@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 厂家门户</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+</head>
+<body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
+
+<!-- Header -->
+<nav class="bg-hg shadow-md">
+  <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <div class="w-7 h-7 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+      <span class="text-white font-semibold text-sm">HOUZY HOME</span>
+    </a>
+    <div class="flex items-center gap-4">
+      <span id="sup-name" class="text-gd text-sm"></span>
+      <button onclick="logout()" class="text-gray-400 hover:text-white text-xs border border-white/20 px-3 py-1 rounded">退出</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Orders list -->
+<div id="v-orders" class="max-w-3xl mx-auto px-4 py-6">
+  <div class="flex items-center justify-between mb-5">
+    <h1 class="text-lg font-bold text-gray-800">我的订单</h1>
+    <span id="order-count" class="text-sm text-gray-400"></span>
+  </div>
+
+  <!-- Status filter -->
+  <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+    <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)">全部</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('accepted',this)">待接单</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_production',this)">生产中</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('production_complete',this)">待发货</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">已发货</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('completed',this)">已完成</button>
+  </div>
+
+  <div id="orders-list"></div>
+</div>
+
+<!-- Order detail -->
+<div id="v-detail" class="hidden max-w-3xl mx-auto px-4 py-6">
+  <div class="flex items-center gap-3 mb-5">
+    <button onclick="show('v-orders')" class="text-gray-400 hover:text-gray-600">← 返回</button>
+    <h1 class="text-lg font-bold text-gray-800">订单详情</h1>
+  </div>
+  <div id="detail-content"></div>
+</div>
+
+<style>
+  .filter-btn { background: white; color: #6b7280; border: 1px solid #e5e7eb; }
+  .filter-btn.active { background: #1a3a2a; color: white; border-color: #1a3a2a; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let profile = null, supplier = null, allOrders = [], currentFilter = '';
+
+const STATUS = {
+  pending_payment:    { label:'待支付',     cls:'bg-yellow-100 text-yellow-700' },
+  paid:               { label:'已支付',     cls:'bg-blue-100 text-blue-700' },
+  assigned:           { label:'已分配',     cls:'bg-blue-100 text-blue-700' },
+  accepted:           { label:'待接单',     cls:'bg-violet-100 text-violet-700' },
+  in_production:      { label:'生产中',     cls:'bg-violet-200 text-violet-800' },
+  production_complete:{ label:'生产完成',   cls:'bg-indigo-100 text-indigo-700' },
+  shipped:            { label:'已发货',     cls:'bg-orange-100 text-orange-700' },
+  in_transit:         { label:'运输中',     cls:'bg-orange-100 text-orange-700' },
+  arrived:            { label:'已到货',     cls:'bg-teal-100 text-teal-700' },
+  installing:         { label:'安装中',     cls:'bg-teal-100 text-teal-700' },
+  completed:          { label:'已完成',     cls:'bg-green-100 text-green-700' },
+  after_sales:        { label:'售后中',     cls:'bg-red-100 text-red-700' },
+  closed:             { label:'已关闭',     cls:'bg-gray-100 text-gray-500' },
+};
+
+// Supplier can only advance through these statuses in order
+const MY_TRANSITIONS = {
+  assigned:           ['accepted'],
+  accepted:           ['in_production'],
+  in_production:      ['production_complete'],
+  production_complete:['shipped'],
+  shipped:            ['in_transit'],
+  in_transit:         ['arrived'],
+};
+
+function badge(s) {
+  const x = STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${x.cls}">${x.label}</span>`;
+}
+function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
+function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+
+function show(id) {
+  ['v-orders','v-detail'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
+}
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  profile = await sb.rpc('get_my_profile').then(r => r.data);
+  if (!profile || profile.role !== 'supplier') {
+    alert('权限不足'); window.location.href = 'login.html'; return;
+  }
+
+  const { data: sup } = await sb.from('suppliers').select('*').eq('user_id', profile.id).single();
+  supplier = sup;
+  document.getElementById('sup-name').textContent = supplier?.name || profile.name;
+
+  await loadOrders();
+}
+
+async function loadOrders() {
+  const { data } = await sb.from('orders')
+    .select('*, stores(name), customers(name,phone)')
+    .eq('supplier_id', supplier?.id)
+    .order('created_at', { ascending: false });
+  allOrders = data || [];
+  renderOrders();
+}
+
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+function renderOrders() {
+  const filtered = currentFilter
+    ? allOrders.filter(o => o.status === currentFilter)
+    : allOrders;
+
+  document.getElementById('order-count').textContent = `共 ${filtered.length} 条`;
+
+  const el = document.getElementById('orders-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="text-center py-16">
+      <div class="text-4xl mb-3">📦</div>
+      <p class="text-gray-400">暂无相关订单</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(o => {
+    const nextStatuses = MY_TRANSITIONS[o.status] || [];
+    const canUpdate = nextStatuses.length > 0;
+    return `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <div class="font-mono font-bold text-hg text-sm">${o.order_no}</div>
+          <div class="text-gray-400 text-xs mt-0.5">${o.stores?.name} · ${fmtDate(o.created_at)}</div>
+        </div>
+        ${badge(o.status)}
+      </div>
+      ${o.description ? `<p class="text-sm text-gray-600 mb-3">${o.description}</p>` : ''}
+      <div class="flex items-center justify-between">
+        <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
+        <div class="flex gap-2">
+          <button onclick="openDetail('${o.id}')"
+                  class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
+            查看详情
+          </button>
+          ${canUpdate ? `<button onclick="quickUpdate('${o.id}','${nextStatuses[0]}')"
+                  class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg">
+            → ${STATUS[nextStatuses[0]].label}
+          </button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function quickUpdate(orderId, newStatus) {
+  const notes = prompt(`更新到「${STATUS[newStatus].label}」，请填写备注（可选）：`);
+  if (notes === null) return; // user cancelled
+
+  await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: newStatus,
+    operator_id: profile.id,
+    operator_role: 'supplier',
+    operator_name: supplier?.name || profile.name,
+    notes: notes || null,
+  });
+  await loadOrders();
+}
+
+async function openDetail(id) {
+  show('v-detail');
+  document.getElementById('detail-content').innerHTML =
+    '<div class="text-center py-10 text-gray-400">加载中…</div>';
+
+  const { data: o } = await sb.from('orders')
+    .select('*, stores(name), customers(name,phone)')
+    .eq('id', id).single();
+
+  const { data: logs } = await sb.from('order_logs')
+    .select('*').eq('order_id', id).order('created_at', { ascending: true });
+
+  const logsHtml = (logs || []).map((l, i, arr) => {
+    const isLast = i === arr.length - 1;
+    return `<div class="flex gap-3">
+      <div class="flex flex-col items-center flex-shrink-0 w-4">
+        <div class="w-2.5 h-2.5 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
+        ${!isLast ? '<div class="w-px bg-gray-200 flex-1 my-1 mx-auto"></div>' : ''}
+      </div>
+      <div class="pb-3 flex-1">
+        <div class="flex items-center gap-2 flex-wrap">${badge(l.status)}
+          <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
+        </div>
+        ${l.notes ? `<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>` : ''}
+        <p class="text-gray-400 text-xs">${l.operator_name || ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  const nextStatuses = MY_TRANSITIONS[o?.status] || [];
+  const updateSection = nextStatuses.length ? `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">更新进度</h3>
+      <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">更新状态</label>
+        <select id="det-status" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
+          ${nextStatuses.map(s => `<option value="${s}">${STATUS[s].label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">备注说明</label>
+        <input type="text" id="det-notes" placeholder="如：预计完成时间 / 物流单号 / 备注"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
+      </div>
+      <button onclick="updateFromDetail('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg transition text-sm">
+        提交更新
+      </button>
+      <p id="det-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
+    </div>` : '';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
+          <div class="text-gray-400 text-sm">${o.stores?.name}</div>
+        </div>
+        ${badge(o.status)}
+      </div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
+        <div><span class="text-gray-400">支付</span>
+          <span class="${o.payment_status==='paid'?'text-green-600':'text-red-500'} font-medium">
+            ${o.payment_status==='paid'?'已支付':'待支付'}
+          </span>
+        </div>
+        <div><span class="text-gray-400">创建</span> <span>${fmtDate(o.created_at)}</span></div>
+      </div>
+      ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
+    </div>
+
+    ${updateSection}
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
+      ${logsHtml || '<p class="text-gray-400 text-sm">暂无记录</p>'}
+    </div>`;
+}
+
+async function updateFromDetail(id) {
+  const newStatus = document.getElementById('det-status').value;
+  const notes = document.getElementById('det-notes').value.trim();
+
+  await sb.from('orders').update({ status: newStatus }).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id: id, status: newStatus,
+    operator_id: profile.id,
+    operator_role: 'supplier',
+    operator_name: supplier?.name || profile.name,
+    notes: notes || null,
+  });
+
+  document.getElementById('det-msg').classList.remove('hidden');
+  setTimeout(() => document.getElementById('det-msg').classList.add('hidden'), 2000);
+  await loadOrders();
+  openDetail(id);
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>

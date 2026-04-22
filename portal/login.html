@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 系统入口</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+</head>
+<body class="bg-hg min-h-screen flex items-center justify-center p-4" style="font-family:'Noto Sans SC',sans-serif">
+
+<div class="w-full max-w-sm">
+  <!-- Logo -->
+  <div class="text-center mb-10">
+    <a href="/" class="inline-flex items-center gap-3">
+      <div class="w-12 h-12 bg-gd flex items-center justify-center">
+        <span class="text-hg font-bold text-xl" style="font-family:'Playfair Display',serif">H</span>
+      </div>
+      <div class="text-left">
+        <div class="text-white font-bold tracking-widest text-lg">HOUZY HOME</div>
+        <div class="text-gd text-xs tracking-widest">ORDER MANAGEMENT</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Customer shortcut -->
+  <a href="customer.html"
+     class="flex items-center gap-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl p-5 mb-4 transition-all group">
+    <div class="w-11 h-11 bg-gd rounded-full flex items-center justify-center flex-shrink-0">
+      <svg class="w-5 h-5 text-hg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <div class="flex-1">
+      <div class="text-white font-semibold">查询我的订单</div>
+      <div class="text-gray-400 text-sm">输入手机号 · 查看进度</div>
+    </div>
+    <svg class="w-4 h-4 text-gd group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+  </a>
+
+  <!-- Staff / Supplier login -->
+  <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-white font-semibold">员工 / 厂家 / 管理员</div>
+        <div class="text-gray-400 text-xs">Staff · Supplier · Admin</div>
+      </div>
+    </div>
+
+    <form id="form" onsubmit="doLogin(event)" class="space-y-3">
+      <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
+             class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+      <input type="password" id="pw" placeholder="密码 Password" required autocomplete="current-password"
+             class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+      <button type="submit" id="btn"
+              class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+        登录 Login
+      </button>
+      <p id="err" class="text-red-400 text-xs hidden"></p>
+    </form>
+  </div>
+
+  <p class="text-center text-gray-600 text-xs mt-8">© 2026 HOUZY HOME SDN. BHD.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ⚠️ 替换为您的 Supabase 凭证 → Supabase Dashboard > Settings > API
+const SB_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// Already logged in?
+sb.auth.getSession().then(({ data: { session } }) => { if (session) redirect(); });
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  btn.textContent = '登录中...'; btn.disabled = true; err.classList.add('hidden');
+
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('email').value,
+    password: document.getElementById('pw').value
+  });
+  if (error) {
+    err.textContent = error.message.includes('Invalid') ? '邮箱或密码错误' : error.message;
+    err.classList.remove('hidden');
+    btn.textContent = '登录 Login'; btn.disabled = false;
+    return;
+  }
+  redirect();
+}
+
+async function redirect() {
+  const { data } = await sb.rpc('get_my_profile');
+  const role = data?.role || 'customer';
+  const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', customer: 'customer.html' };
+  window.location.href = map[role] || 'customer.html';
+}
+</script>
+</body>
+</html>
