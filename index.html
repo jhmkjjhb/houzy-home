@@ -86,8 +86,12 @@
                     <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors">服务 Services</a>
                     <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors">套餐 Packages</a>
                     <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors">关于 About</a>
+                    <a href="#shop" class="text-houzy-gold font-semibold hover:text-houzy-green transition-colors">商城 Shop</a>
                     <a href="#contact" class="px-6 py-2 bg-houzy-green text-white hover:bg-houzy-green-light transition-colors rounded-sm">
                         预约 Book
+                    </a>
+                    <a href="/portal/login.html" class="px-6 py-2 border border-houzy-green text-houzy-green hover:bg-houzy-green hover:text-white transition-colors rounded-sm text-sm">
+                        客户中心
                     </a>
                 </div>
 
@@ -108,7 +112,9 @@
                 <a href="#services" class="block py-2 text-gray-700">服务 Services</a>
                 <a href="#packages" class="block py-2 text-gray-700">套餐 Packages</a>
                 <a href="#about" class="block py-2 text-gray-700">关于 About</a>
+                <a href="#shop" class="block py-2 text-houzy-gold font-semibold">商城 Shop</a>
                 <a href="#contact" class="block py-2 text-houzy-green font-medium">预约 Book</a>
+                <a href="/portal/login.html" class="block py-2 text-houzy-gold font-medium">客户中心 Portal</a>
             </div>
         </div>
     </nav>
@@ -144,6 +150,9 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     <a href="#spaces" class="px-8 py-4 bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-all text-center rounded-sm">
                         探索展厅 Explore
+                    </a>
+                    <a href="#shop" class="px-8 py-4 bg-white text-houzy-green font-semibold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm">
+                        立即选购 Shop Now
                     </a>
                     <a href="https://wa.me/60105898786" target="_blank"
                        class="px-8 py-4 border-2 border-white text-white font-semibold hover:bg-white hover:text-houzy-green transition-all text-center rounded-sm">
@@ -247,72 +256,97 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Kitchen A -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80" 
-                         alt="厨房A Kitchen A" 
+                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('kitchen')">
+                    <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80"
+                         alt="厨房A Kitchen A"
                          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
+                            点击查看效果图 →
+                        </span>
+                    </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
                         <h3 class="font-serif-cn text-2xl font-bold mb-1">厨房A</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Kitchen A</p>
-                        <p class="text-houzy-gold text-sm mb-2">简约生活 · 温暖相伴 | Simple Living</p>
-                        <p class="text-gray-300 text-xs">高效收纳 · 耐用材质 · 轻松清洁</p>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Kitchen A — U型主推款 · 3.3m×4.0m</p>
+                        <p class="text-houzy-gold text-sm mb-2">轻奢 · 高端收纳 | Simple Living, Exceptional Materials</p>
+                        <p class="text-gray-300 text-xs">高效收纳 · 品质五金 · 环保板材</p>
                     </div>
                 </div>
 
                 <!-- Bathroom -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80" 
-                         alt="卫浴区 Bathroom" 
+                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('bathroom')">
+                    <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80"
+                         alt="卫浴穿越体验区 Bathroom"
                          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
+                            点击查看效果图 →
+                        </span>
+                    </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">卫浴区</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Bathroom</p>
-                        <p class="text-houzy-gold text-sm mb-2">沉浸体验 | Immersive Experience</p>
-                        <p class="text-gray-300 text-xs">淋浴系统 · 智能马桶 · 浴室柜</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1">卫浴穿越体验区</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Bathroom Experience — Feel the Quality</p>
+                        <p class="text-houzy-gold text-sm mb-2">全景呈现 · 沉浸体验 | Love the Details</p>
+                        <p class="text-gray-300 text-xs">真实场景 · 搭配推荐 · 专业建议</p>
                     </div>
                 </div>
 
-                <!-- Materials -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80" 
-                         alt="材料区 Materials" 
+                <!-- Tile Selection -->
+                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('materials')">
+                    <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"
+                         alt="瓷砖选材区 Tile Selection"
                          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
+                            点击查看效果图 →
+                        </span>
+                    </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">材料区</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Materials</p>
-                        <p class="text-houzy-gold text-sm mb-2">全球选材 | Global Selection</p>
-                        <p class="text-gray-300 text-xs">大理石 · 木纹 · 水泥 · 特色砖</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1">瓷砖选材区</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Tile Selection — One Surface, Endless Possibilities</p>
+                        <p class="text-houzy-gold text-sm mb-2">严选全球优质瓷砖 | Premium Selection</p>
+                        <p class="text-gray-300 text-xs">大理石纹 · 石材纹 · 木纹砖 · 水泥纹 · 特色砖</p>
                     </div>
                 </div>
 
                 <!-- Wardrobe -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer">
-                    <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80" 
-                         alt="衣柜样间 Wardrobe" 
+                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('wardrobe')">
+                    <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80"
+                         alt="衣柜空间 Wardrobe Space"
                          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
+                            点击查看效果图 →
+                        </span>
+                    </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">衣柜样间</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Wardrobe</p>
-                        <p class="text-houzy-gold text-sm mb-2">理想收纳 · 品质生活 | Smart Storage</p>
-                        <p class="text-gray-300 text-xs">开放式衣帽间 · 定制收纳系统</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1">衣柜空间</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Wardrobe Space — 4.4m×4.0m · 全屋定制</p>
+                        <p class="text-houzy-gold text-sm mb-2">定制收纳 · 品质生活 | Tailored Storage, Timeless Living</p>
+                        <p class="text-gray-300 text-xs">科学分区 · 高效收纳 · 颜值担当</p>
                     </div>
                 </div>
 
-                <!-- Negotiation Area -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer lg:col-span-2">
-                    <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80" 
-                         alt="洽谈区 Consultation" 
+                <!-- Showroom Tour / Consultation -->
+                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer lg:col-span-2" onclick="openGallery('consultation')">
+                    <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80"
+                         alt="展厅全景 Showroom Tour"
                          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
+                            点击查看效果图 →
+                        </span>
+                    </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">洽谈区</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Consultation Area</p>
-                        <p class="text-houzy-gold text-sm mb-2">共筑理想家 · 一对一专属服务 | Build Your Dream Home</p>
-                        <p class="text-gray-300 text-xs">专业设计师咨询 · 方案定制 · 预算规划</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1">洽谈区 · 展厅全景</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Showroom Tour — TOUCH. COMPARE. CREATE.</p>
+                        <p class="text-houzy-gold text-sm mb-2">触摸 · 对比 · 创造理想家 | 一站式配齐</p>
+                        <p class="text-gray-300 text-xs">场景灵感 · 材质甄选 · 专业陪伴 · 一站式配齐</p>
                     </div>
                 </div>
             </div>
@@ -400,6 +434,78 @@
                             咨询详情 Enquire
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shop Section -->
+    <section id="shop" class="py-20 bg-houzy-dark text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">ONLINE STORE</p>
+                <h2 class="font-serif-cn text-4xl font-bold mb-2">线上商城</h2>
+                <p class="font-serif-en text-lg text-gray-400 italic mb-4">Shop Online</p>
+                <p class="text-gray-300 max-w-2xl mx-auto">足不出户，精选建材直达您家 | Premium materials delivered to your door</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                <!-- Feature 1 -->
+                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2">正品保障</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Authentic Products</p>
+                    <p class="text-gray-400 text-sm">品牌直供，假一赔十<br><span class="text-xs">Brand direct supply, guaranteed authentic</span></p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2">快速配送</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Fast Delivery</p>
+                    <p class="text-gray-400 text-sm">新山本地配送，当天达<br><span class="text-xs">Same-day delivery within Johor Bahru</span></p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2">专业顾问</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Expert Support</p>
+                    <p class="text-gray-400 text-sm">选材有疑问？随时 WhatsApp<br><span class="text-xs">Questions? WhatsApp us anytime</span></p>
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="text-center">
+                <p class="text-gray-400 mb-8 text-sm">选择您喜欢的方式开始购物 | Choose your preferred way to shop</p>
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                    <a href="https://houzy-home.myshopify.com" target="_blank"
+                       class="w-full sm:w-auto px-12 py-5 bg-houzy-gold text-houzy-green text-lg font-bold hover:bg-houzy-gold-light transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                        前往商城 Visit Shop
+                    </a>
+                    <span class="text-gray-600 hidden sm:block">或 / or</span>
+                    <a href="https://wa.me/60105898786" target="_blank"
+                       class="w-full sm:w-auto px-12 py-5 border-2 border-houzy-gold text-houzy-gold text-lg font-bold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                        WhatsApp 选购咨询
+                    </a>
                 </div>
             </div>
         </div>
@@ -565,6 +671,7 @@
                         <li><a href="#home" class="hover:text-houzy-gold transition-colors">首页 Home</a></li>
                         <li><a href="#spaces" class="hover:text-houzy-gold transition-colors">展厅 Showroom</a></li>
                         <li><a href="#packages" class="hover:text-houzy-gold transition-colors">套餐 Packages</a></li>
+                        <li><a href="#shop" class="hover:text-houzy-gold transition-colors">商城 Shop</a></li>
                         <li><a href="#about" class="hover:text-houzy-gold transition-colors">关于 About</a></li>
                     </ul>
                 </div>
@@ -581,28 +688,231 @@
                 </div>
             </div>
 
-            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p class="text-gray-500 text-sm">
                     © 2026 HOUZY HOME SDN. BHD. All rights reserved.
                 </p>
-                <div class="flex space-x-4 mt-4 md:mt-0">
-                    <a href="#" class="text-gray-400 hover:text-houzy-gold transition-colors">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <div class="flex flex-wrap gap-3 justify-center md:justify-end">
+                    <!-- Facebook -->
+                    <a href="#" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
+                       style="background-color:#1877F2;">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                         </svg>
+                        Facebook
                     </a>
-                    <a href="#" class="text-gray-400 hover:text-houzy-gold transition-colors">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <!-- Instagram -->
+                    <a href="#" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
+                       style="background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                         </svg>
+                        Instagram
+                    </a>
+                    <!-- 官方小红书 -->
+                    <a href="#" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
+                       style="background-color:#FF2442;">
+                        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 6.5h-2v1.25c0 .414.336.75.75.75h.5v1.5h-.5A2.25 2.25 0 0113 9.75V8.5h-1v5.25a1.75 1.75 0 01-3.5 0V8.5H7v5.25a3.25 3.25 0 006.5 0V10h.25A2.25 2.25 0 0016 7.75V8h.5v.5z"/>
+                            <path d="M8.75 10h1.5v3.75a.75.75 0 01-1.5 0V10z"/>
+                        </svg>
+                        官方小红书
+                    </a>
+                    <!-- 官方 TikTok -->
+                    <a href="#" target="_blank" rel="noopener noreferrer"
+                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold border border-gray-600 transition-opacity hover:opacity-80"
+                       style="background-color:#010101;">
+                        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.78a4.85 4.85 0 01-1.07-.09z"/>
+                        </svg>
+                        官方 TikTok
                     </a>
                 </div>
             </div>
         </div>
     </footer>
 
+    <!-- Gallery Modal -->
+    <div id="gallery-modal" class="fixed inset-0 z-[200] hidden flex-col bg-black/95" onclick="handleModalClick(event)">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 bg-black/60 flex-shrink-0">
+            <div>
+                <h2 id="gallery-title" class="font-serif-cn text-2xl font-bold text-white"></h2>
+                <p id="gallery-subtitle" class="font-serif-en text-houzy-gold text-sm italic mt-1"></p>
+            </div>
+            <div class="flex items-center gap-6">
+                <span id="gallery-counter" class="text-gray-400 text-sm"></span>
+                <button onclick="closeGallery()" class="text-white hover:text-houzy-gold transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Image Area -->
+        <div class="flex-1 flex items-center justify-center relative px-4 py-2 min-h-0">
+            <button onclick="prevImage(event)" class="absolute left-2 md:left-6 z-10 w-12 h-12 bg-black/50 hover:bg-houzy-gold text-white hover:text-houzy-green rounded-full flex items-center justify-center transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <div class="h-full flex flex-col items-center justify-center">
+                <img id="gallery-main-img" src="" alt="" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl">
+                <p id="gallery-caption" class="text-gray-300 text-sm mt-3 text-center"></p>
+            </div>
+            <button onclick="nextImage(event)" class="absolute right-2 md:right-6 z-10 w-12 h-12 bg-black/50 hover:bg-houzy-gold text-white hover:text-houzy-green rounded-full flex items-center justify-center transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Thumbnails -->
+        <div id="gallery-thumbnails" class="flex gap-2 px-6 py-3 overflow-x-auto justify-center flex-shrink-0"></div>
+
+        <!-- CTA -->
+        <div class="text-center py-4 flex-shrink-0">
+            <a href="https://wa.me/60105898786" target="_blank"
+               class="inline-flex items-center gap-2 px-8 py-3 bg-houzy-gold text-houzy-green font-semibold rounded-sm hover:bg-houzy-gold-light transition-colors">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp 咨询报价
+            </a>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script>
+        // Gallery Data
+        const galleries = {
+            kitchen: {
+                title: '厨房A',
+                subtitle: 'Kitchen A — U型主推款 · 3.3m×4.0m · 轻奢高端收纳',
+                images: [
+                    { src: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85', caption: '厨房A整体效果 · U型布局 | Full Kitchen View — U-Shape Layout' },
+                    { src: 'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=1200&q=85', caption: '岛台台面与高效收纳 | Island Countertop & Efficient Storage' },
+                    { src: 'https://images.unsplash.com/photo-1565538810643-b5bdb4c8bdbb?w=1200&q=85', caption: '环保板材橱柜展示 | Eco-Friendly Cabinet Materials' },
+                    { src: 'https://images.unsplash.com/photo-1556909212-d5a3cc51d9f1?w=1200&q=85', caption: '品质五金配件细节 | Quality Hardware Details' },
+                    { src: 'https://images.unsplash.com/photo-1556909048-f20a50d7be5e?w=1200&q=85', caption: '整体灯光氛围与空间感 | Lighting Ambience & Space Feel' },
+                ]
+            },
+            bathroom: {
+                title: '卫浴穿越体验区',
+                subtitle: 'Bathroom Experience — Feel the Quality · Love the Details · 全景呈现·沉浸体验',
+                images: [
+                    { src: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85', caption: '卫浴穿越体验区全景 | Full Bathroom Experience Zone' },
+                    { src: 'https://images.unsplash.com/photo-1620626011761-996317702149?w=1200&q=85', caption: '淋浴花洒系统 · 真实场景呈现 | Shower System — Real Space' },
+                    { src: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1200&q=85', caption: '双盆浴室柜台面展示 | Double Basin Vanity Display' },
+                    { src: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1200&q=85', caption: '独立浴缸区 · 沉浸乐享 | Freestanding Bathtub Zone' },
+                    { src: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200&q=85', caption: '整体搭配推荐 · 专业设计建议 | Styling Ideas & Expert Advice' },
+                ]
+            },
+            materials: {
+                title: '瓷砖选材区',
+                subtitle: 'Tile Selection — One Surface, Endless Possibilities · 无限可能的表面，成就您的理想空间',
+                images: [
+                    { src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85', caption: '大理石纹 Marble · 1200×2400mm | 天然纹路，高贵典雅' },
+                    { src: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=85', caption: '石材纹 Stone · 1200×2400mm | 自然质感，经久耐用' },
+                    { src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=85', caption: '水泥纹 Concrete · 1200×1600mm | 工业风格，简约现代' },
+                    { src: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=85', caption: '木纹砖 Wood Look · 1200×1600mm | 木质温感，易于清洁' },
+                    { src: 'https://images.unsplash.com/photo-1505873242700-f289a29e1e0f?w=1200&q=85', caption: '特色砖 Special · 高端大理石 Premium | 匠心之选，彰显品位' },
+                ]
+            },
+            wardrobe: {
+                title: '衣柜空间',
+                subtitle: 'Wardrobe Space — 4.4m×4.0m · 全屋定制 · Tailored Storage, Timeless Living',
+                images: [
+                    { src: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=1200&q=85', caption: '衣柜空间整体效果 · 4.4m×4.0m | Full Wardrobe Space Overview' },
+                    { src: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=1200&q=85', caption: '开放式挂衣区 · 科学分区设计 | Open Hanging Zone — Smart Zoning' },
+                    { src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=85', caption: '包包鞋履展示区 · 高效收纳系统 | Bags & Shoes Display — Efficient Storage' },
+                    { src: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&q=85', caption: '抽屉与层板收纳细节 | Drawer & Shelf Storage Details' },
+                    { src: 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=85', caption: '颜值担当 · 专属定制设计 | Premium Aesthetics — Personalized Design' },
+                ]
+            },
+            consultation: {
+                title: '洽谈区 · 展厅全景',
+                subtitle: 'Showroom Tour — TOUCH. COMPARE. CREATE. · 触摸·对比·创造理想家',
+                images: [
+                    { src: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=85', caption: '展厅全景 · 五大体验空间一览 | Full Showroom — Five Experience Spaces' },
+                    { src: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85', caption: '厨房A展区 · 场景灵感 | Kitchen A Zone — Scene Inspiration' },
+                    { src: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85', caption: '卫浴体验区 · 沉浸感受 | Bathroom Zone — Immersive Experience' },
+                    { src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85', caption: '瓷砖选材区 · 触摸对比 | Tile Selection Zone — Touch & Compare' },
+                    { src: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=85', caption: '洽谈区 · 一对一专业设计顾问服务 | Consultation — One-on-One Expert Guidance' },
+                ]
+            }
+        };
+
+        let currentGallery = null;
+        let currentIndex = 0;
+
+        function openGallery(key) {
+            currentGallery = galleries[key];
+            currentIndex = 0;
+            const modal = document.getElementById('gallery-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            renderGallery();
+        }
+
+        function closeGallery() {
+            const modal = document.getElementById('gallery-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        function handleModalClick(e) {
+            if (e.target === document.getElementById('gallery-modal')) closeGallery();
+        }
+
+        function renderGallery() {
+            const g = currentGallery;
+            const img = g.images[currentIndex];
+            document.getElementById('gallery-title').textContent = g.title;
+            document.getElementById('gallery-subtitle').textContent = g.subtitle;
+            document.getElementById('gallery-main-img').src = img.src;
+            document.getElementById('gallery-main-img').alt = img.caption;
+            document.getElementById('gallery-caption').textContent = img.caption;
+            document.getElementById('gallery-counter').textContent = `${currentIndex + 1} / ${g.images.length}`;
+            const thumbs = document.getElementById('gallery-thumbnails');
+            thumbs.innerHTML = g.images.map((im, i) => `
+                <img src="${im.src}" onclick="setImage(${i})"
+                     class="h-16 w-24 object-cover rounded cursor-pointer flex-shrink-0 transition-all ${i === currentIndex ? 'ring-2 ring-houzy-gold opacity-100' : 'opacity-50 hover:opacity-90'}"
+                     alt="${im.caption}">
+            `).join('');
+        }
+
+        function prevImage(e) {
+            e.stopPropagation();
+            currentIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length;
+            renderGallery();
+        }
+
+        function nextImage(e) {
+            e.stopPropagation();
+            currentIndex = (currentIndex + 1) % currentGallery.images.length;
+            renderGallery();
+        }
+
+        function setImage(i) {
+            currentIndex = i;
+            renderGallery();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (document.getElementById('gallery-modal').classList.contains('hidden')) return;
+            if (e.key === 'ArrowLeft') { currentIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length; renderGallery(); }
+            if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % currentGallery.images.length; renderGallery(); }
+            if (e.key === 'Escape') closeGallery();
+        });
+
         // Mobile Menu Toggle
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');

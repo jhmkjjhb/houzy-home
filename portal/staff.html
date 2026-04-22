@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 店员后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+<style>
+  .nav-link { @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 hover:text-white transition cursor-pointer; }
+  .nav-link.active { @apply bg-white/15 text-white font-semibold; }
+  .card { @apply bg-white rounded-xl shadow-sm border border-gray-100; }
+  .btn-primary { @apply px-4 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-gg transition; }
+  .btn-gold { @apply px-4 py-2 bg-gd text-hg text-sm font-semibold rounded-lg hover:brightness-110 transition; }
+  .input { @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg; }
+  .label { @apply block text-xs font-medium text-gray-600 mb-1; }
+  [x-cloak] { display: none; }
+</style>
+</head>
+<body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
+
+<!-- Layout -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-56 bg-hg flex-shrink-0 flex flex-col">
+    <!-- Logo -->
+    <div class="px-4 py-5 border-b border-white/10">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+        <div>
+          <div class="text-white font-bold text-sm tracking-wide">HOUZY HOME</div>
+          <div class="text-gd text-xs">店员后台</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-link active" id="nav-dashboard" onclick="goto('dashboard')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        总览
+      </div>
+      <div class="nav-link" id="nav-orders" onclick="goto('orders')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        订单管理
+      </div>
+      <div class="nav-link" id="nav-create" onclick="goto('create')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        新建订单
+      </div>
+      <div class="nav-link" id="nav-customers" onclick="goto('customers')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        客户管理
+      </div>
+    </nav>
+
+    <!-- User info -->
+    <div class="p-3 border-t border-white/10">
+      <div id="user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
+      <button onclick="logout()" class="nav-link w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        退出
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="v-dashboard" class="p-6 max-w-5xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-6">总览 Dashboard</h1>
+      <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-800">最近订单</h2>
+          <button onclick="goto('orders')" class="text-xs text-hg hover:underline">查看全部 →</button>
+        </div>
+        <div id="recent-orders"></div>
+      </div>
+    </div>
+
+    <!-- ── ORDERS LIST ── -->
+    <div id="v-orders" class="hidden p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h1 class="text-xl font-bold text-gray-800">订单管理</h1>
+        <button onclick="goto('create')" class="btn-gold">+ 新建订单</button>
+      </div>
+      <!-- Filters -->
+      <div class="card p-4 mb-4 flex flex-wrap gap-3">
+        <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()"
+               class="input flex-1 min-w-40">
+        <select id="f-status" onchange="filterOrders()" class="input w-44">
+          <option value="">全部状态</option>
+          <option value="pending_payment">待支付</option>
+          <option value="paid">已支付</option>
+          <option value="assigned">已分配厂家</option>
+          <option value="in_production">生产中</option>
+          <option value="shipped">已发货</option>
+          <option value="completed">已完成</option>
+          <option value="after_sales">售后中</option>
+          <option value="closed">已关闭</option>
+        </select>
+      </div>
+      <div class="card overflow-hidden">
+        <div id="orders-table"></div>
+      </div>
+    </div>
+
+    <!-- ── CREATE ORDER ── -->
+    <div id="v-create" class="hidden p-6 max-w-2xl mx-auto">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
+        <h1 class="text-xl font-bold text-gray-800">新建订单</h1>
+      </div>
+
+      <!-- Step 1: Customer -->
+      <div id="step-customer" class="card p-6 mb-4">
+        <h2 class="font-semibold text-gray-800 mb-4">1. 客户信息</h2>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label">手机号码 *</label>
+            <div class="flex gap-2">
+              <input type="tel" id="c-phone" placeholder="+60..." oninput="debounceSearch()"
+                     class="input">
+            </div>
+          </div>
+          <div>
+            <label class="label">姓名 *</label>
+            <input type="text" id="c-name" placeholder="客户姓名" class="input">
+          </div>
+        </div>
+        <div id="customer-found" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 mb-3"></div>
+        <div>
+          <label class="label">地址</label>
+          <input type="text" id="c-address" placeholder="配送地址（选填）" class="input">
+        </div>
+      </div>
+
+      <!-- Step 2: Order details -->
+      <div class="card p-6 mb-4">
+        <h2 class="font-semibold text-gray-800 mb-4">2. 订单信息</h2>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label">门店 *</label>
+            <select id="o-store" class="input">
+              <option value="">选择门店</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">订单金额 (RM) *</label>
+            <input type="number" id="o-amount" placeholder="0.00" min="0" step="0.01" class="input">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="label">套餐/项目描述</label>
+          <input type="text" id="o-desc" placeholder="如：品质套餐 120m²" class="input">
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label">推荐人</label>
+            <select id="o-referrer" class="input">
+              <option value="">无推荐人</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">支付状态</label>
+            <select id="o-payment" class="input">
+              <option value="unpaid">待支付</option>
+              <option value="paid">已支付</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">备注</label>
+          <textarea id="o-notes" rows="2" placeholder="内部备注（客户不可见）" class="input resize-none"></textarea>
+        </div>
+      </div>
+
+      <button onclick="submitOrder()" id="submit-btn" class="btn-gold w-full py-3 text-base">
+        创建订单
+      </button>
+      <p id="create-err" class="text-red-500 text-sm mt-2 text-center hidden"></p>
+    </div>
+
+    <!-- ── CUSTOMERS ── -->
+    <div id="v-customers" class="hidden p-6 max-w-5xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-5">客户管理</h1>
+      <div class="card p-4 mb-4">
+        <input type="text" id="cust-search" placeholder="搜索姓名 / 手机号" oninput="filterCustomers()"
+               class="input max-w-sm">
+      </div>
+      <div class="card overflow-hidden">
+        <div id="customers-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ORDER DETAIL ── -->
+    <div id="v-detail" class="hidden p-6 max-w-3xl mx-auto">
+      <div class="flex items-center gap-3 mb-5">
+        <button id="detail-back" onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
+        <h1 class="text-xl font-bold text-gray-800">订单详情</h1>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
+const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
+let searchTimer = null;
+
+const STATUS = {
+  pending_payment:    { label:'待支付',     cls:'bg-yellow-100 text-yellow-700' },
+  paid:               { label:'已支付',     cls:'bg-blue-100 text-blue-700' },
+  assigned:           { label:'已分配厂家', cls:'bg-blue-100 text-blue-700' },
+  accepted:           { label:'厂家已接单', cls:'bg-violet-100 text-violet-700' },
+  in_production:      { label:'生产中',     cls:'bg-violet-100 text-violet-700' },
+  production_complete:{ label:'生产完成',   cls:'bg-indigo-100 text-indigo-700' },
+  shipped:            { label:'已发货',     cls:'bg-orange-100 text-orange-700' },
+  in_transit:         { label:'运输中',     cls:'bg-orange-100 text-orange-700' },
+  arrived:            { label:'已到货',     cls:'bg-teal-100 text-teal-700' },
+  installing:         { label:'安装中',     cls:'bg-teal-100 text-teal-700' },
+  completed:          { label:'已完成',     cls:'bg-green-100 text-green-700' },
+  after_sales:        { label:'售后中',     cls:'bg-red-100 text-red-700' },
+  closed:             { label:'已关闭',     cls:'bg-gray-100 text-gray-500' },
+};
+
+function badge(s) {
+  const x = STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${x.cls} whitespace-nowrap">${x.label}</span>`;
+}
+function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
+function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  profile = await sb.rpc('get_my_profile').then(r => r.data);
+  document.getElementById('user-info').innerHTML =
+    `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
+     <div class="text-gray-500">${profile?.role || ''}</div>`;
+
+  await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
+  renderDashboard();
+}
+
+async function loadStores() {
+  const { data } = await sb.from('stores').select('*').eq('active', true);
+  stores = data || [];
+  const sel = document.getElementById('o-store');
+  stores.forEach(s => sel.add(new Option(s.name, s.id)));
+}
+
+async function loadReferrers() {
+  const { data } = await sb.from('referrers').select('*').eq('active', true);
+  referrers = data || [];
+  const sel = document.getElementById('o-referrer');
+  referrers.forEach(r => sel.add(new Option(`${r.name} (${r.type})`, r.id)));
+}
+
+async function loadOrders() {
+  let q = sb.from('orders')
+    .select('*, stores(name), customers(name,phone), profiles(name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (profile?.role === 'staff' && profile?.store_id) q = q.eq('store_id', profile.store_id);
+  const { data } = await q;
+  allOrders = data || [];
+}
+
+async function loadCustomers() {
+  const { data } = await sb.from('customers').select('*').order('created_at', { ascending: false }).limit(500);
+  allCustomers = data || [];
+}
+
+// ── Navigation ──
+function goto(view) {
+  ['dashboard','orders','create','customers','detail'].forEach(v => {
+    document.getElementById('v-' + v).classList.toggle('hidden', v !== view);
+    document.getElementById('nav-' + (v === 'detail' ? 'orders' : v))?.classList.toggle('active', v === view || (v === 'detail'));
+  });
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'orders') renderOrdersTable(allOrders);
+  if (view === 'customers') renderCustomersTable(allCustomers);
+  if (view === 'create') resetCreateForm();
+}
+
+// ── Dashboard ──
+function renderDashboard() {
+  const counts = {};
+  allOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  const total = allOrders.length;
+  const active = allOrders.filter(o => !['completed','closed'].includes(o.status)).length;
+  const done = counts['completed'] || 0;
+  const revenue = allOrders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + Number(o.amount), 0);
+
+  document.getElementById('stats').innerHTML = [
+    ['总订单', total, 'bg-hg', 'text-white'],
+    ['进行中', active, 'bg-blue-600', 'text-white'],
+    ['已完成', done, 'bg-green-600', 'text-white'],
+    ['已收款', fmtAmt(revenue), 'bg-gd', 'text-hg'],
+  ].map(([t, v, bg, tc]) => `
+    <div class="${bg} rounded-xl p-4">
+      <div class="text-xs ${tc} opacity-70 mb-1">${t}</div>
+      <div class="text-2xl font-bold ${tc}">${v}</div>
+    </div>`).join('');
+
+  const recent = allOrders.slice(0, 8);
+  document.getElementById('recent-orders').innerHTML = recent.length
+    ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
+        <th class="pb-2">订单号</th><th class="pb-2">客户</th><th class="pb-2">金额</th><th class="pb-2">状态</th><th class="pb-2">时间</th>
+       </tr></thead><tbody>${recent.map(o => `
+        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="openDetail('${o.id}')">
+          <td class="py-2 font-mono text-xs text-hg">${o.order_no}</td>
+          <td class="py-2">${o.customers?.name || '-'}</td>
+          <td class="py-2">${fmtAmt(o.amount)}</td>
+          <td class="py-2">${badge(o.status)}</td>
+          <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
+        </tr>`).join('')}</tbody></table>`
+    : '<p class="text-gray-400 text-sm text-center py-6">暂无订单</p>';
+}
+
+// ── Orders ──
+function filterOrders() {
+  const q = document.getElementById('f-search').value.toLowerCase();
+  const s = document.getElementById('f-status').value;
+  const filtered = allOrders.filter(o => {
+    const txt = (o.order_no + o.customers?.name + o.customers?.phone).toLowerCase();
+    return (!q || txt.includes(q)) && (!s || o.status === s);
+  });
+  renderOrdersTable(filtered);
+}
+
+function renderOrdersTable(orders) {
+  document.getElementById('orders-table').innerHTML = orders.length
+    ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+        <th class="px-4 py-3">订单号</th><th class="px-4 py-3">客户</th><th class="px-4 py-3">门店</th>
+        <th class="px-4 py-3">金额</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">时间</th>
+       </tr></thead><tbody>${orders.map(o => `
+        <tr class="border-t border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openDetail('${o.id}')">
+          <td class="px-4 py-3 font-mono text-xs text-hg font-semibold">${o.order_no}</td>
+          <td class="px-4 py-3">
+            <div class="font-medium">${o.customers?.name || '-'}</div>
+            <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
+          </td>
+          <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name || '-'}</td>
+          <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount)}</td>
+          <td class="px-4 py-3">${badge(o.status)}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
+        </tr>`).join('')}</tbody></table>`
+    : '<p class="text-gray-400 text-sm text-center py-10">暂无订单</p>';
+}
+
+// ── Create Order ──
+function resetCreateForm() {
+  ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('customer-found').classList.add('hidden');
+  document.getElementById('o-payment').value = 'unpaid';
+  document.getElementById('create-err').classList.add('hidden');
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(lookupCustomer, 400);
+}
+
+async function lookupCustomer() {
+  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+  if (raw.length < 8) { document.getElementById('customer-found').classList.add('hidden'); return; }
+  const phone = '60' + raw.replace(/^0+/,'');
+  const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
+  const el = document.getElementById('customer-found');
+  if (data?.length) {
+    el.innerHTML = `✓ 找到客户：<strong>${data[0].name}</strong>（${data[0].phone}）`;
+    el.classList.remove('hidden');
+    document.getElementById('c-name').value = data[0].name;
+    document.getElementById('c-address').value = data[0].address || '';
+    el.dataset.id = data[0].id;
+  } else {
+    el.classList.add('hidden');
+    delete el.dataset.id;
+  }
+}
+
+async function submitOrder() {
+  const btn = document.getElementById('submit-btn');
+  const err = document.getElementById('create-err');
+  err.classList.add('hidden');
+
+  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+  const name = document.getElementById('c-name').value.trim();
+  const storeId = document.getElementById('o-store').value;
+  const amount = parseFloat(document.getElementById('o-amount').value);
+
+  if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+  if (!storeId) { showCreateErr('请选择门店'); return; }
+  if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
+
+  btn.textContent = '创建中...'; btn.disabled = true;
+  const phone = '60' + raw.replace(/^0+/,'');
+
+  // Get or create customer
+  let custId = document.getElementById('customer-found').dataset?.id;
+  if (!custId) {
+    const { data: newCust, error: ce } = await sb.from('customers').insert({
+      name, phone,
+      address: document.getElementById('c-address').value.trim() || null,
+    }).select().single();
+    if (ce) { showCreateErr('创建客户失败: ' + ce.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+    custId = newCust.id;
+  }
+
+  // Get store code
+  const store = stores.find(s => s.id === storeId);
+  const { data: orderNo } = await sb.rpc('generate_order_no', { p_store_code: store.code });
+
+  const refId = document.getElementById('o-referrer').value || null;
+  const { data: order, error: oe } = await sb.from('orders').insert({
+    order_no: orderNo,
+    store_id: storeId,
+    customer_id: custId,
+    staff_id: profile.id,
+    referrer_id: refId,
+    amount,
+    payment_status: document.getElementById('o-payment').value,
+    description: document.getElementById('o-desc').value.trim() || null,
+    notes: document.getElementById('o-notes').value.trim() || null,
+  }).select().single();
+
+  if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+
+  // Log initial status
+  await sb.from('order_logs').insert({
+    order_id: order.id,
+    status: order.status,
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: '订单创建',
+  });
+
+  btn.textContent = '创建订单'; btn.disabled = false;
+  await loadOrders();
+  openDetail(order.id, 'orders');
+}
+
+function showCreateErr(msg) {
+  const e = document.getElementById('create-err');
+  e.textContent = msg; e.classList.remove('hidden');
+  document.getElementById('submit-btn').textContent = '创建订单';
+  document.getElementById('submit-btn').disabled = false;
+}
+
+// ── Customers ──
+function filterCustomers() {
+  const q = document.getElementById('cust-search').value.toLowerCase();
+  const filtered = allCustomers.filter(c =>
+    (c.name + c.phone + (c.address||'')).toLowerCase().includes(q)
+  );
+  renderCustomersTable(filtered);
+}
+
+function renderCustomersTable(customers) {
+  document.getElementById('customers-table').innerHTML = customers.length
+    ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+        <th class="px-4 py-3">姓名</th><th class="px-4 py-3">手机号</th>
+        <th class="px-4 py-3">地址</th><th class="px-4 py-3">注册时间</th>
+       </tr></thead><tbody>${customers.map(c => `
+        <tr class="border-t border-gray-100 hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium">${c.name}</td>
+          <td class="px-4 py-3 text-gray-600">${c.phone}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${c.address || '-'}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(c.created_at)}</td>
+        </tr>`).join('')}</tbody></table>`
+    : '<p class="text-gray-400 text-sm text-center py-10">暂无客户</p>';
+}
+
+// ── Order Detail ──
+async function openDetail(id, backView) {
+  if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
+  goto('detail');
+
+  const { data: o } = await sb.from('orders')
+    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .eq('id', id).single();
+  if (!o) return;
+
+  const { data: logs } = await sb.from('order_logs')
+    .select('*').eq('order_id', id).order('created_at', { ascending: true });
+
+  const { data: supList } = await sb.from('suppliers').select('id,name').eq('active', true);
+
+  const logsHtml = (logs || []).map((l, i, arr) => {
+    const isLast = i === arr.length - 1;
+    return `<div class="flex gap-3">
+      <div class="flex flex-col items-center flex-shrink-0 w-4">
+        <div class="w-2.5 h-2.5 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
+        ${!isLast ? '<div class="w-px bg-gray-200 flex-1 my-1 mx-auto"></div>' : ''}
+      </div>
+      <div class="pb-3 flex-1">
+        <div class="flex items-center gap-2">${badge(l.status)}
+          <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
+        </div>
+        ${l.notes ? `<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>` : ''}
+        <p class="text-gray-400 text-xs">${l.operator_name || ''}${l.operator_role ? ' · '+l.operator_role : ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  const statusOptions = Object.entries(STATUS)
+    .map(([v, s]) => `<option value="${v}" ${v === o.status ? 'selected' : ''}>${s.label}</option>`)
+    .join('');
+
+  const supplierOptions = `<option value="">未分配</option>` +
+    (supList || []).map(s => `<option value="${s.id}" ${s.id === o.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
+
+  document.getElementById('detail-content').innerHTML = `
+    <!-- Info -->
+    <div class="card p-5 mb-4">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
+          <div class="text-gray-400 text-sm">${o.stores?.name}</div>
+        </div>
+        ${badge(o.status)}
+      </div>
+      <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+        <div><span class="text-gray-400">客户</span> <span class="font-medium">${o.customers?.name}</span></div>
+        <div><span class="text-gray-400">手机</span> <span>${o.customers?.phone}</span></div>
+        <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
+        <div><span class="text-gray-400">支付</span>
+          <span class="font-medium ${o.payment_status==='paid'?'text-green-600':'text-red-500'}">
+            ${o.payment_status==='paid'?'已支付':'待支付'}
+          </span>
+        </div>
+        <div><span class="text-gray-400">厂家</span> <span>${o.suppliers?.name || '未分配'}</span></div>
+        <div><span class="text-gray-400">店员</span> <span>${o.profiles?.name || '-'}</span></div>
+      </div>
+      ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
+      ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">备注：${o.notes}</p>` : ''}
+    </div>
+
+    <!-- Update status -->
+    <div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">更新状态</h3>
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="label">订单状态</label>
+          <select id="upd-status" class="input">${statusOptions}</select>
+        </div>
+        <div>
+          <label class="label">支付状态</label>
+          <select id="upd-payment" class="input">
+            <option value="unpaid" ${o.payment_status==='unpaid'?'selected':''}>待支付</option>
+            <option value="paid" ${o.payment_status==='paid'?'selected':''}>已支付</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="label">分配厂家</label>
+        <select id="upd-supplier" class="input">${supplierOptions}</select>
+      </div>
+      <div class="mb-3">
+        <label class="label">备注</label>
+        <input type="text" id="upd-notes" placeholder="状态更新说明" class="input">
+      </div>
+      <button onclick="updateOrder('${o.id}')" class="btn-primary w-full py-2.5">
+        保存更新
+      </button>
+      <p id="upd-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card p-5">
+      <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
+      ${logsHtml || '<p class="text-gray-400 text-sm">暂无记录</p>'}
+    </div>`;
+}
+
+async function updateOrder(id) {
+  const status = document.getElementById('upd-status').value;
+  const payment = document.getElementById('upd-payment').value;
+  const supplier = document.getElementById('upd-supplier').value || null;
+  const notes = document.getElementById('upd-notes').value.trim();
+
+  const upd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  if (status === 'completed') upd.completed_at = new Date().toISOString();
+
+  await sb.from('orders').update(upd).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id: id, status,
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: notes || null,
+  });
+
+  document.getElementById('upd-msg').classList.remove('hidden');
+  setTimeout(() => document.getElementById('upd-msg').classList.add('hidden'), 2000);
+  await loadOrders();
+  openDetail(id);
+}
+
+// ── Customers ──
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>
