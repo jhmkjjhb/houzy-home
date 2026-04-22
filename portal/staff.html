@@ -256,6 +256,11 @@ async function init() {
 }
 
 async function loadStores() {
+  // Auto-update store display names if admin
+  if (profile?.role === 'admin') {
+    await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
+    await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
+  }
   const { data } = await sb.from('stores').select('*').eq('active', true);
   stores = data || [];
   const sel = document.getElementById('o-store');

@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 INSERT INTO stores (name, code, address) VALUES
-  ('新山店 JB', 'JB', '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru'),
-  ('新加坡店 SG', 'SG', 'Singapore')
+  ('001 Austin', '001', '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru'),
+  ('002 Singapore', '002', 'Singapore')
 ON CONFLICT (code) DO NOTHING;
 
 -- User profiles (links to Supabase auth.users)
