@@ -256,14 +256,19 @@ async function init() {
 }
 
 async function loadStores() {
-  // Auto-update store display names if admin
   if (profile?.role === 'admin') {
     await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
     await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
+    // Add 新山门店 if not exists
+    await sb.from('stores').upsert(
+      { name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
+      { onConflict: 'code', ignoreDuplicates: true }
+    );
   }
-  const { data } = await sb.from('stores').select('*').eq('active', true);
+  const { data } = await sb.from('stores').select('*').eq('active', true).order('code');
   stores = data || [];
   const sel = document.getElementById('o-store');
+  sel.innerHTML = '<option value="">选择门店</option>';
   stores.forEach(s => sel.add(new Option(s.name, s.id)));
 }
 
