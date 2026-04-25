@@ -19,11 +19,46 @@
 </head>
 <body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
 
+<!-- Mobile Top Bar -->
+<div class="md:hidden bg-hg flex items-center justify-between px-4 h-14 fixed top-0 left-0 right-0 z-30">
+  <a href="/" class="flex items-center gap-2">
+    <div class="w-7 h-7 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+    <span class="text-white font-bold text-sm">HOUZY HOME</span>
+  </a>
+  <button onclick="toggleMobileMenu()" class="text-white p-2">
+    <svg id="menu-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="mobile-overlay" class="hidden fixed inset-0 z-40 md:hidden">
+  <div class="absolute inset-0 bg-black/50" onclick="toggleMobileMenu()"></div>
+  <aside class="absolute left-0 top-0 bottom-0 w-64 bg-hg flex flex-col">
+    <div class="px-4 py-5 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+        <div class="text-white font-bold text-sm">HOUZY HOME</div>
+      </div>
+      <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">✕</button>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <div class="nav-link" onclick="goto('dashboard');toggleMobileMenu()">🏠 总览</div>
+      <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 订单管理</div>
+      <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ 新建订单</div>
+      <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 客户管理</div>
+    </nav>
+    <div class="p-3 border-t border-white/10">
+      <div id="mobile-user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
+      <button onclick="logout()" class="nav-link w-full text-red-400">🚪 退出</button>
+    </div>
+  </aside>
+</div>
+
 <!-- Layout -->
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen overflow-hidden pt-14 md:pt-0">
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-56 bg-hg flex-shrink-0 flex flex-col">
+  <aside id="sidebar" class="hidden md:flex w-56 bg-hg flex-shrink-0 flex-col">
     <!-- Logo -->
     <div class="px-4 py-5 border-b border-white/10">
       <a href="/" class="flex items-center gap-2">
@@ -118,13 +153,10 @@
       <!-- Step 1: Customer -->
       <div id="step-customer" class="card p-6 mb-4">
         <h2 class="font-semibold text-gray-800 mb-4">1. 客户信息</h2>
-        <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">手机号码 *</label>
-            <div class="flex gap-2">
-              <input type="tel" id="c-phone" placeholder="+60..." oninput="debounceSearch()"
-                     class="input">
-            </div>
+            <input type="tel" id="c-phone" placeholder="+60..." oninput="debounceSearch()" class="input">
           </div>
           <div>
             <label class="label">姓名 *</label>
@@ -141,7 +173,7 @@
       <!-- Step 2: Order details -->
       <div class="card p-6 mb-4">
         <h2 class="font-semibold text-gray-800 mb-4">2. 订单信息</h2>
-        <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">门店 *</label>
             <select id="o-store" class="input">
@@ -157,7 +189,7 @@
           <label class="label">套餐/项目描述</label>
           <input type="text" id="o-desc" placeholder="如：品质套餐 120m²" class="input">
         </div>
-        <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">推荐人</label>
             <select id="o-referrer" class="input">
@@ -241,15 +273,22 @@ function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumF
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
 function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
+function toggleMobileMenu() {
+  const overlay = document.getElementById('mobile-overlay');
+  overlay.classList.toggle('hidden');
+}
+
 // ── Init ──
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'login.html'; return; }
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
-  document.getElementById('user-info').innerHTML =
-    `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
+  const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
      <div class="text-gray-500">${profile?.role || ''}</div>`;
+  document.getElementById('user-info').innerHTML = userHtml;
+  const mobileInfo = document.getElementById('mobile-user-info');
+  if (mobileInfo) mobileInfo.innerHTML = userHtml;
 
   await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
