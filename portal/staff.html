@@ -138,7 +138,7 @@
           <option value="closed">已关闭</option>
         </select>
       </div>
-      <div class="card overflow-hidden">
+      <div class="card overflow-hidden overflow-x-auto">
         <div id="orders-table"></div>
       </div>
     </div>
@@ -586,7 +586,7 @@ async function openDetail(id, backView) {
         </div>
         ${badge(o.status)}
       </div>
-      <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
         <div><span class="text-gray-400">客户</span> <span class="font-medium">${o.customers?.name}</span></div>
         <div><span class="text-gray-400">手机</span> <span>${o.customers?.phone}</span></div>
         <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
@@ -605,7 +605,7 @@ async function openDetail(id, backView) {
     <!-- Update status -->
     <div class="card p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">更新状态</h3>
-      <div class="grid grid-cols-2 gap-3 mb-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
           <label class="label">订单状态</label>
           <select id="upd-status" class="input">${statusOptions}</select>
