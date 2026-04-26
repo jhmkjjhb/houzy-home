@@ -477,7 +477,7 @@ async function lookupCustomer() {
   const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
   if (raw.length < 6) { document.getElementById('customer-found').classList.add('hidden'); return; }
   const cc = document.getElementById('c-country')?.value || '60';
-  const phone = cc + raw.replace(/^0+/,'');
+  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
   const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
   const el = document.getElementById('customer-found');
   if (data?.length) {
@@ -508,7 +508,7 @@ async function submitOrder() {
 
   btn.textContent = '创建中...'; btn.disabled = true;
   const cc = document.getElementById('c-country')?.value || '60';
-  const phone = cc + raw.replace(/^0+/,'');
+  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
 
   // Get or create customer
   let custId = document.getElementById('customer-found').dataset?.id;
