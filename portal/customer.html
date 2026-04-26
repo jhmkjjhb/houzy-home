@@ -34,6 +34,7 @@
 
   <div class="bg-white rounded-2xl shadow-sm p-6">
     <label class="block text-sm font-medium text-gray-700 mb-2">手机号码</label>
+    <p class="text-xs text-gray-400 mb-2">区号已自动添加，直接输入本地号码即可</p>
     <div class="flex gap-2 mb-4">
       <select id="country-code" class="border border-gray-200 rounded-lg px-2 py-3 text-sm bg-gray-50 focus:outline-none focus:border-hg flex-shrink-0" style="max-width:130px">
         <option value="60">🇲🇾 +60 MY</option>
@@ -160,13 +161,19 @@ async function searchOrders() {
   const raw = document.getElementById('phone-in').value.trim().replace(/[\s\-\(\)]/g, '');
   if (!raw) { showErr('请输入手机号码'); return; }
   const countryCode = document.getElementById('country-code').value;
-  const phone = countryCode + raw.replace(/^0+/, '');
+  const localNum = raw.replace(/^0+/, '');
+  const phone = countryCode + localNum;
 
   const btn = document.getElementById('search-btn');
   const err = document.getElementById('phone-err');
   btn.textContent = '查询中...'; btn.disabled = true; err.classList.add('hidden');
 
-  const { data, error } = await sb.rpc('get_orders_by_phone', { p_phone: phone });
+  // Try with country code first, fallback to local number
+  let { data, error } = await sb.rpc('get_orders_by_phone', { p_phone: phone });
+  if (!error && (!data || data.length === 0)) {
+    const r2 = await sb.rpc('get_orders_by_phone', { p_phone: localNum });
+    if (r2.data?.length) { data = r2.data; }
+  }
   btn.textContent = '查询订单'; btn.disabled = false;
 
   if (error) { showErr('查询失败，请稍后再试'); return; }
