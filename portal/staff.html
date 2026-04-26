@@ -295,31 +295,43 @@ async function init() {
 }
 
 async function loadStores() {
-  let { data: storeData } = await sb.from('stores').select('*').order('name');
-  if (profile?.role === 'admin') {
-    try {
-      const codes = (storeData || []).map(s => s.code);
-      if (storeData?.length === 0 || !storeData) {
-        // Table empty — seed all stores
-        await sb.from('stores').insert([
-          { name: '001 Austin', code: '001', address: '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru', active: true },
-          { name: '新山门店',   code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
-          { name: '002 Singapore', code: '002', address: 'Singapore', active: true },
-        ]);
-      } else {
-        if (codes.includes('JB'))
-          await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
-        if (codes.includes('SG'))
-          await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
-        if (!codes.includes('JBN'))
-          await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true });
-      }
-      const { data: refreshed } = await sb.from('stores').select('*').order('name');
-      if (refreshed?.length) storeData = refreshed;
-    } catch(e) { console.warn('store migration:', e); }
-  }
-  stores = storeData || [];
   const sel = document.getElementById('o-store');
+  if (!sel) return;
+
+  const { data: storeData, error: storeErr } = await sb.from('stores').select('*').order('name');
+
+  if (storeErr) {
+    sel.innerHTML = `<option value="">⚠️ 读取失败: ${storeErr.message}</option>`;
+    return;
+  }
+
+  if (!storeData || storeData.length === 0) {
+    // 表空，尝试插入默认门店
+    if (profile?.role === 'admin') {
+      const { error: insErr } = await sb.from('stores').insert([
+        { name: '001 Austin', code: '001', address: '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru', active: true },
+        { name: '新山门店',   code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
+        { name: '002 Singapore', code: '002', address: 'Singapore', active: true },
+      ]);
+      if (insErr) {
+        sel.innerHTML = `<option value="">⚠️ 插入失败: ${insErr.message}</option>`;
+        return;
+      }
+      const { data: fresh } = await sb.from('stores').select('*').order('name');
+      stores = fresh || [];
+    }
+  } else {
+    stores = storeData;
+    if (profile?.role === 'admin') {
+      const codes = stores.map(s => s.code);
+      if (codes.includes('JB')) await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
+      if (codes.includes('SG')) await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
+      if (!codes.includes('JBN')) await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true });
+      const { data: fresh } = await sb.from('stores').select('*').order('name');
+      if (fresh?.length) stores = fresh;
+    }
+  }
+
   sel.innerHTML = '<option value="">选择门店</option>';
   stores.forEach(s => sel.add(new Option(s.name, s.id)));
 }
