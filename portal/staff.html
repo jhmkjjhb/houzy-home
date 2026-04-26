@@ -303,8 +303,10 @@ async function loadStores() {
       await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
     if (codes.includes('SG'))
       await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
-    if (!codes.includes('JBN') && !codes.includes('新山门店'))
-      await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true });
+    await sb.from('stores').upsert(
+      { name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
+      { onConflict: 'code' }
+    );
 
     const { data: refreshed } = await sb.from('stores').select('*').eq('active', true).order('name');
     stores = refreshed || [];
