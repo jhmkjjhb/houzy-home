@@ -295,15 +295,23 @@ async function init() {
 }
 
 async function loadStores() {
+  const { data: existing } = await sb.from('stores').select('*').eq('active', true);
+  const codes = (existing || []).map(s => s.code);
+
   if (profile?.role === 'admin') {
-    try {
+    if (codes.includes('JB'))
       await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
+    if (codes.includes('SG'))
       await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
-      await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true }).select();
-    } catch(_) {}
+    if (!codes.includes('JBN') && !codes.includes('新山门店'))
+      await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true });
+
+    const { data: refreshed } = await sb.from('stores').select('*').eq('active', true).order('name');
+    stores = refreshed || [];
+  } else {
+    stores = existing || [];
   }
-  const { data } = await sb.from('stores').select('*').eq('active', true).order('name');
-  stores = data || [];
+
   const sel = document.getElementById('o-store');
   sel.innerHTML = '<option value="">选择门店</option>';
   stores.forEach(s => sel.add(new Option(s.name, s.id)));
