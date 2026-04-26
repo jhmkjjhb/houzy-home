@@ -35,9 +35,47 @@
   <div class="bg-white rounded-2xl shadow-sm p-6">
     <label class="block text-sm font-medium text-gray-700 mb-2">手机号码</label>
     <div class="flex gap-2 mb-4">
-      <span class="flex items-center px-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 flex-shrink-0">+60</span>
-      <input type="tel" id="phone-in" placeholder="10-1234 5678" maxlength="12"
-             class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-hg"
+      <select id="country-code" class="border border-gray-200 rounded-lg px-2 py-3 text-sm bg-gray-50 focus:outline-none focus:border-hg flex-shrink-0" style="max-width:130px">
+        <option value="60">🇲🇾 +60 MY</option>
+        <option value="65">🇸🇬 +65 SG</option>
+        <option value="86">🇨🇳 +86 CN</option>
+        <option value="62">🇮🇩 +62 ID</option>
+        <option value="66">🇹🇭 +66 TH</option>
+        <option value="63">🇵🇭 +63 PH</option>
+        <option value="84">🇻🇳 +84 VN</option>
+        <option value="95">🇲🇲 +95 MM</option>
+        <option value="855">🇰🇭 +855 KH</option>
+        <option value="856">🇱🇦 +856 LA</option>
+        <option value="673">🇧🇳 +673 BN</option>
+        <option value="886">🇹🇼 +886 TW</option>
+        <option value="852">🇭🇰 +852 HK</option>
+        <option value="853">🇲🇴 +853 MO</option>
+        <option value="81">🇯🇵 +81 JP</option>
+        <option value="82">🇰🇷 +82 KR</option>
+        <option value="91">🇮🇳 +91 IN</option>
+        <option value="92">🇵🇰 +92 PK</option>
+        <option value="94">🇱🇰 +94 LK</option>
+        <option value="880">🇧🇩 +880 BD</option>
+        <option value="977">🇳🇵 +977 NP</option>
+        <option value="61">🇦🇺 +61 AU</option>
+        <option value="64">🇳🇿 +64 NZ</option>
+        <option value="1">🇺🇸 +1 US/CA</option>
+        <option value="44">🇬🇧 +44 UK</option>
+        <option value="49">🇩🇪 +49 DE</option>
+        <option value="33">🇫🇷 +33 FR</option>
+        <option value="39">🇮🇹 +39 IT</option>
+        <option value="34">🇪🇸 +34 ES</option>
+        <option value="31">🇳🇱 +31 NL</option>
+        <option value="41">🇨🇭 +41 CH</option>
+        <option value="971">🇦🇪 +971 AE</option>
+        <option value="966">🇸🇦 +966 SA</option>
+        <option value="974">🇶🇦 +974 QA</option>
+        <option value="965">🇰🇼 +965 KW</option>
+        <option value="27">🇿🇦 +27 ZA</option>
+        <option value="55">🇧🇷 +55 BR</option>
+      </select>
+      <input type="tel" id="phone-in" placeholder="10-1234 5678" maxlength="15"
+             class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-hg min-w-0"
              onkeydown="if(event.key==='Enter')searchOrders()">
     </div>
     <button onclick="searchOrders()" id="search-btn"
@@ -119,10 +157,10 @@ function fmtDateTime(d) {
 }
 
 async function searchOrders() {
-  const raw = document.getElementById('phone-in').value.trim().replace(/[\s\-]/g, '');
+  const raw = document.getElementById('phone-in').value.trim().replace(/[\s\-\(\)]/g, '');
   if (!raw) { showErr('请输入手机号码'); return; }
-  // Normalize: remove leading 0, add country code
-  const phone = '60' + raw.replace(/^0+/, '');
+  const countryCode = document.getElementById('country-code').value;
+  const phone = countryCode + raw.replace(/^0+/, '');
 
   const btn = document.getElementById('search-btn');
   const err = document.getElementById('phone-err');
