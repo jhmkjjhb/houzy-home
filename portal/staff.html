@@ -156,7 +156,29 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">手机号码 *</label>
-            <input type="tel" id="c-phone" placeholder="+60..." oninput="debounceSearch()" class="input">
+            <div class="flex gap-1">
+              <select id="c-country" class="border border-gray-200 rounded-lg px-1 py-2 text-xs bg-gray-50 focus:outline-none focus:border-hg flex-shrink-0" style="max-width:110px">
+                <option value="60">🇲🇾 +60</option>
+                <option value="65">🇸🇬 +65</option>
+                <option value="86">🇨🇳 +86</option>
+                <option value="62">🇮🇩 +62</option>
+                <option value="66">🇹🇭 +66</option>
+                <option value="63">🇵🇭 +63</option>
+                <option value="84">🇻🇳 +84</option>
+                <option value="673">🇧🇳 +673</option>
+                <option value="886">🇹🇼 +886</option>
+                <option value="852">🇭🇰 +852</option>
+                <option value="81">🇯🇵 +81</option>
+                <option value="82">🇰🇷 +82</option>
+                <option value="91">🇮🇳 +91</option>
+                <option value="61">🇦🇺 +61</option>
+                <option value="1">🇺🇸 +1</option>
+                <option value="44">🇬🇧 +44</option>
+                <option value="971">🇦🇪 +971</option>
+                <option value="966">🇸🇦 +966</option>
+              </select>
+              <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input min-w-0">
+            </div>
           </div>
           <div>
             <label class="label">姓名 *</label>
@@ -453,8 +475,9 @@ function debounceSearch() {
 
 async function lookupCustomer() {
   const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
-  if (raw.length < 8) { document.getElementById('customer-found').classList.add('hidden'); return; }
-  const phone = '60' + raw.replace(/^0+/,'');
+  if (raw.length < 6) { document.getElementById('customer-found').classList.add('hidden'); return; }
+  const cc = document.getElementById('c-country')?.value || '60';
+  const phone = cc + raw.replace(/^0+/,'');
   const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
   const el = document.getElementById('customer-found');
   if (data?.length) {
@@ -484,7 +507,8 @@ async function submitOrder() {
   if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
 
   btn.textContent = '创建中...'; btn.disabled = true;
-  const phone = '60' + raw.replace(/^0+/,'');
+  const cc = document.getElementById('c-country')?.value || '60';
+  const phone = cc + raw.replace(/^0+/,'');
 
   // Get or create customer
   let custId = document.getElementById('customer-found').dataset?.id;
