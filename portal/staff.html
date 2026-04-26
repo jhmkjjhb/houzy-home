@@ -153,32 +153,34 @@
       <!-- Step 1: Customer -->
       <div id="step-customer" class="card p-6 mb-4">
         <h2 class="font-semibold text-gray-800 mb-4">1. 客户信息</h2>
+        <div class="mb-3">
+          <label class="label">国家区号 *</label>
+          <select id="c-country" class="input">
+            <option value="">— 请选择国家区号 —</option>
+            <option value="60">🇲🇾 马来西亚 +60</option>
+            <option value="65">🇸🇬 新加坡 +65</option>
+            <option value="86">🇨🇳 中国 +86</option>
+            <option value="62">🇮🇩 印尼 +62</option>
+            <option value="66">🇹🇭 泰国 +66</option>
+            <option value="63">🇵🇭 菲律宾 +63</option>
+            <option value="84">🇻🇳 越南 +84</option>
+            <option value="673">🇧🇳 文莱 +673</option>
+            <option value="886">🇹🇼 台湾 +886</option>
+            <option value="852">🇭🇰 香港 +852</option>
+            <option value="81">🇯🇵 日本 +81</option>
+            <option value="82">🇰🇷 韩国 +82</option>
+            <option value="91">🇮🇳 印度 +91</option>
+            <option value="61">🇦🇺 澳洲 +61</option>
+            <option value="1">🇺🇸 美国/加拿大 +1</option>
+            <option value="44">🇬🇧 英国 +44</option>
+            <option value="971">🇦🇪 阿联酋 +971</option>
+            <option value="966">🇸🇦 沙特 +966</option>
+          </select>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">手机号码 *</label>
-            <div class="flex gap-1">
-              <select id="c-country" class="border border-gray-200 rounded-lg px-1 py-2 text-xs bg-gray-50 focus:outline-none focus:border-hg flex-shrink-0" style="max-width:110px">
-                <option value="60">🇲🇾 +60</option>
-                <option value="65">🇸🇬 +65</option>
-                <option value="86">🇨🇳 +86</option>
-                <option value="62">🇮🇩 +62</option>
-                <option value="66">🇹🇭 +66</option>
-                <option value="63">🇵🇭 +63</option>
-                <option value="84">🇻🇳 +84</option>
-                <option value="673">🇧🇳 +673</option>
-                <option value="886">🇹🇼 +886</option>
-                <option value="852">🇭🇰 +852</option>
-                <option value="81">🇯🇵 +81</option>
-                <option value="82">🇰🇷 +82</option>
-                <option value="91">🇮🇳 +91</option>
-                <option value="61">🇦🇺 +61</option>
-                <option value="1">🇺🇸 +1</option>
-                <option value="44">🇬🇧 +44</option>
-                <option value="971">🇦🇪 +971</option>
-                <option value="966">🇸🇦 +966</option>
-              </select>
-              <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input min-w-0">
-            </div>
+            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input">
           </div>
           <div>
             <label class="label">姓名 *</label>
@@ -476,7 +478,7 @@ function debounceSearch() {
 async function lookupCustomer() {
   const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
   if (raw.length < 6) { document.getElementById('customer-found').classList.add('hidden'); return; }
-  const cc = document.getElementById('c-country')?.value || '60';
+  const cc = document.getElementById('c-country').value || '60';
   const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
   const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
   const el = document.getElementById('customer-found');
@@ -502,12 +504,13 @@ async function submitOrder() {
   const storeId = document.getElementById('o-store').value;
   const amount = parseFloat(document.getElementById('o-amount').value);
 
+  const cc = document.getElementById('c-country').value;
+  if (!cc) { showCreateErr('请选择国家区号'); return; }
   if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
   if (!storeId) { showCreateErr('请选择门店'); return; }
   if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
 
   btn.textContent = '创建中...'; btn.disabled = true;
-  const cc = document.getElementById('c-country')?.value || '60';
   const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
 
   // Get or create customer
