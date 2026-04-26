@@ -688,7 +688,65 @@ async function openDetail(id, backView) {
     <div class="card p-5">
       <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
       ${logsHtml || '<p class="text-gray-400 text-sm">暂无记录</p>'}
+    </div>
+
+    ${profile?.role === 'admin' ? `
+    <!-- Delete -->
+    <div class="mt-4">
+      <button onclick="confirmDelete('${o.id}')"
+              class="w-full py-2.5 border border-red-300 text-red-500 text-sm font-semibold rounded-lg hover:bg-red-50 transition">
+        删除订单
+      </button>
+    </div>` : ''}`;
+}
+
+function confirmDelete(id) {
+  const modal = document.createElement('div');
+  modal.id = 'delete-modal';
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="font-bold text-gray-800 text-lg mb-1">删除订单</h3>
+      <p class="text-gray-500 text-sm mb-4">此操作不可恢复，订单将被标记为已删除并保留操作记录。</p>
+      <label class="block text-xs font-medium text-gray-600 mb-1">请输入管理密码</label>
+      <input type="password" id="del-pw" placeholder="管理密码"
+             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 mb-3">
+      <p id="del-err" class="text-red-500 text-xs mb-3 hidden">密码错误，请重试</p>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('delete-modal').remove()"
+                class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">
+          取消
+        </button>
+        <button onclick="doDelete('${id}')"
+                class="flex-1 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600">
+          确认删除
+        </button>
+      </div>
     </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('del-pw').focus();
+}
+
+async function doDelete(id) {
+  const pw = document.getElementById('del-pw').value;
+  if (pw !== '12345678') {
+    document.getElementById('del-err').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('delete-modal').remove();
+
+  await sb.from('orders').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id: id,
+    status: 'closed',
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: `[已删除] 操作账户：${profile.name}（${profile.role}）`,
+  });
+
+  await loadOrders();
+  goto('orders');
 }
 
 async function updateOrder(id) {
