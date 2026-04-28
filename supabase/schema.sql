@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
 -- Migration: run once if table already exists
 -- ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tier INTEGER DEFAULT 2 CHECK (tier IN (1,2,3));
 -- ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'MYR';
 
 -- Order number daily sequences
 CREATE TABLE IF NOT EXISTS order_sequences (
