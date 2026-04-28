@@ -265,8 +265,19 @@
             </select>
           </div>
           <div>
-            <label class="label" data-i18n="lbl_amount">订单金额 (RM) *</label>
-            <input type="number" id="o-amount" placeholder="0.00" min="0" step="0.01" data-i18n-ph="ph_amount" class="input">
+            <label class="label" data-i18n="lbl_amount">订单金额 *</label>
+            <div class="flex gap-1">
+              <select id="o-currency" class="input w-28 flex-shrink-0">
+                <option value="MYR">🇲🇾 MYR</option>
+                <option value="SGD">🇸🇬 SGD</option>
+                <option value="THB">🇹🇭 THB</option>
+                <option value="IDR">🇮🇩 IDR</option>
+                <option value="PHP">🇵🇭 PHP</option>
+                <option value="VND">🇻🇳 VND</option>
+                <option value="USD">🇺🇸 USD</option>
+              </select>
+              <input type="number" id="o-amount" placeholder="0.00" min="0" step="0.01" data-i18n-ph="ph_amount" class="input flex-1 min-w-0">
+            </div>
           </div>
         </div>
         <div class="mb-3">
@@ -372,7 +383,7 @@ const STAFF_I18N = {
     orders_title:'订单管理', orders_new_btn:'+ 新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
     create_title:'新建订单', create_step1:'1. 客户信息', create_step2:'2. 订单信息', create_btn:'创建订单', creating:'创建中…',
     lbl_country:'区号', lbl_phone:'手机号', lbl_name:'姓名', lbl_address:'地址',
-    lbl_store:'国家/地区', lbl_amount:'金额 (RM)', lbl_desc:'产品描述', lbl_referrer:'推荐人',
+    lbl_store:'国家/地区', lbl_amount:'订单金额', lbl_desc:'产品描述', lbl_referrer:'推荐人',
     lbl_pay_status:'支付状态', lbl_pay_method:'支付方式', lbl_notes:'备注',
     ph_country:'+60', ph_name:'客户姓名', ph_address:'送货地址（选填）',
     ph_amount:'0.00', ph_desc:'产品描述', ph_notes:'备注（选填）', ph_upd_notes:'更新备注（选填）',
@@ -403,7 +414,7 @@ const STAFF_I18N = {
     orders_title:'訂單管理', orders_new_btn:'+ 新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
     create_title:'新建訂單', create_step1:'1. 客戶資訊', create_step2:'2. 訂單資訊', create_btn:'創建訂單', creating:'創建中…',
     lbl_country:'區號', lbl_phone:'手機號', lbl_name:'姓名', lbl_address:'地址',
-    lbl_store:'國家/地區', lbl_amount:'金額 (RM)', lbl_desc:'產品描述', lbl_referrer:'推薦人',
+    lbl_store:'國家/地區', lbl_amount:'訂單金額', lbl_desc:'產品描述', lbl_referrer:'推薦人',
     lbl_pay_status:'支付狀態', lbl_pay_method:'支付方式', lbl_notes:'備註',
     ph_country:'+60', ph_name:'客戶姓名', ph_address:'送貨地址（選填）',
     ph_amount:'0.00', ph_desc:'產品描述', ph_notes:'備註（選填）', ph_upd_notes:'更新備註（選填）',
@@ -434,7 +445,7 @@ const STAFF_I18N = {
     orders_title:'Order Management', orders_new_btn:'+ New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
     create_title:'New Order', create_step1:'1. Customer Info', create_step2:'2. Order Details', create_btn:'Create Order', creating:'Creating…',
     lbl_country:'Code', lbl_phone:'Phone', lbl_name:'Name', lbl_address:'Address',
-    lbl_store:'Country/Region', lbl_amount:'Amount (RM)', lbl_desc:'Description', lbl_referrer:'Referrer',
+    lbl_store:'Country/Region', lbl_amount:'Order Amount', lbl_desc:'Description', lbl_referrer:'Referrer',
     lbl_pay_status:'Payment Status', lbl_pay_method:'Payment Method', lbl_notes:'Notes',
     ph_country:'+60', ph_name:'Customer name', ph_address:'Delivery address (optional)',
     ph_amount:'0.00', ph_desc:'Product description', ph_notes:'Notes (optional)', ph_upd_notes:'Update notes (optional)',
@@ -465,7 +476,7 @@ const STAFF_I18N = {
     orders_title:'Pengurusan Pesanan', orders_new_btn:'+ Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
     create_title:'Pesanan Baru', create_step1:'1. Maklumat Pelanggan', create_step2:'2. Butiran Pesanan', create_btn:'Buat Pesanan', creating:'Sedang dibuat…',
     lbl_country:'Kod', lbl_phone:'Telefon', lbl_name:'Nama', lbl_address:'Alamat',
-    lbl_store:'Negara/Wilayah', lbl_amount:'Jumlah (RM)', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
+    lbl_store:'Negara/Wilayah', lbl_amount:'Jumlah Pesanan', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
     lbl_pay_status:'Status Bayaran', lbl_pay_method:'Kaedah Bayaran', lbl_notes:'Nota',
     ph_country:'+60', ph_name:'Nama pelanggan', ph_address:'Alamat penghantaran (pilihan)',
     ph_amount:'0.00', ph_desc:'Penerangan produk', ph_notes:'Nota (pilihan)', ph_upd_notes:'Nota kemas kini (pilihan)',
@@ -496,7 +507,7 @@ const STAFF_I18N = {
     orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'+ สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
     create_title:'สร้างคำสั่งซื้อ', create_step1:'1. ข้อมูลลูกค้า', create_step2:'2. รายละเอียดคำสั่งซื้อ', create_btn:'สร้างคำสั่งซื้อ', creating:'กำลังสร้าง…',
     lbl_country:'รหัส', lbl_phone:'โทรศัพท์', lbl_name:'ชื่อ', lbl_address:'ที่อยู่',
-    lbl_store:'ประเทศ/ภูมิภาค', lbl_amount:'จำนวนเงิน (RM)', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
+    lbl_store:'ประเทศ/ภูมิภาค', lbl_amount:'จำนวนเงิน', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
     lbl_pay_status:'สถานะการชำระ', lbl_pay_method:'วิธีชำระเงิน', lbl_notes:'หมายเหตุ',
     ph_country:'+60', ph_name:'ชื่อลูกค้า', ph_address:'ที่อยู่จัดส่ง (ไม่บังคับ)',
     ph_amount:'0.00', ph_desc:'รายละเอียดสินค้า', ph_notes:'หมายเหตุ (ไม่บังคับ)', ph_upd_notes:'หมายเหตุการอัปเดต (ไม่บังคับ)',
@@ -609,7 +620,11 @@ function badge(s) {
   const label = t('status_' + s) || x.label;
   return `<span class="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style="${x.s}">${label}</span>`;
 }
-function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }); }
+const CURRENCY_SYMBOL = { MYR:'RM', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫', USD:'US$' };
+function fmtAmt(v, currency) {
+  const sym = CURRENCY_SYMBOL[currency] || (currency || 'RM');
+  return sym + ' ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+}
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
 function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
@@ -775,7 +790,7 @@ function renderDashboard() {
         <tr class="border-b border-gray-50 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
           <td class="py-2 font-mono text-xs text-hg">${o.order_no}</td>
           <td class="py-2">${o.customers?.name || '-'}</td>
-          <td class="py-2">${fmtAmt(o.amount)}</td>
+          <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
           <td class="py-2">${badge(o.status)}</td>
           <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
         </tr>`).join('')}</tbody></table>`
@@ -881,7 +896,7 @@ function renderOrdersTable(orders) {
             <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
           </td>
           <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name || '-'}</td>
-          <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount)}</td>
+          <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount, o.currency)}</td>
           <td class="px-4 py-3">${badge(o.status)}</td>
           <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
         </tr>`).join('')}</tbody></table>`
@@ -894,6 +909,7 @@ function resetCreateForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('customer-found').classList.add('hidden');
+  document.getElementById('o-currency').value = 'MYR';
   document.getElementById('o-payment').value = 'unpaid';
   document.getElementById('create-err').classList.add('hidden');
 }
@@ -957,6 +973,7 @@ async function submitOrder() {
   const { data: orderNo } = await sb.rpc('generate_order_no', { p_store_code: store.code });
 
   const refId = document.getElementById('o-referrer').value || null;
+  const currency = document.getElementById('o-currency').value || 'MYR';
   const { data: order, error: oe } = await sb.from('orders').insert({
     order_no: orderNo,
     store_id: storeId,
@@ -964,6 +981,7 @@ async function submitOrder() {
     staff_id: profile.id,
     referrer_id: refId,
     amount,
+    currency,
     payment_status: document.getElementById('o-payment').value,
     payment_method: document.getElementById('o-pay-method').value || null,
     description: document.getElementById('o-desc').value.trim() || null,
@@ -1072,7 +1090,7 @@ async function openDetail(id, backView) {
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
         <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
         <div><span class="text-gray-400">${t('lbl_mobile')}</span> <span>${o.customers?.phone}</span></div>
-        <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
+        <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span></div>
         <div><span class="text-gray-400">${t('lbl_payment')}</span>
           <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':'color:#dc2626'}">
             ${o.payment_status==='paid' ? t('opt_paid') : t('opt_unpaid')}

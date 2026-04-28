@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS stores (
 );
 
 INSERT INTO stores (name, code, address) VALUES
-  ('新山店 JB', 'JB', '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru'),
-  ('新加坡店 SG', 'SG', 'Singapore')
+  ('001 Austin', '001', '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru'),
+  ('002 Singapore', '002', 'Singapore')
 ON CONFLICT (code) DO NOTHING;
 
 -- User profiles (links to Supabase auth.users)
@@ -62,9 +62,14 @@ CREATE TABLE IF NOT EXISTS suppliers (
   contact_name TEXT,
   phone        TEXT,
   categories   TEXT,
+  tier         INTEGER DEFAULT 2 CHECK (tier IN (1,2,3)),
   active       BOOLEAN DEFAULT true,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Migration: run once if table already exists
+-- ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tier INTEGER DEFAULT 2 CHECK (tier IN (1,2,3));
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'MYR';
 
 -- Order number daily sequences
 CREATE TABLE IF NOT EXISTS order_sequences (
