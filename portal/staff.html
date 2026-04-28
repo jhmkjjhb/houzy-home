@@ -15,6 +15,19 @@
   .input { @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg; }
   .label { @apply block text-xs font-medium text-gray-600 mb-1; }
   [x-cloak] { display: none; }
+  /* Brand VI focus — override iOS Safari blue ring */
+  input, select, textarea {
+    -webkit-tap-highlight-color: rgba(26,58,42,0.1);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    -webkit-appearance: none;
+    border-color: #1a3a2a !important;
+    box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+    -webkit-box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+  }
+  select { cursor: pointer; }
+  select option:checked { background-color: #1a3a2a; color: #ffffff; }
 </style>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
