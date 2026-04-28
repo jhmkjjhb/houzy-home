@@ -59,6 +59,7 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
+      <div class="nav-link hidden admin-nav" onclick="goto('suppliers');toggleMobileMenu()">🏭 <span data-i18n="nav_suppliers">供应商管理</span></div>
       <!-- Language selector -->
       <div class="relative mt-2">
         <button onclick="toggleMobileLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
@@ -114,6 +115,10 @@
       <div class="nav-link" id="nav-customers" onclick="goto('customers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span data-i18n="nav_customers">客户管理</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-suppliers" onclick="goto('suppliers')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <span data-i18n="nav_suppliers">供应商管理</span>
       </div>
     </nav>
 
@@ -283,6 +288,16 @@
             </select>
           </div>
         </div>
+        <div class="mb-3">
+          <label class="label">支付方式</label>
+          <select id="o-pay-method" class="input">
+            <option value="">— 请选择 —</option>
+            <option value="cash">💵 现金</option>
+            <option value="transfer">🏦 银行转账</option>
+            <option value="ewallet">📱 电子钱包</option>
+            <option value="card">💳 刷卡</option>
+          </select>
+        </div>
         <div>
           <label class="label">备注</label>
           <textarea id="o-notes" rows="2" placeholder="内部备注（客户不可见）" class="input resize-none"></textarea>
@@ -316,6 +331,26 @@
       <div id="detail-content"></div>
     </div>
 
+    <!-- ── SUPPLIERS (admin only) ── -->
+    <div id="v-suppliers" class="hidden p-6 max-w-3xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-5" data-i18n="nav_suppliers">供应商管理</h1>
+      <!-- Add supplier form -->
+      <div class="card p-4 mb-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
+        <div class="flex flex-wrap gap-2">
+          <input type="text" id="sup-name" placeholder="供应商名称 *" class="input flex-1 min-w-36">
+          <input type="tel" id="sup-phone" placeholder="联系电话" class="input w-40">
+          <input type="text" id="sup-contact" placeholder="联系人（选填）" class="input w-36">
+          <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
+        </div>
+        <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
+      </div>
+      <!-- Suppliers list -->
+      <div class="card overflow-hidden">
+        <div id="suppliers-table"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -335,6 +370,8 @@ const STAFF_I18N = {
     th_order_no:'订单号', th_customer:'客户', th_store:'门店', th_amount:'金额', th_status:'状态', th_time:'时间',
     th_name:'姓名', th_phone:'手机号', th_address:'地址', th_reg_time:'注册时间',
     no_orders:'暂无订单', no_customers:'暂无客户', no_logs:'暂无记录',
+    nav_suppliers:'供应商管理', sup_add:'添加供应商', sup_add_btn:'添加', no_suppliers:'暂无供应商',
+    pay_method:'支付方式', pay_cash:'现金', pay_transfer:'银行转账', pay_ewallet:'电子钱包', pay_card:'刷卡',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -347,6 +384,8 @@ const STAFF_I18N = {
     th_order_no:'訂單號', th_customer:'客戶', th_store:'門店', th_amount:'金額', th_status:'狀態', th_time:'時間',
     th_name:'姓名', th_phone:'手機號', th_address:'地址', th_reg_time:'注冊時間',
     no_orders:'暫無訂單', no_customers:'暫無客戶', no_logs:'暫無記錄',
+    nav_suppliers:'供應商管理', sup_add:'添加供應商', sup_add_btn:'添加', no_suppliers:'暫無供應商',
+    pay_method:'支付方式', pay_cash:'現金', pay_transfer:'銀行轉賬', pay_ewallet:'電子錢包', pay_card:'刷卡',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -359,6 +398,8 @@ const STAFF_I18N = {
     th_order_no:'Order No.', th_customer:'Customer', th_store:'Store', th_amount:'Amount', th_status:'Status', th_time:'Time',
     th_name:'Name', th_phone:'Phone', th_address:'Address', th_reg_time:'Registered',
     no_orders:'No orders', no_customers:'No customers', no_logs:'No records',
+    nav_suppliers:'Supplier Management', sup_add:'Add Supplier', sup_add_btn:'Add', no_suppliers:'No suppliers',
+    pay_method:'Payment Method', pay_cash:'Cash', pay_transfer:'Bank Transfer', pay_ewallet:'E-Wallet', pay_card:'Card',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -371,6 +412,8 @@ const STAFF_I18N = {
     th_order_no:'No. Pesanan', th_customer:'Pelanggan', th_store:'Kedai', th_amount:'Jumlah', th_status:'Status', th_time:'Masa',
     th_name:'Nama', th_phone:'Telefon', th_address:'Alamat', th_reg_time:'Tarikh Daftar',
     no_orders:'Tiada pesanan', no_customers:'Tiada pelanggan', no_logs:'Tiada rekod',
+    nav_suppliers:'Pengurusan Pembekal', sup_add:'Tambah Pembekal', sup_add_btn:'Tambah', no_suppliers:'Tiada pembekal',
+    pay_method:'Kaedah Pembayaran', pay_cash:'Tunai', pay_transfer:'Pindahan Bank', pay_ewallet:'E-Dompet', pay_card:'Kad',
   },
   'th': {
     sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
@@ -383,6 +426,8 @@ const STAFF_I18N = {
     th_order_no:'หมายเลขคำสั่ง', th_customer:'ลูกค้า', th_store:'สาขา', th_amount:'จำนวนเงิน', th_status:'สถานะ', th_time:'เวลา',
     th_name:'ชื่อ', th_phone:'โทรศัพท์', th_address:'ที่อยู่', th_reg_time:'วันที่ลงทะเบียน',
     no_orders:'ไม่มีคำสั่งซื้อ', no_customers:'ไม่มีลูกค้า', no_logs:'ไม่มีบันทึก',
+    nav_suppliers:'จัดการซัพพลายเออร์', sup_add:'เพิ่มซัพพลายเออร์', sup_add_btn:'เพิ่ม', no_suppliers:'ไม่มีซัพพลายเออร์',
+    pay_method:'วิธีชำระเงิน', pay_cash:'เงินสด', pay_transfer:'โอนธนาคาร', pay_ewallet:'E-Wallet', pay_card:'บัตร',
   },
 };
 
@@ -491,6 +536,9 @@ async function init() {
 
   await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
+  if (profile?.role === 'admin') {
+    document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
+  }
   setLang(currentLang);
 }
 
@@ -567,14 +615,16 @@ async function loadCustomers() {
 
 // ── Navigation ──
 function goto(view) {
-  ['dashboard','orders','create','customers','detail'].forEach(v => {
-    document.getElementById('v-' + v).classList.toggle('hidden', v !== view);
-    document.getElementById('nav-' + (v === 'detail' ? 'orders' : v))?.classList.toggle('active', v === view || (v === 'detail'));
+  ['dashboard','orders','create','customers','detail','suppliers'].forEach(v => {
+    document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
+    const navId = v === 'detail' ? 'orders' : v;
+    document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
   });
   if (view === 'dashboard') renderDashboard();
   if (view === 'orders') renderOrdersTable(allOrders);
   if (view === 'customers') renderCustomersTable(allCustomers);
   if (view === 'create') resetCreateForm();
+  if (view === 'suppliers') renderSuppliersPage();
 }
 
 // ── Dashboard ──
@@ -794,6 +844,7 @@ async function submitOrder() {
     referrer_id: refId,
     amount,
     payment_status: document.getElementById('o-payment').value,
+    payment_method: document.getElementById('o-pay-method').value || null,
     description: document.getElementById('o-desc').value.trim() || null,
     notes: document.getElementById('o-notes').value.trim() || null,
   }).select().single();
@@ -904,6 +955,7 @@ async function openDetail(id, backView) {
             ${o.payment_status==='paid'?'已支付':'待支付'}
           </span>
         </div>
+        ${o.payment_method ? `<div><span class="text-gray-400">方式</span> <span>${{'cash':'💵 现金','transfer':'🏦 转账','ewallet':'📱 电子钱包','card':'💳 刷卡'}[o.payment_method]||o.payment_method}</span></div>` : ''}
         <div><span class="text-gray-400">厂家</span> <span>${o.suppliers?.name || '未分配'}</span></div>
         <div><span class="text-gray-400">店员</span> <span>${o.profiles?.name || '-'}</span></div>
       </div>
@@ -926,6 +978,16 @@ async function openDetail(id, backView) {
             <option value="paid" ${o.payment_status==='paid'?'selected':''}>已支付</option>
           </select>
         </div>
+      </div>
+      <div class="mb-3">
+        <label class="label">支付方式</label>
+        <select id="upd-pay-method" class="input">
+          <option value="">— 请选择 —</option>
+          <option value="cash" ${o.payment_method==='cash'?'selected':''}>💵 现金</option>
+          <option value="transfer" ${o.payment_method==='transfer'?'selected':''}>🏦 银行转账</option>
+          <option value="ewallet" ${o.payment_method==='ewallet'?'selected':''}>📱 电子钱包</option>
+          <option value="card" ${o.payment_method==='card'?'selected':''}>💳 刷卡</option>
+        </select>
       </div>
       <div class="mb-3">
         <label class="label">分配厂家</label>
@@ -1009,10 +1071,12 @@ async function doDelete(id) {
 async function updateOrder(id) {
   const status = document.getElementById('upd-status').value;
   const payment = document.getElementById('upd-payment').value;
+  const payMethod = document.getElementById('upd-pay-method')?.value;
   const supplier = document.getElementById('upd-supplier').value || null;
   const notes = document.getElementById('upd-notes').value.trim();
 
   const upd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  if (payMethod) upd.payment_method = payMethod;
   if (status === 'completed') upd.completed_at = new Date().toISOString();
 
   await sb.from('orders').update(upd).eq('id', id);
@@ -1030,7 +1094,60 @@ async function updateOrder(id) {
   openDetail(id);
 }
 
-// ── Customers ──
+// ── Suppliers (admin) ──
+const PAY_METHOD_LABELS = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
+
+async function renderSuppliersPage() {
+  const { data: sups } = await sb.from('suppliers').select('*').order('name');
+  const rows = (sups || []);
+  document.getElementById('suppliers-table').innerHTML = rows.length
+    ? `<table class="w-full text-sm">
+        <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+          <th class="px-4 py-3">名称</th><th class="px-4 py-3">联系电话</th>
+          <th class="px-4 py-3">联系人</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">操作</th>
+        </tr></thead>
+        <tbody>${rows.map(s => `
+          <tr class="border-t border-gray-100 hover:bg-gc">
+            <td class="px-4 py-3 font-medium">${s.name}</td>
+            <td class="px-4 py-3 text-gray-600">${s.phone || '-'}</td>
+            <td class="px-4 py-3 text-gray-500 text-xs">${s.contact || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
+                ${s.active ? '活跃' : '已禁用'}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <button onclick="toggleSupplier('${s.id}',${s.active})"
+                      class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}">
+                ${s.active ? '禁用' : '启用'}
+              </button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table>`
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_suppliers')}</p>`;
+}
+
+async function addSupplier() {
+  const name = document.getElementById('sup-name').value.trim();
+  const phone = document.getElementById('sup-phone').value.trim();
+  const contact = document.getElementById('sup-contact').value.trim();
+  const errEl = document.getElementById('sup-err');
+  if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, contact: contact || null, active: true });
+  if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
+  document.getElementById('sup-name').value = '';
+  document.getElementById('sup-phone').value = '';
+  document.getElementById('sup-contact').value = '';
+  await renderSuppliersPage();
+}
+
+async function toggleSupplier(id, active) {
+  await sb.from('suppliers').update({ active: !active }).eq('id', id);
+  await renderSuppliersPage();
+}
+
+// ── Auth ──
 async function logout() {
   await sb.auth.signOut();
   window.location.href = 'login.html';
