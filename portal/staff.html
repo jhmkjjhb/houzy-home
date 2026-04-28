@@ -402,6 +402,7 @@ const STAFF_I18N = {
     nav_suppliers:'供应商管理', sup_add:'添加供应商', sup_add_btn:'添加', no_suppliers:'暂无供应商',
     lbl_sup_tier:'级别', sup_active:'活跃', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'启用',
     pay_method:'支付方式', pay_cash:'💵 现金', pay_transfer:'🏦 银行转账', pay_ewallet:'📱 电子钱包', pay_card:'💳 刷卡',
+    overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认',
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到达', status_installing:'安装中',
@@ -433,6 +434,7 @@ const STAFF_I18N = {
     nav_suppliers:'供應商管理', sup_add:'添加供應商', sup_add_btn:'添加', no_suppliers:'暫無供應商',
     lbl_sup_tier:'級別', sup_active:'活躍', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'啟用',
     pay_method:'支付方式', pay_cash:'💵 現金', pay_transfer:'🏦 銀行轉賬', pay_ewallet:'📱 電子錢包', pay_card:'💳 刷卡',
+    overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設',
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到達', status_installing:'安裝中',
@@ -464,6 +466,7 @@ const STAFF_I18N = {
     nav_suppliers:'Supplier Management', sup_add:'Add Supplier', sup_add_btn:'Add', no_suppliers:'No suppliers',
     lbl_sup_tier:'Tier', sup_active:'Active', sup_inactive:'Disabled', sup_disable:'Disable', sup_enable:'Enable',
     pay_method:'Payment Method', pay_cash:'💵 Cash', pay_transfer:'🏦 Bank Transfer', pay_ewallet:'📱 E-Wallet', pay_card:'💳 Card',
+    overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default',
     status_pending_payment:'Pending Payment', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
     status_in_production:'In Production', status_production_complete:'Production Complete', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
@@ -495,6 +498,7 @@ const STAFF_I18N = {
     nav_suppliers:'Pengurusan Pembekal', sup_add:'Tambah Pembekal', sup_add_btn:'Tambah', no_suppliers:'Tiada pembekal',
     lbl_sup_tier:'Tahap', sup_active:'Aktif', sup_inactive:'Dilumpuhkan', sup_disable:'Lumpuhkan', sup_enable:'Aktifkan',
     pay_method:'Kaedah Pembayaran', pay_cash:'💵 Tunai', pay_transfer:'🏦 Pindahan Bank', pay_ewallet:'📱 E-Dompet', pay_card:'💳 Kad',
+    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai',
     status_pending_payment:'Menunggu Bayaran', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
     status_in_production:'Dalam Pengeluaran', status_production_complete:'Pengeluaran Selesai', status_shipped:'Dihantar',
     status_in_transit:'Dalam Transit', status_arrived:'Tiba', status_installing:'Pemasangan',
@@ -526,6 +530,7 @@ const STAFF_I18N = {
     nav_suppliers:'จัดการซัพพลายเออร์', sup_add:'เพิ่มซัพพลายเออร์', sup_add_btn:'เพิ่ม', no_suppliers:'ไม่มีซัพพลายเออร์',
     lbl_sup_tier:'ระดับ', sup_active:'ใช้งานอยู่', sup_inactive:'ปิดใช้งาน', sup_disable:'ปิด', sup_enable:'เปิด',
     pay_method:'วิธีชำระเงิน', pay_cash:'💵 เงินสด', pay_transfer:'🏦 โอนธนาคาร', pay_ewallet:'📱 E-Wallet', pay_card:'💳 บัตร',
+    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น',
     status_pending_payment:'รอชำระเงิน', status_paid:'ชำระแล้ว', status_assigned:'มอบหมายแล้ว', status_accepted:'รับงานแล้ว',
     status_in_production:'กำลังผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่งแล้ว',
     status_in_transit:'กำลังขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'กำลังติดตั้ง',
@@ -641,6 +646,67 @@ function fmtAmt(v, currency) {
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
 function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
+// ── Deadline / SLA ──
+// Default SLA in hours per status (admin can override per-order)
+const STATUS_SLA_HOURS = {
+  pending_payment: 48,
+  paid: 24,
+  assigned: 24,
+  accepted: 4,
+  in_production: 168,
+  production_complete: 24,
+  shipped: 72,
+  in_transit: 72,
+  arrived: 24,
+  installing: 48,
+  after_sales: 72,
+};
+
+function calcDeadline(status) {
+  const h = STATUS_SLA_HOURS[status];
+  if (!h) return null;
+  return new Date(Date.now() + h * 3600000).toISOString();
+}
+
+function fmtCountdown(deadlineAt) {
+  if (!deadlineAt) return null;
+  const diff = new Date(deadlineAt) - Date.now();
+  if (diff <= 0) return { text: '⚠️ ' + t('overdue'), overdue: true, warn: false };
+  const totalMin = Math.floor(diff / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  const warn = h < 4;
+  if (h >= 24) { const d = Math.floor(h/24); return { text: `⏱ ${d}${t('stat_day_pfx')} ${h%24}h`, overdue: false, warn: warn }; }
+  return { text: `⏱ ${h}h ${m}m`, overdue: false, warn };
+}
+
+function deadlineRowStyle(o) {
+  if (['completed','closed'].includes(o.status)) return '';
+  const cd = fmtCountdown(o.deadline_at);
+  if (cd?.overdue) return 'background:#fef2f2;';
+  if (cd?.warn)   return 'background:#fffbeb;';
+  return '';
+}
+
+let _notifiedOverdue = new Set();
+function checkOverdueAlerts() {
+  const now = Date.now();
+  allOrders.forEach(o => {
+    if (['completed','closed'].includes(o.status)) return;
+    if (!o.deadline_at) return;
+    const overdue = new Date(o.deadline_at) < now;
+    if (overdue && !_notifiedOverdue.has(o.id)) {
+      _notifiedOverdue.add(o.id);
+      if (Notification.permission === 'granted') {
+        new Notification('⚠️ 订单逾期', { body: `${o.order_no} — ${o.customers?.name || ''}`, icon: '/favicon.ico' });
+      }
+    }
+  });
+  // Re-render order list if visible to update colors
+  const vOrders = document.getElementById('v-orders');
+  if (vOrders && !vOrders.classList.contains('hidden')) renderOrdersTable(filterGetCurrent());
+}
+
 function toggleMobileMenu() {
   const overlay = document.getElementById('mobile-overlay');
   overlay.classList.toggle('hidden');
@@ -664,6 +730,14 @@ async function init() {
     document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
   }
   setLang(currentLang);
+
+  // Request notification permission for overdue alerts
+  if (Notification.permission === 'default') Notification.requestPermission();
+  // Check every 60s and live-update countdowns
+  setInterval(async () => {
+    await loadOrders();
+    checkOverdueAlerts();
+  }, 60000);
 }
 
 async function loadStores() {
@@ -897,13 +971,22 @@ function renderMonthlyStats(orders, period, specificDate) {
 }
 
 function renderOrdersTable(orders) {
+  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < Date.now()).length;
+  const banner = overdueCount > 0
+    ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
+    : '';
+
   document.getElementById('orders-table').innerHTML = orders.length
-    ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+    ? banner + `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
         <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th><th class="px-4 py-3">${t('th_store')}</th>
         <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
-       </tr></thead><tbody>${orders.map(o => `
-        <tr class="border-t border-gray-100 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
-          <td class="px-4 py-3 font-mono text-xs text-hg font-semibold">${o.order_no}</td>
+       </tr></thead><tbody>${orders.map(o => {
+        const cd = fmtCountdown(o.deadline_at);
+        const rs = deadlineRowStyle(o);
+        const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
+        return `
+        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rs}" onclick="openDetail('${o.id}')">
+          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${rs?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
           <td class="px-4 py-3">
             <div class="font-medium">${o.customers?.name || '-'}</div>
             <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
@@ -911,8 +994,8 @@ function renderOrdersTable(orders) {
           <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name || '-'}</td>
           <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount, o.currency)}</td>
           <td class="px-4 py-3">${badge(o.status)}</td>
-          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
-        </tr>`).join('')}</tbody></table>`
+          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
+        </tr>`;}).join('')}</tbody></table>`
     : `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
 }
 
@@ -987,6 +1070,7 @@ async function submitOrder() {
 
   const refId = document.getElementById('o-referrer').value || null;
   const currency = document.getElementById('o-currency').value || 'MYR';
+  const initStatus = document.getElementById('o-payment').value === 'paid' ? 'paid' : 'pending_payment';
   const { data: order, error: oe } = await sb.from('orders').insert({
     order_no: orderNo,
     store_id: storeId,
@@ -995,10 +1079,12 @@ async function submitOrder() {
     referrer_id: refId,
     amount,
     currency,
+    status: initStatus,
     payment_status: document.getElementById('o-payment').value,
     payment_method: document.getElementById('o-pay-method').value || null,
     description: document.getElementById('o-desc').value.trim() || null,
     notes: document.getElementById('o-notes').value.trim() || null,
+    deadline_at: calcDeadline(initStatus),
   }).select().single();
 
   if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent='创建订单'; btn.disabled=false; return; }
@@ -1090,6 +1176,19 @@ async function openDetail(id, backView) {
 
   const pmLabels = { cash: t('pay_cash'), transfer: t('pay_transfer'), ewallet: t('pay_ewallet'), card: t('pay_card') };
 
+  // Deadline display for info card
+  const cd = fmtCountdown(o.deadline_at);
+  const deadlineBanner = cd ? `
+    <div class="mt-3 rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2"
+         style="background:${cd.overdue?'#fef2f2':cd.warn?'#fffbeb':'#f5f2ed'};color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#1a3a2a'}">
+      ${cd.text}
+      <span class="text-xs font-normal opacity-70">${t('lbl_deadline')}: ${fmtDateTime(o.deadline_at)}</span>
+    </div>` : '';
+
+  // Pre-format deadline for datetime-local input
+  const dlLocal = o.deadline_at ? new Date(new Date(o.deadline_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+  const slaHint = STATUS_SLA_HOURS[o.status] ? `(${t('sla_default')} ${STATUS_SLA_HOURS[o.status]}h)` : '';
+
   document.getElementById('detail-content').innerHTML = `
     <!-- Info -->
     <div class="card p-5 mb-4">
@@ -1115,6 +1214,7 @@ async function openDetail(id, backView) {
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
       ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">${o.notes}</p>` : ''}
+      ${deadlineBanner}
     </div>
 
     <!-- Update status -->
@@ -1123,7 +1223,7 @@ async function openDetail(id, backView) {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
           <label class="label">${t('lbl_order_status')}</label>
-          <select id="upd-status" class="input">${statusOptions}</select>
+          <select id="upd-status" class="input" onchange="onUpdStatusChange()">${statusOptions}</select>
         </div>
         <div>
           <label class="label">${t('lbl_pay_status')}</label>
@@ -1146,6 +1246,10 @@ async function openDetail(id, backView) {
       <div class="mb-3">
         <label class="label">${t('lbl_assign_sup')}</label>
         <select id="upd-supplier" class="input">${supplierOptions}</select>
+      </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
+        <input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_notes')}</label>
@@ -1171,6 +1275,18 @@ async function openDetail(id, backView) {
         ${t('btn_delete')}
       </button>
     </div>` : ''}`;
+}
+
+function onUpdStatusChange() {
+  const status = document.getElementById('upd-status')?.value;
+  const dl = calcDeadline(status);
+  const inp = document.getElementById('upd-deadline');
+  if (!inp) return;
+  if (dl) {
+    inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  } else {
+    inp.value = '';
+  }
 }
 
 function confirmDelete(id) {
@@ -1228,10 +1344,14 @@ async function updateOrder(id) {
   const payMethod = document.getElementById('upd-pay-method')?.value;
   const supplier = document.getElementById('upd-supplier').value || null;
   const notes = document.getElementById('upd-notes').value.trim();
+  const dlVal = document.getElementById('upd-deadline')?.value;
 
-  const upd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  // Use manual deadline if set, else auto-calc from SLA
+  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status);
+
+  const upd = { status, payment_status: payment, supplier_id: supplier, deadline_at, updated_at: new Date().toISOString() };
   if (payMethod) upd.payment_method = payMethod;
-  if (status === 'completed') upd.completed_at = new Date().toISOString();
+  if (status === 'completed' || status === 'closed') { upd.completed_at = new Date().toISOString(); upd.deadline_at = null; }
 
   await sb.from('orders').update(upd).eq('id', id);
   await sb.from('order_logs').insert({
