@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HOUZY HOME — 店员后台</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
 <style>
@@ -54,15 +54,29 @@
       </div>
       <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">✕</button>
     </div>
-    <nav class="flex-1 p-3 space-y-1">
-      <div class="nav-link" onclick="goto('dashboard');toggleMobileMenu()">🏠 总览</div>
-      <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 订单管理</div>
-      <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ 新建订单</div>
-      <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 客户管理</div>
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-link" onclick="goto('dashboard');toggleMobileMenu()">🏠 <span data-i18n="nav_dashboard">总览</span></div>
+      <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
+      <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
+      <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
+      <!-- Language selector -->
+      <div class="relative mt-2">
+        <button onclick="toggleMobileLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
+          🌐 <span id="m-lang-label">简体中文</span>
+          <svg class="w-3 h-3 ml-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="m-lang-drop" class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+          <button onclick="setLang('zh-CN');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁体中文</button>
+          <button onclick="setLang('en');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('ms');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
     </nav>
     <div class="p-3 border-t border-white/10">
       <div id="mobile-user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
-      <button onclick="logout()" class="nav-link w-full text-red-400">🚪 退出</button>
+      <button onclick="logout()" class="nav-link w-full text-red-400">🚪 <span data-i18n="nav_logout">退出</span></button>
     </div>
   </aside>
 </div>
@@ -78,7 +92,7 @@
         <div class="w-8 h-8 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
         <div>
           <div class="text-white font-bold text-sm tracking-wide">HOUZY HOME</div>
-          <div class="text-gd text-xs">店员后台</div>
+          <div class="text-gd text-xs" data-i18n="sidebar_title">店员后台</div>
         </div>
       </a>
     </div>
@@ -87,28 +101,42 @@
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
       <div class="nav-link active" id="nav-dashboard" onclick="goto('dashboard')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        总览
+        <span data-i18n="nav_dashboard">总览</span>
       </div>
       <div class="nav-link" id="nav-orders" onclick="goto('orders')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        订单管理
+        <span data-i18n="nav_orders">订单管理</span>
       </div>
       <div class="nav-link" id="nav-create" onclick="goto('create')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        新建订单
+        <span data-i18n="nav_new">新建订单</span>
       </div>
       <div class="nav-link" id="nav-customers" onclick="goto('customers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        客户管理
+        <span data-i18n="nav_customers">客户管理</span>
       </div>
     </nav>
 
-    <!-- User info -->
+    <!-- User info + Language picker -->
     <div class="p-3 border-t border-white/10">
+      <!-- Language selector -->
+      <div class="relative mb-1">
+        <button onclick="toggleLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
+          🌐 <span id="lang-label">简体中文</span>
+          <svg class="w-3 h-3 ml-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="lang-drop" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+          <button onclick="setLang('zh-CN')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁体中文</button>
+          <button onclick="setLang('en')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('ms')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
       <div id="user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
       <button onclick="logout()" class="nav-link w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        退出
+        <span data-i18n="nav_logout">退出</span>
       </button>
     </div>
   </aside>
@@ -118,12 +146,12 @@
 
     <!-- ── DASHBOARD ── -->
     <div id="v-dashboard" class="p-6 max-w-5xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-6">总览 Dashboard</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-6" data-i18n="dash_title">总览 Dashboard</h1>
       <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-semibold text-gray-800">最近订单</h2>
-          <button onclick="goto('orders')" class="text-xs text-hg hover:underline">查看全部 →</button>
+          <h2 class="font-semibold text-gray-800" data-i18n="dash_recent">最近订单</h2>
+          <button onclick="goto('orders')" class="text-xs text-hg hover:underline" data-i18n="dash_view_all">查看全部 →</button>
         </div>
         <div id="recent-orders"></div>
       </div>
@@ -132,14 +160,14 @@
     <!-- ── ORDERS LIST ── -->
     <div id="v-orders" class="hidden p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-5">
-        <h1 class="text-xl font-bold text-gray-800">订单管理</h1>
-        <button onclick="goto('create')" class="btn-gold">+ 新建订单</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="orders_title">订单管理</h1>
+        <button onclick="goto('create')" class="btn-gold" data-i18n="orders_new_btn">+ 新建订单</button>
       </div>
       <!-- Filters -->
       <div class="card p-4 mb-4 space-y-2">
         <!-- Row 1: search + status -->
         <div class="flex flex-wrap gap-2">
-          <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()"
+          <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()" data-i18n-ph="filter_search"
                  class="input flex-1 min-w-40">
           <select id="f-status" onchange="filterOrders()" class="input w-36">
             <option value="">全部状态</option>
@@ -160,7 +188,7 @@
           </select>
           <input type="date" id="f-date" onchange="onDateChange('date')" class="input w-40" title="按日期查询">
           <input type="month" id="f-month" onchange="onDateChange('month')" class="input w-36" title="按月查询">
-          <button onclick="clearDateFilters()" class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 border border-gray-200 rounded">清除日期</button>
+          <button onclick="clearDateFilters()" class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 border border-gray-200 rounded" data-i18n="filter_clear_date">清除日期</button>
         </div>
       </div>
       <!-- Monthly Stats Panel -->
@@ -174,12 +202,12 @@
     <div id="v-create" class="hidden p-6 max-w-2xl mx-auto">
       <div class="flex items-center gap-3 mb-6">
         <button onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
-        <h1 class="text-xl font-bold text-gray-800">新建订单</h1>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="create_title">新建订单</h1>
       </div>
 
       <!-- Step 1: Customer -->
       <div id="step-customer" class="card p-6 mb-4">
-        <h2 class="font-semibold text-gray-800 mb-4">1. 客户信息</h2>
+        <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step1">1. 客户信息</h2>
         <div class="mb-3">
           <label class="label">国家区号 *</label>
           <select id="c-country" class="input">
@@ -223,7 +251,7 @@
 
       <!-- Step 2: Order details -->
       <div class="card p-6 mb-4">
-        <h2 class="font-semibold text-gray-800 mb-4">2. 订单信息</h2>
+        <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step2">2. 订单信息</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">门店 *</label>
@@ -261,7 +289,7 @@
         </div>
       </div>
 
-      <button onclick="submitOrder()" id="submit-btn" class="btn-gold w-full py-3 text-base">
+      <button onclick="submitOrder()" id="submit-btn" class="btn-gold w-full py-3 text-base" data-i18n="create_btn">
         创建订单
       </button>
       <p id="create-err" class="text-red-500 text-sm mt-2 text-center hidden"></p>
@@ -269,9 +297,9 @@
 
     <!-- ── CUSTOMERS ── -->
     <div id="v-customers" class="hidden p-6 max-w-5xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-5">客户管理</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-5" data-i18n="customers_title">客户管理</h1>
       <div class="card p-4 mb-4">
-        <input type="text" id="cust-search" placeholder="搜索姓名 / 手机号" oninput="filterCustomers()"
+        <input type="text" id="cust-search" placeholder="搜索姓名 / 手机号" oninput="filterCustomers()" data-i18n-ph="cust_search"
                class="input max-w-sm">
       </div>
       <div class="card overflow-hidden">
@@ -293,6 +321,126 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ── i18n ──
+const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
+const STAFF_I18N = {
+  'zh-CN': {
+    sidebar_title:'店员后台', nav_dashboard:'总览', nav_orders:'订单管理', nav_new:'新建订单', nav_customers:'客户管理', nav_logout:'退出',
+    dash_title:'总览 Dashboard', dash_recent:'最近订单', dash_view_all:'查看全部 →',
+    stat_total:'总订单', stat_active:'进行中', stat_done:'已完成', stat_revenue:'已收款',
+    orders_title:'订单管理', orders_new_btn:'+ 新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
+    create_title:'新建订单', create_step1:'1. 客户信息', create_step2:'2. 订单信息', create_btn:'创建订单',
+    customers_title:'客户管理', cust_search:'搜索姓名 / 手机号',
+    detail_title:'订单详情', detail_update:'更新状态', detail_timeline:'进度日志',
+    th_order_no:'订单号', th_customer:'客户', th_store:'门店', th_amount:'金额', th_status:'状态', th_time:'时间',
+    th_name:'姓名', th_phone:'手机号', th_address:'地址', th_reg_time:'注册时间',
+    no_orders:'暂无订单', no_customers:'暂无客户', no_logs:'暂无记录',
+  },
+  'zh-TW': {
+    sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
+    dash_title:'總覽 Dashboard', dash_recent:'最近訂單', dash_view_all:'查看全部 →',
+    stat_total:'總訂單', stat_active:'進行中', stat_done:'已完成', stat_revenue:'已收款',
+    orders_title:'訂單管理', orders_new_btn:'+ 新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
+    create_title:'新建訂單', create_step1:'1. 客戶資訊', create_step2:'2. 訂單資訊', create_btn:'創建訂單',
+    customers_title:'客戶管理', cust_search:'搜尋姓名 / 手機號',
+    detail_title:'訂單詳情', detail_update:'更新狀態', detail_timeline:'進度日誌',
+    th_order_no:'訂單號', th_customer:'客戶', th_store:'門店', th_amount:'金額', th_status:'狀態', th_time:'時間',
+    th_name:'姓名', th_phone:'手機號', th_address:'地址', th_reg_time:'注冊時間',
+    no_orders:'暫無訂單', no_customers:'暫無客戶', no_logs:'暫無記錄',
+  },
+  'en': {
+    sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
+    dash_title:'Dashboard', dash_recent:'Recent Orders', dash_view_all:'View All →',
+    stat_total:'Total Orders', stat_active:'In Progress', stat_done:'Completed', stat_revenue:'Revenue',
+    orders_title:'Order Management', orders_new_btn:'+ New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
+    create_title:'New Order', create_step1:'1. Customer Info', create_step2:'2. Order Details', create_btn:'Create Order',
+    customers_title:'Customers', cust_search:'Search name / phone',
+    detail_title:'Order Detail', detail_update:'Update Status', detail_timeline:'Progress Log',
+    th_order_no:'Order No.', th_customer:'Customer', th_store:'Store', th_amount:'Amount', th_status:'Status', th_time:'Time',
+    th_name:'Name', th_phone:'Phone', th_address:'Address', th_reg_time:'Registered',
+    no_orders:'No orders', no_customers:'No customers', no_logs:'No records',
+  },
+  'ms': {
+    sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
+    dash_title:'Papan Pemuka', dash_recent:'Pesanan Terkini', dash_view_all:'Lihat Semua →',
+    stat_total:'Jumlah Pesanan', stat_active:'Sedang Berjalan', stat_done:'Selesai', stat_revenue:'Hasil',
+    orders_title:'Pengurusan Pesanan', orders_new_btn:'+ Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
+    create_title:'Pesanan Baru', create_step1:'1. Maklumat Pelanggan', create_step2:'2. Butiran Pesanan', create_btn:'Buat Pesanan',
+    customers_title:'Pelanggan', cust_search:'Cari nama / telefon',
+    detail_title:'Butiran Pesanan', detail_update:'Kemaskini Status', detail_timeline:'Log Kemajuan',
+    th_order_no:'No. Pesanan', th_customer:'Pelanggan', th_store:'Kedai', th_amount:'Jumlah', th_status:'Status', th_time:'Masa',
+    th_name:'Nama', th_phone:'Telefon', th_address:'Alamat', th_reg_time:'Tarikh Daftar',
+    no_orders:'Tiada pesanan', no_customers:'Tiada pelanggan', no_logs:'Tiada rekod',
+  },
+  'th': {
+    sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
+    dash_title:'แดชบอร์ด', dash_recent:'คำสั่งซื้อล่าสุด', dash_view_all:'ดูทั้งหมด →',
+    stat_total:'คำสั่งซื้อทั้งหมด', stat_active:'กำลังดำเนินการ', stat_done:'เสร็จสิ้น', stat_revenue:'รายได้',
+    orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'+ สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
+    create_title:'สร้างคำสั่งซื้อ', create_step1:'1. ข้อมูลลูกค้า', create_step2:'2. รายละเอียดคำสั่งซื้อ', create_btn:'สร้างคำสั่งซื้อ',
+    customers_title:'จัดการลูกค้า', cust_search:'ค้นหาชื่อ / โทรศัพท์',
+    detail_title:'รายละเอียดคำสั่งซื้อ', detail_update:'อัปเดตสถานะ', detail_timeline:'บันทึกความคืบหน้า',
+    th_order_no:'หมายเลขคำสั่ง', th_customer:'ลูกค้า', th_store:'สาขา', th_amount:'จำนวนเงิน', th_status:'สถานะ', th_time:'เวลา',
+    th_name:'ชื่อ', th_phone:'โทรศัพท์', th_address:'ที่อยู่', th_reg_time:'วันที่ลงทะเบียน',
+    no_orders:'ไม่มีคำสั่งซื้อ', no_customers:'ไม่มีลูกค้า', no_logs:'ไม่มีบันทึก',
+  },
+};
+
+let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
+function t(k) { return (STAFF_I18N[currentLang] || STAFF_I18N['zh-CN'])[k] || k; }
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('houzy-lang', lang);
+  const label = LANG_LABELS[lang] || lang;
+  const el = document.getElementById('lang-label'); if (el) el.textContent = label;
+  const ml = document.getElementById('m-lang-label'); if (ml) ml.textContent = label;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n); if (v) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh); if (v) el.placeholder = v;
+  });
+  document.body.style.fontFamily = lang === 'th' ? "'Noto Sans Thai',sans-serif" : "'Noto Sans SC',sans-serif";
+  // Update filter select first options
+  const fs = document.getElementById('f-status'); if (fs?.options[0]) fs.options[0].text = t('filter_all_status');
+  const fst = document.getElementById('f-store'); if (fst?.options[0]) fst.options[0].text = t('filter_all_stores');
+  // Re-render current view
+  if (!document.getElementById('v-dashboard').classList.contains('hidden')) renderDashboard();
+  else if (!document.getElementById('v-orders').classList.contains('hidden')) renderOrdersTable(filterGetCurrent());
+  else if (!document.getElementById('v-customers').classList.contains('hidden')) renderCustomersTable(allCustomers);
+  document.getElementById('lang-drop')?.classList.add('hidden');
+  document.getElementById('m-lang-drop')?.classList.add('hidden');
+}
+
+function filterGetCurrent() {
+  const q = document.getElementById('f-search')?.value.toLowerCase() || '';
+  const s = document.getElementById('f-status')?.value || '';
+  const store = document.getElementById('f-store')?.value || '';
+  const date = document.getElementById('f-date')?.value || '';
+  const month = document.getElementById('f-month')?.value || '';
+  return allOrders.filter(o => {
+    const txt = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
+    return (!q || txt.includes(q)) && (!s || o.status === s) && (!store || o.store_id === store)
+        && (!date || o.created_at.slice(0,10) === date) && (!month || o.created_at.slice(0,7) === month);
+  });
+}
+
+function toggleLangDrop() {
+  const d = document.getElementById('lang-drop');
+  d?.classList.toggle('hidden');
+}
+function toggleMobileLangDrop() {
+  const d = document.getElementById('m-lang-drop');
+  d?.classList.toggle('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#lang-drop') && !e.target.closest('[onclick*="toggleLangDrop"]'))
+    document.getElementById('lang-drop')?.classList.add('hidden');
+  if (!e.target.closest('#m-lang-drop') && !e.target.closest('[onclick*="toggleMobileLangDrop"]'))
+    document.getElementById('m-lang-drop')?.classList.add('hidden');
+});
+
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -343,6 +491,7 @@ async function init() {
 
   await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
+  setLang(currentLang);
 }
 
 async function loadStores() {
@@ -438,20 +587,20 @@ function renderDashboard() {
   const revenue = allOrders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + Number(o.amount), 0);
 
   document.getElementById('stats').innerHTML = [
-    ['总订单', total, 'bg-hg', 'text-white'],
-    ['进行中', active, 'bg-gg', 'text-white'],
-    ['已完成', done, 'bg-hg', 'text-gd'],
-    ['已收款', fmtAmt(revenue), 'bg-gd', 'text-hg'],
-  ].map(([t, v, bg, tc]) => `
+    [t('stat_total'), total, 'bg-hg', 'text-white'],
+    [t('stat_active'), active, 'bg-gg', 'text-white'],
+    [t('stat_done'), done, 'bg-hg', 'text-gd'],
+    [t('stat_revenue'), fmtAmt(revenue), 'bg-gd', 'text-hg'],
+  ].map(([lbl, v, bg, tc]) => `
     <div class="${bg} rounded-xl p-4">
-      <div class="text-xs ${tc} opacity-70 mb-1">${t}</div>
+      <div class="text-xs ${tc} opacity-70 mb-1">${lbl}</div>
       <div class="text-2xl font-bold ${tc}">${v}</div>
     </div>`).join('');
 
   const recent = allOrders.slice(0, 8);
   document.getElementById('recent-orders').innerHTML = recent.length
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
-        <th class="pb-2">订单号</th><th class="pb-2">客户</th><th class="pb-2">金额</th><th class="pb-2">状态</th><th class="pb-2">时间</th>
+        <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
        </tr></thead><tbody>${recent.map(o => `
         <tr class="border-b border-gray-50 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
           <td class="py-2 font-mono text-xs text-hg">${o.order_no}</td>
@@ -460,7 +609,7 @@ function renderDashboard() {
           <td class="py-2">${badge(o.status)}</td>
           <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
         </tr>`).join('')}</tbody></table>`
-    : '<p class="text-gray-400 text-sm text-center py-6">暂无订单</p>';
+    : `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`;
 }
 
 // ── Orders ──
@@ -551,8 +700,8 @@ function renderMonthlyStats(orders, period, specificDate) {
 function renderOrdersTable(orders) {
   document.getElementById('orders-table').innerHTML = orders.length
     ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
-        <th class="px-4 py-3">订单号</th><th class="px-4 py-3">客户</th><th class="px-4 py-3">门店</th>
-        <th class="px-4 py-3">金额</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">时间</th>
+        <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th><th class="px-4 py-3">${t('th_store')}</th>
+        <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
        </tr></thead><tbody>${orders.map(o => `
         <tr class="border-t border-gray-100 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
           <td class="px-4 py-3 font-mono text-xs text-hg font-semibold">${o.order_no}</td>
@@ -565,7 +714,7 @@ function renderOrdersTable(orders) {
           <td class="px-4 py-3">${badge(o.status)}</td>
           <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
         </tr>`).join('')}</tbody></table>`
-    : '<p class="text-gray-400 text-sm text-center py-10">暂无订单</p>';
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
 }
 
 // ── Create Order ──
@@ -685,8 +834,8 @@ function filterCustomers() {
 function renderCustomersTable(customers) {
   document.getElementById('customers-table').innerHTML = customers.length
     ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
-        <th class="px-4 py-3">姓名</th><th class="px-4 py-3">手机号</th>
-        <th class="px-4 py-3">地址</th><th class="px-4 py-3">注册时间</th>
+        <th class="px-4 py-3">${t('th_name')}</th><th class="px-4 py-3">${t('th_phone')}</th>
+        <th class="px-4 py-3">${t('th_address')}</th><th class="px-4 py-3">${t('th_reg_time')}</th>
        </tr></thead><tbody>${customers.map(c => `
         <tr class="border-t border-gray-100 hover:bg-gray-50">
           <td class="px-4 py-3 font-medium">${c.name}</td>
@@ -694,7 +843,7 @@ function renderCustomersTable(customers) {
           <td class="px-4 py-3 text-gray-400 text-xs">${c.address || '-'}</td>
           <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(c.created_at)}</td>
         </tr>`).join('')}</tbody></table>`
-    : '<p class="text-gray-400 text-sm text-center py-10">暂无客户</p>';
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_customers')}</p>`;
 }
 
 // ── Order Detail ──
