@@ -7,7 +7,7 @@
     <meta name="description" content="HOUZY HOME 合屋整装科技有限公司，马来西亚新山一站式品质整装服务专家。厨房、卫浴、衣柜、地板，合心筑家，整装焕新。">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -81,18 +81,29 @@
                 
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors">首页 Home</a>
-                    <a href="#spaces" class="text-gray-700 hover:text-houzy-green transition-colors">展厅 Showroom</a>
-                    <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors">服务 Services</a>
-                    <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors">套餐 Packages</a>
-                    <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors">关于 About</a>
-                    <a href="#shop" class="text-houzy-gold font-semibold hover:text-houzy-green transition-colors">商城 Shop</a>
-                    <a href="#contact" class="px-6 py-2 bg-houzy-green text-white hover:bg-houzy-green-light transition-colors rounded-sm">
-                        预约 Book
-                    </a>
-                    <a href="/houzy-home/portal/login.html" class="px-6 py-2 border border-houzy-green text-houzy-green hover:bg-houzy-green hover:text-white transition-colors rounded-sm text-sm">
-                        客户中心
-                    </a>
+                    <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
+                    <a href="#spaces" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_showroom">Showroom</a>
+                    <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_services">Services</a>
+                    <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_packages">Packages</a>
+                    <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_about">About</a>
+                    <a href="#shop" class="text-houzy-gold font-semibold hover:text-houzy-green transition-colors" data-i18n="nav_shop">Shop</a>
+                    <a href="#contact" class="px-6 py-2 bg-houzy-green text-white hover:bg-houzy-green-light transition-colors rounded-sm" data-i18n="nav_book">Book</a>
+                    <a href="/houzy-home/portal/login.html" class="px-6 py-2 border border-houzy-green text-houzy-green hover:bg-houzy-green hover:text-white transition-colors rounded-sm text-sm" data-i18n="nav_portal">Customer Portal</a>
+                    <!-- Language Selector -->
+                    <div class="relative" id="lang-picker">
+                        <button onclick="toggleLangMenu()" class="flex items-center gap-1 text-xs text-gray-500 hover:text-houzy-green border border-gray-200 rounded px-2 py-1 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                            <span id="lang-label">EN</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="lang-menu" class="hidden absolute right-0 top-9 bg-white shadow-lg border border-gray-100 rounded-lg py-1 w-36 z-[100]">
+                            <button onclick="setLanguage('en')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+                            <button onclick="setLanguage('zh-CN')" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+                            <button onclick="setLanguage('zh-TW')" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁體中文</button>
+                            <button onclick="setLanguage('ms')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+                            <button onclick="setLanguage('th')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -107,14 +118,21 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
-                <a href="#home" class="block py-2 text-gray-700">首页 Home</a>
-                <a href="#spaces" class="block py-2 text-gray-700">展厅 Showroom</a>
-                <a href="#services" class="block py-2 text-gray-700">服务 Services</a>
-                <a href="#packages" class="block py-2 text-gray-700">套餐 Packages</a>
-                <a href="#about" class="block py-2 text-gray-700">关于 About</a>
-                <a href="#shop" class="block py-2 text-houzy-gold font-semibold">商城 Shop</a>
-                <a href="#contact" class="block py-2 text-houzy-green font-medium">预约 Book</a>
-                <a href="/houzy-home/portal/login.html" class="block py-2 text-houzy-gold font-medium">客户中心 Portal</a>
+                <a href="#home" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
+                <a href="#spaces" class="block py-2 text-gray-700" data-i18n="nav_showroom">Showroom</a>
+                <a href="#services" class="block py-2 text-gray-700" data-i18n="nav_services">Services</a>
+                <a href="#packages" class="block py-2 text-gray-700" data-i18n="nav_packages">Packages</a>
+                <a href="#about" class="block py-2 text-gray-700" data-i18n="nav_about">About</a>
+                <a href="#shop" class="block py-2 text-houzy-gold font-semibold" data-i18n="nav_shop">Shop</a>
+                <a href="#contact" class="block py-2 text-houzy-green font-medium" data-i18n="nav_book">Book</a>
+                <a href="/houzy-home/portal/login.html" class="block py-2 text-houzy-gold font-medium" data-i18n="nav_portal">Customer Portal</a>
+                <div class="pt-2 border-t flex flex-wrap gap-2">
+                    <button onclick="setLanguage('en');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">EN</button>
+                    <button onclick="setLanguage('zh-CN');toggleMobileMenu()" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">简体</button>
+                    <button onclick="setLanguage('zh-TW');toggleMobileMenu()" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">繁體</button>
+                    <button onclick="setLanguage('ms');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">BM</button>
+                    <button onclick="setLanguage('th');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">ไทย</button>
+                </div>
             </div>
         </div>
     </nav>
@@ -132,32 +150,16 @@
         <!-- Content -->
         <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
             <div class="max-w-2xl animate-fade-in">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-4 font-medium">PREMIUM HOME SOLUTIONS</p>
-                <h1 class="font-serif-cn text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-                    合心筑家<br>
-                    <span class="text-houzy-gold">整装焕新</span>
-                </h1>
-                <p class="font-serif-en text-xl md:text-2xl italic mb-4 text-houzy-gold-light">
-                    Touch. Compare. Create.
-                </p>
-                <p class="text-lg md:text-xl text-gray-200 mb-2 leading-relaxed">
-                    触摸·对比·创造理想家
-                </p>
-                <p class="text-base text-gray-300 mb-8 leading-relaxed">
-                    马来西亚新山一站式品质整装服务专家<br>
-                    <span class="text-sm italic">Johor Bahru's One-Stop Premium Home Solutions</span>
-                </p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-4 font-medium" data-i18n="hero_tagline">PREMIUM HOME SOLUTIONS</p>
+                <h1 class="font-serif-cn text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight" data-i18n-html="hero_h1">Perfect Harmony,<br><span class="text-houzy-gold">Perfect Home</span></h1>
+                <p class="font-serif-en text-xl md:text-2xl italic mb-4 text-houzy-gold-light" data-i18n="hero_slogan">Touch. Compare. Create.</p>
+                <p class="text-lg md:text-xl text-gray-200 mb-2 leading-relaxed" data-i18n="hero_sub1">Touch · Compare · Create Your Dream Home</p>
+                <p class="text-base text-gray-300 mb-8 leading-relaxed" data-i18n="hero_sub2">Johor Bahru's One-Stop Premium Home Solutions</p>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="#spaces" class="px-8 py-4 bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-all text-center rounded-sm">
-                        探索展厅 Explore
-                    </a>
-                    <a href="#shop" class="px-8 py-4 bg-white text-houzy-green font-semibold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm">
-                        立即选购 Shop Now
-                    </a>
+                    <a href="#spaces" class="px-8 py-4 bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-all text-center rounded-sm" data-i18n="hero_btn_explore">Explore Showroom</a>
+                    <a href="#shop" class="px-8 py-4 bg-white text-houzy-green font-semibold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_shop">Shop Now</a>
                     <a href="https://wa.me/60105898786" target="_blank"
-                       class="px-8 py-4 border-2 border-white text-white font-semibold hover:bg-white hover:text-houzy-green transition-all text-center rounded-sm">
-                        WhatsApp 咨询
-                    </a>
+                       class="px-8 py-4 border-2 border-white text-white font-semibold hover:bg-white hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_wa">WhatsApp Us</a>
                 </div>
             </div>
         </div>
@@ -174,10 +176,10 @@
     <section id="services" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">OUR SERVICES</p>
-                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2">四大服务</h2>
-                <p class="font-serif-en text-lg text-gray-500 italic mb-4">Four Core Services</p>
-                <p class="text-gray-600 max-w-2xl mx-auto">从灵感到落地，全程专业陪伴 | From inspiration to completion, professional guidance throughout</p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="svc_label">OUR SERVICES</p>
+                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="svc_h2">Four Core Services</h2>
+                <p class="font-serif-en text-lg text-gray-500 italic mb-4" data-i18n="svc_sub_en">Four Core Services</p>
+                <p class="text-gray-600 max-w-2xl mx-auto" data-i18n="svc_p">From inspiration to completion, professional guidance throughout</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -188,12 +190,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1">场景灵感</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic">Design Inspiration</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed">
-                        专业设计师一对一咨询，根据您的生活方式定制专属方案<br>
-                        <span class="text-xs opacity-75">One-on-one design consultation tailored to your lifestyle</span>
-                    </p>
+                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc1_h">Design Inspiration</h3>
+                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc1_sub">Design Inspiration</p>
+                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc1_p">One-on-one design consultation tailored to your lifestyle</p>
                 </div>
 
                 <!-- Service 2 -->
@@ -203,12 +202,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1">材质甄选</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic">Material Selection</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed">
-                        全球优质建材直供，瓷砖、橱柜、卫浴一站式选材<br>
-                        <span class="text-xs opacity-75">Premium materials sourced globally, one-stop selection</span>
-                    </p>
+                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc2_h">Material Selection</h3>
+                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc2_sub">Material Selection</p>
+                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc2_p">Premium materials sourced globally, one-stop selection for tiles, cabinets & bathrooms</p>
                 </div>
 
                 <!-- Service 3 -->
@@ -218,12 +214,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1">专业陪伴</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic">Professional Support</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed">
-                        专属项目管家，每周进度报告，45天交付承诺<br>
-                        <span class="text-xs opacity-75">Dedicated project manager with weekly updates</span>
-                    </p>
+                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc3_h">Professional Support</h3>
+                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc3_sub">Professional Support</p>
+                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc3_p">Dedicated project manager, weekly progress reports, 45-day delivery commitment</p>
                 </div>
 
                 <!-- Service 4 -->
@@ -233,12 +226,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1">一站式配齐</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic">One-Stop Solution</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed">
-                        设计+材料+施工+软装，拎包入住省心服务<br>
-                        <span class="text-xs opacity-75">Design + Materials + Construction + Furnishing</span>
-                    </p>
+                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc4_h">One-Stop Solution</h3>
+                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc4_sub">One-Stop Solution</p>
+                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc4_p">Design + Materials + Construction + Furnishing, move-in ready</p>
                 </div>
             </div>
         </div>
@@ -248,10 +238,10 @@
     <section id="spaces" class="py-20 gradient-green text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">SHOWROOM</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2">五大体验空间</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4">Five Experience Spaces</p>
-                <p class="text-gray-300 max-w-2xl mx-auto">亲临展厅，触摸材质，感受空间 | Visit our showroom to touch materials and experience spaces</p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="show_label">SHOWROOM</p>
+                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="show_h2">Five Experience Spaces</h2>
+                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="show_h2_en">Five Experience Spaces</p>
+                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="show_p">Visit our showroom to touch materials and experience spaces</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -263,14 +253,14 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            点击查看效果图 →
+                            <span data-i18n="show_view">View Gallery →</span>
                         </span>
                     </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">厨房A</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Kitchen A — U型主推款 · 3.3m×4.0m</p>
-                        <p class="text-houzy-gold text-sm mb-2">轻奢 · 高端收纳 | Simple Living, Exceptional Materials</p>
-                        <p class="text-gray-300 text-xs">高效收纳 · 品质五金 · 环保板材</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space1_h">Kitchen A</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space1_sub">Kitchen A — U-Shape · 3.3m×4.0m</p>
+                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space1_tag">Luxury · Premium Storage</p>
+                        <p class="text-gray-300 text-xs" data-i18n="space1_p">Efficient Storage · Quality Hardware · Eco-Friendly Cabinets</p>
                     </div>
                 </div>
 
@@ -282,14 +272,14 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            点击查看效果图 →
+                            <span data-i18n="show_view">View Gallery →</span>
                         </span>
                     </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">卫浴穿越体验区</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Bathroom Experience — Feel the Quality</p>
-                        <p class="text-houzy-gold text-sm mb-2">全景呈现 · 沉浸体验 | Love the Details</p>
-                        <p class="text-gray-300 text-xs">真实场景 · 搭配推荐 · 专业建议</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space2_h">Bathroom Experience Zone</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space2_sub">Bathroom Experience — Feel the Quality</p>
+                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space2_tag">Panoramic Display · Immersive Experience</p>
+                        <p class="text-gray-300 text-xs" data-i18n="space2_p">Real Scenes · Styling Tips · Expert Advice</p>
                     </div>
                 </div>
 
@@ -301,14 +291,14 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            点击查看效果图 →
+                            <span data-i18n="show_view">View Gallery →</span>
                         </span>
                     </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">瓷砖选材区</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Tile Selection — One Surface, Endless Possibilities</p>
-                        <p class="text-houzy-gold text-sm mb-2">严选全球优质瓷砖 | Premium Selection</p>
-                        <p class="text-gray-300 text-xs">大理石纹 · 石材纹 · 木纹砖 · 水泥纹 · 特色砖</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space3_h">Tile Selection Zone</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space3_sub">Tile Selection — Endless Possibilities</p>
+                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space3_tag">Premium Global Tile Selection</p>
+                        <p class="text-gray-300 text-xs" data-i18n="space3_p">Marble · Stone · Wood · Concrete · Special Tiles</p>
                     </div>
                 </div>
 
@@ -320,14 +310,14 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            点击查看效果图 →
+                            <span data-i18n="show_view">View Gallery →</span>
                         </span>
                     </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">衣柜空间</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Wardrobe Space — 4.4m×4.0m · 全屋定制</p>
-                        <p class="text-houzy-gold text-sm mb-2">定制收纳 · 品质生活 | Tailored Storage, Timeless Living</p>
-                        <p class="text-gray-300 text-xs">科学分区 · 高效收纳 · 颜值担当</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space4_h">Wardrobe Space</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space4_sub">Wardrobe Space — 4.4m×4.0m · Full Custom</p>
+                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space4_tag">Custom Storage · Quality Living</p>
+                        <p class="text-gray-300 text-xs" data-i18n="space4_p">Smart Zoning · Efficient Storage · Stunning Aesthetics</p>
                     </div>
                 </div>
 
@@ -339,14 +329,14 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                     <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            点击查看效果图 →
+                            <span data-i18n="show_view">View Gallery →</span>
                         </span>
                     </div>
                     <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">洽谈区 · 展厅全景</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic">Showroom Tour — TOUCH. COMPARE. CREATE.</p>
-                        <p class="text-houzy-gold text-sm mb-2">触摸 · 对比 · 创造理想家 | 一站式配齐</p>
-                        <p class="text-gray-300 text-xs">场景灵感 · 材质甄选 · 专业陪伴 · 一站式配齐</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space5_h">Consultation · Showroom Tour</h3>
+                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space5_sub">Showroom Tour — TOUCH. COMPARE. CREATE.</p>
+                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space5_tag">Touch · Compare · Create Your Dream Home</p>
+                        <p class="text-gray-300 text-xs" data-i18n="space5_p">Inspiration · Materials · Support · One-Stop Solution</p>
                     </div>
                 </div>
             </div>
@@ -357,82 +347,71 @@
     <section id="packages" class="py-20 bg-houzy-cream">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">PACKAGES</p>
-                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2">整装套餐</h2>
-                <p class="font-serif-en text-lg text-gray-500 italic mb-4">Renovation Packages</p>
-                <p class="text-gray-600 max-w-2xl mx-auto">透明定价，所见即所得 | Transparent pricing, what you see is what you get</p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="pkg_label">PACKAGES</p>
+                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="pkg_h2">Renovation Packages</h2>
+                <p class="font-serif-en text-lg text-gray-500 italic mb-4" data-i18n="pkg_h2_en">Renovation Packages</p>
+                <p class="text-gray-600 max-w-2xl mx-auto" data-i18n="pkg_p">Transparent pricing, what you see is what you get</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Essential - RM29,999 -->
                 <div class="bg-white rounded-lg overflow-hidden shadow-lg hover-lift">
                     <div class="p-8">
-                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1">标准套餐</h3>
-                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic">Standard Package</p>
-                        <p class="text-gray-500 text-sm mb-2">适用80m² | For 80m²</p>
+                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1" data-i18n="pkg1_name">Standard Package</h3>
+                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="pkg1_name_en">Standard Package</p>
+                        <p class="text-gray-500 text-sm mb-2" data-i18n="pkg1_area">For 80m²</p>
                         <div class="mb-6">
                             <span class="text-4xl font-bold text-houzy-green">RM29,999</span>
                         </div>
                         <ul class="text-gray-600 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 全屋瓷砖 | Full House Tiles</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 厨房橱柜 3米 | 3m Kitchen Cabinet</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 卫浴套装 × 1 | 1 Bathroom Set</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 五金辅材 | Hardware & Accessories</li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l1">Full House Tiles</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l2">3m Kitchen Cabinet</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l3">1 Bathroom Set</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l4">Hardware & Accessories</span></li>
                         </ul>
-                        <p class="text-xs text-gray-400 mb-4">传统 ≈ RM 35,000-50,000</p>
-                        <a href="#contact" 
-                           class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm">
-                            咨询详情 Enquire
-                        </a>
+                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg1_trad">Traditional ≈ RM 35,000–50,000</p>
+                        <a href="#contact" class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm" data-i18n="pkg1_cta">Enquire</a>
                     </div>
                 </div>
 
                 <!-- Premium - RM42,999 (Featured) -->
                 <div class="bg-houzy-green rounded-lg overflow-hidden shadow-xl hover-lift transform scale-105">
-                    <div class="bg-houzy-gold text-houzy-green text-center py-2 text-sm font-semibold">
-                        最受欢迎 Most Popular
-                    </div>
+                    <div class="bg-houzy-gold text-houzy-green text-center py-2 text-sm font-semibold" data-i18n="pkg_popular">Most Popular</div>
                     <div class="p-8 text-white">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1">品质套餐</h3>
-                        <p class="font-serif-en text-gray-300 text-sm mb-2 italic">Premium Package</p>
-                        <p class="text-gray-300 text-sm mb-2">适用120m² | For 120m²</p>
+                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="pkg2_name">Premium Package</h3>
+                        <p class="font-serif-en text-gray-300 text-sm mb-2 italic" data-i18n="pkg2_name_en">Premium Package</p>
+                        <p class="text-gray-300 text-sm mb-2" data-i18n="pkg2_area">For 120m²</p>
                         <div class="mb-6">
                             <span class="text-4xl font-bold text-houzy-gold">RM42,999</span>
                         </div>
                         <ul class="text-gray-300 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> 全屋瓷砖（地+墙）| Floor & Wall Tiles</li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> 厨房橱柜 | Kitchen Cabinet</li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> 卫浴套装 × 2 | 2 Bathroom Sets</li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> 五金/辅材全套 | Full Hardware Set</li>
+                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l1">Floor & Wall Tiles</span></li>
+                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l2">Kitchen Cabinet</span></li>
+                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l3">2 Bathroom Sets</span></li>
+                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l4">Full Hardware Set</span></li>
                         </ul>
-                        <p class="text-xs text-gray-400 mb-4">传统 ≈ RM 55,000-80,000</p>
-                        <a href="#contact" 
-                           class="block w-full py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm">
-                            立即预约 Book Now
-                        </a>
+                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg2_trad">Traditional ≈ RM 55,000–80,000</p>
+                        <a href="#contact" class="block w-full py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm" data-i18n="pkg2_cta">Book Now</a>
                     </div>
                 </div>
 
                 <!-- Luxury - RM59,999 -->
                 <div class="bg-white rounded-lg overflow-hidden shadow-lg hover-lift">
                     <div class="p-8">
-                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1">奢华套餐</h3>
-                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic">Luxury Package</p>
-                        <p class="text-gray-500 text-sm mb-2">适用150m² | For 150m²</p>
+                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1" data-i18n="pkg3_name">Luxury Package</h3>
+                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="pkg3_name_en">Luxury Package</p>
+                        <p class="text-gray-500 text-sm mb-2" data-i18n="pkg3_area">For 150m²</p>
                         <div class="mb-6">
                             <span class="text-4xl font-bold text-houzy-green">RM59,999</span>
                         </div>
                         <ul class="text-gray-600 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 升级瓷砖+整体厨房 | Upgraded Tiles & Kitchen</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 卫浴套装 × 2 | 2 Bathroom Sets</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 五金辅材+升级配件 | Premium Hardware</li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> 扩大面积全覆盖 | Full Coverage</li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l1">Upgraded Tiles & Kitchen</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l2">2 Bathroom Sets</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l3">Premium Hardware</span></li>
+                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l4">Full Coverage</span></li>
                         </ul>
-                        <p class="text-xs text-gray-400 mb-4">传统 ≈ RM 80,000-120,000</p>
-                        <a href="#contact" 
-                           class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm">
-                            咨询详情 Enquire
-                        </a>
+                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg3_trad">Traditional ≈ RM 80,000–120,000</p>
+                        <a href="#contact" class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm" data-i18n="pkg3_cta">Enquire</a>
                     </div>
                 </div>
             </div>
@@ -443,10 +422,10 @@
     <section id="shop" class="py-20 bg-houzy-dark text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">ONLINE STORE</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2">线上商城</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4">Shop Online</p>
-                <p class="text-gray-300 max-w-2xl mx-auto">足不出户，精选建材直达您家 | Premium materials delivered to your door</p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="shop_label">ONLINE STORE</p>
+                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="shop_h2">Shop Online</h2>
+                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="shop_h2_en">Shop Online</p>
+                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="shop_p">Premium materials delivered to your door</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
@@ -457,9 +436,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2">正品保障</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Authentic Products</p>
-                    <p class="text-gray-400 text-sm">品牌直供，假一赔十<br><span class="text-xs">Brand direct supply, guaranteed authentic</span></p>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f1_h">Authentic Products</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f1_sub">Authentic Products</p>
+                    <p class="text-gray-400 text-sm" data-i18n="shop_f1_p">Brand direct supply, guaranteed authentic</p>
                 </div>
 
                 <!-- Feature 2 -->
@@ -469,9 +448,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2">快速配送</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Fast Delivery</p>
-                    <p class="text-gray-400 text-sm">新山本地配送，当天达<br><span class="text-xs">Same-day delivery within Johor Bahru</span></p>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f2_h">Fast Delivery</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f2_sub">Fast Delivery</p>
+                    <p class="text-gray-400 text-sm" data-i18n="shop_f2_p">Same-day delivery within Johor Bahru</p>
                 </div>
 
                 <!-- Feature 3 -->
@@ -481,30 +460,30 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
                     </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2">专业顾问</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3">Expert Support</p>
-                    <p class="text-gray-400 text-sm">选材有疑问？随时 WhatsApp<br><span class="text-xs">Questions? WhatsApp us anytime</span></p>
+                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f3_h">Expert Support</h3>
+                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f3_sub">Expert Support</p>
+                    <p class="text-gray-400 text-sm" data-i18n="shop_f3_p">Questions about materials? WhatsApp us anytime</p>
                 </div>
             </div>
 
             <!-- CTA Buttons -->
             <div class="text-center">
-                <p class="text-gray-400 mb-8 text-sm">选择您喜欢的方式开始购物 | Choose your preferred way to shop</p>
+                <p class="text-gray-400 mb-8 text-sm" data-i18n="shop_cta_p">Choose your preferred way to shop</p>
                 <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
                     <a href="https://houzy-home.myshopify.com" target="_blank"
                        class="w-full sm:w-auto px-12 py-5 bg-houzy-gold text-houzy-green text-lg font-bold hover:bg-houzy-gold-light transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                         </svg>
-                        前往商城 Visit Shop
+                        <span data-i18n="shop_btn1">Visit Shop</span>
                     </a>
-                    <span class="text-gray-600 hidden sm:block">或 / or</span>
+                    <span class="text-gray-600 hidden sm:block" data-i18n="shop_or">or</span>
                     <a href="https://wa.me/60105898786" target="_blank"
                        class="w-full sm:w-auto px-12 py-5 border-2 border-houzy-gold text-houzy-gold text-lg font-bold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
-                        WhatsApp 选购咨询
+                        <span data-i18n="shop_btn2">WhatsApp Enquiry</span>
                     </a>
                 </div>
             </div>
@@ -516,44 +495,34 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                    <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">ABOUT US</p>
-                    <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2">关于合屋整装</h2>
-                    <p class="font-serif-en text-lg text-gray-500 italic mb-6">About HOUZY HOME</p>
-                    <p class="text-gray-600 leading-relaxed mb-6">
-                        有些家，走进去就想留下来。这是我们创立合屋整装科技有限公司时心中最朴素的愿望。<br>
-                        <span class="text-sm italic text-gray-500">Some homes, you walk in and never want to leave. This was our simple wish when founding HOUZY HOME.</span>
-                    </p>
-                    <p class="text-gray-600 leading-relaxed mb-6">
-                        新山是一座特别的城市——隔着海峡望向新加坡的繁华，城市之中几代华人在这里扎根、生活、筑巢、传承。这里的人们对"家"有一种格外深沉的情感。<br>
-                        <span class="text-sm italic text-gray-500">Johor Bahru is a special city, where generations of Chinese have put down roots and built homes.</span>
-                    </p>
-                    <p class="text-gray-600 leading-relaxed mb-8">
-                        我们理解这种情感。合屋整装从不只是在做装修，我们在做的是帮助每一个家庭把关于"家"的想象变成推开门就能拥抱的现实。<br>
-                        <span class="text-sm italic text-gray-500">We understand this emotion. We're not just renovating—we're helping families turn their dreams into reality.</span>
-                    </p>
+                    <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="about_label">ABOUT US</p>
+                    <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="about_h2">About HOUZY HOME</h2>
+                    <p class="font-serif-en text-lg text-gray-500 italic mb-6" data-i18n="about_h2_en">About HOUZY HOME</p>
+                    <p class="text-gray-600 leading-relaxed mb-6" data-i18n="about_p1">Some homes, you walk in and never want to leave. This was our simple wish when founding HOUZY HOME.</p>
+                    <p class="text-gray-600 leading-relaxed mb-6" data-i18n="about_p2">Johor Bahru is a special city—gazing across the strait toward Singapore's prosperity, where generations of families have put down roots, built homes, and created legacies.</p>
+                    <p class="text-gray-600 leading-relaxed mb-8" data-i18n="about_p3">We understand this emotion. We're not just renovating—we're helping families turn their dreams of home into a reality they can embrace the moment they open the door.</p>
                     <div class="grid grid-cols-3 gap-6 text-center">
                         <div>
                             <div class="text-3xl font-bold text-houzy-green mb-1">100+</div>
-                            <div class="text-sm text-gray-500">服务家庭<br><span class="text-xs italic">Families Served</span></div>
+                            <div class="text-sm text-gray-500" data-i18n="about_stat1">Families Served</div>
                         </div>
                         <div>
                             <div class="text-3xl font-bold text-houzy-green mb-1">5</div>
-                            <div class="text-sm text-gray-500">年质保<br><span class="text-xs italic">Years Warranty</span></div>
+                            <div class="text-sm text-gray-500" data-i18n="about_stat2">Years Warranty</div>
                         </div>
                         <div>
                             <div class="text-3xl font-bold text-houzy-green mb-1">45</div>
-                            <div class="text-sm text-gray-500">天交付<br><span class="text-xs italic">Days Delivery</span></div>
+                            <div class="text-sm text-gray-500" data-i18n="about_stat3">Days Delivery</div>
                         </div>
                     </div>
                 </div>
                 <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80" 
-                         alt="About HOUZY HOME" 
+                    <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80"
+                         alt="About HOUZY HOME"
                          class="rounded-lg shadow-2xl">
                     <div class="absolute -bottom-6 -left-6 bg-houzy-green text-white p-6 rounded-lg">
-                        <p class="font-serif-cn text-lg italic">"我只是想要一个，回到家就觉得幸福的地方。"</p>
-                        <p class="font-serif-en text-houzy-gold text-sm mt-2 italic">"I just want a place where I feel happy coming home."</p>
-                        <p class="text-houzy-gold text-xs mt-2">— 这，就是合屋整装存在的全部理由</p>
+                        <p class="font-serif-cn text-lg italic" data-i18n="about_quote">"I just want a place where I feel happy coming home."</p>
+                        <p class="text-houzy-gold text-xs mt-2" data-i18n="about_reason">— This is the entire reason HOUZY HOME exists</p>
                     </div>
                 </div>
             </div>
@@ -564,10 +533,10 @@
     <section id="contact" class="py-20 gradient-green text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">CONTACT US</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2">预约到店</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4">Book a Visit</p>
-                <p class="text-gray-300 max-w-2xl mx-auto">亲临展厅，开启您的理想家之旅 | Visit our showroom to start your dream home journey</p>
+                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="contact_label">CONTACT US</p>
+                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="contact_h2">Book a Visit</h2>
+                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="contact_h2_en">Book a Visit</p>
+                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="contact_p">Visit our showroom to start your dream home journey</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -581,8 +550,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1">展厅地址 Location</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic">Showroom Address</p>
+                            <h3 class="font-semibold text-lg mb-1" data-i18n="loc_h">Location</h3>
+                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="loc_sub">Showroom Address</p>
                             <p class="text-gray-300">141, Jalan Mutiara Emas 10/19,<br>Taman Mount Austin, 81100<br>Johor Bahru, Johor Darul Tazim, Malaysia</p>
                         </div>
                     </div>
@@ -595,7 +564,7 @@
                         </div>
                         <div>
                             <h3 class="font-semibold text-lg mb-1">WhatsApp</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic">Contact Us</p>
+                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="wa_sub">Contact Us</p>
                             <p class="text-gray-300">+60 10-5898786<br>+60 19-9823169</p>
                             <div class="flex flex-wrap gap-2 mt-2">
                                 <a href="https://wa.me/60105898786" target="_blank"
@@ -617,9 +586,9 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1">营业时间 Hours</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic">Business Hours</p>
-                            <p class="text-gray-300">每天 Daily: 10:00 AM - 7:30 PM</p>
+                            <h3 class="font-semibold text-lg mb-1" data-i18n="hrs_h">Business Hours</h3>
+                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="hrs_sub">Business Hours</p>
+                            <p class="text-gray-300" data-i18n="hrs_val">Daily: 10:00 AM – 7:30 PM</p>
                         </div>
                     </div>
                 </div>
@@ -634,9 +603,7 @@
                         </iframe>
                     </div>
                     <a href="https://maps.google.com/?q=141+Jalan+Mutiara+Emas+10/19+Taman+Mount+Austin+81100+Johor+Bahru+Johor+Malaysia" target="_blank"
-                       class="block w-full mt-6 py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm">
-                        打开 Google Maps
-                    </a>
+                       class="block w-full mt-6 py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm" data-i18n="map_cta">Open in Google Maps</a>
                 </div>
             </div>
         </div>
@@ -657,41 +624,35 @@
                             <p class="text-xs text-gray-400 tracking-widest">HOME SOLUTIONS</p>
                         </div>
                     </div>
-                    <p class="text-gray-400 text-sm leading-relaxed max-w-md">
-                        HOUZY HOME SDN. BHD. (合屋整装科技有限公司)<br>
-                        马来西亚新山一站式品质整装服务专家<br>
-                        <span class="italic">Johor Bahru's One-Stop Premium Home Solutions</span>
-                    </p>
+                    <p class="text-gray-400 text-sm leading-relaxed max-w-md" data-i18n-html="footer_company">HOUZY HOME SDN. BHD.<br><span class="italic">Johor Bahru's One-Stop Premium Home Solutions</span></p>
                 </div>
 
                 <!-- Quick Links -->
                 <div>
-                    <h4 class="font-semibold mb-4">快速链接 Quick Links</h4>
+                    <h4 class="font-semibold mb-4" data-i18n="footer_links_h">Quick Links</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#home" class="hover:text-houzy-gold transition-colors">首页 Home</a></li>
-                        <li><a href="#spaces" class="hover:text-houzy-gold transition-colors">展厅 Showroom</a></li>
-                        <li><a href="#packages" class="hover:text-houzy-gold transition-colors">套餐 Packages</a></li>
-                        <li><a href="#shop" class="hover:text-houzy-gold transition-colors">商城 Shop</a></li>
-                        <li><a href="#about" class="hover:text-houzy-gold transition-colors">关于 About</a></li>
+                        <li><a href="#home" class="hover:text-houzy-gold transition-colors" data-i18n="nav_home">Home</a></li>
+                        <li><a href="#spaces" class="hover:text-houzy-gold transition-colors" data-i18n="nav_showroom">Showroom</a></li>
+                        <li><a href="#packages" class="hover:text-houzy-gold transition-colors" data-i18n="nav_packages">Packages</a></li>
+                        <li><a href="#shop" class="hover:text-houzy-gold transition-colors" data-i18n="nav_shop">Shop</a></li>
+                        <li><a href="#about" class="hover:text-houzy-gold transition-colors" data-i18n="nav_about">About</a></li>
                     </ul>
                 </div>
 
                 <!-- Services -->
                 <div>
-                    <h4 class="font-semibold mb-4">业务范围 Services</h4>
+                    <h4 class="font-semibold mb-4" data-i18n="footer_svc_h">Services</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li>厨房 Kitchen</li>
-                        <li>衣柜 Wardrobe</li>
-                        <li>卫浴 Bathroom</li>
-                        <li>地板 Flooring</li>
+                        <li data-i18n="svc_kitchen">Kitchen</li>
+                        <li data-i18n="svc_wardrobe">Wardrobe</li>
+                        <li data-i18n="svc_bathroom">Bathroom</li>
+                        <li data-i18n="svc_flooring">Flooring</li>
                     </ul>
                 </div>
             </div>
 
             <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-gray-500 text-sm">
-                    © 2026 HOUZY HOME SDN. BHD. All rights reserved.
-                </p>
+                <p class="text-gray-500 text-sm" data-i18n="footer_copy">© 2026 HOUZY HOME SDN. BHD. All rights reserved.</p>
                 <div class="flex flex-wrap gap-3 justify-center md:justify-end">
                     <!-- Facebook -->
                     <a href="#" target="_blank" rel="noopener noreferrer"
@@ -781,7 +742,7 @@
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                WhatsApp 咨询报价
+                <span data-i18n="gallery_wa_cta">WhatsApp for Quote</span>
             </a>
         </div>
     </div>
@@ -945,5 +906,389 @@
             });
         });
     </script>
+
+    <!-- i18n -->
+    <script>
+    const i18n = {
+      en: {
+        nav_home:'Home', nav_showroom:'Showroom', nav_services:'Services', nav_packages:'Packages',
+        nav_about:'About', nav_shop:'Shop', nav_book:'Book', nav_portal:'Customer Portal',
+        hero_tagline:'PREMIUM HOME SOLUTIONS',
+        hero_h1:'Perfect Harmony,<br><span class="text-houzy-gold">Perfect Home</span>',
+        hero_slogan:'Touch. Compare. Create.',
+        hero_sub1:'Touch · Compare · Create Your Dream Home',
+        hero_sub2:"Johor Bahru's One-Stop Premium Home Solutions",
+        hero_btn_explore:'Explore Showroom', hero_btn_shop:'Shop Now', hero_btn_wa:'WhatsApp Us',
+        svc_label:'OUR SERVICES', svc_h2:'Four Core Services', svc_sub_en:'Four Core Services',
+        svc_p:'From inspiration to completion, professional guidance throughout',
+        svc1_h:'Design Inspiration', svc1_sub:'Design Inspiration',
+        svc1_p:'One-on-one design consultation tailored to your lifestyle',
+        svc2_h:'Material Selection', svc2_sub:'Material Selection',
+        svc2_p:'Premium materials sourced globally — tiles, cabinets & bathrooms one-stop',
+        svc3_h:'Professional Support', svc3_sub:'Professional Support',
+        svc3_p:'Dedicated project manager, weekly progress reports, 45-day delivery commitment',
+        svc4_h:'One-Stop Solution', svc4_sub:'One-Stop Solution',
+        svc4_p:'Design + Materials + Construction + Furnishing, move-in ready',
+        show_label:'SHOWROOM', show_h2:'Five Experience Spaces', show_h2_en:'Five Experience Spaces',
+        show_p:'Visit our showroom to touch materials and experience spaces',
+        show_view:'View Gallery →',
+        space1_h:'Kitchen A', space1_sub:'Kitchen A — U-Shape · 3.3m×4.0m',
+        space1_tag:'Luxury · Premium Storage', space1_p:'Efficient Storage · Quality Hardware · Eco-Friendly Cabinets',
+        space2_h:'Bathroom Experience Zone', space2_sub:'Bathroom Experience — Feel the Quality',
+        space2_tag:'Panoramic Display · Immersive Experience', space2_p:'Real Scenes · Styling Tips · Expert Advice',
+        space3_h:'Tile Selection Zone', space3_sub:'Tile Selection — Endless Possibilities',
+        space3_tag:'Premium Global Tile Selection', space3_p:'Marble · Stone · Wood · Concrete · Special Tiles',
+        space4_h:'Wardrobe Space', space4_sub:'Wardrobe Space — 4.4m×4.0m · Full Custom',
+        space4_tag:'Custom Storage · Quality Living', space4_p:'Smart Zoning · Efficient Storage · Stunning Aesthetics',
+        space5_h:'Consultation · Showroom Tour', space5_sub:'Showroom Tour — TOUCH. COMPARE. CREATE.',
+        space5_tag:'Touch · Compare · Create Your Dream Home', space5_p:'Inspiration · Materials · Support · One-Stop Solution',
+        pkg_label:'PACKAGES', pkg_h2:'Renovation Packages', pkg_h2_en:'Renovation Packages',
+        pkg_p:'Transparent pricing, what you see is what you get', pkg_popular:'Most Popular',
+        pkg1_name:'Standard Package', pkg1_name_en:'Standard Package', pkg1_area:'For 80m²',
+        pkg1_l1:'Full House Tiles', pkg1_l2:'3m Kitchen Cabinet', pkg1_l3:'1 Bathroom Set', pkg1_l4:'Hardware & Accessories',
+        pkg1_trad:'Traditional ≈ RM 35,000–50,000', pkg1_cta:'Enquire',
+        pkg2_name:'Premium Package', pkg2_name_en:'Premium Package', pkg2_area:'For 120m²',
+        pkg2_l1:'Floor & Wall Tiles', pkg2_l2:'Kitchen Cabinet', pkg2_l3:'2 Bathroom Sets', pkg2_l4:'Full Hardware Set',
+        pkg2_trad:'Traditional ≈ RM 55,000–80,000', pkg2_cta:'Book Now',
+        pkg3_name:'Luxury Package', pkg3_name_en:'Luxury Package', pkg3_area:'For 150m²',
+        pkg3_l1:'Upgraded Tiles & Kitchen', pkg3_l2:'2 Bathroom Sets', pkg3_l3:'Premium Hardware', pkg3_l4:'Full Coverage',
+        pkg3_trad:'Traditional ≈ RM 80,000–120,000', pkg3_cta:'Enquire',
+        shop_label:'ONLINE STORE', shop_h2:'Shop Online', shop_h2_en:'Shop Online',
+        shop_p:'Premium materials delivered to your door',
+        shop_f1_h:'Authentic Products', shop_f1_sub:'Authentic Products', shop_f1_p:'Brand direct supply, guaranteed authentic',
+        shop_f2_h:'Fast Delivery', shop_f2_sub:'Fast Delivery', shop_f2_p:'Same-day delivery within Johor Bahru',
+        shop_f3_h:'Expert Support', shop_f3_sub:'Expert Support', shop_f3_p:'Questions about materials? WhatsApp us anytime',
+        shop_cta_p:'Choose your preferred way to shop', shop_btn1:'Visit Shop', shop_or:'or', shop_btn2:'WhatsApp Enquiry',
+        about_label:'ABOUT US', about_h2:'About HOUZY HOME', about_h2_en:'About HOUZY HOME',
+        about_p1:'Some homes, you walk in and never want to leave. This was our simple wish when founding HOUZY HOME.',
+        about_p2:"Johor Bahru is a special city—gazing across the strait toward Singapore's prosperity, where generations of families have put down roots, built homes, and created legacies.",
+        about_p3:"We understand this emotion. We're not just renovating—we're helping families turn their dreams of home into a reality they can embrace the moment they open the door.",
+        about_stat1:'Families Served', about_stat2:'Years Warranty', about_stat3:'Days Delivery',
+        about_quote:'"I just want a place where I feel happy coming home."',
+        about_reason:'— This is the entire reason HOUZY HOME exists',
+        contact_label:'CONTACT US', contact_h2:'Book a Visit', contact_h2_en:'Book a Visit',
+        contact_p:'Visit our showroom to start your dream home journey',
+        loc_h:'Location', loc_sub:'Showroom Address', wa_sub:'Contact Us',
+        hrs_h:'Business Hours', hrs_sub:'Business Hours', hrs_val:'Daily: 10:00 AM – 7:30 PM',
+        map_cta:'Open in Google Maps',
+        footer_company:'HOUZY HOME SDN. BHD.<br><span class="italic">Johor Bahru\'s One-Stop Premium Home Solutions</span>',
+        footer_links_h:'Quick Links', footer_svc_h:'Services', footer_copy:'© 2026 HOUZY HOME SDN. BHD. All rights reserved.',
+        svc_kitchen:'Kitchen', svc_wardrobe:'Wardrobe', svc_bathroom:'Bathroom', svc_flooring:'Flooring',
+        gallery_wa_cta:'WhatsApp for Quote',
+        gal_kitchen_title:'Kitchen A', gal_kitchen_sub:'Kitchen A — U-Shape · 3.3m×4.0m · Luxury Premium Storage',
+        gal_bathroom_title:'Bathroom Experience Zone', gal_bathroom_sub:'Bathroom Experience — Feel the Quality · Love the Details',
+        gal_materials_title:'Tile Selection Zone', gal_materials_sub:'Tile Selection — One Surface, Endless Possibilities',
+        gal_wardrobe_title:'Wardrobe Space', gal_wardrobe_sub:'Wardrobe Space — 4.4m×4.0m · Full Custom',
+        gal_consult_title:'Consultation · Showroom Tour', gal_consult_sub:'Showroom Tour — TOUCH. COMPARE. CREATE.'
+      },
+      'zh-CN': {
+        nav_home:'首页', nav_showroom:'展厅', nav_services:'服务', nav_packages:'套餐',
+        nav_about:'关于', nav_shop:'商城', nav_book:'预约', nav_portal:'客户中心',
+        hero_tagline:'品质整装专家',
+        hero_h1:'合心筑家<br><span class="text-houzy-gold">整装焕新</span>',
+        hero_slogan:'触摸·对比·创造', hero_sub1:'触摸·对比·创造理想家',
+        hero_sub2:'马来西亚新山一站式品质整装服务专家',
+        hero_btn_explore:'探索展厅', hero_btn_shop:'立即选购', hero_btn_wa:'WhatsApp 咨询',
+        svc_label:'我们的服务', svc_h2:'四大服务', svc_sub_en:'Four Core Services',
+        svc_p:'从灵感到落地，全程专业陪伴',
+        svc1_h:'场景灵感', svc1_sub:'设计灵感', svc1_p:'专业设计师一对一咨询，根据您的生活方式定制专属方案',
+        svc2_h:'材质甄选', svc2_sub:'材质甄选', svc2_p:'全球优质建材直供，瓷砖、橱柜、卫浴一站式选材',
+        svc3_h:'专业陪伴', svc3_sub:'专业陪伴', svc3_p:'专属项目管家，每周进度报告，45天交付承诺',
+        svc4_h:'一站式配齐', svc4_sub:'一站式配齐', svc4_p:'设计+材料+施工+软装，拎包入住省心服务',
+        show_label:'展厅', show_h2:'五大体验空间', show_h2_en:'Five Experience Spaces',
+        show_p:'亲临展厅，触摸材质，感受空间', show_view:'点击查看效果图 →',
+        space1_h:'厨房A', space1_sub:'厨房A — U型主推款 · 3.3m×4.0m',
+        space1_tag:'轻奢 · 高端收纳', space1_p:'高效收纳 · 品质五金 · 环保板材',
+        space2_h:'卫浴穿越体验区', space2_sub:'卫浴体验 — 感受品质',
+        space2_tag:'全景呈现 · 沉浸体验', space2_p:'真实场景 · 搭配推荐 · 专业建议',
+        space3_h:'瓷砖选材区', space3_sub:'瓷砖选材 — 无限可能的表面',
+        space3_tag:'严选全球优质瓷砖', space3_p:'大理石纹 · 石材纹 · 木纹砖 · 水泥纹 · 特色砖',
+        space4_h:'衣柜空间', space4_sub:'衣柜空间 — 4.4m×4.0m · 全屋定制',
+        space4_tag:'定制收纳 · 品质生活', space4_p:'科学分区 · 高效收纳 · 颜值担当',
+        space5_h:'洽谈区 · 展厅全景', space5_sub:'展厅全景 — 触摸·对比·创造',
+        space5_tag:'触摸 · 对比 · 创造理想家', space5_p:'场景灵感 · 材质甄选 · 专业陪伴 · 一站式配齐',
+        pkg_label:'套餐', pkg_h2:'整装套餐', pkg_h2_en:'Renovation Packages',
+        pkg_p:'透明定价，所见即所得', pkg_popular:'最受欢迎',
+        pkg1_name:'标准套餐', pkg1_name_en:'Standard Package', pkg1_area:'适用80m²',
+        pkg1_l1:'全屋瓷砖', pkg1_l2:'厨房橱柜 3米', pkg1_l3:'卫浴套装 × 1', pkg1_l4:'五金辅材',
+        pkg1_trad:'传统 ≈ RM 35,000–50,000', pkg1_cta:'咨询详情',
+        pkg2_name:'品质套餐', pkg2_name_en:'Premium Package', pkg2_area:'适用120m²',
+        pkg2_l1:'全屋瓷砖（地+墙）', pkg2_l2:'厨房橱柜', pkg2_l3:'卫浴套装 × 2', pkg2_l4:'五金/辅材全套',
+        pkg2_trad:'传统 ≈ RM 55,000–80,000', pkg2_cta:'立即预约',
+        pkg3_name:'奢华套餐', pkg3_name_en:'Luxury Package', pkg3_area:'适用150m²',
+        pkg3_l1:'升级瓷砖+整体厨房', pkg3_l2:'卫浴套装 × 2', pkg3_l3:'五金辅材+升级配件', pkg3_l4:'扩大面积全覆盖',
+        pkg3_trad:'传统 ≈ RM 80,000–120,000', pkg3_cta:'咨询详情',
+        shop_label:'线上商城', shop_h2:'线上商城', shop_h2_en:'Shop Online',
+        shop_p:'足不出户，精选建材直达您家',
+        shop_f1_h:'正品保障', shop_f1_sub:'正品保障', shop_f1_p:'品牌直供，假一赔十',
+        shop_f2_h:'快速配送', shop_f2_sub:'快速配送', shop_f2_p:'新山本地配送，当天达',
+        shop_f3_h:'专业顾问', shop_f3_sub:'专业顾问', shop_f3_p:'选材有疑问？随时 WhatsApp',
+        shop_cta_p:'选择您喜欢的方式开始购物', shop_btn1:'前往商城', shop_or:'或', shop_btn2:'WhatsApp 选购咨询',
+        about_label:'关于我们', about_h2:'关于合屋整装', about_h2_en:'About HOUZY HOME',
+        about_p1:'有些家，走进去就想留下来。这是我们创立合屋整装科技有限公司时心中最朴素的愿望。',
+        about_p2:'新山是一座特别的城市——隔着海峡望向新加坡的繁华，城市之中几代华人在这里扎根、生活、筑巢、传承。这里的人们对"家"有一种格外深沉的情感。',
+        about_p3:'我们理解这种情感。合屋整装从不只是在做装修，我们在做的是帮助每一个家庭把关于"家"的想象变成推开门就能拥抱的现实。',
+        about_stat1:'服务家庭', about_stat2:'年质保', about_stat3:'天交付',
+        about_quote:'「我只是想要一个，回到家就觉得幸福的地方。」',
+        about_reason:'— 这，就是合屋整装存在的全部理由',
+        contact_label:'联系我们', contact_h2:'预约到店', contact_h2_en:'Book a Visit',
+        contact_p:'亲临展厅，开启您的理想家之旅',
+        loc_h:'展厅地址', loc_sub:'门店位置', wa_sub:'联系我们',
+        hrs_h:'营业时间', hrs_sub:'营业时间', hrs_val:'每天: 10:00 AM – 7:30 PM',
+        map_cta:'打开 Google Maps',
+        footer_company:'HOUZY HOME SDN. BHD. (合屋整装科技有限公司)<br>马来西亚新山一站式品质整装服务专家',
+        footer_links_h:'快速链接', footer_svc_h:'业务范围', footer_copy:'© 2026 HOUZY HOME SDN. BHD. 版权所有',
+        svc_kitchen:'厨房', svc_wardrobe:'衣柜', svc_bathroom:'卫浴', svc_flooring:'地板',
+        gallery_wa_cta:'WhatsApp 咨询报价',
+        gal_kitchen_title:'厨房A', gal_kitchen_sub:'厨房A — U型主推款 · 3.3m×4.0m · 轻奢高端收纳',
+        gal_bathroom_title:'卫浴穿越体验区', gal_bathroom_sub:'卫浴体验 — 全景呈现·沉浸体验',
+        gal_materials_title:'瓷砖选材区', gal_materials_sub:'瓷砖选材 — 无限可能的表面',
+        gal_wardrobe_title:'衣柜空间', gal_wardrobe_sub:'衣柜空间 — 4.4m×4.0m · 全屋定制',
+        gal_consult_title:'洽谈区 · 展厅全景', gal_consult_sub:'展厅全景 — 触摸·对比·创造理想家'
+      },
+      'zh-TW': {
+        nav_home:'首頁', nav_showroom:'展廳', nav_services:'服務', nav_packages:'套餐',
+        nav_about:'關於', nav_shop:'商城', nav_book:'預約', nav_portal:'客戶中心',
+        hero_tagline:'品質整裝專家',
+        hero_h1:'合心築家<br><span class="text-houzy-gold">整裝煥新</span>',
+        hero_slogan:'觸摸·對比·創造', hero_sub1:'觸摸·對比·創造理想家',
+        hero_sub2:'馬來西亞新山一站式品質整裝服務專家',
+        hero_btn_explore:'探索展廳', hero_btn_shop:'立即選購', hero_btn_wa:'WhatsApp 諮詢',
+        svc_label:'我們的服務', svc_h2:'四大服務', svc_sub_en:'Four Core Services',
+        svc_p:'從靈感到落地，全程專業陪伴',
+        svc1_h:'場景靈感', svc1_sub:'設計靈感', svc1_p:'專業設計師一對一諮詢，根據您的生活方式定製專屬方案',
+        svc2_h:'材質甄選', svc2_sub:'材質甄選', svc2_p:'全球優質建材直供，瓷磚、櫥櫃、衛浴一站式選材',
+        svc3_h:'專業陪伴', svc3_sub:'專業陪伴', svc3_p:'專屬項目管家，每週進度報告，45天交付承諾',
+        svc4_h:'一站式配齊', svc4_sub:'一站式配齊', svc4_p:'設計+材料+施工+軟裝，拎包入住省心服務',
+        show_label:'展廳', show_h2:'五大體驗空間', show_h2_en:'Five Experience Spaces',
+        show_p:'親臨展廳，觸摸材質，感受空間', show_view:'點擊查看效果圖 →',
+        space1_h:'廚房A', space1_sub:'廚房A — U型主推款 · 3.3m×4.0m',
+        space1_tag:'輕奢 · 高端收納', space1_p:'高效收納 · 品質五金 · 環保板材',
+        space2_h:'衛浴穿越體驗區', space2_sub:'衛浴體驗 — 感受品質',
+        space2_tag:'全景呈現 · 沉浸體驗', space2_p:'真實場景 · 搭配推薦 · 專業建議',
+        space3_h:'瓷磚選材區', space3_sub:'瓷磚選材 — 無限可能的表面',
+        space3_tag:'嚴選全球優質瓷磚', space3_p:'大理石紋 · 石材紋 · 木紋磚 · 水泥紋 · 特色磚',
+        space4_h:'衣櫃空間', space4_sub:'衣櫃空間 — 4.4m×4.0m · 全屋定製',
+        space4_tag:'定製收納 · 品質生活', space4_p:'科學分區 · 高效收納 · 顏值擔當',
+        space5_h:'洽談區 · 展廳全景', space5_sub:'展廳全景 — 觸摸·對比·創造',
+        space5_tag:'觸摸 · 對比 · 創造理想家', space5_p:'場景靈感 · 材質甄選 · 專業陪伴 · 一站式配齊',
+        pkg_label:'套餐', pkg_h2:'整裝套餐', pkg_h2_en:'Renovation Packages',
+        pkg_p:'透明定價，所見即所得', pkg_popular:'最受歡迎',
+        pkg1_name:'標準套餐', pkg1_name_en:'Standard Package', pkg1_area:'適用80m²',
+        pkg1_l1:'全屋瓷磚', pkg1_l2:'廚房櫥櫃 3米', pkg1_l3:'衛浴套裝 × 1', pkg1_l4:'五金輔材',
+        pkg1_trad:'傳統 ≈ RM 35,000–50,000', pkg1_cta:'諮詢詳情',
+        pkg2_name:'品質套餐', pkg2_name_en:'Premium Package', pkg2_area:'適用120m²',
+        pkg2_l1:'全屋瓷磚（地+牆）', pkg2_l2:'廚房櫥櫃', pkg2_l3:'衛浴套裝 × 2', pkg2_l4:'五金/輔材全套',
+        pkg2_trad:'傳統 ≈ RM 55,000–80,000', pkg2_cta:'立即預約',
+        pkg3_name:'奢華套餐', pkg3_name_en:'Luxury Package', pkg3_area:'適用150m²',
+        pkg3_l1:'升級瓷磚+整體廚房', pkg3_l2:'衛浴套裝 × 2', pkg3_l3:'五金輔材+升級配件', pkg3_l4:'擴大面積全覆蓋',
+        pkg3_trad:'傳統 ≈ RM 80,000–120,000', pkg3_cta:'諮詢詳情',
+        shop_label:'線上商城', shop_h2:'線上商城', shop_h2_en:'Shop Online',
+        shop_p:'足不出戶，精選建材直達您家',
+        shop_f1_h:'正品保障', shop_f1_sub:'正品保障', shop_f1_p:'品牌直供，假一賠十',
+        shop_f2_h:'快速配送', shop_f2_sub:'快速配送', shop_f2_p:'新山本地配送，當天達',
+        shop_f3_h:'專業顧問', shop_f3_sub:'專業顧問', shop_f3_p:'選材有疑問？隨時 WhatsApp',
+        shop_cta_p:'選擇您喜歡的方式開始購物', shop_btn1:'前往商城', shop_or:'或', shop_btn2:'WhatsApp 選購諮詢',
+        about_label:'關於我們', about_h2:'關於合屋整裝', about_h2_en:'About HOUZY HOME',
+        about_p1:'有些家，走進去就想留下來。這是我們創立合屋整裝科技有限公司時心中最樸素的願望。',
+        about_p2:'新山是一座特別的城市——隔著海峽望向新加坡的繁華，幾代華人在這裡紮根、生活、築巢、傳承。這裡的人們對「家」有一種格外深沉的情感。',
+        about_p3:'我們理解這種情感。合屋整裝從不只是在做裝修，我們在做的是幫助每一個家庭把關於「家」的想像變成推開門就能擁抱的現實。',
+        about_stat1:'服務家庭', about_stat2:'年質保', about_stat3:'天交付',
+        about_quote:'「我只是想要一個，回到家就覺得幸福的地方。」',
+        about_reason:'— 這，就是合屋整裝存在的全部理由',
+        contact_label:'聯繫我們', contact_h2:'預約到店', contact_h2_en:'Book a Visit',
+        contact_p:'親臨展廳，開啟您的理想家之旅',
+        loc_h:'展廳地址', loc_sub:'門店位置', wa_sub:'聯繫我們',
+        hrs_h:'營業時間', hrs_sub:'營業時間', hrs_val:'每天: 10:00 AM – 7:30 PM',
+        map_cta:'打開 Google Maps',
+        footer_company:'HOUZY HOME SDN. BHD. (合屋整裝科技有限公司)<br>馬來西亞新山一站式品質整裝服務專家',
+        footer_links_h:'快速鏈接', footer_svc_h:'業務範圍', footer_copy:'© 2026 HOUZY HOME SDN. BHD. 版權所有',
+        svc_kitchen:'廚房', svc_wardrobe:'衣櫃', svc_bathroom:'衛浴', svc_flooring:'地板',
+        gallery_wa_cta:'WhatsApp 諮詢報價',
+        gal_kitchen_title:'廚房A', gal_kitchen_sub:'廚房A — U型主推款 · 3.3m×4.0m · 輕奢高端收納',
+        gal_bathroom_title:'衛浴穿越體驗區', gal_bathroom_sub:'衛浴體驗 — 全景呈現·沉浸體驗',
+        gal_materials_title:'瓷磚選材區', gal_materials_sub:'瓷磚選材 — 無限可能的表面',
+        gal_wardrobe_title:'衣櫃空間', gal_wardrobe_sub:'衣櫃空間 — 4.4m×4.0m · 全屋定製',
+        gal_consult_title:'洽談區 · 展廳全景', gal_consult_sub:'展廳全景 — 觸摸·對比·創造理想家'
+      },
+      ms: {
+        nav_home:'Utama', nav_showroom:'Pameran', nav_services:'Perkhidmatan', nav_packages:'Pakej',
+        nav_about:'Tentang', nav_shop:'Kedai', nav_book:'Tempah', nav_portal:'Portal Pelanggan',
+        hero_tagline:'PENYELESAIAN RUMAH PREMIUM',
+        hero_h1:'Rumah Impian,<br><span class="text-houzy-gold">Nyata Bersama Kami</span>',
+        hero_slogan:'Sentuh. Bandingkan. Cipta.', hero_sub1:'Sentuh · Bandingkan · Cipta Rumah Impian Anda',
+        hero_sub2:'Pakar Renovasi Premium Satu Henti di Johor Bahru',
+        hero_btn_explore:'Jelajahi Pameran', hero_btn_shop:'Beli Sekarang', hero_btn_wa:'WhatsApp Kami',
+        svc_label:'PERKHIDMATAN KAMI', svc_h2:'Empat Perkhidmatan Utama', svc_sub_en:'Four Core Services',
+        svc_p:'Dari inspirasi hingga siap, bimbingan profesional sepanjang masa',
+        svc1_h:'Inspirasi Reka Bentuk', svc1_sub:'Inspirasi Reka Bentuk', svc1_p:'Konsultasi reka bentuk satu lawan satu mengikut gaya hidup anda',
+        svc2_h:'Pemilihan Bahan', svc2_sub:'Pemilihan Bahan', svc2_p:'Bahan premium dari seluruh dunia, pilihan satu henti untuk jubin, kabinet & bilik mandi',
+        svc3_h:'Sokongan Profesional', svc3_sub:'Sokongan Profesional', svc3_p:'Pengurus projek peribadi, laporan kemajuan mingguan, penghantaran 45 hari',
+        svc4_h:'Penyelesaian Satu Henti', svc4_sub:'Penyelesaian Satu Henti', svc4_p:'Reka Bentuk + Bahan + Pembinaan + Perabot, bersedia untuk ditinggali',
+        show_label:'PAMERAN', show_h2:'Lima Ruang Pengalaman', show_h2_en:'Five Experience Spaces',
+        show_p:'Lawati pameran kami untuk menyentuh bahan dan merasai ruang', show_view:'Klik untuk lihat →',
+        space1_h:'Dapur A', space1_sub:'Dapur A — Bentuk-U · 3.3m×4.0m',
+        space1_tag:'Mewah · Storan Premium', space1_p:'Storan Cekap · Perkakasan Berkualiti · Kabinet Mesra Alam',
+        space2_h:'Zon Pengalaman Bilik Mandi', space2_sub:'Pengalaman Bilik Mandi — Rasai Kualiti',
+        space2_tag:'Paparan Panorama · Pengalaman Imersif', space2_p:'Senario Nyata · Cadangan Gaya · Nasihat Pakar',
+        space3_h:'Zon Pemilihan Jubin', space3_sub:'Pemilihan Jubin — Peluang Tanpa Had',
+        space3_tag:'Pemilihan Jubin Premium Global', space3_p:'Marmar · Batu · Kayu · Simen · Jubin Istimewa',
+        space4_h:'Ruang Almari', space4_sub:'Ruang Almari — 4.4m×4.0m · Penyesuaian Penuh',
+        space4_tag:'Storan Tersuai · Kehidupan Berkualiti', space4_p:'Zon Pintar · Storan Cekap · Estetika Memukau',
+        space5_h:'Perbincangan · Lawatan Pameran', space5_sub:'Lawatan Pameran — SENTUH. BANDINGKAN. CIPTA.',
+        space5_tag:'Sentuh · Bandingkan · Cipta Rumah Impian', space5_p:'Inspirasi · Bahan · Sokongan · Penyelesaian Satu Henti',
+        pkg_label:'PAKEJ', pkg_h2:'Pakej Renovasi', pkg_h2_en:'Renovation Packages',
+        pkg_p:'Harga telus, apa yang anda lihat itulah yang anda dapat', pkg_popular:'Paling Popular',
+        pkg1_name:'Pakej Standard', pkg1_name_en:'Standard Package', pkg1_area:'Untuk 80m²',
+        pkg1_l1:'Jubin Seluruh Rumah', pkg1_l2:'Kabinet Dapur 3m', pkg1_l3:'Set Bilik Mandi × 1', pkg1_l4:'Perkakasan & Aksesori',
+        pkg1_trad:'Tradisional ≈ RM 35,000–50,000', pkg1_cta:'Tanya Lanjut',
+        pkg2_name:'Pakej Premium', pkg2_name_en:'Premium Package', pkg2_area:'Untuk 120m²',
+        pkg2_l1:'Jubin Lantai & Dinding', pkg2_l2:'Kabinet Dapur', pkg2_l3:'Set Bilik Mandi × 2', pkg2_l4:'Set Perkakasan Penuh',
+        pkg2_trad:'Tradisional ≈ RM 55,000–80,000', pkg2_cta:'Tempah Sekarang',
+        pkg3_name:'Pakej Mewah', pkg3_name_en:'Luxury Package', pkg3_area:'Untuk 150m²',
+        pkg3_l1:'Jubin & Dapur Naik Taraf', pkg3_l2:'Set Bilik Mandi × 2', pkg3_l3:'Perkakasan Premium', pkg3_l4:'Liputan Penuh',
+        pkg3_trad:'Tradisional ≈ RM 80,000–120,000', pkg3_cta:'Tanya Lanjut',
+        shop_label:'KEDAI DALAM TALIAN', shop_h2:'Beli Dalam Talian', shop_h2_en:'Shop Online',
+        shop_p:'Bahan premium dihantar terus ke pintu anda',
+        shop_f1_h:'Produk Tulen', shop_f1_sub:'Produk Tulen', shop_f1_p:'Bekalan terus dari jenama, dijamin tulen',
+        shop_f2_h:'Penghantaran Pantas', shop_f2_sub:'Penghantaran Pantas', shop_f2_p:'Penghantaran hari sama dalam Johor Bahru',
+        shop_f3_h:'Sokongan Pakar', shop_f3_sub:'Sokongan Pakar', shop_f3_p:'Ada soalan tentang bahan? WhatsApp kami bila-bila masa',
+        shop_cta_p:'Pilih cara membeli-belah yang anda suka', shop_btn1:'Lawati Kedai', shop_or:'atau', shop_btn2:'Tanya Melalui WhatsApp',
+        about_label:'TENTANG KAMI', about_h2:'Tentang HOUZY HOME', about_h2_en:'About HOUZY HOME',
+        about_p1:'Ada rumah yang anda masuk dan tidak mahu pergi. Itulah impian kami ketika menubuhkan HOUZY HOME.',
+        about_p2:'Johor Bahru adalah sebuah kota istimewa, di mana generasi demi generasi telah membina kehidupan dan rumah mereka di sini.',
+        about_p3:'Kami memahami perasaan ini. Kami bukan sekadar merenovasi — kami membantu keluarga mewujudkan impian rumah mereka menjadi kenyataan.',
+        about_stat1:'Keluarga Dilayan', about_stat2:'Tahun Waranti', about_stat3:'Hari Penghantaran',
+        about_quote:'"Saya hanya mahukan tempat yang membuatkan saya gembira balik ke rumah."',
+        about_reason:'— Inilah sebab HOUZY HOME wujud',
+        contact_label:'HUBUNGI KAMI', contact_h2:'Tempah Lawatan', contact_h2_en:'Book a Visit',
+        contact_p:'Lawati pameran kami untuk memulakan perjalanan rumah impian anda',
+        loc_h:'Lokasi', loc_sub:'Alamat Pameran', wa_sub:'Hubungi Kami',
+        hrs_h:'Waktu Perniagaan', hrs_sub:'Waktu Perniagaan', hrs_val:'Setiap Hari: 10:00 PG – 7:30 PTG',
+        map_cta:'Buka dalam Google Maps',
+        footer_company:'HOUZY HOME SDN. BHD.<br><span class="italic">Pakar Renovasi Premium Satu Henti di Johor Bahru</span>',
+        footer_links_h:'Pautan Pantas', footer_svc_h:'Perkhidmatan', footer_copy:'© 2026 HOUZY HOME SDN. BHD. Hak cipta terpelihara.',
+        svc_kitchen:'Dapur', svc_wardrobe:'Almari', svc_bathroom:'Bilik Mandi', svc_flooring:'Lantai',
+        gallery_wa_cta:'WhatsApp untuk Sebut Harga',
+        gal_kitchen_title:'Dapur A', gal_kitchen_sub:'Dapur A — Bentuk-U · 3.3m×4.0m · Storan Premium',
+        gal_bathroom_title:'Zon Pengalaman Bilik Mandi', gal_bathroom_sub:'Pengalaman Bilik Mandi — Rasai Kualiti',
+        gal_materials_title:'Zon Pemilihan Jubin', gal_materials_sub:'Pemilihan Jubin — Peluang Tanpa Had',
+        gal_wardrobe_title:'Ruang Almari', gal_wardrobe_sub:'Ruang Almari — 4.4m×4.0m · Penyesuaian Penuh',
+        gal_consult_title:'Perbincangan · Lawatan Pameran', gal_consult_sub:'Lawatan Pameran — SENTUH. BANDINGKAN. CIPTA.'
+      },
+      th: {
+        nav_home:'หน้าแรก', nav_showroom:'โชว์รูม', nav_services:'บริการ', nav_packages:'แพ็กเกจ',
+        nav_about:'เกี่ยวกับเรา', nav_shop:'ร้านค้า', nav_book:'จอง', nav_portal:'พอร์ทัลลูกค้า',
+        hero_tagline:'โซลูชันบ้านพรีเมียม',
+        hero_h1:'บ้านที่สมบูรณ์แบบ,<br><span class="text-houzy-gold">เริ่มต้นที่นี่</span>',
+        hero_slogan:'สัมผัส. เปรียบเทียบ. สร้างสรรค์.', hero_sub1:'สัมผัส · เปรียบเทียบ · สร้างบ้านในฝันของคุณ',
+        hero_sub2:'ผู้เชี่ยวชาญโซลูชันบ้านครบวงจรที่โจโฮร์บาห์รู',
+        hero_btn_explore:'สำรวจโชว์รูม', hero_btn_shop:'ซื้อเลย', hero_btn_wa:'ติดต่อทาง WhatsApp',
+        svc_label:'บริการของเรา', svc_h2:'สี่บริการหลัก', svc_sub_en:'Four Core Services',
+        svc_p:'จากแรงบันดาลใจสู่ความสำเร็จ พร้อมคำแนะนำมืออาชีพตลอดเส้นทาง',
+        svc1_h:'แรงบันดาลใจด้านการออกแบบ', svc1_sub:'แรงบันดาลใจด้านการออกแบบ', svc1_p:'ปรึกษาการออกแบบแบบตัวต่อตัวตามไลฟ์สไตล์ของคุณ',
+        svc2_h:'การคัดเลือกวัสดุ', svc2_sub:'การคัดเลือกวัสดุ', svc2_p:'วัสดุพรีเมียมจากทั่วโลก เลือกกระเบื้อง ตู้ครัว และห้องน้ำในที่เดียว',
+        svc3_h:'การสนับสนุนระดับมืออาชีพ', svc3_sub:'การสนับสนุนระดับมืออาชีพ', svc3_p:'ผู้จัดการโครงการเฉพาะ รายงานรายสัปดาห์ ส่งมอบภายใน 45 วัน',
+        svc4_h:'โซลูชันครบวงจร', svc4_sub:'โซลูชันครบวงจร', svc4_p:'ออกแบบ + วัสดุ + ก่อสร้าง + ตกแต่ง พร้อมเข้าอยู่',
+        show_label:'โชว์รูม', show_h2:'ห้าพื้นที่สัมผัสประสบการณ์', show_h2_en:'Five Experience Spaces',
+        show_p:'เยี่ยมชมโชว์รูมเพื่อสัมผัสวัสดุและรู้สึกถึงพื้นที่จริง', show_view:'คลิกเพื่อดู →',
+        space1_h:'ห้องครัว A', space1_sub:'ห้องครัว A — รูปตัว U · 3.3m×4.0m',
+        space1_tag:'หรูหรา · จัดเก็บระดับพรีเมียม', space1_p:'จัดเก็บอย่างมีประสิทธิภาพ · อุปกรณ์คุณภาพ · ตู้ครัวเป็นมิตรกับสิ่งแวดล้อม',
+        space2_h:'โซนห้องน้ำ', space2_sub:'ประสบการณ์ห้องน้ำ — สัมผัสคุณภาพ',
+        space2_tag:'จัดแสดงแบบพาโนรามา · ประสบการณ์แบบมีส่วนร่วม', space2_p:'ฉากจริง · คำแนะนำสไตล์ · คำปรึกษาจากผู้เชี่ยวชาญ',
+        space3_h:'โซนเลือกกระเบื้อง', space3_sub:'เลือกกระเบื้อง — ไม่จำกัดความเป็นไปได้',
+        space3_tag:'คัดสรรกระเบื้องพรีเมียมจากทั่วโลก', space3_p:'หินอ่อน · หิน · ไม้ · ซีเมนต์ · กระเบื้องพิเศษ',
+        space4_h:'พื้นที่ตู้เสื้อผ้า', space4_sub:'พื้นที่ตู้เสื้อผ้า — 4.4m×4.0m · ปรับแต่งเต็มรูปแบบ',
+        space4_tag:'จัดเก็บตามสั่ง · ชีวิตที่มีคุณภาพ', space4_p:'การแบ่งโซนอย่างชาญฉลาด · จัดเก็บอย่างมีประสิทธิภาพ · สวยงาม',
+        space5_h:'ห้องปรึกษา · ทัวร์โชว์รูม', space5_sub:'ทัวร์โชว์รูม — สัมผัส เปรียบเทียบ สร้างสรรค์',
+        space5_tag:'สัมผัส · เปรียบเทียบ · สร้างบ้านในฝัน', space5_p:'แรงบันดาลใจ · วัสดุ · การสนับสนุน · โซลูชันครบวงจร',
+        pkg_label:'แพ็กเกจ', pkg_h2:'แพ็กเกจรีโนเวท', pkg_h2_en:'Renovation Packages',
+        pkg_p:'ราคาโปร่งใส สิ่งที่คุณเห็นคือสิ่งที่คุณได้รับ', pkg_popular:'ยอดนิยมที่สุด',
+        pkg1_name:'แพ็กเกจมาตรฐาน', pkg1_name_en:'Standard Package', pkg1_area:'สำหรับ 80m²',
+        pkg1_l1:'กระเบื้องทั้งบ้าน', pkg1_l2:'ตู้ครัว 3 เมตร', pkg1_l3:'ชุดห้องน้ำ × 1', pkg1_l4:'อุปกรณ์และอุปกรณ์เสริม',
+        pkg1_trad:'แบบดั้งเดิม ≈ RM 35,000–50,000', pkg1_cta:'สอบถาม',
+        pkg2_name:'แพ็กเกจพรีเมียม', pkg2_name_en:'Premium Package', pkg2_area:'สำหรับ 120m²',
+        pkg2_l1:'กระเบื้องพื้นและผนัง', pkg2_l2:'ตู้ครัว', pkg2_l3:'ชุดห้องน้ำ × 2', pkg2_l4:'ชุดอุปกรณ์ครบครัน',
+        pkg2_trad:'แบบดั้งเดิม ≈ RM 55,000–80,000', pkg2_cta:'จองเลย',
+        pkg3_name:'แพ็กเกจหรูหรา', pkg3_name_en:'Luxury Package', pkg3_area:'สำหรับ 150m²',
+        pkg3_l1:'กระเบื้องและครัวอัปเกรด', pkg3_l2:'ชุดห้องน้ำ × 2', pkg3_l3:'อุปกรณ์พรีเมียม', pkg3_l4:'ครอบคลุมพื้นที่เต็มรูปแบบ',
+        pkg3_trad:'แบบดั้งเดิม ≈ RM 80,000–120,000', pkg3_cta:'สอบถาม',
+        shop_label:'ร้านค้าออนไลน์', shop_h2:'ช้อปออนไลน์', shop_h2_en:'Shop Online',
+        shop_p:'วัสดุพรีเมียมจัดส่งถึงประตูบ้านคุณ',
+        shop_f1_h:'สินค้าแท้', shop_f1_sub:'สินค้าแท้', shop_f1_p:'จำหน่ายโดยตรงจากแบรนด์ รับประกันของแท้',
+        shop_f2_h:'จัดส่งรวดเร็ว', shop_f2_sub:'จัดส่งรวดเร็ว', shop_f2_p:'จัดส่งในวันเดียวในโจโฮร์บาห์รู',
+        shop_f3_h:'ผู้เชี่ยวชาญพร้อมช่วย', shop_f3_sub:'ผู้เชี่ยวชาญพร้อมช่วย', shop_f3_p:'มีคำถามเกี่ยวกับวัสดุ? WhatsApp เราได้เลย',
+        shop_cta_p:'เลือกวิธีช้อปที่คุณชอบ', shop_btn1:'ไปที่ร้านค้า', shop_or:'หรือ', shop_btn2:'สอบถามทาง WhatsApp',
+        about_label:'เกี่ยวกับเรา', about_h2:'เกี่ยวกับ HOUZY HOME', about_h2_en:'About HOUZY HOME',
+        about_p1:'บ้านบางหลังที่คุณเดินเข้าไปแล้วไม่อยากออกมา นั่นคือความปรารถนาเรียบง่ายของเราเมื่อก่อตั้ง HOUZY HOME',
+        about_p2:'โจโฮร์บาห์รูเป็นเมืองพิเศษ ที่คนหลายรุ่นได้ปักหลักสร้างบ้านและชีวิตที่นี่',
+        about_p3:'เราเข้าใจความรู้สึกนี้ เราไม่ได้แค่รีโนเวท — เราช่วยให้ทุกครอบครัวเปลี่ยนความฝันเรื่องบ้านให้เป็นความจริง',
+        about_stat1:'ครอบครัวที่ให้บริการ', about_stat2:'ปีรับประกัน', about_stat3:'วันส่งมอบ',
+        about_quote:'"ฉันแค่อยากได้บ้านที่ทำให้รู้สึกมีความสุขทุกครั้งที่กลับมา"',
+        about_reason:'— นี่คือเหตุผลที่ HOUZY HOME มีอยู่',
+        contact_label:'ติดต่อเรา', contact_h2:'จองการเยี่ยมชม', contact_h2_en:'Book a Visit',
+        contact_p:'เยี่ยมชมโชว์รูมเพื่อเริ่มต้นการเดินทางสู่บ้านในฝัน',
+        loc_h:'ที่ตั้ง', loc_sub:'ที่อยู่โชว์รูม', wa_sub:'ติดต่อเรา',
+        hrs_h:'เวลาทำการ', hrs_sub:'เวลาทำการ', hrs_val:'ทุกวัน: 10:00 น. – 19:30 น.',
+        map_cta:'เปิดใน Google Maps',
+        footer_company:'HOUZY HOME SDN. BHD.<br><span class="italic">ผู้เชี่ยวชาญโซลูชันบ้านครบวงจรที่โจโฮร์บาห์รู</span>',
+        footer_links_h:'ลิงก์ด่วน', footer_svc_h:'บริการ', footer_copy:'© 2026 HOUZY HOME SDN. BHD. สงวนลิขสิทธิ์',
+        svc_kitchen:'ห้องครัว', svc_wardrobe:'ตู้เสื้อผ้า', svc_bathroom:'ห้องน้ำ', svc_flooring:'พื้น',
+        gallery_wa_cta:'WhatsApp สอบถามใบเสนอราคา',
+        gal_kitchen_title:'ห้องครัว A', gal_kitchen_sub:'ห้องครัว A — รูปตัว U · 3.3m×4.0m',
+        gal_bathroom_title:'โซนห้องน้ำ', gal_bathroom_sub:'ประสบการณ์ห้องน้ำ — สัมผัสคุณภาพ',
+        gal_materials_title:'โซนเลือกกระเบื้อง', gal_materials_sub:'เลือกกระเบื้อง — ไม่จำกัดความเป็นไปได้',
+        gal_wardrobe_title:'พื้นที่ตู้เสื้อผ้า', gal_wardrobe_sub:'พื้นที่ตู้เสื้อผ้า — 4.4m×4.0m · ปรับแต่งเต็มรูปแบบ',
+        gal_consult_title:'ห้องปรึกษา · ทัวร์โชว์รูม', gal_consult_sub:'ทัวร์โชว์รูม — สัมผัส เปรียบเทียบ สร้างสรรค์'
+      }
+    };
+
+    const LANG_LABELS = { en:'EN', 'zh-CN':'简', 'zh-TW':'繁', ms:'BM', th:'ไทย' };
+
+    function setLanguage(lang) {
+      const t = i18n[lang] || i18n.en;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const v = t[el.dataset.i18n];
+        if (v !== undefined) el.textContent = v;
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const v = t[el.dataset.i18nHtml];
+        if (v !== undefined) el.innerHTML = v;
+      });
+      const lbl = document.getElementById('lang-label');
+      if (lbl) lbl.textContent = LANG_LABELS[lang] || lang.toUpperCase();
+      document.documentElement.lang = lang;
+      document.body.style.fontFamily = lang === 'th' ? "'Noto Sans Thai', sans-serif" : '';
+      // update gallery titles/subtitles
+      if (typeof galleries !== 'undefined') {
+        galleries.kitchen.title    = t.gal_kitchen_title;   galleries.kitchen.subtitle    = t.gal_kitchen_sub;
+        galleries.bathroom.title   = t.gal_bathroom_title;  galleries.bathroom.subtitle   = t.gal_bathroom_sub;
+        galleries.materials.title  = t.gal_materials_title; galleries.materials.subtitle  = t.gal_materials_sub;
+        galleries.wardrobe.title   = t.gal_wardrobe_title;  galleries.wardrobe.subtitle   = t.gal_wardrobe_sub;
+        galleries.consultation.title = t.gal_consult_title; galleries.consultation.subtitle = t.gal_consult_sub;
+      }
+      localStorage.setItem('houzy-lang', lang);
+      document.getElementById('lang-menu')?.classList.add('hidden');
+    }
+
+    function toggleLangMenu() {
+      document.getElementById('lang-menu').classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', function(e) {
+      const picker = document.getElementById('lang-picker');
+      if (picker && !picker.contains(e.target)) {
+        document.getElementById('lang-menu')?.classList.add('hidden');
+      }
+    });
+
+    // restore on load
+    (function() {
+      const saved = localStorage.getItem('houzy-lang') || 'en';
+      setLanguage(saved);
+    })();
+    </script>
+</body>
+</html>
 </body>
 </html>
