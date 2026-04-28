@@ -7,11 +7,17 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
 <style>
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: #1a3a2a !important;
-    box-shadow: 0 0 0 2px rgba(26,58,42,0.15) !important;
+  input, select, textarea {
+    -webkit-tap-highlight-color: rgba(26,58,42,0.1);
   }
+  input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    -webkit-appearance: none;
+    border-color: #1a3a2a !important;
+    box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+    -webkit-box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+  }
+  select { cursor: pointer; }
   select option:checked { background-color: #1a3a2a; color: #fff; }
 </style>
 </head>
@@ -44,7 +50,7 @@
     <label class="block text-sm font-medium text-gray-700 mb-2">手机号码</label>
     <p class="text-xs text-gray-400 mb-2">区号已自动添加，直接输入本地号码即可</p>
     <div class="flex gap-2 mb-4">
-      <select id="country-code" class="border border-gray-200 rounded-lg px-2 py-3 text-sm bg-gray-50 focus:outline-none focus:border-hg flex-shrink-0" style="max-width:130px">
+      <select id="country-code" class="border border-gray-200 rounded-lg px-2 py-3 text-sm bg-gray-50 flex-shrink-0" style="max-width:130px">
         <option value="60">🇲🇾 +60 MY</option>
         <option value="65">🇸🇬 +65 SG</option>
         <option value="86">🇨🇳 +86 CN</option>
@@ -84,7 +90,7 @@
         <option value="55">🇧🇷 +55 BR</option>
       </select>
       <input type="tel" id="phone-in" placeholder="10-1234 5678" maxlength="15"
-             class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-hg min-w-0"
+             class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0"
              onkeydown="if(event.key==='Enter')searchOrders()">
     </div>
     <button onclick="searchOrders()" id="search-btn"
