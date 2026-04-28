@@ -201,7 +201,7 @@
             <input type="text" id="c-name" placeholder="客户姓名" class="input">
           </div>
         </div>
-        <div id="customer-found" class="hidden bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 mb-3"></div>
+        <div id="customer-found" class="hidden rounded-lg p-3 text-sm mb-3" style="background:#d6e8db;color:#1a3a2a;border:1px solid #aed0b8"></div>
         <div>
           <label class="label">地址</label>
           <input type="text" id="c-address" placeholder="配送地址（选填）" class="input">
@@ -288,24 +288,24 @@ let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = 
 let searchTimer = null;
 
 const STATUS = {
-  pending_payment:    { label:'待支付',     cls:'bg-yellow-100 text-yellow-700' },
-  paid:               { label:'已支付',     cls:'bg-blue-100 text-blue-700' },
-  assigned:           { label:'已分配厂家', cls:'bg-blue-100 text-blue-700' },
-  accepted:           { label:'厂家已接单', cls:'bg-violet-100 text-violet-700' },
-  in_production:      { label:'生产中',     cls:'bg-violet-100 text-violet-700' },
-  production_complete:{ label:'生产完成',   cls:'bg-indigo-100 text-indigo-700' },
-  shipped:            { label:'已发货',     cls:'bg-orange-100 text-orange-700' },
-  in_transit:         { label:'运输中',     cls:'bg-orange-100 text-orange-700' },
-  arrived:            { label:'已到货',     cls:'bg-teal-100 text-teal-700' },
-  installing:         { label:'安装中',     cls:'bg-teal-100 text-teal-700' },
-  completed:          { label:'已完成',     cls:'bg-green-100 text-green-700' },
-  after_sales:        { label:'售后中',     cls:'bg-red-100 text-red-700' },
-  closed:             { label:'已关闭',     cls:'bg-gray-100 text-gray-500' },
+  pending_payment:    { label:'待支付',     s:'background:#fef3c7;color:#92400e' },
+  paid:               { label:'已支付',     s:'background:#d6e8db;color:#1a3a2a' },
+  assigned:           { label:'已分配厂家', s:'background:#d6e8db;color:#1a3a2a' },
+  accepted:           { label:'厂家已接单', s:'background:#c8a96e22;color:#7a5a00' },
+  in_production:      { label:'生产中',     s:'background:#c8a96e33;color:#7a5a00' },
+  production_complete:{ label:'生产完成',   s:'background:#c8a96e44;color:#5a3f00' },
+  shipped:            { label:'已发货',     s:'background:#2d5e4322;color:#1a3a2a' },
+  in_transit:         { label:'运输中',     s:'background:#2d5e4333;color:#1a3a2a' },
+  arrived:            { label:'已到货',     s:'background:#2d5e4344;color:#1a3a2a' },
+  installing:         { label:'安装中',     s:'background:#1a3a2a22;color:#1a3a2a' },
+  completed:          { label:'已完成',     s:'background:#1a3a2a;color:#ffffff' },
+  after_sales:        { label:'售后中',     s:'background:#fef3c7;color:#b45309' },
+  closed:             { label:'已关闭',     s:'background:#f3f4f6;color:#9ca3af' },
 };
 
 function badge(s) {
-  const x = STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
-  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${x.cls} whitespace-nowrap">${x.label}</span>`;
+  const x = STATUS[s] || { label: s, s:'background:#f3f4f6;color:#9ca3af' };
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style="${x.s}">${x.label}</span>`;
 }
 function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }); }
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
@@ -426,8 +426,8 @@ function renderDashboard() {
 
   document.getElementById('stats').innerHTML = [
     ['总订单', total, 'bg-hg', 'text-white'],
-    ['进行中', active, 'bg-blue-600', 'text-white'],
-    ['已完成', done, 'bg-green-600', 'text-white'],
+    ['进行中', active, 'bg-gg', 'text-white'],
+    ['已完成', done, 'bg-hg', 'text-gd'],
     ['已收款', fmtAmt(revenue), 'bg-gd', 'text-hg'],
   ].map(([t, v, bg, tc]) => `
     <div class="${bg} rounded-xl p-4">
@@ -440,7 +440,7 @@ function renderDashboard() {
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
         <th class="pb-2">订单号</th><th class="pb-2">客户</th><th class="pb-2">金额</th><th class="pb-2">状态</th><th class="pb-2">时间</th>
        </tr></thead><tbody>${recent.map(o => `
-        <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="openDetail('${o.id}')">
+        <tr class="border-b border-gray-50 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
           <td class="py-2 font-mono text-xs text-hg">${o.order_no}</td>
           <td class="py-2">${o.customers?.name || '-'}</td>
           <td class="py-2">${fmtAmt(o.amount)}</td>
@@ -505,7 +505,7 @@ function renderMonthlyStats(orders, period, specificDate) {
     if (o.payment_status === 'paid') storeMap[n].rev += Number(o.amount);
   });
   const storeRows = Object.entries(storeMap).map(([n, v]) =>
-    `<span class="inline-block bg-gray-100 rounded px-2 py-0.5 text-xs text-gray-600 mr-1">${n}: ${v.count}单 / ${fmtAmt(v.rev)}</span>`
+    `<span class="inline-block rounded px-2 py-0.5 text-xs mr-1 mb-1" style="background:#d6e8db;color:#1a3a2a">${n}: ${v.count}单 / ${fmtAmt(v.rev)}</span>`
   ).join('');
 
   const title = specificDate ? `📅 ${specificDate} 日统计` : `📊 ${period} 月度统计`;
@@ -514,21 +514,21 @@ function renderMonthlyStats(orders, period, specificDate) {
   panel.innerHTML = `
     <div class="text-sm font-semibold text-gray-700 mb-3">${title}</div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-      <div class="bg-gray-50 rounded-lg p-3 text-center">
+      <div class="rounded-lg p-3 text-center" style="background:#f5f2ed">
         <div class="text-xs text-gray-400 mb-1">订单总数</div>
-        <div class="text-2xl font-bold text-gray-800">${total}</div>
+        <div class="text-2xl font-bold" style="color:#1a3a2a">${total}</div>
       </div>
-      <div class="bg-green-50 rounded-lg p-3 text-center">
+      <div class="rounded-lg p-3 text-center" style="background:#d6e8db">
         <div class="text-xs text-gray-400 mb-1">已收款</div>
-        <div class="text-2xl font-bold text-green-700">${paid}</div>
+        <div class="text-2xl font-bold" style="color:#1a3a2a">${paid}</div>
       </div>
-      <div class="bg-amber-50 rounded-lg p-3 text-center">
+      <div class="rounded-lg p-3 text-center" style="background:#fef3c7">
         <div class="text-xs text-gray-400 mb-1">待付款</div>
-        <div class="text-2xl font-bold text-amber-700">${unpaid}</div>
+        <div class="text-2xl font-bold" style="color:#92400e">${unpaid}</div>
       </div>
-      <div class="bg-blue-50 rounded-lg p-3 text-center">
-        <div class="text-xs text-gray-400 mb-1">收款总额</div>
-        <div class="text-base font-bold text-blue-700">${fmtAmt(revenue)}</div>
+      <div class="rounded-lg p-3 text-center" style="background:#1a3a2a">
+        <div class="text-xs mb-1" style="color:#c8a96e">收款总额</div>
+        <div class="text-base font-bold" style="color:#c8a96e">${fmtAmt(revenue)}</div>
       </div>
     </div>
     ${storeRows ? `<div class="text-xs text-gray-500 font-medium mb-1">门店明细</div><div>${storeRows}</div>` : ''}
@@ -541,7 +541,7 @@ function renderOrdersTable(orders) {
         <th class="px-4 py-3">订单号</th><th class="px-4 py-3">客户</th><th class="px-4 py-3">门店</th>
         <th class="px-4 py-3">金额</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">时间</th>
        </tr></thead><tbody>${orders.map(o => `
-        <tr class="border-t border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openDetail('${o.id}')">
+        <tr class="border-t border-gray-100 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
           <td class="px-4 py-3 font-mono text-xs text-hg font-semibold">${o.order_no}</td>
           <td class="px-4 py-3">
             <div class="font-medium">${o.customers?.name || '-'}</div>
@@ -738,7 +738,7 @@ async function openDetail(id, backView) {
         <div><span class="text-gray-400">手机</span> <span>${o.customers?.phone}</span></div>
         <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
         <div><span class="text-gray-400">支付</span>
-          <span class="font-medium ${o.payment_status==='paid'?'text-green-600':'text-red-500'}">
+          <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':'color:#dc2626'}">
             ${o.payment_status==='paid'?'已支付':'待支付'}
           </span>
         </div>
@@ -776,7 +776,7 @@ async function openDetail(id, backView) {
       <button onclick="updateOrder('${o.id}')" class="btn-primary w-full py-2.5">
         保存更新
       </button>
-      <p id="upd-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
+      <p id="upd-msg" class="text-sm mt-2 text-center hidden font-semibold" style="color:#1a3a2a">✓ 已更新</p>
     </div>
 
     <!-- Timeline -->
