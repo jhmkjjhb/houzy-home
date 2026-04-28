@@ -259,9 +259,9 @@
         <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step2">2. 订单信息</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label class="label" data-i18n="lbl_store">门店 *</label>
+            <label class="label" data-i18n="lbl_store">国家/地区 *</label>
             <select id="o-store" class="input">
-              <option value="">选择门店</option>
+              <option value="">— 请选择 —</option>
             </select>
           </div>
           <div>
@@ -372,7 +372,7 @@ const STAFF_I18N = {
     orders_title:'订单管理', orders_new_btn:'+ 新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
     create_title:'新建订单', create_step1:'1. 客户信息', create_step2:'2. 订单信息', create_btn:'创建订单', creating:'创建中…',
     lbl_country:'区号', lbl_phone:'手机号', lbl_name:'姓名', lbl_address:'地址',
-    lbl_store:'门店', lbl_amount:'金额 (RM)', lbl_desc:'产品描述', lbl_referrer:'推荐人',
+    lbl_store:'国家/地区', lbl_amount:'金额 (RM)', lbl_desc:'产品描述', lbl_referrer:'推荐人',
     lbl_pay_status:'支付状态', lbl_pay_method:'支付方式', lbl_notes:'备注',
     ph_country:'+60', ph_name:'客户姓名', ph_address:'送货地址（选填）',
     ph_amount:'0.00', ph_desc:'产品描述', ph_notes:'备注（选填）', ph_upd_notes:'更新备注（选填）',
@@ -403,7 +403,7 @@ const STAFF_I18N = {
     orders_title:'訂單管理', orders_new_btn:'+ 新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
     create_title:'新建訂單', create_step1:'1. 客戶資訊', create_step2:'2. 訂單資訊', create_btn:'創建訂單', creating:'創建中…',
     lbl_country:'區號', lbl_phone:'手機號', lbl_name:'姓名', lbl_address:'地址',
-    lbl_store:'門店', lbl_amount:'金額 (RM)', lbl_desc:'產品描述', lbl_referrer:'推薦人',
+    lbl_store:'國家/地區', lbl_amount:'金額 (RM)', lbl_desc:'產品描述', lbl_referrer:'推薦人',
     lbl_pay_status:'支付狀態', lbl_pay_method:'支付方式', lbl_notes:'備註',
     ph_country:'+60', ph_name:'客戶姓名', ph_address:'送貨地址（選填）',
     ph_amount:'0.00', ph_desc:'產品描述', ph_notes:'備註（選填）', ph_upd_notes:'更新備註（選填）',
@@ -434,7 +434,7 @@ const STAFF_I18N = {
     orders_title:'Order Management', orders_new_btn:'+ New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
     create_title:'New Order', create_step1:'1. Customer Info', create_step2:'2. Order Details', create_btn:'Create Order', creating:'Creating…',
     lbl_country:'Code', lbl_phone:'Phone', lbl_name:'Name', lbl_address:'Address',
-    lbl_store:'Store', lbl_amount:'Amount (RM)', lbl_desc:'Description', lbl_referrer:'Referrer',
+    lbl_store:'Country/Region', lbl_amount:'Amount (RM)', lbl_desc:'Description', lbl_referrer:'Referrer',
     lbl_pay_status:'Payment Status', lbl_pay_method:'Payment Method', lbl_notes:'Notes',
     ph_country:'+60', ph_name:'Customer name', ph_address:'Delivery address (optional)',
     ph_amount:'0.00', ph_desc:'Product description', ph_notes:'Notes (optional)', ph_upd_notes:'Update notes (optional)',
@@ -465,7 +465,7 @@ const STAFF_I18N = {
     orders_title:'Pengurusan Pesanan', orders_new_btn:'+ Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
     create_title:'Pesanan Baru', create_step1:'1. Maklumat Pelanggan', create_step2:'2. Butiran Pesanan', create_btn:'Buat Pesanan', creating:'Sedang dibuat…',
     lbl_country:'Kod', lbl_phone:'Telefon', lbl_name:'Nama', lbl_address:'Alamat',
-    lbl_store:'Kedai', lbl_amount:'Jumlah (RM)', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
+    lbl_store:'Negara/Wilayah', lbl_amount:'Jumlah (RM)', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
     lbl_pay_status:'Status Bayaran', lbl_pay_method:'Kaedah Bayaran', lbl_notes:'Nota',
     ph_country:'+60', ph_name:'Nama pelanggan', ph_address:'Alamat penghantaran (pilihan)',
     ph_amount:'0.00', ph_desc:'Penerangan produk', ph_notes:'Nota (pilihan)', ph_upd_notes:'Nota kemas kini (pilihan)',
@@ -496,7 +496,7 @@ const STAFF_I18N = {
     orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'+ สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
     create_title:'สร้างคำสั่งซื้อ', create_step1:'1. ข้อมูลลูกค้า', create_step2:'2. รายละเอียดคำสั่งซื้อ', create_btn:'สร้างคำสั่งซื้อ', creating:'กำลังสร้าง…',
     lbl_country:'รหัส', lbl_phone:'โทรศัพท์', lbl_name:'ชื่อ', lbl_address:'ที่อยู่',
-    lbl_store:'สาขา', lbl_amount:'จำนวนเงิน (RM)', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
+    lbl_store:'ประเทศ/ภูมิภาค', lbl_amount:'จำนวนเงิน (RM)', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
     lbl_pay_status:'สถานะการชำระ', lbl_pay_method:'วิธีชำระเงิน', lbl_notes:'หมายเหตุ',
     ph_country:'+60', ph_name:'ชื่อลูกค้า', ph_address:'ที่อยู่จัดส่ง (ไม่บังคับ)',
     ph_amount:'0.00', ph_desc:'รายละเอียดสินค้า', ph_notes:'หมายเหตุ (ไม่บังคับ)', ph_upd_notes:'หมายเหตุการอัปเดต (ไม่บังคับ)',
@@ -676,14 +676,38 @@ async function loadStores() {
     }
   }
 
-  sel.innerHTML = '<option value="">选择门店</option>';
-  stores.forEach(s => sel.add(new Option(s.name, s.id)));
+  // Country flag mapping by store code prefix
+  const COUNTRY_FLAG = {
+    '001':'🇲🇾', 'JBN':'🇲🇾', 'JB':'🇲🇾', 'KL':'🇲🇾', 'PG':'🇲🇾',
+    '002':'🇸🇬', 'SG':'🇸🇬',
+    'BKK':'🇹🇭', 'TH':'🇹🇭',
+    'JKT':'🇮🇩', 'ID':'🇮🇩',
+    'MNL':'🇵🇭', 'PH':'🇵🇭',
+    'HCM':'🇻🇳', 'VN':'🇻🇳',
+  };
+  const flag = s => COUNTRY_FLAG[s.code] || '🏳️';
+  const label = s => `${flag(s)} ${s.name}`;
+
+  // Sort: Malaysia first, then by name
+  const sorted = [...stores].sort((a, b) => {
+    const aM = flag(a) === '🇲🇾' ? 0 : 1;
+    const bM = flag(b) === '🇲🇾' ? 0 : 1;
+    return aM - bM || a.name.localeCompare(b.name);
+  });
+
+  sel.innerHTML = '<option value="">— 请选择 —</option>';
+  sorted.forEach(s => sel.add(new Option(label(s), s.id)));
+
+  // Auto-select first Malaysia store
+  const myStore = sorted.find(s => flag(s) === '🇲🇾');
+  if (myStore) sel.value = myStore.id;
+
   // populate store filter (admin only)
   const fSel = document.getElementById('f-store');
   if (fSel && profile?.role === 'admin') {
     fSel.classList.remove('hidden');
     fSel.innerHTML = '<option value="">全部门店</option>';
-    stores.forEach(s => fSel.add(new Option(s.name, s.id)));
+    sorted.forEach(s => fSel.add(new Option(label(s), s.id)));
   }
 }
 
