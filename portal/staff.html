@@ -178,9 +178,13 @@
             <option value="">全部状态</option>
             <option value="pending_payment" data-i18n-opt="status_pending_payment">待支付</option>
             <option value="paid" data-i18n-opt="status_paid">已支付</option>
-            <option value="assigned" data-i18n-opt="status_assigned">已分配厂家</option>
+            <option value="accepted" data-i18n-opt="status_accepted">已接单·图纸</option>
             <option value="in_production" data-i18n-opt="status_in_production">生产中</option>
+            <option value="production_complete" data-i18n-opt="status_production_complete">生产完成</option>
             <option value="shipped" data-i18n-opt="status_shipped">已发货</option>
+            <option value="in_transit" data-i18n-opt="status_in_transit">运输中</option>
+            <option value="arrived" data-i18n-opt="status_arrived">已到货</option>
+            <option value="installing" data-i18n-opt="status_installing">安装中</option>
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
             <option value="after_sales" data-i18n-opt="status_after_sales">售后中</option>
             <option value="closed" data-i18n-opt="status_closed">已关闭</option>
@@ -402,8 +406,8 @@ const STAFF_I18N = {
     nav_suppliers:'供应商管理', sup_add:'添加供应商', sup_add_btn:'添加', no_suppliers:'暂无供应商',
     lbl_sup_tier:'级别', sup_active:'活跃', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'启用',
     pay_method:'支付方式', pay_cash:'💵 现金', pay_transfer:'🏦 银行转账', pay_ewallet:'📱 电子钱包', pay_card:'💳 刷卡',
-    overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认',
-    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
+    overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认', lbl_sla_days:'预计天数',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单·图纸',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到达', status_installing:'安装中',
     status_completed:'已完成', status_after_sales:'售后', status_closed:'已关闭',
@@ -434,8 +438,8 @@ const STAFF_I18N = {
     nav_suppliers:'供應商管理', sup_add:'添加供應商', sup_add_btn:'添加', no_suppliers:'暫無供應商',
     lbl_sup_tier:'級別', sup_active:'活躍', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'啟用',
     pay_method:'支付方式', pay_cash:'💵 現金', pay_transfer:'🏦 銀行轉賬', pay_ewallet:'📱 電子錢包', pay_card:'💳 刷卡',
-    overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設',
-    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
+    overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設', lbl_sla_days:'預計天數',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單·圖紙',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到達', status_installing:'安裝中',
     status_completed:'已完成', status_after_sales:'售後', status_closed:'已關閉',
@@ -466,8 +470,8 @@ const STAFF_I18N = {
     nav_suppliers:'Supplier Management', sup_add:'Add Supplier', sup_add_btn:'Add', no_suppliers:'No suppliers',
     lbl_sup_tier:'Tier', sup_active:'Active', sup_inactive:'Disabled', sup_disable:'Disable', sup_enable:'Enable',
     pay_method:'Payment Method', pay_cash:'💵 Cash', pay_transfer:'🏦 Bank Transfer', pay_ewallet:'📱 E-Wallet', pay_card:'💳 Card',
-    overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default',
-    status_pending_payment:'Pending Payment', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
+    overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default', lbl_sla_days:'Est. Days',
+    status_pending_payment:'Pending Payment', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted · Design',
     status_in_production:'In Production', status_production_complete:'Production Complete', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
     status_completed:'Completed', status_after_sales:'After Sales', status_closed:'Closed',
@@ -498,8 +502,8 @@ const STAFF_I18N = {
     nav_suppliers:'Pengurusan Pembekal', sup_add:'Tambah Pembekal', sup_add_btn:'Tambah', no_suppliers:'Tiada pembekal',
     lbl_sup_tier:'Tahap', sup_active:'Aktif', sup_inactive:'Dilumpuhkan', sup_disable:'Lumpuhkan', sup_enable:'Aktifkan',
     pay_method:'Kaedah Pembayaran', pay_cash:'💵 Tunai', pay_transfer:'🏦 Pindahan Bank', pay_ewallet:'📱 E-Dompet', pay_card:'💳 Kad',
-    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai',
-    status_pending_payment:'Menunggu Bayaran', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
+    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai', lbl_sla_days:'Est. Hari',
+    status_pending_payment:'Menunggu Bayaran', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima · Reka',
     status_in_production:'Dalam Pengeluaran', status_production_complete:'Pengeluaran Selesai', status_shipped:'Dihantar',
     status_in_transit:'Dalam Transit', status_arrived:'Tiba', status_installing:'Pemasangan',
     status_completed:'Selesai', status_after_sales:'Selepas Jualan', status_closed:'Ditutup',
@@ -530,8 +534,8 @@ const STAFF_I18N = {
     nav_suppliers:'จัดการซัพพลายเออร์', sup_add:'เพิ่มซัพพลายเออร์', sup_add_btn:'เพิ่ม', no_suppliers:'ไม่มีซัพพลายเออร์',
     lbl_sup_tier:'ระดับ', sup_active:'ใช้งานอยู่', sup_inactive:'ปิดใช้งาน', sup_disable:'ปิด', sup_enable:'เปิด',
     pay_method:'วิธีชำระเงิน', pay_cash:'💵 เงินสด', pay_transfer:'🏦 โอนธนาคาร', pay_ewallet:'📱 E-Wallet', pay_card:'💳 บัตร',
-    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น',
-    status_pending_payment:'รอชำระเงิน', status_paid:'ชำระแล้ว', status_assigned:'มอบหมายแล้ว', status_accepted:'รับงานแล้ว',
+    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น', lbl_sla_days:'จำนวนวัน',
+    status_pending_payment:'รอชำระเงิน', status_paid:'ชำระแล้ว', status_assigned:'มอบหมายแล้ว', status_accepted:'รับงาน · แบบ',
     status_in_production:'กำลังผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่งแล้ว',
     status_in_transit:'กำลังขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'กำลังติดตั้ง',
     status_completed:'เสร็จสิ้น', status_after_sales:'หลังการขาย', status_closed:'ปิด',
@@ -607,19 +611,19 @@ let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = 
 let searchTimer = null;
 
 const STATUS = {
-  pending_payment:    { label:'待支付',     s:'background:#fef3c7;color:#92400e' },
-  paid:               { label:'已支付',     s:'background:#d6e8db;color:#1a3a2a' },
-  assigned:           { label:'已分配厂家', s:'background:#d6e8db;color:#1a3a2a' },
-  accepted:           { label:'厂家已接单', s:'background:#c8a96e22;color:#7a5a00' },
-  in_production:      { label:'生产中',     s:'background:#c8a96e33;color:#7a5a00' },
-  production_complete:{ label:'生产完成',   s:'background:#c8a96e44;color:#5a3f00' },
-  shipped:            { label:'已发货',     s:'background:#2d5e4322;color:#1a3a2a' },
-  in_transit:         { label:'运输中',     s:'background:#2d5e4333;color:#1a3a2a' },
-  arrived:            { label:'已到货',     s:'background:#2d5e4344;color:#1a3a2a' },
-  installing:         { label:'安装中',     s:'background:#1a3a2a22;color:#1a3a2a' },
-  completed:          { label:'已完成',     s:'background:#1a3a2a;color:#ffffff' },
-  after_sales:        { label:'售后中',     s:'background:#fef3c7;color:#b45309' },
-  closed:             { label:'已关闭',     s:'background:#f3f4f6;color:#9ca3af' },
+  pending_payment:    { label:'待支付',      s:'background:#fef3c7;color:#92400e' },
+  paid:               { label:'已支付',      s:'background:#d6e8db;color:#1a3a2a' },
+  assigned:           { label:'已分配',      s:'background:#d6e8db;color:#1a3a2a', hidden:true },
+  accepted:           { label:'已接单·图纸', s:'background:#c8a96e22;color:#7a5a00' },
+  in_production:      { label:'生产中',      s:'background:#c8a96e33;color:#7a5a00' },
+  production_complete:{ label:'生产完成',    s:'background:#c8a96e44;color:#5a3f00' },
+  shipped:            { label:'已发货',      s:'background:#2d5e4322;color:#1a3a2a' },
+  in_transit:         { label:'运输中',      s:'background:#2d5e4333;color:#1a3a2a' },
+  arrived:            { label:'已到货',      s:'background:#2d5e4344;color:#1a3a2a' },
+  installing:         { label:'安装中',      s:'background:#1a3a2a22;color:#1a3a2a' },
+  completed:          { label:'已完成',      s:'background:#1a3a2a;color:#ffffff' },
+  after_sales:        { label:'售后中',      s:'background:#fef3c7;color:#b45309' },
+  closed:             { label:'已关闭',      s:'background:#f3f4f6;color:#9ca3af' },
 };
 
 function badge(s) {
@@ -649,20 +653,26 @@ function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'nu
 // ── Deadline / SLA ──
 // Default SLA in hours per status (admin can override per-order)
 const STATUS_SLA_HOURS = {
-  pending_payment: 48,
-  paid: 24,
-  assigned: 24,
-  accepted: 4,
-  in_production: 168,
+  pending_payment: 0.25,   // 15 min
+  paid: 2,                 // 2h to assign
+  accepted: 24,            // 24h design drawings
+  in_production: 600,      // 25 days default (variable)
   production_complete: 24,
-  shipped: 72,
-  in_transit: 72,
+  shipped: 480,            // 20 days default (variable)
+  in_transit: 480,
   arrived: 24,
-  installing: 48,
+  installing: 120,         // 5 days
   after_sales: 72,
 };
+// Statuses with variable-day selector in update form
+const STATUS_VAR_DAYS = {
+  in_production: { max: 25, default: 25 },
+  shipped:       { max: 30, default: 20 },
+  in_transit:    { max: 30, default: 20 },
+};
 
-function calcDeadline(status) {
+function calcDeadline(status, customDays) {
+  if (customDays) return new Date(Date.now() + customDays * 86400000).toISOString();
   const h = STATUS_SLA_HOURS[status];
   if (!h) return null;
   return new Date(Date.now() + h * 3600000).toISOString();
@@ -675,8 +685,9 @@ function fmtCountdown(deadlineAt) {
   const totalMin = Math.floor(diff / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  const warn = h < 4;
-  if (h >= 24) { const d = Math.floor(h/24); return { text: `⏱ ${d}${t('stat_day_pfx')} ${h%24}h`, overdue: false, warn: warn }; }
+  const warn = totalMin < 240; // warn if < 4h
+  if (h >= 24) { const d = Math.floor(h/24); return { text: `⏱ ${d}${t('stat_day_pfx')} ${h%24}h`, overdue: false, warn }; }
+  if (h === 0) return { text: `⏱ ${m}m`, overdue: false, warn: true };
   return { text: `⏱ ${h}h ${m}m`, overdue: false, warn };
 }
 
@@ -1168,6 +1179,7 @@ async function openDetail(id, backView) {
   }).join('');
 
   const statusOptions = Object.entries(STATUS)
+    .filter(([v, s]) => !s.hidden || v === o.status)
     .map(([v, s]) => `<option value="${v}" ${v === o.status ? 'selected' : ''}>${t('status_' + v) || s.label}</option>`)
     .join('');
 
@@ -1224,6 +1236,14 @@ async function openDetail(id, backView) {
         <div>
           <label class="label">${t('lbl_order_status')}</label>
           <select id="upd-status" class="input" onchange="onUpdStatusChange()">${statusOptions}</select>
+          <div id="sla-days-row" class="mt-2 hidden">
+            <label class="label text-xs" id="sla-days-label">${t('lbl_sla_days')}</label>
+            <div class="flex items-center gap-3">
+              <input type="range" id="sla-days" min="1" max="25" value="25" class="flex-1"
+                     oninput="document.getElementById('sla-days-val').textContent=this.value">
+              <span class="font-bold text-hg w-12 text-center"><span id="sla-days-val">25</span> ${t('stat_day_pfx')}</span>
+            </div>
+          </div>
         </div>
         <div>
           <label class="label">${t('lbl_pay_status')}</label>
@@ -1279,13 +1299,39 @@ async function openDetail(id, backView) {
 
 function onUpdStatusChange() {
   const status = document.getElementById('upd-status')?.value;
-  const dl = calcDeadline(status);
-  const inp = document.getElementById('upd-deadline');
-  if (!inp) return;
-  if (dl) {
-    inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  const varCfg = STATUS_VAR_DAYS[status];
+  const row = document.getElementById('sla-days-row');
+  const slider = document.getElementById('sla-days');
+  const valEl = document.getElementById('sla-days-val');
+
+  if (varCfg && row) {
+    row.classList.remove('hidden');
+    slider.max = varCfg.max;
+    slider.value = varCfg.default;
+    valEl.textContent = varCfg.default;
+    // Auto-fill deadline from slider default
+    const inp = document.getElementById('upd-deadline');
+    if (inp) {
+      const dl = calcDeadline(status, varCfg.default);
+      inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    }
+    // Update deadline live as slider moves
+    slider.oninput = function() {
+      valEl.textContent = this.value;
+      const dl2 = calcDeadline(status, parseInt(this.value));
+      const inp2 = document.getElementById('upd-deadline');
+      if (inp2 && dl2) inp2.value = new Date(new Date(dl2).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    };
   } else {
-    inp.value = '';
+    row?.classList.add('hidden');
+    const dl = calcDeadline(status);
+    const inp = document.getElementById('upd-deadline');
+    if (!inp) return;
+    if (dl) {
+      inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    } else {
+      inp.value = '';
+    }
   }
 }
 
@@ -1345,9 +1391,12 @@ async function updateOrder(id) {
   const supplier = document.getElementById('upd-supplier').value || null;
   const notes = document.getElementById('upd-notes').value.trim();
   const dlVal = document.getElementById('upd-deadline')?.value;
+  const slaRow = document.getElementById('sla-days-row');
+  const customDays = (slaRow && !slaRow.classList.contains('hidden'))
+    ? parseInt(document.getElementById('sla-days')?.value || 0) : null;
 
-  // Use manual deadline if set, else auto-calc from SLA
-  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status);
+  // Use manual deadline if set, else slider days, else auto-calc from SLA
+  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
 
   const upd = { status, payment_status: payment, supplier_id: supplier, deadline_at, updated_at: new Date().toISOString() };
   if (payMethod) upd.payment_method = payMethod;
