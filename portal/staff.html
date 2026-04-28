@@ -339,7 +339,12 @@
         <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
         <div class="flex flex-wrap gap-2">
           <input type="text" id="sup-name" placeholder="供应商名称 *" class="input flex-1 min-w-36">
-          <input type="tel" id="sup-phone" placeholder="联系电话" class="input w-40">
+          <input type="tel" id="sup-phone" placeholder="联系电话" class="input w-36">
+          <select id="sup-tier" class="input w-28">
+            <option value="3">⭐⭐⭐ 三星</option>
+            <option value="2" selected>⭐⭐ 二星</option>
+            <option value="1">⭐ 一星</option>
+          </select>
           <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
         </div>
         <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
@@ -1096,18 +1101,27 @@ async function updateOrder(id) {
 // ── Suppliers (admin) ──
 const PAY_METHOD_LABELS = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
 
+const TIER_STARS = { 3:'⭐⭐⭐', 2:'⭐⭐', 1:'⭐' };
+
 async function renderSuppliersPage() {
-  const { data: sups } = await sb.from('suppliers').select('*').order('name');
+  const { data: sups } = await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name');
   const rows = (sups || []);
   document.getElementById('suppliers-table').innerHTML = rows.length
     ? `<table class="w-full text-sm">
         <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
-          <th class="px-4 py-3">名称</th><th class="px-4 py-3">联系电话</th>
-          <th class="px-4 py-3">状态</th><th class="px-4 py-3">操作</th>
+          <th class="px-4 py-3">名称</th><th class="px-4 py-3">级别</th>
+          <th class="px-4 py-3">联系电话</th><th class="px-4 py-3">状态</th><th class="px-4 py-3">操作</th>
         </tr></thead>
         <tbody>${rows.map(s => `
           <tr class="border-t border-gray-100 hover:bg-gc">
             <td class="px-4 py-3 font-medium">${s.name}</td>
+            <td class="px-4 py-3">
+              <select onchange="setSupplierTier('${s.id}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-1 bg-white">
+                <option value="3" ${s.tier===3?'selected':''}>⭐⭐⭐ 三星</option>
+                <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐ 二星</option>
+                <option value="1" ${s.tier===1?'selected':''}>⭐ 一星</option>
+              </select>
+            </td>
             <td class="px-4 py-3 text-gray-600">${s.phone || '-'}</td>
             <td class="px-4 py-3">
               <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
@@ -1128,18 +1142,25 @@ async function renderSuppliersPage() {
 async function addSupplier() {
   const name = document.getElementById('sup-name').value.trim();
   const phone = document.getElementById('sup-phone').value.trim();
+  const tier = parseInt(document.getElementById('sup-tier').value);
   const errEl = document.getElementById('sup-err');
   if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
-  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, active: true });
+  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, tier, active: true });
   if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
   document.getElementById('sup-name').value = '';
   document.getElementById('sup-phone').value = '';
+  document.getElementById('sup-tier').value = '2';
   await renderSuppliersPage();
 }
 
 async function toggleSupplier(id, active) {
   await sb.from('suppliers').update({ active: !active }).eq('id', id);
+  await renderSuppliersPage();
+}
+
+async function setSupplierTier(id, tier) {
+  await sb.from('suppliers').update({ tier: parseInt(tier) }).eq('id', id);
   await renderSuppliersPage();
 }
 

@@ -62,9 +62,13 @@ CREATE TABLE IF NOT EXISTS suppliers (
   contact_name TEXT,
   phone        TEXT,
   categories   TEXT,
+  tier         INTEGER DEFAULT 2 CHECK (tier IN (1,2,3)),
   active       BOOLEAN DEFAULT true,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Migration: run once if table already exists
+-- ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS tier INTEGER DEFAULT 2 CHECK (tier IN (1,2,3));
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
 
 -- Order number daily sequences
 CREATE TABLE IF NOT EXISTS order_sequences (
