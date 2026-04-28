@@ -260,7 +260,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label" data-i18n="lbl_store">国家/地区 *</label>
-            <select id="o-store" class="input">
+            <select id="o-store" class="input" onchange="autoSetCurrency()">
               <option value="">— 请选择 —</option>
             </select>
           </div>
@@ -621,6 +621,17 @@ function badge(s) {
   return `<span class="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style="${x.s}">${label}</span>`;
 }
 const CURRENCY_SYMBOL = { MYR:'RM', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫', USD:'US$' };
+const FLAG_CURRENCY   = { '🇲🇾':'MYR', '🇸🇬':'SGD', '🇹🇭':'THB', '🇮🇩':'IDR', '🇵🇭':'PHP', '🇻🇳':'VND' };
+
+function autoSetCurrency() {
+  const sel = document.getElementById('o-store');
+  const label = sel.options[sel.selectedIndex]?.text || '';
+  // Extract flag emoji (first grapheme cluster) from option label e.g. "🇲🇾 001 Austin"
+  const flag = [...label][0] + ([...label][1] || '');
+  const cur = FLAG_CURRENCY[flag];
+  if (cur) document.getElementById('o-currency').value = cur;
+}
+
 function fmtAmt(v, currency) {
   const sym = CURRENCY_SYMBOL[currency] || (currency || 'RM');
   return sym + ' ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 });
