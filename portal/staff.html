@@ -123,21 +123,35 @@
         <button onclick="goto('create')" class="btn-gold">+ 新建订单</button>
       </div>
       <!-- Filters -->
-      <div class="card p-4 mb-4 flex flex-wrap gap-3">
-        <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()"
-               class="input flex-1 min-w-40">
-        <select id="f-status" onchange="filterOrders()" class="input w-44">
-          <option value="">全部状态</option>
-          <option value="pending_payment">待支付</option>
-          <option value="paid">已支付</option>
-          <option value="assigned">已分配厂家</option>
-          <option value="in_production">生产中</option>
-          <option value="shipped">已发货</option>
-          <option value="completed">已完成</option>
-          <option value="after_sales">售后中</option>
-          <option value="closed">已关闭</option>
-        </select>
+      <div class="card p-4 mb-4 space-y-2">
+        <!-- Row 1: search + status -->
+        <div class="flex flex-wrap gap-2">
+          <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()"
+                 class="input flex-1 min-w-40">
+          <select id="f-status" onchange="filterOrders()" class="input w-36">
+            <option value="">全部状态</option>
+            <option value="pending_payment">待支付</option>
+            <option value="paid">已支付</option>
+            <option value="assigned">已分配厂家</option>
+            <option value="in_production">生产中</option>
+            <option value="shipped">已发货</option>
+            <option value="completed">已完成</option>
+            <option value="after_sales">售后中</option>
+            <option value="closed">已关闭</option>
+          </select>
+        </div>
+        <!-- Row 2: store + date + month -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <select id="f-store" onchange="filterOrders()" class="input w-36 hidden" title="门店筛选">
+            <option value="">全部门店</option>
+          </select>
+          <input type="date" id="f-date" onchange="onDateChange('date')" class="input w-40" title="按日期查询">
+          <input type="month" id="f-month" onchange="onDateChange('month')" class="input w-36" title="按月查询">
+          <button onclick="clearDateFilters()" class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 border border-gray-200 rounded">清除日期</button>
+        </div>
       </div>
+      <!-- Monthly Stats Panel -->
+      <div id="monthly-stats" class="hidden card p-4 mb-4"></div>
       <div class="card overflow-hidden overflow-x-auto">
         <div id="orders-table"></div>
       </div>
@@ -358,6 +372,13 @@ async function loadStores() {
 
   sel.innerHTML = '<option value="">选择门店</option>';
   stores.forEach(s => sel.add(new Option(s.name, s.id)));
+  // populate store filter (admin only)
+  const fSel = document.getElementById('f-store');
+  if (fSel && profile?.role === 'admin') {
+    fSel.classList.remove('hidden');
+    fSel.innerHTML = '<option value="">全部门店</option>';
+    stores.forEach(s => fSel.add(new Option(s.name, s.id)));
+  }
 }
 
 async function loadReferrers() {
@@ -430,14 +451,88 @@ function renderDashboard() {
 }
 
 // ── Orders ──
+function onDateChange(type) {
+  if (type === 'date') document.getElementById('f-month').value = '';
+  if (type === 'month') document.getElementById('f-date').value = '';
+  filterOrders();
+}
+
+function clearDateFilters() {
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-month').value = '';
+  filterOrders();
+}
+
 function filterOrders() {
-  const q = document.getElementById('f-search').value.toLowerCase();
-  const s = document.getElementById('f-status').value;
+  const q     = document.getElementById('f-search').value.toLowerCase();
+  const s     = document.getElementById('f-status').value;
+  const store = document.getElementById('f-store')?.value || '';
+  const date  = document.getElementById('f-date').value;   // "2026-04-27"
+  const month = document.getElementById('f-month').value;  // "2026-04"
+
   const filtered = allOrders.filter(o => {
-    const txt = (o.order_no + o.customers?.name + o.customers?.phone).toLowerCase();
-    return (!q || txt.includes(q)) && (!s || o.status === s);
+    const txt   = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
+    const oDate = o.created_at.slice(0, 10);
+    const oMon  = o.created_at.slice(0, 7);
+    return (!q     || txt.includes(q))
+        && (!s     || o.status === s)
+        && (!store || o.store_id === store)
+        && (!date  || oDate === date)
+        && (!month || oMon  === month);
   });
+
+  const statPeriod = month || (date ? date.slice(0, 7) : '');
+  renderMonthlyStats(filtered, statPeriod, date);
   renderOrdersTable(filtered);
+}
+
+function renderMonthlyStats(orders, period, specificDate) {
+  const panel = document.getElementById('monthly-stats');
+  if (!period) { panel.classList.add('hidden'); return; }
+
+  const total   = orders.length;
+  const paid    = orders.filter(o => o.payment_status === 'paid').length;
+  const unpaid  = orders.filter(o => o.payment_status === 'unpaid').length;
+  const revenue = orders.filter(o => o.payment_status === 'paid')
+                        .reduce((s, o) => s + Number(o.amount), 0);
+
+  // store breakdown
+  const storeMap = {};
+  orders.forEach(o => {
+    const n = o.stores?.name || '未知';
+    if (!storeMap[n]) storeMap[n] = { count: 0, rev: 0 };
+    storeMap[n].count++;
+    if (o.payment_status === 'paid') storeMap[n].rev += Number(o.amount);
+  });
+  const storeRows = Object.entries(storeMap).map(([n, v]) =>
+    `<span class="inline-block bg-gray-100 rounded px-2 py-0.5 text-xs text-gray-600 mr-1">${n}: ${v.count}单 / ${fmtAmt(v.rev)}</span>`
+  ).join('');
+
+  const title = specificDate ? `📅 ${specificDate} 日统计` : `📊 ${period} 月度统计`;
+
+  panel.classList.remove('hidden');
+  panel.innerHTML = `
+    <div class="text-sm font-semibold text-gray-700 mb-3">${title}</div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+      <div class="bg-gray-50 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-400 mb-1">订单总数</div>
+        <div class="text-2xl font-bold text-gray-800">${total}</div>
+      </div>
+      <div class="bg-green-50 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-400 mb-1">已收款</div>
+        <div class="text-2xl font-bold text-green-700">${paid}</div>
+      </div>
+      <div class="bg-amber-50 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-400 mb-1">待付款</div>
+        <div class="text-2xl font-bold text-amber-700">${unpaid}</div>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-3 text-center">
+        <div class="text-xs text-gray-400 mb-1">收款总额</div>
+        <div class="text-base font-bold text-blue-700">${fmtAmt(revenue)}</div>
+      </div>
+    </div>
+    ${storeRows ? `<div class="text-xs text-gray-500 font-medium mb-1">门店明细</div><div>${storeRows}</div>` : ''}
+  `;
 }
 
 function renderOrdersTable(orders) {
