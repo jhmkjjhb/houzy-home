@@ -183,7 +183,7 @@
             <option value="arrived" data-i18n-opt="status_arrived">已到货</option>
             <option value="installing" data-i18n-opt="status_installing">安装中</option>
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
-            <option value="after_sales" data-i18n-opt="status_after_sales">售后中</option>
+            <option value="after_sales" data-i18n-opt="status_after_sales">质保服务</option>
             <option value="closed" data-i18n-opt="status_closed">已关闭</option>
           </select>
         </div>
@@ -407,7 +407,10 @@ const STAFF_I18N = {
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
-    status_completed:'已完成', status_after_sales:'售后中', status_closed:'已关闭',
+    status_completed:'已完成', status_after_sales:'质保服务', status_closed:'已关闭',
+    warranty_panel_title:'质保服务 (5年)', warranty_start_lbl:'质保开始',
+    warranty_year_pfx:'第', warranty_year_sfx:'年',
+    warranty_advance_btn:'记录下一年提醒', warranty_completed:'5年质保服务已全部完成 🎉',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -439,7 +442,10 @@ const STAFF_I18N = {
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
-    status_completed:'已完成', status_after_sales:'售後中', status_closed:'已關閉',
+    status_completed:'已完成', status_after_sales:'質保服務', status_closed:'已關閉',
+    warranty_panel_title:'質保服務 (5年)', warranty_start_lbl:'質保開始',
+    warranty_year_pfx:'第', warranty_year_sfx:'年',
+    warranty_advance_btn:'記錄下一年提醒', warranty_completed:'5年質保服務已全部完成 🎉',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -471,7 +477,10 @@ const STAFF_I18N = {
     status_pending_payment:'Pending', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
     status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
-    status_completed:'Done', status_after_sales:'After Sales', status_closed:'Closed',
+    status_completed:'Done', status_after_sales:'Warranty', status_closed:'Closed',
+    warranty_panel_title:'Warranty Service (5yr)', warranty_start_lbl:'Warranty Start',
+    warranty_year_pfx:'Year', warranty_year_sfx:'',
+    warranty_advance_btn:'Next Year Reminder', warranty_completed:'All 5-year warranty reminders done 🎉',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -503,7 +512,10 @@ const STAFF_I18N = {
     status_pending_payment:'Belum Bayar', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
     status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
     status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
-    status_completed:'Selesai', status_after_sales:'Selepas Jualan', status_closed:'Ditutup',
+    status_completed:'Selesai', status_after_sales:'Waranti', status_closed:'Ditutup',
+    warranty_panel_title:'Perkhidmatan Waranti (5Thn)', warranty_start_lbl:'Mula Waranti',
+    warranty_year_pfx:'Tahun', warranty_year_sfx:'',
+    warranty_advance_btn:'Peringatan Tahun Depan', warranty_completed:'Semua peringatan waranti 5 tahun selesai 🎉',
   },
   'th': {
     sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
@@ -535,7 +547,10 @@ const STAFF_I18N = {
     status_pending_payment:'รอชำระ', status_paid:'ชำระแล้ว', status_assigned:'มอบหมาย', status_accepted:'รับงาน',
     status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
     status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
-    status_completed:'เสร็จ', status_after_sales:'หลังขาย', status_closed:'ปิด',
+    status_completed:'เสร็จ', status_after_sales:'ประกัน', status_closed:'ปิด',
+    warranty_panel_title:'บริการรับประกัน (5 ปี)', warranty_start_lbl:'เริ่มรับประกัน',
+    warranty_year_pfx:'ปีที่', warranty_year_sfx:'',
+    warranty_advance_btn:'แจ้งเตือนปีหน้า', warranty_completed:'ครบรอบรับประกัน 5 ปีแล้ว 🎉',
   },
 };
 
@@ -617,7 +632,7 @@ const STATUS = {
   installing:      { label:'安装中', s:'background:#1a3a2a22;color:#1a3a2a', step:5 },
   completed:       { label:'已完成', s:'background:#1a3a2a;color:#ffffff',   step:6 },
   // Special
-  after_sales:     { label:'售后中', s:'background:#fef3c7;color:#b45309',   step:-1 },
+  after_sales:     { label:'质保服务', s:'background:#dbeafe;color:#1e40af',  step:-1 },
   closed:          { label:'已关闭', s:'background:#f3f4f6;color:#9ca3af',   step:-1 },
   // Legacy — badge display only (old orders)
   assigned:           { label:'已分配',   s:'background:#d6e8db;color:#1a3a2a',   step:1, legacy:true },
@@ -726,7 +741,7 @@ const STATUS_SLA_HOURS = {
   shipped:         480,   // 20 days default (variable)
   arrived:         24,    // 24h to book install
   installing:      120,   // 5 days
-  after_sales:     72,
+  after_sales:     8760, // 1 year — annual warranty reminder
 };
 // Statuses with variable-day slider
 const STATUS_VAR_DAYS = {
@@ -762,6 +777,79 @@ function deadlineRowStyle(o) {
   return '';
 }
 
+// ── Warranty panel (5-year, annual reminders) ──
+function renderWarrantyPanel(logs, deadlineAt, orderId) {
+  const startLog = (logs || []).find(l => l.status === 'after_sales');
+  if (!startLog) return '';
+  const startIso = startLog.created_at;
+  const startMs  = new Date(startIso).getTime();
+  const YEAR_MS  = 365.25 * 24 * 3600000;
+
+  let currentYear = 1;
+  if (deadlineAt) {
+    const dlMs = new Date(deadlineAt).getTime();
+    let minDiff = Infinity;
+    for (let n = 1; n <= 5; n++) {
+      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
+      if (diff < minDiff) { minDiff = diff; currentYear = n; }
+    }
+  }
+  const isOverdue = deadlineAt && new Date(deadlineAt) < Date.now();
+
+  const yearsHtml = [1,2,3,4,5].map(n => {
+    const dateStr = new Date(startMs + n * YEAR_MS).toISOString().slice(0, 10);
+    let icon, bg, color;
+    if (n < currentYear)      { icon='✓';  bg='#f0fdf4'; color='#16a34a'; }
+    else if (n===currentYear) { icon=isOverdue?'⚠️':'⏰'; bg=isOverdue?'#fef2f2':'#fef3c7'; color=isOverdue?'#dc2626':'#d97706'; }
+    else                       { icon='○';  bg='#f9fafb'; color='#9ca3af'; }
+    const pfx = t('warranty_year_pfx');
+    const sfx = t('warranty_year_sfx');
+    const yearLabel = sfx ? `${pfx} ${n} ${sfx}` : `${pfx} ${n}`;
+    return `<div class="flex items-center gap-3 rounded-lg px-3 py-2" style="background:${bg}">
+      <span class="font-bold text-sm w-6 text-center" style="color:${color}">${icon}</span>
+      <div class="flex-1">
+        <span class="font-medium text-sm">${yearLabel}</span>
+        <span class="text-xs text-gray-400 ml-2">${dateStr}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const canAdvance = currentYear < 5;
+  return `<div class="card p-5 mb-4" style="border-left:3px solid #1e40af">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">🛡️</span>
+      <h3 class="font-semibold text-gray-800">${t('warranty_panel_title')}</h3>
+    </div>
+    <div class="text-xs text-gray-500 mb-3">${t('warranty_start_lbl')}: ${new Date(startIso).toLocaleDateString()}</div>
+    <div class="flex flex-col gap-1.5 mb-3">${yearsHtml}</div>
+    ${canAdvance
+      ? `<button onclick="advanceWarrantyReminder('${orderId}','${startIso}')" class="btn-primary w-full py-2 text-sm">${t('warranty_advance_btn')}</button>`
+      : `<p class="text-center text-xs text-gray-400">${t('warranty_completed')}</p>`}
+  </div>`;
+}
+
+async function advanceWarrantyReminder(orderId, startIso) {
+  const { data: o } = await sb.from('orders').select('deadline_at').eq('id', orderId).single();
+  if (!o) return;
+  const startMs = new Date(startIso).getTime();
+  const YEAR_MS = 365.25 * 24 * 3600000;
+  let currentYear = 1;
+  if (o.deadline_at) {
+    const dlMs = new Date(o.deadline_at).getTime();
+    let minDiff = Infinity;
+    for (let n = 1; n <= 5; n++) {
+      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
+      if (diff < minDiff) { minDiff = diff; currentYear = n; }
+    }
+  }
+  const nextYear = currentYear + 1;
+  if (nextYear > 5) return;
+  const nextDeadline = new Date(startMs + nextYear * YEAR_MS).toISOString();
+  await sb.from('orders').update({ deadline_at: nextDeadline }).eq('id', orderId);
+  await loadOrders();
+  openDetail(orderId);
+}
+
 let _notifiedOverdue = new Set();
 function checkOverdueAlerts() {
   const now = Date.now();
@@ -772,7 +860,9 @@ function checkOverdueAlerts() {
     if (overdue && !_notifiedOverdue.has(o.id)) {
       _notifiedOverdue.add(o.id);
       if (Notification.permission === 'granted') {
-        new Notification('⚠️ 订单逾期', { body: `${o.order_no} — ${o.customers?.name || ''}`, icon: '/favicon.ico' });
+        const isWarranty = o.status === 'after_sales';
+        const title = isWarranty ? `🛡️ ${t('warranty_panel_title')}` : `⚠️ ${t('overdue')}`;
+        new Notification(title, { body: `${o.order_no} — ${o.customers?.name || ''}`, icon: '/favicon.ico' });
       }
     }
   });
@@ -1303,6 +1393,8 @@ async function openDetail(id, backView) {
       ${progressBar}
       ${deadlineBanner}
     </div>
+
+    ${o.status === 'after_sales' ? renderWarrantyPanel(logs, o.deadline_at, o.id) : ''}
 
     <!-- Update status -->
     <div class="card p-5 mb-4">
