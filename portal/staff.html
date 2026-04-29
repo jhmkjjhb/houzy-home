@@ -1363,7 +1363,12 @@ async function openDetail(id, backView) {
 
   // Pre-format deadline for datetime-local input
   const dlLocal = o.deadline_at ? new Date(new Date(o.deadline_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
-  const slaHint = STATUS_SLA_HOURS[o.status] ? `(${t('sla_default')} ${STATUS_SLA_HOURS[o.status]}h)` : '';
+  const _slaH = STATUS_SLA_HOURS[o.status];
+  const slaHint = _slaH ? (() => {
+    if (_slaH >= 8760) { const yrs = Math.round(_slaH / 8760); return `(${t('sla_default')} ${yrs}${t('warranty_year_sfx')||'年'})`; }
+    if (_slaH >= 24)   { const days = Math.round(_slaH / 24);  return `(${t('sla_default')} ${days}${t('stat_day_pfx')})`; }
+    return `(${t('sla_default')} ${_slaH}h)`;
+  })() : '';
 
   document.getElementById('detail-content').innerHTML = `
     <!-- Info -->
