@@ -28,6 +28,12 @@
   }
   select { cursor: pointer; }
   select option:checked { background-color: #1a3a2a; color: #ffffff; }
+  @keyframes overduePulse {
+    0%,100% { background-color: #fef2f2; }
+    50%      { background-color: #fecaca; }
+  }
+  .row-overdue { animation: overduePulse 2s ease-in-out infinite; }
+  .row-warn    { background: #fffbeb; }
 </style>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
@@ -785,11 +791,11 @@ function fmtCountdown(deadlineAt) {
   return { text: `⏱ ${h}h ${m}m`, overdue: false, warn };
 }
 
-function deadlineRowStyle(o) {
+function deadlineRowClass(o) {
   if (['completed','closed'].includes(o.status)) return '';
   const cd = fmtCountdown(o.deadline_at);
-  if (cd?.overdue) return 'background:#fef2f2;';
-  if (cd?.warn)   return 'background:#fffbeb;';
+  if (cd?.overdue) return 'row-overdue';
+  if (cd?.warn)    return 'row-warn';
   return '';
 }
 
@@ -882,9 +888,12 @@ function checkOverdueAlerts() {
       }
     }
   });
-  // Re-render order list if visible to update colors
-  const vOrders = document.getElementById('v-orders');
-  if (vOrders && !vOrders.classList.contains('hidden')) renderOrdersTable(filterGetCurrent());
+  // Re-render whichever view is currently visible
+  if (!document.getElementById('v-orders').classList.contains('hidden')) {
+    renderOrdersTable(filterGetCurrent());
+  } else if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
+    renderDashboard();
+  }
 }
 
 function toggleMobileMenu() {
@@ -913,11 +922,10 @@ async function init() {
 
   // Request notification permission for overdue alerts
   if (Notification.permission === 'default') Notification.requestPermission();
-  // Check every 60s and live-update countdowns
-  setInterval(async () => {
-    await loadOrders();
-    checkOverdueAlerts();
-  }, 60000);
+  // Fast: re-render colors/countdowns every 10 s (no DB call)
+  setInterval(checkOverdueAlerts, 10000);
+  // Slow: reload fresh data from DB every 60 s
+  setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
 }
 
 async function loadStores() {
@@ -1053,14 +1061,16 @@ function renderDashboard() {
   document.getElementById('recent-orders').innerHTML = recent.length
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
         <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
-       </tr></thead><tbody>${recent.map(o => `
-        <tr class="border-b border-gray-50 hover:bg-gc cursor-pointer" onclick="openDetail('${o.id}')">
-          <td class="py-2 font-mono text-xs text-hg">${o.order_no}</td>
+       </tr></thead><tbody>${recent.map(o => {
+        const rc2 = deadlineRowClass(o);
+        return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer ${rc2}" onclick="openDetail('${o.id}')">
+          <td class="py-2 font-mono text-xs" style="color:${rc2?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
           <td class="py-2">${o.customers?.name || '-'}</td>
           <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
           <td class="py-2">${badge(o.status)}</td>
           <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
-        </tr>`).join('')}</tbody></table>`
+        </tr>`;
+      }).join('')}</tbody></table>`
     : `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`;
 }
 
@@ -1162,11 +1172,11 @@ function renderOrdersTable(orders) {
         <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
        </tr></thead><tbody>${orders.map(o => {
         const cd = fmtCountdown(o.deadline_at);
-        const rs = deadlineRowStyle(o);
+        const rc = deadlineRowClass(o);
         const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
         return `
-        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rs}" onclick="openDetail('${o.id}')">
-          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${rs?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90 ${rc}" onclick="openDetail('${o.id}')">
+          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${rc?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
           <td class="px-4 py-3">
             <div class="font-medium">${o.customers?.name || '-'}</div>
             <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
