@@ -174,15 +174,12 @@
         <div class="flex flex-wrap gap-2">
           <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()" data-i18n-ph="filter_search"
                  class="input flex-1 min-w-40">
-          <select id="f-status" onchange="filterOrders()" class="input w-36">
+          <select id="f-status" onchange="filterOrders()" class="input w-32">
             <option value="">全部状态</option>
-            <option value="pending_payment" data-i18n-opt="status_pending_payment">待支付</option>
-            <option value="paid" data-i18n-opt="status_paid">已支付</option>
-            <option value="accepted" data-i18n-opt="status_accepted">已接单·图纸</option>
+            <option value="pending_payment" data-i18n-opt="status_pending_payment">待付款</option>
+            <option value="paid" data-i18n-opt="status_paid">已付款</option>
             <option value="in_production" data-i18n-opt="status_in_production">生产中</option>
-            <option value="production_complete" data-i18n-opt="status_production_complete">生产完成</option>
             <option value="shipped" data-i18n-opt="status_shipped">已发货</option>
-            <option value="in_transit" data-i18n-opt="status_in_transit">运输中</option>
             <option value="arrived" data-i18n-opt="status_arrived">已到货</option>
             <option value="installing" data-i18n-opt="status_installing">安装中</option>
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
@@ -407,10 +404,10 @@ const STAFF_I18N = {
     lbl_sup_tier:'级别', sup_active:'活跃', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'启用',
     pay_method:'支付方式', pay_cash:'💵 现金', pay_transfer:'🏦 银行转账', pay_ewallet:'📱 电子钱包', pay_card:'💳 刷卡',
     overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认', lbl_sla_days:'预计天数',
-    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单·图纸',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
-    status_in_transit:'运输中', status_arrived:'已到达', status_installing:'安装中',
-    status_completed:'已完成', status_after_sales:'售后', status_closed:'已关闭',
+    status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
+    status_completed:'已完成', status_after_sales:'售后中', status_closed:'已关闭',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -439,10 +436,10 @@ const STAFF_I18N = {
     lbl_sup_tier:'級別', sup_active:'活躍', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'啟用',
     pay_method:'支付方式', pay_cash:'💵 現金', pay_transfer:'🏦 銀行轉賬', pay_ewallet:'📱 電子錢包', pay_card:'💳 刷卡',
     overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設', lbl_sla_days:'預計天數',
-    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單·圖紙',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
-    status_in_transit:'運輸中', status_arrived:'已到達', status_installing:'安裝中',
-    status_completed:'已完成', status_after_sales:'售後', status_closed:'已關閉',
+    status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
+    status_completed:'已完成', status_after_sales:'售後中', status_closed:'已關閉',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -471,10 +468,10 @@ const STAFF_I18N = {
     lbl_sup_tier:'Tier', sup_active:'Active', sup_inactive:'Disabled', sup_disable:'Disable', sup_enable:'Enable',
     pay_method:'Payment Method', pay_cash:'💵 Cash', pay_transfer:'🏦 Bank Transfer', pay_ewallet:'📱 E-Wallet', pay_card:'💳 Card',
     overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default', lbl_sla_days:'Est. Days',
-    status_pending_payment:'Pending Payment', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted · Design',
-    status_in_production:'In Production', status_production_complete:'Production Complete', status_shipped:'Shipped',
+    status_pending_payment:'Pending', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
+    status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
-    status_completed:'Completed', status_after_sales:'After Sales', status_closed:'Closed',
+    status_completed:'Done', status_after_sales:'After Sales', status_closed:'Closed',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -503,9 +500,9 @@ const STAFF_I18N = {
     lbl_sup_tier:'Tahap', sup_active:'Aktif', sup_inactive:'Dilumpuhkan', sup_disable:'Lumpuhkan', sup_enable:'Aktifkan',
     pay_method:'Kaedah Pembayaran', pay_cash:'💵 Tunai', pay_transfer:'🏦 Pindahan Bank', pay_ewallet:'📱 E-Dompet', pay_card:'💳 Kad',
     overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai', lbl_sla_days:'Est. Hari',
-    status_pending_payment:'Menunggu Bayaran', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima · Reka',
-    status_in_production:'Dalam Pengeluaran', status_production_complete:'Pengeluaran Selesai', status_shipped:'Dihantar',
-    status_in_transit:'Dalam Transit', status_arrived:'Tiba', status_installing:'Pemasangan',
+    status_pending_payment:'Belum Bayar', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
+    status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
+    status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
     status_completed:'Selesai', status_after_sales:'Selepas Jualan', status_closed:'Ditutup',
   },
   'th': {
@@ -535,10 +532,10 @@ const STAFF_I18N = {
     lbl_sup_tier:'ระดับ', sup_active:'ใช้งานอยู่', sup_inactive:'ปิดใช้งาน', sup_disable:'ปิด', sup_enable:'เปิด',
     pay_method:'วิธีชำระเงิน', pay_cash:'💵 เงินสด', pay_transfer:'🏦 โอนธนาคาร', pay_ewallet:'📱 E-Wallet', pay_card:'💳 บัตร',
     overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น', lbl_sla_days:'จำนวนวัน',
-    status_pending_payment:'รอชำระเงิน', status_paid:'ชำระแล้ว', status_assigned:'มอบหมายแล้ว', status_accepted:'รับงาน · แบบ',
-    status_in_production:'กำลังผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่งแล้ว',
-    status_in_transit:'กำลังขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'กำลังติดตั้ง',
-    status_completed:'เสร็จสิ้น', status_after_sales:'หลังการขาย', status_closed:'ปิด',
+    status_pending_payment:'รอชำระ', status_paid:'ชำระแล้ว', status_assigned:'มอบหมาย', status_accepted:'รับงาน',
+    status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
+    status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
+    status_completed:'เสร็จ', status_after_sales:'หลังขาย', status_closed:'ปิด',
   },
 };
 
@@ -611,20 +608,90 @@ let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = 
 let searchTimer = null;
 
 const STATUS = {
-  pending_payment:    { label:'待支付',      s:'background:#fef3c7;color:#92400e' },
-  paid:               { label:'已支付',      s:'background:#d6e8db;color:#1a3a2a' },
-  assigned:           { label:'已分配',      s:'background:#d6e8db;color:#1a3a2a', hidden:true },
-  accepted:           { label:'已接单·图纸', s:'background:#c8a96e22;color:#7a5a00' },
-  in_production:      { label:'生产中',      s:'background:#c8a96e33;color:#7a5a00' },
-  production_complete:{ label:'生产完成',    s:'background:#c8a96e44;color:#5a3f00' },
-  shipped:            { label:'已发货',      s:'background:#2d5e4322;color:#1a3a2a' },
-  in_transit:         { label:'运输中',      s:'background:#2d5e4333;color:#1a3a2a' },
-  arrived:            { label:'已到货',      s:'background:#2d5e4344;color:#1a3a2a' },
-  installing:         { label:'安装中',      s:'background:#1a3a2a22;color:#1a3a2a' },
-  completed:          { label:'已完成',      s:'background:#1a3a2a;color:#ffffff' },
-  after_sales:        { label:'售后中',      s:'background:#fef3c7;color:#b45309' },
-  closed:             { label:'已关闭',      s:'background:#f3f4f6;color:#9ca3af' },
+  // Core 7-step flow
+  pending_payment: { label:'待付款', s:'background:#fef3c7;color:#92400e',   step:0 },
+  paid:            { label:'已付款', s:'background:#d6e8db;color:#1a3a2a',   step:1 },
+  in_production:   { label:'生产中', s:'background:#c8a96e33;color:#7a5a00', step:2 },
+  shipped:         { label:'已发货', s:'background:#2d5e4322;color:#1a3a2a', step:3 },
+  arrived:         { label:'已到货', s:'background:#2d5e4344;color:#1a3a2a', step:4 },
+  installing:      { label:'安装中', s:'background:#1a3a2a22;color:#1a3a2a', step:5 },
+  completed:       { label:'已完成', s:'background:#1a3a2a;color:#ffffff',   step:6 },
+  // Special
+  after_sales:     { label:'售后中', s:'background:#fef3c7;color:#b45309',   step:-1 },
+  closed:          { label:'已关闭', s:'background:#f3f4f6;color:#9ca3af',   step:-1 },
+  // Legacy — badge display only (old orders)
+  assigned:           { label:'已分配',   s:'background:#d6e8db;color:#1a3a2a',   step:1, legacy:true },
+  accepted:           { label:'已接单',   s:'background:#c8a96e22;color:#7a5a00', step:2, legacy:true },
+  production_complete:{ label:'生产完成', s:'background:#c8a96e44;color:#5a3f00', step:2, legacy:true },
+  in_transit:         { label:'运输中',   s:'background:#2d5e4333;color:#1a3a2a', step:3, legacy:true },
 };
+const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
+
+function renderStatusTimeline(currentStatus) {
+  const curStep = STATUS[currentStatus]?.step ?? -1;
+  const isSpecial = STATUS[currentStatus]?.step === -1;
+
+  const stepsHtml = CORE_STEPS.map((s, i) => {
+    const done    = i < curStep || (!isSpecial && currentStatus === 'completed' && i <= 6);
+    const current = s === currentStatus;
+    const lbl     = t('status_' + s) || STATUS[s].label;
+    let bg, color, icon;
+    if (done)    { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+    else if (current) { bg=STATUS[s].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[s].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
+    else         { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+    const border = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
+    return `<button id="step-${s}" onclick="selectStep('${s}')"
+              class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all flex-shrink-0 w-16"
+              style="background:${bg};color:${color};${border}cursor:pointer;">
+              <span class="step-icon text-sm leading-none">${icon}</span>
+              <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
+            </button>
+            ${i < CORE_STEPS.length-1 ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:-8px"></div>` : ''}`;
+  }).join('');
+
+  const specialHtml = ['after_sales','closed'].map(s => {
+    const active = s === currentStatus;
+    const lbl = t('status_' + s) || STATUS[s].label;
+    return `<button id="step-${s}" onclick="selectStep('${s}')"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
+              style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
+              ${lbl}
+            </button>`;
+  }).join('');
+
+  return `<div class="overflow-x-auto pb-1 -mx-1 px-1">
+            <div class="flex items-center min-w-max">${stepsHtml}</div>
+          </div>
+          <div class="flex gap-2 mt-2">${specialHtml}</div>
+          <input type="hidden" id="upd-status" value="${currentStatus}">`;
+}
+
+function selectStep(s) {
+  document.getElementById('upd-status').value = s;
+  const curStep = STATUS[s]?.step ?? -1;
+  const isSpecial = curStep === -1;
+  CORE_STEPS.forEach((step, i) => {
+    const btn = document.getElementById('step-' + step);
+    if (!btn) return;
+    const done    = !isSpecial && i < curStep;
+    const current = step === s;
+    let bg, color, icon;
+    if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+    else if (current) { bg=STATUS[step].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[step].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
+    else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+    btn.style.cssText = `background:${bg};color:${color};border:2px solid ${current?'#1a3a2a':'transparent'};cursor:pointer;`;
+    btn.querySelector('.step-icon').textContent = icon;
+    // connector color
+    const connector = btn.nextElementSibling;
+    if (connector && connector.tagName === 'DIV') connector.style.background = done ? '#1a3a2a' : '#e5e7eb';
+  });
+  ['after_sales','closed'].forEach(spec => {
+    const btn = document.getElementById('step-' + spec);
+    if (!btn) return;
+    btn.style.cssText = spec === s ? STATUS[spec].s+';border-color:#1a3a2a;cursor:pointer;' : 'background:white;color:#6b7280;border-color:#e5e7eb;cursor:pointer;';
+  });
+  onUpdStatusChange();
+}
 
 function badge(s) {
   const x = STATUS[s] || { label: s, s:'background:#f3f4f6;color:#9ca3af' };
@@ -653,22 +720,18 @@ function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'nu
 // ── Deadline / SLA ──
 // Default SLA in hours per status (admin can override per-order)
 const STATUS_SLA_HOURS = {
-  pending_payment: 0.25,   // 15 min
-  paid: 2,                 // 2h to assign
-  accepted: 24,            // 24h design drawings
-  in_production: 600,      // 25 days default (variable)
-  production_complete: 24,
-  shipped: 480,            // 20 days default (variable)
-  in_transit: 480,
-  arrived: 24,
-  installing: 120,         // 5 days
-  after_sales: 72,
+  pending_payment: 0.25,  // 15 min
+  paid:            2,     // 2h to start production
+  in_production:   600,   // 25 days default (variable)
+  shipped:         480,   // 20 days default (variable)
+  arrived:         24,    // 24h to book install
+  installing:      120,   // 5 days
+  after_sales:     72,
 };
-// Statuses with variable-day selector in update form
+// Statuses with variable-day slider
 const STATUS_VAR_DAYS = {
   in_production: { max: 25, default: 25 },
   shipped:       { max: 30, default: 20 },
-  in_transit:    { max: 30, default: 20 },
 };
 
 function calcDeadline(status, customDays) {
@@ -1178,10 +1241,21 @@ async function openDetail(id, backView) {
     </div>`;
   }).join('');
 
-  const statusOptions = Object.entries(STATUS)
-    .filter(([v, s]) => !s.hidden || v === o.status)
-    .map(([v, s]) => `<option value="${v}" ${v === o.status ? 'selected' : ''}>${t('status_' + v) || s.label}</option>`)
-    .join('');
+  // Progress bar for info card
+  const curStep = STATUS[o.status]?.step ?? 0;
+  const progressPct = Math.max(0, Math.round((curStep / 6) * 100));
+  const progressBar = ['completed','closed'].includes(o.status) ? '' : `
+    <div class="mt-3">
+      <div class="flex justify-between text-xs text-gray-400 mb-1">
+        <span>${t('status_pending_payment')}</span><span>${t('status_completed')}</span>
+      </div>
+      <div class="h-1.5 rounded-full" style="background:#e5e7eb">
+        <div class="h-full rounded-full transition-all" style="width:${progressPct}%;background:#1a3a2a"></div>
+      </div>
+      <div class="flex justify-between mt-1">
+        ${CORE_STEPS.map((s,i) => `<div class="w-2 h-2 rounded-full" style="background:${i<=curStep?'#1a3a2a':'#e5e7eb'}"></div>`).join('')}
+      </div>
+    </div>`;
 
   const supplierOptions = `<option value="">${t('opt_unassigned')}</option>` +
     (supList || []).map(s => `<option value="${s.id}" ${s.id === o.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
@@ -1226,25 +1300,27 @@ async function openDetail(id, backView) {
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
       ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">${o.notes}</p>` : ''}
+      ${progressBar}
       ${deadlineBanner}
     </div>
 
     <!-- Update status -->
     <div class="card p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
+      <div class="mb-3">
+        <label class="label mb-2">${t('lbl_order_status')}</label>
+        ${renderStatusTimeline(o.status)}
+      </div>
+      <div id="sla-days-row" class="mb-3 hidden">
+        <label class="label text-xs">${t('lbl_sla_days')}</label>
+        <div class="flex items-center gap-3">
+          <input type="range" id="sla-days" min="1" max="25" value="25" class="flex-1"
+                 oninput="document.getElementById('sla-days-val').textContent=this.value">
+          <span class="font-bold text-hg w-16 text-center"><span id="sla-days-val">25</span> ${t('stat_day_pfx')}</span>
+        </div>
+      </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
-          <label class="label">${t('lbl_order_status')}</label>
-          <select id="upd-status" class="input" onchange="onUpdStatusChange()">${statusOptions}</select>
-          <div id="sla-days-row" class="mt-2 hidden">
-            <label class="label text-xs" id="sla-days-label">${t('lbl_sla_days')}</label>
-            <div class="flex items-center gap-3">
-              <input type="range" id="sla-days" min="1" max="25" value="25" class="flex-1"
-                     oninput="document.getElementById('sla-days-val').textContent=this.value">
-              <span class="font-bold text-hg w-12 text-center"><span id="sla-days-val">25</span> ${t('stat_day_pfx')}</span>
-            </div>
-          </div>
-        </div>
         <div>
           <label class="label">${t('lbl_pay_status')}</label>
           <select id="upd-payment" class="input">
