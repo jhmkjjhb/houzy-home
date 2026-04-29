@@ -29,10 +29,10 @@
   select { cursor: pointer; }
   select option:checked { background-color: #1a3a2a; color: #ffffff; }
   @keyframes overduePulse {
-    0%,100% { background-color: #fef2f2; }
-    50%      { background-color: #fecaca; }
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.6; }
   }
-  .row-overdue { animation: overduePulse 2s ease-in-out infinite; }
+  .row-overdue-badge { animation: overduePulse 1.5s ease-in-out infinite; }
   .row-warn    { background: #fffbeb; }
 </style>
 </head>
@@ -791,12 +791,9 @@ function fmtCountdown(deadlineAt) {
   return { text: `⏱ ${h}h ${m}m`, overdue: false, warn };
 }
 
-function deadlineRowClass(o) {
-  if (['completed','closed'].includes(o.status)) return '';
-  const cd = fmtCountdown(o.deadline_at);
-  if (cd?.overdue) return 'row-overdue';
-  if (cd?.warn)    return 'row-warn';
-  return '';
+function deadlineRowInfo(o) {
+  if (['completed','closed'].includes(o.status)) return null;
+  return fmtCountdown(o.deadline_at);
 }
 
 // ── Warranty panel (5-year, annual reminders) ──
@@ -915,6 +912,7 @@ async function init() {
 
   await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
+  checkOverdueAlerts();
   if (profile?.role === 'admin') {
     document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
   }
@@ -1062,9 +1060,10 @@ function renderDashboard() {
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
         <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
        </tr></thead><tbody>${recent.map(o => {
-        const rc2 = deadlineRowClass(o);
-        return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer ${rc2}" onclick="openDetail('${o.id}')">
-          <td class="py-2 font-mono text-xs" style="color:${rc2?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        const cd2 = deadlineRowInfo(o);
+        const bg2 = cd2?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd2?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+        return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer" style="${bg2}" onclick="openDetail('${o.id}')">
+          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
           <td class="py-2">${o.customers?.name || '-'}</td>
           <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
           <td class="py-2">${badge(o.status)}</td>
@@ -1171,12 +1170,12 @@ function renderOrdersTable(orders) {
         <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th><th class="px-4 py-3">${t('th_store')}</th>
         <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
        </tr></thead><tbody>${orders.map(o => {
-        const cd = fmtCountdown(o.deadline_at);
-        const rc = deadlineRowClass(o);
-        const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
+        const cd = deadlineRowInfo(o);
+        const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+        const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium ${cd.overdue?'row-overdue-badge':''}" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
         return `
-        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90 ${rc}" onclick="openDetail('${o.id}')">
-          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${rc?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
+          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
           <td class="px-4 py-3">
             <div class="font-medium">${o.customers?.name || '-'}</div>
             <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
