@@ -40,31 +40,156 @@
     </svg>
   </a>
 
-  <!-- Staff / Supplier login -->
-  <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-    <div class="flex items-center gap-3 mb-5">
-      <div class="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
+  <!-- Login panel -->
+  <div id="login-panel">
+    <!-- Staff / Supplier login -->
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-white font-semibold">员工 / 厂家 / 管理员</div>
+          <div class="text-gray-400 text-xs">Staff · Supplier · Admin</div>
+        </div>
       </div>
-      <div>
-        <div class="text-white font-semibold">员工 / 厂家 / 管理员</div>
-        <div class="text-gray-400 text-xs">Staff · Supplier · Admin</div>
-      </div>
+
+      <form id="form" onsubmit="doLogin(event)" class="space-y-3">
+        <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <input type="password" id="pw" placeholder="密码 Password" required autocomplete="current-password"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button type="submit" id="btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          登录 Login
+        </button>
+        <p id="err" class="text-red-400 text-xs hidden"></p>
+      </form>
     </div>
 
-    <form id="form" onsubmit="doLogin(event)" class="space-y-3">
-      <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
-             class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-      <input type="password" id="pw" placeholder="密码 Password" required autocomplete="current-password"
-             class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-      <button type="submit" id="btn"
-              class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
-        登录 Login
-      </button>
-      <p id="err" class="text-red-400 text-xs hidden"></p>
-    </form>
+    <!-- Register link -->
+    <p class="text-center mt-4 text-sm">
+      <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition">没有账号？立即注册 →</a>
+    </p>
+  </div>
+
+  <!-- Registration panel -->
+  <div id="reg-panel" class="hidden">
+    <!-- Back link -->
+    <p class="mb-4">
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+    </p>
+
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-5">申请注册账号</h2>
+
+      <!-- Role selector -->
+      <div class="flex gap-3 mb-5">
+        <button id="reg-btn-staff" onclick="selectRegType('staff')"
+                class="flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition">
+          👤 员工 Staff
+        </button>
+        <button id="reg-btn-supplier" onclick="selectRegType('supplier')"
+                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition">
+          🏭 厂家 Supplier
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Staff fields -->
+        <div id="reg-staff-fields" class="space-y-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-name" placeholder="请输入姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">员工编号</label>
+            <input type="text" id="reg-employee-no" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">部门</label>
+            <input type="text" id="reg-department" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">职位</label>
+            <input type="text" id="reg-position" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+        </div>
+
+        <!-- Supplier fields -->
+        <div id="reg-supplier-fields" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">厂家名称 *</label>
+            <input type="text" id="reg-company" placeholder="请输入公司名称"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">联系人姓名 *</label>
+            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">统一社会信用代码</label>
+            <input type="text" id="reg-credit-code" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">公司地址</label>
+            <input type="text" id="reg-address" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">主营产品/业务</label>
+            <input type="text" id="reg-products" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+        </div>
+
+        <!-- Common: password -->
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">密码 *</label>
+          <input type="password" id="reg-pw" placeholder="请设置登录密码"
+                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">确认密码 *</label>
+          <input type="password" id="reg-pw2" placeholder="请再次输入密码"
+                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        </div>
+
+        <button onclick="submitReg()" id="reg-btn-submit"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          提交申请
+        </button>
+        <p id="reg-err" class="text-red-400 text-xs hidden"></p>
+      </div>
+    </div>
   </div>
 
   <p class="text-center text-gray-600 text-xs mt-8">© 2026 HOUZY HOME SDN. BHD.</p>
