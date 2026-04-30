@@ -657,52 +657,72 @@ function fmtSla(s) {
   return h + 'h';
 }
 
-function renderStatusTimeline(currentStatus) {
-  const curStep = STATUS[currentStatus]?.step ?? -1;
+// Cached for live countdown updates
+let _tlLogs = [], _tlDeadline = null, _tlStatus = '';
+
+function stepTimeLabel(s, i, curStep, isCurrentStatus) {
+  if (isCurrentStatus) {
+    const cd = fmtCountdown(_tlDeadline);
+    if (!cd) return { text: fmtSla(s), color: '#9ca3af' };
+    return { text: cd.text, color: cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a' };
+  }
+  if (i < curStep) {
+    // completed — find first log for this status
+    const log = _tlLogs.find(l => l.status === s);
+    return { text: log ? fmtDateTime(log.created_at) : '', color: '#9ca3af' };
+  }
+  return { text: fmtSla(s), color: '#d1d5db' };
+}
+
+function renderStatusTimeline(currentStatus, logs, deadlineAt) {
+  _tlLogs     = logs     || _tlLogs;
+  _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
+  _tlStatus   = currentStatus;
+
+  const curStep  = STATUS[currentStatus]?.step ?? -1;
   const isSpecial = STATUS[currentStatus]?.step === -1;
 
   const stepsHtml = CORE_STEPS.map((s, i) => {
     const done    = i < curStep || (!isSpecial && currentStatus === 'completed' && i <= 6);
     const current = s === currentStatus;
     const lbl     = t('status_' + s) || STATUS[s].label;
-    const sla     = fmtSla(s);
     let bg, color, icon;
     if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
     else if (current) { bg=STATUS[s].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[s].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
     else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
-    const border = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
+    const border  = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
+    const tl      = stepTimeLabel(s, i, curStep, current);
     const connector = i < CORE_STEPS.length - 1
-      ? `<div class="flex flex-col items-center flex-shrink-0">
-           <div class="w-3 flex-shrink-0" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px"></div>
-           <div class="w-3" style="height:14px"></div>
-         </div>` : '';
-    return `<div class="flex flex-col items-center flex-shrink-0">
+      ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
+      : '';
+    return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:64px">
               <button id="step-${s}" onclick="selectStep('${s}')"
                 class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all w-16"
                 style="background:${bg};color:${color};${border}cursor:pointer;">
                 <span class="step-icon text-sm leading-none">${icon}</span>
                 <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
               </button>
-              ${sla ? `<span class="text-center mt-0.5" style="font-size:9px;color:#9ca3af;min-width:64px">${sla}</span>` : ''}
+              <span id="step-time-${s}" class="text-center mt-0.5 leading-tight px-0.5"
+                    style="font-size:9px;color:${tl.color};min-width:64px;word-break:break-all">${tl.text}</span>
             </div>${connector}`;
   }).join('');
 
   const specialHtml = ['after_sales','closed'].map(s => {
     const active = s === currentStatus;
-    const lbl = t('status_' + s) || STATUS[s].label;
-    const sla = fmtSla(s);
+    const lbl    = t('status_' + s) || STATUS[s].label;
+    const tl     = active ? stepTimeLabel(s, -1, curStep, true) : { text: fmtSla(s), color: '#d1d5db' };
     return `<div class="flex flex-col items-center">
               <button id="step-${s}" onclick="selectStep('${s}')"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
                 style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
                 ${lbl}
               </button>
-              ${sla ? `<span class="text-center mt-0.5" style="font-size:9px;color:#9ca3af">${sla}</span>` : ''}
+              <span id="step-time-${s}" style="font-size:9px;color:${tl.color}">${tl.text}</span>
             </div>`;
   }).join('');
 
   return `<div class="overflow-x-auto pb-1 -mx-1 px-1">
-            <div class="flex items-start min-w-max">${stepsHtml}</div>
+            <div class="flex items-start min-w-max gap-0">${stepsHtml}</div>
           </div>
           <div class="flex gap-2 mt-2">${specialHtml}</div>
           <input type="hidden" id="upd-status" value="${currentStatus}">`;
@@ -731,6 +751,24 @@ function selectStep(s) {
     const btn = document.getElementById('step-' + spec);
     if (!btn) return;
     btn.style.cssText = spec === s ? STATUS[spec].s+';border-color:#1a3a2a;cursor:pointer;' : 'background:white;color:#6b7280;border-color:#e5e7eb;cursor:pointer;';
+  });
+  // Refresh time labels for all steps
+  const savedCurStep = STATUS[_tlStatus]?.step ?? -1;
+  CORE_STEPS.forEach((step, i) => {
+    const el = document.getElementById('step-time-' + step);
+    if (!el) return;
+    const isSelected = step === s;
+    const tl = stepTimeLabel(step, i, savedCurStep, isSelected);
+    el.textContent = tl.text;
+    el.style.color  = tl.color;
+  });
+  ['after_sales','closed'].forEach(spec => {
+    const el = document.getElementById('step-time-' + spec);
+    if (!el) return;
+    const isSelected = spec === s;
+    const tl = isSelected ? stepTimeLabel(spec, -1, savedCurStep, true) : { text: fmtSla(spec), color: '#d1d5db' };
+    el.textContent = tl.text;
+    el.style.color  = tl.color;
   });
   // Live-update progress bar
   const newStep = STATUS[s]?.step ?? 0;
@@ -911,6 +949,14 @@ function checkOverdueAlerts() {
     renderOrdersTable(filterGetCurrent());
   } else if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
     renderDashboard();
+  }
+  // Refresh current-step countdown in detail view if open
+  if (!document.getElementById('v-detail').classList.contains('hidden') && _tlStatus) {
+    const el = document.getElementById('step-time-' + _tlStatus);
+    if (el) {
+      const cd = fmtCountdown(_tlDeadline);
+      if (cd) { el.textContent = cd.text; el.style.color = cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a'; }
+    }
   }
 }
 
@@ -1454,7 +1500,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status)}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at)}
       </div>
       <div id="sla-days-row" class="mb-3 hidden">
         <label class="label text-xs">${t('lbl_sla_days')}</label>
