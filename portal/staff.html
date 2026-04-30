@@ -1387,7 +1387,9 @@ async function openDetail(id, backView) {
     </div>` : '';
 
   // Pre-format deadline for datetime-local input
-  const dlLocal = o.deadline_at ? new Date(new Date(o.deadline_at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+  // If DB has no deadline, auto-compute from current status SLA so field is never blank
+  const _dlIso = o.deadline_at || calcDeadline(o.status);
+  const dlLocal = _dlIso ? new Date(new Date(_dlIso).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
   const _slaH = STATUS_SLA_HOURS[o.status];
   const slaHint = _slaH ? (() => {
     if (_slaH >= 8760) { const yrs = Math.round(_slaH / 8760); return `(${t('sla_default')} ${yrs}${t('warranty_year_sfx')||'年'})`; }
@@ -1600,7 +1602,11 @@ async function updateOrder(id) {
   if (payMethod) upd.payment_method = payMethod;
   if (status === 'completed' || status === 'closed') { upd.completed_at = new Date().toISOString(); upd.deadline_at = null; }
 
-  await sb.from('orders').update(upd).eq('id', id);
+  const { error: updErr } = await sb.from('orders').update(upd).eq('id', id);
+  if (updErr) {
+    alert(`保存失败: ${updErr.message}\n\n如首次使用，请先在 Supabase 运行迁移脚本。`);
+    return;
+  }
   await sb.from('order_logs').insert({
     order_id: id, status,
     operator_id: profile.id,
