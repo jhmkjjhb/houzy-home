@@ -1417,9 +1417,6 @@ async function openDetail(id, backView) {
   const progressPct = curStep < 0 ? 0 : Math.round(((curStep + 1) / 7) * 100);
   const progressBar = ['completed','closed','after_sales'].includes(o.status) ? '' : `
     <div id="progress-bar-wrap" class="mt-3">
-      <div class="flex justify-between text-xs text-gray-400 mb-1">
-        <span>${t('status_pending_payment')}</span><span>${t('status_completed')}</span>
-      </div>
       <div class="h-1.5 rounded-full" style="background:#e5e7eb">
         <div id="progress-bar-fill" class="h-full rounded-full transition-all" style="width:${progressPct}%;background:#1a3a2a"></div>
       </div>
