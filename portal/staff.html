@@ -1327,6 +1327,9 @@ async function submitOrder() {
   const refId = document.getElementById('o-referrer').value || null;
   const currency = document.getElementById('o-currency').value || 'MYR';
   const initStatus = document.getElementById('o-payment').value === 'paid' ? 'paid' : 'pending_payment';
+  const initPayMethod = document.getElementById('o-pay-method').value || null;
+
+  // Core insert (original schema columns only)
   const { data: order, error: oe } = await sb.from('orders').insert({
     order_no: orderNo,
     store_id: storeId,
@@ -1334,16 +1337,18 @@ async function submitOrder() {
     staff_id: profile.id,
     referrer_id: refId,
     amount,
-    currency,
     status: initStatus,
     payment_status: document.getElementById('o-payment').value,
-    payment_method: document.getElementById('o-pay-method').value || null,
     description: document.getElementById('o-desc').value.trim() || null,
     notes: document.getElementById('o-notes').value.trim() || null,
-    deadline_at: calcDeadline(initStatus),
   }).select().single();
 
   if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+
+  // Extended columns (silently skip if migration not yet run)
+  const extNew = { deadline_at: calcDeadline(initStatus), currency };
+  if (initPayMethod) extNew.payment_method = initPayMethod;
+  await sb.from('orders').update(extNew).eq('id', order.id); // ignore error
 
   // Log initial status
   await sb.from('order_logs').insert({
@@ -1664,16 +1669,22 @@ async function updateOrder(id) {
 
   // Use manual deadline if set, else slider days, else auto-calc from SLA
   const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
+  const isTerminal  = status === 'completed' || status === 'closed';
 
-  const upd = { status, payment_status: payment, supplier_id: supplier, deadline_at, updated_at: new Date().toISOString() };
-  if (payMethod) upd.payment_method = payMethod;
-  if (status === 'completed' || status === 'closed') { upd.completed_at = new Date().toISOString(); upd.deadline_at = null; }
+  // ── Core update (original schema columns — always works) ──
+  const coreUpd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  if (isTerminal) coreUpd.completed_at = new Date().toISOString();
 
-  const { error: updErr } = await sb.from('orders').update(upd).eq('id', id);
+  const { error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id);
   if (updErr) {
-    alert(`保存失败: ${updErr.message}\n\n如首次使用，请先在 Supabase 运行迁移脚本。`);
+    alert(`保存失败: ${updErr.message}`);
     return;
   }
+
+  // ── Extended update (migrated columns — silently skip if column missing) ──
+  const extUpd = { deadline_at: isTerminal ? null : deadline_at };
+  if (payMethod !== undefined) extUpd.payment_method = payMethod || null;
+  await sb.from('orders').update(extUpd).eq('id', id); // ignore error — column may not exist yet
   await sb.from('order_logs').insert({
     order_id: id, status,
     operator_id: profile.id,
