@@ -226,9 +226,138 @@ async function doLogin(e) {
 
 async function redirect() {
   const { data } = await sb.rpc('get_my_profile');
+  if (!data) {
+    // No profile — user likely has a pending or rejected registration
+    await sb.auth.signOut();
+    const err = document.getElementById('err');
+    err.textContent = '账号审核中，请等待管理员审核后再登录。';
+    err.classList.remove('hidden');
+    document.getElementById('btn').textContent = '登录 Login';
+    document.getElementById('btn').disabled = false;
+    return;
+  }
   const role = data?.role || 'customer';
   const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', customer: 'customer.html' };
   window.location.href = map[role] || 'customer.html';
+}
+
+// ── Registration ──
+let regType = 'staff';
+
+function showRegister() {
+  document.getElementById('login-panel').classList.add('hidden');
+  document.getElementById('reg-panel').classList.remove('hidden');
+}
+
+function showLogin() {
+  document.getElementById('login-panel').classList.remove('hidden');
+  document.getElementById('reg-panel').classList.add('hidden');
+  document.getElementById('reg-err').classList.add('hidden');
+}
+
+function selectRegType(t) {
+  regType = t;
+  const staffBtn = document.getElementById('reg-btn-staff');
+  const supBtn   = document.getElementById('reg-btn-supplier');
+  const staffFlds = document.getElementById('reg-staff-fields');
+  const supFlds   = document.getElementById('reg-supplier-fields');
+
+  if (t === 'staff') {
+    staffBtn.className = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition';
+    supBtn.className   = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition';
+    staffFlds.classList.remove('hidden');
+    supFlds.classList.add('hidden');
+  } else {
+    supBtn.className   = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition';
+    staffBtn.className = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition';
+    supFlds.classList.remove('hidden');
+    staffFlds.classList.add('hidden');
+  }
+}
+
+async function submitReg() {
+  const errEl = document.getElementById('reg-err');
+  const btn   = document.getElementById('reg-btn-submit');
+  errEl.classList.add('hidden');
+
+  // Collect fields
+  let name, phone, email;
+  let payload = { type: regType };
+
+  if (regType === 'staff') {
+    name  = document.getElementById('reg-name').value.trim();
+    phone = document.getElementById('reg-phone').value.trim();
+    email = document.getElementById('reg-email').value.trim();
+    if (!name || !phone || !email) {
+      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    payload.name            = name;
+    payload.phone           = phone;
+    payload.email           = email;
+    payload.employee_no     = document.getElementById('reg-employee-no').value.trim() || null;
+    payload.department      = document.getElementById('reg-department').value.trim() || null;
+    payload.position_title  = document.getElementById('reg-position').value.trim() || null;
+  } else {
+    const company = document.getElementById('reg-company').value.trim();
+    name  = document.getElementById('reg-sup-name').value.trim();
+    phone = document.getElementById('reg-sup-phone').value.trim();
+    email = document.getElementById('reg-sup-email').value.trim();
+    if (!company || !name || !phone || !email) {
+      errEl.textContent = '请填写厂家名称、联系人姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    payload.company_name  = company;
+    payload.name          = name;
+    payload.phone         = phone;
+    payload.email         = email;
+    payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
+    payload.address       = document.getElementById('reg-address').value.trim() || null;
+    payload.products      = document.getElementById('reg-products').value.trim() || null;
+  }
+
+  const pw  = document.getElementById('reg-pw').value;
+  const pw2 = document.getElementById('reg-pw2').value;
+  if (!pw || pw.length < 6) {
+    errEl.textContent = '密码至少需要6位'; errEl.classList.remove('hidden'); return;
+  }
+  if (pw !== pw2) {
+    errEl.textContent = '两次输入的密码不一致'; errEl.classList.remove('hidden'); return;
+  }
+
+  btn.textContent = '提交中...'; btn.disabled = true;
+
+  // Sign up with Supabase auth
+  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw });
+  if (authErr) {
+    const msg = authErr.message.includes('already registered') || authErr.message.includes('already been registered')
+      ? '该邮箱已注册，请直接登录或联系管理员。'
+      : authErr.message;
+    errEl.textContent = msg; errEl.classList.remove('hidden');
+    btn.textContent = '提交申请'; btn.disabled = false;
+    return;
+  }
+
+  // Insert registration record
+  payload.user_id = authData?.user?.id || null;
+  const { error: insErr } = await sb.from('registrations').insert(payload);
+  if (insErr) {
+    errEl.textContent = '提交失败: ' + insErr.message; errEl.classList.remove('hidden');
+    btn.textContent = '提交申请'; btn.disabled = false;
+    return;
+  }
+
+  // Sign out immediately — they need admin approval first
+  await sb.auth.signOut();
+
+  btn.textContent = '提交申请'; btn.disabled = false;
+
+  // Show success — replace form content
+  document.getElementById('reg-panel').innerHTML = `
+    <div class="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+      <div class="text-4xl mb-4">✅</div>
+      <h2 class="text-white font-bold text-lg mb-3">申请已提交！</h2>
+      <p class="text-gray-300 text-sm leading-relaxed mb-6">请等待管理员审核，审核通过后即可登录。</p>
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+    </div>`;
 }
 </script>
 </body>
