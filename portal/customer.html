@@ -133,20 +133,22 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let myPhone = '', myOrders = [];
 
 const STATUS = {
-  pending_payment:    { label:'待支付',     cls:'bg-yellow-100 text-yellow-800' },
-  paid:               { label:'已支付',     cls:'bg-blue-100 text-blue-700' },
-  assigned:           { label:'已分配厂家', cls:'bg-blue-100 text-blue-700' },
-  accepted:           { label:'厂家已接单', cls:'bg-violet-100 text-violet-700' },
-  in_production:      { label:'生产中',     cls:'bg-violet-100 text-violet-700' },
-  production_complete:{ label:'生产完成',   cls:'bg-indigo-100 text-indigo-700' },
-  shipped:            { label:'已发货',     cls:'bg-orange-100 text-orange-700' },
-  in_transit:         { label:'运输中',     cls:'bg-orange-100 text-orange-700' },
-  arrived:            { label:'已到货',     cls:'bg-teal-100 text-teal-700' },
-  installing:         { label:'安装中',     cls:'bg-teal-100 text-teal-700' },
-  completed:          { label:'已完成',     cls:'bg-green-100 text-green-700' },
-  after_sales:        { label:'售后中',     cls:'bg-red-100 text-red-700' },
-  closed:             { label:'已关闭',     cls:'bg-gray-100 text-gray-500' },
+  pending_payment:    { label:'待付款', cls:'bg-yellow-100 text-yellow-800', step:0 },
+  paid:               { label:'已付款', cls:'bg-blue-100 text-blue-700',    step:1 },
+  in_production:      { label:'生产中', cls:'bg-violet-100 text-violet-700',step:2 },
+  shipped:            { label:'已发货', cls:'bg-orange-100 text-orange-700',step:3 },
+  arrived:            { label:'已到货', cls:'bg-teal-100 text-teal-700',    step:4 },
+  installing:         { label:'安装中', cls:'bg-teal-100 text-teal-700',    step:5 },
+  completed:          { label:'已完成', cls:'bg-green-100 text-green-700',  step:6 },
+  after_sales:        { label:'质保服务',cls:'bg-blue-100 text-blue-700',   step:-1 },
+  closed:             { label:'已关闭', cls:'bg-gray-100 text-gray-500',    step:-1 },
+  // legacy
+  assigned:           { label:'已分配', cls:'bg-blue-100 text-blue-700',    step:1 },
+  accepted:           { label:'已接单', cls:'bg-violet-100 text-violet-700',step:2 },
+  production_complete:{ label:'生产完成',cls:'bg-indigo-100 text-indigo-700',step:2 },
+  in_transit:         { label:'运输中', cls:'bg-orange-100 text-orange-700',step:3 },
 };
+const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
 
 function show(id) {
   ['s-phone','s-orders','s-detail'].forEach(s =>
@@ -269,6 +271,54 @@ async function openDetail(id) {
     </div>`;
   }).join('');
 
+  // Build progress bar + step timeline
+  const curStep = STATUS[o.status]?.step ?? 0;
+  const isTerminal = ['completed','closed','after_sales'].includes(o.status);
+  const progressPct = curStep < 0 ? 100 : Math.round(((curStep + 1) / 7) * 100);
+  const progressBar = isTerminal && o.status !== 'completed' ? '' : `
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-xs font-medium" style="color:#1a3a2a">${STATUS[o.status]?.label || o.status}</span>
+        <span class="text-xs text-gray-400">${progressPct}%</span>
+      </div>
+      <div class="h-1.5 rounded-full bg-gray-100 mb-2">
+        <div class="h-full rounded-full transition-all" style="width:${progressPct}%;background:#1a3a2a"></div>
+      </div>
+    </div>`;
+
+  // Horizontal step timeline
+  const stepTimeline = `
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-4">订单状态</h3>
+      <div class="overflow-x-auto pb-1 -mx-1 px-1">
+        <div class="flex items-start min-w-max gap-0">
+          ${CORE_STEPS.map((s, i) => {
+            const done    = i < curStep || o.status === 'completed';
+            const current = s === o.status || (STATUS[o.status]?.step === i);
+            const log     = (logs || []).find(l => l.status === s || STATUS[l.status]?.step === i && i <= curStep);
+            let bg, color, icon;
+            if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+            else if (current) { bg='#c8a96e'; color='#fff'; icon='●'; }
+            else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+            const timeText = done && log ? fmtDateTime(log.created_at) : current && log ? fmtDateTime(log.created_at) : '';
+            const connector = i < CORE_STEPS.length - 1
+              ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${done?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
+              : '';
+            return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:60px">
+                      <div class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 w-14 text-xs font-medium"
+                           style="background:${bg};color:${color};border:2px solid ${current?'#1a3a2a':'transparent'}">
+                        <span class="text-sm leading-none">${icon}</span>
+                        <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${STATUS[s].label}</span>
+                      </div>
+                      <span class="text-center mt-0.5 px-0.5" style="font-size:9px;color:#9ca3af;min-width:60px;word-break:break-all">${timeText}</span>
+                    </div>${connector}`;
+          }).join('')}
+        </div>
+      </div>
+      ${o.status === 'after_sales' ? `<div class="mt-3 text-xs text-blue-600 font-medium">质保服务中</div>` : ''}
+      ${o.status === 'closed'      ? `<div class="mt-3 text-xs text-gray-400">订单已关闭</div>` : ''}
+    </div>`;
+
   document.getElementById('detail-content').innerHTML = `
     <!-- Info card -->
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
@@ -300,11 +350,14 @@ async function openDetail(id) {
           <span class="text-gray-700">${fmtDate(o.completed_at)}</span>
         </div>` : ''}
       </div>
+      ${progressBar}
     </div>
 
-    <!-- Timeline -->
+    ${stepTimeline}
+
+    <!-- Timeline log -->
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-4">订单进度</h3>
+      <h3 class="font-semibold text-gray-800 mb-4">进度记录</h3>
       ${logsHtml || '<p class="text-gray-400 text-sm">暂无进度记录</p>'}
     </div>
 

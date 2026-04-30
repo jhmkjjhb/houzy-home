@@ -954,13 +954,24 @@ function checkOverdueAlerts() {
   } else if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
     renderDashboard();
   }
-  // Refresh current-step countdown in detail view if open
+  // Refresh all step time labels in detail view if open
   if (!document.getElementById('v-detail').classList.contains('hidden') && _tlStatus) {
-    const el = document.getElementById('step-time-' + _tlStatus);
-    if (el) {
-      const cd = fmtCountdown(_tlDeadline);
-      if (cd) { el.textContent = cd.text; el.style.color = cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a'; }
-    }
+    const curStep = STATUS[_tlStatus]?.step ?? -1;
+    const selectedVal = document.getElementById('upd-status')?.value || _tlStatus;
+    CORE_STEPS.forEach((step, i) => {
+      const el = document.getElementById('step-time-' + step);
+      if (!el) return;
+      const tl = stepTimeLabel(step, i, curStep, step === selectedVal);
+      el.textContent = tl.text;
+      el.style.color  = tl.color;
+    });
+    ['after_sales','closed'].forEach(spec => {
+      const el = document.getElementById('step-time-' + spec);
+      if (!el) return;
+      const tl = spec === selectedVal ? stepTimeLabel(spec, -1, curStep, true) : { text: fmtSla(spec), color: '#d1d5db' };
+      el.textContent = tl.text;
+      el.style.color  = tl.color;
+    });
   }
 }
 
