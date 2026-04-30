@@ -648,6 +648,15 @@ const STATUS = {
 };
 const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
 
+function fmtSla(s) {
+  const h = STATUS_SLA_HOURS[s];
+  if (!h) return '';
+  if (h >= 8760) return Math.round(h / 8760) + (t('warranty_year_sfx') || '年');
+  if (h >= 24)   return Math.round(h / 24) + t('stat_day_pfx');
+  if (h < 1)     return Math.round(h * 60) + '分';
+  return h + 'h';
+}
+
 function renderStatusTimeline(currentStatus) {
   const curStep = STATUS[currentStatus]?.step ?? -1;
   const isSpecial = STATUS[currentStatus]?.step === -1;
@@ -656,32 +665,44 @@ function renderStatusTimeline(currentStatus) {
     const done    = i < curStep || (!isSpecial && currentStatus === 'completed' && i <= 6);
     const current = s === currentStatus;
     const lbl     = t('status_' + s) || STATUS[s].label;
+    const sla     = fmtSla(s);
     let bg, color, icon;
-    if (done)    { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+    if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
     else if (current) { bg=STATUS[s].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[s].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
-    else         { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+    else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
     const border = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
-    return `<button id="step-${s}" onclick="selectStep('${s}')"
-              class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all flex-shrink-0 w-16"
-              style="background:${bg};color:${color};${border}cursor:pointer;">
-              <span class="step-icon text-sm leading-none">${icon}</span>
-              <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
-            </button>
-            ${i < CORE_STEPS.length-1 ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:-8px"></div>` : ''}`;
+    const connector = i < CORE_STEPS.length - 1
+      ? `<div class="flex flex-col items-center flex-shrink-0">
+           <div class="w-3 flex-shrink-0" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px"></div>
+           <div class="w-3" style="height:14px"></div>
+         </div>` : '';
+    return `<div class="flex flex-col items-center flex-shrink-0">
+              <button id="step-${s}" onclick="selectStep('${s}')"
+                class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all w-16"
+                style="background:${bg};color:${color};${border}cursor:pointer;">
+                <span class="step-icon text-sm leading-none">${icon}</span>
+                <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
+              </button>
+              ${sla ? `<span class="text-center mt-0.5" style="font-size:9px;color:#9ca3af;min-width:64px">${sla}</span>` : ''}
+            </div>${connector}`;
   }).join('');
 
   const specialHtml = ['after_sales','closed'].map(s => {
     const active = s === currentStatus;
     const lbl = t('status_' + s) || STATUS[s].label;
-    return `<button id="step-${s}" onclick="selectStep('${s}')"
-              class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
-              style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
-              ${lbl}
-            </button>`;
+    const sla = fmtSla(s);
+    return `<div class="flex flex-col items-center">
+              <button id="step-${s}" onclick="selectStep('${s}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
+                style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
+                ${lbl}
+              </button>
+              ${sla ? `<span class="text-center mt-0.5" style="font-size:9px;color:#9ca3af">${sla}</span>` : ''}
+            </div>`;
   }).join('');
 
   return `<div class="overflow-x-auto pb-1 -mx-1 px-1">
-            <div class="flex items-center min-w-max">${stepsHtml}</div>
+            <div class="flex items-start min-w-max">${stepsHtml}</div>
           </div>
           <div class="flex gap-2 mt-2">${specialHtml}</div>
           <input type="hidden" id="upd-status" value="${currentStatus}">`;
