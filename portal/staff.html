@@ -770,6 +770,22 @@ function selectStep(s) {
     el.textContent = tl.text;
     el.style.color  = tl.color;
   });
+  // Sync progress bar with selected step
+  const newStep = STATUS[s]?.step ?? 0;
+  const isTerminal = ['completed','closed','after_sales'].includes(s);
+  const wrap = document.getElementById('progress-bar-wrap');
+  if (wrap) {
+    wrap.style.display = isTerminal ? 'none' : '';
+    if (!isTerminal) {
+      const pct = newStep < 0 ? 0 : Math.round(((newStep + 1) / 7) * 100);
+      const fill = document.getElementById('progress-bar-fill');
+      if (fill) fill.style.width = pct + '%';
+      const dots = document.getElementById('progress-dots');
+      if (dots) dots.querySelectorAll('div').forEach((dot, i) => {
+        dot.style.background = i <= newStep ? '#1a3a2a' : '#e5e7eb';
+      });
+    }
+  }
   onUpdStatusChange();
 }
 
