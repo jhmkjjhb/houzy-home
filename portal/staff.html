@@ -34,6 +34,12 @@
   }
   .row-overdue-badge { animation: overduePulse 1.5s ease-in-out infinite; }
   .row-warn    { background: #fffbeb; }
+  @keyframes cdTick {
+    0%   { transform: scale(1);    opacity: 1; }
+    30%  { transform: scale(1.12); opacity: 0.7; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
 </style>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
@@ -845,13 +851,19 @@ function fmtCountdown(deadlineAt) {
   if (!deadlineAt) return null;
   const diff = new Date(deadlineAt) - Date.now();
   if (diff <= 0) return { text: '⚠️ ' + t('overdue'), overdue: true, warn: false };
-  const totalMin = Math.floor(diff / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  const warn = totalMin < 240; // warn if < 4h
-  if (h >= 24) { const d = Math.floor(h/24); return { text: `⏱ ${d}${t('stat_day_pfx')} ${h%24}h`, overdue: false, warn }; }
-  if (h === 0) return { text: `⏱ ${m}m`, overdue: false, warn: true };
-  return { text: `⏱ ${h}h ${m}m`, overdue: false, warn };
+  const totalSec = Math.floor(diff / 1000);
+  const s  = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const m  = totalMin % 60;
+  const h  = Math.floor(totalMin / 60) % 24;
+  const d  = Math.floor(totalMin / 1440);
+  const warn = totalMin < 240;
+  const ss = String(s).padStart(2,'0');
+  const mm = String(m).padStart(2,'0');
+  const hh = String(h).padStart(2,'0');
+  if (d > 0) return { text: `⏱ ${d}天 ${hh}:${mm}:${ss}`, overdue: false, warn };
+  if (h > 0) return { text: `⏱ ${hh}:${mm}:${ss}`, overdue: false, warn };
+  return { text: `⏱ ${mm}:${ss}`, overdue: false, warn: true };
 }
 
 function deadlineRowInfo(o) {
@@ -1004,6 +1016,21 @@ async function init() {
   if (Notification.permission === 'default') Notification.requestPermission();
   // Fast: re-render colors/countdowns every 10 s (no DB call)
   setInterval(checkOverdueAlerts, 10000);
+  // 1-second ticker: animate countdown on the current active step label
+  setInterval(() => {
+    if (document.getElementById('v-detail')?.classList.contains('hidden')) return;
+    if (!_tlStatus || !_tlDeadline) return;
+    const cd = fmtCountdown(_tlDeadline);
+    if (!cd || cd.overdue) return;
+    const selectedVal = document.getElementById('upd-status')?.value || _tlStatus;
+    const el = document.getElementById('step-time-' + selectedVal);
+    if (!el) return;
+    el.textContent = cd.text;
+    el.style.color = cd.warn ? '#d97706' : '#16a34a';
+    el.classList.remove('cd-tick');
+    void el.offsetWidth;
+    el.classList.add('cd-tick');
+  }, 1000);
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
 }
