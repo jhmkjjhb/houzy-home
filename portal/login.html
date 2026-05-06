@@ -423,29 +423,51 @@ async function submitReg() {
 
   btn.textContent = '提交中...'; btn.disabled = true;
 
-  // Create auth account
+  // Step 1: Create auth account
   let userId = null;
   const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
     options: { data: { name, role: regType } }
   });
   if (authErr) {
-    // If already registered, treat as success and continue
-    if (!authErr.message.includes('already')) {
-      errEl.textContent = '账号创建失败：' + authErr.message;
-      errEl.classList.remove('hidden');
-      btn.textContent = '提交申请'; btn.disabled = false;
-      return;
+    const msg = authErr.message || '';
+    if (msg.includes('already registered') || msg.includes('already')) {
+      // Email already in auth — that's OK, continue to submit registration record
+    } else if (msg.includes('rate limit') || msg.includes('429')) {
+      errEl.textContent = '提交过于频繁，请稍后再试';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else if (msg.includes('invalid') && msg.includes('email')) {
+      errEl.textContent = '邮箱地址格式不正确，请检查后重试';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else if (msg.includes('Password') || msg.includes('password')) {
+      errEl.textContent = '密码不符合要求，请使用至少6位字符';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else {
+      errEl.textContent = '账号创建失败，请联系管理员（' + msg + '）';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
     }
   } else {
     userId = authData?.user?.id || null;
-    await sb.auth.signOut();
   }
+
+  // Step 2: Insert registration record while session is still active (before signOut)
   payload.user_id = userId;
   const { error: insErr } = await sb.from('registrations').insert(payload);
+
+  // Step 3: Sign out regardless of insert result
+  await sb.auth.signOut();
+
   if (insErr) {
-    errEl.textContent = '提交失败: ' + insErr.message; errEl.classList.remove('hidden');
-    btn.textContent = '提交申请'; btn.disabled = false;
-    return;
+    const imsg = insErr.message || '';
+    if (imsg.includes('relation') || imsg.includes('does not exist')) {
+      errEl.textContent = '系统配置错误：注册表尚未创建，请联系管理员运行数据库迁移';
+    } else if (imsg.includes('violates row-level security') || imsg.includes('permission')) {
+      errEl.textContent = '权限错误：请联系管理员检查数据库 RLS 策略（registrations GRANT）';
+    } else if (imsg.includes('duplicate') || imsg.includes('unique')) {
+      errEl.textContent = '该邮箱已提交过申请，请等待管理员审核或联系管理员';
+    } else {
+      errEl.textContent = '提交失败：' + imsg;
+    }
+    errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
   }
 
   btn.textContent = '提交申请'; btn.disabled = false;

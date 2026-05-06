@@ -18,7 +18,20 @@ CREATE TABLE IF NOT EXISTS public.registrations (
   reviewed_at   TIMESTAMPTZ,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Grant table access to Supabase roles (required for RLS to work)
+GRANT INSERT ON public.registrations TO anon;
+GRANT INSERT ON public.registrations TO authenticated;
+GRANT SELECT ON public.registrations TO authenticated;
+GRANT UPDATE ON public.registrations TO authenticated;
+
 ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
+
+-- Drop old policies to avoid conflicts on re-run
+DROP POLICY IF EXISTS "reg_insert" ON public.registrations;
+DROP POLICY IF EXISTS "reg_select" ON public.registrations;
+DROP POLICY IF EXISTS "reg_update" ON public.registrations;
+
 CREATE POLICY "reg_insert" ON public.registrations FOR INSERT WITH CHECK (true);
 CREATE POLICY "reg_select" ON public.registrations FOR SELECT USING (
   auth.uid() IS NOT NULL AND (
