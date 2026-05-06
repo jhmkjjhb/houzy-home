@@ -680,14 +680,18 @@ const ROLE_LEVEL = {
 
 // 每个目标状态或操作所需的最低权限级别
 const TRANSITION_MIN_LEVEL = {
-  pending_payment: 1, paid: 1, in_production: 1,
-  arrived: 1, installing: 1, completed: 1,
-  after_sales: 2,
-  cancel_paid: 2,      // 待付款/已付款 → 取消
-  cancel_any:  3,      // 其他状态 → 取消
-  revert:      3,      // 回退状态（降 step）
-  skip:        3,      // 跳步骤（如 in_production → completed）
-  closed:      4,
+  pending_payment:     1, paid: 1,
+  arrived:             1, installing: 1, completed: 1,
+  after_sales:         2,
+  cancel_paid:         2,  // 待付款/已付款 → 取消
+  // 生产/发货阶段由厂家操作，人工干预需 L3+
+  in_production:       3,
+  production_complete: 3,
+  shipped:             3,
+  cancel_any:          3,  // 其他状态 → 取消
+  revert:              3,  // 回退状态
+  skip:                3,  // 跳步骤
+  closed:              4,
 };
 
 const FIELD_MIN_LEVEL = {
