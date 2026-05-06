@@ -201,6 +201,7 @@
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
             <option value="after_sales" data-i18n-opt="status_after_sales">质保服务</option>
             <option value="closed" data-i18n-opt="status_closed">已关闭</option>
+            <option value="cancelled" data-i18n-opt="status_cancelled">已取消</option>
           </select>
         </div>
         <!-- Row 2: store + date + month -->
@@ -435,7 +436,7 @@ const STAFF_I18N = {
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
-    status_completed:'已完成', status_after_sales:'质保服务', status_closed:'已关闭',
+    status_completed:'已完成', status_after_sales:'质保服务', status_closed:'已关闭', status_cancelled:'已取消',
     warranty_panel_title:'质保服务 (5年)', warranty_start_lbl:'质保开始',
     warranty_year_pfx:'第', warranty_year_sfx:'年',
     warranty_advance_btn:'记录下一年提醒', warranty_completed:'5年质保服务已全部完成 🎉',
@@ -470,7 +471,7 @@ const STAFF_I18N = {
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
-    status_completed:'已完成', status_after_sales:'質保服務', status_closed:'已關閉',
+    status_completed:'已完成', status_after_sales:'質保服務', status_closed:'已關閉', status_cancelled:'已取消',
     warranty_panel_title:'質保服務 (5年)', warranty_start_lbl:'質保開始',
     warranty_year_pfx:'第', warranty_year_sfx:'年',
     warranty_advance_btn:'記錄下一年提醒', warranty_completed:'5年質保服務已全部完成 🎉',
@@ -505,7 +506,7 @@ const STAFF_I18N = {
     status_pending_payment:'Pending', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
     status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
-    status_completed:'Done', status_after_sales:'Warranty', status_closed:'Closed',
+    status_completed:'Done', status_after_sales:'Warranty', status_closed:'Closed', status_cancelled:'Cancelled',
     warranty_panel_title:'Warranty Service (5yr)', warranty_start_lbl:'Warranty Start',
     warranty_year_pfx:'Year', warranty_year_sfx:'',
     warranty_advance_btn:'Next Year Reminder', warranty_completed:'All 5-year warranty reminders done 🎉',
@@ -540,7 +541,7 @@ const STAFF_I18N = {
     status_pending_payment:'Belum Bayar', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
     status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
     status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
-    status_completed:'Selesai', status_after_sales:'Waranti', status_closed:'Ditutup',
+    status_completed:'Selesai', status_after_sales:'Waranti', status_closed:'Ditutup', status_cancelled:'Dibatalkan',
     warranty_panel_title:'Perkhidmatan Waranti (5Thn)', warranty_start_lbl:'Mula Waranti',
     warranty_year_pfx:'Tahun', warranty_year_sfx:'',
     warranty_advance_btn:'Peringatan Tahun Depan', warranty_completed:'Semua peringatan waranti 5 tahun selesai 🎉',
@@ -575,7 +576,7 @@ const STAFF_I18N = {
     status_pending_payment:'รอชำระ', status_paid:'ชำระแล้ว', status_assigned:'มอบหมาย', status_accepted:'รับงาน',
     status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
     status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
-    status_completed:'เสร็จ', status_after_sales:'ประกัน', status_closed:'ปิด',
+    status_completed:'เสร็จ', status_after_sales:'ประกัน', status_closed:'ปิด', status_cancelled:'ยกเลิก',
     warranty_panel_title:'บริการรับประกัน (5 ปี)', warranty_start_lbl:'เริ่มรับประกัน',
     warranty_year_pfx:'ปีที่', warranty_year_sfx:'',
     warranty_advance_btn:'แจ้งเตือนปีหน้า', warranty_completed:'ครบรอบรับประกัน 5 ปีแล้ว 🎉',
