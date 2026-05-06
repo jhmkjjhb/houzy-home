@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS orders (
                    CHECK (status IN (
                      'pending_payment','paid','assigned','accepted',
                      'in_production','production_complete','shipped',
-                     'in_transit','arrived','installing',
+                     'in_transit','arrived','installing','pending_confirm',
                      'completed','after_sales','closed','cancelled'
                    )),
   description    TEXT,
@@ -171,6 +171,21 @@ DECLARE v_result JSONB; v_ok INTEGER; BEGIN
   SELECT COALESCE(jsonb_agg(row_to_json(l)::JSONB ORDER BY l.created_at ASC), '[]'::JSONB)
   INTO v_result FROM order_logs l WHERE l.order_id = p_order_id;
   RETURN v_result;
+END;
+$$;
+
+-- Customer confirms installation complete (phone-verified, no auth required)
+CREATE OR REPLACE FUNCTION confirm_order_by_phone(p_order_id UUID, p_phone TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_ok INTEGER; BEGIN
+  SELECT COUNT(*) INTO v_ok FROM orders o
+  JOIN customers c ON c.id = o.customer_id
+  WHERE o.id = p_order_id AND c.phone = p_phone AND o.status = 'pending_confirm';
+  IF v_ok = 0 THEN RETURN FALSE; END IF;
+  UPDATE orders SET status = 'after_sales', updated_at = NOW() WHERE id = p_order_id;
+  INSERT INTO order_logs (order_id, status, operator_role, operator_name, notes)
+  VALUES (p_order_id, 'after_sales', 'customer', '客户', '客户确认安装完成，进入质保服务阶段');
+  RETURN TRUE;
 END;
 $$;
 
@@ -312,9 +327,14 @@ CREATE POLICY "logs_logistics" ON order_logs FOR ALL USING (
 -- ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK (status IN (
 --   'pending_payment','paid','assigned','accepted',
 --   'in_production','production_complete','shipped',
---   'in_transit','arrived','installing',
+--   'in_transit','arrived','installing','pending_confirm',
 --   'completed','after_sales','closed','cancelled'
 -- ));
+-- Storage bucket (run in Supabase Storage UI or via API):
+-- CREATE BUCKET order-images WITH public = true;
+-- Storage RLS: allow authenticated to upload to their own order paths
+-- INSERT policy: auth.uid() IS NOT NULL
+-- SELECT policy: true (public read)
 -- ALTER TABLE public.registrations DROP CONSTRAINT IF EXISTS registrations_type_check;
 -- ALTER TABLE public.registrations ADD CONSTRAINT registrations_type_check
 --   CHECK (type IN ('staff','supplier','logistics'));
