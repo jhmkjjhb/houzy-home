@@ -71,8 +71,8 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
-      <div class="nav-link hidden admin-nav" onclick="goto('suppliers');toggleMobileMenu()">🏭 <span data-i18n="nav_suppliers">供应商管理</span></div>
-      <div class="nav-link hidden admin-nav" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="suppliers" onclick="goto('suppliers');toggleMobileMenu()">🏭 <span data-i18n="nav_suppliers">供应商管理</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <!-- Language selector -->
       <div class="relative mt-2">
         <button onclick="toggleMobileLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
@@ -129,11 +129,11 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span data-i18n="nav_customers">客户管理</span>
       </div>
-      <div class="nav-link hidden admin-nav" id="nav-suppliers" onclick="goto('suppliers')">
+      <div class="nav-link hidden admin-nav" id="nav-suppliers" data-perm="suppliers" onclick="goto('suppliers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         <span data-i18n="nav_suppliers">供应商管理</span>
       </div>
-      <div class="nav-link hidden admin-nav" id="nav-registrations" onclick="goto('registrations')">
+      <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
       </div>
     </nav>
@@ -650,6 +650,80 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
 let searchTimer = null;
 
+// ──────────────────────────────────────────────────────────────────
+// ROLE PERMISSION SYSTEM
+// ──────────────────────────────────────────────────────────────────
+
+const ROLE_LEVEL = {
+  staff: 1, store_manager: 2, regional_manager: 3,
+  general_manager: 4, superadmin: 5, admin: 4,
+  supplier: 0, logistics: 0, customer: 0,
+};
+
+// 每个目标状态或操作所需的最低权限级别
+const TRANSITION_MIN_LEVEL = {
+  pending_payment: 1, paid: 1, in_production: 1,
+  arrived: 1, installing: 1, completed: 1,
+  after_sales: 2,
+  cancel_paid: 2,      // 待付款/已付款 → 取消
+  cancel_any:  3,      // 其他状态 → 取消
+  revert:      3,      // 回退状态（降 step）
+  skip:        3,      // 跳步骤（如 in_production → completed）
+  closed:      4,
+};
+
+const FIELD_MIN_LEVEL = {
+  edit_payment:     2,
+  edit_pay_method:  2,
+  edit_deadline:    2,
+  assign_supplier:  3,
+  delete_order:     4,
+  approve_reg:      4,
+  nav_suppliers:    3,
+  nav_registrations:4,
+  store_filter:     2,
+};
+
+function myLevel() { return ROLE_LEVEL[profile?.role] ?? 0; }
+function canDo(min) { return myLevel() >= min; }
+
+function canTransit(currentStatus, targetStatus) {
+  if (targetStatus === currentStatus) return true;
+  if (targetStatus === 'cancelled') {
+    return ['pending_payment','paid'].includes(currentStatus)
+      ? canDo(TRANSITION_MIN_LEVEL.cancel_paid)
+      : canDo(TRANSITION_MIN_LEVEL.cancel_any);
+  }
+  if (targetStatus === 'closed')      return canDo(TRANSITION_MIN_LEVEL.closed);
+  if (targetStatus === 'after_sales') return canDo(TRANSITION_MIN_LEVEL.after_sales);
+  const curStep = STATUS[currentStatus]?.step ?? -1;
+  const tgtStep = STATUS[targetStatus]?.step ?? -1;
+  if (tgtStep >= 0 && curStep >= 0) {
+    if (tgtStep < curStep)            return canDo(TRANSITION_MIN_LEVEL.revert);
+    if (tgtStep - curStep > 1)        return canDo(TRANSITION_MIN_LEVEL.skip);
+  }
+  return canDo(TRANSITION_MIN_LEVEL[targetStatus] ?? 1);
+}
+
+async function buildOrdersQuery() {
+  const lvl = myLevel();
+  let q = sb.from('orders')
+    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .order('created_at', { ascending: false })
+    .limit(300);
+  if (lvl >= 4) {
+    // L4/L5：全公司，不加过滤
+  } else if (lvl === 3 && profile.region) {
+    const regionIds = stores.filter(s => s.region === profile.region).map(s => s.id);
+    if (regionIds.length) q = q.in('store_id', regionIds);
+  } else if (profile?.store_id) {
+    q = q.eq('store_id', profile.store_id);
+  }
+  return q;
+}
+
+// ──────────────────────────────────────────────────────────────────
+
 const STATUS = {
   // Core 7-step flow
   pending_payment: { label:'待付款', s:'background:#fef3c7;color:#92400e',   step:0 },
@@ -752,6 +826,15 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt) {
 }
 
 function selectStep(s) {
+  // 权限检查：阻止无权限的状态迁移
+  const current = _tlStatus;
+  if (s !== current && !canTransit(current, s)) {
+    const lvlNeeded = s === 'closed' ? 'L4 总经理' : s === 'cancelled' ? (
+      ['pending_payment','paid'].includes(current) ? 'L2 店长' : 'L3 区域负责人'
+    ) : myLevel() < 3 ? 'L3 区域负责人' : '';
+    alert(`您的权限（${profile?.role}）不足以执行此状态变更${lvlNeeded ? '，需要 ' + lvlNeeded + ' 以上' : ''}。`);
+    return;
+  }
   document.getElementById('upd-status').value = s;
   const curStep = STATUS[s]?.step ?? -1;
   const isSpecial = curStep === -1;
@@ -1021,18 +1104,29 @@ async function init() {
     storeName = sd?.name || '';
     profile._storeName = storeName;
   }
-  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户', logistics:'物流' }[profile?.role] || profile?.role || '';
+  const roleLabel = {
+    staff:'店员', store_manager:'店长', regional_manager:'区域负责人',
+    general_manager:'总经理', superadmin:'超级管理员', admin:'管理员',
+    supplier:'厂家', logistics:'物流', customer:'客户'
+  }[profile?.role] || profile?.role || '';
   const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
      <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
   document.getElementById('user-info').innerHTML = userHtml;
   const mobileInfo = document.getElementById('mobile-user-info');
   if (mobileInfo) mobileInfo.innerHTML = userHtml;
 
-  await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
+  await loadStores(); // 必须先完成，buildOrdersQuery 的区域过滤依赖 stores 数组
+  await Promise.all([loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
   checkOverdueAlerts();
-  if (profile?.role === 'admin') {
-    document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
+  // 按权限级别解锁导航菜单
+  document.querySelectorAll('.admin-nav[data-perm="suppliers"]').forEach(el => {
+    if (canDo(FIELD_MIN_LEVEL.nav_suppliers)) el.classList.remove('hidden');
+  });
+  document.querySelectorAll('.admin-nav[data-perm="registrations"]').forEach(el => {
+    if (canDo(FIELD_MIN_LEVEL.nav_registrations)) el.classList.remove('hidden');
+  });
+  if (canDo(FIELD_MIN_LEVEL.approve_reg)) {
     loadRegistrations(); // show badge count on startup
   }
   setLang(currentLang);
@@ -1073,7 +1167,7 @@ async function loadStores() {
 
   if (!storeData || storeData.length === 0) {
     // 表空，尝试插入默认门店
-    if (profile?.role === 'admin') {
+    if (canDo(4)) {
       const { error: insErr } = await sb.from('stores').insert([
         { name: '001 Austin', code: '001', address: '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru', active: true },
         { name: '新山门店',   code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
@@ -1088,7 +1182,7 @@ async function loadStores() {
     }
   } else {
     stores = storeData;
-    if (profile?.role === 'admin') {
+    if (canDo(4)) {
       const codes = stores.map(s => s.code);
       if (codes.includes('JB')) await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
       if (codes.includes('SG')) await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
@@ -1124,12 +1218,15 @@ async function loadStores() {
   const myStore = sorted.find(s => flag(s) === '🇲🇾');
   if (myStore) sel.value = myStore.id;
 
-  // populate store filter (admin only)
+  // 门店筛选器：L2+ 可见（L3 只显示本区，L4+ 全部）
   const fSel = document.getElementById('f-store');
-  if (fSel && profile?.role === 'admin') {
+  if (fSel && canDo(FIELD_MIN_LEVEL.store_filter)) {
     fSel.classList.remove('hidden');
     fSel.innerHTML = '<option value="">全部门店</option>';
-    sorted.forEach(s => fSel.add(new Option(label(s), s.id)));
+    const visibleStores = canDo(4) ? sorted
+      : myLevel() === 3 ? sorted.filter(s => !profile.region || s.region === profile.region)
+      : sorted.filter(s => s.id === profile.store_id);
+    visibleStores.forEach(s => fSel.add(new Option(label(s), s.id)));
   }
 }
 
@@ -1141,12 +1238,7 @@ async function loadReferrers() {
 }
 
 async function loadOrders() {
-  let q = sb.from('orders')
-    .select('*, stores(name), customers(name,phone), profiles(name)')
-    .order('created_at', { ascending: false })
-    .limit(200);
-  if (profile?.role === 'staff' && profile?.store_id) q = q.eq('store_id', profile.store_id);
-  const { data } = await q;
+  const { data } = await buildOrdersQuery();
   allOrders = data || [];
 }
 
@@ -1585,33 +1677,50 @@ async function openDetail(id, backView) {
           <span class="font-bold text-hg w-16 text-center"><span id="sla-days-val">25</span> ${t('stat_day_pfx')}</span>
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        <div>
-        <div>
-          <label class="label">${t('lbl_pay_status')}</label>
-          <select id="upd-payment" class="input">
-            <option value="unpaid" ${o.payment_status==='unpaid'?'selected':''}>${t('opt_unpaid')}</option>
-            <option value="paid" ${o.payment_status==='paid'?'selected':''}>${t('opt_paid')}</option>
-          </select>
-        </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_pay_status')}</label>
+        ${canDo(FIELD_MIN_LEVEL.edit_payment)
+          ? `<select id="upd-payment" class="input">
+               <option value="unpaid" ${o.payment_status==='unpaid'?'selected':''}>${t('opt_unpaid')}</option>
+               <option value="paid"   ${o.payment_status==='paid'  ?'selected':''}>${t('opt_paid')}</option>
+             </select>`
+          : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
+               ${o.payment_status==='paid'?t('opt_paid'):t('opt_unpaid')}
+               <input type="hidden" id="upd-payment" value="${o.payment_status}">
+             </div>`}
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_pay_method')}</label>
-        <select id="upd-pay-method" class="input">
-          <option value="">—</option>
-          <option value="cash" ${o.payment_method==='cash'?'selected':''}>${t('pay_cash')}</option>
-          <option value="transfer" ${o.payment_method==='transfer'?'selected':''}>${t('pay_transfer')}</option>
-          <option value="ewallet" ${o.payment_method==='ewallet'?'selected':''}>${t('pay_ewallet')}</option>
-          <option value="card" ${o.payment_method==='card'?'selected':''}>${t('pay_card')}</option>
-        </select>
+        ${canDo(FIELD_MIN_LEVEL.edit_pay_method)
+          ? `<select id="upd-pay-method" class="input">
+               <option value="">—</option>
+               <option value="cash"     ${o.payment_method==='cash'    ?'selected':''}>${t('pay_cash')}</option>
+               <option value="transfer" ${o.payment_method==='transfer'?'selected':''}>${t('pay_transfer')}</option>
+               <option value="ewallet"  ${o.payment_method==='ewallet' ?'selected':''}>${t('pay_ewallet')}</option>
+               <option value="card"     ${o.payment_method==='card'    ?'selected':''}>${t('pay_card')}</option>
+             </select>`
+          : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
+               ${pmLabels[o.payment_method] || '—'}
+               <input type="hidden" id="upd-pay-method" value="${o.payment_method||''}">
+             </div>`}
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_assign_sup')}</label>
-        <select id="upd-supplier" class="input">${supplierOptions}</select>
+        ${canDo(FIELD_MIN_LEVEL.assign_supplier)
+          ? `<select id="upd-supplier" class="input">${supplierOptions}</select>`
+          : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
+               ${o.suppliers?.name || t('opt_unassigned')}
+               <input type="hidden" id="upd-supplier" value="${o.supplier_id||''}">
+             </div>`}
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
-        <input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">
+        ${canDo(FIELD_MIN_LEVEL.edit_deadline)
+          ? `<input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">`
+          : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
+               ${o.deadline_at ? fmtDateTime(o.deadline_at) : '—'}
+               <input type="hidden" id="upd-deadline" value="${dlLocal}">
+             </div>`}
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_notes')}</label>
@@ -1629,7 +1738,7 @@ async function openDetail(id, backView) {
       ${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}
     </div>
 
-    ${profile?.role === 'admin' ? `
+    ${canDo(FIELD_MIN_LEVEL.delete_order) ? `
     <!-- Delete -->
     <div class="mt-4">
       <button onclick="confirmDelete('${o.id}')"
@@ -1705,6 +1814,7 @@ function confirmDelete(id) {
 }
 
 async function doDelete(id) {
+  if (!canDo(FIELD_MIN_LEVEL.delete_order)) { alert('权限不足'); return; }
   const pw = document.getElementById('del-pw').value;
   if (pw !== '12345678') {
     document.getElementById('del-err').classList.remove('hidden');
@@ -1727,15 +1837,21 @@ async function doDelete(id) {
 }
 
 async function updateOrder(id) {
-  const status = document.getElementById('upd-status').value;
-  const payment = document.getElementById('upd-payment').value;
-  const payMethod = document.getElementById('upd-pay-method')?.value;
+  const status   = document.getElementById('upd-status').value;
+  const payment  = document.getElementById('upd-payment').value;
+  const payMethod= document.getElementById('upd-pay-method')?.value;
   const supplier = document.getElementById('upd-supplier').value || null;
-  const notes = document.getElementById('upd-notes').value.trim();
-  const dlVal = document.getElementById('upd-deadline')?.value;
-  const slaRow = document.getElementById('sla-days-row');
+  const notes    = document.getElementById('upd-notes').value.trim();
+  const dlVal    = document.getElementById('upd-deadline')?.value;
+  const slaRow   = document.getElementById('sla-days-row');
   const customDays = (slaRow && !slaRow.classList.contains('hidden'))
     ? parseInt(document.getElementById('sla-days')?.value || 0) : null;
+
+  // 权限二次校验
+  const origOrder = allOrders.find(o => o.id === id);
+  if (origOrder && !canTransit(origOrder.status, status)) {
+    alert('您的权限不足以执行此状态变更，操作已中止。'); return;
+  }
 
   // Use manual deadline if set, else slider days, else auto-calc from SLA
   const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
@@ -1839,7 +1955,7 @@ async function setSupplierTier(id, tier) {
 let regFilter = 'pending';
 
 async function loadRegistrations() {
-  if (profile?.role !== 'admin') return;
+  if (!canDo(FIELD_MIN_LEVEL.approve_reg)) return;
 
   const { data } = await sb.from('registrations').select('*').order('created_at', { ascending: false });
 

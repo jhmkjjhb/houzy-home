@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS stores (
   name       TEXT NOT NULL,
   code       TEXT NOT NULL UNIQUE,   -- JB, SG
   address    TEXT,
+  region     TEXT,                   -- 区域代码，供 regional_manager 数据隔离
   active     BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -24,8 +25,13 @@ CREATE TABLE IF NOT EXISTS profiles (
   name       TEXT NOT NULL DEFAULT '',
   phone      TEXT,
   role       TEXT NOT NULL DEFAULT 'customer'
-               CHECK (role IN ('customer','staff','supplier','admin','logistics')),
-  store_id   UUID REFERENCES stores(id),   -- staff only
+               CHECK (role IN (
+                 'customer','staff','store_manager','regional_manager',
+                 'general_manager','superadmin','admin',
+                 'supplier','logistics'
+               )),
+  store_id   UUID REFERENCES stores(id),
+  region     TEXT,                          -- regional_manager 的管辖区域代码
   active     BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -224,53 +230,68 @@ ALTER TABLE orders          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_logs      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_sequences ENABLE ROW LEVEL SECURITY;
 
+-- ── 权限级别函数（SECURITY DEFINER 绕过 RLS 递归） ──
+CREATE OR REPLACE FUNCTION auth_user_level()
+RETURNS INTEGER LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT CASE role
+    WHEN 'staff'            THEN 1
+    WHEN 'store_manager'    THEN 2
+    WHEN 'regional_manager' THEN 3
+    WHEN 'general_manager'  THEN 4
+    WHEN 'superadmin'       THEN 5
+    WHEN 'admin'            THEN 4
+    ELSE 0
+  END
+  FROM profiles WHERE id = auth.uid()
+$$;
+
 -- Profiles
 CREATE POLICY "profiles_self"  ON profiles FOR ALL USING (id = auth.uid());
-CREATE POLICY "profiles_admin" ON profiles FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
-);
+CREATE POLICY "profiles_admin" ON profiles FOR ALL USING (auth_user_level() >= 4);
 
--- Stores: authenticated read
+-- Stores: authenticated read; L4+ write
 CREATE POLICY "stores_read"  ON stores FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "stores_admin" ON stores FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
-);
+CREATE POLICY "stores_admin" ON stores FOR ALL USING (auth_user_level() >= 4);
 
--- Customers: staff/admin full; self-read
-CREATE POLICY "customers_staff" ON customers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
-);
-CREATE POLICY "customers_self" ON customers FOR SELECT USING (user_id = auth.uid());
+-- Customers: L1+ full; self-read
+CREATE POLICY "customers_staff" ON customers FOR ALL USING (auth_user_level() >= 1);
+CREATE POLICY "customers_self"  ON customers FOR SELECT USING (user_id = auth.uid());
 
--- Referrers: staff/admin
-CREATE POLICY "referrers_staff" ON referrers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
-);
+-- Referrers: L1+
+CREATE POLICY "referrers_staff" ON referrers FOR ALL USING (auth_user_level() >= 1);
 
--- Suppliers: staff/admin full; supplier self-read
-CREATE POLICY "suppliers_staff" ON suppliers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
-);
-CREATE POLICY "suppliers_self" ON suppliers FOR SELECT USING (user_id = auth.uid());
+-- Suppliers: L3+ write; L1+ read; supplier self-read
+CREATE POLICY "suppliers_staff" ON suppliers FOR ALL   USING (auth_user_level() >= 3);
+CREATE POLICY "suppliers_read"  ON suppliers FOR SELECT USING (auth_user_level() >= 1);
+CREATE POLICY "suppliers_self"  ON suppliers FOR SELECT USING (user_id = auth.uid());
 
--- Orders
-CREATE POLICY "orders_staff_admin" ON orders FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+-- Orders: 按角色级别分级隔离
+CREATE POLICY "orders_select" ON orders FOR SELECT USING (
+  CASE auth_user_level()
+    WHEN 1 THEN store_id = (SELECT store_id FROM profiles WHERE id = auth.uid())
+    WHEN 2 THEN store_id = (SELECT store_id FROM profiles WHERE id = auth.uid())
+    WHEN 3 THEN store_id IN (
+      SELECT s.id FROM stores s
+      JOIN profiles p ON p.id = auth.uid()
+      WHERE s.region = p.region
+    )
+    ELSE auth_user_level() >= 4
+  END
+  OR EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid() AND id = orders.supplier_id)
+  OR EXISTS (SELECT 1 FROM customers WHERE user_id = auth.uid() AND id = orders.customer_id)
 );
-CREATE POLICY "orders_supplier_read" ON orders FOR SELECT USING (
-  EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid() AND id = orders.supplier_id)
+CREATE POLICY "orders_insert" ON orders FOR INSERT WITH CHECK (auth_user_level() >= 1);
+CREATE POLICY "orders_update" ON orders FOR UPDATE USING (
+  auth_user_level() >= 1
+  OR EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid() AND id = orders.supplier_id)
+  OR (auth_user_level() = 0 AND
+      (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics' AND
+      status IN ('shipped','in_transit','arrived'))
 );
-CREATE POLICY "orders_supplier_update" ON orders FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid() AND id = orders.supplier_id)
-);
-CREATE POLICY "orders_customer" ON orders FOR SELECT USING (
-  EXISTS (SELECT 1 FROM customers WHERE user_id = auth.uid() AND id = orders.customer_id)
-);
+CREATE POLICY "orders_delete" ON orders FOR DELETE USING (auth_user_level() >= 4);
 
--- Order logs
-CREATE POLICY "logs_staff_admin" ON order_logs FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
-);
+-- Order logs: L1+; supplier; logistics
+CREATE POLICY "logs_staff_admin" ON order_logs FOR ALL USING (auth_user_level() >= 1);
 CREATE POLICY "logs_supplier" ON order_logs FOR ALL USING (
   EXISTS (
     SELECT 1 FROM orders o JOIN suppliers s ON s.id = o.supplier_id
