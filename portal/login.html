@@ -69,10 +69,48 @@
       </form>
     </div>
 
-    <!-- Register link -->
-    <p class="text-center mt-4 text-sm">
+    <!-- Register link + Forgot password -->
+    <div class="flex justify-between mt-4 text-sm">
+      <a onclick="showForgot()" class="text-gray-400 cursor-pointer hover:text-gd transition">忘记密码？</a>
       <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition">没有账号？立即注册 →</a>
-    </p>
+    </div>
+  </div>
+
+  <!-- Forgot password panel -->
+  <div id="forgot-panel" class="hidden">
+    <p class="mb-4"><a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a></p>
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-2">重置密码</h2>
+      <p class="text-gray-400 text-xs mb-4">输入注册邮箱，我们将发送密码重置链接到您的邮箱。</p>
+      <div class="space-y-3">
+        <input type="email" id="forgot-email" placeholder="电邮地址 Email"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button onclick="submitForgot()" id="forgot-btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          发送重置链接
+        </button>
+        <p id="forgot-msg" class="text-xs hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset password panel (shown after clicking email link) -->
+  <div id="reset-panel" class="hidden">
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-2">设置新密码</h2>
+      <p class="text-gray-400 text-xs mb-4">请输入您的新密码。</p>
+      <div class="space-y-3">
+        <input type="password" id="reset-pw" placeholder="新密码（至少6位）"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <input type="password" id="reset-pw2" placeholder="确认新密码"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button onclick="submitReset()" id="reset-btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          确认设置
+        </button>
+        <p id="reset-msg" class="text-xs hidden"></p>
+      </div>
+    </div>
   </div>
 
   <!-- Registration panel -->
@@ -202,8 +240,21 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// Already logged in?
-sb.auth.getSession().then(({ data: { session } }) => { if (session) redirect(); });
+// Check for password recovery token in URL hash
+(async () => {
+  const hash = new URLSearchParams(window.location.hash.replace('#',''));
+  if (hash.get('type') === 'recovery') {
+    // Exchange token for session
+    const { error } = await sb.auth.exchangeCodeForSession(window.location.href).catch(() => ({ error: true }));
+    showPanel('reset-panel');
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data } = await sb.rpc('get_my_profile');
+    if (data) redirect(data);
+  }
+})();
 
 async function doLogin(e) {
   e.preventDefault();
@@ -224,10 +275,21 @@ async function doLogin(e) {
   redirect();
 }
 
-async function redirect() {
-  const { data } = await sb.rpc('get_my_profile');
+function showPanel(id) {
+  ['login-panel','forgot-panel','reset-panel','reg-panel'].forEach(p => {
+    const el = document.getElementById(p);
+    if (el) el.classList.toggle('hidden', p !== id);
+  });
+}
+function showLogin()    { showPanel('login-panel'); }
+function showForgot()   { showPanel('forgot-panel'); }
+function showRegister() { showPanel('reg-panel'); }
+
+async function redirect(data) {
   if (!data) {
-    // No profile — user likely has a pending or rejected registration
+    data = (await sb.rpc('get_my_profile')).data;
+  }
+  if (!data) {
     await sb.auth.signOut();
     const err = document.getElementById('err');
     err.textContent = '账号审核中，请等待管理员审核后再登录。';
@@ -241,19 +303,50 @@ async function redirect() {
   window.location.href = map[role] || 'customer.html';
 }
 
+async function submitForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-btn');
+  const msg = document.getElementById('forgot-msg');
+  if (!email) { msg.textContent = '请输入邮箱地址'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = '发送中...'; btn.disabled = true;
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  btn.textContent = '发送重置链接'; btn.disabled = false;
+  if (error) {
+    msg.textContent = '发送失败：' + error.message;
+    msg.className = 'text-xs text-red-400';
+  } else {
+    msg.textContent = '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。';
+    msg.className = 'text-xs text-green-400';
+  }
+  msg.classList.remove('hidden');
+}
+
+async function submitReset() {
+  const pw  = document.getElementById('reset-pw').value;
+  const pw2 = document.getElementById('reset-pw2').value;
+  const btn = document.getElementById('reset-btn');
+  const msg = document.getElementById('reset-msg');
+  if (!pw || pw.length < 6) { msg.textContent = '密码至少需要6位'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  if (pw !== pw2) { msg.textContent = '两次密码不一致'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = '设置中...'; btn.disabled = true;
+  const { error } = await sb.auth.updateUser({ password: pw });
+  btn.textContent = '确认设置'; btn.disabled = false;
+  if (error) {
+    msg.textContent = '设置失败：' + error.message;
+    msg.className = 'text-xs text-red-400';
+    msg.classList.remove('hidden');
+  } else {
+    msg.textContent = '✅ 密码已更新！正在跳转登录…';
+    msg.className = 'text-xs text-green-400';
+    msg.classList.remove('hidden');
+    setTimeout(() => { window.location.hash = ''; redirect(); }, 1500);
+  }
+}
+
 // ── Registration ──
 let regType = 'staff';
-
-function showRegister() {
-  document.getElementById('login-panel').classList.add('hidden');
-  document.getElementById('reg-panel').classList.remove('hidden');
-}
-
-function showLogin() {
-  document.getElementById('login-panel').classList.remove('hidden');
-  document.getElementById('reg-panel').classList.add('hidden');
-  document.getElementById('reg-err').classList.add('hidden');
-}
 
 function selectRegType(t) {
   regType = t;
@@ -325,20 +418,23 @@ async function submitReg() {
 
   btn.textContent = '提交中...'; btn.disabled = true;
 
-  // Store registration without creating auth account —
-  // admin will approve and create the account manually.
-  // We store the hashed-equivalent by keeping email+password reference only for display;
-  // actual auth account is created by admin on approval.
-  payload.user_id = null;
+  // Try to create auth account (may fail due to DB trigger — handled gracefully)
+  let userId = null;
+  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
+    options: { data: { name, role: regType } }
+  });
+  if (!authErr) {
+    userId = authData?.user?.id || null;
+    await sb.auth.signOut(); // sign out immediately, wait for approval
+  }
+  // Whether signUp worked or not, save the registration record
+  payload.user_id = userId;
   const { error: insErr } = await sb.from('registrations').insert(payload);
   if (insErr) {
     errEl.textContent = '提交失败: ' + insErr.message; errEl.classList.remove('hidden');
     btn.textContent = '提交申请'; btn.disabled = false;
     return;
   }
-
-  // Sign out immediately — they need admin approval first
-  await sb.auth.signOut();
 
   btn.textContent = '提交申请'; btn.disabled = false;
 
