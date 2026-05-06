@@ -1958,6 +1958,10 @@ function renderRegistrations(data) {
 async function approveReg(id, type, userId, name, email, storeId) {
   const typeText = { staff:'员工', supplier:'厂家', logistics:'物流' }[type] || type;
   if (!confirm(`确认批准 ${name} (${email}) 的${typeText}申请？`)) return;
+
+  // 获取完整注册信息（含 company_name / phone / products）
+  const { data: reg } = await sb.from('registrations').select('*').eq('id', id).single();
+
   const { error } = await sb.from('registrations').update({
     status: 'approved',
     reviewed_by: profile.id,
@@ -1965,20 +1969,43 @@ async function approveReg(id, type, userId, name, email, storeId) {
   }).eq('id', id);
   if (error) { alert('操作失败: ' + error.message); return; }
 
-  // Create profile so user can log in
-  if (userId) {
-    const profileData = { id: userId, name, role: type, active: true };
-    if (storeId) profileData.store_id = storeId;
-    const { error: profileErr } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
-    if (profileErr) {
-      alert(`✅ 审批记录已更新，但创建用户档案失败！\n\n错误：${profileErr.message}\n\n请在 Supabase 后台 profiles 表手动插入：\nid=${userId}, name=${name}, role=${type}${storeId ? ', store_id='+storeId : ''}`);
-    } else {
-      const storeName = storeId ? (stores.find(s => s.id === storeId)?.name || '') : '';
-      alert(`✅ 已批准！\n\n${name} 现在可以登录${storeName ? '，所属店面：' + storeName : ''}。`);
-    }
-  } else {
+  if (!userId) {
     alert(`✅ 审批记录已更新。\n\n⚠️ 此申请未关联账号（注册时邮箱已存在或创建失败）\n请在 Supabase 后台找到 ${email} 对应的 auth 用户 ID，在 profiles 表手动添加记录并设置 role=${type}。`);
+    loadRegistrations(); return;
   }
+
+  // 1. 创建 / 更新 profile
+  const profileData = { id: userId, name, role: type, active: true };
+  if (storeId) profileData.store_id = storeId;
+  const { error: profileErr } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
+  if (profileErr) {
+    alert(`审批记录已更新，但创建用户档案失败：${profileErr.message}`);
+    loadRegistrations(); return;
+  }
+
+  // 2. 厂家：在 suppliers 表创建档案（供订单分配和厂家门户使用）
+  if (type === 'supplier') {
+    const supName = reg?.company_name || name;
+    // 检查是否已存在（避免重复）
+    const { data: existing } = await sb.from('suppliers').select('id').eq('user_id', userId).maybeSingle();
+    if (existing) {
+      await sb.from('suppliers').update({ name: supName, contact_name: name, phone: reg?.phone, categories: reg?.products || null, active: true }).eq('id', existing.id);
+    } else {
+      const { error: supErr } = await sb.from('suppliers').insert({
+        user_id: userId, name: supName, contact_name: name,
+        phone: reg?.phone, categories: reg?.products || null, tier: 2, active: true,
+      });
+      if (supErr) {
+        alert(`✅ 账号已激活，但创建厂家档案失败：${supErr.message}\n请在供应商管理页手动添加。`);
+        loadRegistrations(); return;
+      }
+    }
+    alert(`✅ 已批准！\n\n厂家【${supName}】已加入供应商列表，可立即分配订单，厂家登录后即可接单。`);
+  } else {
+    const storeName = storeId ? (stores.find(s => s.id === storeId)?.name || '') : '';
+    alert(`✅ 已批准！\n\n${name} 现在可以登录${storeName ? '，所属店面：' + storeName : ''}。`);
+  }
+
   loadRegistrations();
 }
 

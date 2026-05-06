@@ -110,9 +110,19 @@ async function init() {
     alert('权限不足'); window.location.href = 'login.html'; return;
   }
 
-  const { data: sup } = await sb.from('suppliers').select('*').eq('user_id', profile.id).single();
+  const { data: sup } = await sb.from('suppliers').select('*').eq('user_id', profile.id).maybeSingle();
   supplier = sup;
   document.getElementById('sup-name').textContent = supplier?.name || profile.name;
+
+  if (!supplier) {
+    document.getElementById('orders-list').innerHTML = `
+      <div class="text-center py-16">
+        <div class="text-4xl mb-3">⏳</div>
+        <p class="text-gray-600 font-medium">账号审批中</p>
+        <p class="text-gray-400 text-sm mt-1">您的厂家档案尚未建立，请联系管理员完成审批。</p>
+      </div>`;
+    return;
+  }
 
   await loadOrders();
 }
