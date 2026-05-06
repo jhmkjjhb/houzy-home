@@ -325,19 +325,11 @@ async function submitReg() {
 
   btn.textContent = '提交中...'; btn.disabled = true;
 
-  // Sign up with Supabase auth
-  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw });
-  if (authErr) {
-    const msg = authErr.message.includes('already registered') || authErr.message.includes('already been registered')
-      ? '该邮箱已注册，请直接登录或联系管理员。'
-      : authErr.message;
-    errEl.textContent = msg; errEl.classList.remove('hidden');
-    btn.textContent = '提交申请'; btn.disabled = false;
-    return;
-  }
-
-  // Insert registration record
-  payload.user_id = authData?.user?.id || null;
+  // Store registration without creating auth account —
+  // admin will approve and create the account manually.
+  // We store the hashed-equivalent by keeping email+password reference only for display;
+  // actual auth account is created by admin on approval.
+  payload.user_id = null;
   const { error: insErr } = await sb.from('registrations').insert(payload);
   if (insErr) {
     errEl.textContent = '提交失败: ' + insErr.message; errEl.classList.remove('hidden');

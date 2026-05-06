@@ -1873,7 +1873,7 @@ function renderRegistrations(data) {
     const date = new Date(r.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const actions = r.status === 'pending' ? `
       <div class="flex gap-2 mt-3">
-        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id || ''}','${r.name}','${r.email}')"
+        <button onclick="approveReg('${r.id}','${r.type}','${r.name}','${r.email}')"
                 class="px-3 py-1.5 bg-hg text-white text-xs rounded-lg font-medium">✓ 通过</button>
         <button onclick="promptRejectReg('${r.id}')"
                 class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-200">✗ 拒绝</button>
@@ -1894,18 +1894,15 @@ function renderRegistrations(data) {
   }).join('');
 }
 
-async function approveReg(id, type, userId, name, email) {
-  if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？\n\n批准后需要在 Supabase 后台为其账号设置 Profile。`)) return;
+async function approveReg(id, type, name, email) {
+  if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？`)) return;
   const { error } = await sb.from('registrations').update({
     status: 'approved',
     reviewed_by: profile.id,
     reviewed_at: new Date().toISOString()
   }).eq('id', id);
   if (error) { alert('操作失败: ' + error.message); return; }
-  // Try to create profile if user_id available
-  if (userId) {
-    await sb.from('profiles').upsert({ id: userId, name, role: type }, { onConflict: 'id' });
-  }
+  alert(`✅ 已批准！\n\n请前往 Supabase 后台 → Authentication → Users → Add user，为以下账号创建登录凭据：\n\n邮箱：${email}\n角色：${type === 'staff' ? '员工(staff)' : '厂家(supplier)'}\n姓名：${name}\n\n创建后记得在 profiles 表添加对应记录。`);
   loadRegistrations();
 }
 
