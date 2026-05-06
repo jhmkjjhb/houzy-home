@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 系统入口</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+</head>
+<body class="bg-hg min-h-screen flex items-center justify-center p-4" style="font-family:'Noto Sans SC',sans-serif">
+
+<div class="w-full max-w-sm">
+  <!-- Logo -->
+  <div class="text-center mb-10">
+    <a href="/" class="inline-flex items-center gap-3">
+      <div class="w-12 h-12 bg-gd flex items-center justify-center">
+        <span class="text-hg font-bold text-xl" style="font-family:'Playfair Display',serif">H</span>
+      </div>
+      <div class="text-left">
+        <div class="text-white font-bold tracking-widest text-lg">HOUZY HOME</div>
+        <div class="text-gd text-xs tracking-widest">ORDER MANAGEMENT</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Customer shortcut -->
+  <a href="customer.html"
+     class="flex items-center gap-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl p-5 mb-4 transition-all group">
+    <div class="w-11 h-11 bg-gd rounded-full flex items-center justify-center flex-shrink-0">
+      <svg class="w-5 h-5 text-hg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+    </div>
+    <div class="flex-1">
+      <div class="text-white font-semibold">查询我的订单</div>
+      <div class="text-gray-400 text-sm">输入手机号 · 查看进度</div>
+    </div>
+    <svg class="w-4 h-4 text-gd group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+  </a>
+
+  <!-- Login panel -->
+  <div id="login-panel">
+    <!-- Staff / Supplier login -->
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="text-white font-semibold">员工 / 厂家 / 管理员</div>
+          <div class="text-gray-400 text-xs">Staff · Supplier · Admin</div>
+        </div>
+      </div>
+
+      <form id="form" onsubmit="doLogin(event)" class="space-y-3">
+        <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <input type="password" id="pw" placeholder="密码 Password" required autocomplete="current-password"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button type="submit" id="btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          登录 Login
+        </button>
+        <p id="err" class="text-red-400 text-xs hidden"></p>
+      </form>
+    </div>
+
+    <!-- Register link + Forgot password -->
+    <div class="flex justify-between mt-4 text-sm">
+      <a onclick="showForgot()" class="text-gray-400 cursor-pointer hover:text-gd transition">忘记密码？</a>
+      <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition">没有账号？立即注册 →</a>
+    </div>
+  </div>
+
+  <!-- Forgot password panel -->
+  <div id="forgot-panel" class="hidden">
+    <p class="mb-4"><a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a></p>
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-2">重置密码</h2>
+      <p class="text-gray-400 text-xs mb-4">输入注册邮箱，我们将发送密码重置链接到您的邮箱。</p>
+      <div class="space-y-3">
+        <input type="email" id="forgot-email" placeholder="电邮地址 Email"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button onclick="submitForgot()" id="forgot-btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          发送重置链接
+        </button>
+        <p id="forgot-msg" class="text-xs hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset password panel (shown after clicking email link) -->
+  <div id="reset-panel" class="hidden">
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-2">设置新密码</h2>
+      <p class="text-gray-400 text-xs mb-4">请输入您的新密码。</p>
+      <div class="space-y-3">
+        <input type="password" id="reset-pw" placeholder="新密码（至少6位）"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <input type="password" id="reset-pw2" placeholder="确认新密码"
+               class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        <button onclick="submitReset()" id="reset-btn"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          确认设置
+        </button>
+        <p id="reset-msg" class="text-xs hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration panel -->
+  <div id="reg-panel" class="hidden">
+    <!-- Back link -->
+    <p class="mb-4">
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+    </p>
+
+    <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+      <h2 class="text-white font-bold text-lg mb-5">申请注册账号</h2>
+
+      <!-- Role selector -->
+      <div class="flex gap-2 mb-5">
+        <button id="reg-btn-staff" onclick="selectRegType('staff')"
+                class="flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition">
+          👤 员工 Staff
+        </button>
+        <button id="reg-btn-supplier" onclick="selectRegType('supplier')"
+                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+          🏭 厂家 Supplier
+        </button>
+        <button id="reg-btn-logistics" onclick="selectRegType('logistics')"
+                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+          🚚 物流 Logistics
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Staff fields -->
+        <div id="reg-staff-fields" class="space-y-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-name" placeholder="请输入姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">员工编号</label>
+            <input type="text" id="reg-employee-no" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">部门</label>
+            <input type="text" id="reg-department" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">职位</label>
+            <input type="text" id="reg-position" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+            <select id="reg-store"
+                    class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+              <option value="" style="background:#1a3a2a">请选择所属店面</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Supplier fields -->
+        <div id="reg-supplier-fields" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">厂家名称 *</label>
+            <input type="text" id="reg-company" placeholder="请输入公司名称"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">联系人姓名 *</label>
+            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">统一社会信用代码</label>
+            <input type="text" id="reg-credit-code" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">公司地址</label>
+            <input type="text" id="reg-address" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">主营产品/业务</label>
+            <input type="text" id="reg-products" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+        </div>
+
+        <!-- Logistics fields -->
+        <div id="reg-logistics-fields" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-log-name" placeholder="请输入姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-log-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">公司/团队名称</label>
+            <input type="text" id="reg-log-company" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+        </div>
+
+        <!-- Common: password -->
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">密码 *</label>
+          <input type="password" id="reg-pw" placeholder="请设置登录密码"
+                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">确认密码 *</label>
+          <input type="password" id="reg-pw2" placeholder="请再次输入密码"
+                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+        </div>
+
+        <button onclick="submitReg()" id="reg-btn-submit"
+                class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
+          提交申请
+        </button>
+        <p id="reg-err" class="text-red-400 text-xs hidden"></p>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center text-gray-600 text-xs mt-8">© 2026 HOUZY HOME SDN. BHD.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ⚠️ 替换为您的 Supabase 凭证 → Supabase Dashboard > Settings > API
+const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
+const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// Detect password recovery flow (handles both PKCE and implicit flows)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    showPanel('reset-panel');
+  }
+});
+
+(async () => {
+  // Also handle hash-based recovery token (older Supabase versions)
+  const hash = new URLSearchParams(window.location.hash.replace('#',''));
+  if (hash.get('type') === 'recovery') {
+    showPanel('reset-panel');
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data } = await sb.rpc('get_my_profile');
+    if (data) redirect(data);
+  }
+})();
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  btn.textContent = '登录中...'; btn.disabled = true; err.classList.add('hidden');
+
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('email').value,
+    password: document.getElementById('pw').value
+  });
+  if (error) {
+    const m = error.message || '';
+    if (m.includes('Invalid') || m.includes('invalid')) {
+      err.textContent = '邮箱或密码错误，请重新输入';
+    } else if (m.includes('Email not confirmed') || m.includes('not confirmed')) {
+      err.textContent = '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）';
+    } else if (m.includes('disabled') || m.includes('banned')) {
+      err.textContent = '账号已被停用，请联系管理员';
+    } else {
+      err.textContent = '登录失败：' + m;
+    }
+    err.classList.remove('hidden');
+    btn.textContent = '登录 Login'; btn.disabled = false;
+    return;
+  }
+  redirect();
+}
+
+function showPanel(id) {
+  ['login-panel','forgot-panel','reset-panel','reg-panel'].forEach(p => {
+    const el = document.getElementById(p);
+    if (el) el.classList.toggle('hidden', p !== id);
+  });
+}
+function showLogin()    { showPanel('login-panel'); }
+function showForgot()   { showPanel('forgot-panel'); }
+async function showRegister() {
+  showPanel('reg-panel');
+  const sel = document.getElementById('reg-store');
+  if (sel && sel.options.length <= 1) {
+    const { data } = await sb.from('stores').select('id, name').eq('active', true).order('name');
+    if (data?.length) {
+      sel.innerHTML = '<option value="" style="background:#1a3a2a">请选择所属店面</option>' +
+        data.map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('');
+    }
+  }
+}
+
+async function redirect(data) {
+  if (!data) {
+    const { data: profileData, error: rpcErr } = await sb.rpc('get_my_profile');
+    data = profileData;
+    if (rpcErr) console.error('get_my_profile error:', rpcErr.message);
+  }
+  if (!data) {
+    await sb.auth.signOut();
+    const err = document.getElementById('err');
+    err.textContent = '账号资料未找到，可能正在审核中或审批未完成，请联系管理员确认。';
+    err.classList.remove('hidden');
+    document.getElementById('btn').textContent = '登录 Login';
+    document.getElementById('btn').disabled = false;
+    return;
+  }
+  const role = data?.role || 'customer';
+  const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', logistics: 'logistics.html', customer: 'customer.html' };
+  window.location.href = map[role] || 'customer.html';
+}
+
+async function submitForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-btn');
+  const msg = document.getElementById('forgot-msg');
+  if (!email) { msg.textContent = '请输入邮箱地址'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = '发送中...'; btn.disabled = true;
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  btn.textContent = '发送重置链接'; btn.disabled = false;
+  if (error) {
+    msg.textContent = '发送失败：' + error.message;
+    msg.className = 'text-xs text-red-400';
+  } else {
+    msg.textContent = '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。';
+    msg.className = 'text-xs text-green-400';
+  }
+  msg.classList.remove('hidden');
+}
+
+async function submitReset() {
+  const pw  = document.getElementById('reset-pw').value;
+  const pw2 = document.getElementById('reset-pw2').value;
+  const btn = document.getElementById('reset-btn');
+  const msg = document.getElementById('reset-msg');
+  if (!pw || pw.length < 6) { msg.textContent = '密码至少需要6位'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  if (pw !== pw2) { msg.textContent = '两次密码不一致'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = '设置中...'; btn.disabled = true;
+  const { error } = await sb.auth.updateUser({ password: pw });
+  btn.textContent = '确认设置'; btn.disabled = false;
+  if (error) {
+    msg.textContent = '设置失败：' + error.message;
+    msg.className = 'text-xs text-red-400';
+    msg.classList.remove('hidden');
+  } else {
+    msg.textContent = '✅ 密码已更新！正在跳转登录…';
+    msg.className = 'text-xs text-green-400';
+    msg.classList.remove('hidden');
+    setTimeout(() => { window.location.hash = ''; redirect(); }, 1500);
+  }
+}
+
+// ── Registration ──
+let regType = 'staff';
+
+function selectRegType(t) {
+  regType = t;
+  const activeClass   = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition';
+  const inactiveClass = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition';
+  document.getElementById('reg-btn-staff').className      = t === 'staff'     ? activeClass : inactiveClass;
+  document.getElementById('reg-btn-supplier').className   = t === 'supplier'  ? activeClass : inactiveClass;
+  document.getElementById('reg-btn-logistics').className  = t === 'logistics' ? activeClass : inactiveClass;
+  document.getElementById('reg-staff-fields').classList.toggle('hidden',     t !== 'staff');
+  document.getElementById('reg-supplier-fields').classList.toggle('hidden',  t !== 'supplier');
+  document.getElementById('reg-logistics-fields').classList.toggle('hidden', t !== 'logistics');
+}
+
+async function submitReg() {
+  const errEl = document.getElementById('reg-err');
+  const btn   = document.getElementById('reg-btn-submit');
+  errEl.classList.add('hidden');
+
+  // Collect fields
+  let name, phone, email;
+  let payload = { type: regType };
+
+  if (regType === 'staff') {
+    name  = document.getElementById('reg-name').value.trim();
+    phone = document.getElementById('reg-phone').value.trim();
+    email = document.getElementById('reg-email').value.trim();
+    const storeId = document.getElementById('reg-store')?.value;
+    if (!name || !phone || !email) {
+      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    if (!storeId) {
+      errEl.textContent = '请选择所属店面'; errEl.classList.remove('hidden'); return;
+    }
+    payload.name            = name;
+    payload.phone           = phone;
+    payload.email           = email;
+    payload.store_id        = storeId;
+    payload.employee_no     = document.getElementById('reg-employee-no').value.trim() || null;
+    payload.department      = document.getElementById('reg-department').value.trim() || null;
+    payload.position_title  = document.getElementById('reg-position').value.trim() || null;
+  } else if (regType === 'supplier') {
+    const company = document.getElementById('reg-company').value.trim();
+    name  = document.getElementById('reg-sup-name').value.trim();
+    phone = document.getElementById('reg-sup-phone').value.trim();
+    email = document.getElementById('reg-sup-email').value.trim();
+    if (!company || !name || !phone || !email) {
+      errEl.textContent = '请填写厂家名称、联系人姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    payload.company_name  = company;
+    payload.name          = name;
+    payload.phone         = phone;
+    payload.email         = email;
+    payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
+    payload.address       = document.getElementById('reg-address').value.trim() || null;
+    payload.products      = document.getElementById('reg-products').value.trim() || null;
+  } else {
+    // logistics
+    name  = document.getElementById('reg-log-name').value.trim();
+    phone = document.getElementById('reg-log-phone').value.trim();
+    email = document.getElementById('reg-log-email').value.trim();
+    if (!name || !phone || !email) {
+      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    payload.name         = name;
+    payload.phone        = phone;
+    payload.email        = email;
+    payload.company_name = document.getElementById('reg-log-company').value.trim() || null;
+  }
+
+  const pw  = document.getElementById('reg-pw').value;
+  const pw2 = document.getElementById('reg-pw2').value;
+  if (!pw || pw.length < 6) {
+    errEl.textContent = '密码至少需要6位'; errEl.classList.remove('hidden'); return;
+  }
+  if (pw !== pw2) {
+    errEl.textContent = '两次输入的密码不一致'; errEl.classList.remove('hidden'); return;
+  }
+
+  btn.textContent = '提交中...'; btn.disabled = true;
+
+  // Step 1: Create auth account
+  let userId = null;
+  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
+    options: { data: { name, role: regType } }
+  });
+  if (authErr) {
+    const msg = authErr.message || '';
+    if (msg.includes('already registered') || msg.includes('already')) {
+      // Email already in auth — that's OK, continue to submit registration record
+    } else if (msg.includes('rate limit') || msg.includes('429')) {
+      errEl.textContent = '提交过于频繁，请稍后再试';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else if (msg.includes('invalid') && msg.includes('email')) {
+      errEl.textContent = '邮箱地址格式不正确，请检查后重试';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else if (msg.includes('Password') || msg.includes('password')) {
+      errEl.textContent = '密码不符合要求，请使用至少6位字符';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    } else {
+      errEl.textContent = '账号创建失败，请联系管理员（' + msg + '）';
+      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    }
+  } else {
+    userId = authData?.user?.id || null;
+  }
+
+  // Step 2: Insert registration record while session is still active (before signOut)
+  payload.user_id = userId;
+  const { error: insErr } = await sb.from('registrations').insert(payload);
+
+  // Step 3: Sign out regardless of insert result
+  await sb.auth.signOut();
+
+  if (insErr) {
+    const imsg = insErr.message || '';
+    if (imsg.includes('relation') || imsg.includes('does not exist')) {
+      errEl.textContent = '系统配置错误：注册表尚未创建，请联系管理员运行数据库迁移';
+    } else if (imsg.includes('violates row-level security') || imsg.includes('permission')) {
+      errEl.textContent = '权限错误：请联系管理员检查数据库 RLS 策略（registrations GRANT）';
+    } else if (imsg.includes('duplicate') || imsg.includes('unique')) {
+      errEl.textContent = '该邮箱已提交过申请，请等待管理员审核或联系管理员';
+    } else {
+      errEl.textContent = '提交失败：' + imsg;
+    }
+    errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+  }
+
+  btn.textContent = '提交申请'; btn.disabled = false;
+
+  // Show success — replace form content
+  document.getElementById('reg-panel').innerHTML = `
+    <div class="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+      <div class="text-4xl mb-4">✅</div>
+      <h2 class="text-white font-bold text-lg mb-3">申请已提交！</h2>
+      <div class="text-left space-y-3 mb-6">
+        <div class="flex items-start gap-3">
+          <span class="text-gd font-bold flex-shrink-0">1.</span>
+          <p class="text-gray-300 text-sm">请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="text-gd font-bold flex-shrink-0">2.</span>
+          <p class="text-gray-300 text-sm">邮箱确认后，请等待管理员审核，审核通过后即可登录</p>
+        </div>
+      </div>
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+    </div>`;
+}
+</script>
+</body>
+</html>

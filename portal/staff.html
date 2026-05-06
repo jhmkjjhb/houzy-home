@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 店员后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+<style>
+  .nav-link { @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 hover:text-white transition cursor-pointer; }
+  .nav-link.active { @apply bg-white/15 text-white font-semibold; }
+  .card { @apply bg-white rounded-xl shadow-sm border border-gray-100; }
+  .btn-primary { @apply px-4 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-gg transition; }
+  .btn-gold { @apply px-4 py-2 bg-gd text-hg text-sm font-semibold rounded-lg hover:brightness-110 transition; }
+  .input { @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm; }
+  .label { @apply block text-xs font-medium text-gray-600 mb-1; }
+  [x-cloak] { display: none; }
+  /* Brand VI focus — override iOS Safari blue ring */
+  input, select, textarea {
+    -webkit-tap-highlight-color: rgba(26,58,42,0.1);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    -webkit-appearance: none;
+    border-color: #1a3a2a !important;
+    box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+    -webkit-box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+  }
+  select { cursor: pointer; }
+  select option:checked { background-color: #1a3a2a; color: #ffffff; }
+  @keyframes overduePulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+  }
+  .row-overdue-badge { animation: overduePulse 1.5s ease-in-out infinite; }
+  .row-warn    { background: #fffbeb; }
+  @keyframes cdTick {
+    0%   { transform: scale(1);    opacity: 1; }
+    30%  { transform: scale(1.12); opacity: 0.7; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
+</style>
+</head>
+<body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
+
+<!-- Mobile Top Bar -->
+<div class="md:hidden bg-hg flex items-center justify-between px-4 h-14 fixed top-0 left-0 right-0 z-30">
+  <a href="/" class="flex items-center gap-2">
+    <div class="w-7 h-7 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+    <span class="text-white font-bold text-sm">HOUZY HOME</span>
+  </a>
+  <button onclick="toggleMobileMenu()" class="text-white p-2">
+    <svg id="menu-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="mobile-overlay" class="hidden fixed inset-0 z-40 md:hidden">
+  <div class="absolute inset-0 bg-black/50" onclick="toggleMobileMenu()"></div>
+  <aside class="absolute left-0 top-0 bottom-0 w-64 bg-hg flex flex-col">
+    <div class="px-4 py-5 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+        <div class="text-white font-bold text-sm">HOUZY HOME</div>
+      </div>
+      <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">✕</button>
+    </div>
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-link" onclick="goto('dashboard');toggleMobileMenu()">🏠 <span data-i18n="nav_dashboard">总览</span></div>
+      <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
+      <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
+      <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
+      <div class="nav-link hidden admin-nav" onclick="goto('suppliers');toggleMobileMenu()">🏭 <span data-i18n="nav_suppliers">供应商管理</span></div>
+      <div class="nav-link hidden admin-nav" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
+      <!-- Language selector -->
+      <div class="relative mt-2">
+        <button onclick="toggleMobileLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
+          🌐 <span id="m-lang-label">简体中文</span>
+          <svg class="w-3 h-3 ml-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="m-lang-drop" class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+          <button onclick="setLang('en');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('zh-CN');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁体中文</button>
+          <button onclick="setLang('ms');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th');toggleMobileMenu()" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
+    </nav>
+    <div class="p-3 border-t border-white/10">
+      <div id="mobile-user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
+      <button onclick="logout()" class="nav-link w-full text-red-400">🚪 <span data-i18n="nav_logout">退出</span></button>
+    </div>
+  </aside>
+</div>
+
+<!-- Layout -->
+<div class="flex h-screen overflow-hidden pt-14 md:pt-0">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="hidden md:flex w-56 bg-hg flex-shrink-0 flex-col">
+    <!-- Logo -->
+    <div class="px-4 py-5 border-b border-white/10">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
+        <div>
+          <div class="text-white font-bold text-sm tracking-wide">HOUZY HOME</div>
+          <div class="text-gd text-xs" data-i18n="sidebar_title">店员后台</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-link active" id="nav-dashboard" onclick="goto('dashboard')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span data-i18n="nav_dashboard">总览</span>
+      </div>
+      <div class="nav-link" id="nav-orders" onclick="goto('orders')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span data-i18n="nav_orders">订单管理</span>
+      </div>
+      <div class="nav-link" id="nav-create" onclick="goto('create')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span data-i18n="nav_new">新建订单</span>
+      </div>
+      <div class="nav-link" id="nav-customers" onclick="goto('customers')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span data-i18n="nav_customers">客户管理</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-suppliers" onclick="goto('suppliers')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <span data-i18n="nav_suppliers">供应商管理</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-registrations" onclick="goto('registrations')">
+        📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
+      </div>
+    </nav>
+
+    <!-- User info + Language picker -->
+    <div class="p-3 border-t border-white/10">
+      <!-- Language selector -->
+      <div class="relative mb-1">
+        <button onclick="toggleLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
+          🌐 <span id="lang-label">简体中文</span>
+          <svg class="w-3 h-3 ml-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="lang-drop" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-xl z-50 py-1 overflow-hidden">
+          <button onclick="setLang('en')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('zh-CN')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁体中文</button>
+          <button onclick="setLang('ms')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
+      <div id="user-info" class="text-xs text-gray-400 mb-2 px-2"></div>
+      <button onclick="logout()" class="nav-link w-full text-red-400 hover:text-red-300 hover:bg-red-900/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <span data-i18n="nav_logout">退出</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="v-dashboard" class="p-6 max-w-5xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-6" data-i18n="dash_title">总览 Dashboard</h1>
+      <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-800" data-i18n="dash_recent">最近订单</h2>
+          <button onclick="goto('orders')" class="text-xs text-hg hover:underline" data-i18n="dash_view_all">查看全部 →</button>
+        </div>
+        <div id="recent-orders"></div>
+      </div>
+    </div>
+
+    <!-- ── ORDERS LIST ── -->
+    <div id="v-orders" class="hidden p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="orders_title">订单管理</h1>
+        <button onclick="goto('create')" class="btn-gold" data-i18n="orders_new_btn">+ 新建订单</button>
+      </div>
+      <!-- Filters -->
+      <div class="card p-4 mb-4 space-y-2">
+        <!-- Row 1: search + status -->
+        <div class="flex flex-wrap gap-2">
+          <input type="text" id="f-search" placeholder="搜索订单号 / 客户" oninput="filterOrders()" data-i18n-ph="filter_search"
+                 class="input flex-1 min-w-40">
+          <select id="f-status" onchange="filterOrders()" class="input w-32">
+            <option value="">全部状态</option>
+            <option value="pending_payment" data-i18n-opt="status_pending_payment">待付款</option>
+            <option value="paid" data-i18n-opt="status_paid">已付款</option>
+            <option value="in_production" data-i18n-opt="status_in_production">生产中</option>
+            <option value="shipped" data-i18n-opt="status_shipped">已发货</option>
+            <option value="arrived" data-i18n-opt="status_arrived">已到货</option>
+            <option value="installing" data-i18n-opt="status_installing">安装中</option>
+            <option value="completed" data-i18n-opt="status_completed">已完成</option>
+            <option value="after_sales" data-i18n-opt="status_after_sales">质保服务</option>
+            <option value="closed" data-i18n-opt="status_closed">已关闭</option>
+          </select>
+        </div>
+        <!-- Row 2: store + date + month -->
+        <div class="flex flex-wrap gap-2 items-center">
+          <select id="f-store" onchange="filterOrders()" class="input w-36 hidden" title="门店筛选">
+            <option value="">全部门店</option>
+          </select>
+          <input type="date" id="f-date" onchange="onDateChange('date')" class="input w-40" title="按日期查询">
+          <input type="month" id="f-month" onchange="onDateChange('month')" class="input w-36" title="按月查询">
+          <button onclick="clearDateFilters()" class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 border border-gray-200 rounded" data-i18n="filter_clear_date">清除日期</button>
+        </div>
+      </div>
+      <!-- Monthly Stats Panel -->
+      <div id="monthly-stats" class="hidden card p-4 mb-4"></div>
+      <div class="card overflow-hidden overflow-x-auto">
+        <div id="orders-table"></div>
+      </div>
+    </div>
+
+    <!-- ── CREATE ORDER ── -->
+    <div id="v-create" class="hidden p-6 max-w-2xl mx-auto">
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="create_title">新建订单</h1>
+      </div>
+
+      <!-- Step 1: Customer -->
+      <div id="step-customer" class="card p-6 mb-4">
+        <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step1">1. 客户信息</h2>
+        <div class="mb-3">
+          <label class="label" data-i18n="lbl_country">国家区号 *</label>
+          <select id="c-country" class="input">
+            <option value="">— 请选择国家区号 —</option>
+            <option value="60">🇲🇾 马来西亚 +60</option>
+            <option value="65">🇸🇬 新加坡 +65</option>
+            <option value="86">🇨🇳 中国 +86</option>
+            <option value="62">🇮🇩 印尼 +62</option>
+            <option value="66">🇹🇭 泰国 +66</option>
+            <option value="63">🇵🇭 菲律宾 +63</option>
+            <option value="84">🇻🇳 越南 +84</option>
+            <option value="673">🇧🇳 文莱 +673</option>
+            <option value="886">🇹🇼 台湾 +886</option>
+            <option value="852">🇭🇰 香港 +852</option>
+            <option value="81">🇯🇵 日本 +81</option>
+            <option value="82">🇰🇷 韩国 +82</option>
+            <option value="91">🇮🇳 印度 +91</option>
+            <option value="61">🇦🇺 澳洲 +61</option>
+            <option value="1">🇺🇸 美国/加拿大 +1</option>
+            <option value="44">🇬🇧 英国 +44</option>
+            <option value="971">🇦🇪 阿联酋 +971</option>
+            <option value="966">🇸🇦 沙特 +966</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" data-i18n="lbl_phone">手机号码 *</label>
+            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input">
+          </div>
+          <div>
+            <label class="label" data-i18n="lbl_name">姓名 *</label>
+            <input type="text" id="c-name" placeholder="客户姓名" data-i18n-ph="ph_name" class="input">
+          </div>
+        </div>
+        <div id="customer-found" class="hidden rounded-lg p-3 text-sm mb-3" style="background:#d6e8db;color:#1a3a2a;border:1px solid #aed0b8"></div>
+        <div>
+          <label class="label" data-i18n="lbl_address">地址</label>
+          <input type="text" id="c-address" placeholder="配送地址（选填）" data-i18n-ph="ph_address" class="input">
+        </div>
+      </div>
+
+      <!-- Step 2: Order details -->
+      <div class="card p-6 mb-4">
+        <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step2">2. 订单信息</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" data-i18n="lbl_store">国家/地区 *</label>
+            <select id="o-store" class="input" onchange="autoSetCurrency()">
+              <option value="">— 请选择 —</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" data-i18n="lbl_amount">订单金额 *</label>
+            <div class="flex gap-1">
+              <select id="o-currency" class="input w-28 flex-shrink-0">
+                <option value="MYR">🇲🇾 MYR</option>
+                <option value="SGD">🇸🇬 SGD</option>
+                <option value="THB">🇹🇭 THB</option>
+                <option value="IDR">🇮🇩 IDR</option>
+                <option value="PHP">🇵🇭 PHP</option>
+                <option value="VND">🇻🇳 VND</option>
+                <option value="CNY">🇨🇳 CNY</option>
+                <option value="HKD">🇭🇰 HKD</option>
+                <option value="USD">🇺🇸 USD</option>
+              </select>
+              <input type="number" id="o-amount" placeholder="0.00" min="0" step="0.01" data-i18n-ph="ph_amount" class="input flex-1 min-w-0">
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="label" data-i18n="lbl_desc">套餐/项目描述</label>
+          <input type="text" id="o-desc" placeholder="如：品质套餐 120m²" data-i18n-ph="ph_desc" class="input">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label" data-i18n="lbl_referrer">推荐人</label>
+            <select id="o-referrer" class="input">
+              <option value="">无推荐人</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" data-i18n="lbl_pay_status">支付状态</label>
+            <select id="o-payment" class="input">
+              <option value="unpaid" data-i18n-opt="opt_unpaid">待支付</option>
+              <option value="paid" data-i18n-opt="opt_paid">已支付</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="label" data-i18n="lbl_pay_method">支付方式</label>
+          <select id="o-pay-method" class="input">
+            <option value="">—</option>
+            <option value="cash" data-i18n-opt="pay_cash">💵 现金</option>
+            <option value="transfer" data-i18n-opt="pay_transfer">🏦 银行转账</option>
+            <option value="ewallet" data-i18n-opt="pay_ewallet">📱 电子钱包</option>
+            <option value="card" data-i18n-opt="pay_card">💳 刷卡</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" data-i18n="lbl_notes">备注</label>
+          <textarea id="o-notes" rows="2" placeholder="内部备注（客户不可见）" data-i18n-ph="ph_notes" class="input resize-none"></textarea>
+        </div>
+      </div>
+
+      <button onclick="submitOrder()" id="submit-btn" class="btn-gold w-full py-3 text-base" data-i18n="create_btn">
+        创建订单
+      </button>
+      <p id="create-err" class="text-red-500 text-sm mt-2 text-center hidden"></p>
+    </div>
+
+    <!-- ── CUSTOMERS ── -->
+    <div id="v-customers" class="hidden p-6 max-w-5xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-5" data-i18n="customers_title">客户管理</h1>
+      <div class="card p-4 mb-4">
+        <input type="text" id="cust-search" placeholder="搜索姓名 / 手机号" oninput="filterCustomers()" data-i18n-ph="cust_search"
+               class="input max-w-sm">
+      </div>
+      <div class="card overflow-hidden">
+        <div id="customers-table"></div>
+      </div>
+    </div>
+
+    <!-- ── ORDER DETAIL ── -->
+    <div id="v-detail" class="hidden p-6 max-w-3xl mx-auto">
+      <div class="flex items-center gap-3 mb-5">
+        <button id="detail-back" onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
+        <h1 class="text-xl font-bold text-gray-800">订单详情</h1>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+
+    <!-- ── SUPPLIERS (admin only) ── -->
+    <div id="v-suppliers" class="hidden p-6 max-w-3xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-5" data-i18n="nav_suppliers">供应商管理</h1>
+      <!-- Add supplier form -->
+      <div class="card p-4 mb-4">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
+        <div class="flex flex-wrap gap-2">
+          <input type="text" id="sup-name" placeholder="供应商名称 *" data-i18n-ph="th_name" class="input flex-1 min-w-36">
+          <input type="tel" id="sup-phone" placeholder="联系电话" data-i18n-ph="th_phone" class="input w-36">
+          <select id="sup-tier" class="input w-28">
+            <option value="3">⭐⭐⭐</option>
+            <option value="2" selected>⭐⭐</option>
+            <option value="1">⭐</option>
+          </select>
+          <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
+        </div>
+        <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
+      </div>
+      <!-- Suppliers list -->
+      <div class="card overflow-hidden">
+        <div id="suppliers-table"></div>
+      </div>
+    </div>
+
+    <!-- ── REGISTRATIONS (admin only) ── -->
+    <div id="v-registrations" class="hidden p-6 max-w-3xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-2">注册审核</h1>
+      <!-- status filter tabs -->
+      <div id="reg-filter" class="flex gap-2 mb-4">
+        <button onclick="setRegFilter('pending')" id="rf-pending" class="px-3 py-1 rounded-full text-xs font-medium bg-hg text-white">待审核</button>
+        <button onclick="setRegFilter('approved')" id="rf-approved" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">已通过</button>
+        <button onclick="setRegFilter('rejected')" id="rf-rejected" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">已拒绝</button>
+      </div>
+      <div id="registrations-list" class="space-y-3"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── i18n ──
+const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
+const STAFF_I18N = {
+  'zh-CN': {
+    sidebar_title:'店员后台', nav_dashboard:'总览', nav_orders:'订单管理', nav_new:'新建订单', nav_customers:'客户管理', nav_logout:'退出',
+    dash_title:'总览 Dashboard', dash_recent:'最近订单', dash_view_all:'查看全部 →',
+    stat_total:'总订单', stat_active:'进行中', stat_done:'已完成', stat_revenue:'已收款',
+    stat_total_ord:'总订单数', stat_paid_cnt:'已付款', stat_unpaid_cnt:'待付款', stat_revenue_total:'总收款金额', stat_store_detail:'门店明细',
+    stat_day_pfx:'日', stat_month_pfx:'月',
+    orders_title:'订单管理', orders_new_btn:'+ 新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
+    create_title:'新建订单', create_step1:'1. 客户信息', create_step2:'2. 订单信息', create_btn:'创建订单', creating:'创建中…',
+    lbl_country:'区号', lbl_phone:'手机号', lbl_name:'姓名', lbl_address:'地址',
+    lbl_store:'国家/地区', lbl_amount:'订单金额', lbl_desc:'产品描述', lbl_referrer:'推荐人',
+    lbl_pay_status:'支付状态', lbl_pay_method:'支付方式', lbl_notes:'备注',
+    ph_country:'+60', ph_name:'客户姓名', ph_address:'送货地址（选填）',
+    ph_amount:'0.00', ph_desc:'产品描述', ph_notes:'备注（选填）', ph_upd_notes:'更新备注（选填）',
+    opt_unpaid:'待付款', opt_paid:'已付款', opt_no_ref:'无推荐人', opt_select_store:'请选择门店', opt_unassigned:'待分配',
+    customers_title:'客户管理', cust_search:'搜索姓名 / 手机号',
+    detail_title:'订单详情', detail_update:'更新状态', detail_timeline:'进度日志',
+    lbl_customer:'客户', lbl_mobile:'手机', lbl_amount_d:'金额', lbl_payment:'支付', lbl_method:'方式',
+    lbl_supplier:'供应商', lbl_staff:'店员', lbl_order_status:'订单状态', lbl_assign_sup:'分配供应商',
+    btn_save:'保存', btn_delete:'删除订单', msg_saved:'已保存',
+    del_title:'确认删除', del_msg:'此操作不可撤销，请输入管理员密码确认：', del_pw_lbl:'管理员密码', del_pw_ph:'输入密码', del_err_pw:'密码错误', btn_cancel:'取消', btn_confirm_del:'确认删除',
+    th_order_no:'订单号', th_customer:'客户', th_store:'门店', th_amount:'金额', th_status:'状态', th_time:'时间',
+    th_name:'姓名', th_phone:'手机号', th_address:'地址', th_reg_time:'注册时间',
+    no_orders:'暂无订单', no_customers:'暂无客户', no_logs:'暂无记录',
+    nav_suppliers:'供应商管理', sup_add:'添加供应商', sup_add_btn:'添加', no_suppliers:'暂无供应商',
+    lbl_sup_tier:'级别', sup_active:'活跃', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'启用',
+    pay_method:'支付方式', pay_cash:'💵 现金', pay_transfer:'🏦 银行转账', pay_ewallet:'📱 电子钱包', pay_card:'💳 刷卡',
+    overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认', lbl_sla_days:'预计天数',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
+    status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
+    status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
+    status_completed:'已完成', status_after_sales:'质保服务', status_closed:'已关闭',
+    warranty_panel_title:'质保服务 (5年)', warranty_start_lbl:'质保开始',
+    warranty_year_pfx:'第', warranty_year_sfx:'年',
+    warranty_advance_btn:'记录下一年提醒', warranty_completed:'5年质保服务已全部完成 🎉',
+  },
+  'zh-TW': {
+    sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
+    dash_title:'總覽 Dashboard', dash_recent:'最近訂單', dash_view_all:'查看全部 →',
+    stat_total:'總訂單', stat_active:'進行中', stat_done:'已完成', stat_revenue:'已收款',
+    stat_total_ord:'總訂單數', stat_paid_cnt:'已付款', stat_unpaid_cnt:'待付款', stat_revenue_total:'總收款金額', stat_store_detail:'門店明細',
+    stat_day_pfx:'日', stat_month_pfx:'月',
+    orders_title:'訂單管理', orders_new_btn:'+ 新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
+    create_title:'新建訂單', create_step1:'1. 客戶資訊', create_step2:'2. 訂單資訊', create_btn:'創建訂單', creating:'創建中…',
+    lbl_country:'區號', lbl_phone:'手機號', lbl_name:'姓名', lbl_address:'地址',
+    lbl_store:'國家/地區', lbl_amount:'訂單金額', lbl_desc:'產品描述', lbl_referrer:'推薦人',
+    lbl_pay_status:'支付狀態', lbl_pay_method:'支付方式', lbl_notes:'備註',
+    ph_country:'+60', ph_name:'客戶姓名', ph_address:'送貨地址（選填）',
+    ph_amount:'0.00', ph_desc:'產品描述', ph_notes:'備註（選填）', ph_upd_notes:'更新備註（選填）',
+    opt_unpaid:'待付款', opt_paid:'已付款', opt_no_ref:'無推薦人', opt_select_store:'請選擇門店', opt_unassigned:'待分配',
+    customers_title:'客戶管理', cust_search:'搜尋姓名 / 手機號',
+    detail_title:'訂單詳情', detail_update:'更新狀態', detail_timeline:'進度日誌',
+    lbl_customer:'客戶', lbl_mobile:'手機', lbl_amount_d:'金額', lbl_payment:'支付', lbl_method:'方式',
+    lbl_supplier:'供應商', lbl_staff:'店員', lbl_order_status:'訂單狀態', lbl_assign_sup:'分配供應商',
+    btn_save:'保存', btn_delete:'刪除訂單', msg_saved:'已保存',
+    del_title:'確認刪除', del_msg:'此操作不可撤銷，請輸入管理員密碼確認：', del_pw_lbl:'管理員密碼', del_pw_ph:'輸入密碼', del_err_pw:'密碼錯誤', btn_cancel:'取消', btn_confirm_del:'確認刪除',
+    th_order_no:'訂單號', th_customer:'客戶', th_store:'門店', th_amount:'金額', th_status:'狀態', th_time:'時間',
+    th_name:'姓名', th_phone:'手機號', th_address:'地址', th_reg_time:'注冊時間',
+    no_orders:'暫無訂單', no_customers:'暫無客戶', no_logs:'暫無記錄',
+    nav_suppliers:'供應商管理', sup_add:'添加供應商', sup_add_btn:'添加', no_suppliers:'暫無供應商',
+    lbl_sup_tier:'級別', sup_active:'活躍', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'啟用',
+    pay_method:'支付方式', pay_cash:'💵 現金', pay_transfer:'🏦 銀行轉賬', pay_ewallet:'📱 電子錢包', pay_card:'💳 刷卡',
+    overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設', lbl_sla_days:'預計天數',
+    status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
+    status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
+    status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
+    status_completed:'已完成', status_after_sales:'質保服務', status_closed:'已關閉',
+    warranty_panel_title:'質保服務 (5年)', warranty_start_lbl:'質保開始',
+    warranty_year_pfx:'第', warranty_year_sfx:'年',
+    warranty_advance_btn:'記錄下一年提醒', warranty_completed:'5年質保服務已全部完成 🎉',
+  },
+  'en': {
+    sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
+    dash_title:'Dashboard', dash_recent:'Recent Orders', dash_view_all:'View All →',
+    stat_total:'Total Orders', stat_active:'In Progress', stat_done:'Completed', stat_revenue:'Revenue',
+    stat_total_ord:'Total Orders', stat_paid_cnt:'Paid', stat_unpaid_cnt:'Unpaid', stat_revenue_total:'Total Revenue', stat_store_detail:'Store Details',
+    stat_day_pfx:'D', stat_month_pfx:'M',
+    orders_title:'Order Management', orders_new_btn:'+ New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
+    create_title:'New Order', create_step1:'1. Customer Info', create_step2:'2. Order Details', create_btn:'Create Order', creating:'Creating…',
+    lbl_country:'Code', lbl_phone:'Phone', lbl_name:'Name', lbl_address:'Address',
+    lbl_store:'Country/Region', lbl_amount:'Order Amount', lbl_desc:'Description', lbl_referrer:'Referrer',
+    lbl_pay_status:'Payment Status', lbl_pay_method:'Payment Method', lbl_notes:'Notes',
+    ph_country:'+60', ph_name:'Customer name', ph_address:'Delivery address (optional)',
+    ph_amount:'0.00', ph_desc:'Product description', ph_notes:'Notes (optional)', ph_upd_notes:'Update notes (optional)',
+    opt_unpaid:'Unpaid', opt_paid:'Paid', opt_no_ref:'No referrer', opt_select_store:'Select store', opt_unassigned:'Unassigned',
+    customers_title:'Customers', cust_search:'Search name / phone',
+    detail_title:'Order Detail', detail_update:'Update Status', detail_timeline:'Progress Log',
+    lbl_customer:'Customer', lbl_mobile:'Mobile', lbl_amount_d:'Amount', lbl_payment:'Payment', lbl_method:'Method',
+    lbl_supplier:'Supplier', lbl_staff:'Staff', lbl_order_status:'Order Status', lbl_assign_sup:'Assign Supplier',
+    btn_save:'Save', btn_delete:'Delete Order', msg_saved:'Saved',
+    del_title:'Confirm Delete', del_msg:'This cannot be undone. Enter admin password to confirm:', del_pw_lbl:'Admin Password', del_pw_ph:'Enter password', del_err_pw:'Wrong password', btn_cancel:'Cancel', btn_confirm_del:'Confirm Delete',
+    th_order_no:'Order No.', th_customer:'Customer', th_store:'Store', th_amount:'Amount', th_status:'Status', th_time:'Time',
+    th_name:'Name', th_phone:'Phone', th_address:'Address', th_reg_time:'Registered',
+    no_orders:'No orders', no_customers:'No customers', no_logs:'No records',
+    nav_suppliers:'Supplier Management', sup_add:'Add Supplier', sup_add_btn:'Add', no_suppliers:'No suppliers',
+    lbl_sup_tier:'Tier', sup_active:'Active', sup_inactive:'Disabled', sup_disable:'Disable', sup_enable:'Enable',
+    pay_method:'Payment Method', pay_cash:'💵 Cash', pay_transfer:'🏦 Bank Transfer', pay_ewallet:'📱 E-Wallet', pay_card:'💳 Card',
+    overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default', lbl_sla_days:'Est. Days',
+    status_pending_payment:'Pending', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
+    status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
+    status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
+    status_completed:'Done', status_after_sales:'Warranty', status_closed:'Closed',
+    warranty_panel_title:'Warranty Service (5yr)', warranty_start_lbl:'Warranty Start',
+    warranty_year_pfx:'Year', warranty_year_sfx:'',
+    warranty_advance_btn:'Next Year Reminder', warranty_completed:'All 5-year warranty reminders done 🎉',
+  },
+  'ms': {
+    sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
+    dash_title:'Papan Pemuka', dash_recent:'Pesanan Terkini', dash_view_all:'Lihat Semua →',
+    stat_total:'Jumlah Pesanan', stat_active:'Sedang Berjalan', stat_done:'Selesai', stat_revenue:'Hasil',
+    stat_total_ord:'Jumlah Pesanan', stat_paid_cnt:'Telah Dibayar', stat_unpaid_cnt:'Belum Dibayar', stat_revenue_total:'Jumlah Hasil', stat_store_detail:'Butiran Kedai',
+    stat_day_pfx:'H', stat_month_pfx:'B',
+    orders_title:'Pengurusan Pesanan', orders_new_btn:'+ Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
+    create_title:'Pesanan Baru', create_step1:'1. Maklumat Pelanggan', create_step2:'2. Butiran Pesanan', create_btn:'Buat Pesanan', creating:'Sedang dibuat…',
+    lbl_country:'Kod', lbl_phone:'Telefon', lbl_name:'Nama', lbl_address:'Alamat',
+    lbl_store:'Negara/Wilayah', lbl_amount:'Jumlah Pesanan', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
+    lbl_pay_status:'Status Bayaran', lbl_pay_method:'Kaedah Bayaran', lbl_notes:'Nota',
+    ph_country:'+60', ph_name:'Nama pelanggan', ph_address:'Alamat penghantaran (pilihan)',
+    ph_amount:'0.00', ph_desc:'Penerangan produk', ph_notes:'Nota (pilihan)', ph_upd_notes:'Nota kemas kini (pilihan)',
+    opt_unpaid:'Belum Bayar', opt_paid:'Sudah Bayar', opt_no_ref:'Tiada perujuk', opt_select_store:'Pilih kedai', opt_unassigned:'Belum ditetapkan',
+    customers_title:'Pelanggan', cust_search:'Cari nama / telefon',
+    detail_title:'Butiran Pesanan', detail_update:'Kemaskini Status', detail_timeline:'Log Kemajuan',
+    lbl_customer:'Pelanggan', lbl_mobile:'Telefon', lbl_amount_d:'Jumlah', lbl_payment:'Bayaran', lbl_method:'Kaedah',
+    lbl_supplier:'Pembekal', lbl_staff:'Staf', lbl_order_status:'Status Pesanan', lbl_assign_sup:'Tetapkan Pembekal',
+    btn_save:'Simpan', btn_delete:'Padam Pesanan', msg_saved:'Disimpan',
+    del_title:'Sahkan Padam', del_msg:'Tindakan ini tidak boleh dibuat asal. Masukkan kata laluan admin:', del_pw_lbl:'Kata Laluan Admin', del_pw_ph:'Masukkan kata laluan', del_err_pw:'Kata laluan salah', btn_cancel:'Batal', btn_confirm_del:'Sahkan Padam',
+    th_order_no:'No. Pesanan', th_customer:'Pelanggan', th_store:'Kedai', th_amount:'Jumlah', th_status:'Status', th_time:'Masa',
+    th_name:'Nama', th_phone:'Telefon', th_address:'Alamat', th_reg_time:'Tarikh Daftar',
+    no_orders:'Tiada pesanan', no_customers:'Tiada pelanggan', no_logs:'Tiada rekod',
+    nav_suppliers:'Pengurusan Pembekal', sup_add:'Tambah Pembekal', sup_add_btn:'Tambah', no_suppliers:'Tiada pembekal',
+    lbl_sup_tier:'Tahap', sup_active:'Aktif', sup_inactive:'Dilumpuhkan', sup_disable:'Lumpuhkan', sup_enable:'Aktifkan',
+    pay_method:'Kaedah Pembayaran', pay_cash:'💵 Tunai', pay_transfer:'🏦 Pindahan Bank', pay_ewallet:'📱 E-Dompet', pay_card:'💳 Kad',
+    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai', lbl_sla_days:'Est. Hari',
+    status_pending_payment:'Belum Bayar', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
+    status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
+    status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
+    status_completed:'Selesai', status_after_sales:'Waranti', status_closed:'Ditutup',
+    warranty_panel_title:'Perkhidmatan Waranti (5Thn)', warranty_start_lbl:'Mula Waranti',
+    warranty_year_pfx:'Tahun', warranty_year_sfx:'',
+    warranty_advance_btn:'Peringatan Tahun Depan', warranty_completed:'Semua peringatan waranti 5 tahun selesai 🎉',
+  },
+  'th': {
+    sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
+    dash_title:'แดชบอร์ด', dash_recent:'คำสั่งซื้อล่าสุด', dash_view_all:'ดูทั้งหมด →',
+    stat_total:'คำสั่งซื้อทั้งหมด', stat_active:'กำลังดำเนินการ', stat_done:'เสร็จสิ้น', stat_revenue:'รายได้',
+    stat_total_ord:'คำสั่งซื้อทั้งหมด', stat_paid_cnt:'ชำระแล้ว', stat_unpaid_cnt:'ยังไม่ชำระ', stat_revenue_total:'รายได้รวม', stat_store_detail:'รายละเอียดสาขา',
+    stat_day_pfx:'วัน', stat_month_pfx:'เดือน',
+    orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'+ สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
+    create_title:'สร้างคำสั่งซื้อ', create_step1:'1. ข้อมูลลูกค้า', create_step2:'2. รายละเอียดคำสั่งซื้อ', create_btn:'สร้างคำสั่งซื้อ', creating:'กำลังสร้าง…',
+    lbl_country:'รหัส', lbl_phone:'โทรศัพท์', lbl_name:'ชื่อ', lbl_address:'ที่อยู่',
+    lbl_store:'ประเทศ/ภูมิภาค', lbl_amount:'จำนวนเงิน', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
+    lbl_pay_status:'สถานะการชำระ', lbl_pay_method:'วิธีชำระเงิน', lbl_notes:'หมายเหตุ',
+    ph_country:'+60', ph_name:'ชื่อลูกค้า', ph_address:'ที่อยู่จัดส่ง (ไม่บังคับ)',
+    ph_amount:'0.00', ph_desc:'รายละเอียดสินค้า', ph_notes:'หมายเหตุ (ไม่บังคับ)', ph_upd_notes:'หมายเหตุการอัปเดต (ไม่บังคับ)',
+    opt_unpaid:'ยังไม่ชำระ', opt_paid:'ชำระแล้ว', opt_no_ref:'ไม่มีผู้แนะนำ', opt_select_store:'เลือกสาขา', opt_unassigned:'ยังไม่ได้กำหนด',
+    customers_title:'จัดการลูกค้า', cust_search:'ค้นหาชื่อ / โทรศัพท์',
+    detail_title:'รายละเอียดคำสั่งซื้อ', detail_update:'อัปเดตสถานะ', detail_timeline:'บันทึกความคืบหน้า',
+    lbl_customer:'ลูกค้า', lbl_mobile:'มือถือ', lbl_amount_d:'จำนวนเงิน', lbl_payment:'การชำระ', lbl_method:'วิธี',
+    lbl_supplier:'ซัพพลายเออร์', lbl_staff:'พนักงาน', lbl_order_status:'สถานะคำสั่งซื้อ', lbl_assign_sup:'มอบหมายซัพพลายเออร์',
+    btn_save:'บันทึก', btn_delete:'ลบคำสั่งซื้อ', msg_saved:'บันทึกแล้ว',
+    del_title:'ยืนยันการลบ', del_msg:'ไม่สามารถย้อนกลับได้ กรุณาใส่รหัสผ่านผู้ดูแลเพื่อยืนยัน:', del_pw_lbl:'รหัสผ่านผู้ดูแล', del_pw_ph:'ใส่รหัสผ่าน', del_err_pw:'รหัสผ่านผิด', btn_cancel:'ยกเลิก', btn_confirm_del:'ยืนยันการลบ',
+    th_order_no:'หมายเลขคำสั่ง', th_customer:'ลูกค้า', th_store:'สาขา', th_amount:'จำนวนเงิน', th_status:'สถานะ', th_time:'เวลา',
+    th_name:'ชื่อ', th_phone:'โทรศัพท์', th_address:'ที่อยู่', th_reg_time:'วันที่ลงทะเบียน',
+    no_orders:'ไม่มีคำสั่งซื้อ', no_customers:'ไม่มีลูกค้า', no_logs:'ไม่มีบันทึก',
+    nav_suppliers:'จัดการซัพพลายเออร์', sup_add:'เพิ่มซัพพลายเออร์', sup_add_btn:'เพิ่ม', no_suppliers:'ไม่มีซัพพลายเออร์',
+    lbl_sup_tier:'ระดับ', sup_active:'ใช้งานอยู่', sup_inactive:'ปิดใช้งาน', sup_disable:'ปิด', sup_enable:'เปิด',
+    pay_method:'วิธีชำระเงิน', pay_cash:'💵 เงินสด', pay_transfer:'🏦 โอนธนาคาร', pay_ewallet:'📱 E-Wallet', pay_card:'💳 บัตร',
+    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น', lbl_sla_days:'จำนวนวัน',
+    status_pending_payment:'รอชำระ', status_paid:'ชำระแล้ว', status_assigned:'มอบหมาย', status_accepted:'รับงาน',
+    status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
+    status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
+    status_completed:'เสร็จ', status_after_sales:'ประกัน', status_closed:'ปิด',
+    warranty_panel_title:'บริการรับประกัน (5 ปี)', warranty_start_lbl:'เริ่มรับประกัน',
+    warranty_year_pfx:'ปีที่', warranty_year_sfx:'',
+    warranty_advance_btn:'แจ้งเตือนปีหน้า', warranty_completed:'ครบรอบรับประกัน 5 ปีแล้ว 🎉',
+  },
+};
+
+let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
+function t(k) { return (STAFF_I18N[currentLang] || STAFF_I18N['zh-CN'])[k] || k; }
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('houzy-lang', lang);
+  const label = LANG_LABELS[lang] || lang;
+  const el = document.getElementById('lang-label'); if (el) el.textContent = label;
+  const ml = document.getElementById('m-lang-label'); if (ml) ml.textContent = label;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n); if (v) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh); if (v) el.placeholder = v;
+  });
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const v = t(el.dataset.i18nOpt); if (v) el.textContent = v;
+  });
+  document.body.style.fontFamily = lang === 'th' ? "'Noto Sans Thai',sans-serif" : "'Noto Sans SC',sans-serif";
+  // Update filter select first options
+  const fs = document.getElementById('f-status'); if (fs?.options[0]) fs.options[0].text = t('filter_all_status');
+  const fst = document.getElementById('f-store'); if (fst?.options[0]) fst.options[0].text = t('filter_all_stores');
+  // Update create form dynamic first options
+  const oRef = document.getElementById('o-referrer'); if (oRef?.options[0]) oRef.options[0].text = t('opt_no_ref');
+  const oStr = document.getElementById('o-store'); if (oStr?.options[0]) oStr.options[0].text = t('opt_select_store');
+  // Re-render current view
+  if (!document.getElementById('v-dashboard').classList.contains('hidden')) renderDashboard();
+  else if (!document.getElementById('v-orders').classList.contains('hidden')) renderOrdersTable(filterGetCurrent());
+  else if (!document.getElementById('v-customers').classList.contains('hidden')) renderCustomersTable(allCustomers);
+  document.getElementById('lang-drop')?.classList.add('hidden');
+  document.getElementById('m-lang-drop')?.classList.add('hidden');
+}
+
+function filterGetCurrent() {
+  const q = document.getElementById('f-search')?.value.toLowerCase() || '';
+  const s = document.getElementById('f-status')?.value || '';
+  const store = document.getElementById('f-store')?.value || '';
+  const date = document.getElementById('f-date')?.value || '';
+  const month = document.getElementById('f-month')?.value || '';
+  return allOrders.filter(o => {
+    const txt = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
+    return (!q || txt.includes(q)) && (!s || o.status === s) && (!store || o.store_id === store)
+        && (!date || o.created_at.slice(0,10) === date) && (!month || o.created_at.slice(0,7) === month);
+  });
+}
+
+function toggleLangDrop() {
+  const d = document.getElementById('lang-drop');
+  d?.classList.toggle('hidden');
+}
+function toggleMobileLangDrop() {
+  const d = document.getElementById('m-lang-drop');
+  d?.classList.toggle('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#lang-drop') && !e.target.closest('[onclick*="toggleLangDrop"]'))
+    document.getElementById('lang-drop')?.classList.add('hidden');
+  if (!e.target.closest('#m-lang-drop') && !e.target.closest('[onclick*="toggleMobileLangDrop"]'))
+    document.getElementById('m-lang-drop')?.classList.add('hidden');
+});
+
+const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
+const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
+let searchTimer = null;
+
+const STATUS = {
+  // Core 7-step flow
+  pending_payment: { label:'待付款', s:'background:#fef3c7;color:#92400e',   step:0 },
+  paid:            { label:'已付款', s:'background:#d6e8db;color:#1a3a2a',   step:1 },
+  in_production:   { label:'生产中', s:'background:#c8a96e33;color:#7a5a00', step:2 },
+  shipped:         { label:'已发货', s:'background:#2d5e4322;color:#1a3a2a', step:3 },
+  arrived:         { label:'已到货', s:'background:#2d5e4344;color:#1a3a2a', step:4 },
+  installing:      { label:'安装中', s:'background:#1a3a2a22;color:#1a3a2a', step:5 },
+  completed:       { label:'已完成', s:'background:#1a3a2a;color:#ffffff',   step:6 },
+  // Special
+  after_sales:     { label:'质保服务', s:'background:#dbeafe;color:#1e40af',  step:-1 },
+  closed:          { label:'已关闭', s:'background:#f3f4f6;color:#9ca3af',   step:-1 },
+  cancelled:       { label:'已取消', s:'background:#fee2e2;color:#991b1b',   step:-1 },
+  // Legacy — badge display only (old orders)
+  assigned:           { label:'已分配',   s:'background:#d6e8db;color:#1a3a2a',   step:1, legacy:true },
+  accepted:           { label:'已接单',   s:'background:#c8a96e22;color:#7a5a00', step:2, legacy:true },
+  production_complete:{ label:'生产完成', s:'background:#c8a96e44;color:#5a3f00', step:2, legacy:true },
+  in_transit:         { label:'运输中',   s:'background:#2d5e4333;color:#1a3a2a', step:3, legacy:true },
+};
+const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
+
+function fmtSla(s) {
+  const h = STATUS_SLA_HOURS[s];
+  if (!h) return '';
+  if (h >= 8760) return Math.round(h / 8760) + (t('warranty_year_sfx') || '年');
+  if (h >= 24)   return Math.round(h / 24) + t('stat_day_pfx');
+  if (h < 1)     return Math.round(h * 60) + '分';
+  return h + 'h';
+}
+
+// Cached for live countdown updates
+let _tlLogs = [], _tlDeadline = null, _tlStatus = '';
+
+function stepTimeLabel(s, i, curStep, isCurrentStatus) {
+  if (isCurrentStatus) {
+    const cd = fmtCountdown(_tlDeadline);
+    if (!cd) return { text: fmtSla(s), color: '#9ca3af' };
+    return { text: cd.text, color: cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a' };
+  }
+  if (i < curStep) {
+    // completed — find first log for this status
+    const log = _tlLogs.find(l => l.status === s);
+    return { text: log ? fmtDateTime(log.created_at) : '', color: '#9ca3af' };
+  }
+  return { text: fmtSla(s), color: '#d1d5db' };
+}
+
+function renderStatusTimeline(currentStatus, logs, deadlineAt) {
+  _tlLogs     = logs     || _tlLogs;
+  _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
+  _tlStatus   = currentStatus;
+
+  const curStep  = STATUS[currentStatus]?.step ?? -1;
+  const isSpecial = STATUS[currentStatus]?.step === -1;
+
+  const stepsHtml = CORE_STEPS.map((s, i) => {
+    const done    = i < curStep || (!isSpecial && currentStatus === 'completed' && i <= 6);
+    const current = s === currentStatus;
+    const lbl     = t('status_' + s) || STATUS[s].label;
+    let bg, color, icon;
+    if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+    else if (current) { bg=STATUS[s].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[s].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
+    else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+    const border  = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
+    const tl      = stepTimeLabel(s, i, curStep, current);
+    const connector = i < CORE_STEPS.length - 1
+      ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
+      : '';
+    return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:64px">
+              <button id="step-${s}" onclick="selectStep('${s}')"
+                class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all w-16"
+                style="background:${bg};color:${color};${border}cursor:pointer;">
+                <span class="step-icon text-sm leading-none">${icon}</span>
+                <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
+              </button>
+              <span id="step-time-${s}" class="text-center mt-0.5 leading-tight px-0.5"
+                    style="font-size:9px;color:${tl.color};min-width:64px;word-break:break-all">${tl.text}</span>
+            </div>${connector}`;
+  }).join('');
+
+  const specialHtml = ['after_sales','closed','cancelled'].map(s => {
+    const active = s === currentStatus;
+    const lbl    = t('status_' + s) || STATUS[s].label;
+    const tl     = active ? stepTimeLabel(s, -1, curStep, true) : { text: fmtSla(s), color: '#d1d5db' };
+    return `<div class="flex flex-col items-center">
+              <button id="step-${s}" onclick="selectStep('${s}')"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
+                style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
+                ${lbl}
+              </button>
+              <span id="step-time-${s}" style="font-size:9px;color:${tl.color}">${tl.text}</span>
+            </div>`;
+  }).join('');
+
+  return `<div class="overflow-x-auto pb-1 -mx-1 px-1">
+            <div class="flex items-start min-w-max gap-0">${stepsHtml}</div>
+          </div>
+          <div class="flex gap-2 mt-2">${specialHtml}</div>
+          <input type="hidden" id="upd-status" value="${currentStatus}">`;
+}
+
+function selectStep(s) {
+  document.getElementById('upd-status').value = s;
+  const curStep = STATUS[s]?.step ?? -1;
+  const isSpecial = curStep === -1;
+  CORE_STEPS.forEach((step, i) => {
+    const btn = document.getElementById('step-' + step);
+    if (!btn) return;
+    const done    = !isSpecial && i < curStep;
+    const current = step === s;
+    let bg, color, icon;
+    if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
+    else if (current) { bg=STATUS[step].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[step].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
+    else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
+    btn.style.cssText = `background:${bg};color:${color};border:2px solid ${current?'#1a3a2a':'transparent'};cursor:pointer;`;
+    btn.querySelector('.step-icon').textContent = icon;
+    // connector color
+    const connector = btn.nextElementSibling;
+    if (connector && connector.tagName === 'DIV') connector.style.background = done ? '#1a3a2a' : '#e5e7eb';
+  });
+  ['after_sales','closed','cancelled'].forEach(spec => {
+    const btn = document.getElementById('step-' + spec);
+    if (!btn) return;
+    btn.style.cssText = spec === s ? STATUS[spec].s+';border-color:#1a3a2a;cursor:pointer;' : 'background:white;color:#6b7280;border-color:#e5e7eb;cursor:pointer;';
+  });
+  // Refresh time labels for all steps
+  const savedCurStep = STATUS[_tlStatus]?.step ?? -1;
+  CORE_STEPS.forEach((step, i) => {
+    const el = document.getElementById('step-time-' + step);
+    if (!el) return;
+    const isSelected = step === s;
+    const tl = stepTimeLabel(step, i, savedCurStep, isSelected);
+    el.textContent = tl.text;
+    el.style.color  = tl.color;
+  });
+  ['after_sales','closed','cancelled'].forEach(spec => {
+    const el = document.getElementById('step-time-' + spec);
+    if (!el) return;
+    const isSelected = spec === s;
+    const tl = isSelected ? stepTimeLabel(spec, -1, savedCurStep, true) : { text: fmtSla(spec), color: '#d1d5db' };
+    el.textContent = tl.text;
+    el.style.color  = tl.color;
+  });
+  // Sync progress bar with selected step
+  const newStep = STATUS[s]?.step ?? 0;
+  const isTerminal = ['completed','closed','after_sales'].includes(s);
+  const wrap = document.getElementById('progress-bar-wrap');
+  if (wrap) {
+    wrap.style.display = isTerminal ? 'none' : '';
+    if (!isTerminal) {
+      const pct = newStep < 0 ? 0 : Math.round(((newStep + 1) / 7) * 100);
+      const fill = document.getElementById('progress-bar-fill');
+      if (fill) fill.style.width = pct + '%';
+      const lbl = document.getElementById('progress-bar-label');
+      if (lbl) lbl.textContent = t('status_'+s) || STATUS[s]?.label || s;
+      const pctEl = document.getElementById('progress-bar-pct');
+      if (pctEl) pctEl.textContent = pct + '%';
+      const dots = document.getElementById('progress-dots');
+      if (dots) dots.querySelectorAll('div').forEach((dot, i) => {
+        dot.style.background = i <= newStep ? '#1a3a2a' : '#e5e7eb';
+      });
+    }
+  }
+  onUpdStatusChange();
+}
+
+function badge(s) {
+  const x = STATUS[s] || { label: s, s:'background:#f3f4f6;color:#9ca3af' };
+  const label = t('status_' + s) || x.label;
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap" style="${x.s}">${label}</span>`;
+}
+const CURRENCY_SYMBOL = { MYR:'RM', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫', CNY:'¥', HKD:'HK$', USD:'US$' };
+const FLAG_CURRENCY   = { '🇲🇾':'MYR', '🇸🇬':'SGD', '🇹🇭':'THB', '🇮🇩':'IDR', '🇵🇭':'PHP', '🇻🇳':'VND', '🇨🇳':'CNY', '🇭🇰':'HKD' };
+
+function autoSetCurrency() {
+  const sel = document.getElementById('o-store');
+  const label = sel.options[sel.selectedIndex]?.text || '';
+  // Extract flag emoji (first grapheme cluster) from option label e.g. "🇲🇾 001 Austin"
+  const flag = [...label][0] + ([...label][1] || '');
+  const cur = FLAG_CURRENCY[flag];
+  if (cur) document.getElementById('o-currency').value = cur;
+}
+
+function fmtAmt(v, currency) {
+  const sym = CURRENCY_SYMBOL[currency] || (currency || 'RM');
+  return sym + ' ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+}
+function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
+function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+
+// ── Deadline / SLA ──
+// Default SLA in hours per status (admin can override per-order)
+const STATUS_SLA_HOURS = {
+  pending_payment: 0.25,  // 15 min
+  paid:            2,     // 2h to start production
+  in_production:   600,   // 25 days default (variable)
+  shipped:         480,   // 20 days default (variable)
+  arrived:         24,    // 24h to book install
+  installing:      120,   // 5 days
+  after_sales:     8760, // 1 year — annual warranty reminder
+};
+// Statuses with variable-day slider
+const STATUS_VAR_DAYS = {
+  in_production: { max: 25, default: 25 },
+  shipped:       { max: 30, default: 20 },
+};
+
+function calcDeadline(status, customDays) {
+  if (customDays) return new Date(Date.now() + customDays * 86400000).toISOString();
+  const h = STATUS_SLA_HOURS[status];
+  if (!h) return null;
+  return new Date(Date.now() + h * 3600000).toISOString();
+}
+
+function fmtCountdown(deadlineAt) {
+  if (!deadlineAt) return null;
+  const diff = new Date(deadlineAt) - Date.now();
+  if (diff <= 0) return { text: '⚠️ ' + t('overdue'), overdue: true, warn: false };
+  const totalSec = Math.floor(diff / 1000);
+  const s  = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const m  = totalMin % 60;
+  const h  = Math.floor(totalMin / 60) % 24;
+  const d  = Math.floor(totalMin / 1440);
+  const warn = totalMin < 240;
+  const ss = String(s).padStart(2,'0');
+  const mm = String(m).padStart(2,'0');
+  const hh = String(h).padStart(2,'0');
+  if (d > 0) return { text: `⏱ ${d}天 ${hh}:${mm}:${ss}`, overdue: false, warn };
+  if (h > 0) return { text: `⏱ ${hh}:${mm}:${ss}`, overdue: false, warn };
+  return { text: `⏱ ${mm}:${ss}`, overdue: false, warn: true };
+}
+
+function deadlineRowInfo(o) {
+  if (['completed','closed'].includes(o.status)) return null;
+  return fmtCountdown(o.deadline_at);
+}
+
+// ── Warranty panel (5-year, annual reminders) ──
+function renderWarrantyPanel(logs, deadlineAt, orderId) {
+  const startLog = (logs || []).find(l => l.status === 'after_sales');
+  if (!startLog) return '';
+  const startIso = startLog.created_at;
+  const startMs  = new Date(startIso).getTime();
+  const YEAR_MS  = 365.25 * 24 * 3600000;
+
+  let currentYear = 1;
+  if (deadlineAt) {
+    const dlMs = new Date(deadlineAt).getTime();
+    let minDiff = Infinity;
+    for (let n = 1; n <= 5; n++) {
+      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
+      if (diff < minDiff) { minDiff = diff; currentYear = n; }
+    }
+  }
+  const isOverdue = deadlineAt && new Date(deadlineAt) < Date.now();
+
+  const yearsHtml = [1,2,3,4,5].map(n => {
+    const dateStr = new Date(startMs + n * YEAR_MS).toISOString().slice(0, 10);
+    let icon, bg, color;
+    if (n < currentYear)      { icon='✓';  bg='#f0fdf4'; color='#16a34a'; }
+    else if (n===currentYear) { icon=isOverdue?'⚠️':'⏰'; bg=isOverdue?'#fef2f2':'#fef3c7'; color=isOverdue?'#dc2626':'#d97706'; }
+    else                       { icon='○';  bg='#f9fafb'; color='#9ca3af'; }
+    const pfx = t('warranty_year_pfx');
+    const sfx = t('warranty_year_sfx');
+    const yearLabel = sfx ? `${pfx} ${n} ${sfx}` : `${pfx} ${n}`;
+    return `<div class="flex items-center gap-3 rounded-lg px-3 py-2" style="background:${bg}">
+      <span class="font-bold text-sm w-6 text-center" style="color:${color}">${icon}</span>
+      <div class="flex-1">
+        <span class="font-medium text-sm">${yearLabel}</span>
+        <span class="text-xs text-gray-400 ml-2">${dateStr}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const canAdvance = currentYear < 5;
+  return `<div class="card p-5 mb-4" style="border-left:3px solid #1e40af">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-lg">🛡️</span>
+      <h3 class="font-semibold text-gray-800">${t('warranty_panel_title')}</h3>
+    </div>
+    <div class="text-xs text-gray-500 mb-3">${t('warranty_start_lbl')}: ${new Date(startIso).toLocaleDateString()}</div>
+    <div class="flex flex-col gap-1.5 mb-3">${yearsHtml}</div>
+    ${canAdvance
+      ? `<button onclick="advanceWarrantyReminder('${orderId}','${startIso}')" class="btn-primary w-full py-2 text-sm">${t('warranty_advance_btn')}</button>`
+      : `<p class="text-center text-xs text-gray-400">${t('warranty_completed')}</p>`}
+  </div>`;
+}
+
+async function advanceWarrantyReminder(orderId, startIso) {
+  const { data: o } = await sb.from('orders').select('deadline_at').eq('id', orderId).single();
+  if (!o) return;
+  const startMs = new Date(startIso).getTime();
+  const YEAR_MS = 365.25 * 24 * 3600000;
+  let currentYear = 1;
+  if (o.deadline_at) {
+    const dlMs = new Date(o.deadline_at).getTime();
+    let minDiff = Infinity;
+    for (let n = 1; n <= 5; n++) {
+      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
+      if (diff < minDiff) { minDiff = diff; currentYear = n; }
+    }
+  }
+  const nextYear = currentYear + 1;
+  if (nextYear > 5) return;
+  const nextDeadline = new Date(startMs + nextYear * YEAR_MS).toISOString();
+  await sb.from('orders').update({ deadline_at: nextDeadline }).eq('id', orderId);
+  await loadOrders();
+  openDetail(orderId);
+}
+
+let _notifiedOverdue = new Set();
+function checkOverdueAlerts() {
+  const now = Date.now();
+  allOrders.forEach(o => {
+    if (['completed','closed'].includes(o.status)) return;
+    if (!o.deadline_at) return;
+    const overdue = new Date(o.deadline_at) < now;
+    if (overdue && !_notifiedOverdue.has(o.id)) {
+      _notifiedOverdue.add(o.id);
+      if (Notification.permission === 'granted') {
+        const isWarranty = o.status === 'after_sales';
+        const title = isWarranty ? `🛡️ ${t('warranty_panel_title')}` : `⚠️ ${t('overdue')}`;
+        new Notification(title, { body: `${o.order_no} — ${o.customers?.name || ''}`, icon: '/favicon.ico' });
+      }
+    }
+  });
+  // Re-render whichever view is currently visible
+  if (!document.getElementById('v-orders').classList.contains('hidden')) {
+    renderOrdersTable(filterGetCurrent());
+  } else if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
+    renderDashboard();
+  }
+  // Refresh all step time labels in detail view if open
+  if (!document.getElementById('v-detail').classList.contains('hidden') && _tlStatus) {
+    const curStep = STATUS[_tlStatus]?.step ?? -1;
+    const selectedVal = document.getElementById('upd-status')?.value || _tlStatus;
+    CORE_STEPS.forEach((step, i) => {
+      const el = document.getElementById('step-time-' + step);
+      if (!el) return;
+      const tl = stepTimeLabel(step, i, curStep, step === selectedVal);
+      el.textContent = tl.text;
+      el.style.color  = tl.color;
+    });
+    ['after_sales','closed'].forEach(spec => {
+      const el = document.getElementById('step-time-' + spec);
+      if (!el) return;
+      const tl = spec === selectedVal ? stepTimeLabel(spec, -1, curStep, true) : { text: fmtSla(spec), color: '#d1d5db' };
+      el.textContent = tl.text;
+      el.style.color  = tl.color;
+    });
+  }
+}
+
+function toggleMobileMenu() {
+  const overlay = document.getElementById('mobile-overlay');
+  overlay.classList.toggle('hidden');
+}
+
+// ── Init ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  profile = await sb.rpc('get_my_profile').then(r => r.data);
+  let storeName = '';
+  if (profile?.store_id) {
+    const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
+    storeName = sd?.name || '';
+    profile._storeName = storeName;
+  }
+  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户', logistics:'物流' }[profile?.role] || profile?.role || '';
+  const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
+     <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
+  document.getElementById('user-info').innerHTML = userHtml;
+  const mobileInfo = document.getElementById('mobile-user-info');
+  if (mobileInfo) mobileInfo.innerHTML = userHtml;
+
+  await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
+  renderDashboard();
+  checkOverdueAlerts();
+  if (profile?.role === 'admin') {
+    document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
+    loadRegistrations(); // show badge count on startup
+  }
+  setLang(currentLang);
+
+  // Request notification permission for overdue alerts
+  if (Notification.permission === 'default') Notification.requestPermission();
+  // Fast: re-render colors/countdowns every 10 s (no DB call)
+  setInterval(checkOverdueAlerts, 10000);
+  // 1-second ticker: animate countdown on the current active step label
+  setInterval(() => {
+    if (document.getElementById('v-detail')?.classList.contains('hidden')) return;
+    if (!_tlStatus || !_tlDeadline) return;
+    const cd = fmtCountdown(_tlDeadline);
+    if (!cd || cd.overdue) return;
+    const selectedVal = document.getElementById('upd-status')?.value || _tlStatus;
+    const el = document.getElementById('step-time-' + selectedVal);
+    if (!el) return;
+    el.textContent = cd.text;
+    el.style.color = cd.warn ? '#d97706' : '#16a34a';
+    el.classList.remove('cd-tick');
+    void el.offsetWidth;
+    el.classList.add('cd-tick');
+  }, 1000);
+  // Slow: reload fresh data from DB every 60 s
+  setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
+}
+
+async function loadStores() {
+  const sel = document.getElementById('o-store');
+  if (!sel) return;
+
+  const { data: storeData, error: storeErr } = await sb.from('stores').select('*').order('name');
+
+  if (storeErr) {
+    sel.innerHTML = `<option value="">⚠️ 读取失败: ${storeErr.message}</option>`;
+    return;
+  }
+
+  if (!storeData || storeData.length === 0) {
+    // 表空，尝试插入默认门店
+    if (profile?.role === 'admin') {
+      const { error: insErr } = await sb.from('stores').insert([
+        { name: '001 Austin', code: '001', address: '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru', active: true },
+        { name: '新山门店',   code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
+        { name: '002 Singapore', code: '002', address: 'Singapore', active: true },
+      ]);
+      if (insErr) {
+        sel.innerHTML = `<option value="">⚠️ 插入失败: ${insErr.message}</option>`;
+        return;
+      }
+      const { data: fresh } = await sb.from('stores').select('*').order('name');
+      stores = fresh || [];
+    }
+  } else {
+    stores = storeData;
+    if (profile?.role === 'admin') {
+      const codes = stores.map(s => s.code);
+      if (codes.includes('JB')) await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
+      if (codes.includes('SG')) await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
+      if (!codes.includes('JBN')) await sb.from('stores').insert({ name: '新山门店', code: 'JBN', address: '新山, 柔佛, Malaysia', active: true });
+      const { data: fresh } = await sb.from('stores').select('*').order('name');
+      if (fresh?.length) stores = fresh;
+    }
+  }
+
+  // Country flag mapping by store code prefix
+  const COUNTRY_FLAG = {
+    '001':'🇲🇾', 'JBN':'🇲🇾', 'JB':'🇲🇾', 'KL':'🇲🇾', 'PG':'🇲🇾',
+    '002':'🇸🇬', 'SG':'🇸🇬',
+    'BKK':'🇹🇭', 'TH':'🇹🇭',
+    'JKT':'🇮🇩', 'ID':'🇮🇩',
+    'MNL':'🇵🇭', 'PH':'🇵🇭',
+    'HCM':'🇻🇳', 'VN':'🇻🇳',
+  };
+  const flag = s => COUNTRY_FLAG[s.code] || '🏳️';
+  const label = s => `${flag(s)} ${s.name}`;
+
+  // Sort: Malaysia first, then by name
+  const sorted = [...stores].sort((a, b) => {
+    const aM = flag(a) === '🇲🇾' ? 0 : 1;
+    const bM = flag(b) === '🇲🇾' ? 0 : 1;
+    return aM - bM || a.name.localeCompare(b.name);
+  });
+
+  sel.innerHTML = '<option value="">— 请选择 —</option>';
+  sorted.forEach(s => sel.add(new Option(label(s), s.id)));
+
+  // Auto-select first Malaysia store
+  const myStore = sorted.find(s => flag(s) === '🇲🇾');
+  if (myStore) sel.value = myStore.id;
+
+  // populate store filter (admin only)
+  const fSel = document.getElementById('f-store');
+  if (fSel && profile?.role === 'admin') {
+    fSel.classList.remove('hidden');
+    fSel.innerHTML = '<option value="">全部门店</option>';
+    sorted.forEach(s => fSel.add(new Option(label(s), s.id)));
+  }
+}
+
+async function loadReferrers() {
+  const { data } = await sb.from('referrers').select('*').eq('active', true);
+  referrers = data || [];
+  const sel = document.getElementById('o-referrer');
+  referrers.forEach(r => sel.add(new Option(`${r.name} (${r.type})`, r.id)));
+}
+
+async function loadOrders() {
+  let q = sb.from('orders')
+    .select('*, stores(name), customers(name,phone), profiles(name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (profile?.role === 'staff' && profile?.store_id) q = q.eq('store_id', profile.store_id);
+  const { data } = await q;
+  allOrders = data || [];
+}
+
+async function loadCustomers() {
+  const { data } = await sb.from('customers').select('*').order('created_at', { ascending: false }).limit(500);
+  allCustomers = data || [];
+}
+
+// ── Navigation ──
+function goto(view) {
+  ['dashboard','orders','create','customers','detail','suppliers','registrations'].forEach(v => {
+    document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
+    const navId = v === 'detail' ? 'orders' : v;
+    document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
+  });
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'orders') renderOrdersTable(allOrders);
+  if (view === 'customers') renderCustomersTable(allCustomers);
+  if (view === 'create') resetCreateForm();
+  if (view === 'suppliers') renderSuppliersPage();
+  if (view === 'registrations') loadRegistrations();
+}
+
+// ── Dashboard ──
+function renderDashboard() {
+  const counts = {};
+  allOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  const total = allOrders.length;
+  const active = allOrders.filter(o => !['completed','closed'].includes(o.status)).length;
+  const done = counts['completed'] || 0;
+  const revenue = allOrders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + Number(o.amount), 0);
+
+  document.getElementById('stats').innerHTML = [
+    [t('stat_total'), total, 'bg-hg', 'text-white'],
+    [t('stat_active'), active, 'bg-gg', 'text-white'],
+    [t('stat_done'), done, 'bg-hg', 'text-gd'],
+    [t('stat_revenue'), fmtAmt(revenue), 'bg-gd', 'text-hg'],
+  ].map(([lbl, v, bg, tc]) => `
+    <div class="${bg} rounded-xl p-4">
+      <div class="text-xs ${tc} opacity-70 mb-1">${lbl}</div>
+      <div class="text-2xl font-bold ${tc}">${v}</div>
+    </div>`).join('');
+
+  const recent = allOrders.slice(0, 8);
+  document.getElementById('recent-orders').innerHTML = recent.length
+    ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
+        <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
+       </tr></thead><tbody>${recent.map(o => {
+        const cd2 = deadlineRowInfo(o);
+        const bg2 = cd2?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd2?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+        return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer" style="${bg2}" onclick="openDetail('${o.id}')">
+          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+          <td class="py-2">${o.customers?.name || '-'}</td>
+          <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
+          <td class="py-2">${badge(o.status)}</td>
+          <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`
+    : `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`;
+}
+
+// ── Orders ──
+function onDateChange(type) {
+  if (type === 'date') document.getElementById('f-month').value = '';
+  if (type === 'month') document.getElementById('f-date').value = '';
+  filterOrders();
+}
+
+function clearDateFilters() {
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-month').value = '';
+  filterOrders();
+}
+
+function filterOrders() {
+  const q     = document.getElementById('f-search').value.toLowerCase();
+  const s     = document.getElementById('f-status').value;
+  const store = document.getElementById('f-store')?.value || '';
+  const date  = document.getElementById('f-date').value;   // "2026-04-27"
+  const month = document.getElementById('f-month').value;  // "2026-04"
+
+  const filtered = allOrders.filter(o => {
+    const txt   = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
+    const oDate = o.created_at.slice(0, 10);
+    const oMon  = o.created_at.slice(0, 7);
+    return (!q     || txt.includes(q))
+        && (!s     || o.status === s)
+        && (!store || o.store_id === store)
+        && (!date  || oDate === date)
+        && (!month || oMon  === month);
+  });
+
+  const statPeriod = month || (date ? date.slice(0, 7) : '');
+  renderMonthlyStats(filtered, statPeriod, date);
+  renderOrdersTable(filtered);
+}
+
+function renderMonthlyStats(orders, period, specificDate) {
+  const panel = document.getElementById('monthly-stats');
+  if (!period) { panel.classList.add('hidden'); return; }
+
+  const total   = orders.length;
+  const paid    = orders.filter(o => o.payment_status === 'paid').length;
+  const unpaid  = orders.filter(o => o.payment_status === 'unpaid').length;
+  const revenue = orders.filter(o => o.payment_status === 'paid')
+                        .reduce((s, o) => s + Number(o.amount), 0);
+
+  // store breakdown
+  const storeMap = {};
+  orders.forEach(o => {
+    const n = o.stores?.name || '未知';
+    if (!storeMap[n]) storeMap[n] = { count: 0, rev: 0 };
+    storeMap[n].count++;
+    if (o.payment_status === 'paid') storeMap[n].rev += Number(o.amount);
+  });
+  const storeRows = Object.entries(storeMap).map(([n, v]) =>
+    `<span class="inline-block rounded px-2 py-0.5 text-xs mr-1 mb-1" style="background:#d6e8db;color:#1a3a2a">${n}: ${v.count}单 / ${fmtAmt(v.rev)}</span>`
+  ).join('');
+
+  const dayPfx = t('stat_day_pfx'); const monPfx = t('stat_month_pfx');
+  const title = specificDate ? `📅 ${specificDate} (${dayPfx})` : `📊 ${period} (${monPfx})`;
+
+  panel.classList.remove('hidden');
+  panel.innerHTML = `
+    <div class="text-sm font-semibold text-gray-700 mb-3">${title}</div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+      <div class="rounded-lg p-3 text-center" style="background:#f5f2ed">
+        <div class="text-xs text-gray-400 mb-1">${t('stat_total_ord')}</div>
+        <div class="text-2xl font-bold" style="color:#1a3a2a">${total}</div>
+      </div>
+      <div class="rounded-lg p-3 text-center" style="background:#d6e8db">
+        <div class="text-xs text-gray-400 mb-1">${t('stat_paid_cnt')}</div>
+        <div class="text-2xl font-bold" style="color:#1a3a2a">${paid}</div>
+      </div>
+      <div class="rounded-lg p-3 text-center" style="background:#fef3c7">
+        <div class="text-xs text-gray-400 mb-1">${t('stat_unpaid_cnt')}</div>
+        <div class="text-2xl font-bold" style="color:#92400e">${unpaid}</div>
+      </div>
+      <div class="rounded-lg p-3 text-center" style="background:#1a3a2a">
+        <div class="text-xs mb-1" style="color:#c8a96e">${t('stat_revenue_total')}</div>
+        <div class="text-base font-bold" style="color:#c8a96e">${fmtAmt(revenue)}</div>
+      </div>
+    </div>
+    ${storeRows ? `<div class="text-xs text-gray-500 font-medium mb-1">${t('stat_store_detail')}</div><div>${storeRows}</div>` : ''}
+  `;
+}
+
+function renderOrdersTable(orders) {
+  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < Date.now()).length;
+  const banner = overdueCount > 0
+    ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
+    : '';
+
+  document.getElementById('orders-table').innerHTML = orders.length
+    ? banner + `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+        <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th><th class="px-4 py-3">${t('th_store')}</th>
+        <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
+       </tr></thead><tbody>${orders.map(o => {
+        const cd = deadlineRowInfo(o);
+        const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+        const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium ${cd.overdue?'row-overdue-badge':''}" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
+        return `
+        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
+          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+          <td class="px-4 py-3">
+            <div class="font-medium">${o.customers?.name || '-'}</div>
+            <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
+          </td>
+          <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name || '-'}</td>
+          <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount, o.currency)}</td>
+          <td class="px-4 py-3">${badge(o.status)}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
+        </tr>`;}).join('')}</tbody></table>`
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
+}
+
+// ── Create Order ──
+function resetCreateForm() {
+  ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('customer-found').classList.add('hidden');
+  document.getElementById('o-currency').value = 'MYR';
+  document.getElementById('o-payment').value = 'unpaid';
+  document.getElementById('create-err').classList.add('hidden');
+}
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(lookupCustomer, 400);
+}
+
+async function lookupCustomer() {
+  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+  if (raw.length < 6) { document.getElementById('customer-found').classList.add('hidden'); return; }
+  const cc = document.getElementById('c-country').value || '60';
+  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
+  const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
+  const el = document.getElementById('customer-found');
+  if (data?.length) {
+    el.innerHTML = `✓ 找到客户：<strong>${data[0].name}</strong>（${data[0].phone}）`;
+    el.classList.remove('hidden');
+    document.getElementById('c-name').value = data[0].name;
+    document.getElementById('c-address').value = data[0].address || '';
+    el.dataset.id = data[0].id;
+  } else {
+    el.classList.add('hidden');
+    delete el.dataset.id;
+  }
+}
+
+async function submitOrder() {
+  const btn = document.getElementById('submit-btn');
+  const err = document.getElementById('create-err');
+  err.classList.add('hidden');
+
+  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+  const name = document.getElementById('c-name').value.trim();
+  const storeId = document.getElementById('o-store').value;
+  const amount = parseFloat(document.getElementById('o-amount').value);
+
+  const cc = document.getElementById('c-country').value;
+  if (!cc) { showCreateErr('请选择国家区号'); return; }
+  if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+  if (!storeId) { showCreateErr('请选择门店'); return; }
+  if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
+
+  btn.textContent = t('creating'); btn.disabled = true;
+  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
+
+  // Get or create customer
+  let custId = document.getElementById('customer-found').dataset?.id;
+  if (!custId) {
+    const { data: newCust, error: ce } = await sb.from('customers').insert({
+      name, phone,
+      address: document.getElementById('c-address').value.trim() || null,
+    }).select().single();
+    if (ce) { showCreateErr('创建客户失败: ' + ce.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+    custId = newCust.id;
+  }
+
+  // Get store code
+  const store = stores.find(s => s.id === storeId);
+  const { data: orderNo } = await sb.rpc('generate_order_no', { p_store_code: store.code });
+
+  const refId = document.getElementById('o-referrer').value || null;
+  const currency = document.getElementById('o-currency').value || 'MYR';
+  const initStatus = document.getElementById('o-payment').value === 'paid' ? 'paid' : 'pending_payment';
+  const initPayMethod = document.getElementById('o-pay-method').value || null;
+
+  // Core insert (original schema columns only)
+  const { data: order, error: oe } = await sb.from('orders').insert({
+    order_no: orderNo,
+    store_id: storeId,
+    customer_id: custId,
+    staff_id: profile.id,
+    referrer_id: refId,
+    amount,
+    status: initStatus,
+    payment_status: document.getElementById('o-payment').value,
+    description: document.getElementById('o-desc').value.trim() || null,
+    notes: document.getElementById('o-notes').value.trim() || null,
+  }).select().single();
+
+  if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+
+  // Extended columns (silently skip if migration not yet run)
+  const extNew = { deadline_at: calcDeadline(initStatus), currency };
+  if (initPayMethod) extNew.payment_method = initPayMethod;
+  await sb.from('orders').update(extNew).eq('id', order.id); // ignore error
+
+  // Log initial status
+  await sb.from('order_logs').insert({
+    order_id: order.id,
+    status: order.status,
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: '订单创建',
+  });
+
+  btn.textContent = t('create_btn'); btn.disabled = false;
+  await loadOrders();
+  openDetail(order.id, 'orders');
+}
+
+function showCreateErr(msg) {
+  const e = document.getElementById('create-err');
+  e.textContent = msg; e.classList.remove('hidden');
+  document.getElementById('submit-btn').textContent = t('create_btn');
+  document.getElementById('submit-btn').disabled = false;
+}
+
+// ── Customers ──
+function filterCustomers() {
+  const q = document.getElementById('cust-search').value.toLowerCase();
+  const filtered = allCustomers.filter(c =>
+    (c.name + c.phone + (c.address||'')).toLowerCase().includes(q)
+  );
+  renderCustomersTable(filtered);
+}
+
+function renderCustomersTable(customers) {
+  document.getElementById('customers-table').innerHTML = customers.length
+    ? `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+        <th class="px-4 py-3">${t('th_name')}</th><th class="px-4 py-3">${t('th_phone')}</th>
+        <th class="px-4 py-3">${t('th_address')}</th><th class="px-4 py-3">${t('th_reg_time')}</th>
+       </tr></thead><tbody>${customers.map(c => `
+        <tr class="border-t border-gray-100 hover:bg-gray-50">
+          <td class="px-4 py-3 font-medium">${c.name}</td>
+          <td class="px-4 py-3 text-gray-600">${c.phone}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${c.address || '-'}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(c.created_at)}</td>
+        </tr>`).join('')}</tbody></table>`
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_customers')}</p>`;
+}
+
+// ── Order Detail ──
+async function openDetail(id, backView) {
+  if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
+  goto('detail');
+
+  const { data: o } = await sb.from('orders')
+    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .eq('id', id).single();
+  if (!o) return;
+
+  const { data: logs } = await sb.from('order_logs')
+    .select('*').eq('order_id', id).order('created_at', { ascending: true });
+
+  const { data: supList } = await sb.from('suppliers').select('id,name').eq('active', true);
+
+  const logsHtml = (logs || []).map((l, i, arr) => {
+    const isLast = i === arr.length - 1;
+    return `<div class="flex gap-3">
+      <div class="flex flex-col items-center flex-shrink-0 w-4">
+        <div class="w-2.5 h-2.5 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
+        ${!isLast ? '<div class="w-px bg-gray-200 flex-1 my-1 mx-auto"></div>' : ''}
+      </div>
+      <div class="pb-3 flex-1">
+        <div class="flex items-center gap-2">${badge(l.status)}
+          <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
+        </div>
+        ${l.notes ? `<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>` : ''}
+        <p class="text-gray-400 text-xs">${l.operator_name || ''}${l.operator_role ? ' · '+l.operator_role : ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Progress bar for info card
+  const curStep = STATUS[o.status]?.step ?? 0;
+  const progressPct = curStep < 0 ? 0 : Math.round(((curStep + 1) / 7) * 100);
+  const progressBar = ['completed','closed','after_sales'].includes(o.status) ? '' : `
+    <div id="progress-bar-wrap" class="mt-3">
+      <div class="flex justify-between items-center mb-1">
+        <span id="progress-bar-label" class="text-xs font-medium" style="color:#1a3a2a">${t('status_'+o.status)||STATUS[o.status]?.label||o.status}</span>
+        <span id="progress-bar-pct" class="text-xs" style="color:#9ca3af">${progressPct}%</span>
+      </div>
+      <div class="h-1.5 rounded-full" style="background:#e5e7eb">
+        <div id="progress-bar-fill" class="h-full rounded-full transition-all" style="width:${progressPct}%;background:#1a3a2a"></div>
+      </div>
+      <div id="progress-dots" class="flex justify-between mt-1">
+        ${CORE_STEPS.map((s,i) => `<div class="w-2 h-2 rounded-full" style="background:${i<=curStep?'#1a3a2a':'#e5e7eb'}"></div>`).join('')}
+      </div>
+    </div>`;
+
+  const supplierOptions = `<option value="">${t('opt_unassigned')}</option>` +
+    (supList || []).map(s => `<option value="${s.id}" ${s.id === o.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
+
+  const pmLabels = { cash: t('pay_cash'), transfer: t('pay_transfer'), ewallet: t('pay_ewallet'), card: t('pay_card') };
+
+  // Deadline display for info card
+  const cd = fmtCountdown(o.deadline_at);
+  const deadlineBanner = cd ? `
+    <div class="mt-3 rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2"
+         style="background:${cd.overdue?'#fef2f2':cd.warn?'#fffbeb':'#f5f2ed'};color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#1a3a2a'}">
+      ${cd.text}
+      <span class="text-xs font-normal opacity-70">${t('lbl_deadline')}: ${fmtDateTime(o.deadline_at)}</span>
+    </div>` : '';
+
+  // Pre-format deadline for datetime-local input
+  // If DB has no deadline, auto-compute from current status SLA so field is never blank
+  const _dlIso = o.deadline_at || calcDeadline(o.status);
+  const dlLocal = _dlIso ? new Date(new Date(_dlIso).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
+  const _slaH = STATUS_SLA_HOURS[o.status];
+  const slaHint = _slaH ? (() => {
+    if (_slaH >= 8760) { const yrs = Math.round(_slaH / 8760); return `(${t('sla_default')} ${yrs}${t('warranty_year_sfx')||'年'})`; }
+    if (_slaH >= 24)   { const days = Math.round(_slaH / 24);  return `(${t('sla_default')} ${days}${t('stat_day_pfx')})`; }
+    return `(${t('sla_default')} ${_slaH}h)`;
+  })() : '';
+
+  document.getElementById('detail-content').innerHTML = `
+    <!-- Info -->
+    <div class="card p-5 mb-4">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
+          <div class="text-gray-400 text-sm">${o.stores?.name}</div>
+        </div>
+        ${badge(o.status)}
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+        <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
+        <div><span class="text-gray-400">${t('lbl_mobile')}</span> <span>${o.customers?.phone}</span></div>
+        <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span></div>
+        <div><span class="text-gray-400">${t('lbl_payment')}</span>
+          <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':'color:#dc2626'}">
+            ${o.payment_status==='paid' ? t('opt_paid') : t('opt_unpaid')}
+          </span>
+        </div>
+        ${o.payment_method ? `<div><span class="text-gray-400">${t('lbl_method')}</span> <span>${pmLabels[o.payment_method]||o.payment_method}</span></div>` : ''}
+        <div><span class="text-gray-400">${t('lbl_supplier')}</span> <span>${o.suppliers?.name || t('opt_unassigned')}</span></div>
+        <div><span class="text-gray-400">${t('lbl_staff')}</span> <span>${o.profiles?.name || '-'}</span></div>
+        ${o.tracking_no ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
+      </div>
+      ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
+      ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">${o.notes}</p>` : ''}
+      ${progressBar}
+      ${deadlineBanner}
+    </div>
+
+    ${o.status === 'after_sales' ? renderWarrantyPanel(logs, o.deadline_at, o.id) : ''}
+
+    <!-- Update status -->
+    <div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
+      <div class="mb-3">
+        <label class="label mb-2">${t('lbl_order_status')}</label>
+        ${renderStatusTimeline(o.status, logs, o.deadline_at)}
+      </div>
+      <div id="sla-days-row" class="mb-3 hidden">
+        <label class="label text-xs">${t('lbl_sla_days')}</label>
+        <div class="flex items-center gap-3">
+          <input type="range" id="sla-days" min="1" max="25" value="25" class="flex-1"
+                 oninput="document.getElementById('sla-days-val').textContent=this.value">
+          <span class="font-bold text-hg w-16 text-center"><span id="sla-days-val">25</span> ${t('stat_day_pfx')}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div>
+        <div>
+          <label class="label">${t('lbl_pay_status')}</label>
+          <select id="upd-payment" class="input">
+            <option value="unpaid" ${o.payment_status==='unpaid'?'selected':''}>${t('opt_unpaid')}</option>
+            <option value="paid" ${o.payment_status==='paid'?'selected':''}>${t('opt_paid')}</option>
+          </select>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_pay_method')}</label>
+        <select id="upd-pay-method" class="input">
+          <option value="">—</option>
+          <option value="cash" ${o.payment_method==='cash'?'selected':''}>${t('pay_cash')}</option>
+          <option value="transfer" ${o.payment_method==='transfer'?'selected':''}>${t('pay_transfer')}</option>
+          <option value="ewallet" ${o.payment_method==='ewallet'?'selected':''}>${t('pay_ewallet')}</option>
+          <option value="card" ${o.payment_method==='card'?'selected':''}>${t('pay_card')}</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_assign_sup')}</label>
+        <select id="upd-supplier" class="input">${supplierOptions}</select>
+      </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
+        <input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">
+      </div>
+      <div class="mb-3">
+        <label class="label">${t('lbl_notes')}</label>
+        <input type="text" id="upd-notes" placeholder="${t('ph_upd_notes')}" class="input">
+      </div>
+      <button onclick="updateOrder('${o.id}')" class="btn-primary w-full py-2.5">
+        ${t('btn_save')}
+      </button>
+      <p id="upd-msg" class="text-sm mt-2 text-center hidden font-semibold" style="color:#1a3a2a">✓ ${t('msg_saved')}</p>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card p-5">
+      <h3 class="font-semibold text-gray-800 mb-4">${t('detail_timeline')}</h3>
+      ${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}
+    </div>
+
+    ${profile?.role === 'admin' ? `
+    <!-- Delete -->
+    <div class="mt-4">
+      <button onclick="confirmDelete('${o.id}')"
+              class="w-full py-2.5 border border-red-300 text-red-500 text-sm font-semibold rounded-lg hover:bg-red-50 transition">
+        ${t('btn_delete')}
+      </button>
+    </div>` : ''}`;
+}
+
+function onUpdStatusChange() {
+  const status = document.getElementById('upd-status')?.value;
+  const varCfg = STATUS_VAR_DAYS[status];
+  const row = document.getElementById('sla-days-row');
+  const slider = document.getElementById('sla-days');
+  const valEl = document.getElementById('sla-days-val');
+
+  if (varCfg && row) {
+    row.classList.remove('hidden');
+    slider.max = varCfg.max;
+    slider.value = varCfg.default;
+    valEl.textContent = varCfg.default;
+    // Auto-fill deadline from slider default
+    const inp = document.getElementById('upd-deadline');
+    if (inp) {
+      const dl = calcDeadline(status, varCfg.default);
+      inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    }
+    // Update deadline live as slider moves
+    slider.oninput = function() {
+      valEl.textContent = this.value;
+      const dl2 = calcDeadline(status, parseInt(this.value));
+      const inp2 = document.getElementById('upd-deadline');
+      if (inp2 && dl2) inp2.value = new Date(new Date(dl2).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    };
+  } else {
+    row?.classList.add('hidden');
+    const dl = calcDeadline(status);
+    const inp = document.getElementById('upd-deadline');
+    if (!inp) return;
+    if (dl) {
+      inp.value = new Date(new Date(dl).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    } else {
+      inp.value = '';
+    }
+  }
+}
+
+function confirmDelete(id) {
+  const modal = document.createElement('div');
+  modal.id = 'delete-modal';
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="font-bold text-gray-800 text-lg mb-1">${t('del_title')}</h3>
+      <p class="text-gray-500 text-sm mb-4">${t('del_msg')}</p>
+      <label class="block text-xs font-medium text-gray-600 mb-1">${t('del_pw_lbl')}</label>
+      <input type="password" id="del-pw" placeholder="${t('del_pw_ph')}"
+             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 mb-3">
+      <p id="del-err" class="text-red-500 text-xs mb-3 hidden">${t('del_err_pw')}</p>
+      <div class="flex gap-2">
+        <button onclick="document.getElementById('delete-modal').remove()"
+                class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">
+          ${t('btn_cancel')}
+        </button>
+        <button onclick="doDelete('${id}')"
+                class="flex-1 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600">
+          ${t('btn_confirm_del')}
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('del-pw').focus();
+}
+
+async function doDelete(id) {
+  const pw = document.getElementById('del-pw').value;
+  if (pw !== '12345678') {
+    document.getElementById('del-err').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('delete-modal').remove();
+
+  await sb.from('orders').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id: id,
+    status: 'closed',
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: `[已删除] 操作账户：${profile.name}（${profile.role}）`,
+  });
+
+  await loadOrders();
+  goto('orders');
+}
+
+async function updateOrder(id) {
+  const status = document.getElementById('upd-status').value;
+  const payment = document.getElementById('upd-payment').value;
+  const payMethod = document.getElementById('upd-pay-method')?.value;
+  const supplier = document.getElementById('upd-supplier').value || null;
+  const notes = document.getElementById('upd-notes').value.trim();
+  const dlVal = document.getElementById('upd-deadline')?.value;
+  const slaRow = document.getElementById('sla-days-row');
+  const customDays = (slaRow && !slaRow.classList.contains('hidden'))
+    ? parseInt(document.getElementById('sla-days')?.value || 0) : null;
+
+  // Use manual deadline if set, else slider days, else auto-calc from SLA
+  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
+  const isTerminal  = status === 'completed' || status === 'closed' || status === 'cancelled';
+
+  // ── Core update (original schema columns — always works) ──
+  const coreUpd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  if (isTerminal) coreUpd.completed_at = new Date().toISOString();
+
+  const { error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id);
+  if (updErr) {
+    alert(`保存失败: ${updErr.message}`);
+    return;
+  }
+
+  // ── Extended update (migrated columns — silently skip if column missing) ──
+  const extUpd = { deadline_at: isTerminal ? null : deadline_at };
+  if (payMethod !== undefined) extUpd.payment_method = payMethod || null;
+  await sb.from('orders').update(extUpd).eq('id', id); // ignore error — column may not exist yet
+  await sb.from('order_logs').insert({
+    order_id: id, status,
+    operator_id: profile.id,
+    operator_role: profile.role,
+    operator_name: profile.name,
+    notes: notes || null,
+  });
+
+  document.getElementById('upd-msg').classList.remove('hidden');
+  setTimeout(() => document.getElementById('upd-msg').classList.add('hidden'), 2000);
+  await loadOrders();
+  openDetail(id);
+}
+
+// ── Suppliers (admin) ──
+const PAY_METHOD_LABELS = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
+
+const TIER_STARS = { 3:'⭐⭐⭐', 2:'⭐⭐', 1:'⭐' };
+
+async function renderSuppliersPage() {
+  const { data: sups } = await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name');
+  const rows = (sups || []);
+  document.getElementById('suppliers-table').innerHTML = rows.length
+    ? `<table class="w-full text-sm">
+        <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+          <th class="px-4 py-3">${t('th_name')}</th><th class="px-4 py-3">${t('lbl_sup_tier')}</th>
+          <th class="px-4 py-3">${t('th_phone')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3"></th>
+        </tr></thead>
+        <tbody>${rows.map(s => `
+          <tr class="border-t border-gray-100 hover:bg-gc">
+            <td class="px-4 py-3 font-medium">${s.name}</td>
+            <td class="px-4 py-3">
+              <select onchange="setSupplierTier('${s.id}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-1 bg-white">
+                <option value="3" ${s.tier===3?'selected':''}>⭐⭐⭐</option>
+                <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐</option>
+                <option value="1" ${s.tier===1?'selected':''}>⭐</option>
+              </select>
+            </td>
+            <td class="px-4 py-3 text-gray-600">${s.phone || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
+                ${s.active ? t('sup_active') : t('sup_inactive')}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <button onclick="toggleSupplier('${s.id}',${s.active})"
+                      class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}">
+                ${s.active ? t('sup_disable') : t('sup_enable')}
+              </button>
+            </td>
+          </tr>`).join('')}
+        </tbody></table>`
+    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_suppliers')}</p>`;
+}
+
+async function addSupplier() {
+  const name = document.getElementById('sup-name').value.trim();
+  const phone = document.getElementById('sup-phone').value.trim();
+  const tier = parseInt(document.getElementById('sup-tier').value);
+  const errEl = document.getElementById('sup-err');
+  if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, tier, active: true });
+  if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
+  document.getElementById('sup-name').value = '';
+  document.getElementById('sup-phone').value = '';
+  document.getElementById('sup-tier').value = '2';
+  await renderSuppliersPage();
+}
+
+async function toggleSupplier(id, active) {
+  await sb.from('suppliers').update({ active: !active }).eq('id', id);
+  await renderSuppliersPage();
+}
+
+async function setSupplierTier(id, tier) {
+  await sb.from('suppliers').update({ tier: parseInt(tier) }).eq('id', id);
+  await renderSuppliersPage();
+}
+
+// ── Registrations (admin) ──
+let regFilter = 'pending';
+
+async function loadRegistrations() {
+  if (profile?.role !== 'admin') return;
+
+  const { data } = await sb.from('registrations').select('*').order('created_at', { ascending: false });
+
+  // Update badge with pending count
+  const pendingCount = (data || []).filter(r => r.status === 'pending').length;
+  const badge = document.getElementById('reg-badge');
+  if (badge) {
+    badge.textContent = pendingCount;
+    badge.classList.toggle('hidden', pendingCount === 0);
+  }
+  const badgeM = document.getElementById('reg-badge-m');
+  if (badgeM) {
+    badgeM.textContent = pendingCount;
+    badgeM.classList.toggle('hidden', pendingCount === 0);
+  }
+
+  renderRegistrations(data || []);
+}
+
+function setRegFilter(f) {
+  regFilter = f;
+  ['pending','approved','rejected'].forEach(s => {
+    const btn = document.getElementById('rf-' + s);
+    if (btn) btn.className = `px-3 py-1 rounded-full text-xs font-medium ${s === f ? 'bg-hg text-white' : 'bg-gray-100 text-gray-600'}`;
+  });
+  renderRegistrations(window._regData || []);
+}
+
+function renderRegistrations(data) {
+  window._regData = data;
+  const filtered = data.filter(r => r.status === regFilter);
+  const el = document.getElementById('registrations-list');
+  if (!el) return;
+  if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm">暂无记录</p>'; return; }
+  el.innerHTML = filtered.map(r => {
+    const typeLabel = r.type === 'staff' ? '👤 员工' : r.type === 'logistics' ? '🚚 物流' : '🏭 厂家';
+    const reqStore = r.store_id ? (stores.find(s => s.id === r.store_id)?.name || '未知店面') : null;
+    const info = r.type === 'staff'
+      ? [r.employee_no && `工号: ${r.employee_no}`, r.department, r.position_title, reqStore && `申请店面: ${reqStore}`].filter(Boolean).join(' · ')
+      : r.type === 'logistics'
+        ? [r.company_name && `团队: ${r.company_name}`].filter(Boolean).join(' · ')
+        : [r.company_name, r.credit_code && `信用代码: ${r.credit_code}`, r.address].filter(Boolean).join(' · ');
+    const date = new Date(r.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const sid = r.store_id || '';
+    const actions = r.status === 'pending' ? `
+      <div class="flex gap-2 mt-3">
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}','${sid}')"
+                class="px-3 py-1.5 bg-hg text-white text-xs rounded-lg font-medium">✓ 通过</button>
+        <button onclick="promptRejectReg('${r.id}')"
+                class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-200">✗ 拒绝</button>
+      </div>` : r.status === 'rejected' ? `<p class="text-xs text-red-500 mt-2">拒绝原因: ${r.reject_reason || '—'}</p>` : `<div class="flex items-center gap-3 mt-2">
+        <span class="text-xs text-green-600">✓ 已批准${reqStore ? ' · ' + reqStore : ''}</span>
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}','${sid}')"
+                class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg border border-gray-200">↺ 重建账号</button>
+      </div>`;
+    return `<div class="card p-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">${typeLabel}</span>
+          <span class="ml-2 font-semibold text-gray-800">${r.name}</span>
+        </div>
+        <span class="text-xs text-gray-400">${date}</span>
+      </div>
+      <div class="mt-1 text-sm text-gray-600">${r.email} · ${r.phone}</div>
+      ${info ? `<div class="text-xs text-gray-400 mt-0.5">${info}</div>` : ''}
+      ${r.type === 'supplier' && r.products ? `<div class="text-xs text-gray-400">业务: ${r.products}</div>` : ''}
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+async function approveReg(id, type, userId, name, email, storeId) {
+  const typeText = { staff:'员工', supplier:'厂家', logistics:'物流' }[type] || type;
+  if (!confirm(`确认批准 ${name} (${email}) 的${typeText}申请？`)) return;
+  const { error } = await sb.from('registrations').update({
+    status: 'approved',
+    reviewed_by: profile.id,
+    reviewed_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { alert('操作失败: ' + error.message); return; }
+
+  // Create profile so user can log in
+  if (userId) {
+    const profileData = { id: userId, name, role: type, active: true };
+    if (storeId) profileData.store_id = storeId;
+    const { error: profileErr } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
+    if (profileErr) {
+      alert(`✅ 审批记录已更新，但创建用户档案失败！\n\n错误：${profileErr.message}\n\n请在 Supabase 后台 profiles 表手动插入：\nid=${userId}, name=${name}, role=${type}${storeId ? ', store_id='+storeId : ''}`);
+    } else {
+      const storeName = storeId ? (stores.find(s => s.id === storeId)?.name || '') : '';
+      alert(`✅ 已批准！\n\n${name} 现在可以登录${storeName ? '，所属店面：' + storeName : ''}。`);
+    }
+  } else {
+    alert(`✅ 审批记录已更新。\n\n⚠️ 此申请未关联账号（注册时邮箱已存在或创建失败）\n请在 Supabase 后台找到 ${email} 对应的 auth 用户 ID，在 profiles 表手动添加记录并设置 role=${type}。`);
+  }
+  loadRegistrations();
+}
+
+async function promptRejectReg(id) {
+  const reason = prompt('请输入拒绝原因（将通知申请者）：');
+  if (reason === null) return;
+  const { error } = await sb.from('registrations').update({
+    status: 'rejected',
+    reject_reason: reason || '不符合要求',
+    reviewed_by: profile.id,
+    reviewed_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) { alert('操作失败: ' + error.message); return; }
+  loadRegistrations();
+}
+
+// ── Auth ──
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>
