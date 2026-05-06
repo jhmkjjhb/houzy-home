@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   name       TEXT NOT NULL DEFAULT '',
   phone      TEXT,
   role       TEXT NOT NULL DEFAULT 'customer'
-               CHECK (role IN ('customer','staff','supplier','admin')),
+               CHECK (role IN ('customer','staff','supplier','admin','logistics')),
   store_id   UUID REFERENCES stores(id),   -- staff only
   active     BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -97,10 +97,12 @@ CREATE TABLE IF NOT EXISTS orders (
                      'pending_payment','paid','assigned','accepted',
                      'in_production','production_complete','shipped',
                      'in_transit','arrived','installing',
-                     'completed','after_sales','closed'
+                     'completed','after_sales','closed','cancelled'
                    )),
   description    TEXT,
   notes          TEXT,
+  tracking_no    TEXT,
+  logistics_notes TEXT,
   created_at     TIMESTAMPTZ DEFAULT NOW(),
   updated_at     TIMESTAMPTZ DEFAULT NOW(),
   completed_at   TIMESTAMPTZ
@@ -280,3 +282,39 @@ CREATE POLICY "logs_supplier" ON order_logs FOR ALL USING (
 CREATE POLICY "sequences_staff" ON order_sequences FOR ALL USING (
   (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
 );
+
+-- Logistics: read orders in transit pipeline; update to advance status
+CREATE POLICY "orders_logistics_read" ON orders FOR SELECT USING (
+  (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
+  AND status IN ('production_complete','shipped','in_transit','arrived')
+);
+CREATE POLICY "orders_logistics_update" ON orders FOR UPDATE USING (
+  (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
+  AND status IN ('production_complete','shipped','in_transit','arrived')
+);
+
+-- Logistics: read/write order_logs for transit pipeline
+CREATE POLICY "logs_logistics" ON order_logs FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.id = order_logs.order_id
+      AND (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
+      AND o.status IN ('production_complete','shipped','in_transit','arrived','installing','completed')
+  )
+);
+
+-- ============================================================
+-- MIGRATIONS (safe to run on existing databases)
+-- ============================================================
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_no TEXT;
+-- ALTER TABLE orders ADD COLUMN IF NOT EXISTS logistics_notes TEXT;
+-- ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+-- ALTER TABLE orders ADD CONSTRAINT orders_status_check CHECK (status IN (
+--   'pending_payment','paid','assigned','accepted',
+--   'in_production','production_complete','shipped',
+--   'in_transit','arrived','installing',
+--   'completed','after_sales','closed','cancelled'
+-- ));
+-- ALTER TABLE public.registrations DROP CONSTRAINT IF EXISTS registrations_type_check;
+-- ALTER TABLE public.registrations ADD CONSTRAINT registrations_type_check
+--   CHECK (type IN ('staff','supplier','logistics'));

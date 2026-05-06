@@ -662,6 +662,7 @@ const STATUS = {
   // Special
   after_sales:     { label:'质保服务', s:'background:#dbeafe;color:#1e40af',  step:-1 },
   closed:          { label:'已关闭', s:'background:#f3f4f6;color:#9ca3af',   step:-1 },
+  cancelled:       { label:'已取消', s:'background:#fee2e2;color:#991b1b',   step:-1 },
   // Legacy — badge display only (old orders)
   assigned:           { label:'已分配',   s:'background:#d6e8db;color:#1a3a2a',   step:1, legacy:true },
   accepted:           { label:'已接单',   s:'background:#c8a96e22;color:#7a5a00', step:2, legacy:true },
@@ -729,7 +730,7 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt) {
             </div>${connector}`;
   }).join('');
 
-  const specialHtml = ['after_sales','closed'].map(s => {
+  const specialHtml = ['after_sales','closed','cancelled'].map(s => {
     const active = s === currentStatus;
     const lbl    = t('status_' + s) || STATUS[s].label;
     const tl     = active ? stepTimeLabel(s, -1, curStep, true) : { text: fmtSla(s), color: '#d1d5db' };
@@ -769,7 +770,7 @@ function selectStep(s) {
     const connector = btn.nextElementSibling;
     if (connector && connector.tagName === 'DIV') connector.style.background = done ? '#1a3a2a' : '#e5e7eb';
   });
-  ['after_sales','closed'].forEach(spec => {
+  ['after_sales','closed','cancelled'].forEach(spec => {
     const btn = document.getElementById('step-' + spec);
     if (!btn) return;
     btn.style.cssText = spec === s ? STATUS[spec].s+';border-color:#1a3a2a;cursor:pointer;' : 'background:white;color:#6b7280;border-color:#e5e7eb;cursor:pointer;';
@@ -784,7 +785,7 @@ function selectStep(s) {
     el.textContent = tl.text;
     el.style.color  = tl.color;
   });
-  ['after_sales','closed'].forEach(spec => {
+  ['after_sales','closed','cancelled'].forEach(spec => {
     const el = document.getElementById('step-time-' + spec);
     if (!el) return;
     const isSelected = spec === s;
@@ -1020,7 +1021,7 @@ async function init() {
     storeName = sd?.name || '';
     profile._storeName = storeName;
   }
-  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户' }[profile?.role] || profile?.role || '';
+  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户', logistics:'物流' }[profile?.role] || profile?.role || '';
   const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
      <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
   document.getElementById('user-info').innerHTML = userHtml;
@@ -1559,6 +1560,7 @@ async function openDetail(id, backView) {
         ${o.payment_method ? `<div><span class="text-gray-400">${t('lbl_method')}</span> <span>${pmLabels[o.payment_method]||o.payment_method}</span></div>` : ''}
         <div><span class="text-gray-400">${t('lbl_supplier')}</span> <span>${o.suppliers?.name || t('opt_unassigned')}</span></div>
         <div><span class="text-gray-400">${t('lbl_staff')}</span> <span>${o.profiles?.name || '-'}</span></div>
+        ${o.tracking_no ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
       ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">${o.notes}</p>` : ''}
@@ -1737,7 +1739,7 @@ async function updateOrder(id) {
 
   // Use manual deadline if set, else slider days, else auto-calc from SLA
   const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
-  const isTerminal  = status === 'completed' || status === 'closed';
+  const isTerminal  = status === 'completed' || status === 'closed' || status === 'cancelled';
 
   // ── Core update (original schema columns — always works) ──
   const coreUpd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
@@ -1873,11 +1875,13 @@ function renderRegistrations(data) {
   if (!el) return;
   if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm">暂无记录</p>'; return; }
   el.innerHTML = filtered.map(r => {
-    const typeLabel = r.type === 'staff' ? '👤 员工' : '🏭 厂家';
+    const typeLabel = r.type === 'staff' ? '👤 员工' : r.type === 'logistics' ? '🚚 物流' : '🏭 厂家';
     const reqStore = r.store_id ? (stores.find(s => s.id === r.store_id)?.name || '未知店面') : null;
     const info = r.type === 'staff'
       ? [r.employee_no && `工号: ${r.employee_no}`, r.department, r.position_title, reqStore && `申请店面: ${reqStore}`].filter(Boolean).join(' · ')
-      : [r.company_name, r.credit_code && `信用代码: ${r.credit_code}`, r.address].filter(Boolean).join(' · ');
+      : r.type === 'logistics'
+        ? [r.company_name && `团队: ${r.company_name}`].filter(Boolean).join(' · ')
+        : [r.company_name, r.credit_code && `信用代码: ${r.credit_code}`, r.address].filter(Boolean).join(' · ');
     const date = new Date(r.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const sid = r.store_id || '';
     const actions = r.status === 'pending' ? `
@@ -1908,7 +1912,8 @@ function renderRegistrations(data) {
 }
 
 async function approveReg(id, type, userId, name, email, storeId) {
-  if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？`)) return;
+  const typeText = { staff:'员工', supplier:'厂家', logistics:'物流' }[type] || type;
+  if (!confirm(`确认批准 ${name} (${email}) 的${typeText}申请？`)) return;
   const { error } = await sb.from('registrations').update({
     status: 'approved',
     reviewed_by: profile.id,

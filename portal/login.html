@@ -124,14 +124,18 @@
       <h2 class="text-white font-bold text-lg mb-5">申请注册账号</h2>
 
       <!-- Role selector -->
-      <div class="flex gap-3 mb-5">
+      <div class="flex gap-2 mb-5">
         <button id="reg-btn-staff" onclick="selectRegType('staff')"
-                class="flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition">
+                class="flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition">
           👤 员工 Staff
         </button>
         <button id="reg-btn-supplier" onclick="selectRegType('supplier')"
-                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition">
+                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
           🏭 厂家 Supplier
+        </button>
+        <button id="reg-btn-logistics" onclick="selectRegType('logistics')"
+                class="flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+          🚚 物流 Logistics
         </button>
       </div>
 
@@ -212,6 +216,30 @@
           <div>
             <label class="block text-xs text-gray-400 mb-1">主营产品/业务</label>
             <input type="text" id="reg-products" placeholder="选填"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+        </div>
+
+        <!-- Logistics fields -->
+        <div id="reg-logistics-fields" class="space-y-3 hidden">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-log-name" placeholder="请输入姓名"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-log-phone" placeholder="请输入手机号"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址"
+                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">公司/团队名称</label>
+            <input type="text" id="reg-log-company" placeholder="选填"
                    class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
           </div>
         </div>
@@ -332,7 +360,7 @@ async function redirect(data) {
     return;
   }
   const role = data?.role || 'customer';
-  const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', customer: 'customer.html' };
+  const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', logistics: 'logistics.html', customer: 'customer.html' };
   window.location.href = map[role] || 'customer.html';
 }
 
@@ -383,22 +411,14 @@ let regType = 'staff';
 
 function selectRegType(t) {
   regType = t;
-  const staffBtn = document.getElementById('reg-btn-staff');
-  const supBtn   = document.getElementById('reg-btn-supplier');
-  const staffFlds = document.getElementById('reg-staff-fields');
-  const supFlds   = document.getElementById('reg-supplier-fields');
-
-  if (t === 'staff') {
-    staffBtn.className = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition';
-    supBtn.className   = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition';
-    staffFlds.classList.remove('hidden');
-    supFlds.classList.add('hidden');
-  } else {
-    supBtn.className   = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-sm font-medium transition';
-    staffBtn.className = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-sm font-medium transition';
-    supFlds.classList.remove('hidden');
-    staffFlds.classList.add('hidden');
-  }
+  const activeClass   = 'flex-1 py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition';
+  const inactiveClass = 'flex-1 py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition';
+  document.getElementById('reg-btn-staff').className      = t === 'staff'     ? activeClass : inactiveClass;
+  document.getElementById('reg-btn-supplier').className   = t === 'supplier'  ? activeClass : inactiveClass;
+  document.getElementById('reg-btn-logistics').className  = t === 'logistics' ? activeClass : inactiveClass;
+  document.getElementById('reg-staff-fields').classList.toggle('hidden',     t !== 'staff');
+  document.getElementById('reg-supplier-fields').classList.toggle('hidden',  t !== 'supplier');
+  document.getElementById('reg-logistics-fields').classList.toggle('hidden', t !== 'logistics');
 }
 
 async function submitReg() {
@@ -428,7 +448,7 @@ async function submitReg() {
     payload.employee_no     = document.getElementById('reg-employee-no').value.trim() || null;
     payload.department      = document.getElementById('reg-department').value.trim() || null;
     payload.position_title  = document.getElementById('reg-position').value.trim() || null;
-  } else {
+  } else if (regType === 'supplier') {
     const company = document.getElementById('reg-company').value.trim();
     name  = document.getElementById('reg-sup-name').value.trim();
     phone = document.getElementById('reg-sup-phone').value.trim();
@@ -443,6 +463,18 @@ async function submitReg() {
     payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
     payload.address       = document.getElementById('reg-address').value.trim() || null;
     payload.products      = document.getElementById('reg-products').value.trim() || null;
+  } else {
+    // logistics
+    name  = document.getElementById('reg-log-name').value.trim();
+    phone = document.getElementById('reg-log-phone').value.trim();
+    email = document.getElementById('reg-log-email').value.trim();
+    if (!name || !phone || !email) {
+      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    payload.name         = name;
+    payload.phone        = phone;
+    payload.email        = email;
+    payload.company_name = document.getElementById('reg-log-company').value.trim() || null;
   }
 
   const pw  = document.getElementById('reg-pw').value;

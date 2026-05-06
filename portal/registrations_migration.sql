@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS public.registrations (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID,
-  type          TEXT NOT NULL CHECK (type IN ('staff','supplier')),
+  type          TEXT NOT NULL CHECK (type IN ('staff','supplier','logistics')),
   status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
   name          TEXT NOT NULL,
   phone         TEXT NOT NULL,
