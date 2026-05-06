@@ -1014,8 +1014,15 @@ async function init() {
   if (!session) { window.location.href = 'login.html'; return; }
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
+  let storeName = '';
+  if (profile?.store_id) {
+    const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
+    storeName = sd?.name || '';
+    profile._storeName = storeName;
+  }
+  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户' }[profile?.role] || profile?.role || '';
   const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
-     <div class="text-gray-500">${profile?.role || ''}</div>`;
+     <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
   document.getElementById('user-info').innerHTML = userHtml;
   const mobileInfo = document.getElementById('mobile-user-info');
   if (mobileInfo) mobileInfo.innerHTML = userHtml;
@@ -1867,19 +1874,21 @@ function renderRegistrations(data) {
   if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm">暂无记录</p>'; return; }
   el.innerHTML = filtered.map(r => {
     const typeLabel = r.type === 'staff' ? '👤 员工' : '🏭 厂家';
+    const reqStore = r.store_id ? (stores.find(s => s.id === r.store_id)?.name || '未知店面') : null;
     const info = r.type === 'staff'
-      ? [r.employee_no && `工号: ${r.employee_no}`, r.department, r.position_title].filter(Boolean).join(' · ')
+      ? [r.employee_no && `工号: ${r.employee_no}`, r.department, r.position_title, reqStore && `申请店面: ${reqStore}`].filter(Boolean).join(' · ')
       : [r.company_name, r.credit_code && `信用代码: ${r.credit_code}`, r.address].filter(Boolean).join(' · ');
     const date = new Date(r.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const sid = r.store_id || '';
     const actions = r.status === 'pending' ? `
       <div class="flex gap-2 mt-3">
-        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}')"
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}','${sid}')"
                 class="px-3 py-1.5 bg-hg text-white text-xs rounded-lg font-medium">✓ 通过</button>
         <button onclick="promptRejectReg('${r.id}')"
                 class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-200">✗ 拒绝</button>
       </div>` : r.status === 'rejected' ? `<p class="text-xs text-red-500 mt-2">拒绝原因: ${r.reject_reason || '—'}</p>` : `<div class="flex items-center gap-3 mt-2">
-        <span class="text-xs text-green-600">✓ 已批准</span>
-        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}')"
+        <span class="text-xs text-green-600">✓ 已批准${reqStore ? ' · ' + reqStore : ''}</span>
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}','${sid}')"
                 class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg border border-gray-200">↺ 重建账号</button>
       </div>`;
     return `<div class="card p-4">
@@ -1898,7 +1907,7 @@ function renderRegistrations(data) {
   }).join('');
 }
 
-async function approveReg(id, type, userId, name, email) {
+async function approveReg(id, type, userId, name, email, storeId) {
   if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？`)) return;
   const { error } = await sb.from('registrations').update({
     status: 'approved',
@@ -1909,14 +1918,14 @@ async function approveReg(id, type, userId, name, email) {
 
   // Create profile so user can log in
   if (userId) {
-    const { error: profileErr } = await sb.from('profiles').upsert(
-      { id: userId, name, role: type, active: true },
-      { onConflict: 'id' }
-    );
+    const profileData = { id: userId, name, role: type, active: true };
+    if (storeId) profileData.store_id = storeId;
+    const { error: profileErr } = await sb.from('profiles').upsert(profileData, { onConflict: 'id' });
     if (profileErr) {
-      alert(`✅ 审批记录已更新，但创建用户档案失败！\n\n错误：${profileErr.message}\n\n请在 Supabase 后台 profiles 表手动插入：\nid=${userId}, name=${name}, role=${type}`);
+      alert(`✅ 审批记录已更新，但创建用户档案失败！\n\n错误：${profileErr.message}\n\n请在 Supabase 后台 profiles 表手动插入：\nid=${userId}, name=${name}, role=${type}${storeId ? ', store_id='+storeId : ''}`);
     } else {
-      alert(`✅ 已批准！\n\n${name} 现在可以用注册时填写的邮箱和密码直接登录。`);
+      const storeName = storeId ? (stores.find(s => s.id === storeId)?.name || '') : '';
+      alert(`✅ 已批准！\n\n${name} 现在可以登录${storeName ? '，所属店面：' + storeName : ''}。`);
     }
   } else {
     alert(`✅ 审批记录已更新。\n\n⚠️ 此申请未关联账号（注册时邮箱已存在或创建失败）\n请在 Supabase 后台找到 ${email} 对应的 auth 用户 ID，在 profiles 表手动添加记录并设置 role=${type}。`);

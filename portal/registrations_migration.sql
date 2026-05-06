@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.registrations (
   name          TEXT NOT NULL,
   phone         TEXT NOT NULL,
   email         TEXT NOT NULL,
+  store_id      UUID REFERENCES public.stores(id),
   employee_no   TEXT,
   department    TEXT,
   position_title TEXT,
@@ -18,6 +19,9 @@ CREATE TABLE IF NOT EXISTS public.registrations (
   reviewed_at   TIMESTAMPTZ,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add store_id if table already exists (safe to run multiple times)
+ALTER TABLE public.registrations ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES public.stores(id);
 
 -- Grant table access to Supabase roles (required for RLS to work)
 GRANT INSERT ON public.registrations TO anon;

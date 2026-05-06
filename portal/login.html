@@ -168,6 +168,13 @@
             <input type="text" id="reg-position" placeholder="选填"
                    class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
           </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+            <select id="reg-store"
+                    class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+              <option value="" style="background:#1a3a2a">请选择所属店面</option>
+            </select>
+          </div>
         </div>
 
         <!-- Supplier fields -->
@@ -297,7 +304,17 @@ function showPanel(id) {
 }
 function showLogin()    { showPanel('login-panel'); }
 function showForgot()   { showPanel('forgot-panel'); }
-function showRegister() { showPanel('reg-panel'); }
+async function showRegister() {
+  showPanel('reg-panel');
+  const sel = document.getElementById('reg-store');
+  if (sel && sel.options.length <= 1) {
+    const { data } = await sb.from('stores').select('id, name').eq('active', true).order('name');
+    if (data?.length) {
+      sel.innerHTML = '<option value="" style="background:#1a3a2a">请选择所属店面</option>' +
+        data.map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('');
+    }
+  }
+}
 
 async function redirect(data) {
   if (!data) {
@@ -397,12 +414,17 @@ async function submitReg() {
     name  = document.getElementById('reg-name').value.trim();
     phone = document.getElementById('reg-phone').value.trim();
     email = document.getElementById('reg-email').value.trim();
+    const storeId = document.getElementById('reg-store')?.value;
     if (!name || !phone || !email) {
       errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
+    }
+    if (!storeId) {
+      errEl.textContent = '请选择所属店面'; errEl.classList.remove('hidden'); return;
     }
     payload.name            = name;
     payload.phone           = phone;
     payload.email           = email;
+    payload.store_id        = storeId;
     payload.employee_no     = document.getElementById('reg-employee-no').value.trim() || null;
     payload.department      = document.getElementById('reg-department').value.trim() || null;
     payload.position_title  = document.getElementById('reg-position').value.trim() || null;
