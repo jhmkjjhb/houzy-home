@@ -1909,10 +1909,17 @@ async function approveReg(id, type, userId, name, email) {
 
   // Create profile so user can log in
   if (userId) {
-    await sb.from('profiles').upsert({ id: userId, name, role: type }, { onConflict: 'id' });
-    alert(`✅ 已批准！\n\n用户现在可以用注册时填写的密码直接登录。`);
+    const { error: profileErr } = await sb.from('profiles').upsert(
+      { id: userId, name, role: type, active: true },
+      { onConflict: 'id' }
+    );
+    if (profileErr) {
+      alert(`✅ 审批记录已更新，但创建用户档案失败！\n\n错误：${profileErr.message}\n\n请在 Supabase 后台 profiles 表手动插入：\nid=${userId}, name=${name}, role=${type}`);
+    } else {
+      alert(`✅ 已批准！\n\n${name} 现在可以用注册时填写的邮箱和密码直接登录。`);
+    }
   } else {
-    alert(`✅ 已批准！\n\n⚠️ 注册时账号创建失败，请在 Supabase 后台手动为 ${email} 创建账号并设置角色为 ${type}。`);
+    alert(`✅ 审批记录已更新。\n\n⚠️ 此申请未关联账号（注册时邮箱已存在或创建失败）\n请在 Supabase 后台找到 ${email} 对应的 auth 用户 ID，在 profiles 表手动添加记录并设置 role=${type}。`);
   }
   loadRegistrations();
 }

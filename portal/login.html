@@ -272,7 +272,16 @@ async function doLogin(e) {
     password: document.getElementById('pw').value
   });
   if (error) {
-    err.textContent = error.message.includes('Invalid') ? '邮箱或密码错误' : error.message;
+    const m = error.message || '';
+    if (m.includes('Invalid') || m.includes('invalid')) {
+      err.textContent = '邮箱或密码错误，请重新输入';
+    } else if (m.includes('Email not confirmed') || m.includes('not confirmed')) {
+      err.textContent = '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）';
+    } else if (m.includes('disabled') || m.includes('banned')) {
+      err.textContent = '账号已被停用，请联系管理员';
+    } else {
+      err.textContent = '登录失败：' + m;
+    }
     err.classList.remove('hidden');
     btn.textContent = '登录 Login'; btn.disabled = false;
     return;
@@ -292,12 +301,14 @@ function showRegister() { showPanel('reg-panel'); }
 
 async function redirect(data) {
   if (!data) {
-    data = (await sb.rpc('get_my_profile')).data;
+    const { data: profileData, error: rpcErr } = await sb.rpc('get_my_profile');
+    data = profileData;
+    if (rpcErr) console.error('get_my_profile error:', rpcErr.message);
   }
   if (!data) {
     await sb.auth.signOut();
     const err = document.getElementById('err');
-    err.textContent = '账号审核中，请等待管理员审核后再登录。';
+    err.textContent = '账号资料未找到，可能正在审核中或审批未完成，请联系管理员确认。';
     err.classList.remove('hidden');
     document.getElementById('btn').textContent = '登录 Login';
     document.getElementById('btn').disabled = false;
