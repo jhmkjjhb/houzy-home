@@ -360,7 +360,11 @@ async function redirect(data) {
     return;
   }
   const role = data?.role || 'customer';
-  const map = { staff: 'staff.html', supplier: 'supplier.html', admin: 'staff.html', logistics: 'logistics.html', customer: 'customer.html' };
+  const map = {
+    staff: 'staff.html', store_manager: 'staff.html', regional_manager: 'staff.html',
+    general_manager: 'staff.html', superadmin: 'staff.html', admin: 'staff.html',
+    supplier: 'supplier.html', logistics: 'logistics.html', customer: 'customer.html',
+  };
   window.location.href = map[role] || 'customer.html';
 }
 
@@ -491,7 +495,10 @@ async function submitReg() {
   // Step 1: Create auth account
   let userId = null;
   const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
-    options: { data: { name, role: regType } }
+    options: {
+      data: { name, role: regType },
+      emailRedirectTo: window.location.origin + window.location.pathname,
+    }
   });
   if (authErr) {
     const msg = authErr.message || '';
