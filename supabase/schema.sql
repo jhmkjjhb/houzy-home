@@ -253,24 +253,24 @@ CREATE POLICY "stores_admin" ON stores FOR ALL USING (
 
 -- Customers: staff/admin full; self-read
 CREATE POLICY "customers_staff" ON customers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 CREATE POLICY "customers_self" ON customers FOR SELECT USING (user_id = auth.uid());
 
 -- Referrers: staff/admin
 CREATE POLICY "referrers_staff" ON referrers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 
 -- Suppliers: staff/admin full; supplier self-read
 CREATE POLICY "suppliers_staff" ON suppliers FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 CREATE POLICY "suppliers_self" ON suppliers FOR SELECT USING (user_id = auth.uid());
 
 -- Orders
 CREATE POLICY "orders_staff_admin" ON orders FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 CREATE POLICY "orders_supplier_read" ON orders FOR SELECT USING (
   EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid() AND id = orders.supplier_id)
@@ -284,7 +284,7 @@ CREATE POLICY "orders_customer" ON orders FOR SELECT USING (
 
 -- Order logs
 CREATE POLICY "logs_staff_admin" ON order_logs FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 CREATE POLICY "logs_supplier" ON order_logs FOR ALL USING (
   EXISTS (
@@ -295,7 +295,7 @@ CREATE POLICY "logs_supplier" ON order_logs FOR ALL USING (
 
 -- Order sequences: staff/admin
 CREATE POLICY "sequences_staff" ON order_sequences FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','store_manager','regional_manager','general_manager','superadmin','admin')
 );
 
 -- Logistics: read orders in transit pipeline; update to advance status
