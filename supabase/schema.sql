@@ -242,13 +242,13 @@ ALTER TABLE order_sequences ENABLE ROW LEVEL SECURITY;
 -- Profiles
 CREATE POLICY "profiles_self"  ON profiles FOR ALL USING (id = auth.uid());
 CREATE POLICY "profiles_admin" ON profiles FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin','superadmin','general_manager')
 );
 
 -- Stores: authenticated read
 CREATE POLICY "stores_read"  ON stores FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "stores_admin" ON stores FOR ALL USING (
-  (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
+  (SELECT role FROM profiles WHERE id = auth.uid()) IN ('admin','superadmin','general_manager')
 );
 
 -- Customers: staff/admin full; self-read

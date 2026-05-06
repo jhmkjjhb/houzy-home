@@ -1038,7 +1038,7 @@ async function init() {
     storeName = sd?.name || '';
     profile._storeName = storeName;
   }
-  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户', logistics:'物流' }[profile?.role] || profile?.role || '';
+  const roleLabel = { staff:'员工', supplier:'厂家', admin:'管理员', customer:'客户', logistics:'物流', store_manager:'店长', regional_manager:'区域经理', general_manager:'总经理', superadmin:'超级管理员' }[profile?.role] || profile?.role || '';
   const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
      <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
   document.getElementById('user-info').innerHTML = userHtml;
@@ -1048,7 +1048,7 @@ async function init() {
   await Promise.all([loadStores(), loadReferrers(), loadOrders(), loadCustomers()]);
   renderDashboard();
   checkOverdueAlerts();
-  if (profile?.role === 'admin') {
+  if (['admin','superadmin','general_manager','regional_manager'].includes(profile?.role)) {
     document.querySelectorAll('.admin-nav').forEach(el => el.classList.remove('hidden'));
     loadRegistrations(); // show badge count on startup
   }
@@ -1090,7 +1090,7 @@ async function loadStores() {
 
   if (!storeData || storeData.length === 0) {
     // 表空，尝试插入默认门店
-    if (profile?.role === 'admin') {
+    if (['admin','superadmin','general_manager'].includes(profile?.role)) {
       const { error: insErr } = await sb.from('stores').insert([
         { name: '001 Austin', code: '001', address: '141, Jalan Mutiara Emas 10/19, Taman Mount Austin, 81100 Johor Bahru', active: true },
         { name: '新山门店',   code: 'JBN', address: '新山, 柔佛, Malaysia', active: true },
@@ -1105,7 +1105,7 @@ async function loadStores() {
     }
   } else {
     stores = storeData;
-    if (profile?.role === 'admin') {
+    if (['admin','superadmin','general_manager'].includes(profile?.role)) {
       const codes = stores.map(s => s.code);
       if (codes.includes('JB')) await sb.from('stores').update({ name: '001 Austin', code: '001' }).eq('code', 'JB');
       if (codes.includes('SG')) await sb.from('stores').update({ name: '002 Singapore', code: '002' }).eq('code', 'SG');
@@ -1143,7 +1143,7 @@ async function loadStores() {
 
   // populate store filter (admin only)
   const fSel = document.getElementById('f-store');
-  if (fSel && profile?.role === 'admin') {
+  if (fSel && ['admin','superadmin','general_manager','regional_manager','store_manager'].includes(profile?.role)) {
     fSel.classList.remove('hidden');
     fSel.innerHTML = '<option value="">全部门店</option>';
     sorted.forEach(s => fSel.add(new Option(label(s), s.id)));
@@ -1162,7 +1162,7 @@ async function loadOrders() {
     .select('*, stores(name), customers(name,phone), profiles(name)')
     .order('created_at', { ascending: false })
     .limit(200);
-  if (profile?.role === 'staff' && profile?.store_id) q = q.eq('store_id', profile.store_id);
+  if (['staff','store_manager'].includes(profile?.role) && profile?.store_id) q = q.eq('store_id', profile.store_id);
   const { data } = await q;
   allOrders = data || [];
 }
@@ -1654,7 +1654,7 @@ async function openDetail(id, backView) {
       ${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}
     </div>
 
-    ${profile?.role === 'admin' ? `
+    ${['admin','superadmin','general_manager'].includes(profile?.role) ? `
     <!-- Delete -->
     <div class="mt-4">
       <button onclick="confirmDelete('${o.id}')"
