@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   name       TEXT NOT NULL DEFAULT '',
   phone      TEXT,
   role       TEXT NOT NULL DEFAULT 'customer'
-               CHECK (role IN ('customer','staff','supplier','admin','logistics')),
+               CHECK (role IN ('customer','staff','store_manager','regional_manager','general_manager','superadmin','admin','supplier','logistics')),
   store_id   UUID REFERENCES stores(id),   -- staff only
   active     BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
