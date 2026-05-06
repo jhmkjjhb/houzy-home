@@ -253,14 +253,17 @@ CREATE POLICY "profiles_admin" ON profiles FOR ALL USING (auth_user_level() >= 4
 CREATE POLICY "stores_read"  ON stores FOR SELECT USING (auth.uid() IS NOT NULL);
 CREATE POLICY "stores_admin" ON stores FOR ALL USING (auth_user_level() >= 4);
 
--- Customers: L1+ full; self-read
-CREATE POLICY "customers_staff" ON customers FOR ALL USING (auth_user_level() >= 1);
-CREATE POLICY "customers_self"  ON customers FOR SELECT USING (user_id = auth.uid());
+-- Customers: L1+ 管理；supplier 可读（订单协同）；客户自读
+CREATE POLICY "customers_staff"    ON customers FOR ALL    USING (auth_user_level() >= 1);
+CREATE POLICY "customers_supplier" ON customers FOR SELECT USING (
+  EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid())
+);
+CREATE POLICY "customers_self"     ON customers FOR SELECT USING (user_id = auth.uid());
 
 -- Referrers: L1+
 CREATE POLICY "referrers_staff" ON referrers FOR ALL USING (auth_user_level() >= 1);
 
--- Suppliers: L3+ write; L1+ read; supplier self-read
+-- Suppliers: L3+ 全权；L1-L2 只读；supplier 用户读自己的记录
 CREATE POLICY "suppliers_staff" ON suppliers FOR ALL   USING (auth_user_level() >= 3);
 CREATE POLICY "suppliers_read"  ON suppliers FOR SELECT USING (auth_user_level() >= 1);
 CREATE POLICY "suppliers_self"  ON suppliers FOR SELECT USING (user_id = auth.uid());

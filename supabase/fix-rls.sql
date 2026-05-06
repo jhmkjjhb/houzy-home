@@ -88,14 +88,23 @@ CREATE POLICY "logs_logistics" ON order_logs FOR ALL USING (
 -- 重建 suppliers 策略
 DROP POLICY IF EXISTS "suppliers_staff" ON suppliers;
 DROP POLICY IF EXISTS "suppliers_read"  ON suppliers;
+DROP POLICY IF EXISTS "suppliers_self"  ON suppliers;
+-- L3+ 全权；L1-L2 只读；supplier 用户读自己的记录（supplier.html 依赖）
 CREATE POLICY "suppliers_staff" ON suppliers FOR ALL   USING (auth_user_level() >= 3);
 CREATE POLICY "suppliers_read"  ON suppliers FOR SELECT USING (auth_user_level() >= 1);
+CREATE POLICY "suppliers_self"  ON suppliers FOR SELECT USING (user_id = auth.uid());
 
 -- customers / referrers
 DROP POLICY IF EXISTS "customers_staff" ON customers;
+DROP POLICY IF EXISTS "customers_self"  ON customers;
 DROP POLICY IF EXISTS "referrers_staff" ON referrers;
-CREATE POLICY "customers_staff" ON customers FOR ALL USING (auth_user_level() >= 1);
-CREATE POLICY "referrers_staff" ON referrers FOR ALL USING (auth_user_level() >= 1);
+-- L1+ 管理；supplier 可读客户姓名/电话（订单协同需要）；客户自读
+CREATE POLICY "customers_staff"    ON customers FOR ALL    USING (auth_user_level() >= 1);
+CREATE POLICY "customers_supplier" ON customers FOR SELECT USING (
+  EXISTS (SELECT 1 FROM suppliers WHERE user_id = auth.uid())
+);
+CREATE POLICY "customers_self"     ON customers FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "referrers_staff"    ON referrers FOR ALL    USING (auth_user_level() >= 1);
 
 -- registrations 策略
 DROP POLICY IF EXISTS "reg_select" ON public.registrations;
