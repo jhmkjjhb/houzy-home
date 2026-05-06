@@ -240,12 +240,17 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// Check for password recovery token in URL hash
+// Detect password recovery flow (handles both PKCE and implicit flows)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    showPanel('reset-panel');
+  }
+});
+
 (async () => {
+  // Also handle hash-based recovery token (older Supabase versions)
   const hash = new URLSearchParams(window.location.hash.replace('#',''));
   if (hash.get('type') === 'recovery') {
-    // Exchange token for session
-    const { error } = await sb.auth.exchangeCodeForSession(window.location.href).catch(() => ({ error: true }));
     showPanel('reset-panel');
     return;
   }
