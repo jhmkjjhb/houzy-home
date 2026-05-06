@@ -477,7 +477,16 @@ async function submitReg() {
     <div class="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
       <div class="text-4xl mb-4">✅</div>
       <h2 class="text-white font-bold text-lg mb-3">申请已提交！</h2>
-      <p class="text-gray-300 text-sm leading-relaxed mb-6">请等待管理员审核，审核通过后即可登录。</p>
+      <div class="text-left space-y-3 mb-6">
+        <div class="flex items-start gap-3">
+          <span class="text-gd font-bold flex-shrink-0">1.</span>
+          <p class="text-gray-300 text-sm">请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="text-gd font-bold flex-shrink-0">2.</span>
+          <p class="text-gray-300 text-sm">邮箱确认后，请等待管理员审核，审核通过后即可登录</p>
+        </div>
+      </div>
       <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
     </div>`;
 }
