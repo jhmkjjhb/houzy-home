@@ -369,7 +369,7 @@
       <!-- Add supplier form -->
       <div class="card p-4 mb-4">
         <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 mb-3">
           <input type="text" id="sup-name" placeholder="供应商名称 *" data-i18n-ph="th_name" class="input flex-1 min-w-36">
           <input type="tel" id="sup-phone" placeholder="联系电话" data-i18n-ph="th_phone" class="input w-36">
           <select id="sup-tier" class="input w-28">
@@ -377,8 +377,22 @@
             <option value="2" selected>⭐⭐</option>
             <option value="1">⭐</option>
           </select>
-          <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
         </div>
+        <div class="mb-3">
+          <label class="label mb-1.5">产品类型 <span class="text-gray-400 font-normal">（可多选）</span></label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="定制柜类"><span class="text-xs text-gray-600">定制柜类</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="成品家具"><span class="text-xs text-gray-600">成品家具</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="地板/瓷砖"><span class="text-xs text-gray-600">地板/瓷砖</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="门窗/吊顶"><span class="text-xs text-gray-600">门窗/吊顶</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="卫浴/五金"><span class="text-xs text-gray-600">卫浴/五金</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="电器/灯具"><span class="text-xs text-gray-600">电器/灯具</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="软装"><span class="text-xs text-gray-600">软装</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="智能家居"><span class="text-xs text-gray-600">智能家居</span></label>
+            <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="sup-cat-cb accent-hg" value="施工服务"><span class="text-xs text-gray-600">施工服务</span></label>
+          </div>
+        </div>
+        <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
         <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
       </div>
       <!-- Suppliers list -->
@@ -1821,36 +1835,42 @@ const TIER_STARS = { 3:'⭐⭐⭐', 2:'⭐⭐', 1:'⭐' };
 async function renderSuppliersPage() {
   const { data: sups } = await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name');
   const rows = (sups || []);
+  const catColors = ['#d6e8db','#dbeafe','#fef3c7','#ede9fe','#fee2e2','#d1fae5','#fce7f3','#e0e7ff','#f0fdf4'];
+  function renderCatTags(categories) {
+    if (!categories) return '<span class="text-gray-300 text-xs">—</span>';
+    return categories.split(',').filter(Boolean).map((c, i) =>
+      `<span class="text-xs px-1.5 py-0.5 rounded font-medium whitespace-nowrap" style="background:${catColors[i%catColors.length]};color:#1a3a2a">${c.trim()}</span>`
+    ).join(' ');
+  }
   document.getElementById('suppliers-table').innerHTML = rows.length
-    ? `<table class="w-full text-sm">
-        <thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
-          <th class="px-4 py-3">${t('th_name')}</th><th class="px-4 py-3">${t('lbl_sup_tier')}</th>
-          <th class="px-4 py-3">${t('th_phone')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3"></th>
-        </tr></thead>
-        <tbody>${rows.map(s => `
-          <tr class="border-t border-gray-100 hover:bg-gc">
-            <td class="px-4 py-3 font-medium">${s.name}</td>
-            <td class="px-4 py-3">
-              <select onchange="setSupplierTier('${s.id}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-1 bg-white">
-                <option value="3" ${s.tier===3?'selected':''}>⭐⭐⭐</option>
-                <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐</option>
-                <option value="1" ${s.tier===1?'selected':''}>⭐</option>
-              </select>
-            </td>
-            <td class="px-4 py-3 text-gray-600">${s.phone || '-'}</td>
-            <td class="px-4 py-3">
-              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
-                ${s.active ? t('sup_active') : t('sup_inactive')}
-              </span>
-            </td>
-            <td class="px-4 py-3">
+    ? `<div class="divide-y divide-gray-100">${rows.map(s => `
+        <div class="px-4 py-3 hover:bg-gc">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-medium text-gray-800">${s.name}</span>
+                <select onchange="setSupplierTier('${s.id}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white">
+                  <option value="3" ${s.tier===3?'selected':''}>⭐⭐⭐</option>
+                  <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐</option>
+                  <option value="1" ${s.tier===1?'selected':''}>⭐</option>
+                </select>
+                <span class="text-xs px-1.5 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
+                  ${s.active ? t('sup_active') : t('sup_inactive')}
+                </span>
+              </div>
+              ${s.phone ? `<div class="text-xs text-gray-400 mt-0.5">${s.phone}</div>` : ''}
+              <div class="flex flex-wrap gap-1 mt-1.5">${renderCatTags(s.categories)}</div>
+            </div>
+            <div class="flex flex-col gap-1 flex-shrink-0">
+              <button onclick="editSupplierCategories('${s.id}','${(s.categories||'').replace(/'/g,'')}')"
+                      class="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 whitespace-nowrap">编辑类型</button>
               <button onclick="toggleSupplier('${s.id}',${s.active})"
-                      class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}">
+                      class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'} whitespace-nowrap">
                 ${s.active ? t('sup_disable') : t('sup_enable')}
               </button>
-            </td>
-          </tr>`).join('')}
-        </tbody></table>`
+            </div>
+          </div>
+        </div>`).join('')}</div>`
     : `<p class="text-gray-400 text-sm text-center py-10">${t('no_suppliers')}</p>`;
 }
 
@@ -1858,14 +1878,50 @@ async function addSupplier() {
   const name = document.getElementById('sup-name').value.trim();
   const phone = document.getElementById('sup-phone').value.trim();
   const tier = parseInt(document.getElementById('sup-tier').value);
+  const categories = [...document.querySelectorAll('.sup-cat-cb:checked')].map(cb => cb.value).join(',') || null;
   const errEl = document.getElementById('sup-err');
   if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
-  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, tier, active: true });
+  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, tier, categories, active: true });
   if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
   document.getElementById('sup-name').value = '';
   document.getElementById('sup-phone').value = '';
   document.getElementById('sup-tier').value = '2';
+  document.querySelectorAll('.sup-cat-cb').forEach(cb => cb.checked = false);
+  await renderSuppliersPage();
+}
+
+function editSupplierCategories(id, currentCats) {
+  const ALL_CATS = ['定制柜类','成品家具','地板/瓷砖','门窗/吊顶','卫浴/五金','电器/灯具','软装','智能家居','施工服务'];
+  const selected = currentCats ? currentCats.split(',').map(c => c.trim()) : [];
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+      <h3 class="font-bold text-gray-800 mb-4">编辑产品类型</h3>
+      <div class="grid grid-cols-2 gap-2 mb-5">
+        ${ALL_CATS.map(c => `
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" class="edit-cat-cb accent-hg" value="${c}" ${selected.includes(c)?'checked':''}>
+            <span class="text-sm text-gray-700">${c}</span>
+          </label>`).join('')}
+      </div>
+      <div class="flex gap-2">
+        <button onclick="this.closest('.fixed').remove()"
+                class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg">取消</button>
+        <button onclick="saveSupplierCategories('${id}',this)"
+                class="flex-1 py-2.5 bg-hg text-white text-sm font-semibold rounded-lg">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveSupplierCategories(id, btn) {
+  const modal = btn.closest('.fixed');
+  const cats = [...modal.querySelectorAll('.edit-cat-cb:checked')].map(cb => cb.value).join(',') || null;
+  btn.textContent = '保存中…'; btn.disabled = true;
+  await sb.from('suppliers').update({ categories: cats }).eq('id', id);
+  modal.remove();
   await renderSuppliersPage();
 }
 
@@ -1949,7 +2005,7 @@ function renderRegistrations(data) {
       </div>
       <div class="mt-1 text-sm text-gray-600">${r.email} · ${r.phone}</div>
       ${info ? `<div class="text-xs text-gray-400 mt-0.5">${info}</div>` : ''}
-      ${r.type === 'supplier' && r.products ? `<div class="text-xs text-gray-400">业务: ${r.products}</div>` : ''}
+      ${r.type === 'supplier' && r.products ? `<div class="flex flex-wrap gap-1 mt-1">${r.products.split(',').map(c=>`<span class="text-xs px-1.5 py-0.5 rounded" style="background:#d6e8db;color:#1a3a2a">${c.trim()}</span>`).join('')}</div>` : ''}
       ${actions}
     </div>`;
   }).join('');

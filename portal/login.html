@@ -214,9 +214,45 @@
                    class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">主营产品/业务</label>
-            <input type="text" id="reg-products" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+            <label class="block text-xs text-gray-400 mb-2">主营产品类型 <span class="text-gray-600">（可多选）</span></label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="定制柜类">
+                <span class="text-xs text-gray-300 group-hover:text-white transition leading-tight">定制柜类<br><span class="text-gray-500 text-xs">橱柜、衣柜、榻榻米</span></span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="成品家具">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">成品家具</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="地板/瓷砖">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">地板/瓷砖</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="门窗/吊顶">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">门窗/吊顶</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="卫浴/五金">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">卫浴/五金</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="电器/灯具">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">电器/灯具</span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="软装">
+                <span class="text-xs text-gray-300 group-hover:text-white transition leading-tight">软装<br><span class="text-gray-500 text-xs">窗帘、地毯、饰品</span></span>
+              </label>
+              <label class="flex items-start gap-2 cursor-pointer group">
+                <input type="checkbox" class="reg-cat-cb mt-0.5 accent-gd" value="智能家居">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">智能家居</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer group col-span-2">
+                <input type="checkbox" class="reg-cat-cb accent-gd" value="施工服务">
+                <span class="text-xs text-gray-300 group-hover:text-white transition">施工服务</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -466,7 +502,7 @@ async function submitReg() {
     payload.email         = email;
     payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
     payload.address       = document.getElementById('reg-address').value.trim() || null;
-    payload.products      = document.getElementById('reg-products').value.trim() || null;
+    payload.products      = [...document.querySelectorAll('.reg-cat-cb:checked')].map(cb => cb.value).join(',') || null;
   } else {
     // logistics
     name  = document.getElementById('reg-log-name').value.trim();
