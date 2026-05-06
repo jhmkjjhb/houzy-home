@@ -1873,7 +1873,7 @@ function renderRegistrations(data) {
     const date = new Date(r.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
     const actions = r.status === 'pending' ? `
       <div class="flex gap-2 mt-3">
-        <button onclick="approveReg('${r.id}','${r.type}','${r.name}','${r.email}')"
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}')"
                 class="px-3 py-1.5 bg-hg text-white text-xs rounded-lg font-medium">✓ 通过</button>
         <button onclick="promptRejectReg('${r.id}')"
                 class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-200">✗ 拒绝</button>
@@ -1894,22 +1894,30 @@ function renderRegistrations(data) {
   }).join('');
 }
 
-async function approveReg(id, type, name, email) {
-  if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？\n\n系统将发送密码重置邮件，让用户自行设置密码后即可登录。`)) return;
+async function approveReg(id, type, userId, name, email) {
+  if (!confirm(`确认批准 ${name} (${email}) 的${type === 'staff' ? '员工' : '厂家'}申请？`)) return;
   const { error } = await sb.from('registrations').update({
     status: 'approved',
     reviewed_by: profile.id,
     reviewed_at: new Date().toISOString()
   }).eq('id', id);
   if (error) { alert('操作失败: ' + error.message); return; }
-  // Send password reset email so user can set/reset their password and log in
+
+  // Create profile so user can log in after password reset
+  if (userId) {
+    await sb.from('profiles').upsert({ id: userId, name, role: type }, { onConflict: 'id' });
+  }
+
+  // Send password reset/set email
   const { error: resetErr } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + '/portal/login.html'
   });
-  if (resetErr) {
-    alert(`✅ 已批准！\n\n⚠️ 密码重置邮件发送失败（${resetErr.message}）。\n请在 Supabase 后台手动为 ${email} 创建账号。`);
+  if (!userId) {
+    alert(`✅ 已批准！\n\n⚠️ 注册时账号创建失败，请在 Supabase 后台手动为 ${email} 创建账号并设置角色为 ${type}。`);
+  } else if (resetErr) {
+    alert(`✅ 已批准并创建账号！\n\n⚠️ 密码重置邮件发送失败，用户可在登录页点"忘记密码"自行重置。`);
   } else {
-    alert(`✅ 已批准！\n\n密码重置邮件已发送至 ${email}，用户点击邮件链接即可设置密码并登录。`);
+    alert(`✅ 已批准！\n\n密码设置邮件已发送至 ${email}，用户点击邮件链接设置密码后即可登录。`);
   }
   loadRegistrations();
 }
