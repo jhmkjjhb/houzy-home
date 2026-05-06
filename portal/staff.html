@@ -1802,9 +1802,13 @@ async function updateOrder(id) {
   const coreUpd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
   if (isTerminal) coreUpd.completed_at = new Date().toISOString();
 
-  const { error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id);
+  const { data: updData, error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id).select('id,supplier_id');
   if (updErr) {
-    alert(`保存失败: ${updErr.message}`);
+    alert(`保存失败: ${updErr.message}\n\n角色: ${profile?.role}`);
+    return;
+  }
+  if (!updData || updData.length === 0) {
+    alert(`保存失败：无权限更新此订单（角色: ${profile?.role}）\n请联系管理员检查数据库 RLS 策略。`);
     return;
   }
 
