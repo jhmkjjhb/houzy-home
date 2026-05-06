@@ -283,14 +283,14 @@ CREATE POLICY "sequences_staff" ON order_sequences FOR ALL USING (
   (SELECT role FROM profiles WHERE id = auth.uid()) IN ('staff','admin')
 );
 
--- Logistics: read orders in transit pipeline; update to advance status
+-- Logistics: read/update orders from shipped onward (supplier handles production_complete→shipped)
 CREATE POLICY "orders_logistics_read" ON orders FOR SELECT USING (
   (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
-  AND status IN ('production_complete','shipped','in_transit','arrived')
+  AND status IN ('shipped','in_transit','arrived')
 );
 CREATE POLICY "orders_logistics_update" ON orders FOR UPDATE USING (
   (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
-  AND status IN ('production_complete','shipped','in_transit','arrived')
+  AND status IN ('shipped','in_transit','arrived')
 );
 
 -- Logistics: read/write order_logs for transit pipeline
@@ -299,7 +299,7 @@ CREATE POLICY "logs_logistics" ON order_logs FOR ALL USING (
     SELECT 1 FROM orders o
     WHERE o.id = order_logs.order_id
       AND (SELECT role FROM profiles WHERE id = auth.uid()) = 'logistics'
-      AND o.status IN ('production_complete','shipped','in_transit','arrived','installing','completed')
+      AND o.status IN ('shipped','in_transit','arrived','installing','completed')
   )
 );
 

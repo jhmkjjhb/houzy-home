@@ -33,9 +33,9 @@
   <!-- Status filter -->
   <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
     <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)">全部</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('production_complete',this)">待提货</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">运输中</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_transit',this)">在途</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">待揽件</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_transit',this)">在途中</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_transit',this)">运输中</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('arrived',this)">已到货</button>
   </div>
 
@@ -77,10 +77,10 @@ const STATUS = {
 // production_complete → shipped (pickup confirmed, with tracking_no)
 // shipped → in_transit (dispatched)
 // in_transit → arrived (delivered to customer)
+// 发货由厂家确认；物流从 shipped 开始接手
 const MY_TRANSITIONS = {
-  production_complete: { next: 'shipped',     label: '✅ 确认提货', requireTracking: true },
-  shipped:             { next: 'in_transit',  label: '🚛 已发出',   requireTracking: false },
-  in_transit:          { next: 'arrived',     label: '📦 已到货',   requireTracking: false },
+  shipped:    { next: 'in_transit', label: '🚛 已揽件发出', requireTracking: false },
+  in_transit: { next: 'arrived',   label: '📦 已到货签收', requireTracking: false },
 };
 
 function badge(s) {
@@ -111,7 +111,7 @@ async function init() {
 async function loadOrders() {
   const { data } = await sb.from('orders')
     .select('*, stores(name), customers(name,phone,address), suppliers(name,phone)')
-    .in('status', ['production_complete','shipped','in_transit','arrived'])
+    .in('status', ['shipped','in_transit','arrived'])
     .order('updated_at', { ascending: false });
   allOrders = data || [];
   renderOrders();
