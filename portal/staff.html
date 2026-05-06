@@ -1877,7 +1877,11 @@ function renderRegistrations(data) {
                 class="px-3 py-1.5 bg-hg text-white text-xs rounded-lg font-medium">✓ 通过</button>
         <button onclick="promptRejectReg('${r.id}')"
                 class="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-200">✗ 拒绝</button>
-      </div>` : r.status === 'rejected' ? `<p class="text-xs text-red-500 mt-2">拒绝原因: ${r.reject_reason || '—'}</p>` : '<p class="text-xs text-green-600 mt-2">✓ 已批准</p>';
+      </div>` : r.status === 'rejected' ? `<p class="text-xs text-red-500 mt-2">拒绝原因: ${r.reject_reason || '—'}</p>` : `<div class="flex items-center gap-3 mt-2">
+        <span class="text-xs text-green-600">✓ 已批准</span>
+        <button onclick="approveReg('${r.id}','${r.type}','${r.user_id||''}','${r.name}','${r.email}')"
+                class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg border border-gray-200">↺ 重建账号</button>
+      </div>`;
     return `<div class="card p-4">
       <div class="flex items-start justify-between">
         <div>
