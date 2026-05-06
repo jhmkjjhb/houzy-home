@@ -1907,21 +1907,12 @@ async function approveReg(id, type, userId, name, email) {
   }).eq('id', id);
   if (error) { alert('操作失败: ' + error.message); return; }
 
-  // Create profile so user can log in after password reset
+  // Create profile so user can log in
   if (userId) {
     await sb.from('profiles').upsert({ id: userId, name, role: type }, { onConflict: 'id' });
-  }
-
-  // Send password reset/set email
-  const { error: resetErr } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/portal/login.html'
-  });
-  if (!userId) {
-    alert(`✅ 已批准！\n\n⚠️ 注册时账号创建失败，请在 Supabase 后台手动为 ${email} 创建账号并设置角色为 ${type}。`);
-  } else if (resetErr) {
-    alert(`✅ 已批准并创建账号！\n\n⚠️ 密码重置邮件发送失败，用户可在登录页点"忘记密码"自行重置。`);
+    alert(`✅ 已批准！\n\n用户现在可以用注册时填写的密码直接登录。`);
   } else {
-    alert(`✅ 已批准！\n\n密码设置邮件已发送至 ${email}，用户点击邮件链接设置密码后即可登录。`);
+    alert(`✅ 已批准！\n\n⚠️ 注册时账号创建失败，请在 Supabase 后台手动为 ${email} 创建账号并设置角色为 ${type}。`);
   }
   loadRegistrations();
 }
