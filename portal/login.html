@@ -423,16 +423,23 @@ async function submitReg() {
 
   btn.textContent = '提交中...'; btn.disabled = true;
 
-  // Try to create auth account (may fail due to DB trigger — handled gracefully)
+  // Create auth account
   let userId = null;
   const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
     options: { data: { name, role: regType } }
   });
-  if (!authErr) {
+  if (authErr) {
+    // If already registered, treat as success and continue
+    if (!authErr.message.includes('already')) {
+      errEl.textContent = '账号创建失败：' + authErr.message;
+      errEl.classList.remove('hidden');
+      btn.textContent = '提交申请'; btn.disabled = false;
+      return;
+    }
+  } else {
     userId = authData?.user?.id || null;
-    await sb.auth.signOut(); // sign out immediately, wait for approval
+    await sb.auth.signOut();
   }
-  // Whether signUp worked or not, save the registration record
   payload.user_id = userId;
   const { error: insErr } = await sb.from('registrations').insert(payload);
   if (insErr) {
