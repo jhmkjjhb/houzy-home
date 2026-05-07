@@ -403,16 +403,14 @@
     </div>
 
     <!-- ── USER MANAGEMENT (L4+) ── -->
-    <div id="v-users" class="hidden p-6 max-w-3xl mx-auto">
-      <div class="flex items-center justify-between mb-5">
+    <div id="v-users" class="hidden p-4 md:p-6 max-w-3xl mx-auto">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <h1 class="text-xl font-bold text-gray-800">👥 用户管理</h1>
-        <div class="flex gap-2">
-          <input id="user-search" type="text" placeholder="搜索姓名/邮箱…"
-                 oninput="filterUsers(this.value)"
-                 class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-hg w-40">
-        </div>
+        <input id="user-search" type="text" placeholder="搜索姓名/邮箱…"
+               oninput="filterUsers(this.value)"
+               class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hg w-full sm:w-52">
       </div>
-      <div id="users-list" class="space-y-2"></div>
+      <div id="users-list" class="space-y-3"></div>
     </div>
 
   </main>
@@ -2141,53 +2139,47 @@ function renderUsersTable(users) {
     return;
   }
   const roleSelect = (uid, currentRole) =>
-    `<select onchange="setUserRole('${uid}',this.value)" class="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:border-hg">
+    `<select onchange="setUserRole('${uid}',this.value)" class="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white w-full focus:outline-none focus:border-hg">
       ${ROLE_OPTIONS.map(r =>
         `<option value="${r.value}" ${r.value === currentRole ? 'selected' : ''}>${r.label}</option>`
       ).join('')}
     </select>`;
 
   const storeSelect = (uid, currentStoreId) =>
-    `<select onchange="setUserStore('${uid}',this.value)" class="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:border-hg">
+    `<select onchange="setUserStore('${uid}',this.value)" class="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white w-full focus:outline-none focus:border-hg">
       <option value="">— 无 —</option>
       ${stores.map(s => `<option value="${s.id}" ${s.id === currentStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
     </select>`;
 
-  el.innerHTML = `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="bg-gray-50 text-left text-xs text-gray-500">
-            <th class="px-4 py-3">姓名</th>
-            <th class="px-4 py-3">手机</th>
-            <th class="px-4 py-3">角色</th>
-            <th class="px-4 py-3">所属店面</th>
-            <th class="px-4 py-3">区域</th>
-            <th class="px-4 py-3">状态</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${users.map(u => `
-          <tr class="border-t border-gray-100 hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-gray-800">${u.name || '—'}</td>
-            <td class="px-4 py-3 text-gray-500 text-xs">${u.phone || '—'}</td>
-            <td class="px-4 py-3">${roleSelect(u.id, u.role)}</td>
-            <td class="px-4 py-3">${storeSelect(u.id, u.store_id)}</td>
-            <td class="px-4 py-3">
-              <input type="text" value="${u.region || ''}" placeholder="如 south"
-                     onchange="setUserRegion('${u.id}',this.value)"
-                     class="text-xs border border-gray-200 rounded px-2 py-1 w-20 focus:outline-none focus:border-hg">
-            </td>
-            <td class="px-4 py-3">
-              <button onclick="toggleUserActive('${u.id}',${u.active})"
-                      class="text-xs px-2 py-0.5 rounded-full font-medium ${u.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
-                ${u.active ? '启用' : '停用'}
-              </button>
-            </td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+  el.innerHTML = users.map(u => `
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <div class="flex items-start justify-between mb-3">
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-gray-800 truncate">${u.name || '—'}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${u.phone || '无手机号'}</div>
+        </div>
+        <button onclick="toggleUserActive('${u.id}',${u.active})"
+                class="ml-3 flex-shrink-0 text-xs px-3 py-1 rounded-full font-medium ${u.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
+          ${u.active ? '启用' : '停用'}
+        </button>
+      </div>
+      <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+        <div>
+          <div class="text-xs text-gray-400 mb-1">角色</div>
+          ${roleSelect(u.id, u.role)}
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-1">所属店面</div>
+          ${storeSelect(u.id, u.store_id)}
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 mb-1">区域</div>
+          <input type="text" value="${u.region || ''}" placeholder="如 south"
+                 onchange="setUserRegion('${u.id}',this.value)"
+                 class="text-xs border border-gray-200 rounded px-2 py-1.5 w-full focus:outline-none focus:border-hg">
+        </div>
+      </div>
+    </div>`).join('');
 }
 
 async function setUserRole(uid, role) {
