@@ -3196,7 +3196,7 @@ async function loadUsersPage() {
 async function loadUsersData() {
   const [{ data, error }, { data: supRows }] = await Promise.all([
     sb.from('profiles').select('id, name, phone, role, store_id, region, active, created_at')
-      .not('role', 'in', '("supplier","logistics")')
+      .neq('role', 'supplier').neq('role', 'logistics')
       .order('created_at', { ascending: false }).limit(500),
     sb.from('suppliers').select('user_id, supplier_code, product_types'),
   ]);
