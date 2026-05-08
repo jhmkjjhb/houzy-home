@@ -2915,26 +2915,44 @@ const PAY_METHOD_LABELS = { cash:'💵 现金', transfer:'🏦 银行转账', ew
 const TIER_STARS = { 3:'⭐⭐⭐', 2:'⭐⭐', 1:'⭐' };
 
 async function renderSuppliersPage() {
-  // Auto-sync: 确保所有 role='supplier' 的 profiles 都有对应的 suppliers 记录
-  const [{ data: sups }, { data: supProfiles }] = await Promise.all([
-    sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name'),
+  document.getElementById('suppliers-table').innerHTML =
+    '<p class="text-gray-400 text-sm text-center py-6">加载中…</p>';
+
+  // 同时拉取 suppliers 表和所有 role='supplier' 的 profiles
+  const [{ data: supRows }, { data: supProfiles }] = await Promise.all([
+    sb.from('suppliers').select('*'),
     sb.from('profiles').select('id, name, phone, active').eq('role', 'supplier'),
   ]);
-  const existingUserIds = new Set((sups || []).map(s => s.user_id).filter(Boolean));
-  const unsynced = (supProfiles || []).filter(p => !existingUserIds.has(p.id));
-  if (unsynced.length > 0) {
-    await Promise.all(unsynced.map(p =>
-      sb.from('suppliers').insert({ user_id: p.id, name: p.name, phone: p.phone || null, active: p.active ?? true, product_types: [] })
+
+  // 以 user_id 为 key 建立 suppliers 映射
+  const supByUid = {};
+  (supRows || []).forEach(s => { if (s.user_id) supByUid[s.user_id] = s; });
+
+  // 找出注册了但 suppliers 表里还没有记录的厂家，先同步进去
+  const toSync = (supProfiles || []).filter(p => !supByUid[p.id]);
+  if (toSync.length > 0) {
+    await Promise.all(toSync.map(p =>
+      sb.from('suppliers').insert({
+        user_id: p.id, name: p.name, phone: p.phone || null,
+        active: p.active ?? true, product_types: [],
+      }).select().single().then(({ data }) => { if (data) supByUid[p.id] = data; })
     ));
   }
-  const { data: freshSups } = unsynced.length > 0
-    ? await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name')
-    : { data: sups };
-  const rows = (freshSups || []);
+
+  // 合并列表：注册厂家（以 profiles 为准）+ 手动添加的（无 user_id）
+  const registered = (supProfiles || []).map(p => ({ ...(supByUid[p.id] || {}), user_id: p.id,
+    name: supByUid[p.id]?.name || p.name, phone: supByUid[p.id]?.phone || p.phone,
+    active: supByUid[p.id]?.active ?? p.active ?? true,
+  }));
+  const manual = (supRows || []).filter(s => !s.user_id);
+  const rows = [...registered, ...manual]
+    .sort((a, b) => (b.tier || 2) - (a.tier || 2) || (a.name || '').localeCompare(b.name || ''));
+
   document.getElementById('suppliers-table').innerHTML = rows.length
     ? `<div class="divide-y divide-gray-100">${rows.map(s => {
         const types = (s.product_types || []);
         const typeBadges = types.map(c => ptBadge(c)).join(' ');
+        const sid = s.id || '';
         return `
         <div class="px-4 py-3 hover:bg-gc">
           <div class="flex items-start justify-between gap-2 flex-wrap">
@@ -2942,6 +2960,7 @@ async function renderSuppliersPage() {
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-medium text-sm text-gray-800">${s.name}</span>
                 ${s.supplier_code ? `<span class="text-xs text-gray-400 font-mono">${s.supplier_code}</span>` : ''}
+                ${s.user_id ? '<span class="text-xs text-blue-400">已注册</span>' : ''}
                 <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${s.active?'background:#d6e8db;color:#1a3a2a':'background:#f3f4f6;color:#9ca3af'}">
                   ${s.active ? t('sup_active') : t('sup_inactive')}
                 </span>
@@ -2951,21 +2970,22 @@ async function renderSuppliersPage() {
               </div>
               <div class="text-xs text-gray-400 mt-1">${s.phone || '—'}</div>
             </div>
+            ${sid ? `
             <div class="flex items-center gap-2 flex-shrink-0">
-              <select onchange="setSupplierTier('${s.id}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-1 bg-white">
+              <select onchange="setSupplierTier('${sid}',this.value)" class="text-xs border border-gray-200 rounded px-1 py-1 bg-white">
                 <option value="3" ${s.tier===3?'selected':''}>⭐⭐⭐</option>
                 <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐</option>
                 <option value="1" ${s.tier===1?'selected':''}>⭐</option>
               </select>
-              <button onclick="editSupplierTypes('${s.id}',${JSON.stringify(types)})"
+              <button onclick="editSupplierTypes('${sid}',${JSON.stringify(types)})"
                       class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50">
                 编辑类型
               </button>
-              <button onclick="toggleSupplier('${s.id}',${s.active})"
+              <button onclick="toggleSupplier('${sid}',${s.active})"
                       class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}">
                 ${s.active ? t('sup_disable') : t('sup_enable')}
               </button>
-            </div>
+            </div>` : ''}
           </div>
         </div>`;
       }).join('')}</div>`
