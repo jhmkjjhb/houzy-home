@@ -2915,8 +2915,22 @@ const PAY_METHOD_LABELS = { cash:'💵 现金', transfer:'🏦 银行转账', ew
 const TIER_STARS = { 3:'⭐⭐⭐', 2:'⭐⭐', 1:'⭐' };
 
 async function renderSuppliersPage() {
-  const { data: sups } = await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name');
-  const rows = (sups || []);
+  // Auto-sync: 确保所有 role='supplier' 的 profiles 都有对应的 suppliers 记录
+  const [{ data: sups }, { data: supProfiles }] = await Promise.all([
+    sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name'),
+    sb.from('profiles').select('id, name, phone, active').eq('role', 'supplier'),
+  ]);
+  const existingUserIds = new Set((sups || []).map(s => s.user_id).filter(Boolean));
+  const unsynced = (supProfiles || []).filter(p => !existingUserIds.has(p.id));
+  if (unsynced.length > 0) {
+    await Promise.all(unsynced.map(p =>
+      sb.from('suppliers').insert({ user_id: p.id, name: p.name, phone: p.phone || null, active: p.active ?? true, product_types: [] })
+    ));
+  }
+  const { data: freshSups } = unsynced.length > 0
+    ? await sb.from('suppliers').select('*').order('tier', { ascending: false }).order('name')
+    : { data: sups };
+  const rows = (freshSups || []);
   document.getElementById('suppliers-table').innerHTML = rows.length
     ? `<div class="divide-y divide-gray-100">${rows.map(s => {
         const types = (s.product_types || []);
