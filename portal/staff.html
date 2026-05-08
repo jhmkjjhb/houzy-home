@@ -2924,28 +2924,30 @@ async function renderSuppliersPage() {
     sb.from('profiles').select('id, name, phone, active').eq('role', 'supplier'),
   ]);
 
-  // 以 user_id 为 key 建立 suppliers 映射
+  // suppliers 表以 user_id 建索引
   const supByUid = {};
   (supRows || []).forEach(s => { if (s.user_id) supByUid[s.user_id] = s; });
 
-  // 找出注册了但 suppliers 表里还没有记录的厂家，先同步进去
+  // profiles 里有但 suppliers 表里还没有的，后台静默同步
   const toSync = (supProfiles || []).filter(p => !supByUid[p.id]);
   if (toSync.length > 0) {
-    await Promise.all(toSync.map(p =>
-      sb.from('suppliers').insert({
-        user_id: p.id, name: p.name, phone: p.phone || null,
-        active: p.active ?? true, product_types: [],
-      }).select().single().then(({ data }) => { if (data) supByUid[p.id] = data; })
-    ));
+    Promise.all(toSync.map(async p => {
+      const ins = { user_id: p.id, name: p.name, phone: p.phone || null, active: p.active ?? true };
+      // 尝试带 product_types（需要迁移），失败则不带
+      let { data, error } = await sb.from('suppliers').insert({ ...ins, product_types: [] }).select().single();
+      if (error) ({ data } = await sb.from('suppliers').insert(ins).select().single());
+      if (data) supByUid[p.id] = data;
+    }));
   }
 
-  // 合并列表：注册厂家（以 profiles 为准）+ 手动添加的（无 user_id）
-  const registered = (supProfiles || []).map(p => ({ ...(supByUid[p.id] || {}), user_id: p.id,
-    name: supByUid[p.id]?.name || p.name, phone: supByUid[p.id]?.phone || p.phone,
-    active: supByUid[p.id]?.active ?? p.active ?? true,
-  }));
-  const manual = (supRows || []).filter(s => !s.user_id);
-  const rows = [...registered, ...manual]
+  // 合并：① suppliers 表全部行（包含有/无 user_id 的）
+  //       ② profiles 里有但 suppliers 表里还没有的（已在上面同步，此处做保底显示）
+  const coveredUids = new Set(Object.keys(supByUid));
+  const profilesOnly = (supProfiles || [])
+    .filter(p => !coveredUids.has(p.id))
+    .map(p => ({ user_id: p.id, name: p.name, phone: p.phone, active: p.active ?? true, tier: 2, product_types: [] }));
+
+  const rows = [...(supRows || []), ...profilesOnly]
     .sort((a, b) => (b.tier || 2) - (a.tier || 2) || (a.name || '').localeCompare(b.name || ''));
 
   document.getElementById('suppliers-table').innerHTML = rows.length
@@ -3152,7 +3154,13 @@ async function approveReg(id, type, userId, name, email, storeId) {
         const productTypes = regData?.products ? regData.products.split(',').filter(Boolean) : [];
         const { data: existing } = await sb.from('suppliers').select('id').eq('user_id', userId).maybeSingle();
         if (!existing) {
-          await sb.from('suppliers').insert({ user_id: userId, name, active: true, product_types: productTypes });
+          const insBase = { user_id: userId, name, active: true };
+          const { error: insErr } = await sb.from('suppliers')
+            .insert({ ...insBase, product_types: productTypes });
+          if (insErr) {
+            // fallback: insert without product_types (migration may not have run yet)
+            await sb.from('suppliers').insert(insBase);
+          }
         }
       }
       const storeName = storeId ? (stores.find(s => s.id === storeId)?.name || '') : '';
