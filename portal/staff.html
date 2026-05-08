@@ -747,6 +747,7 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
+let mySupplierId = null;
 let searchTimer = null;
 
 // ──────────────────────────────────────────────────────────────────
@@ -810,12 +811,40 @@ function canTransit(currentStatus, targetStatus) {
 
 async function buildOrdersQuery() {
   const lvl = myLevel();
+
+  if (profile?.role === 'supplier') {
+    if (!mySupplierId) {
+      return sb.from('orders')
+        .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+        .eq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    const { data: myItems } = await sb.from('order_items').select('order_id').eq('supplier_id', mySupplierId);
+    const orderIds = [...new Set((myItems || []).map(i => i.order_id))];
+    if (!orderIds.length) {
+      return sb.from('orders')
+        .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+        .eq('id', '00000000-0000-0000-0000-000000000000');
+    }
+    return sb.from('orders')
+      .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+      .in('id', orderIds)
+      .in('status', ['paid','in_production','shipped','arrived','installing','completed'])
+      .order('created_at', { ascending: false }).limit(300);
+  }
+
+  if (profile?.role === 'logistics') {
+    return sb.from('orders')
+      .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+      .in('status', ['shipped','arrived'])
+      .order('created_at', { ascending: false }).limit(300);
+  }
+
   let q = sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
     .order('created_at', { ascending: false })
     .limit(300);
   if (lvl >= 4) {
-    // L4/L5：全公司，不加过滤
+    // L4+: all orders
   } else if (lvl === 3 && profile.region) {
     const regionIds = stores.filter(s => s.region === profile.region).map(s => s.id);
     if (regionIds.length) q = q.in('store_id', regionIds);
@@ -1202,6 +1231,10 @@ async function init() {
   if (!session) { window.location.href = 'login.html'; return; }
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
+  if (profile?.role === 'supplier') {
+    const { data: _sup } = await sb.from('suppliers').select('id').eq('user_id', profile.id).maybeSingle();
+    mySupplierId = _sup?.id || null;
+  }
   let storeName = '';
   if (profile?.store_id) {
     const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
@@ -1897,6 +1930,24 @@ async function openDetail(id, backView) {
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
   ]);
 
+  // Load logistics profiles and current logistics person
+  const needsLogistics = ['shipped','arrived','installing','completed'].includes(o.status);
+  let logisticsProfiles = [];
+  if (needsLogistics || profile?.role === 'logistics') {
+    const { data: _lp } = await sb.from('profiles')
+      .select('id,name,phone').eq('role','logistics').eq('active',true);
+    logisticsProfiles = _lp || [];
+  }
+  let logisticsPerson = null;
+  if (o.logistics_profile_id) {
+    logisticsPerson = logisticsProfiles.find(p => p.id === o.logistics_profile_id) || null;
+    if (!logisticsPerson) {
+      const { data: _lp2 } = await sb.from('profiles')
+        .select('id,name,phone').eq('id', o.logistics_profile_id).maybeSingle();
+      logisticsPerson = _lp2 || null;
+    }
+  }
+
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
     return `<div class="flex gap-3">
@@ -2000,6 +2051,9 @@ async function openDetail(id, backView) {
     ${renderItemsCard(items, o, supList)}
 
     ${renderChecklistPanel(o, items)}
+
+    ${renderSupplierActionCard(o, items)}
+    ${renderLogisticsCard(o, logisticsProfiles, logisticsPerson)}
 
     ${renderAttachmentsCard(attachments, o.id)}
 
@@ -2637,6 +2691,66 @@ async function saveItemSuppliers(orderId) {
   setTimeout(() => openDetail(orderId), 600);
 }
 
+async function acceptOrder(orderId) {
+  if (!confirm('确认接单，开始生产？')) return;
+  await sb.from('orders').update({ status: 'in_production', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'in_production',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '厂家确认接单，开始生产',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function shipOrder(orderId) {
+  if (!confirm('确认发货？')) return;
+  await sb.from('orders').update({ status: 'shipped', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'shipped',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '厂家确认发货',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function saveLogisticsInfo(orderId) {
+  const logisticsProfileId = document.getElementById('logistics-sel')?.value || null;
+  const shipTime  = document.getElementById('ship-time')?.value;
+  const etaTime   = document.getElementById('eta-time')?.value;
+  const shipNotes = document.getElementById('ship-notes')?.value?.trim() || null;
+  const upd = {
+    logistics_profile_id: logisticsProfileId || null,
+    ship_time:  shipTime  ? new Date(shipTime).toISOString()  : null,
+    eta_time:   etaTime   ? new Date(etaTime).toISOString()   : null,
+    ship_notes: shipNotes,
+  };
+  const { error } = await sb.from('orders').update(upd).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function markArrived(orderId) {
+  if (!confirm('确认货物已到达？到货后将自动进入安装阶段。')) return;
+  const now = new Date().toISOString();
+  await sb.from('orders').update({ status: 'arrived', updated_at: now }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'arrived',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '物流确认货物已到达',
+  });
+  await sb.from('orders').update({ status: 'installing', updated_at: now }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'installing',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '货物到达，自动进入安装阶段',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
 async function markItemStatus(itemId, status, orderId) {
   await sb.from('order_items').update({ item_status: status }).eq('id', itemId);
   openDetail(orderId);
@@ -2773,6 +2887,121 @@ async function deleteAttachment(attachId, storagePath, orderId) {
   const { data: fresh } = await sb.from('order_attachments').select('*').eq('order_id', orderId).order('uploaded_at');
   const card = document.getElementById(`attach-card-${orderId}`);
   if (card) card.outerHTML = renderAttachmentsCard(fresh, orderId);
+}
+
+function renderSupplierActionCard(o, items) {
+  if (profile?.role !== 'supplier' || !mySupplierId) return '';
+  const myItems = (items || []).filter(i => i.supplier_id === mySupplierId);
+  if (!myItems.length) return '';
+  const itemNames = myItems.map(i => i.product_name).join('、');
+  if (o.status === 'paid') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
+      <p class="text-sm text-gray-500 mb-1">订单已付款，请确认接单后开始生产。</p>
+      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
+      <button onclick="acceptOrder('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+        ✓ 接单，开始生产
+      </button>
+    </div>`;
+  }
+  if (o.status === 'in_production') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
+      <p class="text-sm text-gray-500 mb-1">生产中，货物备好后请确认发货。</p>
+      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
+      <button onclick="shipOrder('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+        🚚 确认发货
+      </button>
+    </div>`;
+  }
+  return '';
+}
+
+function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
+  const isLogistics = profile?.role === 'logistics';
+  const isManager   = canDo(2);
+  if (!isLogistics && !isManager) return '';
+  const relevant = ['shipped','arrived','installing','completed'];
+  if (!relevant.includes(o.status)) return '';
+
+  const fmtDT = s => s ? new Date(s).toLocaleString('zh-CN',
+    { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+  const toLocal = s => s ? new Date(s).toISOString().slice(0,16) : '';
+
+  const infoLines = [];
+  if (logisticsPerson) infoLines.push(`物流：${logisticsPerson.name}${logisticsPerson.phone?' · '+logisticsPerson.phone:''}`);
+  if (o.ship_time) infoLines.push(`发货时间：${fmtDT(o.ship_time)}`);
+  if (o.eta_time)  infoLines.push(`预计到货：${fmtDT(o.eta_time)}`);
+  if (o.ship_notes) infoLines.push(`备注：${o.ship_notes}`);
+  const infoHtml = infoLines.length
+    ? `<div class="text-xs text-gray-500 space-y-0.5 mb-3 bg-gray-50 rounded-lg p-2">
+        ${infoLines.map(l=>`<div>${l}</div>`).join('')}
+       </div>`
+    : '';
+
+  // Logistics user: confirm arrival button
+  if (isLogistics && o.status === 'shipped') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">物流操作</h3>
+      ${infoHtml}
+      <button onclick="markArrived('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+        📦 确认到货，进入安装
+      </button>
+    </div>`;
+  }
+
+  // Manager: editable logistics form when shipped
+  if (isManager && o.status === 'shipped') {
+    const logOpts = (logisticsProfiles || []).map(p =>
+      `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
+    ).join('');
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">物流信息</h3>
+      ${infoHtml}
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">物流供应商</label>
+          <select id="logistics-sel" class="input text-sm py-1.5 w-full">
+            <option value="">— 未分配 —</option>
+            ${logOpts}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">发货时间</label>
+            <input type="datetime-local" id="ship-time" class="input text-sm py-1.5 w-full"
+                   value="${toLocal(o.ship_time)}">
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">预计到货</label>
+            <input type="datetime-local" id="eta-time" class="input text-sm py-1.5 w-full"
+                   value="${toLocal(o.eta_time)}">
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">备注</label>
+          <input type="text" id="ship-notes" class="input text-sm py-1.5 w-full"
+                 value="${o.ship_notes||''}" placeholder="运货单号等">
+        </div>
+        <button onclick="saveLogisticsInfo('${o.id}')"
+                class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+          保存物流信息
+        </button>
+      </div>
+    </div>`;
+  }
+
+  // Read-only: show info for arrived/installing/completed
+  if (infoLines.length) {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">物流信息</h3>
+      ${infoHtml}
+    </div>`;
+  }
+  return '';
 }
 
 function renderPaymentPanel(o, payments) {
