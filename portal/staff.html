@@ -779,11 +779,11 @@ const FIELD_MIN_LEVEL = {
   edit_payment:     2,
   edit_pay_method:  2,
   edit_deadline:    2,
-  assign_supplier:  2,
+  assign_supplier:  1,
   delete_order:     4,
   approve_reg:      4,
   nav_registrations:4,
-  nav_users:        3,
+  nav_users:        2,
   store_filter:     2,
 };
 
@@ -2364,7 +2364,7 @@ function autoDetectProductType(id) {
 function renderItemsCard(items, o, supList) {
   if (!items || items.length === 0) return '';
   const isSupplier = profile?.role === 'supplier';
-  const canAssign  = canDo(2) && !['completed','closed','cancelled'].includes(o.status);
+  const canAssign  = canDo(FIELD_MIN_LEVEL.assign_supplier) && !['completed','closed','cancelled'].includes(o.status);
   const currency   = o.currency || 'MYR';
   const collapsed  = items.length > 4;
   const uid        = 'items-body-' + o.id.slice(0,8);
@@ -3284,9 +3284,9 @@ function switchUserTab(tab) {
 
 async function loadUsersPage() {
   if (!canDo(FIELD_MIN_LEVEL.nav_users)) return;
-  // L3 (store_manager): show supplier tab only; L4+: show both tabs, default staff
+  // L2 (store_manager): supplier tab only; L3+ (regional_manager+): both tabs
   const staffTabBtn = document.getElementById('utab-btn-staff');
-  if (canDo(4)) {
+  if (canDo(3)) {
     if (staffTabBtn) staffTabBtn.classList.remove('hidden');
     switchUserTab('staff');
   } else {
