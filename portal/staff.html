@@ -73,7 +73,6 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
-      <div class="nav-link hidden admin-nav" data-perm="suppliers" onclick="goto('suppliers');toggleMobileMenu()">🏭 <span data-i18n="nav_suppliers">供应商管理</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -131,10 +130,6 @@
       <div class="nav-link" id="nav-customers" onclick="goto('customers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span data-i18n="nav_customers">客户管理</span>
-      </div>
-      <div class="nav-link hidden admin-nav" id="nav-suppliers" data-perm="suppliers" onclick="goto('suppliers')">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-        <span data-i18n="nav_suppliers">供应商管理</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -376,45 +371,6 @@
       <div id="detail-content"></div>
     </div>
 
-    <!-- ── SUPPLIERS (admin only) ── -->
-    <div id="v-suppliers" class="hidden p-6 max-w-3xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-5" data-i18n="nav_suppliers">供应商管理</h1>
-      <!-- Add supplier form -->
-      <div class="card p-4 mb-4">
-        <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
-        <div class="flex flex-wrap gap-2 mb-3">
-          <input type="text" id="sup-name" placeholder="供应商名称 *" data-i18n-ph="th_name" class="input flex-1 min-w-36">
-          <input type="tel" id="sup-phone" placeholder="联系电话" data-i18n-ph="th_phone" class="input w-36">
-          <select id="sup-tier" class="input w-28">
-            <option value="3">⭐⭐⭐</option>
-            <option value="2" selected>⭐⭐</option>
-            <option value="1">⭐</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <p class="text-xs text-gray-500 mb-1.5">专业供应产品类型（可多选）</p>
-          <div class="flex flex-wrap gap-x-4 gap-y-1.5">
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="WY"><span class="text-xs text-gray-700">卫浴</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="CG"><span class="text-xs text-gray-700">橱柜</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DB"><span class="text-xs text-gray-700">地板/地砖</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DJ"><span class="text-xs text-gray-700">灯具</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="MC"><span class="text-xs text-gray-700">门窗</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="JJ"><span class="text-xs text-gray-700">家具</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="WJ"><span class="text-xs text-gray-700">五金</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DQ"><span class="text-xs text-gray-700">电器</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="TL"><span class="text-xs text-gray-700">涂料/壁纸</span></label>
-            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="QT"><span class="text-xs text-gray-700">其他</span></label>
-          </div>
-        </div>
-        <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
-        <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
-      </div>
-      <!-- Suppliers list -->
-      <div class="card overflow-hidden">
-        <div id="suppliers-table"></div>
-      </div>
-    </div>
-
     <!-- ── REGISTRATIONS (admin only) ── -->
     <div id="v-registrations" class="hidden p-6 max-w-3xl mx-auto">
       <h1 class="text-xl font-bold text-gray-800 mb-2">注册审核</h1>
@@ -427,18 +383,71 @@
       <div id="registrations-list" class="space-y-3"></div>
     </div>
 
-    <!-- ── USER MANAGEMENT (L4+) ── -->
+    <!-- ── USER MANAGEMENT (L3+) ── -->
     <div id="v-users" class="hidden p-4 md:p-6 max-w-3xl mx-auto">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-        <h1 class="text-xl font-bold text-gray-800">👥 用户管理</h1>
-        <input id="user-search" type="text" placeholder="搜索姓名/邮箱…"
-               oninput="filterUsers(this.value)"
-               class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hg w-full sm:w-52">
+      <h1 class="text-xl font-bold text-gray-800 mb-4">用户管理</h1>
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-5 border-b border-gray-200">
+        <button id="utab-btn-staff" onclick="switchUserTab('staff')"
+                class="hidden px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition">
+          👤 员工
+        </button>
+        <button id="utab-btn-supplier" onclick="switchUserTab('supplier')"
+                class="px-4 py-2 text-sm font-medium border-b-2 border-hg text-hg -mb-px">
+          🏭 供应商
+        </button>
       </div>
-      <div id="users-list" class="space-y-3"></div>
-      <div id="user-op-log-wrap" class="hidden mt-6">
-        <h2 class="text-sm font-semibold text-gray-500 mb-2">操作日志</h2>
-        <div id="user-op-log" class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-100"></div>
+
+      <!-- ── Staff tab ── -->
+      <div id="utab-staff" class="hidden">
+        <div class="mb-4">
+          <input id="user-search" type="text" placeholder="搜索姓名/手机号…"
+                 oninput="filterUsers(this.value)"
+                 class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-hg w-full sm:w-64">
+        </div>
+        <div id="users-list" class="space-y-3"></div>
+        <div id="user-op-log-wrap" class="hidden mt-6">
+          <h2 class="text-sm font-semibold text-gray-500 mb-2">操作日志</h2>
+          <div id="user-op-log" class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-100"></div>
+        </div>
+      </div>
+
+      <!-- ── Supplier tab ── -->
+      <div id="utab-supplier">
+        <!-- Add supplier form -->
+        <div class="card p-4 mb-4">
+          <h2 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="sup_add">添加供应商</h2>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <input type="text" id="sup-name" placeholder="供应商名称 *" data-i18n-ph="th_name" class="input flex-1 min-w-36">
+            <input type="tel" id="sup-phone" placeholder="联系电话" data-i18n-ph="th_phone" class="input w-36">
+            <select id="sup-tier" class="input w-28">
+              <option value="3">⭐⭐⭐</option>
+              <option value="2" selected>⭐⭐</option>
+              <option value="1">⭐</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <p class="text-xs text-gray-500 mb-1.5">专业供应产品类型（可多选）</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1.5">
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="WY"><span class="text-xs text-gray-700">卫浴</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="CG"><span class="text-xs text-gray-700">橱柜</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DB"><span class="text-xs text-gray-700">地板/地砖</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DJ"><span class="text-xs text-gray-700">灯具</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="MC"><span class="text-xs text-gray-700">门窗</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="JJ"><span class="text-xs text-gray-700">家具</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="WJ"><span class="text-xs text-gray-700">五金</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DQ"><span class="text-xs text-gray-700">电器</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="TL"><span class="text-xs text-gray-700">涂料/壁纸</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="QT"><span class="text-xs text-gray-700">其他</span></label>
+            </div>
+          </div>
+          <button onclick="addSupplier()" class="btn-gold px-4 py-2" data-i18n="sup_add_btn">添加</button>
+          <p id="sup-err" class="text-red-500 text-xs mt-2 hidden"></p>
+        </div>
+        <!-- Suppliers list -->
+        <div class="card overflow-hidden">
+          <div id="suppliers-table"></div>
+        </div>
       </div>
     </div>
 
@@ -773,9 +782,8 @@ const FIELD_MIN_LEVEL = {
   assign_supplier:  2,
   delete_order:     4,
   approve_reg:      4,
-  nav_suppliers:    3,
   nav_registrations:4,
-  nav_users:        4,
+  nav_users:        3,
   store_filter:     2,
 };
 
@@ -1216,9 +1224,6 @@ async function init() {
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
-  document.querySelectorAll('.admin-nav[data-perm="suppliers"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_suppliers)) el.classList.remove('hidden');
-  });
   document.querySelectorAll('.admin-nav[data-perm="registrations"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_registrations)) el.classList.remove('hidden');
   });
@@ -1351,7 +1356,9 @@ async function loadCustomers() {
 
 // ── Navigation ──
 function goto(view) {
-  ['dashboard','orders','create','customers','detail','suppliers','registrations','users'].forEach(v => {
+  // 'suppliers' is now a tab inside 'users'
+  if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
+  ['dashboard','orders','create','customers','detail','registrations','users'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     const navId = v === 'detail' ? 'orders' : v;
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
@@ -1360,7 +1367,6 @@ function goto(view) {
   if (view === 'orders') renderOrdersTable(allOrders);
   if (view === 'customers') renderCustomersTable(allCustomers);
   if (view === 'create') resetCreateForm();
-  if (view === 'suppliers') renderSuppliersPage();
   if (view === 'registrations') loadRegistrations();
   if (view === 'users') loadUsersPage();
 }
@@ -3153,10 +3159,41 @@ const ROLE_OPTIONS = [
 
 let suppliersMap = {};
 
+function switchUserTab(tab) {
+  const tabs = ['staff', 'supplier'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`utab-btn-${t}`);
+    const content = document.getElementById(`utab-${t}`);
+    if (!btn || !content) return;
+    const active = t === tab;
+    btn.className = active
+      ? 'px-4 py-2 text-sm font-medium border-b-2 border-hg text-hg -mb-px'
+      : 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition';
+    content.classList.toggle('hidden', !active);
+  });
+  if (tab === 'staff') {
+    document.getElementById('users-list').innerHTML =
+      '<p class="text-gray-400 text-sm text-center py-8">加载中…</p>';
+    loadUsersData();
+  } else {
+    renderSuppliersPage();
+  }
+}
+
 async function loadUsersPage() {
   if (!canDo(FIELD_MIN_LEVEL.nav_users)) return;
-  document.getElementById('users-list').innerHTML =
-    '<p class="text-gray-400 text-sm text-center py-8">加载中…</p>';
+  // L3 (store_manager): show supplier tab only; L4+: show both tabs, default staff
+  const staffTabBtn = document.getElementById('utab-btn-staff');
+  if (canDo(4)) {
+    if (staffTabBtn) staffTabBtn.classList.remove('hidden');
+    switchUserTab('staff');
+  } else {
+    if (staffTabBtn) staffTabBtn.classList.add('hidden');
+    switchUserTab('supplier');
+  }
+}
+
+async function loadUsersData() {
   const [{ data, error }, { data: supRows }] = await Promise.all([
     sb.from('profiles').select('id, name, phone, role, store_id, region, active, created_at')
       .order('created_at', { ascending: false }).limit(500),
@@ -3328,7 +3365,8 @@ async function toggleUserActive(uid, current) {
   if (error) { alert('操作失败: ' + error.message); return; }
   // 同步厂家在 suppliers 表的启用状态
   await sb.from('suppliers').update({ active: !current }).eq('user_id', uid);
-  await loadUsersPage();
+  await loadUsersData();
+  renderUsersTable(filteredUsers);
 }
 
 // ── Auth ──
