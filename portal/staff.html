@@ -1962,7 +1962,19 @@ async function openDetail(id, backView) {
           <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
           <div class="text-gray-400 text-sm">${o.stores?.name}</div>
         </div>
-        ${badge(o.status)}
+        <div class="text-right">
+          ${badge(o.status)}
+          ${(() => {
+            const n = o.installments || 1;
+            if (n <= 1) return '';
+            const paidCnt = payments?.length || 0;
+            if (paidCnt >= n) return '';
+            const splits = Array.isArray(o.pay_splits) ? o.pay_splits : Array(n).fill(Math.floor(100/n));
+            const paidPct = (payments || []).reduce((s, p) => s + (p.pct || 0), 0);
+            const remaining = o.amount * (100 - paidPct) / 100;
+            return `<div class="text-xs text-gray-400 mt-1">已收 ${paidCnt}/${n} 期 · 待收 ${fmtAmt(remaining, o.currency||'MYR')}</div>`;
+          })()}
+        </div>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
         <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
@@ -2863,14 +2875,14 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   const newPayStatus = (allPaid?.length || 0) >= totalInst ? 'paid' : 'partial';
   const orderUpd = { payment_status: newPayStatus };
 
-  // Auto-advance order status: pending_payment → paid when all installments collected
-  const autoAdvance = newPayStatus === 'paid' && ord?.status === 'pending_payment';
+  // Auto-advance order status: pending_payment → paid on first payment received
+  const autoAdvance = ord?.status === 'pending_payment' && (allPaid?.length || 0) > 0;
   if (autoAdvance) orderUpd.status = 'paid';
 
   await sb.from('orders').update(orderUpd).eq('id', orderId);
 
   const logNotes = `确认收款 第${seq}期 ${pct}% · ${pmLabel[method]||method}` +
-    (autoAdvance ? ' · 全款收齐，自动跳转已付款' : '');
+    (autoAdvance ? ' · 自动跳转已付款' : '');
   await sb.from('order_logs').insert({
     order_id: orderId,
     status: autoAdvance ? 'paid' : (ord?.status || ''),
