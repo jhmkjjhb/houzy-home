@@ -2963,8 +2963,16 @@ async function renderSuppliersPage() {
   // profiles 里有但 suppliers 表里还没有的，后台静默同步
   const toSync = (supProfiles || []).filter(p => !supByUid[p.id]);
   if (toSync.length > 0) {
+    // 查 registrations 取公司名
+    const { data: regCompanies } = await sb.from('registrations')
+      .select('user_id, company_name')
+      .eq('type', 'supplier').eq('status', 'approved')
+      .in('user_id', toSync.map(p => p.id));
+    const companyByUid = {};
+    (regCompanies || []).forEach(r => { if (r.user_id) companyByUid[r.user_id] = r.company_name; });
+
     Promise.all(toSync.map(async p => {
-      const ins = { user_id: p.id, name: p.name, phone: p.phone || null, active: p.active ?? true };
+      const ins = { user_id: p.id, name: companyByUid[p.id] || p.name, phone: p.phone || null, active: p.active ?? true };
       // 尝试带 product_types（需要迁移），失败则不带
       let { data, error } = await sb.from('suppliers').insert({ ...ins, product_types: [] }).select().single();
       if (error) ({ data } = await sb.from('suppliers').insert(ins).select().single());
@@ -3150,7 +3158,7 @@ function renderRegistrations(data) {
       <div class="flex items-start justify-between">
         <div>
           <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">${typeLabel}</span>
-          <span class="ml-2 font-semibold text-gray-800">${r.name}</span>
+          <span class="ml-2 font-semibold text-gray-800">${r.type === 'supplier' && r.company_name ? r.company_name : r.name}</span>
         </div>
         <span class="text-xs text-gray-400">${date}</span>
       </div>
@@ -3182,11 +3190,12 @@ async function approveReg(id, type, userId, name, email, storeId) {
     } else {
       // 厂家注册同步在 suppliers 表创建记录，使其出现在订单分配下拉列表
       if (type === 'supplier') {
-        const { data: regData } = await sb.from('registrations').select('products').eq('id', id).maybeSingle();
+        const { data: regData } = await sb.from('registrations').select('products, company_name').eq('id', id).maybeSingle();
         const productTypes = regData?.products ? regData.products.split(',').filter(Boolean) : [];
+        const companyName = regData?.company_name || name;
         const { data: existing } = await sb.from('suppliers').select('id').eq('user_id', userId).maybeSingle();
         if (!existing) {
-          const insBase = { user_id: userId, name, active: true };
+          const insBase = { user_id: userId, name: companyName, active: true };
           const { error: insErr } = await sb.from('suppliers')
             .insert({ ...insBase, product_types: productTypes });
           if (insErr) {
