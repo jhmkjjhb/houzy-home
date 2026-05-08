@@ -2857,14 +2857,25 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   if (error) { alert('记录失败: ' + error.message); return; }
 
   const { data: allPaid } = await sb.from('order_payments').select('seq').eq('order_id', orderId);
-  const { data: ord }     = await sb.from('orders').select('installments,status').eq('id', orderId).single();
-  const newPayStatus = (allPaid?.length || 0) >= (ord?.installments || 1) ? 'paid' : 'partial';
-  await sb.from('orders').update({ payment_status: newPayStatus }).eq('id', orderId);
+  const { data: ord }     = await sb.from('orders').select('installments,pay_splits,status').eq('id', orderId).single();
+  // Fallback: use pay_splits length if installments column is null
+  const totalInst = ord?.installments || (Array.isArray(ord?.pay_splits) ? ord.pay_splits.length : 1);
+  const newPayStatus = (allPaid?.length || 0) >= totalInst ? 'paid' : 'partial';
+  const orderUpd = { payment_status: newPayStatus };
 
+  // Auto-advance order status: pending_payment → paid when all installments collected
+  const autoAdvance = newPayStatus === 'paid' && ord?.status === 'pending_payment';
+  if (autoAdvance) orderUpd.status = 'paid';
+
+  await sb.from('orders').update(orderUpd).eq('id', orderId);
+
+  const logNotes = `确认收款 第${seq}期 ${pct}% · ${pmLabel[method]||method}` +
+    (autoAdvance ? ' · 全款收齐，自动跳转已付款' : '');
   await sb.from('order_logs').insert({
-    order_id: orderId, status: ord?.status || '',
+    order_id: orderId,
+    status: autoAdvance ? 'paid' : (ord?.status || ''),
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: `确认收款 第${seq}期 ${pct}% · ${pmLabel[method]||method}`,
+    notes: logNotes,
   });
 
   await loadOrders();
