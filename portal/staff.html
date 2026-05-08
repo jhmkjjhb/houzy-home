@@ -1923,8 +1923,6 @@ async function openDetail(id, backView) {
       </div>
     </div>`;
 
-  const supplierOptions = `<option value="">${t('opt_unassigned')}</option>` +
-    (supList || []).map(s => `<option value="${s.id}" ${s.id === o.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
 
   const pmLabels = { cash: t('pay_cash'), transfer: t('pay_transfer'), ewallet: t('pay_ewallet'), card: t('pay_card') };
 
@@ -2040,15 +2038,6 @@ async function openDetail(id, backView) {
                  ${pmLabels[o.payment_method] || '—'}
                  <input type="hidden" id="upd-pay-method" value="${o.payment_method||''}">
                </div>`}
-      </div>
-      <div class="mb-3">
-        <label class="label">${t('lbl_assign_sup')}</label>
-        ${canDo(FIELD_MIN_LEVEL.assign_supplier)
-          ? `<select id="upd-supplier" class="input">${supplierOptions}</select>`
-          : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
-               ${o.suppliers?.name || t('opt_unassigned')}
-               <input type="hidden" id="upd-supplier" value="${o.supplier_id||''}">
-             </div>`}
       </div>
       <div class="mb-3">
         <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
@@ -2877,7 +2866,6 @@ async function updateOrder(id) {
   const status   = document.getElementById('upd-status').value;
   const payment  = document.getElementById('upd-payment').value;
   const payMethod= document.getElementById('upd-pay-method')?.value;
-  const supplier = document.getElementById('upd-supplier').value || null;
   const notes    = document.getElementById('upd-notes').value.trim();
   const dlVal    = document.getElementById('upd-deadline')?.value;
   const slaRow   = document.getElementById('sla-days-row');
@@ -2928,7 +2916,7 @@ async function updateOrder(id) {
   const isTerminal  = status === 'completed' || status === 'closed' || status === 'cancelled';
 
   // ── Core update (original schema columns — always works) ──
-  const coreUpd = { status, payment_status: payment, supplier_id: supplier, updated_at: new Date().toISOString() };
+  const coreUpd = { status, payment_status: payment, updated_at: new Date().toISOString() };
   if (isTerminal) coreUpd.completed_at = new Date().toISOString();
 
   const { error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id);
