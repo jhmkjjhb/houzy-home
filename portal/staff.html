@@ -1540,17 +1540,19 @@ function addItemRow(data = {}) {
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
         <input type="text" id="item-name-${id}" value="${data.product_name||''}"
-               placeholder="货品名称 *" class="input text-sm w-full">
-      </div>
-      <div class="col-span-2">
-        <input type="text" id="item-spec-${id}" value="${data.model_spec||''}"
-               placeholder="型号规格（选填）" class="input text-sm w-full">
+               placeholder="货品名称 *" oninput="autoDetectProductType(${id})"
+               class="input text-sm w-full">
       </div>
       <div>
-        <select id="item-type-${id}" class="input text-sm w-full">
-          <option value="">产品类型（选填）</option>
+        <select id="item-type-${id}" class="input text-sm w-full"
+                onchange="document.getElementById('item-type-${id}').classList.toggle('border-blue-400',!!this.value)">
+          <option value="">⚠ 产品类型</option>
           ${PRODUCT_TYPES.map(pt => `<option value="${pt.code}" ${data.product_type===pt.code?'selected':''}>${pt.label}</option>`).join('')}
         </select>
+      </div>
+      <div>
+        <input type="text" id="item-spec-${id}" value="${data.model_spec||''}"
+               placeholder="型号规格（选填）" class="input text-sm w-full">
       </div>
       <div>
         <input type="number" id="item-qty-${id}" value="${data.quantity||1}"
@@ -2333,6 +2335,32 @@ const PRODUCT_TYPES = [
 const ptLabel = code => PRODUCT_TYPES.find(p => p.code === code)?.label || code;
 const ptBadge = code => `<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">${ptLabel(code)}</span>`;
 
+const PRODUCT_TYPE_KEYWORDS = {
+  WY: ['卫浴','浴室','马桶','花洒','浴缸','洗手盆','淋浴','水龙头','镜柜','浴室柜'],
+  CG: ['橱柜','厨柜','厨房柜','整体橱柜'],
+  DB: ['地板','地砖','瓷砖','木地板','石材','大理石','地胶'],
+  DJ: ['灯具','吊灯','射灯','筒灯','台灯','壁灯','灯带','LED灯'],
+  MC: ['门','窗','推拉门','移门','铝合金','门窗','玻璃门'],
+  JJ: ['沙发','餐桌','餐椅','床架','衣柜','书柜','家具'],
+  WJ: ['五金','锁具','铰链','拉手','合页','膨胀螺丝'],
+  DQ: ['电器','空调','热水器','冰箱','洗衣机','烟机','灶','烤箱'],
+  TL: ['涂料','油漆','壁纸','墙纸','乳胶漆','硅藻泥'],
+};
+function detectProductType(name) {
+  if (!name) return '';
+  for (const [code, keywords] of Object.entries(PRODUCT_TYPE_KEYWORDS)) {
+    if (keywords.some(kw => name.includes(kw))) return code;
+  }
+  return '';
+}
+function autoDetectProductType(id) {
+  const name = document.getElementById(`item-name-${id}`)?.value || '';
+  const sel  = document.getElementById(`item-type-${id}`);
+  if (!sel) return;
+  const detected = detectProductType(name);
+  if (detected) sel.value = detected;
+}
+
 function renderItemsCard(items, o, supList) {
   if (!items || items.length === 0) return '';
   const isSupplier = profile?.role === 'supplier';
@@ -2345,16 +2373,20 @@ function renderItemsCard(items, o, supList) {
 
   const supOpts = (curId, itemType) => {
     const all = supList || [];
-    const matched = itemType ? all.filter(s => !s.product_types?.length || s.product_types.includes(itemType)) : all;
-    const others  = itemType ? all.filter(s => s.product_types?.length && !s.product_types.includes(itemType)) : [];
     const fmt = s => {
       const code  = s.supplier_code ? `[${s.supplier_code}] ` : '';
       const types = (s.product_types||[]).map(c => ptLabel(c)).join('/');
       return `${code}${s.name}${types ? ' · '+types : ''}`;
     };
+    if (!itemType) {
+      return `<option value="">— 未分配 —</option>` +
+        all.map(s => `<option value="${s.id}" ${s.id===curId?'selected':''}>${fmt(s)}</option>`).join('');
+    }
+    const matched = all.filter(s => !s.product_types?.length || s.product_types.includes(itemType));
+    const others  = all.filter(s => s.product_types?.length && !s.product_types.includes(itemType));
     return `<option value="">— 未分配 —</option>` +
       matched.map(s => `<option value="${s.id}" ${s.id===curId?'selected':''}>${fmt(s)}</option>`).join('') +
-      (others.length ? `<optgroup label="─ 其他类型 ─">${others.map(s => `<option value="${s.id}" ${s.id===curId?'selected':''}>${fmt(s)}</option>`).join('')}</optgroup>` : '');
+      (others.length ? `<optgroup label="⚠ 非对口类型">${others.map(s => `<option value="${s.id}" ${s.id===curId?'selected':''}>${fmt(s)}</option>`).join('')}</optgroup>` : '');
   };
 
   const rows = items.map(item => {
@@ -2364,7 +2396,7 @@ function renderItemsCard(items, o, supList) {
       <tr class="border-b border-gray-50">
         <td class="py-2 pr-3">
           <div class="text-sm text-gray-800">${item.product_name}</div>
-          ${item.product_type ? `<div class="mt-0.5">${ptBadge(item.product_type)}</div>` : ''}
+          <div class="mt-0.5">${item.product_type ? ptBadge(item.product_type) : `<span class="text-xs text-orange-400">未设类型</span>`}</div>
         </td>
         <td class="py-2 pr-3 text-xs text-gray-500">${item.model_spec||'—'}</td>
         <td class="py-2 pr-3 text-sm text-center whitespace-nowrap">${item.quantity} ${item.unit}</td>
