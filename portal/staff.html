@@ -3037,7 +3037,8 @@ async function renderSuppliersPage() {
                 <option value="2" ${(!s.tier||s.tier===2)?'selected':''}>⭐⭐</option>
                 <option value="1" ${s.tier===1?'selected':''}>⭐</option>
               </select>
-              <button onclick="editSupplierTypes('${sid}',${JSON.stringify(types)})"
+              <button onclick="editSupplierTypes('${sid}',JSON.parse(this.dataset.types))"
+                      data-types="${JSON.stringify(types).replace(/"/g,'&quot;')}"
                       class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50">
                 编辑类型
               </button>
