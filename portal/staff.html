@@ -2960,6 +2960,24 @@ async function renderSuppliersPage() {
   const supByUid = {};
   (supRows || []).forEach(s => { if (s.user_id) supByUid[s.user_id] = s; });
 
+  // 自修复：把存量记录里的联系人名替换为公司名
+  const uidsInDB = (supRows || []).filter(s => s.user_id).map(s => s.user_id);
+  if (uidsInDB.length > 0) {
+    const { data: regNames } = await sb.from('registrations')
+      .select('user_id, company_name')
+      .eq('type', 'supplier').eq('status', 'approved')
+      .in('user_id', uidsInDB);
+    const companyMap = {};
+    (regNames || []).forEach(r => { if (r.user_id && r.company_name) companyMap[r.user_id] = r.company_name; });
+    const toRename = (supRows || []).filter(s => s.user_id && companyMap[s.user_id] && companyMap[s.user_id] !== s.name);
+    if (toRename.length > 0) {
+      await Promise.all(toRename.map(s =>
+        sb.from('suppliers').update({ name: companyMap[s.user_id] }).eq('id', s.id)
+      ));
+      toRename.forEach(s => { s.name = companyMap[s.user_id]; supByUid[s.user_id] = s; });
+    }
+  }
+
   // profiles 里有但 suppliers 表里还没有的，后台静默同步
   const toSync = (supProfiles || []).filter(p => !supByUid[p.id]);
   if (toSync.length > 0) {
