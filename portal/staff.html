@@ -2376,7 +2376,7 @@ function autoDetectProductType(id) {
 function renderItemsCard(items, o, supList) {
   if (!items || items.length === 0) return '';
   const isSupplier = profile?.role === 'supplier';
-  const canAssign  = canDo(FIELD_MIN_LEVEL.assign_supplier) && !['completed','closed','cancelled'].includes(o.status);
+  const canAssign  = canDo(FIELD_MIN_LEVEL.assign_supplier) && !['pending_payment','completed','closed','cancelled'].includes(o.status);
   const currency   = o.currency || 'MYR';
   const collapsed  = items.length > 4;
   const uid        = 'items-body-' + o.id.slice(0,8);
