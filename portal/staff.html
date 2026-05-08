@@ -1966,7 +1966,6 @@ async function openDetail(id, backView) {
           </span>
         </div>
         ${o.payment_method ? `<div><span class="text-gray-400">${t('lbl_method')}</span> <span>${pmLabels[o.payment_method]||o.payment_method}</span></div>` : ''}
-        <div><span class="text-gray-400">${t('lbl_supplier')}</span> <span>${o.suppliers?.name || t('opt_unassigned')}</span></div>
         <div><span class="text-gray-400">${t('lbl_staff')}</span> <span>${o.profiles?.name || '-'}</span></div>
         ${o.tracking_no ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
         ${o.install_date ? `<div><span class="text-gray-400">安装日期</span> <span class="font-medium text-hg">${new Date(o.install_date+'T00:00:00').toLocaleDateString('zh-CN')}</span></div>` : ''}
