@@ -214,9 +214,49 @@
                    class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
           </div>
           <div>
-            <label class="block text-xs text-gray-400 mb-1">主营产品/业务</label>
-            <input type="text" id="reg-products" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+            <label class="block text-xs text-gray-400 mb-2">专业供应产品类型（可多选）</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="WY">
+                <span class="text-sm text-gray-300">卫浴</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="CG">
+                <span class="text-sm text-gray-300">橱柜</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DB">
+                <span class="text-sm text-gray-300">地板/地砖</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DJ">
+                <span class="text-sm text-gray-300">灯具</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="MC">
+                <span class="text-sm text-gray-300">门窗</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="JJ">
+                <span class="text-sm text-gray-300">家具</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="WJ">
+                <span class="text-sm text-gray-300">五金</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DQ">
+                <span class="text-sm text-gray-300">电器</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="TL">
+                <span class="text-sm text-gray-300">涂料/壁纸</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="QT">
+                <span class="text-sm text-gray-300">其他</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -467,7 +507,8 @@ async function submitReg() {
     payload.email         = email;
     payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
     payload.address       = document.getElementById('reg-address').value.trim() || null;
-    payload.products      = document.getElementById('reg-products').value.trim() || null;
+    const checkedPts = [...document.querySelectorAll('.reg-pt-check:checked')].map(el => el.value);
+    payload.products      = checkedPts.length ? checkedPts.join(',') : null;
   } else {
     // logistics
     name  = document.getElementById('reg-log-name').value.trim();
