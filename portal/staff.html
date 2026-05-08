@@ -2003,42 +2003,6 @@ async function openDetail(id, backView) {
         </div>
       </div>
       <div class="mb-3">
-        <label class="label">${t('lbl_pay_status')}</label>
-        ${(o.installments || 1) > 1
-          ? `<div class="input bg-gray-50 text-gray-500 cursor-not-allowed text-sm">
-               ${o.payment_status==='paid'?'全款已收':o.payment_status==='partial'?'部分已收':'待收款'}（由付款进度自动更新）
-               <input type="hidden" id="upd-payment" value="${o.payment_status}">
-             </div>`
-          : canDo(FIELD_MIN_LEVEL.edit_payment)
-            ? `<select id="upd-payment" class="input">
-                 <option value="unpaid" ${o.payment_status==='unpaid'?'selected':''}>${t('opt_unpaid')}</option>
-                 <option value="paid"   ${o.payment_status==='paid'  ?'selected':''}>${t('opt_paid')}</option>
-               </select>`
-            : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
-                 ${o.payment_status==='paid'?t('opt_paid'):t('opt_unpaid')}
-                 <input type="hidden" id="upd-payment" value="${o.payment_status}">
-               </div>`}
-      </div>
-      <div class="mb-3">
-        <label class="label">${t('lbl_pay_method')}</label>
-        ${(o.installments || 1) > 1
-          ? `<div class="input bg-gray-50 text-gray-500 cursor-not-allowed text-sm">各期独立记录
-               <input type="hidden" id="upd-pay-method" value="${o.payment_method||''}">
-             </div>`
-          : canDo(FIELD_MIN_LEVEL.edit_pay_method)
-            ? `<select id="upd-pay-method" class="input">
-                 <option value="">—</option>
-                 <option value="cash"     ${o.payment_method==='cash'    ?'selected':''}>${t('pay_cash')}</option>
-                 <option value="transfer" ${o.payment_method==='transfer'?'selected':''}>${t('pay_transfer')}</option>
-                 <option value="ewallet"  ${o.payment_method==='ewallet' ?'selected':''}>${t('pay_ewallet')}</option>
-                 <option value="card"     ${o.payment_method==='card'    ?'selected':''}>${t('pay_card')}</option>
-               </select>`
-            : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
-                 ${pmLabels[o.payment_method] || '—'}
-                 <input type="hidden" id="upd-pay-method" value="${o.payment_method||''}">
-               </div>`}
-      </div>
-      <div class="mb-3">
         <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
         ${canDo(FIELD_MIN_LEVEL.edit_deadline)
           ? `<input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">`
@@ -2863,8 +2827,6 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
 
 async function updateOrder(id) {
   const status   = document.getElementById('upd-status').value;
-  const payment  = document.getElementById('upd-payment').value;
-  const payMethod= document.getElementById('upd-pay-method')?.value;
   const notes    = document.getElementById('upd-notes').value.trim();
   const dlVal    = document.getElementById('upd-deadline')?.value;
   const slaRow   = document.getElementById('sla-days-row');
@@ -2877,8 +2839,8 @@ async function updateOrder(id) {
     alert('您的权限不足以执行此状态变更，操作已中止。'); return;
   }
 
-  // 安装前必须付清所有款项
-  if (status === 'installing' && payment !== 'paid') {
+  // 安装前必须付清所有款项（从订单缓存读取，不依赖表单）
+  if (status === 'installing' && origOrder?.payment_status !== 'paid') {
     alert('⚠️ 请先确认收取所有期款项后，才能进入安装阶段。'); return;
   }
 
@@ -2915,7 +2877,7 @@ async function updateOrder(id) {
   const isTerminal  = status === 'completed' || status === 'closed' || status === 'cancelled';
 
   // ── Core update (original schema columns — always works) ──
-  const coreUpd = { status, payment_status: payment, updated_at: new Date().toISOString() };
+  const coreUpd = { status, updated_at: new Date().toISOString() };
   if (isTerminal) coreUpd.completed_at = new Date().toISOString();
 
   const { error: updErr } = await sb.from('orders').update(coreUpd).eq('id', id);
@@ -2926,7 +2888,6 @@ async function updateOrder(id) {
 
   // ── Extended update (migrated columns — silently skip if column missing) ──
   const extUpd = { deadline_at: isTerminal ? null : deadline_at };
-  if (payMethod !== undefined) extUpd.payment_method = payMethod || null;
   await sb.from('orders').update(extUpd).eq('id', id); // ignore error — column may not exist yet
   await sb.from('order_logs').insert({
     order_id: id, status,
