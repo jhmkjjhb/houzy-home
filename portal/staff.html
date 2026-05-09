@@ -277,6 +277,15 @@
         </div>
       </div>
 
+      <!-- Supplement order: read-only customer summary (replaces step-customer) -->
+      <div id="supplement-customer-info" class="hidden card p-4 mb-4 flex items-center gap-3" style="border-left:3px solid #c8a96e">
+        <span class="text-xl">👤</span>
+        <div>
+          <div class="text-xs text-gray-400 mb-0.5">补件单关联客户</div>
+          <div id="supplement-customer-text" class="font-medium text-gray-800 text-sm"></div>
+        </div>
+      </div>
+
       <!-- Step 2: Order details -->
       <div class="card p-6 mb-4">
         <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step2">2. 订单信息</h2>
@@ -1583,6 +1592,7 @@ function renderOrdersTable(orders) {
 // ── Create Order ──
 let itemRowCount = 0;
 let _supplementParentId = null;
+let _supplementCustomerId = null;
 
 function addItemRow(data = {}) {
   itemRowCount++;
@@ -1691,6 +1701,9 @@ function getItemRows() {
 
 function resetCreateForm() {
   _supplementParentId = null;
+  _supplementCustomerId = null;
+  document.getElementById('step-customer')?.classList.remove('hidden');
+  document.getElementById('supplement-customer-info')?.classList.add('hidden');
   ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -1797,29 +1810,30 @@ async function submitOrder() {
   const err = document.getElementById('create-err');
   err.classList.add('hidden');
 
-  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
-  const name = document.getElementById('c-name').value.trim();
   const storeId = document.getElementById('o-store').value;
   const amount = parseFloat(document.getElementById('o-amount').value);
 
-  const cc = document.getElementById('c-country').value;
-  if (!cc) { showCreateErr('请选择国家区号'); return; }
-  if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
   if (!storeId) { showCreateErr('请选择门店'); return; }
   if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
 
-  btn.textContent = t('creating'); btn.disabled = true;
-  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
-
-  // Get or create customer
-  let custId = document.getElementById('customer-found').dataset?.id;
+  // Supplement order: customer already known, skip customer form
+  let custId = _supplementCustomerId;
   if (!custId) {
-    const { data: newCust, error: ce } = await sb.from('customers').insert({
-      name, phone,
-      address: document.getElementById('c-address').value.trim() || null,
-    }).select().single();
-    if (ce) { showCreateErr('创建客户失败: ' + ce.message); btn.textContent='创建订单'; btn.disabled=false; return; }
-    custId = newCust.id;
+    const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+    const name = document.getElementById('c-name').value.trim();
+    const cc = document.getElementById('c-country').value;
+    if (!cc) { showCreateErr('请选择国家区号'); return; }
+    if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+    const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
+    custId = document.getElementById('customer-found').dataset?.id;
+    if (!custId) {
+      const { data: newCust, error: ce } = await sb.from('customers').insert({
+        name, phone,
+        address: document.getElementById('c-address').value.trim() || null,
+      }).select().single();
+      if (ce) { showCreateErr('创建客户失败: ' + ce.message); btn.textContent='创建订单'; btn.disabled=false; return; }
+      custId = newCust.id;
+    }
   }
 
   // Get store code
@@ -1867,6 +1881,7 @@ async function submitOrder() {
   if (initPayMethod) extNew.payment_method = initPayMethod;
   if (_supplementParentId) extNew.parent_order_id = _supplementParentId;
   _supplementParentId = null;
+  _supplementCustomerId = null;
   const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
   if (extErr) console.warn('[submitOrder] extended update failed:', extErr.message);
 
@@ -2801,16 +2816,14 @@ async function openSupplementOrder(orderId, orderNo) {
 
   await new Promise(r => setTimeout(r, 80));
 
+  // Hide customer form; show read-only customer banner
   if (order?.customers) {
-    document.getElementById('c-phone').value   = order.customers.phone   || '';
-    document.getElementById('c-name').value    = order.customers.name    || '';
-    document.getElementById('c-address').value = order.customers.address || '';
-    const found = document.getElementById('customer-found');
-    if (found) {
-      found.innerHTML  = `✓ 找到客户：<strong>${order.customers.name}</strong>（${order.customers.phone}）`;
-      found.dataset.id = order.customers.id;
-      found.classList.remove('hidden');
-    }
+    _supplementCustomerId = order.customers.id;
+    document.getElementById('step-customer')?.classList.add('hidden');
+    const banner = document.getElementById('supplement-customer-info');
+    const text   = document.getElementById('supplement-customer-text');
+    if (banner) banner.classList.remove('hidden');
+    if (text)   text.textContent = `${order.customers.name}（${order.customers.phone}）`;
   }
   if (order?.store_id) {
     const sel = document.getElementById('o-store');
