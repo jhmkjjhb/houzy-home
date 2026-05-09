@@ -9,7 +9,7 @@
 <style>
   .filter-btn{background:white;color:#6b7280;border:1px solid #e5e7eb}
   .filter-btn.active{background:#1a3a2a;color:white;border-color:#1a3a2a}
-  .stage-btn.selected{border-color:#1a3a2a;color:#1a3a2a;background:rgba(26,58,42,.07);font-weight:500}
+  .stage-btn.selected{border-color:#1a3a2a!important;color:#1a3a2a!important;background:rgba(26,58,42,.07)!important;font-weight:500!important}
   @media print{
     .no-print{display:none!important}
     #v-orders,#v-detail{display:none!important}
@@ -47,7 +47,7 @@
   <!-- Filter tabs -->
   <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
     <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)">全部</button>
-    <button id="btn-assigned" class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('assigned',this)">待接单</button>
+    <button id="btn-assigned" class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('__pending__',this)">待接单</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_production',this)">生产中</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('production_complete',this)">待发货</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">已发货</button>
@@ -104,6 +104,8 @@ const PROD_STAGES = [
   {key:'producing', label:'生产加工'},
   {key:'qc',        label:'质检中'},
 ];
+
+const SUPPLIER_CONFIRMED = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
 
 function badge(s) {
   const x = STATUS[s] || {label:s, cls:'bg-gray-100 text-gray-500'};
@@ -167,8 +169,7 @@ function setFilter(val, btn) {
 
 function renderOrders() {
   // Update "待接单" badge count
-  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
-  const assignedOrders = allOrders.filter(o => !supplierConfirmed.includes(o.status));
+  const assignedOrders = allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status));
   const btnAssigned = document.getElementById('btn-assigned');
   if (btnAssigned) {
     btnAssigned.innerHTML = assignedOrders.length
@@ -186,16 +187,18 @@ function renderOrders() {
         <p class="text-sm font-medium text-orange-700">有 ${assignedOrders.length} 笔订单待接单</p>
         <p class="text-xs text-orange-500 mt-0.5">请尽快确认，超时将通知店长重新分配</p>
       </div>
-      <button onclick="setFilter('assigned',document.getElementById('btn-assigned'))"
+      <button onclick="setFilter('__pending__',document.getElementById('btn-assigned'))"
               class="text-xs bg-orange-500 text-white px-3 py-1.5 rounded-lg whitespace-nowrap">立即查看</button>
     </div>`;
   } else {
     banner.classList.add('hidden');
   }
 
-  const filtered = currentFilter
-    ? allOrders.filter(o => o.status === currentFilter)
-    : allOrders;
+  const filtered = currentFilter === '__pending__'
+    ? allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status))
+    : currentFilter
+      ? allOrders.filter(o => o.status === currentFilter)
+      : allOrders;
 
   document.getElementById('order-count').textContent = `共 ${filtered.length} 条`;
 
@@ -243,11 +246,10 @@ function renderOrders() {
 
 function orderCard(o) {
   const st = o.status;
-  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
   let actionBtns = `<button onclick="openDetail('${o.id}')"
     class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">详情</button>`;
 
-  if (!supplierConfirmed.includes(st)) {
+  if (!SUPPLIER_CONFIRMED.includes(st)) {
     actionBtns += `
       <button onclick="rejectOrder(event,'${o.id}')"
               class="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-500 hover:bg-red-50">拒绝</button>
@@ -339,7 +341,15 @@ async function openDetail(id) {
     sb.from('order_logs').select('*').eq('order_id',id).order('created_at',{ascending:true}),
   ]);
 
+  const [{ data: parentOrder }, { data: childOrders }] = await Promise.all([
+    o?.parent_order_id
+      ? sb.from('orders').select('id,order_no').eq('id', o.parent_order_id).single()
+      : Promise.resolve({ data: null }),
+    sb.from('orders').select('id,order_no,status,amount,created_at').eq('parent_order_id', id).order('created_at'),
+  ]);
+
   currentDetailData = {o, items};
+
 
   const logsHtml = (logs||[]).map((l,i,arr) => {
     const isLast = i === arr.length-1;
@@ -359,11 +369,9 @@ async function openDetail(id) {
   }).join('');
 
   const st = o?.status;
-  // Statuses where supplier has already confirmed/started work
-  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
   let actionSection = '';
 
-  if (!supplierConfirmed.includes(st)) {
+  if (!SUPPLIER_CONFIRMED.includes(st)) {
     // Any pre-confirmation status (assigned, paid, pending_payment, etc.) → show accept panel
     actionSection = `
     <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
@@ -479,7 +487,37 @@ async function openDetail(id) {
       </div>
     </div>` : '';
 
+  const parentBanner = parentOrder ? `
+    <div class="rounded-xl p-4 mb-4 flex items-center gap-3" style="background:#fef3c7;border:1px solid #f59e0b22">
+      <span>🔗</span>
+      <div>
+        <div class="text-xs font-medium" style="color:#92400e">此为补件单，关联原单：</div>
+        <div class="font-mono font-bold cursor-pointer hover:underline" style="color:#78350f"
+             onclick="openDetail('${parentOrder.id}')">${parentOrder.order_no}</div>
+      </div>
+    </div>` : '';
+
+  const childOrdersCard = childOrders?.length ? `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4" style="border-left:3px solid #c8a96e">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="font-semibold text-gray-800">补件单</h3>
+        <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">${childOrders.length}</span>
+      </div>
+      ${childOrders.map(c => {
+        const st = STATUS[c.status] || { label: c.status, cls: 'bg-gray-100 text-gray-600' };
+        return `<div onclick="openDetail('${c.id}')"
+             class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:opacity-80">
+          <div class="font-mono text-sm font-semibold text-hg">${c.order_no}</div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}">${st.label}</span>
+            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
   document.getElementById('detail-content').innerHTML = `
+    ${parentBanner}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
@@ -509,6 +547,9 @@ async function openDetail(id) {
     </div>
 
     ${itemsHtml}
+
+    ${childOrdersCard}
+
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
@@ -556,6 +597,7 @@ async function detailReject(id) {
 async function detailStartProd(id) {
   const notes = document.getElementById('start-notes')?.value.trim();
   await sb.from('orders').update({status:'in_production'}).eq('id', id);
+  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
   await sb.from('order_logs').insert({
     order_id:id, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
@@ -573,7 +615,9 @@ async function updateProdProgress(id) {
 
   if (!stageLabel && !notes) { alert('请选择生产阶段或填写备注'); return; }
 
+  const stageKey = selectedBtn?.dataset.key || null;
   const logNotes = [stageLabel?`【${stageLabel}】`:null, notes||null].filter(Boolean).join(' ');
+  if (stageKey) await sb.from('orders').update({ prod_stage: stageKey }).eq('id', id);
   await sb.from('order_logs').insert({
     order_id:id, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
@@ -591,6 +635,7 @@ async function updateProdProgress(id) {
 async function markProdComplete(id) {
   if (!confirm('确认生产完成？订单将进入待发货状态。')) return;
   await sb.from('orders').update({status:'production_complete'}).eq('id', id);
+  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
   await sb.from('order_logs').insert({
     order_id:id, status:'production_complete',
     operator_id:profile.id, operator_role:'supplier',
