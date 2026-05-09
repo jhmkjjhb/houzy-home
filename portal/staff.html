@@ -41,6 +41,10 @@
   }
   .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
   @media print { body * { visibility: hidden; } #pdf-preview, #pdf-preview * { visibility: visible; } #pdf-preview { position:fixed;top:0;left:0;width:100%;z-index:9999; } }
+  /* Responsive order list layout — used in JS-generated HTML so must live here not in Tailwind classes */
+  .ord-desktop { display:none; }
+  .ord-mobile  { display:block; }
+  @media (min-width:768px) { .ord-desktop { display:block; } .ord-mobile { display:none; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 </head>
@@ -770,7 +774,7 @@ const TRANSITION_MIN_LEVEL = {
   production_complete: 3,
   shipped:             3,
   cancel_any:          3,  // 其他状态 → 取消
-  revert:              3,  // 回退状态
+  revert:              5,  // 状态回退仅 superadmin（业务上不允许）
   skip:                3,  // 跳步骤
   closed:              4,
 };
@@ -847,6 +851,8 @@ const STATUS = {
   in_transit:         { label:'运输中',   s:'background:#2d5e4333;color:#1a3a2a', step:3, legacy:true },
 };
 const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
+const PROD_STAGE_KEYS   = ['drawing','material','producing','qc'];
+const PROD_STAGE_LABELS = { drawing:'图纸确认', material:'材料采购', producing:'生产加工', qc:'质检中' };
 
 function fmtSla(s) {
   const h = STATUS_SLA_HOURS[s];
@@ -874,7 +880,7 @@ function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   return { text: fmtSla(s), color: '#d1d5db' };
 }
 
-function renderStatusTimeline(currentStatus, logs, deadlineAt) {
+function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage) {
   _tlLogs     = logs     || _tlLogs;
   _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
   _tlStatus   = currentStatus;
@@ -892,18 +898,22 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt) {
     else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
     const border  = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
     const tl      = stepTimeLabel(s, i, curStep, current);
+    const subText = (s === 'in_production' && current && prodStage)
+      ? (PROD_STAGE_LABELS[prodStage] || prodStage)
+      : tl.text;
+    const subColor = (s === 'in_production' && current && prodStage) ? '#b45309' : tl.color;
     const connector = i < CORE_STEPS.length - 1
       ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
       : '';
     return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:64px">
-              <button id="step-${s}" onclick="selectStep('${s}')"
+              <button id="step-${s}" ${done ? '' : `onclick="selectStep('${s}')"`}
                 class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all w-16"
-                style="background:${bg};color:${color};${border}cursor:pointer;">
+                style="background:${bg};color:${color};${border}cursor:${done ? 'default' : 'pointer'};">
                 <span class="step-icon text-sm leading-none">${icon}</span>
                 <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
               </button>
               <span id="step-time-${s}" class="text-center mt-0.5 leading-tight px-0.5"
-                    style="font-size:9px;color:${tl.color};min-width:64px;word-break:break-all">${tl.text}</span>
+                    style="font-size:9px;color:${subColor};min-width:64px;word-break:break-all">${subText}</span>
             </div>${connector}`;
   }).join('');
 
@@ -1345,7 +1355,15 @@ async function loadReferrers() {
 }
 
 async function loadOrders() {
-  const { data } = await buildOrdersQuery();
+  const { data, error } = await buildOrdersQuery();
+  if (error) {
+    console.error('[loadOrders] Supabase error:', error.message, error);
+    const el = document.getElementById('orders-table');
+    if (el) el.innerHTML = `<div class="p-4 text-red-600 text-sm bg-red-50 rounded-lg">
+      ⚠️ 加载订单失败：${error.message}
+      <div class="mt-1 text-xs text-gray-500">请联系管理员检查数据库权限设置</div>
+    </div>`;
+  }
   allOrders = data || [];
 }
 
@@ -1364,7 +1382,7 @@ function goto(view) {
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
   });
   if (view === 'dashboard') renderDashboard();
-  if (view === 'orders') renderOrdersTable(allOrders);
+  if (view === 'orders') filterOrders();
   if (view === 'customers') renderCustomersTable(allCustomers);
   if (view === 'create') resetCreateForm();
   if (view === 'registrations') loadRegistrations();
@@ -1501,31 +1519,70 @@ function renderOrdersTable(orders) {
     ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
     : '';
 
-  document.getElementById('orders-table').innerHTML = orders.length
-    ? banner + `<table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
-        <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th><th class="px-4 py-3">${t('th_store')}</th>
-        <th class="px-4 py-3">${t('th_amount')}</th><th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
-       </tr></thead><tbody>${orders.map(o => {
-        const cd = deadlineRowInfo(o);
-        const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
-        const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium ${cd.overdue?'row-overdue-badge':''}" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
-        return `
-        <tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
-          <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
-          <td class="px-4 py-3">
-            <div class="font-medium">${o.customers?.name || '-'}</div>
-            <div class="text-gray-400 text-xs">${o.customers?.phone || ''}</div>
-          </td>
-          <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name || '-'}</td>
-          <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount, o.currency)}</td>
-          <td class="px-4 py-3">${badge(o.status)}</td>
-          <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
-        </tr>`;}).join('')}</tbody></table>`
-    : `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
+  if (!orders.length) {
+    document.getElementById('orders-table').innerHTML = `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
+    return;
+  }
+
+  const rowsData = orders.map(o => {
+    const cd = deadlineRowInfo(o);
+    const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
+    return { o, cd, cdHtml };
+  });
+
+  // Desktop: table (hidden on mobile)
+  const tableHtml = `<div class="ord-desktop overflow-x-auto">
+    <table class="w-full text-sm"><thead><tr class="bg-gray-50 text-left text-gray-500 text-xs">
+      <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th>
+      <th class="px-4 py-3">${t('th_store')}</th><th class="px-4 py-3">${t('th_amount')}</th>
+      <th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
+    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml }) => {
+      const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+      return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
+        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        <td class="px-4 py-3"><div class="font-medium">${o.customers?.name||'-'}</div><div class="text-gray-400 text-xs">${o.customers?.phone||''}</div></td>
+        <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name||'-'}</td>
+        <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount,o.currency)}</td>
+        <td class="px-4 py-3">
+          ${badge(o.status)}
+          ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium ml-1" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+        </td>
+        <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
+      </tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+
+  // Mobile: card list (hidden on md+)
+  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml }) => {
+    const borderColor = cd?.overdue ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
+    return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
+      <div class="flex items-start justify-between gap-2 mb-1.5">
+        <span class="font-mono text-sm font-bold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</span>
+        <div class="flex items-center gap-1 flex-wrap justify-end">
+          ${badge(o.status)}
+          ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-medium text-gray-800 text-sm">${o.customers?.name||'-'}</div>
+          <div class="text-xs text-gray-400">${o.customers?.phone||''} ${o.stores?.name ? '· '+o.stores.name : ''}</div>
+        </div>
+        <div class="text-right">
+          <div class="font-semibold text-sm" style="color:#1a3a2a">${fmtAmt(o.amount,o.currency)}</div>
+          <div class="text-xs text-gray-400">${fmtDate(o.created_at)}</div>
+        </div>
+      </div>
+      ${cdHtml ? `<div class="mt-1">${cdHtml}</div>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+
+  document.getElementById('orders-table').innerHTML = banner + tableHtml + cardsHtml;
 }
 
 // ── Create Order ──
 let itemRowCount = 0;
+let _supplementParentId = null;
 
 function addItemRow(data = {}) {
   itemRowCount++;
@@ -1633,6 +1690,7 @@ function getItemRows() {
 }
 
 function resetCreateForm() {
+  _supplementParentId = null;
   ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -1807,6 +1865,8 @@ async function submitOrder() {
   // Extended columns
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
+  if (_supplementParentId) extNew.parent_order_id = _supplementParentId;
+  _supplementParentId = null;
   const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
   if (extErr) console.warn('[submitOrder] extended update failed:', extErr.message);
 
@@ -1894,11 +1954,13 @@ async function openDetail(id, backView) {
     { data: payments },
     { data: items },
     { data: attachments },
+    { data: childOrders },
   ] = await Promise.all([
     sb.from('suppliers').select('id,name,supplier_code,product_types').eq('active', true),
     sb.from('order_payments').select('*').eq('order_id', id).order('seq'),
     sb.from('order_items').select('*').eq('order_id', id).order('sort_order'),
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at').eq('parent_order_id', id).order('created_at'),
   ]);
 
   const logsHtml = (logs || []).map((l, i, arr) => {
@@ -1991,6 +2053,10 @@ async function openDetail(id, backView) {
 
     ${renderItemsCard(items, o, supList)}
 
+    ${renderChildOrdersCard(childOrders)}
+
+    ${renderProdStagePanel(o)}
+
     ${renderChecklistPanel(o, items)}
 
     ${renderAttachmentsCard(attachments, o.id)}
@@ -2004,7 +2070,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status, logs, o.deadline_at)}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage)}
       </div>
       <div id="sla-days-row" class="mb-3 hidden">
         <label class="label text-xs">${t('lbl_sla_days')}</label>
@@ -2396,8 +2462,7 @@ function renderItemsCard(items, o, supList) {
   const rows = items.map(item => {
     const sub     = Number(item.total_price || (item.quantity * item.unit_price));
     const supName = (supList||[]).find(s => s.id === item.supplier_id)?.name;
-    // L2 can only assign if not yet assigned; L3+ can always reassign
-    const itemCanAssign = canAssign && (canDo(3) || !item.supplier_id);
+    const itemCanAssign = canAssign && (!item.supplier_id || canDo(4));
     return `
       <tr class="border-b border-gray-50">
         <td class="py-2 pr-3">
@@ -2470,10 +2535,16 @@ function renderItemsCard(items, o, supList) {
         </div>
         ${canAssign ? `
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end">
-            <button onclick="saveItemSuppliers('${o.id}')"
-                    class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
-              保存供应商分配
-            </button>
+            ${(items.some(i => !i.supplier_id) || canDo(4))
+              ? `<button onclick="saveItemSuppliers('${o.id}')"
+                        class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
+                   保存供应商分配
+                 </button>`
+              : `<button disabled
+                        class="px-4 py-1.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
+                   已完成分配
+                 </button>`
+            }
           </div>` : ''}
       </div>
     </div>`;
@@ -2483,46 +2554,7 @@ function renderItemsCard(items, o, supList) {
 function renderChecklistPanel(o, items) {
   if (!items || items.length === 0) return '';
 
-  // ── 装柜核对（生产中）──
-  if (o.status === 'in_production') {
-    const readyCount = items.filter(i => ['ready','shipped','arrived'].includes(i.item_status)).length;
-    const allReady   = readyCount === items.length;
-    const rows = items.map(i => {
-      const isReady  = ['ready','shipped','arrived'].includes(i.item_status);
-      const noSup    = !i.supplier_id;
-      return `
-        <div class="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-gray-800">${i.product_name}</div>
-            ${i.model_spec?`<div class="text-xs text-gray-400">${i.model_spec}</div>`:''}
-          </div>
-          ${noSup
-            ? `<span class="text-xs text-red-400 flex-shrink-0">⚠ 未分配供应商</span>`
-            : isReady
-              ? `<span class="text-xs text-green-600 font-medium flex-shrink-0 flex items-center gap-1">
-                   <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                   已备货
-                 </span>`
-              : `<button onclick="markItemStatus('${i.id}','ready','${o.id}')"
-                         class="flex-shrink-0 px-3 py-1 text-xs font-semibold rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 transition">
-                   确认备货
-                 </button>`
-          }
-        </div>`;
-    }).join('');
-    return `
-      <div class="card p-5 mb-4" style="border-left:3px solid #c8a96e">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-gray-800">装柜核对</h3>
-          <span class="text-sm ${allReady?'text-green-600 font-medium':'text-gray-400'}">${readyCount} / ${items.length} 件已备货</span>
-        </div>
-        <div>${rows}</div>
-        ${allReady?`<div class="mt-3 rounded-lg p-3 text-sm font-medium text-green-700 bg-green-50 flex items-center gap-2">
-          <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-          全部商品已备货，可以在状态栏推进到"已发货"
-        </div>`:''}
-      </div>`;
-  }
+  if (o.status === 'in_production') return '';
 
   // ── 验货核对 + 预约安装（已到货）──
   if (o.status === 'arrived') {
@@ -2550,24 +2582,37 @@ function renderChecklistPanel(o, items) {
         </div>`;
     }).join('');
 
-    const scheduleCard = allInspect && !damaged ? `
+    const scheduleCard = allInspect ? `
       <div class="card p-5 mb-4" style="border-left:3px solid #1a3a2a">
         <h3 class="font-semibold text-gray-800 mb-3">预约安装</h3>
-        <div class="flex gap-2 mb-3">
-          <input type="date" id="install-date-input" value="${o.install_date||''}"
-                 min="${new Date().toISOString().slice(0,10)}" class="input flex-1 text-sm">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
+            <div class="flex gap-2">
+              <input type="date" id="install-date-input" value="${o.install_date||''}"
+                     min="${new Date().toISOString().slice(0,10)}" class="input flex-1 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
+            <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
+                   placeholder="填写安装师傅姓名或电话"
+                   class="input text-sm w-full">
+          </div>
           <button onclick="saveInstallDate('${o.id}')"
-                  class="px-4 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition whitespace-nowrap">保存日期</button>
+                  class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
+            保存预约信息
+          </button>
         </div>
         ${o.install_date
           ? `<a href="https://wa.me/${(o.customers?.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(
-              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}，请确认是否方便，谢谢。`
+              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}${o.installer_notes?'，安装负责人：'+o.installer_notes:''}，请确认是否方便，谢谢。`
             )}" target="_blank"
-               class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm mt-2">
+               class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm mt-3">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               WhatsApp 通知客户预约安装
             </a>`
-          : `<p class="text-xs text-gray-400 mt-1">保存安装日期后可发送 WhatsApp 通知</p>`
+          : `<p class="text-xs text-gray-400 mt-2">保存安装日期后可发送 WhatsApp 通知</p>`
         }
       </div>` : '';
 
@@ -2578,32 +2623,72 @@ function renderChecklistPanel(o, items) {
           <span class="text-sm ${allInspect?'text-green-600 font-medium':'text-gray-400'}">${inspCount} / ${items.length} 件已核对</span>
         </div>
         <div>${inspRows}</div>
-        ${damaged?`<div class="mt-3 rounded-lg p-3 text-sm text-red-700 bg-red-50">⚠ 有 ${damaged} 件破损，请联系供应商处理后再安排安装</div>`:''}
-        ${allInspect && !damaged?`<div class="mt-3 rounded-lg p-3 text-sm font-medium text-green-700 bg-green-50">✓ 全部验货完成，请预约安装时间</div>`:''}
+        ${damaged ? `
+          <div class="mt-3 rounded-lg p-3 bg-red-50">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-sm text-red-700">⚠ 有 ${damaged} 件破损，需向供应商补件</span>
+              <button onclick="openSupplementOrder('${o.id}', '${o.order_no}')"
+                      class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
+                创建补件单
+              </button>
+            </div>
+            <p class="text-xs text-red-400 mt-1">其他货品可继续安排安装</p>
+          </div>` : ''}
+        ${allInspect
+          ? damaged
+            ? `<div class="mt-3 rounded-lg p-3 text-sm font-medium text-amber-700 bg-amber-50">其他货品验货完成，可安排安装，补件单另行跟进</div>`
+            : `<div class="mt-3 rounded-lg p-3 text-sm font-medium text-green-700 bg-green-50">✓ 全部验货完成，请预约安装时间</div>`
+          : ''}
       </div>
       ${scheduleCard}`;
   }
 
   // ── 客户签收（安装中）──
   if (o.status === 'installing') {
+    const installerInfo = (o.install_date || o.installer_notes) ? `
+      <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-600 space-y-1">
+        ${o.install_date ? `<div>📅 安装日期：<span class="font-medium">${o.install_date}</span></div>` : ''}
+        ${o.installer_notes ? `<div>👷 安装负责人：<span class="font-medium">${o.installer_notes}</span></div>` : ''}
+      </div>` : '';
+    const installerSection = canDo(1) ? `
+      <div class="mb-4 space-y-2">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
+          <input type="date" id="install-date-input" value="${o.install_date||''}"
+                 class="input text-sm w-full">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
+          <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
+                 placeholder="填写安装师傅姓名或电话" class="input text-sm w-full">
+        </div>
+        <button onclick="saveInstallDate('${o.id}')"
+                class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition">
+          保存预约信息
+        </button>
+      </div>` : installerInfo;
     return `
       <div class="card p-5 mb-4" style="border-left:3px solid #1a3a2a">
         <h3 class="font-semibold text-gray-800 mb-3">客户签收确认</h3>
+        ${installerSection}
         ${o.signed_at
           ? `<div class="rounded-lg p-3 bg-green-50 text-sm text-green-700 flex items-center gap-2">
                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                已签收 — ${o.signed_by||''} · ${fmtDate(o.signed_at)}
              </div>`
           : `<div class="space-y-3">
-               <div>
-                 <label class="label text-xs">签收人姓名</label>
-                 <input type="text" id="sign-name" placeholder="客户姓名" value="${o.customers?.name||''}" class="input text-sm">
-               </div>
-               <button onclick="submitSignOff('${o.id}')"
+               ${o.sign_image
+                 ? `<div>
+                      <p class="text-xs text-gray-500 mb-2">客户电子签名：</p>
+                      <img src="${o.sign_image}" alt="客户签名" class="border border-gray-200 rounded-lg w-full max-w-xs" style="background:#fafafa">
+                    </div>`
+                 : `<div class="rounded-lg p-3 bg-amber-50 text-sm text-amber-700">等待客户在客户端完成电子签名</div>`
+               }
+               <button onclick="submitSignOff('${o.id}', ${JSON.stringify(o.customers?.name||'')})"
                        class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                  确认客户签收 → 完成订单
                </button>
-               <p class="text-xs text-gray-400">签收后订单自动变为"已完成"</p>
+               <p class="text-xs text-gray-400">确认后订单自动变为"已完成"</p>
              </div>`
         }
       </div>`;
@@ -2623,24 +2708,149 @@ async function saveItemSuppliers(orderId) {
   setTimeout(() => openDetail(orderId), 600);
 }
 
+async function acceptOrder(orderId) {
+  if (!confirm('确认接单，开始生产？')) return;
+  await sb.from('orders').update({ status: 'in_production', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'in_production',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '厂家确认接单，开始生产',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function shipOrder(orderId) {
+  if (!confirm('确认发货？')) return;
+  await sb.from('orders').update({ status: 'shipped', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'shipped',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '厂家确认发货',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
+function etaDaysToIso(shipTimeVal, days) {
+  const base = shipTimeVal ? new Date(shipTimeVal) : new Date();
+  base.setDate(base.getDate() + Number(days));
+  return base.toISOString();
+}
+
+async function saveEtaDays(orderId) {
+  const days = Number(document.getElementById('eta-days')?.value || 7);
+  const { data: o } = await sb.from('orders').select('ship_time').eq('id', orderId).single();
+  const eta_time = etaDaysToIso(o?.ship_time, days);
+  const { error } = await sb.from('orders').update({ eta_time }).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  openDetail(orderId);
+}
+
+async function saveLogisticsInfo(orderId) {
+  const logisticsProfileId = document.getElementById('logistics-sel')?.value || null;
+  const shipTimeVal = document.getElementById('ship-time')?.value;
+  const days        = Number(document.getElementById('eta-days')?.value || 7);
+  const shipNotes   = document.getElementById('ship-notes')?.value?.trim() || null;
+  const upd = {
+    logistics_profile_id: logisticsProfileId || null,
+    ship_time: shipTimeVal ? new Date(shipTimeVal).toISOString() : null,
+    eta_time:  etaDaysToIso(shipTimeVal, days),
+    ship_notes: shipNotes,
+  };
+  const { error } = await sb.from('orders').update(upd).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function markArrived(orderId) {
+  if (!confirm('确认货物已到达？到货后将自动进入安装阶段。')) return;
+  const now = new Date().toISOString();
+  await sb.from('orders').update({ status: 'arrived', updated_at: now }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'arrived',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '物流确认货物已到达',
+  });
+  await sb.from('orders').update({ status: 'installing', updated_at: now }).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'installing',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '货物到达，自动进入安装阶段',
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
 async function markItemStatus(itemId, status, orderId) {
   const { error } = await sb.from('order_items').update({ item_status: status }).eq('id', itemId);
   if (error) { alert('更新失败: ' + error.message); return; }
   await openDetail(orderId);
 }
 
-async function saveInstallDate(orderId) {
-  const date = document.getElementById('install-date-input')?.value;
-  if (!date) { alert('请选择安装日期'); return; }
-  const { error } = await sb.from('orders').update({ install_date: date }).eq('id', orderId);
-  if (error) { alert('保存失败: ' + error.message); return; }
-  await openDetail(orderId);
+async function openSupplementOrder(orderId, orderNo) {
+  const [{ data: order }, { data: damaged }] = await Promise.all([
+    sb.from('orders').select('store_id, customers(id,name,phone,address)').eq('id', orderId).single(),
+    sb.from('order_items').select('*').eq('order_id', orderId).eq('item_status', 'damaged'),
+  ]);
+
+  resetCreateForm();
+  goto('create');
+  _supplementParentId = orderId;
+
+  await new Promise(r => setTimeout(r, 80));
+
+  if (order?.customers) {
+    document.getElementById('c-phone').value   = order.customers.phone   || '';
+    document.getElementById('c-name').value    = order.customers.name    || '';
+    document.getElementById('c-address').value = order.customers.address || '';
+    const found = document.getElementById('customer-found');
+    if (found) {
+      found.innerHTML  = `✓ 找到客户：<strong>${order.customers.name}</strong>（${order.customers.phone}）`;
+      found.dataset.id = order.customers.id;
+      found.classList.remove('hidden');
+    }
+  }
+  if (order?.store_id) {
+    const sel = document.getElementById('o-store');
+    if (sel) sel.value = order.store_id;
+  }
+
+  document.getElementById('o-desc').value  = `补件单 — 关联原单 ${orderNo}`;
+  document.getElementById('o-notes').value = `破损补件：${(damaged||[]).map(i => i.product_name).join('、')}`;
+
+  const list = document.getElementById('items-list');
+  if (list) {
+    list.innerHTML = '';
+    itemRowCount = 0;
+    if (damaged?.length) {
+      damaged.forEach(item => addItemRow({
+        product_name: item.product_name,
+        product_type: item.product_type,
+        model_spec:   item.model_spec,
+        quantity:     item.quantity,
+        unit:         item.unit,
+      }));
+    } else {
+      addItemRow();
+    }
+    calcItemsTotal();
+  }
 }
 
-async function submitSignOff(orderId) {
-  const name = document.getElementById('sign-name')?.value.trim();
-  if (!name) { alert('请输入签收人姓名'); return; }
-  const btn = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
+async function saveInstallDate(orderId) {
+  const date  = document.getElementById('install-date-input')?.value;
+  const notes = document.getElementById('installer-notes-input')?.value.trim() || null;
+  if (!date) { alert('请选择安装日期'); return; }
+  const { error } = await sb.from('orders').update({ install_date: date, installer_notes: notes }).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  openDetail(orderId);
+}
+
+async function submitSignOff(orderId, customerName) {
+  const name = customerName || '';
+  const btn = event?.currentTarget || document.querySelector(`button[onclick^="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
   await sb.from('orders').update({
     signed_at: new Date().toISOString(),
@@ -2761,6 +2971,202 @@ async function deleteAttachment(attachId, storagePath, orderId) {
   const { data: fresh } = await sb.from('order_attachments').select('*').eq('order_id', orderId).order('uploaded_at');
   const card = document.getElementById(`attach-card-${orderId}`);
   if (card) card.outerHTML = renderAttachmentsCard(fresh, orderId);
+}
+
+function renderChildOrdersCard(children) {
+  if (!children?.length) return '';
+  const rows = children.map(c => {
+    const st = STATUS[c.status] || { label: c.status, s: 'background:#f3f4f6;color:#6b7280' };
+    return `
+      <div onclick="openDetail('${c.id}')"
+           class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition">
+        <div>
+          <div class="font-mono text-sm font-semibold text-hg">${c.order_no}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${fmtDate(c.created_at)}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-medium text-sm text-gray-700">${fmtAmt(c.amount)}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${st.s}">${st.label}</span>
+          <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="card p-5 mb-4" style="border-left:3px solid #c8a96e">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="font-semibold text-gray-800">补件单</h3>
+        <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">${children.length}</span>
+      </div>
+      ${rows}
+    </div>`;
+}
+
+function renderProdStagePanel(o) {
+  if (o.status !== 'in_production') return '';
+  const cur = o.prod_stage;
+  const curIdx = PROD_STAGE_KEYS.indexOf(cur);
+  const stagesHtml = PROD_STAGE_KEYS.map((k, i) => {
+    const label = PROD_STAGE_LABELS[k];
+    const done = cur && i < curIdx;
+    const active = k === cur;
+    const style = active
+      ? 'background:#fffbeb;border:2px solid #f59e0b;color:#92400e;font-weight:600'
+      : done
+        ? 'background:#f0fdf4;border:1px solid #86efac;color:#166534'
+        : 'background:white;border:1px solid #e5e7eb;color:#9ca3af';
+    const icon = active ? '●' : done ? '✓' : '○';
+    return `<div class="text-center p-2 rounded-lg text-xs" style="${style}">
+      <div class="text-base mb-0.5">${icon}</div>
+      <div>${label}</div>
+    </div>`;
+  }).join('');
+  return `<div class="card p-5 mb-4">
+    <h3 class="font-semibold text-gray-800 mb-3">🏭 生产进度</h3>
+    <div class="grid grid-cols-4 gap-2">${stagesHtml}</div>
+    <p class="mt-2 text-xs text-center ${cur ? 'text-amber-600 font-medium' : 'text-gray-400'}">
+      ${cur ? `当前阶段：${PROD_STAGE_LABELS[cur] || cur}` : '厂家尚未更新生产阶段'}
+    </p>
+  </div>`;
+}
+
+function renderSupplierActionCard(o, items) {
+  if (profile?.role !== 'supplier' || !mySupplierId) return '';
+  const myItems = (items || []).filter(i => i.supplier_id === mySupplierId);
+  if (!myItems.length) return '';
+  const itemNames = myItems.map(i => i.product_name).join('、');
+  if (o.status === 'paid') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
+      <p class="text-sm text-gray-500 mb-1">订单已付款，请确认接单后开始生产。</p>
+      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
+      <button onclick="acceptOrder('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+        ✓ 接单，开始生产
+      </button>
+    </div>`;
+  }
+  if (o.status === 'in_production') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
+      <p class="text-sm text-gray-500 mb-1">生产中，货物备好后请确认发货。</p>
+      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
+      <button onclick="shipOrder('${o.id}')"
+              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+        🚚 确认发货
+      </button>
+    </div>`;
+  }
+  return '';
+}
+
+function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
+  const isLogistics = profile?.role === 'logistics';
+  const isManager   = canDo(2);
+  if (!isLogistics && !isManager) return '';
+  const relevant = ['shipped','arrived','installing','completed'];
+  if (!relevant.includes(o.status)) return '';
+
+  const fmtDT = s => s ? new Date(s).toLocaleString('zh-CN',
+    { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+  const toLocal = s => s ? new Date(s).toISOString().slice(0,16) : '';
+
+  const infoLines = [];
+  if (logisticsPerson) infoLines.push(`物流：${logisticsPerson.name}${logisticsPerson.phone?' · '+logisticsPerson.phone:''}`);
+  if (o.ship_time) infoLines.push(`发货时间：${fmtDT(o.ship_time)}`);
+  if (o.eta_time)  infoLines.push(`预计到货：${fmtDT(o.eta_time)}`);
+  if (o.ship_notes) infoLines.push(`备注：${o.ship_notes}`);
+  const infoHtml = infoLines.length
+    ? `<div class="text-xs text-gray-500 space-y-0.5 mb-3 bg-gray-50 rounded-lg p-2">
+        ${infoLines.map(l=>`<div>${l}</div>`).join('')}
+       </div>`
+    : '';
+
+  // Compute default ETA days from ship_time → eta_time
+  const etaDays = (() => {
+    if (o.eta_time && o.ship_time) {
+      const d = Math.round((new Date(o.eta_time) - new Date(o.ship_time)) / 86400000);
+      return d > 0 ? d : 7;
+    }
+    return 7;
+  })();
+
+  const confirmBtn = `<button onclick="markArrived('${o.id}')"
+    class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition mt-3">
+    📦 确认到货，进入安装
+  </button>`;
+
+  // Logistics: ETA days + confirm arrival
+  if (isLogistics && o.status === 'shipped') {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">物流操作</h3>
+      ${infoHtml}
+      <div class="flex items-center gap-2 mb-3">
+        <label class="text-xs text-gray-500 whitespace-nowrap">预计到货天数</label>
+        <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
+               class="input text-sm py-1.5 w-20 text-center">
+        <span class="text-xs text-gray-400">天</span>
+        <button onclick="saveEtaDays('${o.id}')"
+                class="ml-auto px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition whitespace-nowrap">
+          保存
+        </button>
+      </div>
+      ${confirmBtn}
+    </div>`;
+  }
+
+  // Manager: full logistics form + confirm arrival
+  if (isManager && o.status === 'shipped') {
+    const logOpts = (logisticsProfiles || []).map(p =>
+      `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
+    ).join('');
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">物流信息</h3>
+      ${infoHtml}
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">物流供应商</label>
+          <select id="logistics-sel" class="input text-sm py-1.5 w-full">
+            <option value="">— 未分配 —</option>
+            ${logOpts}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">发货时间</label>
+            <input type="datetime-local" id="ship-time" class="input text-sm py-1.5 w-full"
+                   value="${toLocal(o.ship_time)}">
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">预计天数</label>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
+                     class="input text-sm py-1.5 flex-1 text-center">
+              <span class="text-xs text-gray-400">天</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">备注</label>
+          <input type="text" id="ship-notes" class="input text-sm py-1.5 w-full"
+                 value="${o.ship_notes||''}" placeholder="运货单号等">
+        </div>
+        <button onclick="saveLogisticsInfo('${o.id}')"
+                class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition">
+          保存物流信息
+        </button>
+        ${confirmBtn}
+      </div>
+    </div>`;
+  }
+
+  // Read-only info for arrived/installing/completed
+  if (infoLines.length) {
+    return `<div class="card p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-2">物流信息</h3>
+      ${infoHtml}
+    </div>`;
+  }
+  return '';
 }
 
 function renderPaymentPanel(o, payments) {
