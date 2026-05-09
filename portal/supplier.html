@@ -361,23 +361,24 @@ async function openDetail(id) {
 
   if (st === 'assigned') {
     actionSection = `
-    <div class="bg-orange-50 rounded-xl border border-orange-200 p-5 mb-4">
-      <h3 class="font-semibold text-orange-700 mb-3">⏳ 请确认是否接单</h3>
+    <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-xl">⏳</span>
+        <h3 class="font-bold text-orange-700 text-base">此订单等待您接单确认</h3>
+      </div>
       <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-600 mb-1">接单备注（可填预计完成天数）</label>
+        <label class="block text-xs font-medium text-gray-600 mb-1">接单备注（可选，如：预计完成天数）</label>
         <input type="text" id="accept-notes" placeholder="如：预计7个工作日完成"
                class="w-full border border-orange-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400">
       </div>
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="detailReject('${o.id}')"
-                class="py-2.5 border border-red-200 text-red-500 font-medium rounded-lg hover:bg-red-50 text-sm">
-          ✗ 拒绝接单
-        </button>
-        <button onclick="detailAccept('${o.id}')"
-                class="py-2.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 text-sm">
-          ✓ 确认接单
-        </button>
-      </div>
+      <button onclick="detailAccept('${o.id}')"
+              class="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 text-base mb-3">
+        ✓ 确认接单
+      </button>
+      <button onclick="detailReject('${o.id}')"
+              class="w-full py-2.5 border border-red-200 text-red-500 font-medium rounded-xl hover:bg-red-50 text-sm">
+        ✗ 无法接单（填写原因）
+      </button>
     </div>`;
 
   } else if (st === 'accepted') {
@@ -502,13 +503,14 @@ async function openDetail(id) {
       </div>
     </div>
 
-    ${actionSection}
     ${itemsHtml}
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
       ${logsHtml||'<p class="text-gray-400 text-sm">暂无记录</p>'}
-    </div>`;
+    </div>
+
+    ${actionSection}`;
 }
 
 // ── Detail action handlers ────────────────────────────────────────────
