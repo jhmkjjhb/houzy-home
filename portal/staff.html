@@ -2003,19 +2003,29 @@ async function openDetail(id, backView) {
     { data: attachments },
     { data: childByFk },
     { data: childByDesc },
+    { data: childByCustomer },
   ] = await Promise.all([
     sb.from('suppliers').select('id,name,supplier_code,product_types').eq('active', true),
     sb.from('order_payments').select('*').eq('order_id', id).order('seq'),
     sb.from('order_items').select('*').eq('order_id', id).order('sort_order'),
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
     sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').eq('parent_order_id', id).order('created_at'),
-    sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').like('description', `补件单%${o.order_no}%`).order('created_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').like('description', `%${o.order_no}%`).order('created_at'),
+    o?.customer_id
+      ? sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description,customer_id').eq('customer_id', o.customer_id).like('description', '补件单%').order('created_at')
+      : Promise.resolve({ data: [] }),
   ]);
-  // Merge FK + description-fallback children (dedupe by id; exclude self)
+  // Merge children: parent_order_id FK > description-by-orderno > customer + 补件 desc fallback (older orphan data)
   const childMap = new Map();
   (childByFk || []).forEach(c => childMap.set(c.id, c));
   (childByDesc || []).forEach(c => { if (c.id !== id) childMap.set(c.id, c); });
+  (childByCustomer || []).forEach(c => {
+    if (c.id === id) return;
+    // Only include orphans (parent_order_id null) that mention this parent's order_no, OR have no other parent set
+    if (!c.parent_order_id || c.parent_order_id === id) childMap.set(c.id, c);
+  });
   const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  console.log('[openDetail] childOrders for', o.order_no, '— FK:', childByFk?.length, 'desc:', childByDesc?.length, 'customer:', childByCustomer?.length, 'merged:', childOrders.length);
 
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;

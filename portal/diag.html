@@ -1,49 +1,140 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><title>诊断</title>
-<style>body{font-family:sans-serif;padding:20px;max-width:700px}
-pre{background:#f5f5f5;padding:10px;border-radius:6px;white-space:pre-wrap;word-break:break-all;font-size:13px}</style>
+<head><meta charset="UTF-8"><title>补件单诊断</title>
+<style>
+body{font-family:sans-serif;padding:20px;max-width:900px;margin:0 auto}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f5f5f5}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-ok{background:#d1fae5;color:#065f46}
+.tag-bad{background:#fee2e2;color:#991b1b}
+.section{margin:24px 0}
+h3{margin-bottom:8px}
+.muted{color:#666;font-size:12px}
+pre{background:#f5f5f5;padding:8px;border-radius:4px;font-size:12px;white-space:pre-wrap}
+</style>
 </head>
 <body>
-<h2>订单诊断工具 v2</h2>
-<div id="out">正在检查...</div>
+<h2>补件单诊断工具</h2>
+<div id="user-info" class="muted"></div>
+<div id="content">检查中…</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
-const log = [];
+
 async function run() {
+  const out = document.getElementById('content');
+  const userInfo = document.getElementById('user-info');
+
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { log.push('❌ 未登录'); render(); return; }
-  log.push('✅ 已登录: ' + session.user.email);
+  if (!session) { out.innerHTML = '<p style="color:red">❌ 未登录，请先在主端登录</p>'; return; }
+  userInfo.textContent = '当前用户: ' + session.user.email;
 
-  const { data: prof } = await sb.rpc('get_my_profile');
-  log.push('✅ 角色=' + (prof?.role||'null') + ' 门店=' + (prof?.store_id||'null'));
+  // 1. All orders with description starting with 补件
+  const { data: suppOrders, error: e1 } = await sb.from('orders')
+    .select('id, order_no, description, parent_order_id, customer_id, store_id, status, amount, created_at, customers(name,phone)')
+    .like('description', '补件%')
+    .order('created_at', { ascending: false });
 
-  // Test 1: simple query (no joins)
-  const { data: d1, error: e1 } = await sb.from('orders').select('id,order_no').limit(5);
-  log.push((e1 ? '❌' : '✅') + ' 简单查询: ' + (e1 ? e1.message : (d1?.length||0) + '条'));
+  // 2. All orders with parent_order_id set (children)
+  const { data: childOrders, error: e2 } = await sb.from('orders')
+    .select('id, order_no, description, parent_order_id, customer_id, status, created_at, customers(name)')
+    .not('parent_order_id', 'is', null)
+    .order('created_at', { ascending: false });
 
-  // Test 2: full query exactly as staff.html uses
-  const { data: d2, error: e2 } = await sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
-    .limit(5);
-  log.push((e2 ? '❌' : '✅') + ' 完整查询(含关联): ' + (e2 ? '\n错误: ' + e2.message + '\n' + JSON.stringify(e2) : (d2?.length||0) + '条'));
+  let html = '';
 
-  // Test 3: explicit FK hint for profiles
-  const { data: d3, error: e3 } = await sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles!profile_id(name), suppliers(name,phone)')
-    .limit(5);
-  log.push((e3 ? '❌' : '✅') + ' 修复查询(明确外键): ' + (e3 ? '\n错误: ' + e3.message : (d3?.length||0) + '条'));
+  html += `<div class="section">
+    <h3>1. 描述以「补件」开头的订单（共 ${suppOrders?.length || 0} 条）</h3>
+    ${e1 ? `<pre style="color:red">查询错误: ${e1.message}</pre>` : ''}
+    ${suppOrders?.length ? `
+      <table>
+        <thead><tr><th>订单号</th><th>客户</th><th>parent_order_id</th><th>description</th><th>状态</th><th>金额</th><th>创建时间</th></tr></thead>
+        <tbody>
+          ${suppOrders.map(o => `<tr>
+            <td><strong>${o.order_no}</strong></td>
+            <td>${o.customers?.name || '-'}<br><span class="muted">${o.customers?.phone || ''}</span></td>
+            <td>${o.parent_order_id ? `<span class="tag tag-ok">已设</span><br><span class="muted">${o.parent_order_id.slice(0,8)}…</span>` : '<span class="tag tag-bad">NULL</span>'}</td>
+            <td style="max-width:280px"><span class="muted">${o.description || '-'}</span></td>
+            <td>${o.status}</td>
+            <td>${o.amount}</td>
+            <td>${new Date(o.created_at).toLocaleString()}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    ` : '<p class="muted">没有任何描述以「补件」开头的订单。可能从未成功创建过补件单。</p>'}
+  </div>`;
 
-  render();
+  html += `<div class="section">
+    <h3>2. 已设置 parent_order_id 的子订单（共 ${childOrders?.length || 0} 条）</h3>
+    ${e2 ? `<pre style="color:red">查询错误: ${e2.message}</pre>` : ''}
+    ${childOrders?.length ? `
+      <table>
+        <thead><tr><th>子订单号</th><th>parent_order_id</th><th>description</th><th>状态</th><th>创建时间</th></tr></thead>
+        <tbody>
+          ${childOrders.map(o => `<tr>
+            <td>${o.order_no}</td>
+            <td><span class="muted">${o.parent_order_id?.slice(0,8) || ''}…</span></td>
+            <td style="max-width:280px"><span class="muted">${o.description || '-'}</span></td>
+            <td>${o.status}</td>
+            <td>${new Date(o.created_at).toLocaleString()}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    ` : '<p class="muted">没有任何已设置 parent_order_id 的订单。</p>'}
+  </div>`;
+
+  // 3. Manual fix tool
+  if (suppOrders?.length) {
+    const orphans = suppOrders.filter(o => !o.parent_order_id);
+    if (orphans.length) {
+      html += `<div class="section">
+        <h3>3. 修复孤儿补件单（${orphans.length} 条没有 parent_order_id）</h3>
+        <p class="muted">点击下方按钮，会按 description 中的「关联原单 XXX」自动重新关联。</p>
+        <button onclick="relinkAll()" style="padding:10px 16px;background:#1a3a2a;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">重新关联所有孤儿补件单</button>
+        <div id="relink-result" style="margin-top:12px"></div>
+      </div>`;
+    }
+  }
+
+  out.innerHTML = html;
 }
-function render() {
-  document.getElementById('out').innerHTML = log.map(l =>
-    '<pre style="border-left:4px solid ' + (l.startsWith('✅')?'green':l.startsWith('❌')?'red':'orange') + '">' + l + '</pre>'
-  ).join('');
+
+async function relinkAll() {
+  const result = document.getElementById('relink-result');
+  result.innerHTML = '<p class="muted">正在重新关联…</p>';
+  const messages = [];
+
+  // Get all orphan supplement orders
+  const { data: orphans } = await sb.from('orders')
+    .select('id, order_no, description')
+    .is('parent_order_id', null)
+    .like('description', '补件%');
+
+  if (!orphans?.length) { result.innerHTML = '<p>没有孤儿补件单</p>'; return; }
+
+  for (const orph of orphans) {
+    // Try to extract original order_no from description
+    // Patterns: '补件单 — 关联原单 XXX', '补件 - 关联 XXX', etc.
+    const match = orph.description?.match(/(?:关联原单|关联|原单)\s*([A-Z0-9\-]+)/);
+    if (!match) { messages.push(`❌ ${orph.order_no}: 无法从描述提取原单号 (${orph.description})`); continue; }
+    const parentOrderNo = match[1];
+
+    const { data: parent } = await sb.from('orders').select('id').eq('order_no', parentOrderNo).single();
+    if (!parent) { messages.push(`❌ ${orph.order_no}: 找不到原单 ${parentOrderNo}`); continue; }
+
+    const { error } = await sb.from('orders').update({ parent_order_id: parent.id }).eq('id', orph.id);
+    if (error) { messages.push(`❌ ${orph.order_no}: 更新失败 ${error.message}`); continue; }
+    messages.push(`✅ ${orph.order_no} → ${parentOrderNo}`);
+  }
+
+  result.innerHTML = '<pre>' + messages.join('\n') + '</pre><p>完成，请刷新页面或返回主端查看。</p>';
 }
+
 run();
 </script>
 </body>
