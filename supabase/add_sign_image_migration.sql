@@ -11,14 +11,14 @@ CREATE OR REPLACE FUNCTION customer_submit_signature(
 DECLARE
   v_rows INT;
 BEGIN
-  UPDATE orders o
+  UPDATE orders
   SET sign_image = p_sign_image
-  FROM customers c
-  WHERE o.id          = p_order_id
-    AND o.customer_id = c.id
-    AND c.phone       = p_phone
-    AND o.status      = 'installing'
-    AND o.sign_image  IS NULL;
+  WHERE orders.id = p_order_id
+    AND orders.status = 'installing'
+    AND orders.sign_image IS NULL
+    AND orders.customer_id IN (
+      SELECT id FROM customers WHERE phone = p_phone
+    );
   GET DIAGNOSTICS v_rows = ROW_COUNT;
   RETURN v_rows > 0;
 END;
