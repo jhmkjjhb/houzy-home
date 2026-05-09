@@ -2516,8 +2516,7 @@ function renderItemsCard(items, o, supList) {
   const rows = items.map(item => {
     const sub     = Number(item.total_price || (item.quantity * item.unit_price));
     const supName = (supList||[]).find(s => s.id === item.supplier_id)?.name;
-    // L2 can only assign if not yet assigned; L3+ can always reassign
-    const itemCanAssign = canAssign && (canDo(3) || !item.supplier_id);
+    const itemCanAssign = canAssign && !item.supplier_id;
     return `
       <tr class="border-b border-gray-50">
         <td class="py-2 pr-3">
