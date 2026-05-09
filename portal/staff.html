@@ -2811,19 +2811,16 @@ async function openSupplementOrder(orderId, orderNo) {
   ]);
 
   resetCreateForm();
-  goto('create');
+  goto('create');          // calls resetCreateForm() internally — step-customer is visible here
   _supplementParentId = orderId;
 
-  await new Promise(r => setTimeout(r, 80));
-
-  // Hide customer form; show read-only customer banner
+  // Immediately after goto, hide customer section and lock in the customer
   if (order?.customers) {
     _supplementCustomerId = order.customers.id;
-    document.getElementById('step-customer')?.classList.add('hidden');
-    const banner = document.getElementById('supplement-customer-info');
-    const text   = document.getElementById('supplement-customer-text');
-    if (banner) banner.classList.remove('hidden');
-    if (text)   text.textContent = `${order.customers.name}（${order.customers.phone}）`;
+    document.getElementById('step-customer').classList.add('hidden');
+    document.getElementById('supplement-customer-info').classList.remove('hidden');
+    document.getElementById('supplement-customer-text').textContent =
+      `${order.customers.name}（${order.customers.phone}）`;
   }
   if (order?.store_id) {
     const sel = document.getElementById('o-store');
