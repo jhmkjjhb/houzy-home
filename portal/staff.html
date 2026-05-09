@@ -1202,7 +1202,6 @@ async function init() {
   if (!session) { window.location.href = 'login.html'; return; }
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
-  console.log('[init] profile:', profile, 'level:', ROLE_LEVEL[profile?.role] ?? 0);
   let storeName = '';
   if (profile?.store_id) {
     const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
@@ -1346,12 +1345,7 @@ async function loadReferrers() {
 }
 
 async function loadOrders() {
-  const { data, error } = await buildOrdersQuery();
-  if (error) {
-    console.error('[loadOrders] Supabase error:', error.message, error);
-    const el = document.getElementById('orders-table');
-    if (el) el.innerHTML = `<div class="p-4 text-red-600 text-sm bg-red-50 rounded-lg">⚠️ 加载订单失败：${error.message}</div>`;
-  }
+  const { data } = await buildOrdersQuery();
   allOrders = data || [];
 }
 
