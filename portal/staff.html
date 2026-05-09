@@ -1882,8 +1882,10 @@ async function submitOrder() {
   const initStatus   = firstPaid ? 'paid' : 'pending_payment';
   const initPayStatus = !firstPaid ? 'unpaid' : instCount === 1 ? 'paid' : 'partial';
 
-  // Core insert (original schema columns only)
-  const { data: order, error: oe } = await sb.from('orders').insert({
+  const parentRedirectId = _supplementParentId;  // remember before clearing
+
+  // Core insert (include parent_order_id here so it's guaranteed to be set)
+  const coreInsert = {
     order_no: orderNo,
     store_id: storeId,
     customer_id: custId,
@@ -1894,16 +1896,17 @@ async function submitOrder() {
     payment_status: initPayStatus,
     description: document.getElementById('o-desc').value.trim() || null,
     notes: document.getElementById('o-notes').value.trim() || null,
-  }).select().single();
+  };
+  if (_supplementParentId) coreInsert.parent_order_id = _supplementParentId;
+
+  const { data: order, error: oe } = await sb.from('orders').insert(coreInsert).select().single();
 
   if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent = t('create_btn'); btn.disabled = false; return; }
 
   // Extended columns
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
-  const parentRedirectId = _supplementParentId;  // remember for post-submit redirect
   if (_supplementParentId) {
-    extNew.parent_order_id  = _supplementParentId;
     extNew.liability_party  = document.getElementById('o-liability-party')?.value || 'supplier';
     const lossVal = parseFloat(document.getElementById('o-loss-amount')?.value);
     if (lossVal > 0) extNew.loss_amount = lossVal;
