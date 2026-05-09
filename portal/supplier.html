@@ -6,11 +6,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+<style>
+  .filter-btn{background:white;color:#6b7280;border:1px solid #e5e7eb}
+  .filter-btn.active{background:#1a3a2a;color:white;border-color:#1a3a2a}
+  .stage-btn.selected{border-color:#1a3a2a!important;color:#1a3a2a!important;background:rgba(26,58,42,.07)!important;font-weight:500!important}
+  @media print{
+    .no-print{display:none!important}
+    #v-orders,#v-detail{display:none!important}
+    #v-print{display:block!important}
+    body{background:white}
+  }
+</style>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:'Noto Sans SC',sans-serif">
 
 <!-- Header -->
-<nav class="bg-hg shadow-md">
+<nav class="bg-hg shadow-md no-print">
   <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
     <a href="/" class="flex items-center gap-2">
       <div class="w-7 h-7 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
@@ -24,16 +35,19 @@
 </nav>
 
 <!-- Orders list -->
-<div id="v-orders" class="max-w-3xl mx-auto px-4 py-6">
-  <div class="flex items-center justify-between mb-5">
+<div id="v-orders" class="max-w-3xl mx-auto px-4 py-6 no-print">
+  <div class="flex items-center justify-between mb-4">
     <h1 class="text-lg font-bold text-gray-800">我的订单</h1>
     <span id="order-count" class="text-sm text-gray-400"></span>
   </div>
 
-  <!-- Status filter -->
+  <!-- Urgent banner for pending orders -->
+  <div id="alert-banner" class="hidden mb-4"></div>
+
+  <!-- Filter tabs -->
   <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
     <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)">全部</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('accepted',this)">待接单</button>
+    <button id="btn-assigned" class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('__pending__',this)">待接单</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_production',this)">生产中</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('production_complete',this)">待发货</button>
     <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">已发货</button>
@@ -44,18 +58,19 @@
 </div>
 
 <!-- Order detail -->
-<div id="v-detail" class="hidden max-w-3xl mx-auto px-4 py-6">
+<div id="v-detail" class="hidden max-w-3xl mx-auto px-4 py-6 no-print">
   <div class="flex items-center gap-3 mb-5">
     <button onclick="show('v-orders')" class="text-gray-400 hover:text-gray-600">← 返回</button>
     <h1 class="text-lg font-bold text-gray-800">订单详情</h1>
+    <button onclick="printTaskSheet()" class="ml-auto text-xs border border-gray-200 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-gray-50">🖨 打印任务单</button>
   </div>
   <div id="detail-content"></div>
 </div>
 
-<style>
-  .filter-btn { background: white; color: #6b7280; border: 1px solid #e5e7eb; }
-  .filter-btn.active { background: #1a3a2a; color: white; border-color: #1a3a2a; }
-</style>
+<!-- Print view (only visible when printing) -->
+<div id="v-print" class="hidden p-8" style="max-width:720px;margin:0 auto">
+  <div id="print-content"></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -63,46 +78,53 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-let profile = null, supplier = null, allOrders = [], currentFilter = '';
+let profile = null, supplier = null, allOrders = [], currentFilter = '', currentDetailData = null;
 
 const STATUS = {
-  pending_payment:    { label:'待支付',     cls:'bg-yellow-100 text-yellow-700' },
-  paid:               { label:'已支付',     cls:'bg-blue-100 text-blue-700' },
-  assigned:           { label:'已分配',     cls:'bg-blue-100 text-blue-700' },
-  accepted:           { label:'待接单',     cls:'bg-violet-100 text-violet-700' },
-  in_production:      { label:'生产中',     cls:'bg-violet-200 text-violet-800' },
-  production_complete:{ label:'生产完成',   cls:'bg-indigo-100 text-indigo-700' },
-  shipped:            { label:'已发货',     cls:'bg-orange-100 text-orange-700' },
-  in_transit:         { label:'运输中',     cls:'bg-orange-100 text-orange-700' },
-  arrived:            { label:'已到货',     cls:'bg-teal-100 text-teal-700' },
-  installing:         { label:'安装中',     cls:'bg-teal-100 text-teal-700' },
-  completed:          { label:'已完成',     cls:'bg-green-100 text-green-700' },
-  after_sales:        { label:'售后中',     cls:'bg-red-100 text-red-700' },
-  closed:             { label:'已关闭',     cls:'bg-gray-100 text-gray-500' },
+  pending_payment:    {label:'待支付',   cls:'bg-yellow-100 text-yellow-700'},
+  paid:               {label:'已支付',   cls:'bg-blue-100 text-blue-700'},
+  assigned:           {label:'待接单',   cls:'bg-orange-100 text-orange-700'},
+  accepted:           {label:'已接单',   cls:'bg-violet-100 text-violet-700'},
+  in_production:      {label:'生产中',   cls:'bg-violet-200 text-violet-800'},
+  production_complete:{label:'生产完成', cls:'bg-indigo-100 text-indigo-700'},
+  shipped:            {label:'已发货',   cls:'bg-orange-100 text-orange-700'},
+  in_transit:         {label:'运输中',   cls:'bg-orange-100 text-orange-700'},
+  arrived:            {label:'已到货',   cls:'bg-teal-100 text-teal-700'},
+  installing:         {label:'安装中',   cls:'bg-teal-100 text-teal-700'},
+  completed:          {label:'已完成',   cls:'bg-green-100 text-green-700'},
+  after_sales:        {label:'售后中',   cls:'bg-red-100 text-red-700'},
+  closed:             {label:'已关闭',   cls:'bg-gray-100 text-gray-500'},
 };
 
-// Supplier handles: accept order → produce → mark shipped (logistics takes over after)
-const MY_TRANSITIONS = {
-  assigned:           ['accepted'],
-  accepted:           ['in_production'],
-  in_production:      ['production_complete'],
-  production_complete:['shipped'],
-};
+const LOGISTICS = ['顺丰速运','德邦物流','京东物流','圆通速递','中通快递','韵达快递','申通快递','百世快递','其他'];
+
+const PROD_STAGES = [
+  {key:'drawing',   label:'图纸确认'},
+  {key:'material',  label:'材料采购'},
+  {key:'producing', label:'生产加工'},
+  {key:'qc',        label:'质检中'},
+];
+
+const SUPPLIER_CONFIRMED = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
 
 function badge(s) {
-  const x = STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
+  const x = STATUS[s] || {label:s, cls:'bg-gray-100 text-gray-500'};
   return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${x.cls}">${x.label}</span>`;
 }
-function fmtAmt(v) { return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 }); }
-function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
-function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+function maskPhone(p) {
+  if (!p) return '-';
+  const s = String(p);
+  return s.length >= 7 ? s.slice(0,3) + '****' + s.slice(-4) : s;
+}
+function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN',{month:'short',day:'numeric'}); }
+function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
 
 function show(id) {
   ['v-orders','v-detail'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
 }
 
 async function init() {
-  const { data: { session } } = await sb.auth.getSession();
+  const {data:{session}} = await sb.auth.getSession();
   if (!session) { window.location.href = 'login.html'; return; }
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
@@ -110,18 +132,30 @@ async function init() {
     alert('权限不足'); window.location.href = 'login.html'; return;
   }
 
-  const { data: sup } = await sb.from('suppliers').select('*').eq('user_id', profile.id).single();
+  const {data:sup} = await sb.from('suppliers').select('*').eq('user_id', profile.id).single();
   supplier = sup;
   document.getElementById('sup-name').textContent = supplier?.name || profile.name;
-
   await loadOrders();
 }
 
 async function loadOrders() {
-  const { data } = await sb.from('orders')
+  const {data:items} = await sb.from('order_items')
+    .select('order_id').eq('supplier_id', supplier?.id);
+
+  const itemOrderIds = (items||[]).map(i => i.order_id).filter(Boolean);
+  const supId = supplier?.id;
+
+  let q = sb.from('orders')
     .select('*, stores(name), customers(name,phone)')
-    .eq('supplier_id', supplier?.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', {ascending:false});
+
+  if (itemOrderIds.length && supId)   q = q.or(`id.in.(${itemOrderIds.join(',')}),supplier_id.eq.${supId}`);
+  else if (itemOrderIds.length)       q = q.in('id', itemOrderIds);
+  else if (supId)                     q = q.eq('supplier_id', supId);
+  else { allOrders = []; renderOrders(); return; }
+
+  const {data, error} = await q;
+  if (error) console.error('[supplier loadOrders]', error.message);
   allOrders = data || [];
   renderOrders();
 }
@@ -134,9 +168,37 @@ function setFilter(val, btn) {
 }
 
 function renderOrders() {
-  const filtered = currentFilter
-    ? allOrders.filter(o => o.status === currentFilter)
-    : allOrders;
+  // Update "待接单" badge count
+  const assignedOrders = allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status));
+  const btnAssigned = document.getElementById('btn-assigned');
+  if (btnAssigned) {
+    btnAssigned.innerHTML = assignedOrders.length
+      ? `待接单 <span class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-orange-500 text-white ml-1">${assignedOrders.length}</span>`
+      : '待接单';
+  }
+
+  // Alert banner
+  const banner = document.getElementById('alert-banner');
+  if (assignedOrders.length && !currentFilter) {
+    banner.classList.remove('hidden');
+    banner.innerHTML = `<div class="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center gap-3">
+      <span class="text-2xl">⏳</span>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-orange-700">有 ${assignedOrders.length} 笔订单待接单</p>
+        <p class="text-xs text-orange-500 mt-0.5">请尽快确认，超时将通知店长重新分配</p>
+      </div>
+      <button onclick="setFilter('__pending__',document.getElementById('btn-assigned'))"
+              class="text-xs bg-orange-500 text-white px-3 py-1.5 rounded-lg whitespace-nowrap">立即查看</button>
+    </div>`;
+  } else {
+    banner.classList.add('hidden');
+  }
+
+  const filtered = currentFilter === '__pending__'
+    ? allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status))
+    : currentFilter
+      ? allOrders.filter(o => o.status === currentFilter)
+      : allOrders;
 
   document.getElementById('order-count').textContent = `共 ${filtered.length} 条`;
 
@@ -149,185 +211,520 @@ function renderOrders() {
     return;
   }
 
-  el.innerHTML = filtered.map(o => {
-    const nextStatuses = MY_TRANSITIONS[o.status] || [];
-    const canUpdate = nextStatuses.length > 0;
-    return `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3">
-      <div class="flex items-start justify-between mb-3">
-        <div>
-          <div class="font-mono font-bold text-hg text-sm">${o.order_no}</div>
-          <div class="text-gray-400 text-xs mt-0.5">${o.stores?.name} · ${fmtDate(o.created_at)}</div>
+  if (!currentFilter) {
+    // Grouped kanban view
+    const groups = [
+      {statuses:['assigned','paid','pending_payment'], label:'待接单'},
+      {statuses:['accepted'],                          label:'已接单'},
+      {statuses:['in_production'],                     label:'生产中'},
+      {statuses:['production_complete'],               label:'待发货'},
+      {statuses:['shipped','in_transit'],              label:'已发货'},
+      {statuses:['arrived','installing','completed'],  label:'已完成'},
+    ];
+    const shown = new Set();
+    let html = '';
+    for (const g of groups) {
+      const gOrders = filtered.filter(o => g.statuses.includes(o.status));
+      if (!gOrders.length) continue;
+      gOrders.forEach(o => shown.add(o.id));
+      html += `<div class="mb-5">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="h-px flex-1 bg-gray-200"></div>
+          <span class="text-xs font-semibold text-gray-400 px-2 tracking-wide">${g.label}（${gOrders.length}）</span>
+          <div class="h-px flex-1 bg-gray-200"></div>
         </div>
-        ${badge(o.status)}
-      </div>
-      ${o.description ? `<p class="text-sm text-gray-600 mb-3">${o.description}</p>` : ''}
-      <div class="flex items-center justify-between">
-        <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
-        <div class="flex gap-2">
-          <button onclick="openDetail('${o.id}')"
-                  class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
-            查看详情
-          </button>
-          ${canUpdate ? `<button onclick="quickUpdate('${o.id}','${nextStatuses[0]}')"
-                  class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg">
-            → ${STATUS[nextStatuses[0]].label}
-          </button>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+        ${gOrders.map(o => orderCard(o)).join('')}
+      </div>`;
+    }
+    // Catch-all for unlisted statuses
+    filtered.filter(o => !shown.has(o.id)).forEach(o => { html += orderCard(o); });
+    el.innerHTML = html;
+  } else {
+    el.innerHTML = filtered.map(o => orderCard(o)).join('');
+  }
 }
 
-async function quickUpdate(orderId, newStatus) {
-  let trackingNo = null;
-  if (newStatus === 'shipped') {
-    trackingNo = prompt('请填写物流单号（必填）：');
-    if (!trackingNo || !trackingNo.trim()) { alert('发货时必须填写物流单号'); return; }
-    trackingNo = trackingNo.trim();
-  }
-  const notes = prompt(`更新到「${STATUS[newStatus].label}」，请填写备注（可选）：`);
-  if (notes === null) return; // user cancelled
+function orderCard(o) {
+  const st = o.status;
+  let actionBtns = `<button onclick="openDetail('${o.id}')"
+    class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">详情</button>`;
 
-  const update = { status: newStatus };
-  if (trackingNo) update.tracking_no = trackingNo;
-  await sb.from('orders').update(update).eq('id', orderId);
+  if (!SUPPLIER_CONFIRMED.includes(st)) {
+    actionBtns += `
+      <button onclick="rejectOrder(event,'${o.id}')"
+              class="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-500 hover:bg-red-50">拒绝</button>
+      <button onclick="acceptOrder(event,'${o.id}')"
+              class="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium">接单</button>`;
+  } else if (st === 'accepted') {
+    actionBtns += `<button onclick="quickStartProd(event,'${o.id}')"
+      class="px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700">→ 开始生产</button>`;
+  } else if (st === 'in_production') {
+    actionBtns = `<button onclick="openDetail('${o.id}')"
+      class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg">更新进度</button>`;
+  } else if (st === 'production_complete') {
+    actionBtns = `<button onclick="openDetail('${o.id}')"
+      class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">📦 填写发货</button>`;
+  }
+
+  return `
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3">
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <div class="font-mono font-bold text-hg text-sm">${o.order_no}</div>
+        <div class="text-gray-400 text-xs mt-0.5">${o.stores?.name||'-'} · ${fmtDate(o.created_at)}</div>
+      </div>
+      ${badge(o.status)}
+    </div>
+    ${o.description ? `<p class="text-sm text-gray-600 mb-3 line-clamp-2">${o.description}</p>` : ''}
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-gray-400">${o.customers?.name||''}</span>
+      <div class="flex gap-2">${actionBtns}</div>
+    </div>
+  </div>`;
+}
+
+// ── Quick actions from card ──────────────────────────────────────────
+
+async function acceptOrder(e, orderId) {
+  e.stopPropagation();
+  const notes = prompt('接单备注（可选，如：预计X个工作日完成）：');
+  if (notes === null) return;
+  await sb.from('orders').update({status:'accepted'}).eq('id', orderId);
   await sb.from('order_logs').insert({
-    order_id: orderId, status: newStatus,
-    operator_id: profile.id,
-    operator_role: 'supplier',
-    operator_name: supplier?.name || profile.name,
-    notes: [trackingNo ? `物流单号：${trackingNo}` : null, notes || null].filter(Boolean).join(' | ') || null,
+    order_id:orderId, status:'accepted',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: notes||'厂商已接单',
   });
   await loadOrders();
 }
+
+async function rejectOrder(e, orderId) {
+  e.stopPropagation();
+  const reason = prompt('请填写拒绝原因（必填）：');
+  if (reason === null) return;
+  if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
+  await sb.from('orders').update({status:'paid'}).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id:orderId, status:'paid',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes:`❌ 厂商拒绝接单：${reason.trim()}`,
+  });
+  await loadOrders();
+}
+
+async function quickStartProd(e, orderId) {
+  e.stopPropagation();
+  const notes = prompt('开始生产备注（可选）：');
+  if (notes === null) return;
+  await sb.from('orders').update({status:'in_production'}).eq('id', orderId);
+  await sb.from('order_logs').insert({
+    order_id:orderId, status:'in_production',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: notes||'已开始生产',
+  });
+  await loadOrders();
+}
+
+// ── Order detail ─────────────────────────────────────────────────────
 
 async function openDetail(id) {
   show('v-detail');
   document.getElementById('detail-content').innerHTML =
     '<div class="text-center py-10 text-gray-400">加载中…</div>';
 
-  const { data: o } = await sb.from('orders')
-    .select('*, stores(name), customers(name,phone)')
-    .eq('id', id).single();
+  const [{data:o}, {data:items}, {data:logs}] = await Promise.all([
+    sb.from('orders').select('*, stores(name), customers(name,phone,address)').eq('id',id).single(),
+    sb.from('order_items').select('*').eq('order_id',id).order('sort_order'),
+    sb.from('order_logs').select('*').eq('order_id',id).order('created_at',{ascending:true}),
+  ]);
 
-  const { data: logs } = await sb.from('order_logs')
-    .select('*').eq('order_id', id).order('created_at', { ascending: true });
+  const [{ data: parentOrder }, { data: childByFk }, { data: childByDesc }] = await Promise.all([
+    o?.parent_order_id
+      ? sb.from('orders').select('id,order_no').eq('id', o.parent_order_id).single()
+      : Promise.resolve({ data: null }),
+    sb.from('orders').select('id,order_no,status,amount,created_at').eq('parent_order_id', id).order('created_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at').like('description', `补件单%${o.order_no}%`).order('created_at'),
+  ]);
+  const childMap = new Map();
+  (childByFk || []).forEach(c => childMap.set(c.id, c));
+  (childByDesc || []).forEach(c => { if (c.id !== id) childMap.set(c.id, c); });
+  const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
 
-  const logsHtml = (logs || []).map((l, i, arr) => {
-    const isLast = i === arr.length - 1;
+  currentDetailData = {o, items};
+
+
+  const logsHtml = (logs||[]).map((l,i,arr) => {
+    const isLast = i === arr.length-1;
     return `<div class="flex gap-3">
       <div class="flex flex-col items-center flex-shrink-0 w-4">
-        <div class="w-2.5 h-2.5 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
-        ${!isLast ? '<div class="w-px bg-gray-200 flex-1 my-1 mx-auto"></div>' : ''}
+        <div class="w-2.5 h-2.5 rounded-full ${isLast?'bg-hg':'bg-gray-300'} mt-0.5"></div>
+        ${!isLast?'<div class="w-px bg-gray-200 flex-1 my-1 mx-auto"></div>':''}
       </div>
       <div class="pb-3 flex-1">
         <div class="flex items-center gap-2 flex-wrap">${badge(l.status)}
           <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
         </div>
-        ${l.notes ? `<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>` : ''}
-        <p class="text-gray-400 text-xs">${l.operator_name || ''}</p>
+        ${l.notes?`<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>`:''}
+        <p class="text-gray-400 text-xs">${l.operator_name||''}</p>
       </div>
     </div>`;
   }).join('');
 
-  const nextStatuses = MY_TRANSITIONS[o?.status] || [];
-  const willShip = nextStatuses.includes('shipped') || nextStatuses[0] === 'shipped';
-  const trackingRow = willShip ? `
-    <div class="mb-3">
-      <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
-      <input type="text" id="det-tracking" placeholder="发货时必填"
-             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
-    </div>` : '';
-  const updateSection = nextStatuses.length ? `
+  const st = o?.status;
+  let actionSection = '';
+
+  if (!SUPPLIER_CONFIRMED.includes(st)) {
+    // Any pre-confirmation status (assigned, paid, pending_payment, etc.) → show accept panel
+    actionSection = `
+    <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-xl">⏳</span>
+        <h3 class="font-bold text-orange-700 text-base">此订单等待您接单确认</h3>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-1">接单备注（可选，如：预计完成天数）</label>
+        <input type="text" id="accept-notes" placeholder="如：预计7个工作日完成"
+               class="w-full border border-orange-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+      </div>
+      <button onclick="detailAccept('${o.id}')"
+              class="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 text-base mb-3">
+        ✓ 确认接单
+      </button>
+      <button onclick="detailReject('${o.id}')"
+              class="w-full py-2.5 border border-red-200 text-red-500 font-medium rounded-xl hover:bg-red-50 text-sm">
+        ✗ 无法接单（填写原因）
+      </button>
+    </div>`;
+
+  } else if (st === 'accepted') {
+    actionSection = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">更新进度</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">开始生产</h3>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">更新状态</label>
-        <select id="det-status" onchange="onDetailStatusChange(this.value)"
-                class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
-          ${nextStatuses.map(s => `<option value="${s}">${STATUS[s].label}</option>`).join('')}
+        <label class="block text-xs font-medium text-gray-600 mb-1">备注（预计完成时间等）</label>
+        <input type="text" id="start-notes" placeholder="如：已安排生产，预计5天完成"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
+      </div>
+      <button onclick="detailStartProd('${o.id}')"
+              class="w-full py-2.5 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 text-sm">
+        → 开始生产
+      </button>
+    </div>`;
+
+  } else if (st === 'in_production') {
+    actionSection = `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-4">更新生产进度</h3>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-2">当前阶段</label>
+        <div class="grid grid-cols-2 gap-2">
+          ${PROD_STAGES.map(s=>`
+            <button onclick="selectStage(this)" data-label="${s.label}"
+                    class="stage-btn py-2.5 px-3 text-xs border border-gray-200 rounded-lg text-gray-600 transition">
+              ${s.label}
+            </button>`).join('')}
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-1">备注说明</label>
+        <input type="text" id="prod-notes" placeholder="如：材料已到位，预计3天完成"
+               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="updateProdProgress('${o.id}')"
+                class="py-2.5 border border-hg text-hg font-medium rounded-lg hover:bg-hg hover:text-white transition text-sm">
+          更新进度
+        </button>
+        <button onclick="markProdComplete('${o.id}')"
+                class="py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm">
+          ✓ 生产完成
+        </button>
+      </div>
+      <p id="prod-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 进度已更新</p>
+    </div>`;
+
+  } else if (st === 'production_complete') {
+    actionSection = `
+    <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
+      <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
+      <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">物流公司 <span class="text-red-500">*</span></label>
+        <select id="ship-company"
+                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+          <option value="">请选择物流公司</option>
+          ${LOGISTICS.map(l=>`<option value="${l}">${l}</option>`).join('')}
         </select>
       </div>
-      <div id="tracking-row" class="${willShip ? '' : 'hidden'} mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
-        <input type="text" id="det-tracking" placeholder="发货时必填"
-               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
-      </div>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">备注说明</label>
-        <input type="text" id="det-notes" placeholder="如：预计完成时间 / 备注"
-               class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
+        <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
+        <input type="text" id="ship-tracking" placeholder="请输入物流单号"
+               class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 font-mono">
       </div>
-      <button onclick="updateFromDetail('${o.id}')"
-              class="w-full py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg transition text-sm">
-        提交更新
+      <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-600 mb-1">发货备注（可选）</label>
+        <input type="text" id="ship-notes" placeholder="如：分两批发货"
+               class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+      </div>
+      <button onclick="submitShipping('${o.id}')"
+              class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition text-sm">
+        确认发货
       </button>
-      <p id="det-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
+      <p id="ship-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 发货信息已提交</p>
+    </div>`;
+  }
+
+  const itemsHtml = (items||[]).length ? `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">商品明细</h3>
+      <div class="space-y-2">
+        ${(items||[]).map(it=>`
+          <div class="bg-gray-50 rounded-lg p-3 text-sm">
+            <div class="font-medium text-gray-800">${it.product_name||'-'}</div>
+            ${it.model_spec?`<div class="text-gray-500 text-xs mt-0.5">型号：${it.model_spec}</div>`:''}
+            <div class="flex gap-4 mt-1 text-xs text-gray-500">
+              <span>数量：<span class="font-medium text-gray-700">${it.quantity} ${it.unit||''}</span></span>
+            </div>
+            ${it.notes?`<div class="text-gray-500 text-xs mt-1 italic">${it.notes}</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  const parentBanner = parentOrder ? `
+    <div class="rounded-xl p-4 mb-4 flex items-center gap-3" style="background:#fef3c7;border:1px solid #f59e0b22">
+      <span>🔗</span>
+      <div>
+        <div class="text-xs font-medium" style="color:#92400e">此为补件单，关联原单：</div>
+        <div class="font-mono font-bold cursor-pointer hover:underline" style="color:#78350f"
+             onclick="openDetail('${parentOrder.id}')">${parentOrder.order_no}</div>
+      </div>
+    </div>` : '';
+
+  const childOrdersCard = childOrders?.length ? `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4" style="border-left:3px solid #c8a96e">
+      <div class="flex items-center gap-2 mb-3">
+        <h3 class="font-semibold text-gray-800">补件单</h3>
+        <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">${childOrders.length}</span>
+      </div>
+      ${childOrders.map(c => {
+        const st = STATUS[c.status] || { label: c.status, cls: 'bg-gray-100 text-gray-600' };
+        return `<div onclick="openDetail('${c.id}')"
+             class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:opacity-80">
+          <div class="font-mono text-sm font-semibold text-hg">${c.order_no}</div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}">${st.label}</span>
+            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>`;
+      }).join('')}
     </div>` : '';
 
   document.getElementById('detail-content').innerHTML = `
+    ${parentBanner}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
           <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
-          <div class="text-gray-400 text-sm">${o.stores?.name}</div>
+          <div class="text-gray-400 text-sm">${o.stores?.name||''}</div>
         </div>
         ${badge(o.status)}
       </div>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-        <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
-        <div><span class="text-gray-400">支付</span>
-          <span class="${o.payment_status==='paid'?'text-green-600':'text-red-500'} font-medium">
-            ${o.payment_status==='paid'?'已支付':'待支付'}
-          </span>
+      <div class="divide-y divide-gray-50 text-sm space-y-2">
+        <div class="flex justify-between pb-2">
+          <span class="text-gray-400">客户</span>
+          <span class="font-medium">${o.customers?.name||'-'}</span>
         </div>
-        <div><span class="text-gray-400">创建</span> <span>${fmtDate(o.created_at)}</span></div>
-        ${o.tracking_no ? `<div class="col-span-2"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">电话</span>
+          <span class="font-mono">${maskPhone(o.customers?.phone)}</span>
+        </div>
+        ${o.customers?.address?`<div class="py-2"><span class="text-gray-400">地址</span><p class="mt-1 text-gray-700">${o.customers.address}</p></div>`:''}
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">创建日期</span>
+          <span>${fmtDate(o.created_at)}</span>
+        </div>
+        ${o.tracking_no?`<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>`:''}
+        ${o.description?`<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${o.description}</p></div>`:''}
+        ${o.notes?`<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${o.notes}</p></div>`:''}
       </div>
-      ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
     </div>
 
-    ${updateSection}
+    ${itemsHtml}
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    ${childOrdersCard}
+
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">进度日志</h3>
-      ${logsHtml || '<p class="text-gray-400 text-sm">暂无记录</p>'}
-    </div>`;
+      ${logsHtml||'<p class="text-gray-400 text-sm">暂无记录</p>'}
+    </div>
+
+    ${actionSection}`;
 }
 
-function onDetailStatusChange(val) {
-  const row = document.getElementById('tracking-row');
-  if (row) row.classList.toggle('hidden', val !== 'shipped');
+// ── Detail action handlers ────────────────────────────────────────────
+
+function selectStage(btn) {
+  document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
 }
 
-async function updateFromDetail(id) {
-  const newStatus = document.getElementById('det-status').value;
-  const notes     = document.getElementById('det-notes').value.trim();
-  const trackingEl = document.getElementById('det-tracking');
-  const trackingNo = trackingEl ? trackingEl.value.trim() : '';
-
-  if (newStatus === 'shipped' && !trackingNo) {
-    alert('发货时必须填写物流单号'); return;
-  }
-
-  const update = { status: newStatus };
-  if (trackingNo) update.tracking_no = trackingNo;
-  await sb.from('orders').update(update).eq('id', id);
-
-  const logNotes = [trackingNo ? `物流单号：${trackingNo}` : null, notes || null].filter(Boolean).join(' | ');
+async function detailAccept(id) {
+  const notes = document.getElementById('accept-notes')?.value.trim();
+  await sb.from('orders').update({status:'accepted'}).eq('id', id);
   await sb.from('order_logs').insert({
-    order_id: id, status: newStatus,
-    operator_id: profile.id,
-    operator_role: 'supplier',
-    operator_name: supplier?.name || profile.name,
-    notes: logNotes || null,
+    order_id:id, status:'accepted',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: notes||'厂商已接单',
   });
-
-  document.getElementById('det-msg').classList.remove('hidden');
-  setTimeout(() => document.getElementById('det-msg').classList.add('hidden'), 2000);
   await loadOrders();
   openDetail(id);
+}
+
+async function detailReject(id) {
+  const reason = prompt('请填写拒绝原因（必填）：');
+  if (reason === null) return;
+  if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
+  await sb.from('orders').update({status:'paid'}).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id:id, status:'paid',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes:`❌ 厂商拒绝接单：${reason.trim()}`,
+  });
+  show('v-orders');
+  await loadOrders();
+}
+
+async function detailStartProd(id) {
+  const notes = document.getElementById('start-notes')?.value.trim();
+  await sb.from('orders').update({status:'in_production'}).eq('id', id);
+  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
+  await sb.from('order_logs').insert({
+    order_id:id, status:'in_production',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: notes||'已开始生产',
+  });
+  await loadOrders();
+  openDetail(id);
+}
+
+async function updateProdProgress(id) {
+  const selectedBtn = document.querySelector('.stage-btn.selected');
+  const stageLabel  = selectedBtn?.dataset.label;
+  const notes = document.getElementById('prod-notes')?.value.trim();
+
+  if (!stageLabel && !notes) { alert('请选择生产阶段或填写备注'); return; }
+
+  const stageKey = selectedBtn?.dataset.key || null;
+  const logNotes = [stageLabel?`【${stageLabel}】`:null, notes||null].filter(Boolean).join(' ');
+  if (stageKey) await sb.from('orders').update({ prod_stage: stageKey }).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id:id, status:'in_production',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: logNotes,
+  });
+
+  const msg = document.getElementById('prod-msg');
+  if (msg) { msg.classList.remove('hidden'); setTimeout(()=>msg?.classList.add('hidden'), 2000); }
+  const notesEl = document.getElementById('prod-notes');
+  if (notesEl) notesEl.value = '';
+  document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('selected'));
+}
+
+async function markProdComplete(id) {
+  if (!confirm('确认生产完成？订单将进入待发货状态。')) return;
+  await sb.from('orders').update({status:'production_complete'}).eq('id', id);
+  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
+  await sb.from('order_logs').insert({
+    order_id:id, status:'production_complete',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes:'生产完成，准备发货',
+  });
+  await loadOrders();
+  openDetail(id);
+}
+
+async function submitShipping(id) {
+  const company  = document.getElementById('ship-company')?.value;
+  const tracking = document.getElementById('ship-tracking')?.value.trim();
+  const notes    = document.getElementById('ship-notes')?.value.trim();
+
+  if (!company)  { alert('请选择物流公司'); return; }
+  if (!tracking) { alert('请填写物流单号'); return; }
+
+  const logNotes = [`物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
+  await sb.from('orders').update({status:'shipped', tracking_no:tracking}).eq('id', id);
+  await sb.from('order_logs').insert({
+    order_id:id, status:'shipped',
+    operator_id:profile.id, operator_role:'supplier',
+    operator_name:supplier?.name||profile.name,
+    notes: logNotes,
+  });
+
+  const msg = document.getElementById('ship-msg');
+  if (msg) msg.classList.remove('hidden');
+  setTimeout(async () => { await loadOrders(); openDetail(id); }, 1200);
+}
+
+// ── Print task sheet ──────────────────────────────────────────────────
+
+function printTaskSheet() {
+  if (!currentDetailData) return;
+  const {o, items} = currentDetailData;
+
+  const itemRows = (items||[]).map(it => `
+    <tr>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee">${it.product_name||'-'}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee">${it.model_spec||'-'}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:center">${it.quantity} ${it.unit||''}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee;color:#555">${it.notes||''}</td>
+    </tr>`).join('');
+
+  document.getElementById('print-content').innerHTML = `
+    <div style="border-bottom:3px solid #1a3a2a;padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <h1 style="font-size:22px;font-weight:bold;color:#1a3a2a;margin:0">生产任务单</h1>
+        <div style="font-size:12px;color:#999;margin-top:3px">${supplier?.name||'HOUZY HOME'}</div>
+      </div>
+      <div style="font-size:11px;color:#bbb">打印：${new Date().toLocaleString('zh-CN')}</div>
+    </div>
+    <table style="width:100%;font-size:13px;margin-bottom:18px;border-collapse:collapse">
+      <tr><td style="color:#888;width:90px;padding:5px 0;vertical-align:top">订单编号</td>
+          <td style="font-weight:bold;font-family:monospace;font-size:15px">${o.order_no}</td></tr>
+      <tr><td style="color:#888;padding:5px 0">门店</td><td>${o.stores?.name||'-'}</td></tr>
+      <tr><td style="color:#888;padding:5px 0">客户姓名</td><td>${o.customers?.name||'-'}</td></tr>
+      <tr><td style="color:#888;padding:5px 0;vertical-align:top">送货地址</td><td>${o.customers?.address||'-'}</td></tr>
+      <tr><td style="color:#888;padding:5px 0">创建日期</td><td>${fmtDate(o.created_at)}</td></tr>
+      ${o.description?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">订单描述</td><td>${o.description}</td></tr>`:''}
+      ${o.notes?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">备注</td><td>${o.notes}</td></tr>`:''}
+    </table>
+    <h3 style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-top:14px;border-top:1px solid #ddd">商品明细</h3>
+    ${items?.length ? `
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead>
+        <tr style="background:#f0f0f0">
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #ccc">产品名称</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #ccc">型号规格</th>
+          <th style="padding:8px 6px;text-align:center;border-bottom:2px solid #ccc">数量</th>
+          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #ccc">备注</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>` : '<p style="color:#aaa;font-size:13px">无商品明细</p>'}
+    <div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;font-size:12px;color:#777">
+      <div style="border-top:1px solid #aaa;padding-top:6px;text-align:center">生产负责人</div>
+      <div style="border-top:1px solid #aaa;padding-top:6px;text-align:center">质检签字</div>
+      <div style="border-top:1px solid #aaa;padding-top:6px;text-align:center">发货确认</div>
+    </div>`;
+
+  window.print();
 }
 
 async function logout() {
