@@ -341,12 +341,17 @@ async function openDetail(id) {
     sb.from('order_logs').select('*').eq('order_id',id).order('created_at',{ascending:true}),
   ]);
 
-  const [{ data: parentOrder }, { data: childOrders }] = await Promise.all([
+  const [{ data: parentOrder }, { data: childByFk }, { data: childByDesc }] = await Promise.all([
     o?.parent_order_id
       ? sb.from('orders').select('id,order_no').eq('id', o.parent_order_id).single()
       : Promise.resolve({ data: null }),
     sb.from('orders').select('id,order_no,status,amount,created_at').eq('parent_order_id', id).order('created_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at').like('description', `补件单%${o.order_no}%`).order('created_at'),
   ]);
+  const childMap = new Map();
+  (childByFk || []).forEach(c => childMap.set(c.id, c));
+  (childByDesc || []).forEach(c => { if (c.id !== id) childMap.set(c.id, c); });
+  const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
 
   currentDetailData = {o, items};
 
