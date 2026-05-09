@@ -811,7 +811,7 @@ function canTransit(currentStatus, targetStatus) {
 async function buildOrdersQuery() {
   const lvl = myLevel();
   let q = sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
     .order('created_at', { ascending: false })
     .limit(300);
   if (lvl >= 4) {
@@ -1878,7 +1878,7 @@ async function openDetail(id, backView) {
   goto('detail');
 
   const { data: o } = await sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
     .eq('id', id).single();
   if (!o) return;
 
