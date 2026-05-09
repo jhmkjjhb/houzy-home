@@ -88,12 +88,60 @@ async function run() {
     ` : '<p class="muted">没有任何已设置 parent_order_id 的订单。</p>'}
   </div>`;
 
-  // 3. Manual fix tool
+  // 3. Cross-check: for each unique parent_order_id, verify parent exists and is readable
+  const uniqueParentIds = [...new Set((childOrders || []).map(o => o.parent_order_id).filter(Boolean))];
+  if (uniqueParentIds.length) {
+    const parentResults = await Promise.all(uniqueParentIds.map(pid =>
+      sb.from('orders')
+        .select('id, order_no, status, store_id, customer_id')
+        .eq('id', pid)
+        .single()
+        .then(({ data, error }) => ({ pid, data, error }))
+    ));
+
+    // For each parent, also query child orders the same way staff.html does
+    const childCheckResults = await Promise.all(uniqueParentIds.map(pid =>
+      sb.from('orders')
+        .select('id, order_no, status, parent_order_id')
+        .eq('parent_order_id', pid)
+        .then(({ data, error }) => ({ pid, data, error }))
+    ));
+    const childCheckMap = Object.fromEntries(childCheckResults.map(r => [r.pid, r]));
+
+    html += `<div class="section">
+      <h3>3. 原单可见性检查（当前账号能否查到补件单）</h3>
+      <table>
+        <thead><tr><th>原单号</th><th>原单状态</th><th>原单可读</th><th>按 parent_order_id 反查子单</th><th>结论</th></tr></thead>
+        <tbody>
+          ${parentResults.map(({ pid, data: p, error: pe }) => {
+            const cc = childCheckMap[pid];
+            const parentOk = !!p && !pe;
+            const childCount = cc?.data?.length ?? 0;
+            const childError = cc?.error?.message || '';
+            const ok = parentOk && childCount > 0;
+            return `<tr>
+              <td><strong>${p?.order_no || pid.slice(0,8)+'…'}</strong></td>
+              <td>${p?.status || '—'}</td>
+              <td>${parentOk ? '<span class="tag tag-ok">✓ 可读</span>' : `<span class="tag tag-bad">❌ 读不到</span><br><span class="muted">${pe?.message||''}</span>`}</td>
+              <td>${childError
+                ? `<span class="tag tag-bad">❌ 查询失败</span><br><span class="muted">${childError}</span>`
+                : `<span class="tag ${childCount>0?'tag-ok':'tag-bad'}">${childCount > 0 ? '✓ 找到 '+childCount+' 条' : '❌ 0 条（补件单不可见）'}</span>`}</td>
+              <td>${ok
+                ? '<span class="tag tag-ok">✓ 正常，主端可显示</span>'
+                : '<span class="tag tag-bad">❌ 主端补件单卡片会是空的</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  // 4. Manual fix tool
   if (suppOrders?.length) {
     const orphans = suppOrders.filter(o => !o.parent_order_id);
     if (orphans.length) {
       html += `<div class="section">
-        <h3>3. 修复孤儿补件单（${orphans.length} 条没有 parent_order_id）</h3>
+        <h3>4. 修复孤儿补件单（${orphans.length} 条没有 parent_order_id）</h3>
         <p class="muted">点击下方按钮，会按 description 中的「关联原单 XXX」自动重新关联。</p>
         <button onclick="relinkAll()" style="padding:10px 16px;background:#1a3a2a;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">重新关联所有孤儿补件单</button>
         <div id="relink-result" style="margin-top:12px"></div>
