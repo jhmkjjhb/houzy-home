@@ -2640,21 +2640,34 @@ function renderChecklistPanel(o, items) {
     const scheduleCard = allInspect && !damaged ? `
       <div class="card p-5 mb-4" style="border-left:3px solid #1a3a2a">
         <h3 class="font-semibold text-gray-800 mb-3">预约安装</h3>
-        <div class="flex gap-2 mb-3">
-          <input type="date" id="install-date-input" value="${o.install_date||''}"
-                 min="${new Date().toISOString().slice(0,10)}" class="input flex-1 text-sm">
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
+            <div class="flex gap-2">
+              <input type="date" id="install-date-input" value="${o.install_date||''}"
+                     min="${new Date().toISOString().slice(0,10)}" class="input flex-1 text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
+            <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
+                   placeholder="填写安装师傅姓名或电话"
+                   class="input text-sm w-full">
+          </div>
           <button onclick="saveInstallDate('${o.id}')"
-                  class="px-4 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition whitespace-nowrap">保存日期</button>
+                  class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
+            保存预约信息
+          </button>
         </div>
         ${o.install_date
           ? `<a href="https://wa.me/${(o.customers?.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(
-              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}，请确认是否方便，谢谢。`
+              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}${o.installer_notes?'，安装负责人：'+o.installer_notes:''}，请确认是否方便，谢谢。`
             )}" target="_blank"
-               class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm mt-2">
+               class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm mt-3">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               WhatsApp 通知客户预约安装
             </a>`
-          : `<p class="text-xs text-gray-400 mt-1">保存安装日期后可发送 WhatsApp 通知</p>`
+          : `<p class="text-xs text-gray-400 mt-2">保存安装日期后可发送 WhatsApp 通知</p>`
         }
       </div>` : '';
 
@@ -2673,9 +2686,32 @@ function renderChecklistPanel(o, items) {
 
   // ── 客户签收（安装中）──
   if (o.status === 'installing') {
+    const installerInfo = (o.install_date || o.installer_notes) ? `
+      <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-600 space-y-1">
+        ${o.install_date ? `<div>📅 安装日期：<span class="font-medium">${o.install_date}</span></div>` : ''}
+        ${o.installer_notes ? `<div>👷 安装负责人：<span class="font-medium">${o.installer_notes}</span></div>` : ''}
+      </div>` : '';
+    const installerSection = canDo(1) ? `
+      <div class="mb-4 space-y-2">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
+          <input type="date" id="install-date-input" value="${o.install_date||''}"
+                 class="input text-sm w-full">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
+          <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
+                 placeholder="填写安装师傅姓名或电话" class="input text-sm w-full">
+        </div>
+        <button onclick="saveInstallDate('${o.id}')"
+                class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition">
+          保存预约信息
+        </button>
+      </div>` : installerInfo;
     return `
       <div class="card p-5 mb-4" style="border-left:3px solid #1a3a2a">
         <h3 class="font-semibold text-gray-800 mb-3">客户签收确认</h3>
+        ${installerSection}
         ${o.signed_at
           ? `<div class="rounded-lg p-3 bg-green-50 text-sm text-green-700 flex items-center gap-2">
                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -2734,15 +2770,30 @@ async function shipOrder(orderId) {
   openDetail(orderId);
 }
 
+function etaDaysToIso(shipTimeVal, days) {
+  const base = shipTimeVal ? new Date(shipTimeVal) : new Date();
+  base.setDate(base.getDate() + Number(days));
+  return base.toISOString();
+}
+
+async function saveEtaDays(orderId) {
+  const days = Number(document.getElementById('eta-days')?.value || 7);
+  const { data: o } = await sb.from('orders').select('ship_time').eq('id', orderId).single();
+  const eta_time = etaDaysToIso(o?.ship_time, days);
+  const { error } = await sb.from('orders').update({ eta_time }).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  openDetail(orderId);
+}
+
 async function saveLogisticsInfo(orderId) {
   const logisticsProfileId = document.getElementById('logistics-sel')?.value || null;
-  const shipTime  = document.getElementById('ship-time')?.value;
-  const etaTime   = document.getElementById('eta-time')?.value;
-  const shipNotes = document.getElementById('ship-notes')?.value?.trim() || null;
+  const shipTimeVal = document.getElementById('ship-time')?.value;
+  const days        = Number(document.getElementById('eta-days')?.value || 7);
+  const shipNotes   = document.getElementById('ship-notes')?.value?.trim() || null;
   const upd = {
     logistics_profile_id: logisticsProfileId || null,
-    ship_time:  shipTime  ? new Date(shipTime).toISOString()  : null,
-    eta_time:   etaTime   ? new Date(etaTime).toISOString()   : null,
+    ship_time: shipTimeVal ? new Date(shipTimeVal).toISOString() : null,
+    eta_time:  etaDaysToIso(shipTimeVal, days),
     ship_notes: shipNotes,
   };
   const { error } = await sb.from('orders').update(upd).eq('id', orderId);
@@ -2776,9 +2827,10 @@ async function markItemStatus(itemId, status, orderId) {
 }
 
 async function saveInstallDate(orderId) {
-  const date = document.getElementById('install-date-input')?.value;
+  const date  = document.getElementById('install-date-input')?.value;
+  const notes = document.getElementById('installer-notes-input')?.value.trim() || null;
   if (!date) { alert('请选择安装日期'); return; }
-  await sb.from('orders').update({ install_date: date }).eq('id', orderId);
+  await sb.from('orders').update({ install_date: date, installer_notes: notes }).eq('id', orderId);
   openDetail(orderId);
 }
 
@@ -2988,19 +3040,40 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
        </div>`
     : '';
 
-  // Logistics user: confirm arrival button
+  // Compute default ETA days from ship_time → eta_time
+  const etaDays = (() => {
+    if (o.eta_time && o.ship_time) {
+      const d = Math.round((new Date(o.eta_time) - new Date(o.ship_time)) / 86400000);
+      return d > 0 ? d : 7;
+    }
+    return 7;
+  })();
+
+  const confirmBtn = `<button onclick="markArrived('${o.id}')"
+    class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition mt-3">
+    📦 确认到货，进入安装
+  </button>`;
+
+  // Logistics: ETA days + confirm arrival
   if (isLogistics && o.status === 'shipped') {
     return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-2">物流操作</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">物流操作</h3>
       ${infoHtml}
-      <button onclick="markArrived('${o.id}')"
-              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
-        📦 确认到货，进入安装
-      </button>
+      <div class="flex items-center gap-2 mb-3">
+        <label class="text-xs text-gray-500 whitespace-nowrap">预计到货天数</label>
+        <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
+               class="input text-sm py-1.5 w-20 text-center">
+        <span class="text-xs text-gray-400">天</span>
+        <button onclick="saveEtaDays('${o.id}')"
+                class="ml-auto px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition whitespace-nowrap">
+          保存
+        </button>
+      </div>
+      ${confirmBtn}
     </div>`;
   }
 
-  // Manager: editable logistics form when shipped
+  // Manager: full logistics form + confirm arrival
   if (isManager && o.status === 'shipped') {
     const logOpts = (logisticsProfiles || []).map(p =>
       `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
@@ -3023,9 +3096,12 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
                    value="${toLocal(o.ship_time)}">
           </div>
           <div>
-            <label class="text-xs text-gray-400 mb-1 block">预计到货</label>
-            <input type="datetime-local" id="eta-time" class="input text-sm py-1.5 w-full"
-                   value="${toLocal(o.eta_time)}">
+            <label class="text-xs text-gray-400 mb-1 block">预计天数</label>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
+                     class="input text-sm py-1.5 flex-1 text-center">
+              <span class="text-xs text-gray-400">天</span>
+            </div>
           </div>
         </div>
         <div>
@@ -3034,14 +3110,15 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
                  value="${o.ship_notes||''}" placeholder="运货单号等">
         </div>
         <button onclick="saveLogisticsInfo('${o.id}')"
-                class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
+                class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition">
           保存物流信息
         </button>
+        ${confirmBtn}
       </div>
     </div>`;
   }
 
-  // Read-only: show info for arrived/installing/completed
+  // Read-only info for arrived/installing/completed
   if (infoLines.length) {
     return `<div class="card p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-2">物流信息</h3>
