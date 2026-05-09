@@ -816,7 +816,7 @@ async function buildOrdersQuery() {
     .limit(300);
   if (lvl >= 4) {
     // L4/L5：全公司，不加过滤
-  } else if (lvl === 3 && profile.region) {
+  } else if (lvl === 3 && profile?.region) {
     const regionIds = stores.filter(s => s.region === profile.region).map(s => s.id);
     if (regionIds.length) q = q.in('store_id', regionIds);
   } else if (profile?.store_id) {
@@ -1658,7 +1658,7 @@ async function lookupCustomer() {
   const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
   const el = document.getElementById('customer-found');
   if (data?.length) {
-    el.innerHTML = `✓ 找到客户：<strong>${data[0].name}</strong>（${data[0].phone}）`;
+    el.textContent = `✓ 找到客户：${data[0].name}（${data[0].phone}）`;
     el.classList.remove('hidden');
     document.getElementById('c-name').value = data[0].name;
     document.getElementById('c-address').value = data[0].address || '';
@@ -1804,30 +1804,33 @@ async function submitOrder() {
 
   if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent = t('create_btn'); btn.disabled = false; return; }
 
-  // Extended columns (silently skip if migration not yet run)
+  // Extended columns
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
-  await sb.from('orders').update(extNew).eq('id', order.id);
+  const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
+  if (extErr) console.warn('[submitOrder] extended update failed:', extErr.message);
 
-  // Save order items (silently skip if table not yet created)
+  // Save order items
   const items = getItemRows();
   if (items.length > 0) {
-    await sb.from('order_items').insert(items.map(item => ({ ...item, order_id: order.id })));
+    const { error: itemErr } = await sb.from('order_items').insert(items.map(item => ({ ...item, order_id: order.id })));
+    if (itemErr) console.warn('[submitOrder] order_items insert failed:', itemErr.message);
   }
 
   // Record first payment if already paid
   if (firstPaid) {
-    await sb.from('order_payments').insert({
+    const { error: payErr } = await sb.from('order_payments').insert({
       order_id: order.id, seq: 1,
       pct: splits[0], amount: amount * splits[0] / 100,
       method: initPayMethod || null,
       paid_at: new Date().toISOString(),
       recorded_by: profile.id,
     });
+    if (payErr) console.warn('[submitOrder] payment insert failed:', payErr.message);
   }
 
   // Log initial status
-  await sb.from('order_logs').insert({
+  const { error: logErr } = await sb.from('order_logs').insert({
     order_id: order.id,
     status: order.status,
     operator_id: profile.id,
@@ -1835,6 +1838,7 @@ async function submitOrder() {
     operator_name: profile.name,
     notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}`,
   });
+  if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
 
   btn.textContent = t('create_btn'); btn.disabled = false;
   await loadOrders();
@@ -2620,15 +2624,17 @@ async function saveItemSuppliers(orderId) {
 }
 
 async function markItemStatus(itemId, status, orderId) {
-  await sb.from('order_items').update({ item_status: status }).eq('id', itemId);
-  openDetail(orderId);
+  const { error } = await sb.from('order_items').update({ item_status: status }).eq('id', itemId);
+  if (error) { alert('更新失败: ' + error.message); return; }
+  await openDetail(orderId);
 }
 
 async function saveInstallDate(orderId) {
   const date = document.getElementById('install-date-input')?.value;
   if (!date) { alert('请选择安装日期'); return; }
-  await sb.from('orders').update({ install_date: date }).eq('id', orderId);
-  openDetail(orderId);
+  const { error } = await sb.from('orders').update({ install_date: date }).eq('id', orderId);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  await openDetail(orderId);
 }
 
 async function submitSignOff(orderId) {
@@ -2940,7 +2946,7 @@ async function updateOrder(id) {
   document.getElementById('upd-msg').classList.remove('hidden');
   setTimeout(() => document.getElementById('upd-msg').classList.add('hidden'), 2000);
   await loadOrders();
-  openDetail(id);
+  await openDetail(id);
 }
 
 // ── Suppliers (admin) ──
