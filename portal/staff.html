@@ -2718,15 +2718,18 @@ function renderChecklistPanel(o, items) {
                已签收 — ${o.signed_by||''} · ${fmtDate(o.signed_at)}
              </div>`
           : `<div class="space-y-3">
-               <div>
-                 <label class="label text-xs">签收人姓名</label>
-                 <input type="text" id="sign-name" placeholder="客户姓名" value="${o.customers?.name||''}" class="input text-sm">
-               </div>
-               <button onclick="submitSignOff('${o.id}')"
+               ${o.sign_image
+                 ? `<div>
+                      <p class="text-xs text-gray-500 mb-2">客户电子签名：</p>
+                      <img src="${o.sign_image}" alt="客户签名" class="border border-gray-200 rounded-lg w-full max-w-xs" style="background:#fafafa">
+                    </div>`
+                 : `<div class="rounded-lg p-3 bg-amber-50 text-sm text-amber-700">等待客户在客户端完成电子签名</div>`
+               }
+               <button onclick="submitSignOff('${o.id}', ${JSON.stringify(o.customers?.name||'')})"
                        class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                  确认客户签收 → 完成订单
                </button>
-               <p class="text-xs text-gray-400">签收后订单自动变为"已完成"</p>
+               <p class="text-xs text-gray-400">确认后订单自动变为"已完成"</p>
              </div>`
         }
       </div>`;
@@ -2834,10 +2837,9 @@ async function saveInstallDate(orderId) {
   openDetail(orderId);
 }
 
-async function submitSignOff(orderId) {
-  const name = document.getElementById('sign-name')?.value.trim();
-  if (!name) { alert('请输入签收人姓名'); return; }
-  const btn = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
+async function submitSignOff(orderId, customerName) {
+  const name = customerName || '';
+  const btn = event?.currentTarget || document.querySelector(`button[onclick^="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
   await sb.from('orders').update({
     signed_at: new Date().toISOString(),
