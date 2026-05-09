@@ -1899,6 +1899,7 @@ async function submitOrder() {
   // Extended columns
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
+  const parentRedirectId = _supplementParentId;  // remember for post-submit redirect
   if (_supplementParentId) {
     extNew.parent_order_id  = _supplementParentId;
     extNew.liability_party  = document.getElementById('o-liability-party')?.value || 'supplier';
@@ -1942,7 +1943,8 @@ async function submitOrder() {
 
   btn.textContent = t('create_btn'); btn.disabled = false;
   await loadOrders();
-  openDetail(order.id, 'orders');
+  // For supplement orders, return to the parent order so user can create more if needed
+  openDetail(parentRedirectId || order.id, 'orders');
 }
 
 function showCreateErr(msg) {
