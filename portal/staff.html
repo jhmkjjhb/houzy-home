@@ -340,7 +340,24 @@
         </div>
       </div>
 
-      <!-- Step 3: Order Items -->
+      <!-- Supplement order: liability section (hidden for normal orders) -->
+      <div id="supplement-liability" class="hidden card p-6 mb-4" style="border-left:3px solid #ef4444">
+        <h2 class="font-semibold text-gray-800 mb-4">3. 责任与亏损</h2>
+        <div class="mb-3">
+          <label class="label">责任方</label>
+          <select id="o-liability-party" class="input">
+            <option value="supplier">供应商承担</option>
+            <option value="store">店面承担</option>
+            <option value="shared">双方协商</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">店面亏损金额（若店面承担或双方协商填写）</label>
+          <input type="number" id="o-loss-amount" placeholder="0.00" min="0" step="0.01" class="input">
+        </div>
+      </div>
+
+      <!-- Step 3 (Step 4 for supplement): Order Items -->
       <div class="card p-6 mb-4">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-semibold text-gray-800">3. 商品明细</h2>
@@ -1704,6 +1721,8 @@ function resetCreateForm() {
   _supplementCustomerId = null;
   document.getElementById('step-customer')?.classList.remove('hidden');
   document.getElementById('supplement-customer-info')?.classList.add('hidden');
+  document.getElementById('supplement-liability')?.classList.add('hidden');
+  const lossEl = document.getElementById('o-loss-amount'); if (lossEl) lossEl.value = '';
   ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -1879,7 +1898,12 @@ async function submitOrder() {
   // Extended columns
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
-  if (_supplementParentId) extNew.parent_order_id = _supplementParentId;
+  if (_supplementParentId) {
+    extNew.parent_order_id  = _supplementParentId;
+    extNew.liability_party  = document.getElementById('o-liability-party')?.value || 'supplier';
+    const lossVal = parseFloat(document.getElementById('o-loss-amount')?.value);
+    if (lossVal > 0) extNew.loss_amount = lossVal;
+  }
   _supplementParentId = null;
   _supplementCustomerId = null;
   const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
@@ -2062,6 +2086,13 @@ async function openDetail(id, backView) {
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
       ${o.notes ? `<p class="mt-2 text-xs text-gray-400 bg-gray-50 rounded p-2">${o.notes}</p>` : ''}
+      ${o.liability_party ? (() => {
+        const partyLabel = {supplier:'供应商承担', store:'店面承担', shared:'双方协商'}[o.liability_party] || o.liability_party;
+        const lossHtml = o.loss_amount > 0 ? `，店面亏损 <span class="font-semibold text-red-600">${fmtAmt(o.loss_amount, o.currency)}</span>` : '';
+        return `<div class="mt-2 text-xs rounded p-2 flex items-center gap-1.5" style="background:#fef2f2;color:#991b1b">
+          <span>⚠</span><span>责任方：<strong>${partyLabel}</strong>${lossHtml}</span>
+        </div>`;
+      })() : ''}
       ${progressBar}
       ${deadlineBanner}
     </div>
@@ -2822,6 +2853,8 @@ async function openSupplementOrder(orderId, orderNo) {
     document.getElementById('supplement-customer-text').textContent =
       `${order.customers.name}（${order.customers.phone}）`;
   }
+  document.getElementById('supplement-liability').classList.remove('hidden');
+
   if (order?.store_id) {
     const sel = document.getElementById('o-store');
     if (sel) sel.value = order.store_id;
