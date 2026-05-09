@@ -2001,14 +2001,21 @@ async function openDetail(id, backView) {
     { data: payments },
     { data: items },
     { data: attachments },
-    { data: childOrders },
+    { data: childByFk },
+    { data: childByDesc },
   ] = await Promise.all([
     sb.from('suppliers').select('id,name,supplier_code,product_types').eq('active', true),
     sb.from('order_payments').select('*').eq('order_id', id).order('seq'),
     sb.from('order_items').select('*').eq('order_id', id).order('sort_order'),
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
-    sb.from('orders').select('id,order_no,status,amount,created_at').eq('parent_order_id', id).order('created_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').eq('parent_order_id', id).order('created_at'),
+    sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').like('description', `补件单%${o.order_no}%`).order('created_at'),
   ]);
+  // Merge FK + description-fallback children (dedupe by id; exclude self)
+  const childMap = new Map();
+  (childByFk || []).forEach(c => childMap.set(c.id, c));
+  (childByDesc || []).forEach(c => { if (c.id !== id) childMap.set(c.id, c); });
+  const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
 
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
