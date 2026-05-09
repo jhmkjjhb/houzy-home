@@ -227,12 +227,11 @@ async function openDetail(id) {
   document.getElementById('detail-content').innerHTML =
     '<div class="text-center py-10 text-gray-400">加载中…</div>';
 
-  const { data: o } = await sb.from('orders')
-    .select('*, stores(name), customers(name,phone)')
-    .eq('id', id).single();
-
-  const { data: logs } = await sb.from('order_logs')
-    .select('*').eq('order_id', id).order('created_at', { ascending: true });
+  const [{ data: o }, { data: items }, { data: logs }] = await Promise.all([
+    sb.from('orders').select('*, stores(name), customers(name,phone,address)').eq('id', id).single(),
+    sb.from('order_items').select('*').eq('order_id', id).order('sort_order'),
+    sb.from('order_logs').select('*').eq('order_id', id).order('created_at', { ascending: true }),
+  ]);
 
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
@@ -286,6 +285,23 @@ async function openDetail(id) {
       <p id="det-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
     </div>` : '';
 
+  const itemsHtml = (items || []).length ? `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">商品明细</h3>
+      <div class="space-y-2">
+        ${(items || []).map(it => `
+          <div class="bg-gray-50 rounded-lg p-3 text-sm">
+            <div class="font-medium text-gray-800">${it.product_name || '-'}</div>
+            ${it.model_spec ? `<div class="text-gray-500 text-xs mt-0.5">型号：${it.model_spec}</div>` : ''}
+            <div class="flex gap-4 mt-1 text-xs text-gray-500">
+              <span>数量：<span class="font-medium text-gray-700">${it.quantity} ${it.unit || ''}</span></span>
+              ${it.unit_price ? `<span>单价：<span class="font-medium text-gray-700">${fmtAmt(it.unit_price)}</span></span>` : ''}
+              ${it.total_price ? `<span>小计：<span class="font-bold text-hg">${fmtAmt(it.total_price)}</span></span>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
   document.getElementById('detail-content').innerHTML = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
@@ -295,18 +311,37 @@ async function openDetail(id) {
         </div>
         ${badge(o.status)}
       </div>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-        <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
-        <div><span class="text-gray-400">支付</span>
-          <span class="${o.payment_status==='paid'?'text-green-600':'text-red-500'} font-medium">
+      <div class="divide-y divide-gray-50 text-sm space-y-2">
+        <div class="flex justify-between pb-2">
+          <span class="text-gray-400">客户</span>
+          <span class="font-medium">${o.customers?.name || '-'}</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">电话</span>
+          <span>${o.customers?.phone || '-'}</span>
+        </div>
+        ${o.customers?.address ? `<div class="py-2"><span class="text-gray-400">地址</span><p class="mt-1 text-gray-700">${o.customers.address}</p></div>` : ''}
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">金额</span>
+          <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">支付</span>
+          <span class="${o.payment_status==='paid'?'text-green-600 font-medium':'text-orange-500'}">
             ${o.payment_status==='paid'?'已支付':'待支付'}
           </span>
         </div>
-        <div><span class="text-gray-400">创建</span> <span>${fmtDate(o.created_at)}</span></div>
-        ${o.tracking_no ? `<div class="col-span-2"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
+        <div class="flex justify-between py-2">
+          <span class="text-gray-400">创建日期</span>
+          <span>${fmtDate(o.created_at)}</span>
+        </div>
+        ${o.tracking_no ? `<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
+        ${o.description ? `<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${o.description}</p></div>` : ''}
+        ${o.notes ? `<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${o.notes}</p></div>` : ''}
       </div>
-      ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
     </div>
+
+    ${itemsHtml}
 
     ${updateSection}
 
