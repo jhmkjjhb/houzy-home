@@ -2857,8 +2857,8 @@ async function openSupplementOrder(orderId, orderNo) {
   ]);
 
   resetCreateForm();
-  _supplementParentId = orderId;
   goto('create');
+  _supplementParentId = orderId;
 
   await new Promise(r => setTimeout(r, 80));
 
