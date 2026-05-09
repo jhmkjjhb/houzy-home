@@ -880,6 +880,8 @@ const STATUS = {
   in_transit:         { label:'运输中',   s:'background:#2d5e4333;color:#1a3a2a', step:3, legacy:true },
 };
 const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
+const PROD_STAGE_KEYS   = ['drawing','material','producing','qc'];
+const PROD_STAGE_LABELS = { drawing:'图纸确认', material:'材料采购', producing:'生产加工', qc:'质检中' };
 
 function fmtSla(s) {
   const h = STATUS_SLA_HOURS[s];
@@ -1570,7 +1572,10 @@ function renderOrdersTable(orders) {
         <td class="px-4 py-3"><div class="font-medium">${o.customers?.name||'-'}</div><div class="text-gray-400 text-xs">${o.customers?.phone||''}</div></td>
         <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name||'-'}</td>
         <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount,o.currency)}</td>
-        <td class="px-4 py-3">${badge(o.status)}</td>
+        <td class="px-4 py-3">
+          ${badge(o.status)}
+          ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium ml-1" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+        </td>
         <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
       </tr>`;
     }).join('')}</tbody></table>
@@ -1582,7 +1587,10 @@ function renderOrdersTable(orders) {
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
       <div class="flex items-start justify-between gap-2 mb-1.5">
         <span class="font-mono text-sm font-bold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</span>
-        ${badge(o.status)}
+        <div class="flex items-center gap-1 flex-wrap justify-end">
+          ${badge(o.status)}
+          ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+        </div>
       </div>
       <div class="flex items-center justify-between">
         <div>
@@ -2093,6 +2101,8 @@ async function openDetail(id, backView) {
     </div>
 
     ${renderItemsCard(items, o, supList)}
+
+    ${renderProdStagePanel(o)}
 
     ${renderChecklistPanel(o, items)}
 
@@ -2931,6 +2941,34 @@ async function deleteAttachment(attachId, storagePath, orderId) {
   const { data: fresh } = await sb.from('order_attachments').select('*').eq('order_id', orderId).order('uploaded_at');
   const card = document.getElementById(`attach-card-${orderId}`);
   if (card) card.outerHTML = renderAttachmentsCard(fresh, orderId);
+}
+
+function renderProdStagePanel(o) {
+  if (o.status !== 'in_production') return '';
+  const cur = o.prod_stage;
+  const curIdx = PROD_STAGE_KEYS.indexOf(cur);
+  const stagesHtml = PROD_STAGE_KEYS.map((k, i) => {
+    const label = PROD_STAGE_LABELS[k];
+    const done = cur && i < curIdx;
+    const active = k === cur;
+    const style = active
+      ? 'background:#fffbeb;border:2px solid #f59e0b;color:#92400e;font-weight:600'
+      : done
+        ? 'background:#f0fdf4;border:1px solid #86efac;color:#166534'
+        : 'background:white;border:1px solid #e5e7eb;color:#9ca3af';
+    const icon = active ? '●' : done ? '✓' : '○';
+    return `<div class="text-center p-2 rounded-lg text-xs" style="${style}">
+      <div class="text-base mb-0.5">${icon}</div>
+      <div>${label}</div>
+    </div>`;
+  }).join('');
+  return `<div class="card p-5 mb-4">
+    <h3 class="font-semibold text-gray-800 mb-3">🏭 生产进度</h3>
+    <div class="grid grid-cols-4 gap-2">${stagesHtml}</div>
+    <p class="mt-2 text-xs text-center ${cur ? 'text-amber-600 font-medium' : 'text-gray-400'}">
+      ${cur ? `当前阶段：${PROD_STAGE_LABELS[cur] || cur}` : '厂家尚未更新生产阶段'}
+    </p>
+  </div>`;
 }
 
 function renderSupplierActionCard(o, items) {

@@ -557,7 +557,7 @@ async function detailReject(id) {
 
 async function detailStartProd(id) {
   const notes = document.getElementById('start-notes')?.value.trim();
-  await sb.from('orders').update({status:'in_production'}).eq('id', id);
+  await sb.from('orders').update({status:'in_production', prod_stage:null}).eq('id', id);
   await sb.from('order_logs').insert({
     order_id:id, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
@@ -575,7 +575,9 @@ async function updateProdProgress(id) {
 
   if (!stageLabel && !notes) { alert('请选择生产阶段或填写备注'); return; }
 
+  const stageKey = selectedBtn?.dataset.key || null;
   const logNotes = [stageLabel?`【${stageLabel}】`:null, notes||null].filter(Boolean).join(' ');
+  if (stageKey) await sb.from('orders').update({ prod_stage: stageKey }).eq('id', id);
   await sb.from('order_logs').insert({
     order_id:id, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
@@ -592,7 +594,7 @@ async function updateProdProgress(id) {
 
 async function markProdComplete(id) {
   if (!confirm('确认生产完成？订单将进入待发货状态。')) return;
-  await sb.from('orders').update({status:'production_complete'}).eq('id', id);
+  await sb.from('orders').update({status:'production_complete', prod_stage:null}).eq('id', id);
   await sb.from('order_logs').insert({
     order_id:id, status:'production_complete',
     operator_id:profile.id, operator_role:'supplier',
