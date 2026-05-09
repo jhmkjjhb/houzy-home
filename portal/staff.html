@@ -842,8 +842,6 @@ async function buildOrdersQuery() {
   const lvl = myLevel();
   let q = sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
-    .is('parent_order_id', null)
-    .or('description.is.null,description.not.like.补件单*')
     .order('created_at', { ascending: false })
     .limit(300);
   if (lvl >= 4) {
@@ -1392,7 +1390,10 @@ async function loadOrders() {
       <div class="mt-1 text-xs text-gray-500">请联系管理员检查数据库权限设置</div>
     </div>`;
   }
-  allOrders = data || [];
+  // Hide supplement orders from main list — they're viewed via the parent's child card
+  allOrders = (data || []).filter(o =>
+    !o.parent_order_id && !(o.description && o.description.startsWith('补件单'))
+  );
 }
 
 async function loadCustomers() {
