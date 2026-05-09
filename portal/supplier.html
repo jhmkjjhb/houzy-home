@@ -118,10 +118,30 @@ async function init() {
 }
 
 async function loadOrders() {
-  const { data } = await sb.from('orders')
+  // Find orders assigned via order_items (new) or orders.supplier_id (legacy)
+  const { data: items } = await sb.from('order_items')
+    .select('order_id')
+    .eq('supplier_id', supplier?.id);
+
+  const itemOrderIds = (items || []).map(i => i.order_id).filter(Boolean);
+  const supId = supplier?.id;
+
+  let q = sb.from('orders')
     .select('*, stores(name), customers(name,phone)')
-    .eq('supplier_id', supplier?.id)
     .order('created_at', { ascending: false });
+
+  if (itemOrderIds.length && supId) {
+    q = q.or(`id.in.(${itemOrderIds.join(',')}),supplier_id.eq.${supId}`);
+  } else if (itemOrderIds.length) {
+    q = q.in('id', itemOrderIds);
+  } else if (supId) {
+    q = q.eq('supplier_id', supId);
+  } else {
+    allOrders = []; renderOrders(); return;
+  }
+
+  const { data, error } = await q;
+  if (error) console.error('[supplier loadOrders]', error.message);
   allOrders = data || [];
   renderOrders();
 }
