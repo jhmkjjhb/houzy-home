@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><title>诊断</title>
-<style>body{font-family:sans-serif;padding:20px;max-width:600px}
-.ok{color:green;font-weight:bold}.err{color:red;font-weight:bold}
-pre{background:#f5f5f5;padding:10px;border-radius:6px;white-space:pre-wrap;word-break:break-all}</style>
+<style>body{font-family:sans-serif;padding:20px;max-width:700px}
+pre{background:#f5f5f5;padding:10px;border-radius:6px;white-space:pre-wrap;word-break:break-all;font-size:13px}</style>
 </head>
 <body>
-<h2>订单诊断工具</h2>
+<h2>订单诊断工具 v2</h2>
 <div id="out">正在检查...</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -15,26 +14,28 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 const log = [];
 async function run() {
-  // 1. Check auth
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) { log.push('❌ 未登录，请先登录后台再访问此页面'); render(); return; }
+  if (!session) { log.push('❌ 未登录'); render(); return; }
   log.push('✅ 已登录: ' + session.user.email);
 
-  // 2. Check profile RPC
-  const { data: prof, error: pe } = await sb.rpc('get_my_profile');
-  if (pe) log.push('⚠️ get_my_profile 错误: ' + pe.message);
-  else log.push('✅ 用户资料: 角色=' + (prof?.role||'null') + ' 门店=' + (prof?.store_id||'null'));
+  const { data: prof } = await sb.rpc('get_my_profile');
+  log.push('✅ 角色=' + (prof?.role||'null') + ' 门店=' + (prof?.store_id||'null'));
 
-  // 3. Query orders directly (no filter)
-  const { data: orders, error: oe } = await sb.from('orders').select('id,order_no,store_id').limit(20);
-  if (oe) log.push('❌ 查询订单错误: ' + oe.message + '\n详情: ' + JSON.stringify(oe));
-  else log.push('✅ 查询到 ' + (orders?.length||0) + ' 条订单\n' + (orders||[]).map(o=>o.order_no+'(store:'+o.store_id+')').join('\n'));
+  // Test 1: simple query (no joins)
+  const { data: d1, error: e1 } = await sb.from('orders').select('id,order_no').limit(5);
+  log.push((e1 ? '❌' : '✅') + ' 简单查询: ' + (e1 ? e1.message : (d1?.length||0) + '条'));
 
-  // 4. If orders found, check store_id match
-  if (orders?.length && prof?.store_id) {
-    const match = orders.filter(o => o.store_id === prof.store_id);
-    log.push('ℹ️ 其中属于你门店的: ' + match.length + ' 条');
-  }
+  // Test 2: full query exactly as staff.html uses
+  const { data: d2, error: e2 } = await sb.from('orders')
+    .select('*, stores(name,code), customers(name,phone,address), profiles(name), suppliers(name,phone)')
+    .limit(5);
+  log.push((e2 ? '❌' : '✅') + ' 完整查询(含关联): ' + (e2 ? '\n错误: ' + e2.message + '\n' + JSON.stringify(e2) : (d2?.length||0) + '条'));
+
+  // Test 3: explicit FK hint for profiles
+  const { data: d3, error: e3 } = await sb.from('orders')
+    .select('*, stores(name,code), customers(name,phone,address), profiles!profile_id(name), suppliers(name,phone)')
+    .limit(5);
+  log.push((e3 ? '❌' : '✅') + ' 修复查询(明确外键): ' + (e3 ? '\n错误: ' + e3.message : (d3?.length||0) + '条'));
 
   render();
 }
