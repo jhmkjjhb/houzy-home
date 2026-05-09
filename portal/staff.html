@@ -2590,14 +2590,14 @@ function renderItemsCard(items, o, supList) {
         </div>
         ${canAssign ? `
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end">
-            ${items.some(i => canDo(3) || !i.supplier_id)
+            ${items.some(i => !i.supplier_id)
               ? `<button onclick="saveItemSuppliers('${o.id}')"
                         class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                    保存供应商分配
                  </button>`
               : `<button disabled
-                        class="px-4 py-1.5 bg-gray-300 text-gray-500 text-sm font-semibold rounded-lg cursor-not-allowed">
-                   保存供应商分配
+                        class="px-4 py-1.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
+                   已完成分配
                  </button>`
             }
           </div>` : ''}
