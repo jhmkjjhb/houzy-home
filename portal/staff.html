@@ -909,7 +909,7 @@ function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   return { text: fmtSla(s), color: '#d1d5db' };
 }
 
-function renderStatusTimeline(currentStatus, logs, deadlineAt) {
+function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage) {
   _tlLogs     = logs     || _tlLogs;
   _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
   _tlStatus   = currentStatus;
@@ -927,6 +927,10 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt) {
     else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
     const border  = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
     const tl      = stepTimeLabel(s, i, curStep, current);
+    const subText = (s === 'in_production' && current && prodStage)
+      ? (PROD_STAGE_LABELS[prodStage] || prodStage)
+      : tl.text;
+    const subColor = (s === 'in_production' && current && prodStage) ? '#b45309' : tl.color;
     const connector = i < CORE_STEPS.length - 1
       ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
       : '';
@@ -938,7 +942,7 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt) {
                 <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
               </button>
               <span id="step-time-${s}" class="text-center mt-0.5 leading-tight px-0.5"
-                    style="font-size:9px;color:${tl.color};min-width:64px;word-break:break-all">${tl.text}</span>
+                    style="font-size:9px;color:${subColor};min-width:64px;word-break:break-all">${subText}</span>
             </div>${connector}`;
   }).join('');
 
@@ -2120,7 +2124,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status, logs, o.deadline_at)}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage)}
         ${o.status === 'in_production' ? `
         <div class="mt-3 pt-3 border-t border-gray-100">
           <p class="text-xs text-gray-400 mb-2">厂家生产进度</p>
@@ -2627,7 +2631,7 @@ function renderChecklistPanel(o, items) {
   if (!items || items.length === 0) return '';
 
   // ── 装柜核对（生产中）──
-  if (o.status === 'in_production') {
+  if (o.status === 'in_production') return '';
     const readyCount = items.filter(i => ['ready','shipped','arrived'].includes(i.item_status)).length;
     const allReady   = readyCount === items.length;
     const rows = items.map(i => {
