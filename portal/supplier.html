@@ -182,8 +182,7 @@ function renderOrders() {
         ${badge(o.status)}
       </div>
       ${o.description ? `<p class="text-sm text-gray-600 mb-3">${o.description}</p>` : ''}
-      <div class="flex items-center justify-between">
-        <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
+      <div class="flex items-center justify-end">
         <div class="flex gap-2">
           <button onclick="openDetail('${o.id}')"
                   class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
@@ -295,8 +294,6 @@ async function openDetail(id) {
             ${it.model_spec ? `<div class="text-gray-500 text-xs mt-0.5">型号：${it.model_spec}</div>` : ''}
             <div class="flex gap-4 mt-1 text-xs text-gray-500">
               <span>数量：<span class="font-medium text-gray-700">${it.quantity} ${it.unit || ''}</span></span>
-              ${it.unit_price ? `<span>单价：<span class="font-medium text-gray-700">${fmtAmt(it.unit_price)}</span></span>` : ''}
-              ${it.total_price ? `<span>小计：<span class="font-bold text-hg">${fmtAmt(it.total_price)}</span></span>` : ''}
             </div>
           </div>`).join('')}
       </div>
@@ -321,16 +318,6 @@ async function openDetail(id) {
           <span>${o.customers?.phone || '-'}</span>
         </div>
         ${o.customers?.address ? `<div class="py-2"><span class="text-gray-400">地址</span><p class="mt-1 text-gray-700">${o.customers.address}</p></div>` : ''}
-        <div class="flex justify-between py-2">
-          <span class="text-gray-400">金额</span>
-          <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
-        </div>
-        <div class="flex justify-between py-2">
-          <span class="text-gray-400">支付</span>
-          <span class="${o.payment_status==='paid'?'text-green-600 font-medium':'text-orange-500'}">
-            ${o.payment_status==='paid'?'已支付':'待支付'}
-          </span>
-        </div>
         <div class="flex justify-between py-2">
           <span class="text-gray-400">创建日期</span>
           <span>${fmtDate(o.created_at)}</span>
