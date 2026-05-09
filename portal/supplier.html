@@ -166,7 +166,9 @@ function setFilter(val, btn) {
 }
 
 function renderOrders() {
-  const assignedOrders = allOrders.filter(o => o.status === 'assigned');
+  // Update "待接单" badge count
+  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
+  const assignedOrders = allOrders.filter(o => !supplierConfirmed.includes(o.status));
   const btnAssigned = document.getElementById('btn-assigned');
   if (btnAssigned) {
     btnAssigned.innerHTML = assignedOrders.length
@@ -174,6 +176,7 @@ function renderOrders() {
       : '待接单';
   }
 
+  // Alert banner
   const banner = document.getElementById('alert-banner');
   if (assignedOrders.length && !currentFilter) {
     banner.classList.remove('hidden');
@@ -206,8 +209,9 @@ function renderOrders() {
   }
 
   if (!currentFilter) {
+    // Grouped kanban view
     const groups = [
-      {statuses:['assigned'],                          label:'待接单'},
+      {statuses:['assigned','paid','pending_payment'], label:'待接单'},
       {statuses:['accepted'],                          label:'已接单'},
       {statuses:['in_production'],                     label:'生产中'},
       {statuses:['production_complete'],               label:'待发货'},
@@ -229,6 +233,7 @@ function renderOrders() {
         ${gOrders.map(o => orderCard(o)).join('')}
       </div>`;
     }
+    // Catch-all for unlisted statuses
     filtered.filter(o => !shown.has(o.id)).forEach(o => { html += orderCard(o); });
     el.innerHTML = html;
   } else {
@@ -238,10 +243,11 @@ function renderOrders() {
 
 function orderCard(o) {
   const st = o.status;
+  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
   let actionBtns = `<button onclick="openDetail('${o.id}')"
     class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">详情</button>`;
 
-  if (st === 'assigned') {
+  if (!supplierConfirmed.includes(st)) {
     actionBtns += `
       <button onclick="rejectOrder(event,'${o.id}')"
               class="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-500 hover:bg-red-50">拒绝</button>
@@ -274,6 +280,8 @@ function orderCard(o) {
     </div>
   </div>`;
 }
+
+// ── Quick actions from card ──────────────────────────────────────────
 
 async function acceptOrder(e, orderId) {
   e.stopPropagation();
@@ -318,6 +326,8 @@ async function quickStartProd(e, orderId) {
   await loadOrders();
 }
 
+// ── Order detail ─────────────────────────────────────────────────────
+
 async function openDetail(id) {
   show('v-detail');
   document.getElementById('detail-content').innerHTML =
@@ -349,9 +359,12 @@ async function openDetail(id) {
   }).join('');
 
   const st = o?.status;
+  // Statuses where supplier has already confirmed/started work
+  const supplierConfirmed = ['accepted','in_production','production_complete','shipped','in_transit','arrived','installing','completed','after_sales','closed'];
   let actionSection = '';
 
-  if (st === 'assigned') {
+  if (!supplierConfirmed.includes(st)) {
+    // Any pre-confirmation status (assigned, paid, pending_payment, etc.) → show accept panel
     actionSection = `
     <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
       <div class="flex items-center gap-2 mb-3">
@@ -375,7 +388,7 @@ async function openDetail(id) {
 
   } else if (st === 'accepted') {
     actionSection = `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">开始生产</h3>
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">备注（预计完成时间等）</label>
@@ -390,7 +403,7 @@ async function openDetail(id) {
 
   } else if (st === 'in_production') {
     actionSection = `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">更新生产进度</h3>
       <div class="mb-4">
         <label class="block text-xs font-medium text-gray-600 mb-2">当前阶段</label>
@@ -422,7 +435,7 @@ async function openDetail(id) {
 
   } else if (st === 'production_complete') {
     actionSection = `
-    <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5">
+    <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
       <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">物流公司 <span class="text-red-500">*</span></label>
@@ -504,6 +517,8 @@ async function openDetail(id) {
 
     ${actionSection}`;
 }
+
+// ── Detail action handlers ────────────────────────────────────────────
 
 function selectStage(btn) {
   document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('selected'));
@@ -607,6 +622,8 @@ async function submitShipping(id) {
   if (msg) msg.classList.remove('hidden');
   setTimeout(async () => { await loadOrders(); openDetail(id); }, 1200);
 }
+
+// ── Print task sheet ──────────────────────────────────────────────────
 
 function printTaskSheet() {
   if (!currentDetailData) return;
