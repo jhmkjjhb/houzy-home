@@ -2852,7 +2852,7 @@ async function markItemStatus(itemId, status, orderId) {
 
 async function openSupplementOrder(orderId, orderNo) {
   const [{ data: order }, { data: damaged }] = await Promise.all([
-    sb.from('orders').select('id, customers(name,phone,address)').eq('id', orderId).single(),
+    sb.from('orders').select('store_id, customers(id,name,phone,address)').eq('id', orderId).single(),
     sb.from('order_items').select('*').eq('order_id', orderId).eq('item_status', 'damaged'),
   ]);
 
@@ -2863,14 +2863,19 @@ async function openSupplementOrder(orderId, orderNo) {
   await new Promise(r => setTimeout(r, 80));
 
   if (order?.customers) {
-    document.getElementById('c-phone').value  = order.customers.phone  || '';
-    document.getElementById('c-name').value   = order.customers.name   || '';
+    document.getElementById('c-phone').value   = order.customers.phone   || '';
+    document.getElementById('c-name').value    = order.customers.name    || '';
     document.getElementById('c-address').value = order.customers.address || '';
     const found = document.getElementById('customer-found');
     if (found) {
-      found.innerHTML = `✓ 找到客户：<strong>${order.customers.name}</strong>（${order.customers.phone}）`;
+      found.innerHTML  = `✓ 找到客户：<strong>${order.customers.name}</strong>（${order.customers.phone}）`;
+      found.dataset.id = order.customers.id;
       found.classList.remove('hidden');
     }
+  }
+  if (order?.store_id) {
+    const sel = document.getElementById('o-store');
+    if (sel) sel.value = order.store_id;
   }
 
   document.getElementById('o-desc').value  = `补件单 — 关联原单 ${orderNo}`;
