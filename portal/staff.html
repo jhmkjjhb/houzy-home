@@ -842,6 +842,7 @@ async function buildOrdersQuery() {
   const lvl = myLevel();
   let q = sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
+    .is('parent_order_id', null)
     .order('created_at', { ascending: false })
     .limit(300);
   if (lvl >= 4) {
