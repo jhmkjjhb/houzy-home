@@ -843,6 +843,7 @@ async function buildOrdersQuery() {
   let q = sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
     .is('parent_order_id', null)
+    .or('description.is.null,description.not.like.补件单*')
     .order('created_at', { ascending: false })
     .limit(300);
   if (lvl >= 4) {

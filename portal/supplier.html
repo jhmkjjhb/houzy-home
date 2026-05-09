@@ -148,6 +148,7 @@ async function loadOrders() {
   let q = sb.from('orders')
     .select('*, stores(name), customers(name,phone)')
     .is('parent_order_id', null)
+    .or('description.is.null,description.not.like.补件单*')
     .order('created_at', {ascending:false});
 
   if (itemOrderIds.length && supId)   q = q.or(`id.in.(${itemOrderIds.join(',')}),supplier_id.eq.${supId}`);
