@@ -156,10 +156,7 @@ async function loadOrders() {
 
   const {data, error} = await q;
   if (error) console.error('[supplier loadOrders]', error.message);
-  // Hide supplement orders — they're viewed via the parent's child card
-  allOrders = (data || []).filter(o =>
-    !o.parent_order_id && !(o.description && o.description.startsWith('补件单'))
-  );
+  allOrders = data || [];
   renderOrders();
 }
 
