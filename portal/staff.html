@@ -3308,7 +3308,9 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   const { data: allPaid } = await sb.from('order_payments').select('seq').eq('order_id', orderId);
   const { data: ord }     = await sb.from('orders').select('installments,status').eq('id', orderId).single();
   const newPayStatus = (allPaid?.length || 0) >= (ord?.installments || 1) ? 'paid' : 'partial';
-  await sb.from('orders').update({ payment_status: newPayStatus }).eq('id', orderId);
+  const statusUpd = { payment_status: newPayStatus };
+  if (newPayStatus === 'paid' && ord?.status === 'pending_payment') statusUpd.status = 'paid';
+  await sb.from('orders').update(statusUpd).eq('id', orderId);
 
   await sb.from('order_logs').insert({
     order_id: orderId, status: ord?.status || '',
