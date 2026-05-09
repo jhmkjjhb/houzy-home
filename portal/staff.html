@@ -2128,7 +2128,7 @@ async function openDetail(id, backView) {
 
     ${renderProdStagePanel(o)}
 
-    ${renderChecklistPanel(o, items)}
+    ${renderChecklistPanel(o, items, childOrders)}
 
     ${renderAttachmentsCard(attachments, o.id)}
 
@@ -2622,7 +2622,7 @@ function renderItemsCard(items, o, supList) {
 }
 
 // ── Checklist panels ──
-function renderChecklistPanel(o, items) {
+function renderChecklistPanel(o, items, childOrders) {
   if (!items || items.length === 0) return '';
 
   if (o.status === 'in_production') return '';
@@ -2694,17 +2694,36 @@ function renderChecklistPanel(o, items) {
           <span class="text-sm ${allInspect?'text-green-600 font-medium':'text-gray-400'}">${inspCount} / ${items.length} 件已核对</span>
         </div>
         <div>${inspRows}</div>
-        ${damaged ? `
+        ${damaged ? (() => {
+          const existingSupps = (childOrders || []);
+          const suppLinks = existingSupps.map(c =>
+            `<button onclick="openDetail('${c.id}')"
+                     class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-white border border-blue-400 text-blue-600 rounded-lg hover:bg-blue-50 transition whitespace-nowrap">
+               查看补件单 ${c.order_no}
+             </button>`
+          ).join('');
+          const createBtn = existingSupps.length
+            ? `<button disabled
+                       title="已存在补件单，如需新补件请先跟进现有补件单"
+                       class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-gray-200 text-gray-400 rounded-lg cursor-not-allowed whitespace-nowrap">
+                 创建补件单
+               </button>`
+            : `<button onclick="openSupplementOrder('${o.id}', '${o.order_no}')"
+                       class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
+                 创建补件单
+               </button>`;
+          return `
           <div class="mt-3 rounded-lg p-3 bg-red-50">
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
               <span class="text-sm text-red-700">⚠ 有 ${damaged} 件破损，需向供应商补件</span>
-              <button onclick="openSupplementOrder('${o.id}', '${o.order_no}')"
-                      class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition whitespace-nowrap">
-                创建补件单
-              </button>
+              <div class="flex items-center gap-2 flex-wrap">
+                ${suppLinks}
+                ${createBtn}
+              </div>
             </div>
             <p class="text-xs text-red-400 mt-1">其他货品可继续安排安装</p>
-          </div>` : ''}
+          </div>`;
+        })() : ''}
         ${allInspect
           ? damaged
             ? `<div class="mt-3 rounded-lg p-3 text-sm font-medium text-amber-700 bg-amber-50">其他货品验货完成，可安排安装，补件单另行跟进</div>`
