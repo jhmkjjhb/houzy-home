@@ -1383,7 +1383,14 @@ async function loadReferrers() {
 
 async function loadOrders() {
   const { data, error } = await buildOrdersQuery();
-  if (error) console.error('[loadOrders] Supabase error:', error.message, error);
+  if (error) {
+    console.error('[loadOrders] Supabase error:', error.message, error);
+    const el = document.getElementById('orders-table');
+    if (el) el.innerHTML = `<div class="p-4 text-red-600 text-sm bg-red-50 rounded-lg">
+      ⚠️ 加载订单失败：${error.message}
+      <div class="mt-1 text-xs text-gray-500">请联系管理员检查数据库权限设置</div>
+    </div>`;
+  }
   allOrders = data || [];
 }
 
@@ -1402,7 +1409,7 @@ function goto(view) {
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
   });
   if (view === 'dashboard') renderDashboard();
-  if (view === 'orders') renderOrdersTable(allOrders);
+  if (view === 'orders') filterOrders();
   if (view === 'customers') renderCustomersTable(allCustomers);
   if (view === 'create') resetCreateForm();
   if (view === 'registrations') loadRegistrations();
