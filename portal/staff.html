@@ -1899,6 +1899,7 @@ async function submitOrder() {
   const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits };
   if (initPayMethod) extNew.payment_method = initPayMethod;
   if (_supplementParentId) extNew.parent_order_id = _supplementParentId;
+  _supplementParentId = null;
   await sb.from('orders').update(extNew).eq('id', order.id);
 
   // Save order items (silently skip if table not yet created)
@@ -2851,7 +2852,7 @@ async function markItemStatus(itemId, status, orderId) {
 
 async function openSupplementOrder(orderId, orderNo) {
   const [{ data: order }, { data: damaged }] = await Promise.all([
-    sb.from('orders').select('*, customers(name,phone,address), stores(id)').eq('id', orderId).single(),
+    sb.from('orders').select('id, customers(name,phone,address)').eq('id', orderId).single(),
     sb.from('order_items').select('*').eq('order_id', orderId).eq('item_status', 'damaged'),
   ]);
 

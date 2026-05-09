@@ -397,11 +397,12 @@ async function openDetail(id) {
   initSigCanvas();
 }
 
-let _sigCanvas, _sigCtx, _sigPen = false;
+let _sigCanvas, _sigCtx, _sigPen = false, _sigHasContent = false;
 
 function initSigCanvas() {
   _sigCanvas = document.getElementById('sig-canvas');
   if (!_sigCanvas) return;
+  _sigHasContent = false;
   const dpr = window.devicePixelRatio || 1;
   const r = _sigCanvas.getBoundingClientRect();
   _sigCanvas.width  = r.width  * dpr;
@@ -417,28 +418,28 @@ function initSigCanvas() {
     const b = _sigCanvas.getBoundingClientRect();
     return [e.clientX - b.left, e.clientY - b.top];
   }
-  _sigCanvas.addEventListener('mousedown', e => { _sigPen=true; _sigCtx.beginPath(); _sigCtx.moveTo(...pos(e)); });
+  _sigCanvas.addEventListener('mousedown', e => { _sigPen=true; _sigHasContent=true; _sigCtx.beginPath(); _sigCtx.moveTo(...pos(e)); });
   _sigCanvas.addEventListener('mousemove', e => { if (!_sigPen) return; _sigCtx.lineTo(...pos(e)); _sigCtx.stroke(); });
   _sigCanvas.addEventListener('mouseup',   () => _sigPen = false);
   _sigCanvas.addEventListener('mouseleave',() => _sigPen = false);
-  _sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); _sigPen=true; _sigCtx.beginPath(); _sigCtx.moveTo(...pos(e.touches[0])); }, {passive:false});
+  _sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); _sigPen=true; _sigHasContent=true; _sigCtx.beginPath(); _sigCtx.moveTo(...pos(e.touches[0])); }, {passive:false});
   _sigCanvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!_sigPen) return; _sigCtx.lineTo(...pos(e.touches[0])); _sigCtx.stroke(); }, {passive:false});
   _sigCanvas.addEventListener('touchend',   () => _sigPen = false);
 }
 
 function clearSig() {
-  if (_sigCtx) _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+  if (_sigCtx) { _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height); _sigHasContent = false; }
 }
 
 async function submitSig(orderId) {
-  if (!_sigCanvas || !_sigCtx.getImageData(0, 0, _sigCanvas.width, _sigCanvas.height).data.some(v => v)) {
+  if (!_sigCanvas || !_sigHasContent) {
     const e = document.getElementById('sig-err');
     if (e) { e.textContent = '请先签名'; e.classList.remove('hidden'); }
     return;
   }
   const dataURL = _sigCanvas.toDataURL('image/png');
-  const btn = event.currentTarget;
-  btn.textContent = '提交中…'; btn.disabled = true;
+  const btn = event?.currentTarget;
+  if (btn) { btn.textContent = '提交中…'; btn.disabled = true; }
 
   const { data, error } = await sb.rpc('customer_submit_signature', {
     p_order_id:   orderId,
@@ -447,7 +448,7 @@ async function submitSig(orderId) {
   });
 
   if (error || !data) {
-    btn.textContent = '确认签名'; btn.disabled = false;
+    if (btn) { btn.textContent = '确认签名'; btn.disabled = false; }
     const e = document.getElementById('sig-err');
     if (e) { e.textContent = error?.message || '提交失败，请重试'; e.classList.remove('hidden'); }
     return;
