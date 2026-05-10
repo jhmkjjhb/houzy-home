@@ -7,12 +7,12 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
 </head>
-<body class="bg-hg min-h-screen flex items-center justify-center p-4" style="font-family:'Noto Sans SC',sans-serif">
+<body class="bg-hg min-h-screen flex items-center justify-center p-4 cursor-pointer" style="font-family:'Noto Sans SC',sans-serif" onclick="window.location.href='https://jhmkjjhb.github.io/houzy-home/'">
 
-<div class="w-full max-w-sm">
+<div class="w-full max-w-sm cursor-default" onclick="event.stopPropagation()">
   <!-- Logo -->
   <div class="text-center mb-10">
-    <a href="/" class="inline-flex items-center gap-3">
+    <a href="https://jhmkjjhb.github.io/houzy-home/" class="inline-flex items-center gap-3">
       <div class="w-12 h-12 bg-gd flex items-center justify-center">
         <span class="text-hg font-bold text-xl" style="font-family:'Playfair Display',serif">H</span>
       </div>
@@ -306,6 +306,7 @@
   </div>
 
   <p class="text-center text-gray-600 text-xs mt-8">© 2026 HOUZY HOME SDN. BHD.</p>
+  <p class="text-center text-gray-700 text-xs mt-2 opacity-50">点击空白处返回官网</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
