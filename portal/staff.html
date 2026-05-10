@@ -3,3 +3,48 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HOUZY HOME — 店员后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
+<style>
+  .nav-link { @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 hover:text-white transition cursor-pointer; }
+  .nav-link.active { @apply bg-white/15 text-white font-semibold; }
+  .card { @apply bg-white rounded-xl shadow-sm border border-gray-100; }
+  .btn-primary { @apply px-4 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-gg transition; }
+  .btn-gold { @apply px-4 py-2 bg-gd text-hg text-sm font-semibold rounded-lg hover:brightness-110 transition; }
+  .input { @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm; }
+  .label { @apply block text-xs font-medium text-gray-600 mb-1; }
+  [x-cloak] { display: none; }
+  /* Brand VI focus — override iOS Safari blue ring */
+  input, select, textarea {
+    -webkit-tap-highlight-color: rgba(26,58,42,0.1);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    -webkit-appearance: none;
+    border-color: #1a3a2a !important;
+    box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+    -webkit-box-shadow: 0 0 0 3px rgba(26,58,42,0.25) !important;
+  }
+  select { cursor: pointer; }
+  select option:checked { background-color: #1a3a2a; color: #ffffff; }
+  @keyframes overduePulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+  }
+  .row-overdue-badge { animation: overduePulse 1.5s ease-in-out infinite; }
+  .row-warn    { background: #fffbeb; }
+  @keyframes cdTick {
+    0%   { transform: scale(1);    opacity: 1; }
+    30%  { transform: scale(1.12); opacity: 0.7; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
+  @media print { body * { visibility: hidden; } #pdf-preview, #pdf-preview * { visibility: visible; } #pdf-preview { position:fixed;top:0;left:0;width:100%;z-index:9999; } }
+  /* Responsive order list layout — used in JS-generated HTML so must live here not in Tailwind classes */
+  .ord-desktop { display:none; }
+  .ord-mobile  { display:block; }
+  @media (min-width:768px) { .ord-desktop { display:block; } .ord-mobile { display:none; } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+</head>
