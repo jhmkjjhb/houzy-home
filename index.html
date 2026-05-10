@@ -82,7 +82,6 @@
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
-                    <a href="#spaces" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_showroom">Showroom</a>
                     <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_services">Services</a>
                     <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_packages">Packages</a>
                     <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_about">About</a>
@@ -119,7 +118,6 @@
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
                 <a href="#home" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
-                <a href="#spaces" class="block py-2 text-gray-700" data-i18n="nav_showroom">Showroom</a>
                 <a href="#services" class="block py-2 text-gray-700" data-i18n="nav_services">Services</a>
                 <a href="#packages" class="block py-2 text-gray-700" data-i18n="nav_packages">Packages</a>
                 <a href="#about" class="block py-2 text-gray-700" data-i18n="nav_about">About</a>
@@ -156,7 +154,6 @@
                 <p class="text-lg md:text-xl text-gray-200 mb-2 leading-relaxed" data-i18n="hero_sub1">Touch · Compare · Create Your Dream Home</p>
                 <p class="text-base text-gray-300 mb-8 leading-relaxed" data-i18n="hero_sub2">Johor Bahru's One-Stop Premium Home Solutions</p>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="#spaces" class="px-8 py-4 bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-all text-center rounded-sm" data-i18n="hero_btn_explore">Explore Showroom</a>
                     <a href="#shop" class="px-8 py-4 bg-white text-houzy-green font-semibold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_shop">Shop Now</a>
                     <a href="https://wa.me/60105898786" target="_blank"
                        class="px-8 py-4 border-2 border-white text-white font-semibold hover:bg-white hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_wa">WhatsApp Us</a>
@@ -234,114 +231,6 @@
         </div>
     </section>
 
-    <!-- Showroom Spaces Section -->
-    <section id="spaces" class="py-20 gradient-green text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="show_label">SHOWROOM</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="show_h2">Five Experience Spaces</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="show_h2_en">Five Experience Spaces</p>
-                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="show_p">Visit our showroom to touch materials and experience spaces</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Kitchen A -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('kitchen')">
-                    <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80"
-                         alt="厨房A Kitchen A"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            <span data-i18n="show_view">View Gallery →</span>
-                        </span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space1_h">Kitchen A</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space1_sub">Kitchen A — U-Shape · 3.3m×4.0m</p>
-                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space1_tag">Luxury · Premium Storage</p>
-                        <p class="text-gray-300 text-xs" data-i18n="space1_p">Efficient Storage · Quality Hardware · Eco-Friendly Cabinets</p>
-                    </div>
-                </div>
-
-                <!-- Bathroom -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('bathroom')">
-                    <img src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80"
-                         alt="卫浴穿越体验区 Bathroom"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            <span data-i18n="show_view">View Gallery →</span>
-                        </span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space2_h">Bathroom Experience Zone</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space2_sub">Bathroom Experience — Feel the Quality</p>
-                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space2_tag">Panoramic Display · Immersive Experience</p>
-                        <p class="text-gray-300 text-xs" data-i18n="space2_p">Real Scenes · Styling Tips · Expert Advice</p>
-                    </div>
-                </div>
-
-                <!-- Tile Selection -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('materials')">
-                    <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"
-                         alt="瓷砖选材区 Tile Selection"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            <span data-i18n="show_view">View Gallery →</span>
-                        </span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space3_h">Tile Selection Zone</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space3_sub">Tile Selection — Endless Possibilities</p>
-                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space3_tag">Premium Global Tile Selection</p>
-                        <p class="text-gray-300 text-xs" data-i18n="space3_p">Marble · Stone · Wood · Concrete · Special Tiles</p>
-                    </div>
-                </div>
-
-                <!-- Wardrobe -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer" onclick="openGallery('wardrobe')">
-                    <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80"
-                         alt="衣柜空间 Wardrobe Space"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            <span data-i18n="show_view">View Gallery →</span>
-                        </span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space4_h">Wardrobe Space</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space4_sub">Wardrobe Space — 4.4m×4.0m · Full Custom</p>
-                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space4_tag">Custom Storage · Quality Living</p>
-                        <p class="text-gray-300 text-xs" data-i18n="space4_p">Smart Zoning · Efficient Storage · Stunning Aesthetics</p>
-                    </div>
-                </div>
-
-                <!-- Showroom Tour / Consultation -->
-                <div class="group relative overflow-hidden rounded-lg aspect-[4/3] cursor-pointer lg:col-span-2" onclick="openGallery('consultation')">
-                    <img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80"
-                         alt="展厅全景 Showroom Tour"
-                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div class="absolute inset-0 bg-houzy-green/0 group-hover:bg-houzy-green/30 transition-colors duration-300 flex items-center justify-center">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-houzy-gold text-houzy-green text-sm font-semibold px-4 py-2 rounded-sm">
-                            <span data-i18n="show_view">View Gallery →</span>
-                        </span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="space5_h">Consultation · Showroom Tour</h3>
-                        <p class="font-serif-en text-houzy-gold text-sm mb-2 italic" data-i18n="space5_sub">Showroom Tour — TOUCH. COMPARE. CREATE.</p>
-                        <p class="text-houzy-gold text-sm mb-2" data-i18n="space5_tag">Touch · Compare · Create Your Dream Home</p>
-                        <p class="text-gray-300 text-xs" data-i18n="space5_p">Inspiration · Materials · Support · One-Stop Solution</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- Packages Section -->
     <section id="packages" class="py-20 bg-houzy-cream">
@@ -470,7 +359,7 @@
             <div class="text-center">
                 <p class="text-gray-400 mb-8 text-sm" data-i18n="shop_cta_p">Choose your preferred way to shop</p>
                 <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                    <a href="https://houzy-home.myshopify.com" target="_blank"
+                    <a href="https://houzy-home-solutions.myshopify.com/zh-hans/collections/aluminum-kitchen-cabinets" target="_blank"
                        class="w-full sm:w-auto px-12 py-5 bg-houzy-gold text-houzy-green text-lg font-bold hover:bg-houzy-gold-light transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
@@ -632,7 +521,6 @@
                     <h4 class="font-semibold mb-4" data-i18n="footer_links_h">Quick Links</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
                         <li><a href="#home" class="hover:text-houzy-gold transition-colors" data-i18n="nav_home">Home</a></li>
-                        <li><a href="#spaces" class="hover:text-houzy-gold transition-colors" data-i18n="nav_showroom">Showroom</a></li>
                         <li><a href="#packages" class="hover:text-houzy-gold transition-colors" data-i18n="nav_packages">Packages</a></li>
                         <li><a href="#shop" class="hover:text-houzy-gold transition-colors" data-i18n="nav_shop">Shop</a></li>
                         <li><a href="#about" class="hover:text-houzy-gold transition-colors" data-i18n="nav_about">About</a></li>
