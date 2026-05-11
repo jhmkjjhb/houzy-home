@@ -263,7 +263,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label" data-i18n="lbl_phone">手机号码 *</label>
-            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input">
+            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch(); validatePhone()" class="input">
+            <p id="phone-err" class="hidden text-xs text-red-500 mt-1"></p>
           </div>
           <div>
             <label class="label" data-i18n="lbl_name">姓名 *</label>
@@ -1738,6 +1739,30 @@ function resetCreateForm() {
   if (list) { list.innerHTML = ''; itemRowCount = 0; addItemRow(); calcItemsTotal(); }
 }
 
+function validatePhone() {
+  const inp = document.getElementById('c-phone');
+  const err = document.getElementById('phone-err');
+  const raw = inp.value.trim().replace(/[\s\-\(\)\.]/g, '');
+  if (!raw) { inp.style.borderColor = ''; err.classList.add('hidden'); return true; }
+  if (!/^\+?\d+$/.test(raw)) {
+    err.textContent = '手机号码只能包含数字'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  const cc = document.getElementById('c-country').value || '60';
+  let digits = raw.replace(/^\+?0*/, '');
+  if (digits.startsWith(cc)) digits = digits.slice(cc.length);
+  else if (raw.startsWith('0')) digits = raw.slice(1).replace(/^0+/, '');
+  if (digits.length < 7) {
+    err.textContent = '手机号码位数不足（至少7位）'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  if (digits.length > 12) {
+    err.textContent = '手机号码位数过多（最多12位）'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  err.classList.add('hidden'); inp.style.borderColor = '#1a3a2a'; return true;
+}
+
 function debounceSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(lookupCustomer, 400);
@@ -1846,6 +1871,7 @@ async function submitOrder() {
     const cc = document.getElementById('c-country').value;
     if (!cc) { showCreateErr('请选择国家区号'); return; }
     if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+    if (!validatePhone()) { showCreateErr('手机号码格式不正确，请重新检查'); return; }
     const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
     custId = document.getElementById('customer-found').dataset?.id;
     if (!custId) {
