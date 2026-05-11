@@ -263,7 +263,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label" data-i18n="lbl_phone">手机号码 *</label>
-            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch()" class="input">
+            <input type="tel" id="c-phone" placeholder="10-1234 5678" oninput="debounceSearch(); validatePhone()" class="input">
+            <p id="phone-err" class="hidden text-xs text-red-500 mt-1"></p>
           </div>
           <div>
             <label class="label" data-i18n="lbl_name">姓名 *</label>
@@ -520,9 +521,10 @@ const STAFF_I18N = {
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
     status_completed:'已完成', status_after_sales:'质保服务', status_closed:'已关闭', status_cancelled:'已取消',
-    warranty_panel_title:'质保服务 (5年)', warranty_start_lbl:'质保开始',
-    warranty_year_pfx:'第', warranty_year_sfx:'年',
-    warranty_advance_btn:'记录下一年提醒', warranty_completed:'5年质保服务已全部完成 🎉',
+    warranty_panel_title:'质保服务 (1年)', warranty_start_lbl:'质保开始',
+    warranty_year_pfx:'质保至', warranty_year_sfx:'',
+    warranty_advance_btn:'记录下一年提醒', warranty_completed:'1年质保期已满 🎉',
+    warranty_close_btn:'质保期满，完成订单',
     pdf_title:'订单确认书', pdf_customer_info:'客户信息', pdf_order_info:'订单信息',
     pdf_status:'订单状态', pdf_payment:'付款状态', pdf_method:'付款方式',
     pdf_supplier:'供应商', pdf_est_install:'预计安装日期', pdf_notes:'备注',
@@ -564,9 +566,10 @@ const STAFF_I18N = {
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
     status_completed:'已完成', status_after_sales:'質保服務', status_closed:'已關閉', status_cancelled:'已取消',
-    warranty_panel_title:'質保服務 (5年)', warranty_start_lbl:'質保開始',
-    warranty_year_pfx:'第', warranty_year_sfx:'年',
-    warranty_advance_btn:'記錄下一年提醒', warranty_completed:'5年質保服務已全部完成 🎉',
+    warranty_panel_title:'質保服務 (1年)', warranty_start_lbl:'質保開始',
+    warranty_year_pfx:'質保至', warranty_year_sfx:'',
+    warranty_advance_btn:'記錄下一年提醒', warranty_completed:'1年質保期已滿 🎉',
+    warranty_close_btn:'質保期滿，完成訂單',
     pdf_title:'訂單確認書', pdf_customer_info:'客戶信息', pdf_order_info:'訂單信息',
     pdf_status:'訂單狀態', pdf_payment:'付款狀態', pdf_method:'付款方式',
     pdf_supplier:'供應商', pdf_est_install:'預計安裝日期', pdf_notes:'備註',
@@ -608,9 +611,10 @@ const STAFF_I18N = {
     status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
     status_completed:'Done', status_after_sales:'Warranty', status_closed:'Closed', status_cancelled:'Cancelled',
-    warranty_panel_title:'Warranty Service (5yr)', warranty_start_lbl:'Warranty Start',
-    warranty_year_pfx:'Year', warranty_year_sfx:'',
-    warranty_advance_btn:'Next Year Reminder', warranty_completed:'All 5-year warranty reminders done 🎉',
+    warranty_panel_title:'Warranty Service (1yr)', warranty_start_lbl:'Warranty Start',
+    warranty_year_pfx:'Valid until', warranty_year_sfx:'',
+    warranty_advance_btn:'Next Year Reminder', warranty_completed:'1-year warranty expired 🎉',
+    warranty_close_btn:'Warranty Expired, Complete Order',
     pdf_title:'Order Confirmation', pdf_customer_info:'Customer Information', pdf_order_info:'Order Information',
     pdf_status:'Order Status', pdf_payment:'Payment Status', pdf_method:'Payment Method',
     pdf_supplier:'Supplier', pdf_est_install:'Est. Installation Date', pdf_notes:'Notes',
@@ -652,9 +656,10 @@ const STAFF_I18N = {
     status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
     status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
     status_completed:'Selesai', status_after_sales:'Waranti', status_closed:'Ditutup', status_cancelled:'Dibatalkan',
-    warranty_panel_title:'Perkhidmatan Waranti (5Thn)', warranty_start_lbl:'Mula Waranti',
-    warranty_year_pfx:'Tahun', warranty_year_sfx:'',
-    warranty_advance_btn:'Peringatan Tahun Depan', warranty_completed:'Semua peringatan waranti 5 tahun selesai 🎉',
+    warranty_panel_title:'Perkhidmatan Waranti (1Thn)', warranty_start_lbl:'Mula Waranti',
+    warranty_year_pfx:'Sah hingga', warranty_year_sfx:'',
+    warranty_advance_btn:'Peringatan Tahun Depan', warranty_completed:'Waranti 1 tahun tamat 🎉',
+    warranty_close_btn:'Waranti Tamat, Selesai Pesanan',
     pdf_title:'Pengesahan Pesanan', pdf_customer_info:'Maklumat Pelanggan', pdf_order_info:'Maklumat Pesanan',
     pdf_status:'Status Pesanan', pdf_payment:'Status Bayaran', pdf_method:'Kaedah Bayaran',
     pdf_supplier:'Pembekal', pdf_est_install:'Tarikh Pemasangan Anggaran', pdf_notes:'Nota',
@@ -696,9 +701,10 @@ const STAFF_I18N = {
     status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
     status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
     status_completed:'เสร็จ', status_after_sales:'ประกัน', status_closed:'ปิด', status_cancelled:'ยกเลิก',
-    warranty_panel_title:'บริการรับประกัน (5 ปี)', warranty_start_lbl:'เริ่มรับประกัน',
-    warranty_year_pfx:'ปีที่', warranty_year_sfx:'',
-    warranty_advance_btn:'แจ้งเตือนปีหน้า', warranty_completed:'ครบรอบรับประกัน 5 ปีแล้ว 🎉',
+    warranty_panel_title:'บริการรับประกัน (1 ปี)', warranty_start_lbl:'เริ่มรับประกัน',
+    warranty_year_pfx:'รับประกันถึง', warranty_year_sfx:'',
+    warranty_advance_btn:'แจ้งเตือนปีหน้า', warranty_completed:'รับประกัน 1 ปีหมดอายุแล้ว 🎉',
+    warranty_close_btn:'ประกันหมด, ปิดคำสั่งซื้อ',
     pdf_title:'ใบยืนยันคำสั่งซื้อ', pdf_customer_info:'ข้อมูลลูกค้า', pdf_order_info:'ข้อมูลคำสั่งซื้อ',
     pdf_status:'สถานะ', pdf_payment:'สถานะการชำระ', pdf_method:'วิธีชำระเงิน',
     pdf_supplier:'ซัพพลายเออร์', pdf_est_install:'วันติดตั้งโดยประมาณ', pdf_notes:'หมายเหตุ',
@@ -778,6 +784,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
 let searchTimer = null;
+let _openDetailId = null;
 
 // ──────────────────────────────────────────────────────────────────
 // ROLE PERMISSION SYSTEM
@@ -879,6 +886,88 @@ const STATUS = {
 const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
 const PROD_STAGE_KEYS   = ['drawing','material','producing','qc'];
 const PROD_STAGE_LABELS = { drawing:'图纸确认', material:'材料采购', producing:'生产加工', qc:'质检中' };
+
+const WARRANTY_SERIES = [
+  { id:'kitchen',     name:'厨房系列', icon:'🍳',
+    keywords:['厨房','橱柜','水槽','龙头','厨','灶','kitchen'],
+    items:[
+      { name:'全铝合金橱柜柜体', years:11 },
+      { name:'橱柜门板',         years:4  },
+      { name:'橱柜五金',         years:6  },
+      { name:'台面',             years:6  },
+      { name:'水槽',             years:11 },
+      { name:'厨房龙头',         years:6  },
+      { name:'抽屉系统',         years:6  },
+    ],
+  },
+  { id:'bathroom',    name:'卫浴系列', icon:'🚿',
+    keywords:['卫浴','淋浴','马桶','浴室','花洒','卫生间','bathroom','shower'],
+    items:[
+      { name:'淋浴房框架',       years:6  },
+      { name:'淋浴房玻璃',       years:6  },
+      { name:'淋浴房五金',       years:3  },
+      { name:'马桶陶瓷本体',     years:11 },
+      { name:'马桶冲水机构',     years:4  },
+      { name:'智能马桶电路',     years:3  },
+      { name:'卫浴五金PVD',      years:4  },
+      { name:'浴室柜',           years:4  },
+      { name:'卫浴龙头',         years:6  },
+      { name:'花洒',             years:4  },
+    ],
+  },
+  { id:'door_window', name:'门窗系列', icon:'🚪',
+    keywords:['门','窗','铝合金门','铝合金窗','推拉','玻璃门','window','door'],
+    items:[
+      { name:'铝合金窗框/门框型材', years:11 },
+      { name:'Low-E玻璃',           years:6  },
+      { name:'门窗五金',             years:4  },
+      { name:'密封胶条',             years:3  },
+      { name:'纱窗',                 years:3  },
+    ],
+  },
+  { id:'tile',        name:'瓷砖系列', icon:'🟫',
+    keywords:['瓷砖','地砖','墙砖','砖','tile'],
+    items:[
+      { name:'瓷砖本体',   years:11 },
+      { name:'釉面层',     years:6  },
+      { name:'防滑性能',   years:6  },
+    ],
+  },
+];
+
+function computeWarrantyInfo(orderItems, startIso) {
+  const startMs  = new Date(startIso).getTime();
+  const YEAR_MS  = 365.25 * 24 * 3600000;
+  const matched  = new Set();
+  const result   = [];
+  (orderItems || []).forEach(item => {
+    const pname = (item.product_name || item.name || '').toLowerCase();
+    for (const series of WARRANTY_SERIES) {
+      if (matched.has(series.id)) continue;
+      if (series.keywords.some(kw => pname.includes(kw.toLowerCase()))) {
+        matched.add(series.id);
+        result.push({
+          seriesId:   series.id,
+          seriesName: series.name,
+          icon:       series.icon,
+          startIso,
+          components: series.items.map(c => ({
+            name:    c.name,
+            years:   c.years,
+            endIso:  new Date(startMs + c.years * YEAR_MS).toISOString(),
+          })),
+        });
+      }
+    }
+  });
+  if (result.length === 0) {
+    result.push({
+      seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso,
+      components:[{ name:'整体产品', years:1, endIso: new Date(startMs + YEAR_MS).toISOString() }],
+    });
+  }
+  return result;
+}
 
 function fmtSla(s) {
   const h = STATUS_SLA_HOURS[s];
@@ -1112,53 +1201,78 @@ function deadlineRowInfo(o) {
 }
 
 // ── Warranty panel (5-year, annual reminders) ──
-function renderWarrantyPanel(logs, deadlineAt, orderId) {
+function renderWarrantyPanel(o, logs, orderId) {
   const startLog = (logs || []).find(l => l.status === 'after_sales');
   if (!startLog) return '';
   const startIso = startLog.created_at;
-  const startMs  = new Date(startIso).getTime();
-  const YEAR_MS  = 365.25 * 24 * 3600000;
 
-  let currentYear = 1;
-  if (deadlineAt) {
-    const dlMs = new Date(deadlineAt).getTime();
-    let minDiff = Infinity;
-    for (let n = 1; n <= 5; n++) {
-      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
-      if (diff < minDiff) { minDiff = diff; currentYear = n; }
-    }
+  let warrantyData = null;
+  if (o && o.warranty_info) {
+    try { warrantyData = JSON.parse(o.warranty_info); } catch(e) {}
   }
-  const isOverdue = deadlineAt && new Date(deadlineAt) < Date.now();
+  if (!warrantyData || warrantyData.length === 0) {
+    warrantyData = computeWarrantyInfo([], startIso);
+  }
 
-  const yearsHtml = [1,2,3,4,5].map(n => {
-    const dateStr = new Date(startMs + n * YEAR_MS).toISOString().slice(0, 10);
-    let icon, bg, color;
-    if (n < currentYear)      { icon='✓';  bg='#f0fdf4'; color='#16a34a'; }
-    else if (n===currentYear) { icon=isOverdue?'⚠️':'⏰'; bg=isOverdue?'#fef2f2':'#fef3c7'; color=isOverdue?'#dc2626':'#d97706'; }
-    else                       { icon='○';  bg='#f9fafb'; color='#9ca3af'; }
-    const pfx = t('warranty_year_pfx');
-    const sfx = t('warranty_year_sfx');
-    const yearLabel = sfx ? `${pfx} ${n} ${sfx}` : `${pfx} ${n}`;
-    return `<div class="flex items-center gap-3 rounded-lg px-3 py-2" style="background:${bg}">
-      <span class="font-bold text-sm w-6 text-center" style="color:${color}">${icon}</span>
-      <div class="flex-1">
-        <span class="font-medium text-sm">${yearLabel}</span>
-        <span class="text-xs text-gray-400 ml-2">${dateStr}</span>
+  const now = Date.now();
+  const allExpired = warrantyData.every(s => s.components.every(c => new Date(c.endIso).getTime() < now));
+  const borderClr  = allExpired ? '#dc2626' : '#1e40af';
+
+  const seriesHtml = warrantyData.map(series => {
+    const maxEndMs     = Math.max(...series.components.map(c => new Date(c.endIso).getTime()));
+    const seriesExp    = maxEndMs < now;
+    const seriesClr    = seriesExp ? '#dc2626' : '#16a34a';
+    const seriesTxt    = seriesExp ? '已到期' : '质保中';
+    const rows = series.components.map(comp => {
+      const expired  = new Date(comp.endIso).getTime() < now;
+      const endDate  = comp.endIso.slice(0, 10);
+      const dot      = expired
+        ? `<span style="color:#dc2626;font-size:10px;font-weight:600">已到期</span>`
+        : `<span style="color:#16a34a;font-size:10px;font-weight:600">质保中</span>`;
+      return `<tr>
+        <td style="padding:4px 8px;font-size:12px;color:#374151">${comp.name}</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${comp.years}年</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${endDate}</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center">${dot}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mb-3">
+      <div class="flex items-center gap-1 mb-1">
+        <span>${series.icon}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${series.seriesName}</span>
+        <span style="font-size:10px;color:${seriesClr};margin-left:4px">${seriesTxt}</span>
       </div>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb">
+        <thead>
+          <tr style="background:#f9fafb">
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:left;font-weight:500">配件</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">质保期</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">到期日</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">状态</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
   }).join('');
 
-  const canAdvance = currentYear < 5;
-  return `<div class="card p-5 mb-4" style="border-left:3px solid #1e40af">
-    <div class="flex items-center gap-2 mb-3">
-      <span class="text-lg">🛡️</span>
-      <h3 class="font-semibold text-gray-800">${t('warranty_panel_title')}</h3>
+  return `<div class="card p-5 mb-4" style="border-left:3px solid ${borderClr}">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-lg">${allExpired ? '⚠️' : '🛡️'}</span>
+      <h3 class="font-semibold text-gray-800">质保服务详情</h3>
+      <span class="text-xs px-2 py-0.5 rounded-full ml-auto" style="background:${allExpired?'#fef2f2':'#eff6ff'};color:${borderClr};border:1px solid ${borderClr}33">
+        ${allExpired ? '全部已到期' : '质保中'}
+      </span>
     </div>
-    <div class="text-xs text-gray-500 mb-3">${t('warranty_start_lbl')}: ${new Date(startIso).toLocaleDateString()}</div>
-    <div class="flex flex-col gap-1.5 mb-3">${yearsHtml}</div>
-    ${canAdvance
-      ? `<button onclick="advanceWarrantyReminder('${orderId}','${startIso}')" class="btn-primary w-full py-2 text-sm">${t('warranty_advance_btn')}</button>`
-      : `<p class="text-center text-xs text-gray-400">${t('warranty_completed')}</p>`}
+    <div class="text-xs text-gray-400 mb-3">质保开始：${new Date(startIso).toLocaleDateString()}</div>
+    ${seriesHtml}
+    ${allExpired
+      ? `<button onclick="closeAfterWarranty('${orderId}')"
+                class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition mt-1">
+           ✓ ${t('warranty_close_btn')}
+         </button>`
+      : `<p class="text-xs text-gray-400 text-center mt-2">${t('warranty_completed')}</p>`
+    }
   </div>`;
 }
 
@@ -1292,6 +1406,29 @@ async function init() {
   }, 1000);
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
+
+  // Realtime: sync order updates from suppliers immediately
+  sb.channel('order-realtime')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
+      const updated = payload.new;
+      const idx = allOrders.findIndex(o => o.id === updated.id);
+      if (idx !== -1) {
+        allOrders[idx] = { ...allOrders[idx], ...updated };
+      } else {
+        await loadOrders();
+      }
+      // 根据当前激活视图刷新对应页面
+      if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
+        renderDashboard();
+      } else if (!document.getElementById('v-orders').classList.contains('hidden')) {
+        filterOrders();
+      }
+      checkOverdueAlerts();
+      if (_openDetailId === updated.id) {
+        await openDetail(updated.id);
+      }
+    })
+    .subscribe();
 }
 
 async function loadStores() {
@@ -1738,6 +1875,30 @@ function resetCreateForm() {
   if (list) { list.innerHTML = ''; itemRowCount = 0; addItemRow(); calcItemsTotal(); }
 }
 
+function validatePhone() {
+  const inp = document.getElementById('c-phone');
+  const err = document.getElementById('phone-err');
+  const raw = inp.value.trim().replace(/[\s\-\(\)\.]/g, '');
+  if (!raw) { inp.style.borderColor = ''; err.classList.add('hidden'); return true; }
+  if (!/^\+?\d+$/.test(raw)) {
+    err.textContent = '手机号码只能包含数字'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  const cc = document.getElementById('c-country').value || '60';
+  let digits = raw.replace(/^\+?0*/, '');
+  if (digits.startsWith(cc)) digits = digits.slice(cc.length);
+  else if (raw.startsWith('0')) digits = raw.slice(1).replace(/^0+/, '');
+  if (digits.length < 7) {
+    err.textContent = '手机号码位数不足（至少7位）'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  if (digits.length > 12) {
+    err.textContent = '手机号码位数过多（最多12位）'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  err.classList.add('hidden'); inp.style.borderColor = '#1a3a2a'; return true;
+}
+
 function debounceSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(lookupCustomer, 400);
@@ -1846,6 +2007,7 @@ async function submitOrder() {
     const cc = document.getElementById('c-country').value;
     if (!cc) { showCreateErr('请选择国家区号'); return; }
     if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+    if (!validatePhone()) { showCreateErr('手机号码格式不正确，请重新检查'); return; }
     const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
     custId = document.getElementById('customer-found').dataset?.id;
     if (!custId) {
@@ -1985,6 +2147,7 @@ function renderCustomersTable(customers) {
 
 // ── Order Detail ──
 async function openDetail(id, backView) {
+  _openDetailId = id;
   if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
   goto('detail');
 
@@ -2107,6 +2270,7 @@ async function openDetail(id, backView) {
         <div><span class="text-gray-400">${t('lbl_staff')}</span> <span>${o.profiles?.name || '-'}</span></div>
         ${o.tracking_no ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>` : ''}
         ${o.install_date ? `<div><span class="text-gray-400">安装日期</span> <span class="font-medium text-hg">${new Date(o.install_date+'T00:00:00').toLocaleDateString('zh-CN')}</span></div>` : ''}
+        ${o.installer_notes ? (()=>{ const p=parseInstallerNotes(o.installer_notes); return `<div><span class="text-gray-400">安装人</span> <span>${p.name}${p.phone?' · '+p.phone:''}</span></div>`; })() : ''}
         ${o.signed_at ? `<div><span class="text-gray-400">签收时间</span> <span class="text-gray-700">${fmtDate(o.signed_at)}</span></div>` : ''}
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${o.description}</p>` : ''}
@@ -2132,7 +2296,7 @@ async function openDetail(id, backView) {
 
     ${renderAttachmentsCard(attachments, o.id)}
 
-    ${o.status === 'after_sales' ? renderWarrantyPanel(logs, o.deadline_at, o.id) : ''}
+    ${['after_sales','completed'].includes(o.status) ? renderWarrantyPanel(o, logs, o.id) : ''}
 
     ${renderPaymentPanel(o, payments)}
 
@@ -2653,37 +2817,42 @@ function renderChecklistPanel(o, items, childOrders) {
         </div>`;
     }).join('');
 
+    const _instParsed = parseInstallerNotes(o.installer_notes);
     const scheduleCard = allInspect ? `
       <div class="card p-5 mb-4" style="border-left:3px solid #1a3a2a">
         <h3 class="font-semibold text-gray-800 mb-3">预约安装</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
-            <div class="flex gap-2">
-              <input type="date" id="install-date-input" value="${o.install_date||''}"
-                     min="${new Date().toISOString().slice(0,10)}" class="input flex-1 text-sm">
-            </div>
+            <label class="text-xs text-gray-400 mb-1 block">安装日期 <span class="text-red-500">*</span></label>
+            <input type="date" id="install-date-input" value="${o.install_date||''}"
+                   min="${new Date().toISOString().slice(0,10)}" class="input text-sm w-full">
           </div>
-          <div>
-            <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
-            <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
-                   placeholder="填写安装师傅姓名或电话"
-                   class="input text-sm w-full">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-400 mb-1 block">安装人姓名 <span class="text-red-500">*</span></label>
+              <input type="text" id="installer-name-input" value="${_instParsed.name}"
+                     placeholder="安装师傅姓名" class="input text-sm w-full">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 mb-1 block">安装人电话 <span class="text-red-500">*</span></label>
+              <input type="text" id="installer-phone-input" value="${_instParsed.phone}"
+                     placeholder="+60 ..." class="input text-sm w-full">
+            </div>
           </div>
           <button onclick="saveInstallDate('${o.id}')"
                   class="w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
             保存预约信息
           </button>
         </div>
-        ${o.install_date
+        ${o.install_date && o.installer_notes
           ? `<a href="https://wa.me/${(o.customers?.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(
-              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}${o.installer_notes?'，安装负责人：'+o.installer_notes:''}，请确认是否方便，谢谢。`
+              `您好 ${o.customers?.name||''}，您的订单 ${o.order_no} 货品已全部到货，安装日期预约为 ${o.install_date}，安装负责人：${_instParsed.name}（${_instParsed.phone}），请确认是否方便，谢谢。`
             )}" target="_blank"
                class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm mt-3">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               WhatsApp 通知客户预约安装
             </a>`
-          : `<p class="text-xs text-gray-400 mt-2">保存安装日期后可发送 WhatsApp 通知</p>`
+          : `<p class="text-xs text-gray-400 mt-2">保存安装日期和安装人后可发送 WhatsApp 通知</p>`
         }
       </div>` : '';
 
@@ -2735,22 +2904,31 @@ function renderChecklistPanel(o, items, childOrders) {
 
   // ── 客户签收（安装中）──
   if (o.status === 'installing') {
+    const _instP = parseInstallerNotes(o.installer_notes);
     const installerInfo = (o.install_date || o.installer_notes) ? `
       <div class="bg-gray-50 rounded-lg p-3 mb-3 text-xs text-gray-600 space-y-1">
         ${o.install_date ? `<div>📅 安装日期：<span class="font-medium">${o.install_date}</span></div>` : ''}
-        ${o.installer_notes ? `<div>👷 安装负责人：<span class="font-medium">${o.installer_notes}</span></div>` : ''}
+        ${_instP.name  ? `<div>👷 安装人：<span class="font-medium">${_instP.name}</span></div>` : ''}
+        ${_instP.phone ? `<div>📞 安装人电话：<span class="font-medium">${_instP.phone}</span></div>` : ''}
       </div>` : '';
     const installerSection = canDo(1) ? `
       <div class="mb-4 space-y-2">
         <div>
-          <label class="text-xs text-gray-400 mb-1 block">安装日期</label>
+          <label class="text-xs text-gray-400 mb-1 block">安装日期 <span class="text-red-500">*</span></label>
           <input type="date" id="install-date-input" value="${o.install_date||''}"
                  class="input text-sm w-full">
         </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">安装负责人</label>
-          <input type="text" id="installer-notes-input" value="${o.installer_notes||''}"
-                 placeholder="填写安装师傅姓名或电话" class="input text-sm w-full">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装人姓名 <span class="text-red-500">*</span></label>
+            <input type="text" id="installer-name-input" value="${_instP.name}"
+                   placeholder="安装师傅姓名" class="input text-sm w-full">
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">安装人电话 <span class="text-red-500">*</span></label>
+            <input type="text" id="installer-phone-input" value="${_instP.phone}"
+                   placeholder="+60 ..." class="input text-sm w-full">
+          </div>
         </div>
         <button onclick="saveInstallDate('${o.id}')"
                 class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition">
@@ -2774,7 +2952,7 @@ function renderChecklistPanel(o, items, childOrders) {
                     </div>`
                  : `<div class="rounded-lg p-3 bg-amber-50 text-sm text-amber-700">等待客户在客户端完成电子签名</div>`
                }
-               <button onclick="submitSignOff('${o.id}', ${JSON.stringify(o.customers?.name||'')})"
+               <button onclick="submitSignOff('${o.id}')"
                        class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                  确认客户签收 → 完成订单
                </button>
@@ -2837,16 +3015,34 @@ async function saveEtaDays(orderId) {
   openDetail(orderId);
 }
 
+function toggleCustomCarrier(sel) {
+  const customInput = document.getElementById('ship-carrier-custom');
+  if (!customInput) return;
+  if (sel.value === '__custom__') {
+    customInput.classList.remove('hidden');
+    customInput.focus();
+  } else {
+    customInput.classList.add('hidden');
+  }
+}
+
 async function saveLogisticsInfo(orderId) {
   const logisticsProfileId = document.getElementById('logistics-sel')?.value || null;
   const shipTimeVal = document.getElementById('ship-time')?.value;
   const days        = Number(document.getElementById('eta-days')?.value || 7);
   const shipNotes   = document.getElementById('ship-notes')?.value?.trim() || null;
+  const shipMethod  = document.getElementById('ship-method')?.value || null;
+  const carrierSel  = document.getElementById('ship-carrier')?.value || '';
+  const shipCarrier = carrierSel === '__custom__'
+    ? (document.getElementById('ship-carrier-custom')?.value?.trim() || null)
+    : (carrierSel || null);
   const upd = {
     logistics_profile_id: logisticsProfileId || null,
-    ship_time: shipTimeVal ? new Date(shipTimeVal).toISOString() : null,
-    eta_time:  etaDaysToIso(shipTimeVal, days),
-    ship_notes: shipNotes,
+    ship_time:    shipTimeVal ? new Date(shipTimeVal).toISOString() : null,
+    eta_time:     etaDaysToIso(shipTimeVal, days),
+    ship_notes:   shipNotes,
+    ship_method:  shipMethod || null,
+    ship_carrier: shipCarrier || null,
   };
   const { error } = await sb.from('orders').update(upd).eq('id', orderId);
   if (error) { alert('保存失败: ' + error.message); return; }
@@ -2926,29 +3122,106 @@ async function openSupplementOrder(orderId, orderNo) {
   }
 }
 
+function parseInstallerNotes(notes) {
+  if (!notes) return { name: '', phone: '' };
+  const parts = notes.split(' | ');
+  return { name: parts[0] || '', phone: parts[1] || '' };
+}
+
 async function saveInstallDate(orderId) {
   const date  = document.getElementById('install-date-input')?.value;
-  const notes = document.getElementById('installer-notes-input')?.value.trim() || null;
-  if (!date) { alert('请选择安装日期'); return; }
-  const { error } = await sb.from('orders').update({ install_date: date, installer_notes: notes }).eq('id', orderId);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  const name  = document.getElementById('installer-name-input')?.value.trim();
+  const phone = document.getElementById('installer-phone-input')?.value.trim();
+  if (!date)  { alert('请选择安装日期'); return; }
+  if (!name)  { alert('请填写安装人姓名'); return; }
+  if (!phone) { alert('请填写安装人电话'); return; }
+
+  const btn = document.querySelector(`button[onclick="saveInstallDate('${orderId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+
+  const notes = `${name} | ${phone}`;
+  const { error } = await sb.from('orders')
+    .update({ install_date: date, installer_notes: notes })
+    .eq('id', orderId);
+
+  if (btn) { btn.disabled = false; btn.textContent = '保存预约信息'; }
+
+  if (error) {
+    console.error('[saveInstallDate]', error);
+    alert('保存失败：' + error.message);
+    return;
+  }
   openDetail(orderId);
 }
 
-async function submitSignOff(orderId, customerName) {
-  const name = customerName || '';
-  const btn = event?.currentTarget || document.querySelector(`button[onclick^="submitSignOff('${orderId}')"]`);
+async function submitSignOff(orderId) {
+  const order = allOrders.find(o => o.id === orderId);
+  const name  = order?.customers?.name || '';
+  const btn   = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
+
+  const now = new Date().toISOString();
+
+  // Fetch order items to determine which warranty series apply
+  const { data: orderItems } = await sb.from('order_items').select('product_name,name').eq('order_id', orderId);
+  const warrantyData = computeWarrantyInfo(orderItems, now);
+
+  // deadline_at = max warranty years across all matched components
+  let maxYears = 1;
+  warrantyData.forEach(s => s.components.forEach(c => { if (c.years > maxYears) maxYears = c.years; }));
+  const warrantyEnd = new Date(Date.now() + maxYears * 365.25 * 24 * 3600000).toISOString();
+
+  // Core: status → after_sales
+  const { error: e1 } = await sb.from('orders').update({
+    status:      'after_sales',
+    deadline_at: warrantyEnd,
+  }).eq('id', orderId);
+  if (e1) {
+    alert('操作失败：' + e1.message);
+    if (btn) { btn.disabled = false; btn.textContent = '确认客户签收 → 完成订单'; }
+    return;
+  }
+
+  // Optional: signed_at, signed_by, warranty_info（列不存在时静默跳过）
   await sb.from('orders').update({
-    signed_at: new Date().toISOString(),
-    signed_by: name,
-    status: 'completed',
+    signed_at:    now,
+    signed_by:    name,
+    warranty_info: JSON.stringify(warrantyData),
+  }).eq('id', orderId);
+
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'after_sales',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: `客户 ${name} 签收确认，进入质保服务期（最长${maxYears}年）`,
+  });
+  await loadOrders();
+  openDetail(orderId);
+}
+
+async function closeAfterWarranty(orderId) {
+  const btn = document.querySelector(`button[onclick="closeAfterWarranty('${orderId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '处理中...'; }
+  const { error } = await sb.from('orders').update({
+    status:       'completed',
     completed_at: new Date().toISOString(),
   }).eq('id', orderId);
+  if (error) {
+    alert('操作失败：' + error.message);
+    if (btn) { btn.disabled = false; btn.textContent = `✓ ${t('warranty_close_btn')}`; }
+    return;
+  }
+  const order = allOrders.find(o => o.id === orderId);
+  let maxYears = 1;
+  if (order?.warranty_info) {
+    try {
+      const wd = JSON.parse(order.warranty_info);
+      wd.forEach(s => s.components.forEach(c => { if (c.years > maxYears) maxYears = c.years; }));
+    } catch(e) {}
+  }
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'completed',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: `客户 ${name} 签收确认，订单完成`,
+    notes: `质保期满（最长${maxYears}年），订单完成`,
   });
   await loadOrders();
   openDetail(orderId);
@@ -3157,8 +3430,11 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
     { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
   const toLocal = s => s ? new Date(s).toISOString().slice(0,16) : '';
 
+  const SHIP_METHOD_LABEL = { land:'陆运', sea:'海运', air:'空运' };
   const infoLines = [];
   if (logisticsPerson) infoLines.push(`物流：${logisticsPerson.name}${logisticsPerson.phone?' · '+logisticsPerson.phone:''}`);
+  if (o.ship_method) infoLines.push(`运输方式：${SHIP_METHOD_LABEL[o.ship_method]||o.ship_method}`);
+  if (o.ship_carrier) infoLines.push(`物流公司：${o.ship_carrier}`);
   if (o.ship_time) infoLines.push(`发货时间：${fmtDT(o.ship_time)}`);
   if (o.eta_time)  infoLines.push(`预计到货：${fmtDT(o.eta_time)}`);
   if (o.ship_notes) infoLines.push(`备注：${o.ship_notes}`);
@@ -3206,10 +3482,52 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
     const logOpts = (logisticsProfiles || []).map(p =>
       `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
     ).join('');
+    const knownCarriers = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport','COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE','骐盛国际物流'];
+    const isCustomCarrier = o.ship_carrier && !knownCarriers.includes(o.ship_carrier);
+    const customCarrierStyle = isCustomCarrier ? '' : 'hidden';
+    const carrierSelVal = isCustomCarrier ? '__custom__' : (o.ship_carrier || '');
     return `<div class="card p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">物流信息</h3>
       ${infoHtml}
       <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">运输方式</label>
+            <select id="ship-method" class="input text-sm py-1.5 w-full">
+              <option value="">— 请选择 —</option>
+              <option value="land" ${o.ship_method==='land'?'selected':''}>🚛 陆运</option>
+              <option value="sea"  ${o.ship_method==='sea' ?'selected':''}>🚢 海运</option>
+              <option value="air"  ${o.ship_method==='air' ?'selected':''}>✈️ 空运</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">物流公司</label>
+            <select id="ship-carrier" class="input text-sm py-1.5 w-full" onchange="toggleCustomCarrier(this)">
+              <option value="" ${carrierSelVal===''?'selected':''}>— 请选择 —</option>
+              <optgroup label="马来西亚物流">
+                <option ${carrierSelVal==='J&T Express'?'selected':''}>J&T Express</option>
+                <option ${carrierSelVal==='Ninja Van'?'selected':''}>Ninja Van</option>
+                <option ${carrierSelVal==='Pos Laju'?'selected':''}>Pos Laju</option>
+                <option ${carrierSelVal==='DHL Malaysia'?'selected':''}>DHL Malaysia</option>
+                <option ${carrierSelVal==='FedEx Malaysia'?'selected':''}>FedEx Malaysia</option>
+                <option ${carrierSelVal==='GDex'?'selected':''}>GDex</option>
+                <option ${carrierSelVal==='Teleport'?'selected':''}>Teleport</option>
+              </optgroup>
+              <optgroup label="海运船公司">
+                <option ${carrierSelVal==='COSCO 中远'?'selected':''}>COSCO 中远</option>
+                <option ${carrierSelVal==='Evergreen 长荣'?'selected':''}>Evergreen 长荣</option>
+                <option ${carrierSelVal==='Maersk 马士基'?'selected':''}>Maersk 马士基</option>
+                <option ${carrierSelVal==='PIL'?'selected':''}>PIL</option>
+                <option ${carrierSelVal==='ONE'?'selected':''}>ONE</option>
+                <option ${carrierSelVal==='骐盛国际物流'?'selected':''}>骐盛国际物流</option>
+              </optgroup>
+              <option value="__custom__" ${carrierSelVal==='__custom__'?'selected':''}>其他（自填）</option>
+            </select>
+            <input type="text" id="ship-carrier-custom" class="input text-sm py-1.5 w-full mt-1.5 ${customCarrierStyle}"
+                   placeholder="填写物流公司名称"
+                   value="${isCustomCarrier ? o.ship_carrier : ''}">
+          </div>
+        </div>
         <div>
           <label class="text-xs text-gray-400 mb-1 block">物流供应商</label>
           <select id="logistics-sel" class="input text-sm py-1.5 w-full">
@@ -3385,8 +3703,8 @@ async function updateOrder(id) {
     alert('⚠️ 请先确认收取所有期款项后，才能进入安装阶段。'); return;
   }
 
-  // 发货前：所有商品行必须已备货
-  if (status === 'shipped') {
+  // 发货前：所有商品行必须已备货（厂家已确认生产完成则跳过）
+  if (status === 'shipped' && origOrder?.status !== 'production_complete') {
     const { data: chkItems } = await sb.from('order_items').select('item_status,product_name').eq('order_id', id);
     if (chkItems && chkItems.length > 0) {
       const notReady = chkItems.filter(i => !['ready','shipped','arrived'].includes(i.item_status));
@@ -3401,7 +3719,7 @@ async function updateOrder(id) {
   if (status === 'installing') {
     const { data: chkItems } = await sb.from('order_items').select('item_status,product_name').eq('order_id', id);
     if (chkItems && chkItems.length > 0) {
-      const notArrived = chkItems.filter(i => i.item_status !== 'arrived');
+      const notArrived = chkItems.filter(i => i.item_status !== 'arrived' && i.item_status !== 'damaged');
       if (notArrived.length > 0) {
         alert(`验货核对未完成：${notArrived.map(i=>i.product_name).join('、')} 状态异常`);
         return;

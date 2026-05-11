@@ -96,7 +96,10 @@ const STATUS = {
   closed:             {label:'已关闭',   cls:'bg-gray-100 text-gray-500'},
 };
 
-const LOGISTICS = ['顺丰速运','德邦物流','京东物流','圆通速递','中通快递','韵达快递','申通快递','百世快递','其他'];
+const LOGISTICS_MY = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport'];
+const LOGISTICS_SEA = ['COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE','骐盛国际物流'];
+const LOGISTICS_CN  = ['顺丰速运','德邦物流','京东物流','圆通速递','中通快递','韵达快递','申通快递','百世快递'];
+const LOGISTICS = [...LOGISTICS_MY, ...LOGISTICS_SEA, ...LOGISTICS_CN, '其他'];
 
 const PROD_STAGES = [
   {key:'drawing',   label:'图纸确认'},
@@ -451,12 +454,34 @@ async function openDetail(id) {
     <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
       <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
       <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">运输方式 <span class="text-red-500">*</span></label>
+        <select id="ship-method"
+                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+          <option value="">请选择运输方式</option>
+          <option value="land">🚛 陆运</option>
+          <option value="sea">🚢 海运</option>
+          <option value="air">✈️ 空运</option>
+        </select>
+      </div>
+      <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">物流公司 <span class="text-red-500">*</span></label>
         <select id="ship-company"
-                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
+                onchange="document.getElementById('ship-company-custom').classList.toggle('hidden',this.value!=='其他')">
           <option value="">请选择物流公司</option>
-          ${LOGISTICS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          <optgroup label="马来西亚物流">
+            ${LOGISTICS_MY.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <optgroup label="海运船公司">
+            ${LOGISTICS_SEA.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <optgroup label="国内快递">
+            ${LOGISTICS_CN.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <option value="其他">其他（自填）</option>
         </select>
+        <input type="text" id="ship-company-custom" placeholder="填写物流公司名称"
+               class="hidden w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 mt-2">
       </div>
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
@@ -545,6 +570,8 @@ async function openDetail(id) {
           <span class="text-gray-400">创建日期</span>
           <span>${fmtDate(o.created_at)}</span>
         </div>
+        ${o.ship_method?`<div class="flex justify-between py-2"><span class="text-gray-400">运输方式</span><span class="font-medium">${{land:'🚛 陆运',sea:'🚢 海运',air:'✈️ 空运'}[o.ship_method]||o.ship_method}</span></div>`:''}
+        ${o.ship_carrier?`<div class="flex justify-between py-2"><span class="text-gray-400">物流公司</span><span class="font-medium">${o.ship_carrier}</span></div>`:''}
         ${o.tracking_no?`<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>`:''}
         ${o.description?`<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${o.description}</p></div>`:''}
         ${o.notes?`<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${o.notes}</p></div>`:''}
@@ -620,6 +647,9 @@ async function updateProdProgress(id) {
 
   if (!stageLabel && !notes) { alert('请选择生产阶段或填写备注'); return; }
 
+  const updateBtn = document.querySelector(`button[onclick="updateProdProgress('${id}')"]`);
+  if (updateBtn) { updateBtn.disabled = true; updateBtn.textContent = '提交中...'; }
+
   const stageKey = selectedBtn?.dataset.key || null;
   const logNotes = [stageLabel?`【${stageLabel}】`:null, notes||null].filter(Boolean).join(' ');
   if (stageKey) await sb.from('orders').update({ prod_stage: stageKey }).eq('id', id);
@@ -630,17 +660,54 @@ async function updateProdProgress(id) {
     notes: logNotes,
   });
 
-  const msg = document.getElementById('prod-msg');
-  if (msg) { msg.classList.remove('hidden'); setTimeout(()=>msg?.classList.add('hidden'), 2000); }
+  // Lock the entire progress form after successful submission
+  document.querySelectorAll('.stage-btn').forEach(b => {
+    b.disabled = true;
+    b.classList.add('opacity-40', 'cursor-not-allowed');
+  });
   const notesEl = document.getElementById('prod-notes');
-  if (notesEl) notesEl.value = '';
-  document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('selected'));
+  if (notesEl) { notesEl.disabled = true; notesEl.classList.add('bg-gray-50', 'text-gray-400'); }
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.textContent = '✅ 已提交';
+    updateBtn.className = 'py-2.5 border border-gray-300 text-gray-400 font-medium rounded-lg text-sm cursor-not-allowed';
+  }
+  const msg = document.getElementById('prod-msg');
+  if (msg) { msg.textContent = '✅ 进度已更新，运营团队将同步收到'; msg.classList.remove('hidden'); }
 }
 
 async function markProdComplete(id) {
-  if (!confirm('确认生产完成？订单将进入待发货状态。')) return;
-  await sb.from('orders').update({status:'production_complete'}).eq('id', id);
-  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
+  const btn = document.querySelector(`button[onclick="markProdComplete('${id}')"]`);
+  if (!btn) return;
+
+  // 第一次点击：变成确认状态
+  if (!btn.dataset.confirming) {
+    btn.dataset.confirming = '1';
+    btn.textContent = '⚠️ 再次点击确认完成';
+    btn.className = 'py-2.5 bg-amber-500 text-white font-semibold rounded-lg text-sm';
+    setTimeout(() => {
+      if (btn.dataset.confirming) {
+        btn.dataset.confirming = '';
+        btn.textContent = '✓ 生产完成';
+        btn.className = 'py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm';
+      }
+    }, 4000);
+    return;
+  }
+
+  // 第二次点击：执行
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  btn.dataset.confirming = '';
+
+  const { error } = await sb.from('orders').update({status:'production_complete', prod_stage:null}).eq('id', id);
+  if (error) {
+    alert('操作失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = '✓ 生产完成';
+    btn.className = 'py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm';
+    return;
+  }
   await sb.from('order_logs').insert({
     order_id:id, status:'production_complete',
     operator_id:profile.id, operator_role:'supplier',
@@ -652,19 +719,50 @@ async function markProdComplete(id) {
 }
 
 async function submitShipping(id) {
-  const company  = document.getElementById('ship-company')?.value;
+  const method   = document.getElementById('ship-method')?.value;
+  const companySel = document.getElementById('ship-company')?.value;
+  const companyCustom = document.getElementById('ship-company-custom')?.value.trim();
+  const company  = companySel === '其他' ? (companyCustom || '其他') : companySel;
   const tracking = document.getElementById('ship-tracking')?.value.trim();
   const notes    = document.getElementById('ship-notes')?.value.trim();
 
+  if (!method)   { alert('请选择运输方式'); return; }
   if (!company)  { alert('请选择物流公司'); return; }
   if (!tracking) { alert('请填写物流单号'); return; }
 
-  const logNotes = [`物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
-  await sb.from('orders').update({status:'shipped', tracking_no:tracking}).eq('id', id);
+  const btn = document.querySelector(`button[onclick="submitShipping('${id}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+
+  const methodLabel = {land:'陆运', sea:'海运', air:'空运'}[method] || method;
+
+  // 商品行同步标记为已备货（让运营端装柜核对通过）
+  await sb.from('order_items').update({ item_status: 'ready' })
+    .eq('order_id', id)
+    .not('item_status', 'in', '("shipped","arrived","damaged")');
+
+  // 核心更新：状态 + 物流单号（必须成功）
+  const { error: coreErr } = await sb.from('orders').update({
+    status: 'shipped',
+    tracking_no: tracking,
+  }).eq('id', id);
+
+  if (coreErr) {
+    alert('发货失败：' + coreErr.message);
+    if (btn) { btn.disabled = false; btn.textContent = '确认发货'; }
+    return;
+  }
+
+  // 扩展更新：运输方式 + 物流公司（列不存在时静默跳过）
+  await sb.from('orders').update({
+    ship_method: method,
+    ship_carrier: company,
+  }).eq('id', id);
+
+  const logNotes = [`运输：${methodLabel}`, `物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
   await sb.from('order_logs').insert({
-    order_id:id, status:'shipped',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
+    order_id: id, status: 'shipped',
+    operator_id: profile.id, operator_role: 'supplier',
+    operator_name: supplier?.name || profile.name,
     notes: logNotes,
   });
 
