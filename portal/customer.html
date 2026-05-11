@@ -249,8 +249,19 @@ async function openDetail(id) {
     `<div class="text-center py-10 text-gray-400">加载中…</div>`;
   show('s-detail');
 
-  const { data: logs } = await sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone });
+  const [{ data: logs }, { data: freshOrder }] = await Promise.all([
+    sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
+    sb.from('orders').select('sign_image,signed_at,signed_by').eq('id', id).single(),
+  ]);
 
+  // 用最新数据更新本地缓存，防止重新搜索后签名状态丢失
+  if (freshOrder) {
+    if (freshOrder.sign_image) o.sign_image = freshOrder.sign_image;
+    if (freshOrder.signed_at)  o.signed_at  = freshOrder.signed_at;
+    if (freshOrder.signed_by)  o.signed_by  = freshOrder.signed_by;
+  }
+
+  // 进度记录：只显示状态名 + 时间，不显示备注和操作人
   const logsHtml = (logs || []).map((l, i, arr) => {
     const st = STATUS[l.status] || { label: l.status };
     const isLast = i === arr.length - 1;
@@ -260,13 +271,9 @@ async function openDetail(id) {
         <div class="w-3 h-3 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
         ${!isLast ? '<div class="w-0.5 bg-gray-200 flex-1 my-1"></div>' : ''}
       </div>
-      <div class="pb-4 flex-1 min-w-0">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-medium text-sm text-gray-800">${st.label}</span>
-          <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
-        </div>
-        ${l.notes ? `<p class="text-gray-500 text-sm mt-0.5">${l.notes}</p>` : ''}
-        ${l.operator_name ? `<p class="text-gray-400 text-xs mt-0.5">${l.operator_name}</p>` : ''}
+      <div class="pb-3 flex-1">
+        <span class="font-medium text-sm text-gray-800">${st.label}</span>
+        <span class="text-gray-400 text-xs ml-2">${fmtDateTime(l.created_at)}</span>
       </div>
     </div>`;
   }).join('');
