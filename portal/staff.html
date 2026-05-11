@@ -2840,7 +2840,7 @@ function renderChecklistPanel(o, items, childOrders) {
                     </div>`
                  : `<div class="rounded-lg p-3 bg-amber-50 text-sm text-amber-700">等待客户在客户端完成电子签名</div>`
                }
-               <button onclick="submitSignOff('${o.id}', ${JSON.stringify(o.customers?.name||'')})"
+               <button onclick="submitSignOff('${o.id}')"
                        class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                  确认客户签收 → 完成订单
                </button>
@@ -3042,16 +3042,22 @@ async function saveInstallDate(orderId) {
   openDetail(orderId);
 }
 
-async function submitSignOff(orderId, customerName) {
-  const name = customerName || '';
-  const btn = event?.currentTarget || document.querySelector(`button[onclick^="submitSignOff('${orderId}')"]`);
+async function submitSignOff(orderId) {
+  const order = allOrders.find(o => o.id === orderId);
+  const name  = order?.customers?.name || '';
+  const btn   = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
-  await sb.from('orders').update({
-    signed_at: new Date().toISOString(),
-    signed_by: name,
-    status: 'completed',
+  const { error } = await sb.from('orders').update({
+    signed_at:    new Date().toISOString(),
+    signed_by:    name,
+    status:       'completed',
     completed_at: new Date().toISOString(),
   }).eq('id', orderId);
+  if (error) {
+    alert('操作失败：' + error.message);
+    if (btn) { btn.disabled = false; btn.textContent = '确认客户签收 → 完成订单'; }
+    return;
+  }
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'completed',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
