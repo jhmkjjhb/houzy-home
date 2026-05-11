@@ -3047,17 +3047,23 @@ async function submitSignOff(orderId) {
   const name  = order?.customers?.name || '';
   const btn   = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
-  const { error } = await sb.from('orders').update({
-    signed_at:    new Date().toISOString(),
-    signed_by:    name,
+
+  const now = new Date().toISOString();
+
+  // 核心：状态改为已完成
+  const { error: e1 } = await sb.from('orders').update({
     status:       'completed',
-    completed_at: new Date().toISOString(),
+    completed_at: now,
   }).eq('id', orderId);
-  if (error) {
-    alert('操作失败：' + error.message);
+  if (e1) {
+    alert('操作失败：' + e1.message);
     if (btn) { btn.disabled = false; btn.textContent = '确认客户签收 → 完成订单'; }
     return;
   }
+
+  // 附加：签收人信息（列不存在时静默跳过）
+  await sb.from('orders').update({ signed_at: now, signed_by: name }).eq('id', orderId);
+
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'completed',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
