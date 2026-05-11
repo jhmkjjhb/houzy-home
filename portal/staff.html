@@ -779,6 +779,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
 let searchTimer = null;
+let _openDetailId = null;
 
 // ──────────────────────────────────────────────────────────────────
 // ROLE PERMISSION SYSTEM
@@ -1293,6 +1294,22 @@ async function init() {
   }, 1000);
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
+
+  // Realtime: sync order updates from suppliers immediately
+  sb.channel('order-realtime')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
+      const updated = payload.new;
+      const idx = allOrders.findIndex(o => o.id === updated.id);
+      if (idx !== -1) {
+        allOrders[idx] = { ...allOrders[idx], ...updated };
+        renderDashboard();
+        checkOverdueAlerts();
+      }
+      if (_openDetailId === updated.id) {
+        await openDetail(updated.id);
+      }
+    })
+    .subscribe();
 }
 
 async function loadStores() {
@@ -2011,6 +2028,7 @@ function renderCustomersTable(customers) {
 
 // ── Order Detail ──
 async function openDetail(id, backView) {
+  _openDetailId = id;
   if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
   goto('detail');
 

@@ -620,6 +620,9 @@ async function updateProdProgress(id) {
 
   if (!stageLabel && !notes) { alert('请选择生产阶段或填写备注'); return; }
 
+  const updateBtn = document.querySelector(`button[onclick="updateProdProgress('${id}')"]`);
+  if (updateBtn) { updateBtn.disabled = true; updateBtn.textContent = '提交中...'; }
+
   const stageKey = selectedBtn?.dataset.key || null;
   const logNotes = [stageLabel?`【${stageLabel}】`:null, notes||null].filter(Boolean).join(' ');
   if (stageKey) await sb.from('orders').update({ prod_stage: stageKey }).eq('id', id);
@@ -630,11 +633,20 @@ async function updateProdProgress(id) {
     notes: logNotes,
   });
 
-  const msg = document.getElementById('prod-msg');
-  if (msg) { msg.classList.remove('hidden'); setTimeout(()=>msg?.classList.add('hidden'), 2000); }
+  // Lock the entire progress form after successful submission
+  document.querySelectorAll('.stage-btn').forEach(b => {
+    b.disabled = true;
+    b.classList.add('opacity-40', 'cursor-not-allowed');
+  });
   const notesEl = document.getElementById('prod-notes');
-  if (notesEl) notesEl.value = '';
-  document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('selected'));
+  if (notesEl) { notesEl.disabled = true; notesEl.classList.add('bg-gray-50', 'text-gray-400'); }
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.textContent = '✅ 已提交';
+    updateBtn.className = 'py-2.5 border border-gray-300 text-gray-400 font-medium rounded-lg text-sm cursor-not-allowed';
+  }
+  const msg = document.getElementById('prod-msg');
+  if (msg) { msg.textContent = '✅ 进度已更新，运营团队将同步收到'; msg.classList.remove('hidden'); }
 }
 
 async function markProdComplete(id) {
