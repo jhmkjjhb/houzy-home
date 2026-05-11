@@ -1303,10 +1303,14 @@ async function init() {
       if (idx !== -1) {
         allOrders[idx] = { ...allOrders[idx], ...updated };
       } else {
-        // 订单不在当前列表（如状态变化导致筛选不到），重新全量加载
         await loadOrders();
       }
-      renderDashboard();
+      // 根据当前激活视图刷新对应页面
+      if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
+        renderDashboard();
+      } else if (!document.getElementById('v-orders').classList.contains('hidden')) {
+        filterOrders();
+      }
       checkOverdueAlerts();
       if (_openDetailId === updated.id) {
         await openDetail(updated.id);
