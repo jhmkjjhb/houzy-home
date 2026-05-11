@@ -3499,8 +3499,8 @@ async function updateOrder(id) {
     alert('⚠️ 请先确认收取所有期款项后，才能进入安装阶段。'); return;
   }
 
-  // 发货前：所有商品行必须已备货
-  if (status === 'shipped') {
+  // 发货前：所有商品行必须已备货（厂家已确认生产完成则跳过）
+  if (status === 'shipped' && origOrder?.status !== 'production_complete') {
     const { data: chkItems } = await sb.from('order_items').select('item_status,product_name').eq('order_id', id);
     if (chkItems && chkItems.length > 0) {
       const notReady = chkItems.filter(i => !['ready','shipped','arrived'].includes(i.item_status));
