@@ -730,16 +730,34 @@ async function submitShipping(id) {
   if (!company)  { alert('请选择物流公司'); return; }
   if (!tracking) { alert('请填写物流单号'); return; }
 
+  const btn = document.querySelector(`button[onclick="submitShipping('${id}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+
   const methodLabel = {land:'陆运', sea:'海运', air:'空运'}[method] || method;
-  const logNotes = [`运输：${methodLabel}`, `物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
-  await sb.from('orders').update({
-    status:'shipped', tracking_no:tracking,
-    ship_method:method, ship_carrier:company,
+
+  // 核心更新：状态 + 物流单号（必须成功）
+  const { error: coreErr } = await sb.from('orders').update({
+    status: 'shipped',
+    tracking_no: tracking,
   }).eq('id', id);
+
+  if (coreErr) {
+    alert('发货失败：' + coreErr.message);
+    if (btn) { btn.disabled = false; btn.textContent = '确认发货'; }
+    return;
+  }
+
+  // 扩展更新：运输方式 + 物流公司（列不存在时静默跳过）
+  await sb.from('orders').update({
+    ship_method: method,
+    ship_carrier: company,
+  }).eq('id', id);
+
+  const logNotes = [`运输：${methodLabel}`, `物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
   await sb.from('order_logs').insert({
-    order_id:id, status:'shipped',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
+    order_id: id, status: 'shipped',
+    operator_id: profile.id, operator_role: 'supplier',
+    operator_name: supplier?.name || profile.name,
     notes: logNotes,
   });
 
