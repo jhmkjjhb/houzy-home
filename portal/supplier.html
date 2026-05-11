@@ -650,9 +650,37 @@ async function updateProdProgress(id) {
 }
 
 async function markProdComplete(id) {
-  if (!confirm('确认生产完成？订单将进入待发货状态。')) return;
-  await sb.from('orders').update({status:'production_complete'}).eq('id', id);
-  sb.from('orders').update({prod_stage:null}).eq('id', id).catch(()=>{});
+  const btn = document.querySelector(`button[onclick="markProdComplete('${id}')"]`);
+  if (!btn) return;
+
+  // 第一次点击：变成确认状态
+  if (!btn.dataset.confirming) {
+    btn.dataset.confirming = '1';
+    btn.textContent = '⚠️ 再次点击确认完成';
+    btn.className = 'py-2.5 bg-amber-500 text-white font-semibold rounded-lg text-sm';
+    setTimeout(() => {
+      if (btn.dataset.confirming) {
+        btn.dataset.confirming = '';
+        btn.textContent = '✓ 生产完成';
+        btn.className = 'py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm';
+      }
+    }, 4000);
+    return;
+  }
+
+  // 第二次点击：执行
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  btn.dataset.confirming = '';
+
+  const { error } = await sb.from('orders').update({status:'production_complete', prod_stage:null}).eq('id', id);
+  if (error) {
+    alert('操作失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = '✓ 生产完成';
+    btn.className = 'py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm';
+    return;
+  }
   await sb.from('order_logs').insert({
     order_id:id, status:'production_complete',
     operator_id:profile.id, operator_role:'supplier',
