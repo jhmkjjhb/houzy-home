@@ -3271,7 +3271,7 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
     const logOpts = (logisticsProfiles || []).map(p =>
       `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
     ).join('');
-    const knownCarriers = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport','COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE'];
+    const knownCarriers = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport','COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE','骐盛国际物流'];
     const isCustomCarrier = o.ship_carrier && !knownCarriers.includes(o.ship_carrier);
     const customCarrierStyle = isCustomCarrier ? '' : 'hidden';
     const carrierSelVal = isCustomCarrier ? '__custom__' : (o.ship_carrier || '');
@@ -3308,6 +3308,7 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
                 <option ${carrierSelVal==='Maersk 马士基'?'selected':''}>Maersk 马士基</option>
                 <option ${carrierSelVal==='PIL'?'selected':''}>PIL</option>
                 <option ${carrierSelVal==='ONE'?'selected':''}>ONE</option>
+                <option ${carrierSelVal==='骐盛国际物流'?'selected':''}>骐盛国际物流</option>
               </optgroup>
               <option value="__custom__" ${carrierSelVal==='__custom__'?'selected':''}>其他（自填）</option>
             </select>
