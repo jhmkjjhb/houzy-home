@@ -3023,13 +3023,37 @@ async function saveInstallDate(orderId) {
   if (!date)  { alert('请选择安装日期'); return; }
   if (!name)  { alert('请填写安装人姓名'); return; }
   if (!phone) { alert('请填写安装人电话'); return; }
+
+  const btn = document.querySelector(`button[onclick="saveInstallDate('${orderId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+
+  // 分两步：先存日期，再存安装人（防止某列不存在拖垮整体）
+  const { data: d1, error: e1 } = await sb.from('orders')
+    .update({ install_date: date })
+    .eq('id', orderId)
+    .select('id');
+  if (e1) {
+    alert('保存失败（安装日期）：' + e1.message);
+    if (btn) { btn.disabled = false; btn.textContent = '保存预约信息'; }
+    return;
+  }
+  if (!d1 || d1.length === 0) {
+    alert('保存失败：无权限更新此订单，请联系管理员检查 Supabase RLS 策略');
+    if (btn) { btn.disabled = false; btn.textContent = '保存预约信息'; }
+    return;
+  }
+
   const notes = `${name} | ${phone}`;
-  const { error } = await sb.from('orders').update({
-    install_date: date,
-    installer_notes: notes,
-    updated_at: new Date().toISOString(),
-  }).eq('id', orderId);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  const { error: e2 } = await sb.from('orders')
+    .update({ installer_notes: notes })
+    .eq('id', orderId);
+  if (e2) {
+    // installer_notes 列可能不存在，提示用户添加
+    alert('安装人信息未能保存：' + e2.message + '\n\n请在 Supabase orders 表添加 installer_notes (text) 列');
+    // 安装日期已保存成功，仍然刷新
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '保存预约信息'; }
   openDetail(orderId);
 }
 
