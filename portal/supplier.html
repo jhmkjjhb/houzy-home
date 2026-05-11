@@ -735,6 +735,11 @@ async function submitShipping(id) {
 
   const methodLabel = {land:'陆运', sea:'海运', air:'空运'}[method] || method;
 
+  // 商品行同步标记为已备货（让运营端装柜核对通过）
+  await sb.from('order_items').update({ item_status: 'ready' })
+    .eq('order_id', id)
+    .not('item_status', 'in', '("shipped","arrived","damaged")');
+
   // 核心更新：状态 + 物流单号（必须成功）
   const { error: coreErr } = await sb.from('orders').update({
     status: 'shipped',
