@@ -1302,9 +1302,12 @@ async function init() {
       const idx = allOrders.findIndex(o => o.id === updated.id);
       if (idx !== -1) {
         allOrders[idx] = { ...allOrders[idx], ...updated };
-        renderDashboard();
-        checkOverdueAlerts();
+      } else {
+        // 订单不在当前列表（如状态变化导致筛选不到），重新全量加载
+        await loadOrders();
       }
+      renderDashboard();
+      checkOverdueAlerts();
       if (_openDetailId === updated.id) {
         await openDetail(updated.id);
       }
