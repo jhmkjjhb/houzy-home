@@ -96,7 +96,10 @@ const STATUS = {
   closed:             {label:'已关闭',   cls:'bg-gray-100 text-gray-500'},
 };
 
-const LOGISTICS = ['顺丰速运','德邦物流','京东物流','圆通速递','中通快递','韵达快递','申通快递','百世快递','其他'];
+const LOGISTICS_MY = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport'];
+const LOGISTICS_SEA = ['COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE'];
+const LOGISTICS_CN  = ['顺丰速运','德邦物流','京东物流','圆通速递','中通快递','韵达快递','申通快递','百世快递'];
+const LOGISTICS = [...LOGISTICS_MY, ...LOGISTICS_SEA, ...LOGISTICS_CN, '其他'];
 
 const PROD_STAGES = [
   {key:'drawing',   label:'图纸确认'},
@@ -451,12 +454,34 @@ async function openDetail(id) {
     <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
       <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
       <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">运输方式 <span class="text-red-500">*</span></label>
+        <select id="ship-method"
+                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+          <option value="">请选择运输方式</option>
+          <option value="land">🚛 陆运</option>
+          <option value="sea">🚢 海运</option>
+          <option value="air">✈️ 空运</option>
+        </select>
+      </div>
+      <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">物流公司 <span class="text-red-500">*</span></label>
         <select id="ship-company"
-                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
+                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
+                onchange="document.getElementById('ship-company-custom').classList.toggle('hidden',this.value!=='其他')">
           <option value="">请选择物流公司</option>
-          ${LOGISTICS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          <optgroup label="马来西亚物流">
+            ${LOGISTICS_MY.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <optgroup label="海运船公司">
+            ${LOGISTICS_SEA.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <optgroup label="国内快递">
+            ${LOGISTICS_CN.map(l=>`<option value="${l}">${l}</option>`).join('')}
+          </optgroup>
+          <option value="其他">其他（自填）</option>
         </select>
+        <input type="text" id="ship-company-custom" placeholder="填写物流公司名称"
+               class="hidden w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 mt-2">
       </div>
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
@@ -545,6 +570,8 @@ async function openDetail(id) {
           <span class="text-gray-400">创建日期</span>
           <span>${fmtDate(o.created_at)}</span>
         </div>
+        ${o.ship_method?`<div class="flex justify-between py-2"><span class="text-gray-400">运输方式</span><span class="font-medium">${{land:'🚛 陆运',sea:'🚢 海运',air:'✈️ 空运'}[o.ship_method]||o.ship_method}</span></div>`:''}
+        ${o.ship_carrier?`<div class="flex justify-between py-2"><span class="text-gray-400">物流公司</span><span class="font-medium">${o.ship_carrier}</span></div>`:''}
         ${o.tracking_no?`<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>`:''}
         ${o.description?`<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${o.description}</p></div>`:''}
         ${o.notes?`<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${o.notes}</p></div>`:''}
@@ -692,15 +719,23 @@ async function markProdComplete(id) {
 }
 
 async function submitShipping(id) {
-  const company  = document.getElementById('ship-company')?.value;
+  const method   = document.getElementById('ship-method')?.value;
+  const companySel = document.getElementById('ship-company')?.value;
+  const companyCustom = document.getElementById('ship-company-custom')?.value.trim();
+  const company  = companySel === '其他' ? (companyCustom || '其他') : companySel;
   const tracking = document.getElementById('ship-tracking')?.value.trim();
   const notes    = document.getElementById('ship-notes')?.value.trim();
 
+  if (!method)   { alert('请选择运输方式'); return; }
   if (!company)  { alert('请选择物流公司'); return; }
   if (!tracking) { alert('请填写物流单号'); return; }
 
-  const logNotes = [`物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
-  await sb.from('orders').update({status:'shipped', tracking_no:tracking}).eq('id', id);
+  const methodLabel = {land:'陆运', sea:'海运', air:'空运'}[method] || method;
+  const logNotes = [`运输：${methodLabel}`, `物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
+  await sb.from('orders').update({
+    status:'shipped', tracking_no:tracking,
+    ship_method:method, ship_carrier:company,
+  }).eq('id', id);
   await sb.from('order_logs').insert({
     order_id:id, status:'shipped',
     operator_id:profile.id, operator_role:'supplier',
