@@ -77,7 +77,6 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
-      <div class="nav-link hidden" id="nav-warehouse-m" onclick="goto('warehouse');toggleMobileMenu()">📦 <span>仓库管理</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -135,10 +134,6 @@
       <div class="nav-link" id="nav-customers" onclick="goto('customers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span data-i18n="nav_customers">客户管理</span>
-      </div>
-      <div class="nav-link hidden" id="nav-warehouse" onclick="goto('warehouse')">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V7"/></svg>
-        <span>仓库管理</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -419,125 +414,6 @@
       <div id="detail-content"></div>
     </div>
 
-    <!-- ── WAREHOUSE ── -->
-    <div id="v-warehouse" class="hidden p-4 max-w-5xl mx-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">仓库管理</h1>
-        <span id="wh-role-tag" class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 font-medium hidden">仓库管理员</span>
-      </div>
-      <!-- Tabs -->
-      <div class="flex gap-0 border-b border-gray-200 mb-4">
-        <button id="wtab-btn-inventory" onclick="switchWarehouseTab('inventory')"
-                class="px-4 py-2 text-sm font-medium border-b-2 border-hg text-hg -mb-px">库存总览</button>
-        <button id="wtab-btn-stockin" onclick="switchWarehouseTab('stockin')"
-                class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition">入库操作</button>
-        <button id="wtab-btn-products" onclick="switchWarehouseTab('products')"
-                class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition">产品档案</button>
-      </div>
-
-      <!-- Tab: 库存总览 -->
-      <div id="wtab-inventory">
-        <div class="flex gap-2 mb-3">
-          <input type="text" id="wh-inv-search" placeholder="搜索产品名称 / SKU / 厂家编码"
-                 oninput="filterInventoryTable()" class="input max-w-sm text-sm">
-          <select id="wh-wh-filter" onchange="filterInventoryTable()" class="input w-40 text-sm">
-            <option value="">全部仓库</option>
-          </select>
-        </div>
-        <div id="wh-inv-content" class="card overflow-hidden">
-          <p class="text-gray-400 text-sm p-6 text-center">加载中…</p>
-        </div>
-      </div>
-
-      <!-- Tab: 入库操作 (仓管/L2+) -->
-      <div id="wtab-stockin" class="hidden">
-        <div id="wh-stockin-guard" class="hidden card p-6 text-center text-gray-400 text-sm">仅仓库管理员或店长以上可操作</div>
-        <div id="wh-stockin-form" class="hidden">
-          <div class="card p-5 mb-4">
-            <h3 class="font-semibold text-gray-800 mb-4">新建入库</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <div>
-                <label class="label">仓库 *</label>
-                <select id="si-warehouse" class="input text-sm"><option value="">— 选择仓库 —</option></select>
-              </div>
-              <div>
-                <label class="label">产品 *</label>
-                <select id="si-product" class="input text-sm"><option value="">— 选择产品 —</option></select>
-              </div>
-              <div>
-                <label class="label">入库数量 *</label>
-                <input type="number" id="si-qty" placeholder="0" min="0.01" step="0.01" class="input text-sm">
-              </div>
-              <div>
-                <label class="label">单位成本（选填）</label>
-                <input type="number" id="si-cost" placeholder="0.00" min="0" step="0.01" class="input text-sm">
-              </div>
-              <div class="sm:col-span-2">
-                <label class="label">备注</label>
-                <input type="text" id="si-notes" placeholder="来源、批次等" class="input text-sm">
-              </div>
-            </div>
-            <button onclick="submitStockIn()" class="btn-gold px-6 py-2 text-sm">确认入库</button>
-            <p id="si-err" class="text-red-500 text-sm mt-2 hidden"></p>
-          </div>
-          <div class="card p-5">
-            <h3 class="font-semibold text-gray-800 mb-3">近期流水记录</h3>
-            <div id="wh-movements" class="text-sm text-gray-400">加载中…</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: 产品档案 (仓管/L2+) -->
-      <div id="wtab-products" class="hidden">
-        <div id="wh-products-guard" class="hidden card p-6 text-center text-gray-400 text-sm">仅仓库管理员或店长以上可操作</div>
-        <div id="wh-products-content" class="hidden">
-          <div class="flex items-center justify-between mb-3">
-            <input type="text" id="wh-prod-search" placeholder="搜索产品" oninput="filterProductsTable()" class="input max-w-xs text-sm">
-            <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm">+ 新增产品</button>
-          </div>
-          <!-- Add product inline form -->
-          <div id="add-product-form" class="hidden card p-5 mb-4 border-2 border-dashed border-hg/30">
-            <h3 class="font-semibold text-gray-800 mb-3">新增产品</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-              <div>
-                <label class="label">类别 *</label>
-                <select id="np-cat" class="input text-sm" onchange="previewSKU()">
-                  <option value="">— 选类别 —</option>
-                  ${[['WY','卫浴'],['DB','地板/地砖'],['CG','橱柜'],['MC','门窗'],['DJ','灯具'],['JJ','家具'],['WJ','五金'],['DQ','电器'],['TL','涂料/壁纸'],['QT','其他']].map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
-                </select>
-              </div>
-              <div>
-                <label class="label">产品名称 *</label>
-                <input type="text" id="np-name" placeholder="如：600×1200哑白砖" class="input text-sm">
-              </div>
-              <div>
-                <label class="label">单位</label>
-                <select id="np-unit" class="input text-sm">
-                  ${['件','片','套','米','平方米','箱','包','个','批'].map(u=>`<option>${u}</option>`).join('')}
-                </select>
-              </div>
-              <div class="sm:col-span-2">
-                <label class="label">规格描述（选填）</label>
-                <input type="text" id="np-specs" placeholder="颜色、尺寸、材质等" class="input text-sm">
-              </div>
-              <div>
-                <label class="label">最低库存预警</label>
-                <input type="number" id="np-min" placeholder="0" min="0" class="input text-sm">
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="text-xs text-gray-400">SKU 预览：<span id="np-sku-preview" class="font-mono font-bold text-hg">—</span></div>
-              <button onclick="submitNewProduct()" class="btn-gold px-5 py-2 text-sm">保存</button>
-              <button onclick="document.getElementById('add-product-form').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
-            </div>
-            <p id="np-err" class="text-red-500 text-xs mt-2 hidden"></p>
-          </div>
-          <div id="wh-products-list" class="card overflow-hidden">
-            <p class="text-gray-400 text-sm p-6 text-center">加载中…</p>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- ── REGISTRATIONS (admin only) ── -->
     <div id="v-registrations" class="hidden p-6 max-w-3xl mx-auto">
@@ -959,9 +835,7 @@ const FIELD_MIN_LEVEL = {
   nav_registrations:4,
   nav_users:        4,
   store_filter:     2,
-  nav_warehouse:    1,
 };
-function canManageWarehouse() { return profile?.role === 'warehouse' || canDo(2); }
 
 function myLevel() { return ROLE_LEVEL[profile?.role] ?? 0; }
 function canDo(min) { return myLevel() >= min; }
@@ -1513,9 +1387,6 @@ async function init() {
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
-  if (canDo(FIELD_MIN_LEVEL.nav_warehouse)) {
-    document.getElementById('nav-warehouse')?.classList.remove('hidden');
-    document.getElementById('nav-warehouse-m')?.classList.remove('hidden');
   }
   document.querySelectorAll('.admin-nav[data-perm="registrations"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_registrations)) el.classList.remove('hidden');
@@ -1685,7 +1556,7 @@ async function loadCustomers() {
 function goto(view) {
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
-  ['dashboard','orders','create','customers','detail','registrations','users','warehouse'].forEach(v => {
+  ['dashboard','orders','create','customers','detail','registrations','users'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     const navId = v === 'detail' ? 'orders' : v;
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
@@ -1696,7 +1567,6 @@ function goto(view) {
   if (view === 'create') resetCreateForm();
   if (view === 'registrations') loadRegistrations();
   if (view === 'users') loadUsersPage();
-  if (view === 'warehouse') loadWarehousePage();
 }
 
 // ── Dashboard ──
@@ -4350,289 +4220,6 @@ async function promptRejectReg(id) {
   }).eq('id', id);
   if (error) { alert('操作失败: ' + error.message); return; }
   loadRegistrations();
-}
-
-// ── Warehouse Management ──
-let whProducts = [], whInventory = [], whWarehouses = [], whMovements = [];
-let whTab = 'inventory';
-
-function switchWarehouseTab(tab) {
-  whTab = tab;
-  ['inventory','stockin','products'].forEach(t => {
-    document.getElementById(`wtab-${t}`)?.classList.toggle('hidden', t !== tab);
-    const btn = document.getElementById(`wtab-btn-${t}`);
-    if (btn) {
-      btn.className = t === tab
-        ? 'px-4 py-2 text-sm font-medium border-b-2 border-hg text-hg -mb-px'
-        : 'px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition';
-    }
-  });
-  if (tab === 'inventory') renderInventoryTable();
-  if (tab === 'stockin')   renderStockInTab();
-  if (tab === 'products')  renderProductsTab();
-}
-
-async function loadWarehousePage() {
-  if (profile?.role === 'warehouse') {
-    document.getElementById('wh-role-tag')?.classList.remove('hidden');
-  }
-  const [{ data: whs }, { data: prods }, { data: inv }] = await Promise.all([
-    sb.from('warehouses').select('*').order('name'),
-    sb.from('products').select('*').order('sku'),
-    sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty), warehouses(name)').order('updated_at', { ascending: false }),
-  ]);
-  whWarehouses = whs || [];
-  whProducts   = prods || [];
-  whInventory  = inv || [];
-  // Populate warehouse filter + stockin dropdowns
-  const whFilter = document.getElementById('wh-wh-filter');
-  const siWh     = document.getElementById('si-warehouse');
-  if (whFilter) {
-    whFilter.innerHTML = '<option value="">全部仓库</option>' + whWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  }
-  if (siWh) {
-    siWh.innerHTML = '<option value="">— 选择仓库 —</option>' + whWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-    if (whWarehouses.length === 0) siWh.innerHTML = '<option value="">（先新建仓库）</option>';
-  }
-  // Populate product dropdown in stockin
-  const siProd = document.getElementById('si-product');
-  if (siProd) {
-    siProd.innerHTML = '<option value="">— 选择产品 —</option>' + whProducts.map(p => `<option value="${p.id}">[${p.sku}] ${p.name}</option>`).join('');
-  }
-  switchWarehouseTab('inventory');
-}
-
-function renderInventoryTable() {
-  const q = (document.getElementById('wh-inv-search')?.value || '').toLowerCase();
-  const wf = document.getElementById('wh-wh-filter')?.value || '';
-  const el = document.getElementById('wh-inv-content');
-  if (!el) return;
-
-  // Build flat rows: one per product+warehouse pair
-  let rows = whInventory.filter(row => {
-    if (wf && row.warehouse_id !== wf) return false;
-    const p = row.products;
-    if (q && !`${p?.sku} ${p?.name}`.toLowerCase().includes(q)) return false;
-    return true;
-  });
-
-  // Also include products with no inventory rows (when search matches)
-  if (q) {
-    const inInv = new Set(rows.map(r => r.product_id));
-    whProducts.forEach(p => {
-      if (inInv.has(p.id)) return;
-      if (`${p.sku} ${p.name}`.toLowerCase().includes(q)) {
-        rows.push({ product_id: p.id, warehouse_id: null, qty_on_hand: 0, qty_reserved: 0, products: p, warehouses: null });
-      }
-    });
-  }
-
-  if (!rows.length) {
-    el.innerHTML = '<p class="text-gray-400 text-sm p-6 text-center">暂无库存记录</p>'; return;
-  }
-  el.innerHTML = `<div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead><tr class="border-b border-gray-200 text-xs text-gray-400 bg-gray-50">
-        <th class="px-4 py-3 text-left font-medium">SKU</th>
-        <th class="px-4 py-3 text-left font-medium">产品名称</th>
-        <th class="px-4 py-3 text-left font-medium">仓库</th>
-        <th class="px-4 py-3 text-right font-medium">在库</th>
-        <th class="px-4 py-3 text-right font-medium">预占</th>
-        <th class="px-4 py-3 text-right font-medium">可用</th>
-        <th class="px-4 py-3 text-left font-medium">单位</th>
-        <th class="px-4 py-3 text-left font-medium">状态</th>
-      </tr></thead>
-      <tbody>
-        ${rows.map((row, i) => {
-          const p = row.products || {};
-          const avail = (row.qty_on_hand || 0) - (row.qty_reserved || 0);
-          const low = p.min_stock_qty > 0 && avail <= p.min_stock_qty;
-          return `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/50'}">
-            <td class="px-4 py-3 font-mono text-xs text-hg font-bold">${p.sku||'—'}</td>
-            <td class="px-4 py-3">
-              <div class="font-medium text-gray-800">${p.name||'—'}</div>
-              ${p.category ? `<div class="text-xs text-gray-400">${p.category}</div>` : ''}
-            </td>
-            <td class="px-4 py-3 text-gray-500">${row.warehouses?.name || '<span class="text-gray-300">未入库</span>'}</td>
-            <td class="px-4 py-3 text-right font-medium">${row.qty_on_hand ?? '—'}</td>
-            <td class="px-4 py-3 text-right text-orange-500">${row.qty_reserved || 0}</td>
-            <td class="px-4 py-3 text-right font-bold ${avail > 0 ? 'text-green-700' : 'text-red-500'}">${row.qty_on_hand !== undefined ? avail : '—'}</td>
-            <td class="px-4 py-3 text-gray-400 text-xs">${p.unit||'—'}</td>
-            <td class="px-4 py-3">${low ? '<span class="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">库存低</span>' : ''}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
-
-function filterInventoryTable() { renderInventoryTable(); }
-function filterProductsTable() { renderProductsTab(); }
-
-function renderStockInTab() {
-  const canManage = canManageWarehouse();
-  document.getElementById('wh-stockin-guard')?.classList.toggle('hidden', canManage);
-  document.getElementById('wh-stockin-form')?.classList.toggle('hidden', !canManage);
-  if (canManage) renderMovements();
-}
-
-async function renderMovements() {
-  const { data } = await sb.from('inventory_movements')
-    .select('*, products(sku,name), warehouses(name), profiles(name)')
-    .order('created_at', { ascending: false }).limit(30);
-  whMovements = data || [];
-  const el = document.getElementById('wh-movements');
-  if (!el) return;
-  if (!whMovements.length) { el.innerHTML = '<p class="text-gray-400">暂无记录</p>'; return; }
-  const typeLabel = { in:'入库', out:'出库', adjust:'调整', reserve:'预占', release:'释放' };
-  const typeColor = { in:'text-green-700', out:'text-red-600', adjust:'text-blue-600', reserve:'text-orange-500', release:'text-gray-500' };
-  el.innerHTML = `<table class="w-full text-xs">
-    <thead><tr class="text-gray-400 border-b">
-      <th class="pb-2 text-left">时间</th><th class="pb-2 text-left">类型</th>
-      <th class="pb-2 text-left">产品</th><th class="pb-2 text-left">仓库</th>
-      <th class="pb-2 text-right">数量</th><th class="pb-2 text-left">备注</th>
-    </tr></thead>
-    <tbody>${whMovements.map(m => `<tr class="border-b border-gray-50">
-      <td class="py-1.5 text-gray-400">${new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-      <td class="py-1.5 font-medium ${typeColor[m.type]||''}">${typeLabel[m.type]||m.type}</td>
-      <td class="py-1.5">${m.products ? `[${m.products.sku}] ${m.products.name}` : '—'}</td>
-      <td class="py-1.5 text-gray-500">${m.warehouses?.name||'—'}</td>
-      <td class="py-1.5 text-right font-mono font-bold ${m.type==='in'?'text-green-700':'text-red-600'}">${m.type==='in'?'+':'−'}${m.qty}</td>
-      <td class="py-1.5 text-gray-400">${m.notes||''}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-async function submitStockIn() {
-  const whId   = document.getElementById('si-warehouse')?.value;
-  const prodId = document.getElementById('si-product')?.value;
-  const qty    = parseFloat(document.getElementById('si-qty')?.value);
-  const cost   = parseFloat(document.getElementById('si-cost')?.value) || null;
-  const notes  = document.getElementById('si-notes')?.value.trim() || null;
-  const err    = document.getElementById('si-err');
-  if (!whId)   { err.textContent='请选择仓库'; err.classList.remove('hidden'); return; }
-  if (!prodId) { err.textContent='请选择产品'; err.classList.remove('hidden'); return; }
-  if (!qty || qty <= 0) { err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
-  err.classList.add('hidden');
-
-  // Upsert inventory row
-  const { data: existing } = await sb.from('inventory').select('id,qty_on_hand').eq('product_id', prodId).eq('warehouse_id', whId).maybeSingle();
-  if (existing) {
-    await sb.from('inventory').update({ qty_on_hand: existing.qty_on_hand + qty, ...(cost ? { unit_cost: cost } : {}), updated_at: new Date().toISOString() }).eq('id', existing.id);
-  } else {
-    await sb.from('inventory').insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0, ...(cost ? { unit_cost: cost } : {}) });
-  }
-  // Record movement
-  await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type: 'in', qty, notes, operator_id: profile.id });
-  // Reset form
-  ['si-qty','si-cost','si-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  // Reload
-  await loadWarehousePage();
-  switchWarehouseTab('stockin');
-  alert('✅ 入库成功');
-}
-
-function renderProductsTab() {
-  const canManage = canManageWarehouse();
-  document.getElementById('wh-products-guard')?.classList.toggle('hidden', canManage);
-  document.getElementById('wh-products-content')?.classList.toggle('hidden', !canManage);
-  if (!canManage) return;
-  const q = (document.getElementById('wh-prod-search')?.value || '').toLowerCase();
-  const el = document.getElementById('wh-products-list');
-  if (!el) return;
-  const filtered = whProducts.filter(p => !q || `${p.sku} ${p.name}`.toLowerCase().includes(q));
-  if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-6 text-center">暂无产品档案，点击「新增产品」开始建档</p>'; return; }
-  const catLabel = { WY:'卫浴', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
-  el.innerHTML = `<div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead><tr class="border-b border-gray-200 text-xs text-gray-400 bg-gray-50">
-        <th class="px-4 py-3 text-left font-medium">SKU</th>
-        <th class="px-4 py-3 text-left font-medium">产品名称</th>
-        <th class="px-4 py-3 text-left font-medium">类别</th>
-        <th class="px-4 py-3 text-left font-medium">单位</th>
-        <th class="px-4 py-3 text-left font-medium">规格</th>
-        <th class="px-4 py-3 text-left font-medium">厂家编码</th>
-        <th class="px-4 py-3 text-left font-medium">操作</th>
-      </tr></thead>
-      <tbody>
-        ${filtered.map((p, i) => `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/50'}">
-          <td class="px-4 py-3 font-mono font-bold text-hg text-xs">${p.sku}</td>
-          <td class="px-4 py-3 font-medium text-gray-800">${p.name}</td>
-          <td class="px-4 py-3 text-xs text-gray-500">${catLabel[p.category]||p.category||'—'}</td>
-          <td class="px-4 py-3 text-gray-500">${p.unit||'—'}</td>
-          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${p.specs||'—'}</td>
-          <td class="px-4 py-3"><button onclick="openSupplierCodes('${p.id}','${p.name.replace(/'/g,"\\\'")}')"
-            class="text-xs text-blue-600 hover:underline">绑定/查看</button></td>
-          <td class="px-4 py-3"><button onclick="deleteProduct('${p.id}')"
-            class="text-xs text-red-400 hover:text-red-600">删除</button></td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
-
-function openAddProduct() {
-  document.getElementById('add-product-form')?.classList.remove('hidden');
-  ['np-name','np-specs','np-min'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const cat = document.getElementById('np-cat'); if (cat) cat.value = '';
-  previewSKU();
-}
-
-async function previewSKU() {
-  const cat = document.getElementById('np-cat')?.value || 'QT';
-  const preview = document.getElementById('np-sku-preview');
-  if (!preview) return;
-  if (!cat) { preview.textContent = '—'; return; }
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  const seq = String((count || 0) + 1).padStart(4, '0');
-  preview.textContent = `HH-${cat}-${seq}`;
-}
-
-async function submitNewProduct() {
-  const cat   = document.getElementById('np-cat')?.value;
-  const name  = document.getElementById('np-name')?.value.trim();
-  const unit  = document.getElementById('np-unit')?.value || '件';
-  const specs = document.getElementById('np-specs')?.value.trim() || null;
-  const minQ  = parseFloat(document.getElementById('np-min')?.value) || 0;
-  const err   = document.getElementById('np-err');
-  if (!cat)  { err.textContent='请选择类别'; err.classList.remove('hidden'); return; }
-  if (!name) { err.textContent='请填写产品名称'; err.classList.remove('hidden'); return; }
-  err.classList.add('hidden');
-
-  // Generate SKU
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  const seq = String((count || 0) + 1).padStart(4, '0');
-  const sku = `HH-${cat}-${seq}`;
-
-  const { error } = await sb.from('products').insert({ sku, name, category: cat, unit, specs, min_stock_qty: minQ });
-  if (error) { err.textContent = '保存失败: ' + error.message; err.classList.remove('hidden'); return; }
-  document.getElementById('add-product-form')?.classList.add('hidden');
-  await loadWarehousePage();
-  switchWarehouseTab('products');
-}
-
-async function deleteProduct(productId) {
-  if (!confirm('确认删除此产品档案？相关库存记录也会删除。')) return;
-  await sb.from('products').delete().eq('id', productId);
-  await loadWarehousePage();
-  switchWarehouseTab('products');
-}
-
-async function openSupplierCodes(productId, productName) {
-  const { data: codes } = await sb.from('product_supplier_codes')
-    .select('*, suppliers(name)').eq('product_id', productId);
-  const rows = (codes || []).map(c => `${c.supplier_code}（${c.suppliers?.name || '未知供应商'}）`).join('\n') || '暂无绑定';
-  const newCode = prompt(`产品：${productName}\n\n已绑定厂家编码：\n${rows}\n\n输入新的厂家编码（格式：厂家编码，不填则取消）：`);
-  if (!newCode) return;
-  // Pick supplier
-  const { data: sups } = await sb.from('suppliers').select('id,name').eq('active', true).order('name');
-  if (!sups?.length) { alert('请先在用户管理中添加供应商'); return; }
-  const supName = prompt(`选择供应商（输入序号）：\n${(sups||[]).map((s,i)=>`${i+1}. ${s.name}`).join('\n')}`);
-  const idx = parseInt(supName) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= sups.length) { alert('取消操作'); return; }
-  const { error } = await sb.from('product_supplier_codes').insert({ product_id: productId, supplier_id: sups[idx].id, supplier_code: newCode.trim() });
-  if (error) alert('绑定失败: ' + error.message);
-  else alert('✅ 厂家编码已绑定');
 }
 
 // ── User Management (L4+) ──
