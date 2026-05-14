@@ -202,7 +202,35 @@
             </div>
             <div>
               <label class="label">产品 *</label>
-              <select id="si-prod" class="input text-sm"><option value="">— 选择产品 —</option></select>
+              <div class="flex gap-2">
+                <select id="si-prod" class="input text-sm flex-1"><option value="">— 选择现有产品 —</option></select>
+                <button onclick="toggleNewProduct()" id="si-new-btn"
+                  class="flex-shrink-0 px-3 py-2 text-xs rounded-lg border-2 border-dashed font-semibold transition-colors whitespace-nowrap"
+                  style="border-color:#c8a96e;color:#c8a96e">+ 新建</button>
+              </div>
+              <div id="si-new-prod-row" class="hidden mt-2 p-3 rounded-lg border border-dashed" style="border-color:#c8a96e55;background:#fafaf8">
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  <div class="col-span-2">
+                    <label class="label">新产品名称 *</label>
+                    <input type="text" id="si-new-name" placeholder="如：TOTO龙头 TLG31001B" class="input text-sm" oninput="previewNewSku()">
+                  </div>
+                  <div>
+                    <label class="label">单位</label>
+                    <select id="si-new-unit" class="input text-sm">
+                      <option>件</option><option>套</option><option>片</option>
+                      <option>箱</option><option>平方米</option><option>个</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label">低库存预警</label>
+                    <input type="number" id="si-new-min" placeholder="0" min="0" class="input text-sm">
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                  <span>系统编码预览：</span>
+                  <span id="si-new-sku" class="font-mono font-bold text-sm" style="color:#1a3a2a">—</span>
+                </div>
+              </div>
             </div>
             <div>
               <label class="label">入库数量 *</label>
@@ -334,6 +362,16 @@
         </div>
         <p id="np-err" class="text-red-500 text-xs mt-2 hidden"></p>
       </div>
+      <!-- 编码查询 -->
+      <div class="card p-4 mb-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">🔍 产品编码查询</h3>
+        <div class="flex gap-2 mb-3">
+          <input type="text" id="code-search" placeholder="输入系统编码（HH-WY-0001）或厂家原编码"
+                 class="input text-sm flex-1" onkeydown="if(event.key==='Enter')lookupCode()">
+          <button onclick="lookupCode()" class="btn-gold px-4 py-2 text-sm whitespace-nowrap">查询</button>
+        </div>
+        <div id="code-result" class="text-xs text-gray-400">输入编码后按回车或点查询</div>
+      </div>
       <!-- Search -->
       <input type="text" id="prod-search" placeholder="搜索 SKU / 产品名称"
              oninput="renderProducts()" class="input max-w-xs text-sm mb-3">
@@ -417,7 +455,7 @@ const CAT_LABEL = { WY:'卫浴', DB:'地板/地砖', CG:'橱柜', MC:'门窗', D
 let profile = null;
 let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
 let soTab = 'out';
-let siCat = '', siSub = '';
+let siCat = '', siSub = '', siNewProduct = false;
 
 const SI_FIELDS = {
   WY: {
@@ -787,18 +825,98 @@ function collectSiAttrs() {
   return attrs;
 }
 
+// ── Stock In Helpers ──
+function toggleNewProduct() {
+  siNewProduct = !siNewProduct;
+  document.getElementById('si-new-prod-row').classList.toggle('hidden', !siNewProduct);
+  document.getElementById('si-prod').classList.toggle('hidden', siNewProduct);
+  const btn = document.getElementById('si-new-btn');
+  btn.textContent = siNewProduct ? '× 取消' : '+ 新建';
+  if (siNewProduct) { previewNewSku(); document.getElementById('si-new-name').focus(); }
+}
+
+async function previewNewSku() {
+  const cat = siCat === 'CT' ? 'CT' : siCat === 'WY' ? 'WY' : 'QT';
+  const el  = document.getElementById('si-new-sku');
+  if (!el) return;
+  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
+  el.textContent = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+}
+
+async function lookupCode() {
+  const q  = (document.getElementById('code-search')?.value || '').trim();
+  const el = document.getElementById('code-result');
+  if (!q || !el) return;
+  el.innerHTML = '<span class="text-gray-400">查询中…</span>';
+
+  const [{ data: bySku }, { data: byCode }] = await Promise.all([
+    sb.from('products').select('id,sku,name,category,unit').ilike('sku', `%${q}%`).limit(10),
+    sb.from('product_supplier_codes')
+      .select('supplier_code, suppliers(name), products(id,sku,name,category,unit)')
+      .ilike('supplier_code', `%${q}%`).limit(10),
+  ]);
+
+  const prodMap = new Map();
+  for (const p of (bySku || [])) prodMap.set(p.id, p);
+  for (const r of (byCode || [])) { const p = r.products; if (p && !prodMap.has(p.id)) prodMap.set(p.id, p); }
+
+  if (!prodMap.size) { el.innerHTML = '<span class="text-gray-400">未找到匹配产品</span>'; return; }
+
+  const items = await Promise.all([...prodMap.values()].map(async p => {
+    const { data: codes } = await sb.from('product_supplier_codes')
+      .select('supplier_code, suppliers(name)').eq('product_id', p.id);
+    return { p, codes: codes || [] };
+  }));
+
+  el.innerHTML = items.map(({ p, codes }) => `
+    <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-white">
+      <div class="flex flex-wrap items-center gap-2 mb-1.5">
+        <span class="font-mono text-sm font-bold" style="color:#1a3a2a">${p.sku}</span>
+        <span class="text-gray-300 text-xs">→</span>
+        <span class="font-medium text-gray-800 text-sm">${p.name}</span>
+        <span class="tag tag-adj ml-auto">${CAT_LABEL[p.category]||p.category||'—'}</span>
+      </div>
+      <div class="text-xs">
+        <span class="text-gray-400 font-medium">厂家编码：</span>
+        ${codes.length
+          ? codes.map(c => `<span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 mr-1">${c.supplier_code}</span><span class="text-gray-400">${c.suppliers?.name ? '('+c.suppliers.name+')' : ''}</span>`).join('&ensp;')
+          : '<span class="text-gray-300">暂无厂家编码，可在下方产品列表中绑定</span>'}
+      </div>
+    </div>`).join('');
+}
+
 // ── Stock In ──
 async function submitStockIn() {
   const whId      = document.getElementById('si-wh')?.value;
-  const prodId    = document.getElementById('si-prod')?.value;
   const qty       = parseFloat(document.getElementById('si-qty')?.value);
   const cost      = parseFloat(document.getElementById('si-cost')?.value) || null;
   const userNotes = document.getElementById('si-notes')?.value.trim() || '';
   const err       = document.getElementById('si-err');
   err.classList.add('hidden');
   if (!whId)         { err.textContent='请选择仓库'; err.classList.remove('hidden'); return; }
-  if (!prodId)       { err.textContent='请选择产品'; err.classList.remove('hidden'); return; }
   if (!qty || qty<=0){ err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
+
+  let prodId = document.getElementById('si-prod')?.value;
+
+  if (siNewProduct) {
+    const newName = document.getElementById('si-new-name')?.value.trim();
+    if (!newName) { err.textContent='请输入新产品名称'; err.classList.remove('hidden'); return; }
+    const cat   = siCat === 'CT' ? 'CT' : siCat === 'WY' ? 'WY' : 'QT';
+    const unit  = document.getElementById('si-new-unit')?.value || '件';
+    const minQ  = parseFloat(document.getElementById('si-new-min')?.value) || 0;
+    const attrs = collectSiAttrs();
+    const specs = Object.entries(attrs).map(([k,v])=>`${k}:${v}`).join(' | ') || null;
+    const { count } = await sb.from('products').select('id',{count:'exact',head:true}).like('sku',`HH-${cat}-%`);
+    const sku = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+    const { data: np, error: npErr } = await sb.from('products')
+      .insert({ sku, name: newName, category: cat, unit, specs, min_stock_qty: minQ })
+      .select('id').single();
+    if (npErr) { err.textContent='建档失败: '+npErr.message; err.classList.remove('hidden'); return; }
+    prodId = np.id;
+    await loadAll();
+  } else if (!prodId) {
+    err.textContent='请选择产品'; err.classList.remove('hidden'); return;
+  }
 
   const attrs = collectSiAttrs();
   const subLabels = { faucet:'龙头', shower:'花洒', 'toilet-basic':'马桶（普通）', 'toilet-semi':'马桶（半智能）', 'toilet-smart':'马桶（全智能）', accessory:'卫浴配件' };
@@ -817,8 +935,16 @@ async function submitStockIn() {
   }
   await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'in', qty, notes: notesStr, operator_id: profile.id });
 
-  ['si-qty','si-cost','si-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['si-qty','si-cost','si-notes','si-new-name','si-new-min'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('si-prod').value = '';
+  document.getElementById('si-new-sku').textContent = '—';
+  // Reset new-product mode
+  if (siNewProduct) {
+    siNewProduct = false;
+    document.getElementById('si-new-prod-row').classList.add('hidden');
+    document.getElementById('si-prod').classList.remove('hidden');
+    document.getElementById('si-new-btn').textContent = '+ 新建';
+  }
   siCat = ''; siSub = '';
   document.querySelectorAll('.si-cat-btn').forEach(b => {
     b.className = 'si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400';
