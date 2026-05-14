@@ -1931,7 +1931,7 @@ function setInstallments(n) {
       ? 'flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-hg bg-hg text-white'
       : 'flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600';
   });
-  const defaults = { 1: [100], 2: [70, 30], 3: [50, 40, 10] };
+  const defaults = { 1: [100], 2: [50, 50], 3: [50, 40, 10] };
   const container = document.getElementById('inst-splits');
   const methodOpts = `
     <option value="">方式 —</option>
@@ -3575,14 +3575,37 @@ function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
 }
 
 function renderPaymentPanel(o, payments) {
-  const n        = o.installments || 1;
-  const splits   = Array.isArray(o.pay_splits) ? o.pay_splits : [100];
-  const paidCnt  = payments?.length || 0;
-  const currency = o.currency || 'MYR';
-  const pmLabel  = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
+  const payStatus = o.payment_status || 'unpaid';
+  const currency  = o.currency || 'MYR';
+  const pmLabel   = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
+  const paidCnt   = payments?.length || 0;
+  const canRec    = canDo(FIELD_MIN_LEVEL.edit_payment);
 
-  // Legacy single-payment order already marked paid with no order_payments record
-  if (n === 1 && paidCnt === 0 && o.payment_status === 'paid') {
+  // Derive installment count robustly.
+  // o.installments may be null if the column doesn't exist yet in the DB.
+  // If payment_status is 'partial' but we only see n=1, we know there's at least one more期 due.
+  let n = o.installments || 1;
+  if (n === 1 && payStatus === 'partial') n = paidCnt + 1;
+
+  // Derive per-期 percentages.
+  // Prefer DB pay_splits; fall back by combining actual payment records + even split for remainder.
+  let splits = Array.isArray(o.pay_splits) ? o.pay_splits : null;
+  if (!splits || splits.length < n) {
+    const paidPct = payments?.reduce((s, p) => s + (p.pct || 0), 0) || 0;
+    const remPct  = 100 - paidPct;
+    const unpaid  = n - paidCnt;
+    const each    = unpaid > 0 ? Math.floor(remPct / unpaid) : 0;
+    splits = Array.from({ length: n }, (_, i) => {
+      const rec = payments?.find(p => p.seq === i + 1);
+      return rec ? (rec.pct || each) : each;
+    });
+    // Fix rounding on last slot
+    const tot = splits.reduce((a, b) => a + b, 0);
+    if (tot !== 100 && n > 0) splits[n - 1] += 100 - tot;
+  }
+
+  // Legacy: single full payment already recorded without installment rows
+  if (n === 1 && paidCnt === 0 && payStatus === 'paid') {
     return `<div class="card p-5 mb-4">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold text-gray-800">付款进度</h3>
@@ -3591,6 +3614,18 @@ function renderPaymentPanel(o, payments) {
       <p class="text-xs text-gray-400 mt-1">全款 ${fmtAmt(o.amount, currency)}</p>
     </div>`;
   }
+
+  // 到货催款横幅：货到了但尾款未结清时提醒
+  const paidAmt   = payments?.reduce((s, p) => s + (p.amount || 0), 0) || 0;
+  const remainAmt = Math.max(0, o.amount - paidAmt);
+  const collectionBanner = (o.status === 'arrived' && payStatus !== 'paid') ? `
+    <div class="mb-3 rounded-lg px-3 py-2.5 flex items-center gap-2" style="background:#fef3c7;border:1px solid #fcd34d">
+      <span class="text-base flex-shrink-0">⚠️</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold" style="color:#92400e">货已到，请催收尾款</div>
+        <div class="text-xs" style="color:#b45309">待收余额 ${fmtAmt(remainAmt, currency)}</div>
+      </div>
+    </div>` : '';
 
   const rows = Array.from({ length: n }, (_, i) => {
     const seq     = i + 1;
@@ -3604,24 +3639,23 @@ function renderPaymentPanel(o, payments) {
         <div class="flex items-center gap-3">
           <span class="text-green-500 text-base">✅</span>
           <div>
-            <div class="text-sm font-medium text-gray-800">第${seq}期 · ${pct}%</div>
+            <div class="text-sm font-medium text-gray-800">${n > 1 ? `第${seq}期 · ${pct}%` : '全款'}</div>
             <div class="text-xs text-gray-400">${fmtAmt(instAmt, currency)} · ${pmLabel[paid.method]||paid.method||'—'} · ${fmtDate(paid.paid_at)}</div>
           </div>
         </div>
         <span class="text-xs font-medium text-green-600">已收款</span>
       </div>`;
     }
-    const canRec = canDo(FIELD_MIN_LEVEL.edit_payment);
     return `<div class="py-3 ${divider}">
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-3">
           <span class="text-gray-300 text-base">◯</span>
           <div>
-            <div class="text-sm font-medium text-gray-800">第${seq}期 · ${pct}%</div>
+            <div class="text-sm font-medium text-gray-800">${n > 1 ? `第${seq}期 · ${pct}%` : '全款'}</div>
             <div class="text-xs text-gray-400">应收 ${fmtAmt(instAmt, currency)}</div>
           </div>
         </div>
-        <span class="text-xs font-medium text-red-500">待收款</span>
+        <span class="text-xs font-medium" style="color:#dc2626">待收款</span>
       </div>
       ${canRec ? `<div class="flex gap-2 ml-7">
         <select id="pay-method-${seq}" class="input text-sm py-1.5 flex-1">
@@ -3649,6 +3683,7 @@ function renderPaymentPanel(o, payments) {
       <h3 class="font-semibold text-gray-800">付款进度</h3>
       ${badge}
     </div>
+    ${collectionBanner}
     ${rows}
   </div>`;
 }
