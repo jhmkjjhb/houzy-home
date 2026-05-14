@@ -99,6 +99,7 @@ async function run() {
         .then(({ data, error }) => ({ pid, data, error }))
     ));
 
+    // For each parent, also query child orders the same way staff.html does
     const childCheckResults = await Promise.all(uniqueParentIds.map(pid =>
       sb.from('orders')
         .select('id, order_no, status, parent_order_id')

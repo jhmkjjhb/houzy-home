@@ -242,6 +242,77 @@ function renderOrders() {
     </div>`).join('');
 }
 
+function renderCustomerWarranty(o, logs) {
+  if (!['after_sales','completed'].includes(o.status)) return '';
+  const startLog = (logs || []).find(l => l.status === 'after_sales');
+  if (!startLog) return '';
+
+  let warrantyData = null;
+  if (o.warranty_info) {
+    try { warrantyData = JSON.parse(o.warranty_info); } catch(e) {}
+  }
+  if (!warrantyData || warrantyData.length === 0) {
+    warrantyData = [{
+      seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso: startLog.created_at,
+      components:[{ name:'整体产品', years:1,
+        endIso: new Date(new Date(startLog.created_at).getTime() + 365.25*24*3600000).toISOString() }],
+    }];
+  }
+
+  const now = Date.now();
+  const allExpired = warrantyData.every(s => s.components.every(c => new Date(c.endIso).getTime() < now));
+  const borderClr  = allExpired ? '#dc2626' : '#1e40af';
+
+  const seriesHtml = warrantyData.map(series => {
+    const maxEndMs  = Math.max(...series.components.map(c => new Date(c.endIso).getTime()));
+    const sExp      = maxEndMs < now;
+    const rows = series.components.map(comp => {
+      const expired = new Date(comp.endIso).getTime() < now;
+      const dot     = expired
+        ? `<span style="color:#dc2626;font-size:10px;font-weight:600">已到期</span>`
+        : `<span style="color:#16a34a;font-size:10px;font-weight:600">质保中</span>`;
+      return `<tr>
+        <td style="padding:4px 8px;font-size:12px;color:#374151">${comp.name}</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${comp.years}年</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${comp.endIso.slice(0,10)}</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center">${dot}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mb-3">
+      <div class="flex items-center gap-1 mb-1">
+        <span>${series.icon}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${series.seriesName}</span>
+        <span style="font-size:10px;color:${sExp?'#dc2626':'#16a34a'};margin-left:4px">${sExp?'已到期':'质保中'}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb">
+        <thead>
+          <tr style="background:#f9fafb">
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:left;font-weight:500">配件</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">质保期</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">到期日</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">状态</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `<div class="bg-white rounded-xl shadow-sm p-5 mb-4" style="border-left:3px solid ${borderClr}">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-lg">${allExpired ? '⚠️' : '🛡️'}</span>
+      <h3 class="font-semibold text-gray-800">质保服务详情</h3>
+      <span class="text-xs px-2 py-0.5 rounded-full ml-auto"
+            style="background:${allExpired?'#fef2f2':'#eff6ff'};color:${borderClr};border:1px solid ${borderClr}33">
+        ${allExpired ? '全部已到期' : '质保中'}
+      </span>
+    </div>
+    <div class="text-xs text-gray-400 mb-3">质保开始：${new Date(startLog.created_at).toLocaleDateString()}</div>
+    ${seriesHtml}
+    <p class="text-xs text-gray-400 text-center mt-2">如有质保问题，请联系客服</p>
+  </div>`;
+}
+
 async function openDetail(id) {
   const o = myOrders.find(x => x.id === id);
   if (!o) return;
@@ -251,14 +322,15 @@ async function openDetail(id) {
 
   const [{ data: logs }, { data: freshOrder }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
-    sb.from('orders').select('sign_image,signed_at,signed_by').eq('id', id).single(),
+    sb.from('orders').select('sign_image,signed_at,signed_by,warranty_info').eq('id', id).single(),
   ]);
 
   // 用最新数据更新本地缓存，防止重新搜索后签名状态丢失
   if (freshOrder) {
-    if (freshOrder.sign_image) o.sign_image = freshOrder.sign_image;
-    if (freshOrder.signed_at)  o.signed_at  = freshOrder.signed_at;
-    if (freshOrder.signed_by)  o.signed_by  = freshOrder.signed_by;
+    if (freshOrder.sign_image)    o.sign_image    = freshOrder.sign_image;
+    if (freshOrder.signed_at)     o.signed_at     = freshOrder.signed_at;
+    if (freshOrder.signed_by)     o.signed_by     = freshOrder.signed_by;
+    if (freshOrder.warranty_info) o.warranty_info = freshOrder.warranty_info;
   }
 
   // 进度记录：只显示状态名 + 时间，不显示备注和操作人
@@ -390,6 +462,8 @@ async function openDetail(id) {
       <h3 class="font-semibold text-gray-800 mb-4">进度记录</h3>
       ${logsHtml || '<p class="text-gray-400 text-sm">暂无进度记录</p>'}
     </div>
+
+    ${renderCustomerWarranty(o, logs)}
 
     <!-- WhatsApp CTA -->
     <a href="https://wa.me/60105898786?text=${encodeURIComponent('您好，我想查询订单 ' + o.order_no + ' 的状态')}"
