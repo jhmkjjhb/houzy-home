@@ -1387,7 +1387,6 @@ async function init() {
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
-  }
   document.querySelectorAll('.admin-nav[data-perm="registrations"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_registrations)) el.classList.remove('hidden');
   });
