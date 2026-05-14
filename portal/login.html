@@ -617,7 +617,7 @@ async function submitReg() {
   if (insErr) {
     const imsg = insErr.message || '';
     if (imsg.includes('relation') || imsg.includes('does not exist')) {
-      errEl.textContent = '系统配置错误：注册表尚未创建，请联系管理员运行数据库迁移';
+      errEl.textContent = '数据库错误（调试）：' + imsg;
     } else if (imsg.includes('violates row-level security') || imsg.includes('permission')) {
       errEl.textContent = '权限错误：请联系管理员检查数据库 RLS 策略（registrations GRANT）';
     } else if (imsg.includes('duplicate') || imsg.includes('unique')) {
