@@ -1956,7 +1956,9 @@ function setInstallments(n) {
           <span class="text-gray-600 font-medium text-xs w-10 flex-shrink-0">${label}</span>
           ${pctInput}
           <span id="split-amt-${seq}" class="text-hg font-semibold text-xs ml-1"></span>
-          ${!isFirst ? '<span class="text-xs text-gray-400 ml-auto">收款时确认</span>' : ''}
+          ${!isFirst ? `<span class="text-xs text-gray-400 ml-auto">${
+            n === 3 && seq === 2 ? '到货时收' : n === 3 && seq === 3 ? '完工时收' : '收款时确认'
+          }</span>` : '<span class="text-xs text-gray-400 ml-auto">创建时（订金）</span>'}
         </div>
         ${isFirst ? `<div class="flex gap-2 mt-1.5">
           <select id="o-payment" class="input text-sm py-1.5 flex-1">
@@ -3582,24 +3584,26 @@ function renderPaymentPanel(o, payments) {
   const canRec    = canDo(FIELD_MIN_LEVEL.edit_payment);
 
   // Derive installment count robustly.
-  // o.installments may be null if the column doesn't exist yet in the DB.
-  // If payment_status is 'partial' but we only see n=1, we know there's at least one more期 due.
+  // o.installments may be null if the column doesn't exist in DB.
+  // When partial, at minimum there's paidCnt paid + 1 more due.
+  // When all pct from payment records don't add to 100, there must be more periods.
   let n = o.installments || 1;
-  if (n === 1 && payStatus === 'partial') n = paidCnt + 1;
+  const totalPaidPct = payments?.reduce((s, p) => s + (p.pct || 0), 0) || 0;
+  if (n === 1 && (payStatus === 'partial' || totalPaidPct < 100)) {
+    n = paidCnt + 1;
+  }
 
   // Derive per-期 percentages.
-  // Prefer DB pay_splits; fall back by combining actual payment records + even split for remainder.
+  // Prefer DB pay_splits; otherwise build from payment records + even split for remainder.
   let splits = Array.isArray(o.pay_splits) ? o.pay_splits : null;
   if (!splits || splits.length < n) {
-    const paidPct = payments?.reduce((s, p) => s + (p.pct || 0), 0) || 0;
-    const remPct  = 100 - paidPct;
-    const unpaid  = n - paidCnt;
-    const each    = unpaid > 0 ? Math.floor(remPct / unpaid) : 0;
+    const remPct = 100 - totalPaidPct;
+    const unpaid = n - paidCnt;
+    const each   = unpaid > 0 ? Math.floor(remPct / unpaid) : 0;
     splits = Array.from({ length: n }, (_, i) => {
       const rec = payments?.find(p => p.seq === i + 1);
       return rec ? (rec.pct || each) : each;
     });
-    // Fix rounding on last slot
     const tot = splits.reduce((a, b) => a + b, 0);
     if (tot !== 100 && n > 0) splits[n - 1] += 100 - tot;
   }
@@ -3615,17 +3619,33 @@ function renderPaymentPanel(o, payments) {
     </div>`;
   }
 
-  // 到货催款横幅：货到了但尾款未结清时提醒
+  // 催款横幅：到货/安装中 且尾款未结清时提醒
   const paidAmt   = payments?.reduce((s, p) => s + (p.amount || 0), 0) || 0;
   const remainAmt = Math.max(0, o.amount - paidAmt);
-  const collectionBanner = (o.status === 'arrived' && payStatus !== 'paid') ? `
-    <div class="mb-3 rounded-lg px-3 py-2.5 flex items-center gap-2" style="background:#fef3c7;border:1px solid #fcd34d">
-      <span class="text-base flex-shrink-0">⚠️</span>
-      <div class="flex-1 min-w-0">
-        <div class="text-sm font-semibold" style="color:#92400e">货已到，请催收尾款</div>
-        <div class="text-xs" style="color:#b45309">待收余额 ${fmtAmt(remainAmt, currency)}</div>
-      </div>
-    </div>` : '';
+  const nextUnpaidSeq = Array.from({ length: n }, (_, i) => i + 1).find(s => !payments?.find(p => p.seq === s));
+  let collectionBanner = '';
+  if (payStatus !== 'paid' && remainAmt > 0) {
+    if (o.status === 'arrived') {
+      const tip = n >= 3 ? `货已到，请催收第${nextUnpaidSeq || 2}期款` : '货已到，请催收尾款';
+      collectionBanner = `
+        <div class="mb-3 rounded-lg px-3 py-2.5 flex items-center gap-2" style="background:#fef3c7;border:1px solid #fcd34d">
+          <span class="text-base flex-shrink-0">⚠️</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold" style="color:#92400e">${tip}</div>
+            <div class="text-xs" style="color:#b45309">待收余额 ${fmtAmt(remainAmt, currency)}</div>
+          </div>
+        </div>`;
+    } else if (o.status === 'installing') {
+      collectionBanner = `
+        <div class="mb-3 rounded-lg px-3 py-2.5 flex items-center gap-2" style="background:#fef3c7;border:1px solid #fcd34d">
+          <span class="text-base flex-shrink-0">⚠️</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold" style="color:#92400e">安装中，请催收尾款</div>
+            <div class="text-xs" style="color:#b45309">待收余额 ${fmtAmt(remainAmt, currency)}</div>
+          </div>
+        </div>`;
+    }
+  }
 
   const rows = Array.from({ length: n }, (_, i) => {
     const seq     = i + 1;
@@ -3702,9 +3722,11 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   });
   if (error) { alert('记录失败: ' + error.message); return; }
 
-  const { data: allPaid } = await sb.from('order_payments').select('seq').eq('order_id', orderId);
+  // 用已收百分比总和判断是否全款到位，避免 installments 列缺失时误判
+  const { data: allPaid } = await sb.from('order_payments').select('seq,pct').eq('order_id', orderId);
   const { data: ord }     = await sb.from('orders').select('installments,status').eq('id', orderId).single();
-  const newPayStatus = (allPaid?.length || 0) >= (ord?.installments || 1) ? 'paid' : 'partial';
+  const totalPaidPct  = allPaid?.reduce((s, p) => s + (p.pct || 0), 0) || 0;
+  const newPayStatus  = totalPaidPct >= 100 ? 'paid' : 'partial';
   const statusUpd = { payment_status: newPayStatus };
   if (newPayStatus === 'paid' && ord?.status === 'pending_payment') statusUpd.status = 'paid';
   await sb.from('orders').update(statusUpd).eq('id', orderId);
