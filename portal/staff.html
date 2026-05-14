@@ -3184,8 +3184,8 @@ async function submitSignOff(orderId) {
 
   // Optional: signed_at, signed_by, warranty_info（列不存在时静默跳过）
   await sb.from('orders').update({
-    signed_at:    now,
-    signed_by:    name,
+    signed_at:     now,
+    signed_by:     name,
     warranty_info: JSON.stringify(warrantyData),
   }).eq('id', orderId);
 

@@ -157,7 +157,6 @@ async function relinkAll() {
   result.innerHTML = '<p class="muted">正在重新关联…</p>';
   const messages = [];
 
-  // Get all orphan supplement orders
   const { data: orphans } = await sb.from('orders')
     .select('id, order_no, description')
     .is('parent_order_id', null)
@@ -166,8 +165,6 @@ async function relinkAll() {
   if (!orphans?.length) { result.innerHTML = '<p>没有孤儿补件单</p>'; return; }
 
   for (const orph of orphans) {
-    // Try to extract original order_no from description
-    // Patterns: '补件单 — 关联原单 XXX', '补件 - 关联 XXX', etc.
     const match = orph.description?.match(/(?:关联原单|关联|原单)\s*([A-Z0-9\-]+)/);
     if (!match) { messages.push(`❌ ${orph.order_no}: 无法从描述提取原单号 (${orph.description})`); continue; }
     const parentOrderNo = match[1];

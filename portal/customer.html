@@ -327,9 +327,9 @@ async function openDetail(id) {
 
   // 用最新数据更新本地缓存，防止重新搜索后签名状态丢失
   if (freshOrder) {
-    if (freshOrder.sign_image)   o.sign_image   = freshOrder.sign_image;
-    if (freshOrder.signed_at)    o.signed_at    = freshOrder.signed_at;
-    if (freshOrder.signed_by)    o.signed_by    = freshOrder.signed_by;
+    if (freshOrder.sign_image)    o.sign_image    = freshOrder.sign_image;
+    if (freshOrder.signed_at)     o.signed_at     = freshOrder.signed_at;
+    if (freshOrder.signed_by)     o.signed_by     = freshOrder.signed_by;
     if (freshOrder.warranty_info) o.warranty_info = freshOrder.warranty_info;
   }
 
