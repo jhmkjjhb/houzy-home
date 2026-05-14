@@ -30,6 +30,9 @@
 
     <!-- Basic info -->
     <div class="card p-5">
+      <div id="p-img-wrap" class="hidden mb-4 -mx-0 rounded-xl overflow-hidden">
+        <img id="p-img" class="w-full object-cover" style="max-height:220px">
+      </div>
       <div class="flex items-start justify-between mb-2">
         <div>
           <div class="font-mono text-xs font-bold mb-1" style="color:#c8a96e" id="p-sku"></div>
@@ -90,6 +93,11 @@ const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', M
   document.getElementById('p-cat').textContent  = CAT_LABEL[prod.category] || prod.category || '—';
   document.getElementById('p-unit').textContent = prod.unit || '件';
   document.getElementById('p-ts').textContent   = new Date().toLocaleString('zh-CN');
+
+  if (prod.image_url) {
+    document.getElementById('p-img').src = prod.image_url;
+    document.getElementById('p-img-wrap').classList.remove('hidden');
+  }
 
   if (prod.specs) {
     const pairs = prod.specs.split(' | ').filter(Boolean);
