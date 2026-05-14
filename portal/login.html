@@ -42,7 +42,6 @@
 
   <!-- Login panel -->
   <div id="login-panel">
-    <!-- Staff / Supplier login -->
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -55,7 +54,6 @@
           <div class="text-gray-400 text-xs">Staff · Supplier · Warehouse · Admin</div>
         </div>
       </div>
-
       <form id="form" onsubmit="doLogin(event)" class="space-y-3">
         <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
@@ -68,8 +66,6 @@
         <p id="err" class="text-red-400 text-xs hidden"></p>
       </form>
     </div>
-
-    <!-- Register link + Forgot password -->
     <div class="flex justify-between mt-4 text-sm">
       <a onclick="showForgot()" class="text-gray-400 cursor-pointer hover:text-gd transition">忘记密码？</a>
       <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition">没有账号？立即注册 →</a>
@@ -94,7 +90,7 @@
     </div>
   </div>
 
-  <!-- Reset password panel (shown after clicking email link) -->
+  <!-- Reset password panel -->
   <div id="reset-panel" class="hidden">
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
       <h2 class="text-white font-bold text-lg mb-2">设置新密码</h2>
@@ -115,15 +111,11 @@
 
   <!-- Registration panel -->
   <div id="reg-panel" class="hidden">
-    <!-- Back link -->
     <p class="mb-4">
       <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
     </p>
-
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
       <h2 class="text-white font-bold text-lg mb-5">申请注册账号</h2>
-
-      <!-- Role selector -->
       <div class="grid grid-cols-2 gap-2 mb-5">
         <button id="reg-btn-staff" onclick="selectRegType('staff')"
                 class="py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition">
@@ -142,190 +134,85 @@
           📦 仓管 Warehouse
         </button>
       </div>
-
       <div class="space-y-3">
         <!-- Staff fields -->
         <div id="reg-staff-fields" class="space-y-3">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-name" placeholder="请输入姓名"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-phone" placeholder="请输入手机号"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-email" placeholder="请输入邮箱地址"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">员工编号</label>
-            <input type="text" id="reg-employee-no" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">部门</label>
-            <input type="text" id="reg-department" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">职位</label>
-            <input type="text" id="reg-position" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
-            <select id="reg-store"
-                    class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">员工编号</label>
+            <input type="text" id="reg-employee-no" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">部门</label>
+            <input type="text" id="reg-department" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">职位</label>
+            <input type="text" id="reg-position" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+            <select id="reg-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
               <option value="" style="background:#1a3a2a">请选择所属店面</option>
-            </select>
-          </div>
+            </select></div>
         </div>
-
         <!-- Supplier fields -->
         <div id="reg-supplier-fields" class="space-y-3 hidden">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">厂家名称 *</label>
-            <input type="text" id="reg-company" placeholder="请输入公司名称"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">联系人姓名 *</label>
-            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">统一社会信用代码</label>
-            <input type="text" id="reg-credit-code" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">公司地址</label>
-            <input type="text" id="reg-address" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
+          <div><label class="block text-xs text-gray-400 mb-1">厂家名称 *</label>
+            <input type="text" id="reg-company" placeholder="请输入公司名称" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">联系人姓名 *</label>
+            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">统一社会信用代码</label>
+            <input type="text" id="reg-credit-code" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">公司地址</label>
+            <input type="text" id="reg-address" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
           <div>
             <label class="block text-xs text-gray-400 mb-2">专业供应产品类型（可多选）</label>
             <div class="grid grid-cols-3 gap-2">
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="WY">
-                <span class="text-sm text-gray-300">卫浴</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="CG">
-                <span class="text-sm text-gray-300">橱柜</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DB">
-                <span class="text-sm text-gray-300">地板/地砖</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DJ">
-                <span class="text-sm text-gray-300">灯具</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="MC">
-                <span class="text-sm text-gray-300">门窗</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="JJ">
-                <span class="text-sm text-gray-300">家具</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="WJ">
-                <span class="text-sm text-gray-300">五金</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="DQ">
-                <span class="text-sm text-gray-300">电器</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="TL">
-                <span class="text-sm text-gray-300">涂料/壁纸</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" class="reg-pt-check accent-yellow-400" value="QT">
-                <span class="text-sm text-gray-300">其他</span>
-              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WY"><span class="text-sm text-gray-300">卫浴</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="CG"><span class="text-sm text-gray-300">橱柜</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DB"><span class="text-sm text-gray-300">地板/地砖</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DJ"><span class="text-sm text-gray-300">灯具</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="MC"><span class="text-sm text-gray-300">门窗</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="JJ"><span class="text-sm text-gray-300">家具</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WJ"><span class="text-sm text-gray-300">五金</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DQ"><span class="text-sm text-gray-300">电器</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="TL"><span class="text-sm text-gray-300">涂料/壁纸</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="QT"><span class="text-sm text-gray-300">其他</span></label>
             </div>
           </div>
         </div>
-
         <!-- Logistics fields -->
         <div id="reg-logistics-fields" class="space-y-3 hidden">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-log-name" placeholder="请输入姓名"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-log-phone" placeholder="请输入手机号"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">公司/团队名称</label>
-            <input type="text" id="reg-log-company" placeholder="选填"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
+          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-log-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-log-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">公司/团队名称</label>
+            <input type="text" id="reg-log-company" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
         </div>
-
         <!-- Warehouse fields -->
         <div id="reg-warehouse-fields" class="space-y-3 hidden">
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-wh-name" placeholder="请输入姓名"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-wh-phone" placeholder="请输入手机号"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-wh-email" placeholder="请输入邮箱地址"
-                   class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-          </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
-            <select id="reg-wh-store"
-                    class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
+          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
+            <input type="text" id="reg-wh-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
+            <input type="tel" id="reg-wh-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
+            <input type="email" id="reg-wh-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+            <select id="reg-wh-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
               <option value="" style="background:#1a3a2a">请选择所属店面</option>
-            </select>
-          </div>
+            </select></div>
         </div>
-
-        <!-- Common: password -->
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">密码 *</label>
-          <input type="password" id="reg-pw" placeholder="请设置登录密码"
-                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        </div>
-        <div>
-          <label class="block text-xs text-gray-400 mb-1">确认密码 *</label>
-          <input type="password" id="reg-pw2" placeholder="请再次输入密码"
-                 class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        </div>
-
+        <!-- Password -->
+        <div><label class="block text-xs text-gray-400 mb-1">密码 *</label>
+          <input type="password" id="reg-pw" placeholder="请设置登录密码" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+        <div><label class="block text-xs text-gray-400 mb-1">确认密码 *</label>
+          <input type="password" id="reg-pw2" placeholder="请再次输入密码" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
         <button onclick="submitReg()" id="reg-btn-submit"
                 class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
           提交申请
@@ -341,53 +228,35 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ⚠️ 替换为您的 Supabase 凭证 → Supabase Dashboard > Settings > API
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// Detect password recovery flow (handles both PKCE and implicit flows)
 sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'PASSWORD_RECOVERY') {
-    showPanel('reset-panel');
-  }
+  if (event === 'PASSWORD_RECOVERY') showPanel('reset-panel');
 });
 
 (async () => {
-  // Also handle hash-based recovery token (older Supabase versions)
   const hash = new URLSearchParams(window.location.hash.replace('#',''));
-  if (hash.get('type') === 'recovery') {
-    showPanel('reset-panel');
-    return;
-  }
+  if (hash.get('type') === 'recovery') { showPanel('reset-panel'); return; }
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    const { data } = await sb.rpc('get_my_profile');
-    if (data) redirect(data);
-  }
+  if (session) { const { data } = await sb.rpc('get_my_profile'); if (data) redirect(data); }
 })();
 
 async function doLogin(e) {
   e.preventDefault();
-  const btn = document.getElementById('btn');
-  const err = document.getElementById('err');
+  const btn = document.getElementById('btn'), err = document.getElementById('err');
   btn.textContent = '登录中...'; btn.disabled = true; err.classList.add('hidden');
-
   const { error } = await sb.auth.signInWithPassword({
     email: document.getElementById('email').value,
     password: document.getElementById('pw').value
   });
   if (error) {
     const m = error.message || '';
-    if (m.includes('Invalid') || m.includes('invalid')) {
-      err.textContent = '邮箱或密码错误，请重新输入';
-    } else if (m.includes('Email not confirmed') || m.includes('not confirmed')) {
-      err.textContent = '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）';
-    } else if (m.includes('disabled') || m.includes('banned')) {
-      err.textContent = '账号已被停用，请联系管理员';
-    } else {
-      err.textContent = '登录失败：' + m;
-    }
+    if (m.includes('Invalid') || m.includes('invalid')) err.textContent = '邮箱或密码错误，请重新输入';
+    else if (m.includes('not confirmed')) err.textContent = '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）';
+    else if (m.includes('disabled') || m.includes('banned')) err.textContent = '账号已被停用，请联系管理员';
+    else err.textContent = '登录失败：' + m;
     err.classList.remove('hidden');
     btn.textContent = '登录 Login'; btn.disabled = false;
     return;
@@ -401,8 +270,8 @@ function showPanel(id) {
     if (el) el.classList.toggle('hidden', p !== id);
   });
 }
-function showLogin()    { showPanel('login-panel'); }
-function showForgot()   { showPanel('forgot-panel'); }
+function showLogin()  { showPanel('login-panel'); }
+function showForgot() { showPanel('forgot-panel'); }
 async function showRegister() {
   showPanel('reg-panel');
   const { data } = await sb.from('stores').select('id, name').eq('active', true).order('name');
@@ -432,78 +301,51 @@ async function redirect(data) {
   }
   const role = data?.role || 'customer';
   const map = {
-    staff: 'staff.html', store_manager: 'staff.html',
-    regional_manager: 'staff.html', general_manager: 'staff.html',
-    superadmin: 'staff.html', admin: 'staff.html',
-    warehouse: 'warehouse.html',
-    supplier: 'supplier.html', logistics: 'logistics.html', customer: 'customer.html'
+    staff:'staff.html', store_manager:'staff.html', regional_manager:'staff.html',
+    general_manager:'staff.html', superadmin:'staff.html', admin:'staff.html',
+    warehouse:'warehouse.html', supplier:'supplier.html', logistics:'logistics.html', customer:'customer.html'
   };
   window.location.href = map[role] || 'customer.html';
 }
 
 async function submitForgot() {
   const email = document.getElementById('forgot-email').value.trim();
-  const btn = document.getElementById('forgot-btn');
-  const msg = document.getElementById('forgot-msg');
+  const btn = document.getElementById('forgot-btn'), msg = document.getElementById('forgot-msg');
   if (!email) { msg.textContent = '请输入邮箱地址'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
   btn.textContent = '发送中...'; btn.disabled = true;
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname
-  });
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
   btn.textContent = '发送重置链接'; btn.disabled = false;
-  if (error) {
-    msg.textContent = '发送失败：' + error.message;
-    msg.className = 'text-xs text-red-400';
-  } else {
-    msg.textContent = '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。';
-    msg.className = 'text-xs text-green-400';
-  }
+  msg.textContent = error ? '发送失败：' + error.message : '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。';
+  msg.className = 'text-xs ' + (error ? 'text-red-400' : 'text-green-400');
   msg.classList.remove('hidden');
 }
 
 async function submitReset() {
-  const pw  = document.getElementById('reset-pw').value;
-  const pw2 = document.getElementById('reset-pw2').value;
-  const btn = document.getElementById('reset-btn');
-  const msg = document.getElementById('reset-msg');
+  const pw = document.getElementById('reset-pw').value, pw2 = document.getElementById('reset-pw2').value;
+  const btn = document.getElementById('reset-btn'), msg = document.getElementById('reset-msg');
   if (!pw || pw.length < 6) { msg.textContent = '密码至少需要6位'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
   if (pw !== pw2) { msg.textContent = '两次密码不一致'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
   btn.textContent = '设置中...'; btn.disabled = true;
   const { error } = await sb.auth.updateUser({ password: pw });
   btn.textContent = '确认设置'; btn.disabled = false;
-  if (error) {
-    msg.textContent = '设置失败：' + error.message;
-    msg.className = 'text-xs text-red-400';
-    msg.classList.remove('hidden');
-  } else {
-    msg.textContent = '✅ 密码已更新！正在跳转登录…';
-    msg.className = 'text-xs text-green-400';
-    msg.classList.remove('hidden');
-    setTimeout(() => { window.location.hash = ''; redirect(); }, 1500);
-  }
+  if (error) { msg.textContent = '设置失败：' + error.message; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); }
+  else { msg.textContent = '✅ 密码已更新！正在跳转登录…'; msg.className = 'text-xs text-green-400'; msg.classList.remove('hidden'); setTimeout(() => { window.location.hash = ''; redirect(); }, 1500); }
 }
 
-// ── Registration ──
 let regType = 'staff';
-
 function selectRegType(t) {
   regType = t;
-  const activeClass   = 'py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition';
-  const inactiveClass = 'py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition';
+  const on  = 'py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition';
+  const off = 'py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition';
   ['staff','supplier','logistics','warehouse'].forEach(type => {
-    const btn = document.getElementById(`reg-btn-${type}`);
-    if (btn) btn.className = type === t ? activeClass : inactiveClass;
-    const fields = document.getElementById(`reg-${type}-fields`);
-    if (fields) fields.classList.toggle('hidden', type !== t);
+    const b = document.getElementById(`reg-btn-${type}`); if (b) b.className = type===t ? on : off;
+    const f = document.getElementById(`reg-${type}-fields`); if (f) f.classList.toggle('hidden', type!==t);
   });
 }
 
 async function submitReg() {
-  const errEl = document.getElementById('reg-err');
-  const btn   = document.getElementById('reg-btn-submit');
+  const errEl = document.getElementById('reg-err'), btn = document.getElementById('reg-btn-submit');
   errEl.classList.add('hidden');
-
-  // Collect fields
   let name, phone, email;
   let payload = { type: regType };
 
@@ -512,138 +354,85 @@ async function submitReg() {
     phone = document.getElementById('reg-phone').value.trim();
     email = document.getElementById('reg-email').value.trim();
     const storeId = document.getElementById('reg-store')?.value;
-    if (!name || !phone || !email) {
-      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
-    }
-    if (!storeId) {
-      errEl.textContent = '请选择所属店面'; errEl.classList.remove('hidden'); return;
-    }
-    payload.name            = name;
-    payload.phone           = phone;
-    payload.email           = email;
-    payload.store_id        = storeId;
-    payload.employee_no     = document.getElementById('reg-employee-no').value.trim() || null;
-    payload.department      = document.getElementById('reg-department').value.trim() || null;
-    payload.position_title  = document.getElementById('reg-position').value.trim() || null;
+    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
+    if (!storeId) { errEl.textContent='请选择所属店面'; errEl.classList.remove('hidden'); return; }
+    payload = { ...payload, name, phone, email, store_id: storeId,
+      employee_no: document.getElementById('reg-employee-no').value.trim()||null,
+      department:  document.getElementById('reg-department').value.trim()||null,
+      position_title: document.getElementById('reg-position').value.trim()||null };
   } else if (regType === 'supplier') {
     const company = document.getElementById('reg-company').value.trim();
     name  = document.getElementById('reg-sup-name').value.trim();
     phone = document.getElementById('reg-sup-phone').value.trim();
     email = document.getElementById('reg-sup-email').value.trim();
-    if (!company || !name || !phone || !email) {
-      errEl.textContent = '请填写厂家名称、联系人姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
-    }
-    payload.company_name  = company;
-    payload.name          = name;
-    payload.phone         = phone;
-    payload.email         = email;
-    payload.credit_code   = document.getElementById('reg-credit-code').value.trim() || null;
-    payload.address       = document.getElementById('reg-address').value.trim() || null;
+    if (!company||!name||!phone||!email) { errEl.textContent='请填写厂家名称、联系人姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
     const checkedPts = [...document.querySelectorAll('.reg-pt-check:checked')].map(el => el.value);
-    payload.products      = checkedPts.length ? checkedPts.join(',') : null;
+    payload = { ...payload, company_name: company, name, phone, email,
+      credit_code: document.getElementById('reg-credit-code').value.trim()||null,
+      address:     document.getElementById('reg-address').value.trim()||null,
+      products:    checkedPts.length ? checkedPts.join(',') : null };
   } else if (regType === 'logistics') {
     name  = document.getElementById('reg-log-name').value.trim();
     phone = document.getElementById('reg-log-phone').value.trim();
     email = document.getElementById('reg-log-email').value.trim();
-    if (!name || !phone || !email) {
-      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
-    }
-    payload.name         = name;
-    payload.phone        = phone;
-    payload.email        = email;
-    payload.company_name = document.getElementById('reg-log-company').value.trim() || null;
+    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
+    payload = { ...payload, name, phone, email, company_name: document.getElementById('reg-log-company').value.trim()||null };
   } else {
-    // warehouse
     name  = document.getElementById('reg-wh-name').value.trim();
     phone = document.getElementById('reg-wh-phone').value.trim();
     email = document.getElementById('reg-wh-email').value.trim();
     const storeId = document.getElementById('reg-wh-store')?.value;
-    if (!name || !phone || !email) {
-      errEl.textContent = '请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return;
-    }
-    if (!storeId) {
-      errEl.textContent = '请选择所属店面'; errEl.classList.remove('hidden'); return;
-    }
-    payload.name     = name;
-    payload.phone    = phone;
-    payload.email    = email;
-    payload.store_id = storeId;
+    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
+    if (!storeId) { errEl.textContent='请选择所属店面'; errEl.classList.remove('hidden'); return; }
+    payload = { ...payload, name, phone, email, store_id: storeId };
   }
 
-  const pw  = document.getElementById('reg-pw').value;
-  const pw2 = document.getElementById('reg-pw2').value;
-  if (!pw || pw.length < 6) {
-    errEl.textContent = '密码至少需要6位'; errEl.classList.remove('hidden'); return;
-  }
-  if (pw !== pw2) {
-    errEl.textContent = '两次输入的密码不一致'; errEl.classList.remove('hidden'); return;
-  }
+  const pw = document.getElementById('reg-pw').value, pw2 = document.getElementById('reg-pw2').value;
+  if (!pw||pw.length<6) { errEl.textContent='密码至少需要6位'; errEl.classList.remove('hidden'); return; }
+  if (pw!==pw2) { errEl.textContent='两次输入的密码不一致'; errEl.classList.remove('hidden'); return; }
 
   btn.textContent = '提交中...'; btn.disabled = true;
 
-  // Step 1: Create auth account
   let userId = null;
-  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw,
-    options: { data: { name, role: regType } }
-  });
+  const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw, options: { data: { name, role: regType } } });
   if (authErr) {
     const msg = authErr.message || '';
     if (msg.includes('already registered') || msg.includes('already')) {
-      // Email already in auth — that's OK, continue to submit registration record
+      // already exists, continue
     } else if (msg.includes('rate limit') || msg.includes('429')) {
-      errEl.textContent = '提交过于频繁，请稍后再试';
-      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+      errEl.textContent = '提交过于频繁，请稍后再试'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
     } else if (msg.includes('invalid') && msg.includes('email')) {
-      errEl.textContent = '邮箱地址格式不正确，请检查后重试';
-      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+      errEl.textContent = '邮箱地址格式不正确'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
     } else if (msg.includes('Password') || msg.includes('password')) {
-      errEl.textContent = '密码不符合要求，请使用至少6位字符';
-      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+      errEl.textContent = '密码不符合要求，请使用至少6位字符'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
     } else {
-      errEl.textContent = '账号创建失败，请联系管理员（' + msg + '）';
-      errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+      errEl.textContent = '账号创建失败：' + msg; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
     }
   } else {
     userId = authData?.user?.id || null;
   }
 
-  // Step 2: Insert registration record while session is still active (before signOut)
   payload.user_id = userId;
   const { error: insErr } = await sb.from('registrations').insert(payload);
-
-  // Step 3: Sign out regardless of insert result
   await sb.auth.signOut();
 
   if (insErr) {
     const imsg = insErr.message || '';
-    if (imsg.includes('relation') || imsg.includes('does not exist')) {
-      errEl.textContent = '系统配置错误：注册表尚未创建，请联系管理员运行数据库迁移';
-    } else if (imsg.includes('violates row-level security') || imsg.includes('permission')) {
-      errEl.textContent = '权限错误：请联系管理员检查数据库 RLS 策略（registrations GRANT）';
-    } else if (imsg.includes('duplicate') || imsg.includes('unique')) {
-      errEl.textContent = '该邮箱已提交过申请，请等待管理员审核或联系管理员';
-    } else {
-      errEl.textContent = '提交失败：' + imsg;
-    }
-    errEl.classList.remove('hidden'); btn.textContent = '提交申请'; btn.disabled = false; return;
+    // Show raw error for debugging
+    errEl.textContent = '提交失败（错误详情）：' + imsg;
+    errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
   }
 
   btn.textContent = '提交申请'; btn.disabled = false;
-
-  // Show success — replace form content
   document.getElementById('reg-panel').innerHTML = `
     <div class="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
       <div class="text-4xl mb-4">✅</div>
       <h2 class="text-white font-bold text-lg mb-3">申请已提交！</h2>
       <div class="text-left space-y-3 mb-6">
-        <div class="flex items-start gap-3">
-          <span class="text-gd font-bold flex-shrink-0">1.</span>
-          <p class="text-gray-300 text-sm">请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）</p>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-gd font-bold flex-shrink-0">2.</span>
-          <p class="text-gray-300 text-sm">邮箱确认后，请等待管理员审核，审核通过后即可登录</p>
-        </div>
+        <div class="flex items-start gap-3"><span class="text-gd font-bold flex-shrink-0">1.</span>
+          <p class="text-gray-300 text-sm">请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）</p></div>
+        <div class="flex items-start gap-3"><span class="text-gd font-bold flex-shrink-0">2.</span>
+          <p class="text-gray-300 text-sm">邮箱确认后，请等待管理员审核，审核通过后即可登录</p></div>
       </div>
       <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
     </div>`;
