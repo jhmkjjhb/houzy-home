@@ -2196,6 +2196,7 @@ async function openDetail(id, backView) {
     { data: childByFk },
     { data: childByDesc },
     { data: childByCustomer },
+    { data: warehouses },
   ] = await Promise.all([
     sb.from('suppliers').select('id,name,supplier_code,product_types').eq('active', true),
     sb.from('order_payments').select('*').eq('order_id', id).order('seq'),
@@ -2206,6 +2207,7 @@ async function openDetail(id, backView) {
     o?.customer_id
       ? sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description,customer_id').eq('customer_id', o.customer_id).like('description', '补件单%').order('created_at')
       : Promise.resolve({ data: [] }),
+    sb.from('warehouses').select('id,name,location').order('name'),
   ]);
   // Merge children: parent_order_id FK > description-by-orderno > customer + 补件 desc fallback (older orphan data)
   const childMap = new Map();
@@ -2326,7 +2328,7 @@ async function openDetail(id, backView) {
       ${deadlineBanner}
     </div>
 
-    ${renderItemsCard(items, o, supList)}
+    ${renderItemsCard(items, o, supList, warehouses)}
 
     ${renderChildOrdersCard(childOrders)}
 
@@ -2749,7 +2751,7 @@ function setFulfillmentMode(mode) {
   if (phsBtn) phsBtn.className = mode === 'phased'       ? activeStyle : inactiveStyle;
 }
 
-function renderItemsCard(items, o, supList) {
+function renderItemsCard(items, o, supList, warehouses) {
   if (!items || items.length === 0) return '';
   const isSupplier = profile?.role === 'supplier';
   const canAssign  = canDo(FIELD_MIN_LEVEL.assign_supplier) && !['completed','closed','cancelled'].includes(o.status);
@@ -2757,7 +2759,7 @@ function renderItemsCard(items, o, supList) {
   const collapsed  = items.length > 4;
   const uid        = 'items-body-' + o.id.slice(0,8);
   const total      = items.reduce((s,i) => s + Number(i.total_price || (i.quantity * i.unit_price)), 0);
-  const unassigned = items.filter(i => !i.supplier_id).length;
+  const unassigned = items.filter(i => i.fulfillment_source === 'warehouse' ? !i.source_warehouse_id : !i.supplier_id).length;
 
   const supOpts = (curId, itemType) => {
     const all = supList || [];
@@ -2800,13 +2802,62 @@ function renderItemsCard(items, o, supList) {
         `}
         <td class="py-2 pr-2">
           ${itemCanAssign
-            ? `<select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
-                       data-item-id="${item.id}">
-                 ${supOpts(item.supplier_id, item.product_type)}
-               </select>`
-            : supName
-              ? `<span class="text-xs text-gray-700">${supName}</span>`
-              : `<span class="text-xs text-red-400">未分配</span>`
+            ? (() => {
+                const isStock = item.fulfillment_type === 'stock';
+                const src     = item.fulfillment_source || (isStock ? 'warehouse' : 'supplier');
+                const whOpts  = (warehouses||[]).map(w =>
+                  `<option value="${w.id}" ${w.id===item.source_warehouse_id?'selected':''}>${w.name}</option>`
+                ).join('');
+                if (!isStock) {
+                  // 定制商品：直接显示供应商下拉
+                  return `<select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
+                                  data-item-id="${item.id}">
+                            ${supOpts(item.supplier_id, item.product_type)}
+                          </select>`;
+                }
+                // 现货商品：来源选择 + 对应 UI
+                return `
+                  <input type="hidden" class="item-src-inp" id="src-${item.id}" data-item-id="${item.id}" value="${src}">
+                  <div class="flex flex-col gap-1">
+                    <div class="flex gap-1">
+                      <button id="src-wh-btn-${item.id}" onclick="setItemSource('${item.id}','warehouse')"
+                              class="px-1.5 py-0.5 rounded border text-xs transition ${src==='warehouse'?'border-green-500 bg-green-50 text-green-700 font-medium':'border-gray-200 text-gray-400'}">
+                        🏬 仓库
+                      </button>
+                      <button id="src-sup-btn-${item.id}" onclick="setItemSource('${item.id}','supplier')"
+                              class="px-1.5 py-0.5 rounded border text-xs transition ${src==='supplier'?'border-hg bg-green-50 text-hg font-medium':'border-gray-200 text-gray-400'}">
+                        🏭 采购
+                      </button>
+                    </div>
+                    <div id="src-wh-ui-${item.id}" class="${src==='warehouse'?'':'hidden'}">
+                      <select class="item-wh-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
+                              data-item-id="${item.id}" data-product-id="${item.product_id||''}"
+                              onchange="showInvQty('${item.id}',this.value)">
+                        <option value="">— 选择仓库 —</option>
+                        ${whOpts}
+                      </select>
+                      <div id="inv-qty-${item.id}" class="text-xs mt-0.5 text-gray-400"></div>
+                    </div>
+                    <div id="src-sup-ui-${item.id}" class="${src==='supplier'?'':'hidden'}">
+                      <select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
+                              data-item-id="${item.id}">
+                        ${supOpts(item.supplier_id, item.product_type)}
+                      </select>
+                    </div>
+                  </div>`;
+              })()
+            : (() => {
+                if (item.fulfillment_type === 'stock' && item.fulfillment_source === 'warehouse') {
+                  const whName = (warehouses||[]).find(w => w.id === item.source_warehouse_id)?.name;
+                  return whName
+                    ? `<span class="text-xs text-green-700">🏬 ${whName}</span>`
+                    : `<span class="text-xs text-red-400">未选仓库</span>`;
+                }
+                const supName2 = (supList||[]).find(s => s.id === item.supplier_id)?.name;
+                return supName2
+                  ? `<span class="text-xs text-gray-700">${supName2}</span>`
+                  : `<span class="text-xs text-red-400">未分配</span>`;
+              })()
           }
         </td>
         <td class="py-2 whitespace-nowrap">${itemStatusBadge(item.item_status||'pending')}</td>
@@ -3056,12 +3107,81 @@ function renderChecklistPanel(o, items, childOrders) {
 async function saveItemSuppliers(orderId) {
   const btn = event.currentTarget;
   btn.textContent = '保存中…'; btn.disabled = true;
-  const updates = Array.from(document.querySelectorAll('.item-sup-sel')).map(sel =>
-    sb.from('order_items').update({ supplier_id: sel.value || null }).eq('id', sel.dataset.itemId)
-  );
+  const updates = [];
+  // Supplier-source items
+  document.querySelectorAll('.item-sup-sel').forEach(sel => {
+    const src = document.getElementById(`src-${sel.dataset.itemId}`)?.value;
+    if (!src || src === 'supplier') {
+      updates.push(sb.from('order_items').update({
+        supplier_id: sel.value || null,
+        fulfillment_source: 'supplier',
+        source_warehouse_id: null,
+      }).eq('id', sel.dataset.itemId));
+    }
+  });
+  // Warehouse-source items
+  document.querySelectorAll('.item-wh-sel').forEach(sel => {
+    const src = document.getElementById(`src-${sel.dataset.itemId}`)?.value;
+    if (src === 'warehouse') {
+      updates.push(sb.from('order_items').update({
+        fulfillment_source: 'warehouse',
+        source_warehouse_id: sel.value || null,
+        supplier_id: null,
+      }).eq('id', sel.dataset.itemId));
+    }
+  });
   await Promise.all(updates);
   btn.textContent = '已保存 ✓';
   setTimeout(() => openDetail(orderId), 600);
+}
+
+function setItemSource(itemId, source) {
+  const inp    = document.getElementById(`src-${itemId}`);
+  const whUi   = document.getElementById(`src-wh-ui-${itemId}`);
+  const supUi  = document.getElementById(`src-sup-ui-${itemId}`);
+  const whBtn  = document.getElementById(`src-wh-btn-${itemId}`);
+  const supBtn = document.getElementById(`src-sup-btn-${itemId}`);
+  if (!inp) return;
+  inp.value = source;
+  const isWh = source === 'warehouse';
+  whUi?.classList.toggle('hidden', !isWh);
+  supUi?.classList.toggle('hidden', isWh);
+  const activeClass   = 'px-1.5 py-0.5 rounded border text-xs transition font-medium';
+  const inactiveClass = 'px-1.5 py-0.5 rounded border text-xs transition border-gray-200 text-gray-400';
+  if (whBtn)  whBtn.className  = isWh  ? `${activeClass} border-green-500 bg-green-50 text-green-700` : inactiveClass;
+  if (supBtn) supBtn.className = !isWh ? `${activeClass} border-hg bg-green-50 text-hg`               : inactiveClass;
+  if (isWh) {
+    const sel = document.querySelector(`.item-wh-sel[data-item-id="${itemId}"]`);
+    if (sel?.value) showInvQty(itemId, sel.value);
+  }
+}
+
+async function showInvQty(itemId, warehouseId) {
+  const el = document.getElementById(`inv-qty-${itemId}`);
+  if (!el) return;
+  if (!warehouseId) { el.textContent = ''; return; }
+  const sel       = document.querySelector(`.item-wh-sel[data-item-id="${itemId}"]`);
+  const productId = sel?.dataset.productId;
+  if (!productId) {
+    el.style.color = '#f59e0b';
+    el.textContent = '该商品未关联产品档案，无法查询库存';
+    return;
+  }
+  el.style.color = '#9ca3af';
+  el.textContent = '查询中…';
+  const { data } = await sb.from('inventory')
+    .select('qty_on_hand,qty_reserved')
+    .eq('product_id', productId)
+    .eq('warehouse_id', warehouseId)
+    .single();
+  if (!data) {
+    el.style.color = '#ef4444';
+    el.textContent = '无库存记录';
+    return;
+  }
+  const avail = (data.qty_on_hand || 0) - (data.qty_reserved || 0);
+  el.style.color = avail > 0 ? '#059669' : '#ef4444';
+  el.textContent  = `在库 ${data.qty_on_hand}  可用 ${avail}`;
 }
 
 async function acceptOrder(orderId) {
