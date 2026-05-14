@@ -413,6 +413,21 @@
 
   </main>
 
+  <!-- QR Modal -->
+  <div id="qr-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.55)" onclick="if(event.target===this)closeQR()">
+    <div class="card p-6 w-full max-w-xs text-center relative">
+      <button onclick="closeQR()" class="absolute top-3 right-4 text-gray-400 text-2xl leading-none hover:text-gray-600">×</button>
+      <div class="font-bold text-gray-800 text-base mb-0.5" id="qr-name"></div>
+      <div class="font-mono text-sm font-bold mb-4" style="color:#c8a96e" id="qr-sku"></div>
+      <div id="qr-canvas" class="flex justify-center mb-3"></div>
+      <div class="text-xs text-gray-400 mb-4">店员扫描二维码查看产品详情与库存</div>
+      <div class="flex gap-2">
+        <button onclick="printQR()" class="btn-gold flex-1 py-2.5 text-sm">🖨 打印</button>
+        <button onclick="closeQR()" class="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-500">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile Bottom Nav -->
   <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex bg-white border-t border-gray-200 pb-safe">
     <button onclick="goto('overview')" id="mnav-overview" class="mnav active flex-1 flex flex-col items-center pt-2 pb-1 text-gray-400">
@@ -444,6 +459,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -897,6 +913,7 @@ async function submitStockIn() {
   if (!qty || qty<=0){ err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
 
   let prodId = document.getElementById('si-prod')?.value;
+  let newProductSku = null, newProductName = null;
 
   if (siNewProduct) {
     const newName = document.getElementById('si-new-name')?.value.trim();
@@ -914,6 +931,7 @@ async function submitStockIn() {
     if (npErr) { err.textContent='建档失败: '+npErr.message; err.classList.remove('hidden'); return; }
     prodId = np.id;
     await loadAll();
+    newProductSku = sku; newProductName = newName;
   } else if (!prodId) {
     err.textContent='请选择产品'; err.classList.remove('hidden'); return;
   }
@@ -952,7 +970,11 @@ async function submitStockIn() {
   document.getElementById('si-sub-cat-row').classList.add('hidden');
   document.getElementById('si-cat-fields').classList.add('hidden');
   await loadAll();
-  alert('✅ 入库成功');
+  if (newProductSku) {
+    showQR(newProductSku, newProductName);
+  } else {
+    alert('✅ 入库成功');
+  }
 }
 
 // ── Stock Out / Adjust ──
@@ -1076,6 +1098,7 @@ function renderProducts() {
         <th class="px-4 py-3 text-left font-medium">规格</th>
         <th class="px-4 py-3 text-right font-medium">预警数</th>
         <th class="px-4 py-3 text-left font-medium">厂家编码</th>
+        <th class="px-4 py-3 text-left font-medium">二维码</th>
         <th class="px-4 py-3"></th>
       </tr></thead>
       <tbody>
@@ -1089,6 +1112,10 @@ function renderProducts() {
           <td class="px-4 py-3">
             <button onclick="manageSupplierCodes('${p.id}','${p.name.replace(/'/g,"\\'")}')" 
                     class="text-xs text-blue-600 hover:underline">绑定/查看</button>
+          </td>
+          <td class="px-4 py-3">
+            <button onclick="showQR('${p.sku}','${p.name.replace(/'/g,"\\'")}')" 
+                    class="text-xs font-medium hover:underline" style="color:#1a3a2a">🔲 生成</button>
           </td>
           <td class="px-4 py-3">
             <button onclick="deleteProduct('${p.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>
@@ -1155,6 +1182,38 @@ async function manageSupplierCodes(productId, productName) {
   const { error } = await sb.from('product_supplier_codes').insert({ product_id: productId, supplier_id: sups[idx].id, supplier_code: newCode.trim() });
   if (error) alert('绑定失败: '+error.message);
   else alert(`✅ 已绑定厂家编码：${newCode.trim()}`);
+}
+
+// ── QR Code ──
+function showQR(sku, name) {
+  document.getElementById('qr-name').textContent = name;
+  document.getElementById('qr-sku').textContent  = sku;
+  const canvas = document.getElementById('qr-canvas');
+  canvas.innerHTML = '';
+  const base = location.href.replace(/warehouse\.html.*$/, 'product-lookup.html');
+  const url  = `${base}?sku=${encodeURIComponent(sku)}`;
+  new QRCode(canvas, { text: url, width: 200, height: 200, colorDark: '#1a3a2a', colorLight: '#ffffff' });
+  document.getElementById('qr-modal').classList.remove('hidden');
+}
+
+function closeQR() {
+  document.getElementById('qr-modal').classList.add('hidden');
+}
+
+function printQR() {
+  const sku    = document.getElementById('qr-sku').textContent;
+  const name   = document.getElementById('qr-name').textContent;
+  const canvas = document.getElementById('qr-canvas').querySelector('canvas');
+  if (!canvas) return;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><body style="text-align:center;font-family:-apple-system,sans-serif;padding:24px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${name}</div>
+    <div style="font-size:13px;color:#c8a96e;font-family:monospace;margin-bottom:14px">${sku}</div>
+    <img src="${canvas.toDataURL()}" style="width:200px;height:200px;display:block;margin:0 auto">
+    <div style="font-size:11px;color:#aaa;margin-top:10px">HOUZY HOME</div>
+  </body></html>`);
+  w.document.close();
+  w.print();
 }
 
 // ── Warehouses ──
