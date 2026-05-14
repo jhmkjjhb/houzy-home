@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仓库管理系统 - HOUZY HOME</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: { hg:'#1a3a2a', gg:'#2d5a3d', gd:'#c8a96e' } } }
+  };
+</script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f5f5f0; }
+  .card { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .btn-gold { background:#c8a96e; color:#1a3a2a; border:none; border-radius:8px; font-weight:700; cursor:pointer; transition:opacity .15s; }
+  .btn-gold:hover { opacity:.9; }
+  .input { width:100%; border:1px solid #e5e7eb; border-radius:8px; padding:8px 12px; font-size:14px; outline:none; transition:border-color .15s; box-sizing:border-box; }
+  .input:focus { border-color:#1a3a2a; }
+  .label { display:block; font-size:12px; font-weight:600; color:#6b7280; margin-bottom:4px; }
+  .nav-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; color:#d1d5db; font-size:14px; font-weight:500; transition:background .15s,color .15s; }
+  .nav-link:hover { background:rgba(255,255,255,.1); color:white; }
+  .nav-link.active { background:rgba(200,169,110,.2); color:#c8a96e; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+  .tag-in { background:#d1fae5; color:#065f46; }
+  .tag-out { background:#fee2e2; color:#991b1b; }
+  .tag-adj { background:#dbeafe; color:#1e40af; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Auth Gate -->
+<div id="auth-gate" class="min-h-screen flex items-center justify-center p-4">
+  <div class="card p-8 w-full max-w-sm">
+    <div class="text-center mb-6">
+      <div class="text-2xl font-bold text-hg tracking-wide">HOUZY HOME</div>
+      <div class="text-sm text-gray-400 mt-1">仓库管理系统</div>
+    </div>
+    <div class="mb-4">
+      <label class="label">邮箱</label>
+      <input type="email" id="login-email" placeholder="warehouse@houzy.com" class="input">
+    </div>
+    <div class="mb-5">
+      <label class="label">密码</label>
+      <input type="password" id="login-pw" placeholder="••••••••" class="input" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button onclick="doLogin()" id="login-btn" class="btn-gold w-full py-3 text-base">登录</button>
+    <p id="login-err" class="text-red-500 text-sm mt-3 text-center hidden"></p>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" class="hidden min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="w-56 flex-shrink-0 flex flex-col sticky top-0 h-screen" style="background:#1a3a2a">
+    <div class="p-4 border-b border-white/10">
+      <div class="font-bold text-white text-base tracking-wide">HOUZY HOME</div>
+      <div class="text-xs text-gd mt-0.5">仓库管理系统</div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-link active" id="nav-overview" onclick="goto('overview')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        库存总览
+      </div>
+      <div class="nav-link" id="nav-stockin" onclick="goto('stockin')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        入库操作
+      </div>
+      <div class="nav-link" id="nav-stockout" onclick="goto('stockout')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+        出库/调整
+      </div>
+      <div class="nav-link" id="nav-movements" onclick="goto('movements')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        流水记录
+      </div>
+      <div class="nav-link" id="nav-products" onclick="goto('products')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V7"/></svg>
+        产品档案
+      </div>
+      <div class="nav-link" id="nav-warehouses" onclick="goto('warehouses')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        仓库设置
+      </div>
+    </nav>
+    <div class="p-3 border-t border-white/10">
+      <div id="user-info" class="text-xs text-gray-400 mb-2 px-1"></div>
+      <button onclick="doLogout()" class="nav-link w-full text-red-400 hover:text-red-300">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        退出登录
+      </button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- 库存总览 -->
+    <div id="v-overview" class="p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800">库存总览</h1>
+        <button onclick="loadAll()" class="text-sm text-hg hover:underline">↺ 刷新</button>
+      </div>
+      <!-- Stats row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" id="inv-stats"></div>
+      <!-- Search -->
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <input type="text" id="ov-search" placeholder="搜索产品名称 / SKU / 厂家编码"
+               oninput="renderOverview()" class="input max-w-xs text-sm">
+        <select id="ov-wh" onchange="renderOverview()" class="input w-44 text-sm">
+          <option value="">全部仓库</option>
+        </select>
+        <select id="ov-cat" onchange="renderOverview()" class="input w-36 text-sm">
+          <option value="">全部类别</option>
+          <option value="WY">卫浴</option>
+          <option value="DB">地板/地砖</option>
+          <option value="CG">橱柜</option>
+          <option value="MC">门窗</option>
+          <option value="DJ">灯具</option>
+          <option value="JJ">家具</option>
+          <option value="WJ">五金</option>
+          <option value="DQ">电器</option>
+          <option value="TL">涂料/壁纸</option>
+          <option value="QT">其他</option>
+        </select>
+      </div>
+      <div id="ov-table" class="card overflow-hidden">
+        <p class="text-gray-400 text-sm p-8 text-center">加载中…</p>
+      </div>
+    </div>
+
+    <!-- 入库操作 -->
+    <div id="v-stockin" class="hidden p-6 max-w-3xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-4">入库操作</h1>
+      <div class="card p-6 mb-4">
+        <h3 class="font-semibold text-gray-800 mb-4">新建入库单</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="label">仓库 *</label>
+            <select id="si-wh" class="input text-sm"><option value="">— 选择仓库 —</option></select>
+          </div>
+          <div>
+            <label class="label">产品 *</label>
+            <select id="si-prod" class="input text-sm"><option value="">— 选择产品 —</option></select>
+          </div>
+          <div>
+            <label class="label">入库数量 *</label>
+            <input type="number" id="si-qty" placeholder="0" min="0.01" step="0.01" class="input text-sm">
+          </div>
+          <div>
+            <label class="label">单位成本（选填）</label>
+            <input type="number" id="si-cost" placeholder="0.00" min="0" step="0.01" class="input text-sm">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="label">备注（来源、批次、供应商等）</label>
+            <input type="text" id="si-notes" placeholder="如：来自 ABC 供应商，批次 2024-05" class="input text-sm">
+          </div>
+        </div>
+        <button onclick="submitStockIn()" class="btn-gold px-8 py-2.5 text-sm">✓ 确认入库</button>
+        <p id="si-err" class="text-red-500 text-sm mt-2 hidden"></p>
+      </div>
+    </div>
+
+    <!-- 出库/调整 -->
+    <div id="v-stockout" class="hidden p-6 max-w-3xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-4">出库 / 库存调整</h1>
+      <div class="card p-6 mb-4">
+        <div class="flex gap-2 mb-4">
+          <button id="so-tab-out" onclick="setSoTab('out')"
+                  class="px-4 py-2 text-sm font-semibold rounded-lg bg-hg text-white">出库</button>
+          <button id="so-tab-adj" onclick="setSoTab('adj')"
+                  class="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600">库存调整</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="label">仓库 *</label>
+            <select id="so-wh" class="input text-sm"><option value="">— 选择仓库 —</option></select>
+          </div>
+          <div>
+            <label class="label">产品 *</label>
+            <select id="so-prod" onchange="showCurrentStock()" class="input text-sm"><option value="">— 选择产品 —</option></select>
+          </div>
+          <div>
+            <label class="label" id="so-qty-label">出库数量 *</label>
+            <input type="number" id="so-qty" placeholder="0" min="0.01" step="0.01" class="input text-sm">
+            <div id="so-stock-hint" class="text-xs text-gray-400 mt-1"></div>
+          </div>
+          <div>
+            <label class="label">备注 *</label>
+            <input type="text" id="so-notes" placeholder="出库原因/调整说明" class="input text-sm">
+          </div>
+        </div>
+        <button onclick="submitStockOut()" class="btn-gold px-8 py-2.5 text-sm">✓ 确认</button>
+        <p id="so-err" class="text-red-500 text-sm mt-2 hidden"></p>
+      </div>
+    </div>
+
+    <!-- 流水记录 -->
+    <div id="v-movements" class="hidden p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800">流水记录</h1>
+        <div class="flex gap-2">
+          <select id="mv-type" onchange="renderMovements()" class="input w-32 text-sm">
+            <option value="">全部类型</option>
+            <option value="in">入库</option>
+            <option value="out">出库</option>
+            <option value="adjust">调整</option>
+          </select>
+          <select id="mv-wh" onchange="renderMovements()" class="input w-40 text-sm">
+            <option value="">全部仓库</option>
+          </select>
+        </div>
+      </div>
+      <div id="mv-table" class="card overflow-hidden">
+        <p class="text-gray-400 text-sm p-8 text-center">加载中…</p>
+      </div>
+    </div>
+
+    <!-- 产品档案 -->
+    <div id="v-products" class="hidden p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800">产品档案</h1>
+        <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm">+ 新增产品</button>
+      </div>
+      <!-- Add form -->
+      <div id="prod-add-form" class="hidden card p-6 mb-4 border-2 border-dashed" style="border-color:#c8a96e4d">
+        <h3 class="font-semibold text-gray-800 mb-4">新增产品</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+          <div>
+            <label class="label">类别 *</label>
+            <select id="np-cat" class="input text-sm" onchange="previewSKU()">
+              <option value="">— 选类别 —</option>
+              <option value="WY">卫浴</option>
+              <option value="DB">地板/地砖</option>
+              <option value="CG">橱柜</option>
+              <option value="MC">门窗</option>
+              <option value="DJ">灯具</option>
+              <option value="JJ">家具</option>
+              <option value="WJ">五金</option>
+              <option value="DQ">电器</option>
+              <option value="TL">涂料/壁纸</option>
+              <option value="QT">其他</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">产品名称 *</label>
+            <input type="text" id="np-name" placeholder="如：600×1200哑白砖" class="input text-sm">
+          </div>
+          <div>
+            <label class="label">单位</label>
+            <select id="np-unit" class="input text-sm">
+              <option>件</option><option>片</option><option>套</option>
+              <option>米</option><option>平方米</option><option>箱</option>
+              <option>包</option><option>个</option><option>批</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="label">规格描述（选填）</label>
+            <input type="text" id="np-specs" placeholder="颜色、尺寸、材质等" class="input text-sm">
+          </div>
+          <div>
+            <label class="label">低库存预警数量</label>
+            <input type="number" id="np-min" placeholder="0" min="0" class="input text-sm">
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-xs text-gray-400">SKU 预览：<span id="np-sku-preview" class="font-mono font-bold text-hg text-sm">—</span></div>
+          <button onclick="submitNewProduct()" class="btn-gold px-6 py-2 text-sm">保存</button>
+          <button onclick="document.getElementById('prod-add-form').classList.add('hidden')"
+                  class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
+        </div>
+        <p id="np-err" class="text-red-500 text-xs mt-2 hidden"></p>
+      </div>
+      <!-- Search -->
+      <input type="text" id="prod-search" placeholder="搜索 SKU / 产品名称"
+             oninput="renderProducts()" class="input max-w-xs text-sm mb-3">
+      <div id="prod-table" class="card overflow-hidden">
+        <p class="text-gray-400 text-sm p-8 text-center">加载中…</p>
+      </div>
+    </div>
+
+    <!-- 仓库设置 -->
+    <div id="v-warehouses" class="hidden p-6 max-w-3xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800">仓库设置</h1>
+        <button onclick="openAddWarehouse()" class="btn-gold px-4 py-2 text-sm">+ 新建仓库</button>
+      </div>
+      <!-- Add form -->
+      <div id="wh-add-form" class="hidden card p-5 mb-4 border-2 border-dashed" style="border-color:#c8a96e4d">
+        <h3 class="font-semibold text-gray-800 mb-3">新建仓库</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="label">仓库名称 *</label>
+            <input type="text" id="nw-name" placeholder="如：马来西亚主仓" class="input text-sm">
+          </div>
+          <div>
+            <label class="label">地址/位置</label>
+            <input type="text" id="nw-loc" placeholder="城市或详细地址" class="input text-sm">
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="submitNewWarehouse()" class="btn-gold px-6 py-2 text-sm">保存</button>
+          <button onclick="document.getElementById('wh-add-form').classList.add('hidden')"
+                  class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
+        </div>
+        <p id="nw-err" class="text-red-500 text-xs mt-2 hidden"></p>
+      </div>
+      <div id="wh-list" class="space-y-3">
+        <p class="text-gray-400 text-sm p-8 text-center card">加载中…</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
+const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const ALLOWED_ROLES = ['warehouse','store_manager','regional_manager','general_manager','superadmin','admin'];
+const CAT_LABEL = { WY:'卫浴', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
+
+let profile = null;
+let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
+let soTab = 'out';
+
+// ── Auth ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-err');
+  if (!email || !pw) { err.textContent='请填写邮箱和密码'; err.classList.remove('hidden'); return; }
+  btn.textContent = '登录中…'; btn.disabled = true; err.classList.add('hidden');
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    err.textContent = '登录失败：' + (error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message);
+    err.classList.remove('hidden'); btn.textContent = '登录'; btn.disabled = false; return;
+  }
+  await initApp();
+}
+
+async function initApp() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  const { data: prof } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  if (!prof || !ALLOWED_ROLES.includes(prof.role)) {
+    await sb.auth.signOut();
+    const err = document.getElementById('login-err');
+    err.textContent = '您的账号无仓库管理权限，请联系管理员';
+    err.classList.remove('hidden');
+    document.getElementById('login-btn').textContent = '登录';
+    document.getElementById('login-btn').disabled = false;
+    return;
+  }
+  profile = prof;
+
+  document.getElementById('auth-gate').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('user-info').innerHTML =
+    `<div class="font-medium text-white text-xs">${profile.name || session.user.email}</div>
+     <div class="text-gray-400 text-xs">${profile.role === 'warehouse' ? '仓库管理员' : '管理员'}</div>`;
+
+  await loadAll();
+  goto('overview');
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ── Data ──
+async function loadAll() {
+  const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }] = await Promise.all([
+    sb.from('warehouses').select('*').order('name'),
+    sb.from('products').select('*').order('sku'),
+    sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty), warehouses(name)'),
+    sb.from('inventory_movements')
+      .select('*, products(sku,name), warehouses(name), profiles(name)')
+      .order('created_at', { ascending: false }).limit(200),
+  ]);
+  allWarehouses = whs || [];
+  allProducts   = prods || [];
+  allInventory  = inv || [];
+  allMovements  = mvs || [];
+  populateSelects();
+}
+
+function populateSelects() {
+  const whOpts = '<option value="">— 选择仓库 —</option>' + allWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  const prodOpts = '<option value="">— 选择产品 —</option>' + allProducts.map(p => `<option value="${p.id}">[${p.sku}] ${p.name} (${p.unit})</option>`).join('');
+
+  ['si-wh','so-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whOpts; });
+  ['si-prod','so-prod'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = prodOpts; });
+
+  const whFilterOpts = '<option value="">全部仓库</option>' + allWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  ['ov-wh','mv-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whFilterOpts; });
+
+  // Inv stats
+  const totalProducts = allProducts.length;
+  const totalOn = allInventory.reduce((s, r) => s + (r.qty_on_hand || 0), 0);
+  const totalAvail = allInventory.reduce((s, r) => s + Math.max(0, (r.qty_on_hand || 0) - (r.qty_reserved || 0)), 0);
+  const lowStock = allInventory.filter(r => {
+    const min = r.products?.min_stock_qty || 0;
+    return min > 0 && ((r.qty_on_hand || 0) - (r.qty_reserved || 0)) <= min;
+  }).length;
+  document.getElementById('inv-stats').innerHTML = [
+    ['产品种类', totalProducts, '#d1fae5','#065f46'],
+    ['在库总量', totalOn.toFixed(0), '#dbeafe','#1e40af'],
+    ['可用库存', totalAvail.toFixed(0), '#d1fae5','#1a3a2a'],
+    ['低库存预警', lowStock, lowStock > 0 ? '#fee2e2':'#f3f4f6', lowStock > 0 ? '#991b1b':'#6b7280'],
+  ].map(([l,v,bg,tc]) => `<div class="card p-4" style="background:${bg}">
+    <div class="text-xs font-medium mb-1" style="color:${tc};opacity:.8">${l}</div>
+    <div class="text-2xl font-bold" style="color:${tc}">${v}</div>
+  </div>`).join('');
+}
+
+// ── Navigation ──
+function goto(view) {
+  ['overview','stockin','stockout','movements','products','warehouses'].forEach(v => {
+    document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
+    document.getElementById('nav-' + v)?.classList.toggle('active', v === view);
+  });
+  if (view === 'overview')   renderOverview();
+  if (view === 'movements')  renderMovements();
+  if (view === 'products')   renderProducts();
+  if (view === 'warehouses') renderWarehouses();
+}
+
+// ── Overview ──
+function renderOverview() {
+  const q   = (document.getElementById('ov-search')?.value || '').toLowerCase();
+  const wf  = document.getElementById('ov-wh')?.value || '';
+  const cf  = document.getElementById('ov-cat')?.value || '';
+  const el  = document.getElementById('ov-table');
+  if (!el) return;
+
+  let rows = allInventory.filter(r => {
+    const p = r.products || {};
+    if (wf && r.warehouse_id !== wf) return false;
+    if (cf && p.category !== cf) return false;
+    if (q && !`${p.sku||''} ${p.name||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">没有匹配的库存记录</p>'; return; }
+
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b border-gray-200">
+        <th class="px-4 py-3 text-left font-medium">SKU</th>
+        <th class="px-4 py-3 text-left font-medium">产品名称</th>
+        <th class="px-4 py-3 text-left font-medium">类别</th>
+        <th class="px-4 py-3 text-left font-medium">仓库</th>
+        <th class="px-4 py-3 text-right font-medium">在库</th>
+        <th class="px-4 py-3 text-right font-medium">预占</th>
+        <th class="px-4 py-3 text-right font-medium text-green-700">可用</th>
+        <th class="px-4 py-3 text-left font-medium">单位</th>
+        <th class="px-4 py-3 text-left font-medium">状态</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((row, i) => {
+          const p = row.products || {};
+          const avail = (row.qty_on_hand || 0) - (row.qty_reserved || 0);
+          const low = p.min_stock_qty > 0 && avail <= p.min_stock_qty;
+          return `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'} hover:bg-green-50/30 transition-colors">
+            <td class="px-4 py-3 font-mono text-xs font-bold text-hg">${p.sku||'—'}</td>
+            <td class="px-4 py-3 font-medium text-gray-800">${p.name||'—'}</td>
+            <td class="px-4 py-3 text-xs text-gray-400">${CAT_LABEL[p.category]||p.category||'—'}</td>
+            <td class="px-4 py-3 text-gray-500">${row.warehouses?.name||'—'}</td>
+            <td class="px-4 py-3 text-right">${row.qty_on_hand ?? 0}</td>
+            <td class="px-4 py-3 text-right text-orange-500">${row.qty_reserved || 0}</td>
+            <td class="px-4 py-3 text-right font-bold ${avail > 0 ? 'text-green-700' : 'text-red-500'}">${avail}</td>
+            <td class="px-4 py-3 text-xs text-gray-400">${p.unit||'—'}</td>
+            <td class="px-4 py-3">${low ? '<span class="tag" style="background:#fee2e2;color:#991b1b">⚠ 低库存</span>' : ''}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ── Stock In ──
+async function submitStockIn() {
+  const whId   = document.getElementById('si-wh')?.value;
+  const prodId = document.getElementById('si-prod')?.value;
+  const qty    = parseFloat(document.getElementById('si-qty')?.value);
+  const cost   = parseFloat(document.getElementById('si-cost')?.value) || null;
+  const notes  = document.getElementById('si-notes')?.value.trim() || null;
+  const err    = document.getElementById('si-err');
+  err.classList.add('hidden');
+  if (!whId)         { err.textContent='请选择仓库'; err.classList.remove('hidden'); return; }
+  if (!prodId)       { err.textContent='请选择产品'; err.classList.remove('hidden'); return; }
+  if (!qty || qty<=0){ err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
+
+  const existing = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
+  if (existing) {
+    await sb.from('inventory').update({ qty_on_hand: (existing.qty_on_hand||0) + qty, ...(cost?{unit_cost:cost}:{}), updated_at: new Date().toISOString() }).eq('id', existing.id);
+  } else {
+    await sb.from('inventory').insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0, ...(cost?{unit_cost:cost}:{}) });
+  }
+  await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'in', qty, notes, operator_id: profile.id });
+
+  ['si-qty','si-cost','si-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  await loadAll();
+  alert('✅ 入库成功');
+}
+
+// ── Stock Out / Adjust ──
+function setSoTab(tab) {
+  soTab = tab;
+  document.getElementById('so-tab-out').className = tab==='out'
+    ? 'px-4 py-2 text-sm font-semibold rounded-lg bg-hg text-white'
+    : 'px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600';
+  document.getElementById('so-tab-adj').className = tab==='adj'
+    ? 'px-4 py-2 text-sm font-semibold rounded-lg bg-hg text-white'
+    : 'px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600';
+  const lbl = document.getElementById('so-qty-label');
+  if (lbl) lbl.textContent = tab==='out' ? '出库数量 *' : '调整后实际库存数量 *';
+}
+
+function showCurrentStock() {
+  const prodId = document.getElementById('so-prod')?.value;
+  const whId   = document.getElementById('so-wh')?.value;
+  const hint   = document.getElementById('so-stock-hint');
+  if (!hint) return;
+  const row = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
+  hint.textContent = row ? `当前在库：${row.qty_on_hand}，可用：${(row.qty_on_hand||0)-(row.qty_reserved||0)}` : '';
+}
+
+async function submitStockOut() {
+  const whId   = document.getElementById('so-wh')?.value;
+  const prodId = document.getElementById('so-prod')?.value;
+  const qty    = parseFloat(document.getElementById('so-qty')?.value);
+  const notes  = document.getElementById('so-notes')?.value.trim() || null;
+  const err    = document.getElementById('so-err');
+  err.classList.add('hidden');
+  if (!whId)        { err.textContent='请选择仓库'; err.classList.remove('hidden'); return; }
+  if (!prodId)      { err.textContent='请选择产品'; err.classList.remove('hidden'); return; }
+  if (!qty || qty<0){ err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
+  if (!notes)       { err.textContent='请填写备注说明'; err.classList.remove('hidden'); return; }
+
+  const existing = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
+  if (soTab === 'out') {
+    if (!existing || (existing.qty_on_hand||0) < qty) {
+      err.textContent = `库存不足（当前在库：${existing?.qty_on_hand||0}）`; err.classList.remove('hidden'); return;
+    }
+    await sb.from('inventory').update({ qty_on_hand: existing.qty_on_hand - qty, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'out', qty, notes, operator_id: profile.id });
+  } else {
+    // adjust: qty = new actual on_hand value
+    const diff = qty - (existing?.qty_on_hand || 0);
+    if (existing) {
+      await sb.from('inventory').update({ qty_on_hand: qty, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    } else {
+      await sb.from('inventory').insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0 });
+    }
+    await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'adjust', qty: Math.abs(diff), notes: `调整：${notes}（差值${diff>=0?'+':''}${diff}）`, operator_id: profile.id });
+  }
+
+  ['so-qty','so-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('so-stock-hint').textContent = '';
+  await loadAll();
+  alert(`✅ ${soTab==='out'?'出库':'调整'}成功`);
+}
+
+// ── Movements ──
+function renderMovements() {
+  const tf = document.getElementById('mv-type')?.value || '';
+  const wf = document.getElementById('mv-wh')?.value   || '';
+  const el = document.getElementById('mv-table');
+  if (!el) return;
+
+  const rows = allMovements.filter(m => {
+    if (tf && m.type !== tf) return false;
+    if (wf && m.warehouse_id !== wf) return false;
+    return true;
+  });
+
+  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无流水记录</p>'; return; }
+
+  const typeLabel = { in:'入库', out:'出库', adjust:'调整', reserve:'预占', release:'释放' };
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
+        <th class="px-4 py-3 text-left font-medium">时间</th>
+        <th class="px-4 py-3 text-left font-medium">类型</th>
+        <th class="px-4 py-3 text-left font-medium">产品</th>
+        <th class="px-4 py-3 text-left font-medium">仓库</th>
+        <th class="px-4 py-3 text-right font-medium">数量</th>
+        <th class="px-4 py-3 text-left font-medium">备注</th>
+        <th class="px-4 py-3 text-left font-medium">操作人</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((m, i) => {
+          const tagCls = m.type==='in' ? 'tag-in' : m.type==='out' ? 'tag-out' : 'tag-adj';
+          return `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
+            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+            <td class="px-4 py-3"><span class="tag ${tagCls}">${typeLabel[m.type]||m.type}</span></td>
+            <td class="px-4 py-3">${m.products ? `<span class="font-mono text-xs text-hg">[${m.products.sku}]</span> ${m.products.name}` : '—'}</td>
+            <td class="px-4 py-3 text-gray-500">${m.warehouses?.name||'—'}</td>
+            <td class="px-4 py-3 text-right font-bold font-mono ${m.type==='in'?'text-green-700':'text-red-600'}">${m.type==='in'?'+':'−'}${m.qty}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">${m.notes||'—'}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs">${m.profiles?.name||'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+// ── Products ──
+function renderProducts() {
+  const q  = (document.getElementById('prod-search')?.value || '').toLowerCase();
+  const el = document.getElementById('prod-table');
+  if (!el) return;
+  const filtered = allProducts.filter(p => !q || `${p.sku} ${p.name}`.toLowerCase().includes(q));
+  if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无产品档案</p>'; return; }
+
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
+        <th class="px-4 py-3 text-left font-medium">SKU</th>
+        <th class="px-4 py-3 text-left font-medium">产品名称</th>
+        <th class="px-4 py-3 text-left font-medium">类别</th>
+        <th class="px-4 py-3 text-left font-medium">单位</th>
+        <th class="px-4 py-3 text-left font-medium">规格</th>
+        <th class="px-4 py-3 text-right font-medium">预警数</th>
+        <th class="px-4 py-3 text-left font-medium">厂家编码</th>
+        <th class="px-4 py-3"></th>
+      </tr></thead>
+      <tbody>
+        ${filtered.map((p, i) => `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
+          <td class="px-4 py-3 font-mono font-bold text-hg text-xs">${p.sku}</td>
+          <td class="px-4 py-3 font-medium text-gray-800">${p.name}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">${CAT_LABEL[p.category]||p.category||'—'}</td>
+          <td class="px-4 py-3 text-gray-500">${p.unit||'—'}</td>
+          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${p.specs||'—'}</td>
+          <td class="px-4 py-3 text-right text-gray-400">${p.min_stock_qty||0}</td>
+          <td class="px-4 py-3">
+            <button onclick="manageSupplierCodes('${p.id}','${p.name.replace(/'/g,"\\\'")}')"
+                    class="text-xs text-blue-600 hover:underline">绑定/查看</button>
+          </td>
+          <td class="px-4 py-3">
+            <button onclick="deleteProduct('${p.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function openAddProduct() {
+  document.getElementById('prod-add-form').classList.remove('hidden');
+  ['np-name','np-specs','np-min'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('np-cat').value = '';
+  document.getElementById('np-sku-preview').textContent = '—';
+}
+
+async function previewSKU() {
+  const cat = document.getElementById('np-cat')?.value;
+  const el  = document.getElementById('np-sku-preview');
+  if (!el || !cat) { if(el) el.textContent='—'; return; }
+  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
+  el.textContent = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+}
+
+async function submitNewProduct() {
+  const cat   = document.getElementById('np-cat')?.value;
+  const name  = document.getElementById('np-name')?.value.trim();
+  const unit  = document.getElementById('np-unit')?.value || '件';
+  const specs = document.getElementById('np-specs')?.value.trim() || null;
+  const minQ  = parseFloat(document.getElementById('np-min')?.value) || 0;
+  const err   = document.getElementById('np-err');
+  err.classList.add('hidden');
+  if (!cat)  { err.textContent='请选择类别'; err.classList.remove('hidden'); return; }
+  if (!name) { err.textContent='请填写产品名称'; err.classList.remove('hidden'); return; }
+
+  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
+  const sku = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+  const { error } = await sb.from('products').insert({ sku, name, category: cat, unit, specs, min_stock_qty: minQ });
+  if (error) { err.textContent='保存失败: '+error.message; err.classList.remove('hidden'); return; }
+  document.getElementById('prod-add-form').classList.add('hidden');
+  await loadAll();
+  renderProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('确认删除此产品档案？相关库存记录也会一并删除。')) return;
+  await sb.from('products').delete().eq('id', id);
+  await loadAll();
+  renderProducts();
+}
+
+async function manageSupplierCodes(productId, productName) {
+  const { data: codes } = await sb.from('product_supplier_codes')
+    .select('id, supplier_code, suppliers(name)').eq('product_id', productId);
+  const existing = (codes||[]).map(c => `• ${c.supplier_code}（${c.suppliers?.name||'未知供应商'}）`).join('\n') || '（暂无）';
+  const newCode = prompt(`产品：${productName}\n\n已绑定厂家编码：\n${existing}\n\n输入新厂家编码绑定（取消则关闭）：`);
+  if (!newCode?.trim()) return;
+  const { data: sups } = await sb.from('suppliers').select('id,name').eq('active',true).order('name');
+  if (!sups?.length) { alert('请先在运营端添加供应商'); return; }
+  const pick = prompt(`选择供应商（输入序号）：\n${sups.map((s,i)=>`${i+1}. ${s.name}`).join('\n')}`);
+  const idx = parseInt(pick) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= sups.length) return;
+  const { error } = await sb.from('product_supplier_codes').insert({ product_id: productId, supplier_id: sups[idx].id, supplier_code: newCode.trim() });
+  if (error) alert('绑定失败: '+error.message);
+  else alert(`✅ 已绑定厂家编码：${newCode.trim()}`);
+}
+
+// ── Warehouses ──
+function renderWarehouses() {
+  const el = document.getElementById('wh-list');
+  if (!el) return;
+  if (!allWarehouses.length) {
+    el.innerHTML = '<div class="card p-8 text-center text-gray-400 text-sm">暂无仓库，点击「新建仓库」开始</div>';
+    return;
+  }
+  el.innerHTML = allWarehouses.map(w => {
+    const inv = allInventory.filter(r => r.warehouse_id === w.id);
+    const totalOn = inv.reduce((s,r) => s+(r.qty_on_hand||0), 0);
+    return `<div class="card p-5 flex items-center justify-between">
+      <div>
+        <div class="font-semibold text-gray-800">${w.name}</div>
+        ${w.location ? `<div class="text-xs text-gray-400 mt-0.5">${w.location}</div>` : ''}
+        <div class="text-xs text-gray-400 mt-1">${inv.length} 种产品 · 在库合计 ${totalOn.toFixed(0)} 件</div>
+      </div>
+      <button onclick="deleteWarehouse('${w.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>
+    </div>`;
+  }).join('');
+}
+
+function openAddWarehouse() {
+  document.getElementById('wh-add-form').classList.remove('hidden');
+  ['nw-name','nw-loc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+async function submitNewWarehouse() {
+  const name = document.getElementById('nw-name')?.value.trim();
+  const loc  = document.getElementById('nw-loc')?.value.trim() || null;
+  const err  = document.getElementById('nw-err');
+  err.classList.add('hidden');
+  if (!name) { err.textContent='请填写仓库名称'; err.classList.remove('hidden'); return; }
+  const { error } = await sb.from('warehouses').insert({ name, location: loc });
+  if (error) { err.textContent='保存失败: '+error.message; err.classList.remove('hidden'); return; }
+  document.getElementById('wh-add-form').classList.add('hidden');
+  await loadAll();
+  renderWarehouses();
+}
+
+async function deleteWarehouse(id) {
+  if (!confirm('确认删除此仓库？所有关联库存记录会一并删除。')) return;
+  await sb.from('warehouses').delete().eq('id', id);
+  await loadAll();
+  renderWarehouses();
+}
+
+// ── Init ──
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await initApp();
+})();
+</script>
+</body>
+</html>
