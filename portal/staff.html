@@ -297,6 +297,7 @@
           </button>
         </div>
         <div class="text-xs text-gray-400 mb-3">名称、数量、单价填写后自动合计到订单金额</div>
+        <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
           <span class="text-sm text-gray-500">商品合计</span>
@@ -798,6 +799,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
 let searchTimer = null;
 let _openDetailId = null;
+let staffProducts = [];
 
 // ──────────────────────────────────────────────────────────────────
 // ROLE PERMISSION SYSTEM
@@ -1383,7 +1385,7 @@ async function init() {
   if (mobileInfo) mobileInfo.innerHTML = userHtml;
 
   await loadStores(); // 必须先完成，buildOrdersQuery 的区域过滤依赖 stores 数组
-  await Promise.all([loadReferrers(), loadOrders(), loadCustomers()]);
+  await Promise.all([loadReferrers(), loadOrders(), loadCustomers(), loadStaffProducts()]);
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
@@ -1770,14 +1772,15 @@ function addItemRow(data = {}) {
   const row = document.createElement('div');
   row.className = 'item-row bg-gray-50 rounded-lg p-3 relative mb-2';
   row.dataset.rowId = id;
-  const units = ['套','米','平方米','个','件','批'];
+  const units = ['套','件','片','米','平方米','个','箱','批'];
   row.innerHTML = `
     <button type="button" onclick="removeItemRow(this)"
             class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none font-light w-6 h-6 flex items-center justify-center">×</button>
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
         <input type="text" id="item-name-${id}" value="${data.product_name||''}"
-               placeholder="货品名称 *" oninput="autoDetectProductType(${id}); autoDetectItemFT(${id})"
+               placeholder="货品名称或SKU *" list="staff-product-datalist"
+               oninput="autoDetectProductType(${id}); autoDetectItemFT(${id}); onProductSelect(${id})"
                class="input text-sm w-full">
       </div>
       <div>
@@ -2721,6 +2724,36 @@ function detectProductType(name) {
   }
   return '';
 }
+async function loadStaffProducts() {
+  const { data } = await sb.from('products').select('id,sku,name,unit,specs').order('name');
+  staffProducts = data || [];
+  const dl = document.getElementById('staff-product-datalist');
+  if (!dl) return;
+  dl.innerHTML = staffProducts.map(p =>
+    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">[${p.sku}] ${p.name||''}</option>`
+  ).join('');
+}
+
+function onProductSelect(id) {
+  const inp = document.getElementById(`item-name-${id}`);
+  if (!inp) return;
+  const typed = inp.value.trim();
+  if (!typed) return;
+  const match = staffProducts.find(p => p.name === typed)
+    || staffProducts.find(p => p.sku.toLowerCase() === typed.toLowerCase());
+  if (!match) return;
+  if (match.name !== typed) inp.value = match.name;
+  const unitEl = document.getElementById(`item-unit-${id}`);
+  if (unitEl && match.unit) {
+    const opts = Array.from(unitEl.options).map(o => o.value);
+    if (opts.includes(match.unit)) unitEl.value = match.unit;
+  }
+  const specEl = document.getElementById(`item-spec-${id}`);
+  if (specEl && !specEl.value && match.specs) {
+    specEl.value = match.specs.split('|')[0]?.replace(/^[^:]+:/, '').trim() || '';
+  }
+}
+
 function autoDetectProductType(id) {
   const name = document.getElementById(`item-name-${id}`)?.value || '';
   const sel  = document.getElementById(`item-type-${id}`);
