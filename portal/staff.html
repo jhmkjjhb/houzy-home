@@ -2727,7 +2727,7 @@ function detectProductType(name) {
   return '';
 }
 async function loadStaffProducts() {
-  const { data } = await sb.from('products').select('id,sku,name,unit,specs').order('sku');
+  const { data } = await sb.from('products').select('id,sku,name,unit,specs,category').order('sku');
   staffProducts = data || [];
   const dl = document.getElementById('staff-product-datalist');
   if (!dl) return;
@@ -2744,7 +2744,7 @@ function _findProductMatch(typed) {
     || staffProducts.find(p => p.name === typed);
 }
 
-function onProductSelect(id) {
+async function onProductSelect(id) {
   const inp    = document.getElementById(`item-name-${id}`);
   const hidden = document.getElementById(`item-actual-name-${id}`);
   const badge  = document.getElementById(`item-name-badge-${id}`);
@@ -2756,18 +2756,38 @@ function onProductSelect(id) {
   if (match) {
     if (hidden) hidden.value = match.name;
     if (badge) {
-      // typed SKU → show name; typed name → show SKU
       badge.textContent = match.sku.toLowerCase() === typed.toLowerCase() ? match.name : match.sku;
       badge.classList.remove('hidden');
     }
+    // Auto-fill unit
     const unitEl = document.getElementById(`item-unit-${id}`);
     if (unitEl && match.unit) {
       const opts = Array.from(unitEl.options).map(o => o.value);
       if (opts.includes(match.unit)) unitEl.value = match.unit;
     }
+    // Auto-fill spec (first attribute only)
     const specEl = document.getElementById(`item-spec-${id}`);
     if (specEl && !specEl.value && match.specs) {
       specEl.value = match.specs.split('|')[0]?.replace(/^[^:]+:/, '').trim() || '';
+    }
+    // Auto-fill product type from category (same code system)
+    if (match.category) {
+      const typeEl = document.getElementById(`item-type-${id}`);
+      if (typeEl && !typeEl.value) typeEl.value = match.category;
+    }
+    // Check inventory: auto-switch to 现货 if stock available, fill reference price
+    const { data: invRows } = await sb.from('inventory')
+      .select('qty_on_hand,qty_reserved,unit_cost').eq('product_id', match.id);
+    if (invRows?.length) {
+      const totalAvail = invRows.reduce((s, r) => s + (r.qty_on_hand||0) - (r.qty_reserved||0), 0);
+      if (totalAvail > 0) setItemFT(id, 'stock');
+      // Fill reference price from unit_cost if price not yet entered
+      const priceEl = document.getElementById(`item-price-${id}`);
+      if (priceEl && !priceEl.value) {
+        const cost = invRows.find(r => r.unit_cost > 0)?.unit_cost;
+        if (cost) priceEl.value = cost.toFixed(2);
+        calcItemRow(id);
+      }
     }
   } else {
     if (hidden) hidden.value = typed;
