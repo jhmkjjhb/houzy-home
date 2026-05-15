@@ -2246,6 +2246,25 @@ async function openDetail(id, backView) {
   console.log('[openDetail] childOrders for', o.order_no, '— FK:', childByFk?.length, 'desc:', childByDesc?.length, 'customer:', childByCustomer?.length, 'merged:', childOrders.length);
   console.log('[openDetail] items for', o.order_no, ':', items?.length, itemsErr ? '错误:'+itemsErr.message : '');
 
+  // 按真实库存判断每件商品是否"走仓库出库"：
+  // 单个仓库的库存 ≥ 开单数量 → 现货走仓库，不需要供应商；否则需分配供应商下单。
+  // （目前仅 1 个仓库；若将来增加仓库，这里取"单仓最大库存"的口径需重新评估）
+  await Promise.all((items || []).map(async (it) => {
+    it._stockQty = 0;
+    it._fromStock = false;
+    const nm  = (it.product_name || '').trim();
+    const qty = parseFloat(it.quantity) || 0;
+    if (!nm || qty <= 0) return;
+    const { data: prod } = await sb.from('products').select('id')
+      .ilike('name', `%${nm}%`).limit(1).maybeSingle();
+    if (!prod) return;
+    const { data: invRows } = await sb.from('inventory')
+      .select('qty_on_hand').eq('product_id', prod.id);
+    const maxQty = (invRows || []).reduce((m, r) => Math.max(m, Number(r.qty_on_hand) || 0), 0);
+    it._stockQty  = maxQty;
+    it._fromStock = maxQty >= qty;
+  }));
+
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
     return `<div class="flex gap-3">
@@ -2866,7 +2885,7 @@ function renderItemsCard(items, o, supList) {
   const collapsed  = false;
   const uid        = 'items-body-' + o.id.slice(0,8);
   const total      = items.reduce((s,i) => s + Number(i.total_price || (i.quantity * i.unit_price)), 0);
-  const unassigned = items.filter(i => !i.supplier_id).length;
+  const unassigned = items.filter(i => !i._fromStock && !i.supplier_id).length;
 
   const supOpts = (curId, itemType) => {
     const all = supList || [];
@@ -2908,7 +2927,9 @@ function renderItemsCard(items, o, supList) {
           <td class="py-2 pr-3 text-sm text-right font-medium text-hg whitespace-nowrap">${fmtAmt(sub,currency)}</td>
         `}
         <td class="py-2 pr-2">
-          ${itemCanAssign
+          ${item._fromStock
+            ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#d1fae5;color:#065f46">现货 · 库存${item._stockQty}，走仓库出库</span>`
+            : itemCanAssign
             ? `<select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
                        data-item-id="${item.id}">
                  ${supOpts(item.supplier_id, item.product_type)}
@@ -2978,7 +2999,7 @@ function renderItemsCard(items, o, supList) {
             </button>` : ''}
           </div>
           ${canAssign ? `
-            ${(items.some(i => !i.supplier_id) || canDo(4))
+            ${(items.some(i => !i._fromStock && !i.supplier_id) || canDo(4))
               ? `<button onclick="saveItemSuppliers('${o.id}')"
                           class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                      保存供应商分配
