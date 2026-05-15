@@ -371,6 +371,10 @@
             <input type="text" id="np-specs" placeholder="颜色、尺寸、材质等" class="input text-sm">
           </div>
           <div>
+            <label class="label">售价（RM）</label>
+            <input type="number" id="np-price" placeholder="0.00" min="0" step="0.01" class="input text-sm">
+          </div>
+          <div>
             <label class="label">低库存预警数量</label>
             <input type="number" id="np-min" placeholder="0" min="0" class="input text-sm">
           </div>
@@ -1167,6 +1171,7 @@ function renderProducts() {
         <th class="px-4 py-3 text-left font-medium">产品名称</th>
         <th class="px-4 py-3 text-left font-medium">类别</th>
         <th class="px-4 py-3 text-left font-medium">单位</th>
+        <th class="px-4 py-3 text-right font-medium">售价(RM)</th>
         <th class="px-4 py-3 text-left font-medium">规格</th>
         <th class="px-4 py-3 text-right font-medium">预警数</th>
         <th class="px-4 py-3 text-left font-medium">厂家编码</th>
@@ -1187,6 +1192,11 @@ function renderProducts() {
           <td class="px-4 py-3 font-medium text-gray-800">${p.name}</td>
           <td class="px-4 py-3 text-xs text-gray-400">${CAT_LABEL[p.category]||p.category||'—'}</td>
           <td class="px-4 py-3 text-gray-500">${p.unit||'—'}</td>
+          <td class="px-4 py-3 text-right">
+            <input type="number" value="${p.price||''}" placeholder="—" min="0" step="0.01"
+              class="w-20 text-right text-sm border border-transparent rounded px-1 hover:border-gray-300 focus:border-hg focus:outline-none"
+              onchange="updateProductPrice('${p.id}',this.value)">
+          </td>
           <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${p.specs||'—'}</td>
           <td class="px-4 py-3 text-right text-gray-400">${p.min_stock_qty||0}</td>
           <td class="px-4 py-3">
@@ -1207,9 +1217,16 @@ function renderProducts() {
   </div>`;
 }
 
+async function updateProductPrice(productId, val) {
+  const price = parseFloat(val) || null;
+  await sb.from('products').update({ price }).eq('id', productId);
+  const p = allProducts.find(p => p.id === productId);
+  if (p) p.price = price;
+}
+
 function openAddProduct() {
   document.getElementById('prod-add-form').classList.remove('hidden');
-  ['np-name','np-specs','np-min'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['np-name','np-specs','np-min','np-price'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('np-cat').value = '';
   document.getElementById('np-sku-preview').textContent = '—';
   const fi = document.getElementById('np-image'); if (fi) fi.value = '';
@@ -1281,7 +1298,8 @@ async function submitNewProduct() {
 
   const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
   const sku = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
-  const { data: np, error } = await sb.from('products').insert({ sku, name, category: cat, unit, specs, min_stock_qty: minQ }).select('id').single();
+  const price = parseFloat(document.getElementById('np-price')?.value) || null;
+  const { data: np, error } = await sb.from('products').insert({ sku, name, category: cat, unit, specs, min_stock_qty: minQ, price }).select('id').single();
   if (error) { err.textContent='保存失败: '+error.message; err.classList.remove('hidden'); return; }
 
   const file = document.getElementById('np-image')?.files[0];
