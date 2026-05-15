@@ -297,6 +297,7 @@
           </button>
         </div>
         <div class="text-xs text-gray-400 mb-3">名称、数量、单价填写后自动合计到订单金额</div>
+        <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
           <span class="text-sm text-gray-500">商品合计</span>
@@ -798,6 +799,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
 let searchTimer = null;
 let _openDetailId = null;
+let staffProducts = [];
 
 // ──────────────────────────────────────────────────────────────────
 // ROLE PERMISSION SYSTEM
@@ -1383,7 +1385,7 @@ async function init() {
   if (mobileInfo) mobileInfo.innerHTML = userHtml;
 
   await loadStores(); // 必须先完成，buildOrdersQuery 的区域过滤依赖 stores 数组
-  await Promise.all([loadReferrers(), loadOrders(), loadCustomers()]);
+  await Promise.all([loadReferrers(), loadOrders(), loadCustomers(), loadStaffProducts()]);
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
@@ -1770,15 +1772,18 @@ function addItemRow(data = {}) {
   const row = document.createElement('div');
   row.className = 'item-row bg-gray-50 rounded-lg p-3 relative mb-2';
   row.dataset.rowId = id;
-  const units = ['套','米','平方米','个','件','批'];
+  const units = ['套','件','片','米','平方米','个','箱','批'];
   row.innerHTML = `
     <button type="button" onclick="removeItemRow(this)"
             class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none font-light w-6 h-6 flex items-center justify-center">×</button>
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
-        <input type="text" id="item-name-${id}" value="${data.product_name||''}"
-               placeholder="货品名称 *" oninput="autoDetectProductType(${id}); autoDetectItemFT(${id})"
-               class="input text-sm w-full">
+        <input type="text" id="item-name-${id}" value="${data.sku_ref||data.product_name||''}"
+               placeholder="产品编号（如 HH-WY-0001）或货品名称" list="staff-product-datalist"
+               oninput="autoDetectProductType(${id}); autoDetectItemFT(${id}); onProductSelect(${id})"
+               class="input text-sm w-full font-mono">
+        <input type="hidden" id="item-actual-name-${id}" value="${data.product_name||''}">
+        <div id="item-name-badge-${id}" class="text-xs text-green-800 mt-1 px-1 ${data.product_name&&data.sku_ref?'':'hidden'}">${data.product_name||''}</div>
       </div>
       <div>
         <select id="item-type-${id}" class="input text-sm w-full"
@@ -1841,6 +1846,8 @@ function calcItemsTotal() {
   let total = 0;
   document.querySelectorAll('.item-row').forEach(row => {
     const id    = row.dataset.rowId;
+    const name  = _getItemName(id);
+    if (!name) return; // only count rows that will actually be saved
     const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 0;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
     total += qty * price;
@@ -1860,7 +1867,7 @@ function getItemRows() {
   const rows = [];
   document.querySelectorAll('.item-row').forEach((row, idx) => {
     const id   = row.dataset.rowId;
-    const name = document.getElementById(`item-name-${id}`)?.value.trim();
+    const name = _getItemName(id);
     if (!name) return;
     const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 1;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
@@ -2027,6 +2034,18 @@ async function submitOrder() {
   if (!storeId) { showCreateErr('请选择门店'); return; }
   if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
 
+  // Validate items: must have at least one named row, and total must match order amount
+  const itemsForCheck = getItemRows();
+  if (itemsForCheck.length === 0) { showCreateErr('请至少添加一条商品明细'); return; }
+  const itemsTotal = itemsForCheck.reduce((s, r) => s + r.total_price, 0);
+  if (Math.abs(itemsTotal - amount) > 0.01) {
+    const proceed = confirm(
+      `⚠ 注意：商品明细合计 ${itemsTotal.toFixed(2)}，与订单金额 ${amount.toFixed(2)} 不符。\n\n` +
+      `可能有商品行未填写名称导致未被计入。\n\n确认要继续提交吗？`
+    );
+    if (!proceed) return;
+  }
+
   // Supplement order: customer already known, skip customer form
   let custId = _supplementCustomerId;
   if (!custId) {
@@ -2111,7 +2130,14 @@ async function submitOrder() {
   const items = getItemRows();
   if (items.length > 0) {
     const { error: itemErr } = await sb.from('order_items').insert(items.map(item => ({ ...item, order_id: order.id })));
-    if (itemErr) console.warn('[submitOrder] order_items insert failed:', itemErr.message);
+    if (itemErr) {
+      console.warn('[submitOrder] order_items insert failed:', itemErr.message);
+      showCreateErr('订单已创建，但商品明细保存失败: ' + itemErr.message);
+      btn.textContent = t('create_btn'); btn.disabled = false;
+      await loadOrders();
+      openDetail(order.id, 'orders');
+      return;
+    }
   }
 
   // Record first payment if already paid
@@ -2191,7 +2217,7 @@ async function openDetail(id, backView) {
   const [
     { data: supList },
     { data: payments },
-    { data: items },
+    { data: items, error: itemsErr },
     { data: attachments },
     { data: childByFk },
     { data: childByDesc },
@@ -2218,6 +2244,7 @@ async function openDetail(id, backView) {
   });
   const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
   console.log('[openDetail] childOrders for', o.order_no, '— FK:', childByFk?.length, 'desc:', childByDesc?.length, 'customer:', childByCustomer?.length, 'merged:', childOrders.length);
+  console.log('[openDetail] items for', o.order_no, ':', items?.length, itemsErr ? '错误:'+itemsErr.message : '');
 
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
@@ -2289,6 +2316,7 @@ async function openDetail(id, backView) {
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
         <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
         <div><span class="text-gray-400">${t('lbl_mobile')}</span> <span>${o.customers?.phone}</span></div>
+        ${o.customers?.address ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">配送地址</span> <span class="text-gray-700">${o.customers.address}</span></div>` : ''}
         <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span></div>
         <div><span class="text-gray-400">${t('lbl_payment')}</span>
           <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':o.payment_status==='partial'?'color:#d97706':'color:#dc2626'}">
@@ -2698,8 +2726,63 @@ function detectProductType(name) {
   }
   return '';
 }
+async function loadStaffProducts() {
+  const { data } = await sb.from('products').select('id,sku,name,unit,specs').order('sku');
+  staffProducts = data || [];
+  const dl = document.getElementById('staff-product-datalist');
+  if (!dl) return;
+  // Both SKU and name as searchable values
+  dl.innerHTML = staffProducts.flatMap(p => [
+    `<option value="${p.sku}">${p.name}</option>`,
+    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
+  ]).join('');
+}
+
+function _findProductMatch(typed) {
+  if (!typed) return null;
+  return staffProducts.find(p => p.sku.toLowerCase() === typed.toLowerCase())
+    || staffProducts.find(p => p.name === typed);
+}
+
+function onProductSelect(id) {
+  const inp    = document.getElementById(`item-name-${id}`);
+  const hidden = document.getElementById(`item-actual-name-${id}`);
+  const badge  = document.getElementById(`item-name-badge-${id}`);
+  if (!inp) return;
+  const typed = inp.value.trim();
+  if (!typed) { if (hidden) hidden.value = ''; if (badge) badge.classList.add('hidden'); return; }
+
+  const match = _findProductMatch(typed);
+  if (match) {
+    if (hidden) hidden.value = match.name;
+    if (badge) {
+      // typed SKU → show name; typed name → show SKU
+      badge.textContent = match.sku.toLowerCase() === typed.toLowerCase() ? match.name : match.sku;
+      badge.classList.remove('hidden');
+    }
+    const unitEl = document.getElementById(`item-unit-${id}`);
+    if (unitEl && match.unit) {
+      const opts = Array.from(unitEl.options).map(o => o.value);
+      if (opts.includes(match.unit)) unitEl.value = match.unit;
+    }
+    const specEl = document.getElementById(`item-spec-${id}`);
+    if (specEl && !specEl.value && match.specs) {
+      specEl.value = match.specs.split('|')[0]?.replace(/^[^:]+:/, '').trim() || '';
+    }
+  } else {
+    if (hidden) hidden.value = typed;
+    if (badge) badge.classList.add('hidden');
+  }
+}
+
+function _getItemName(id) {
+  return document.getElementById(`item-actual-name-${id}`)?.value.trim()
+    || document.getElementById(`item-name-${id}`)?.value.trim()
+    || '';
+}
+
 function autoDetectProductType(id) {
-  const name = document.getElementById(`item-name-${id}`)?.value || '';
+  const name = _getItemName(id);
   const sel  = document.getElementById(`item-type-${id}`);
   if (!sel) return;
   const detected = detectProductType(name);
@@ -2710,7 +2793,7 @@ const STOCK_KEYWORDS = ['瓷砖','地砖','墙砖','马桶','花洒','龙头','�
 const CUSTOM_KEYWORDS = ['橱柜','铝合金门','铝合金窗','淋浴房','推拉门','定制','浴缸','整体'];
 
 function autoDetectItemFT(id) {
-  const name = (document.getElementById(`item-name-${id}`)?.value || '').toLowerCase();
+  const name = _getItemName(id).toLowerCase();
   if (!name) return;
   if (STOCK_KEYWORDS.some(kw => name.includes(kw))) setItemFT(id, 'stock');
   else if (CUSTOM_KEYWORDS.some(kw => name.includes(kw))) setItemFT(id, 'custom');
@@ -2754,7 +2837,7 @@ function renderItemsCard(items, o, supList) {
   const isSupplier = profile?.role === 'supplier';
   const canAssign  = canDo(FIELD_MIN_LEVEL.assign_supplier) && !['completed','closed','cancelled'].includes(o.status);
   const currency   = o.currency || 'MYR';
-  const collapsed  = items.length > 4;
+  const collapsed  = false;
   const uid        = 'items-body-' + o.id.slice(0,8);
   const total      = items.reduce((s,i) => s + Number(i.total_price || (i.quantity * i.unit_price)), 0);
   const unassigned = items.filter(i => !i.supplier_id).length;
@@ -2856,19 +2939,30 @@ function renderItemsCard(items, o, supList) {
             `}
           </table>
         </div>
-        ${canAssign ? `
-          <div class="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+        <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="openAddItemsPanel('${o.id}','${currency}')"
+                    class="px-3 py-1.5 border border-hg text-hg text-sm font-semibold rounded-lg hover:bg-green-50 transition">
+              ＋ 补录商品明细
+            </button>
+            ${!isSupplier && !['completed','closed','cancelled'].includes(o.status) ? `
+            <button onclick="openDeductModal('${o.id}')"
+                    class="px-3 py-1.5 border border-orange-400 text-orange-600 text-sm font-semibold rounded-lg hover:bg-orange-50 transition">
+              📦 确认出库
+            </button>` : ''}
+          </div>
+          ${canAssign ? `
             ${(items.some(i => !i.supplier_id) || canDo(4))
               ? `<button onclick="saveItemSuppliers('${o.id}')"
-                        class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
-                   保存供应商分配
-                 </button>`
+                          class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
+                     保存供应商分配
+                   </button>`
               : `<button disabled
-                        class="px-4 py-1.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
-                   已完成分配
-                 </button>`
-            }
-          </div>` : ''}
+                          class="px-4 py-1.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
+                     已完成分配
+                   </button>`
+            }` : ''}
+        </div>
       </div>
     </div>`;
 }
@@ -4456,6 +4550,233 @@ async function logout() {
 }
 
 init();
+
+// ── Add Items to Existing Order ──
+let _addItemsOrderId = '', _addItemsRowCount = 0, _addItemsCurrency = 'MYR';
+
+function openAddItemsPanel(orderId, currency) {
+  _addItemsOrderId = orderId;
+  _addItemsCurrency = currency || 'MYR';
+  _addItemsRowCount = 0;
+  const list = document.getElementById('add-items-list');
+  if (list) { list.innerHTML = ''; addExtraItemRow(); }
+  document.getElementById('add-items-modal').classList.remove('hidden');
+}
+
+function closeAddItemsPanel() {
+  document.getElementById('add-items-modal').classList.add('hidden');
+}
+
+function addExtraItemRow(data = {}) {
+  _addItemsRowCount++;
+  const id = 'x' + _addItemsRowCount;
+  const row = document.createElement('div');
+  row.className = 'item-row bg-gray-50 rounded-lg p-3 relative mb-2';
+  row.dataset.rowId = id;
+  const units = ['套','米','平方米','个','件','批'];
+  row.innerHTML = `
+    <button type="button" onclick="this.closest('.item-row').remove(); recalcAddTotal()"
+            class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none font-light w-6 h-6 flex items-center justify-center">×</button>
+    <div class="grid grid-cols-2 gap-2 pr-6">
+      <div class="col-span-2">
+        <input type="text" id="add-item-name-${id}" value="${data.product_name||''}"
+               placeholder="货品名称 *" class="input text-sm w-full">
+      </div>
+      <div>
+        <select id="add-item-type-${id}" class="input text-sm w-full">
+          <option value="">⚠ 产品类型</option>
+          ${PRODUCT_TYPES.map(pt => `<option value="${pt.code}" ${data.product_type===pt.code?'selected':''}>${pt.label}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <input type="text" id="add-item-spec-${id}" value="${data.model_spec||''}"
+               placeholder="型号规格（选填）" class="input text-sm w-full">
+      </div>
+      <div>
+        <input type="number" id="add-item-qty-${id}" value="${data.quantity||1}"
+               placeholder="数量" min="0.01" step="0.01"
+               oninput="recalcAddItemRow('${id}')" class="input text-sm w-full">
+      </div>
+      <div>
+        <select id="add-item-unit-${id}" class="input text-sm w-full">
+          ${units.map(u => `<option ${(data.unit||'套')===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <input type="number" id="add-item-price-${id}" value="${data.unit_price||''}"
+               placeholder="单价" min="0" step="0.01"
+               oninput="recalcAddItemRow('${id}')" class="input text-sm w-full">
+      </div>
+      <div>
+        <input type="text" id="add-item-sub-${id}" value=""
+               placeholder="小计" class="input text-sm w-full bg-gray-100 font-bold text-hg" readonly>
+      </div>
+    </div>`;
+  document.getElementById('add-items-list').appendChild(row);
+}
+
+function recalcAddItemRow(id) {
+  const qty   = parseFloat(document.getElementById(`add-item-qty-${id}`)?.value)   || 0;
+  const price = parseFloat(document.getElementById(`add-item-price-${id}`)?.value) || 0;
+  const sub   = qty * price;
+  const el = document.getElementById(`add-item-sub-${id}`);
+  if (el) el.value = sub > 0 ? sub.toFixed(2) : '';
+  recalcAddTotal();
+}
+
+function recalcAddTotal() {
+  let total = 0;
+  document.querySelectorAll('#add-items-list .item-row').forEach(row => {
+    const id = row.dataset.rowId;
+    total += parseFloat(document.getElementById(`add-item-sub-${id}`)?.value) || 0;
+  });
+  const el = document.getElementById('add-items-total');
+  if (el) el.textContent = total > 0 ? fmtAmt(total, _addItemsCurrency) : '—';
+}
+
+async function saveAddedItems() {
+  const rows = [];
+  let idx = 0;
+  document.querySelectorAll('#add-items-list .item-row').forEach(row => {
+    const id = row.dataset.rowId;
+    const name = document.getElementById(`add-item-name-${id}`)?.value.trim();
+    if (!name) return;
+    const qty   = parseFloat(document.getElementById(`add-item-qty-${id}`)?.value)   || 1;
+    const price = parseFloat(document.getElementById(`add-item-price-${id}`)?.value) || 0;
+    rows.push({
+      order_id:        _addItemsOrderId,
+      product_name:    name,
+      model_spec:      document.getElementById(`add-item-spec-${id}`)?.value.trim() || null,
+      quantity:        qty,
+      unit:            document.getElementById(`add-item-unit-${id}`)?.value || '套',
+      unit_price:      price,
+      total_price:     qty * price,
+      sort_order:      1000 + idx,
+      product_type:    document.getElementById(`add-item-type-${id}`)?.value || null,
+      fulfillment_type: 'custom',
+    });
+    idx++;
+  });
+  if (!rows.length) { alert('请至少填写一行货品名称'); return; }
+  const btn = document.getElementById('add-items-save-btn');
+  btn.disabled = true; btn.textContent = '保存中…';
+  const { error } = await sb.from('order_items').insert(rows);
+  if (error) {
+    alert('保存失败: ' + error.message);
+    btn.disabled = false; btn.textContent = '保存';
+    return;
+  }
+  closeAddItemsPanel();
+  openDetail(_addItemsOrderId, 'orders');
+}
 </script>
+
+<!-- Add Items Modal -->
+<div id="add-items-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style="background:rgba(0,0,0,.4)">
+  <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="font-semibold text-gray-800">补录商品明细</h3>
+      <button onclick="closeAddItemsPanel()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4">
+      <div id="add-items-list"></div>
+      <button onclick="addExtraItemRow()"
+              class="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:border-hg hover:text-hg transition mt-1">
+        ＋ 再加一行
+      </button>
+      <div class="mt-3 text-right text-sm text-gray-500">合计：<span id="add-items-total" class="font-bold text-hg">—</span></div>
+    </div>
+    <div class="px-5 py-4 border-t border-gray-100 flex gap-2 justify-end">
+      <button onclick="closeAddItemsPanel()"
+              class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">取消</button>
+      <button id="add-items-save-btn" onclick="saveAddedItems()"
+              class="px-5 py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deduct Inventory Modal -->
+<div id="deduct-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style="background:rgba(0,0,0,.4)">
+  <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="font-semibold text-gray-800">确认出库</h3>
+      <button onclick="closeDeductModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4">
+      <div class="mb-3">
+        <label class="block text-xs font-semibold text-gray-500 mb-1">选择仓库</label>
+        <select id="deduct-wh" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"><option value="">— 选择仓库 —</option></select>
+      </div>
+      <div class="text-xs font-semibold text-gray-500 mb-2">选择要出库的商品</div>
+      <div id="deduct-items-list" class="space-y-2"></div>
+    </div>
+    <div class="px-5 py-4 border-t border-gray-100 flex gap-2 justify-end">
+      <button onclick="closeDeductModal()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">取消</button>
+      <button id="deduct-save-btn" onclick="saveDeductInventory()"
+              class="px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition">确认出库</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Deduct Inventory ──
+let _deductOrderId = '';
+
+async function openDeductModal(orderId) {
+  _deductOrderId = orderId;
+  const [{ data: items }, { data: warehouses }] = await Promise.all([
+    sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
+    sb.from('warehouses').select('*').order('name'),
+  ]);
+  const whSel = document.getElementById('deduct-wh');
+  whSel.innerHTML = '<option value="">— 选择仓库 —</option>' +
+    (warehouses||[]).map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  document.getElementById('deduct-items-list').innerHTML = (items||[]).map(item => `
+    <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-50">
+      <input type="checkbox" class="deduct-item-chk mt-0.5 accent-orange-500"
+             data-name="${item.product_name}" data-qty="${item.quantity}" data-unit="${item.unit||'套'}" checked>
+      <div class="flex-1">
+        <div class="text-sm font-medium text-gray-800">${item.product_name}</div>
+        <div class="text-xs text-gray-400">${item.model_spec||''} · ${item.quantity} ${item.unit||'套'}</div>
+      </div>
+    </label>`).join('') || '<p class="text-gray-400 text-sm text-center py-4">无商品明细</p>';
+  document.getElementById('deduct-modal').classList.remove('hidden');
+}
+
+function closeDeductModal() {
+  document.getElementById('deduct-modal').classList.add('hidden');
+}
+
+async function saveDeductInventory() {
+  const whId = document.getElementById('deduct-wh').value;
+  if (!whId) { alert('请选择仓库'); return; }
+  const checked = [...document.querySelectorAll('.deduct-item-chk:checked')];
+  if (!checked.length) { alert('请至少选择一项商品'); return; }
+  const btn = document.getElementById('deduct-save-btn');
+  btn.disabled = true; btn.textContent = '处理中…';
+
+  const { data: { user } } = await sb.auth.getUser();
+  const ops = [];
+  for (const chk of checked) {
+    const qty  = parseFloat(chk.dataset.qty) || 0;
+    const name = chk.dataset.name;
+    if (!qty) continue;
+    // Find matching product by name
+    const { data: prod } = await sb.from('products').select('id').ilike('name', `%${name}%`).limit(1).maybeSingle();
+    if (!prod) { ops.push({ name, qty, status: '未找到产品档案，跳过' }); continue; }
+    const { data: inv } = await sb.from('inventory').select('id,qty_on_hand').eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
+    if (!inv || inv.qty_on_hand < qty) { ops.push({ name, qty, status: `库存不足（当前：${inv?.qty_on_hand||0}）` }); continue; }
+    await sb.from('inventory').update({ qty_on_hand: inv.qty_on_hand - qty, updated_at: new Date().toISOString() }).eq('id', inv.id);
+    await sb.from('inventory_movements').insert({ product_id: prod.id, warehouse_id: whId, type: 'out', qty, notes: `订单出库：${name}`, operator_id: user?.id });
+    ops.push({ name, qty, status: '✅ 已出库' });
+  }
+
+  closeDeductModal();
+  btn.disabled = false; btn.textContent = '确认出库';
+  const summary = ops.map(o => `${o.name}（${o.qty}）：${o.status}`).join('\n');
+  alert('出库结果：\n\n' + summary);
+}
+</script>
+
 </body>
 </html>
