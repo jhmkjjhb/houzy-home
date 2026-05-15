@@ -1778,10 +1778,12 @@ function addItemRow(data = {}) {
             class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none font-light w-6 h-6 flex items-center justify-center">×</button>
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
-        <input type="text" id="item-name-${id}" value="${data.product_name||''}"
-               placeholder="货品名称或SKU *" list="staff-product-datalist"
+        <input type="text" id="item-name-${id}" value="${data.sku_ref||data.product_name||''}"
+               placeholder="产品编号（如 HH-WY-0001）或货品名称" list="staff-product-datalist"
                oninput="autoDetectProductType(${id}); autoDetectItemFT(${id}); onProductSelect(${id})"
-               class="input text-sm w-full">
+               class="input text-sm w-full font-mono">
+        <input type="hidden" id="item-actual-name-${id}" value="${data.product_name||''}">
+        <div id="item-name-badge-${id}" class="text-xs text-green-800 mt-1 px-1 ${data.product_name&&data.sku_ref?'':'hidden'}">${data.product_name||''}</div>
       </div>
       <div>
         <select id="item-type-${id}" class="input text-sm w-full"
@@ -1844,7 +1846,7 @@ function calcItemsTotal() {
   let total = 0;
   document.querySelectorAll('.item-row').forEach(row => {
     const id    = row.dataset.rowId;
-    const name  = document.getElementById(`item-name-${id}`)?.value.trim();
+    const name  = _getItemName(id);
     if (!name) return; // only count rows that will actually be saved
     const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 0;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
@@ -1865,7 +1867,7 @@ function getItemRows() {
   const rows = [];
   document.querySelectorAll('.item-row').forEach((row, idx) => {
     const id   = row.dataset.rowId;
-    const name = document.getElementById(`item-name-${id}`)?.value.trim();
+    const name = _getItemName(id);
     if (!name) return;
     const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 1;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
@@ -2725,37 +2727,62 @@ function detectProductType(name) {
   return '';
 }
 async function loadStaffProducts() {
-  const { data } = await sb.from('products').select('id,sku,name,unit,specs').order('name');
+  const { data } = await sb.from('products').select('id,sku,name,unit,specs').order('sku');
   staffProducts = data || [];
   const dl = document.getElementById('staff-product-datalist');
   if (!dl) return;
-  dl.innerHTML = staffProducts.map(p =>
-    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">[${p.sku}] ${p.name||''}</option>`
-  ).join('');
+  // Both SKU and name as searchable values
+  dl.innerHTML = staffProducts.flatMap(p => [
+    `<option value="${p.sku}">${p.name}</option>`,
+    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
+  ]).join('');
+}
+
+function _findProductMatch(typed) {
+  if (!typed) return null;
+  return staffProducts.find(p => p.sku.toLowerCase() === typed.toLowerCase())
+    || staffProducts.find(p => p.name === typed);
 }
 
 function onProductSelect(id) {
-  const inp = document.getElementById(`item-name-${id}`);
+  const inp    = document.getElementById(`item-name-${id}`);
+  const hidden = document.getElementById(`item-actual-name-${id}`);
+  const badge  = document.getElementById(`item-name-badge-${id}`);
   if (!inp) return;
   const typed = inp.value.trim();
-  if (!typed) return;
-  const match = staffProducts.find(p => p.name === typed)
-    || staffProducts.find(p => p.sku.toLowerCase() === typed.toLowerCase());
-  if (!match) return;
-  if (match.name !== typed) inp.value = match.name;
-  const unitEl = document.getElementById(`item-unit-${id}`);
-  if (unitEl && match.unit) {
-    const opts = Array.from(unitEl.options).map(o => o.value);
-    if (opts.includes(match.unit)) unitEl.value = match.unit;
-  }
-  const specEl = document.getElementById(`item-spec-${id}`);
-  if (specEl && !specEl.value && match.specs) {
-    specEl.value = match.specs.split('|')[0]?.replace(/^[^:]+:/, '').trim() || '';
+  if (!typed) { if (hidden) hidden.value = ''; if (badge) badge.classList.add('hidden'); return; }
+
+  const match = _findProductMatch(typed);
+  if (match) {
+    if (hidden) hidden.value = match.name;
+    if (badge) {
+      // typed SKU → show name; typed name → show SKU
+      badge.textContent = match.sku.toLowerCase() === typed.toLowerCase() ? match.name : match.sku;
+      badge.classList.remove('hidden');
+    }
+    const unitEl = document.getElementById(`item-unit-${id}`);
+    if (unitEl && match.unit) {
+      const opts = Array.from(unitEl.options).map(o => o.value);
+      if (opts.includes(match.unit)) unitEl.value = match.unit;
+    }
+    const specEl = document.getElementById(`item-spec-${id}`);
+    if (specEl && !specEl.value && match.specs) {
+      specEl.value = match.specs.split('|')[0]?.replace(/^[^:]+:/, '').trim() || '';
+    }
+  } else {
+    if (hidden) hidden.value = typed;
+    if (badge) badge.classList.add('hidden');
   }
 }
 
+function _getItemName(id) {
+  return document.getElementById(`item-actual-name-${id}`)?.value.trim()
+    || document.getElementById(`item-name-${id}`)?.value.trim()
+    || '';
+}
+
 function autoDetectProductType(id) {
-  const name = document.getElementById(`item-name-${id}`)?.value || '';
+  const name = _getItemName(id);
   const sel  = document.getElementById(`item-type-${id}`);
   if (!sel) return;
   const detected = detectProductType(name);
@@ -2766,7 +2793,7 @@ const STOCK_KEYWORDS = ['瓷砖','地砖','墙砖','马桶','花洒','龙头','�
 const CUSTOM_KEYWORDS = ['橱柜','铝合金门','铝合金窗','淋浴房','推拉门','定制','浴缸','整体'];
 
 function autoDetectItemFT(id) {
-  const name = (document.getElementById(`item-name-${id}`)?.value || '').toLowerCase();
+  const name = _getItemName(id).toLowerCase();
   if (!name) return;
   if (STOCK_KEYWORDS.some(kw => name.includes(kw))) setItemFT(id, 'stock');
   else if (CUSTOM_KEYWORDS.some(kw => name.includes(kw))) setItemFT(id, 'custom');
