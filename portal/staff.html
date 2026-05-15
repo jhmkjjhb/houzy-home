@@ -4747,6 +4747,7 @@ async function saveAddedItems() {
 <script>
 // ── Deduct Inventory ──
 let _deductOrderId = '';
+let _deductItems = [];   // 当前订单的商品行快照
 
 async function openDeductModal(orderId) {
   _deductOrderId = orderId;
@@ -4754,18 +4755,17 @@ async function openDeductModal(orderId) {
     sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
     sb.from('warehouses').select('*').order('name'),
   ]);
+  _deductItems = (items || []).map(it => ({
+    name: it.product_name || '',
+    qty:  parseFloat(it.quantity) || 0,
+    unit: it.unit || '套',
+    model_spec: it.model_spec || '',
+  }));
   const whSel = document.getElementById('deduct-wh');
   whSel.innerHTML = '<option value="">— 选择仓库 —</option>' +
     (warehouses||[]).map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  document.getElementById('deduct-items-list').innerHTML = (items||[]).map(item => `
-    <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-50">
-      <input type="checkbox" class="deduct-item-chk mt-0.5 accent-orange-500"
-             data-name="${item.product_name}" data-qty="${item.quantity}" data-unit="${item.unit||'套'}" checked>
-      <div class="flex-1">
-        <div class="text-sm font-medium text-gray-800">${item.product_name}</div>
-        <div class="text-xs text-gray-400">${item.model_spec||''} · ${item.quantity} ${item.unit||'套'}</div>
-      </div>
-    </label>`).join('') || '<p class="text-gray-400 text-sm text-center py-4">无商品明细</p>';
+  whSel.onchange = evaluateDeductStock;
+  renderDeductItems();              // 选仓库前：先不让操作
   document.getElementById('deduct-modal').classList.remove('hidden');
 }
 
@@ -4773,22 +4773,106 @@ function closeDeductModal() {
   document.getElementById('deduct-modal').classList.add('hidden');
 }
 
+// 把订单商品行匹配到仓库产品（与实际出库用同一规则，保证一致）
+async function _resolveDeductProduct(name) {
+  if (!name) return null;
+  const { data: prod } = await sb.from('products').select('id,name')
+    .ilike('name', `%${name}%`).limit(1).maybeSingle();
+  return prod || null;
+}
+
+function _setDeductSaveEnabled(enabled) {
+  const btn = document.getElementById('deduct-save-btn');
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.classList.toggle('opacity-40', !enabled);
+  btn.classList.toggle('cursor-not-allowed', !enabled);
+}
+
+// 选仓库前的初始状态：全部锁定，提示先选仓库
+function renderDeductItems() {
+  const box = document.getElementById('deduct-items-list');
+  if (!_deductItems.length) {
+    box.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">无商品明细</p>';
+    _setDeductSaveEnabled(false);
+    return;
+  }
+  box.innerHTML = _deductItems.map(it => `
+    <div class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 opacity-60">
+      <input type="checkbox" class="mt-0.5" disabled>
+      <div class="flex-1">
+        <div class="text-sm font-medium text-gray-800">${it.name}</div>
+        <div class="text-xs text-gray-400">${it.model_spec||''} · ${it.qty} ${it.unit}</div>
+        <div class="text-xs text-gray-400 mt-1">请先选择仓库</div>
+      </div>
+    </div>`).join('');
+  _setDeductSaveEnabled(false);
+}
+
+// 选了仓库后：逐项核对库存，没库存/不足的锁死勾不上
+async function evaluateDeductStock() {
+  const whId = document.getElementById('deduct-wh').value;
+  const box  = document.getElementById('deduct-items-list');
+  if (!whId || !_deductItems.length) { renderDeductItems(); return; }
+  box.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">正在核对库存…</p>';
+  _setDeductSaveEnabled(false);
+
+  let anyAvailable = false;
+  const rows = [];
+  for (let i = 0; i < _deductItems.length; i++) {
+    const it = _deductItems[i];
+    let ok = false, note = '', noteCls = 'text-red-500';
+    if (!it.qty) {
+      note = '数量为 0，无法出库';
+    } else {
+      const prod = await _resolveDeductProduct(it.name);
+      if (!prod) {
+        note = '❌ 该产品未在仓库建档，无法出库';
+      } else {
+        const { data: inv } = await sb.from('inventory').select('qty_on_hand')
+          .eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
+        const onHand = inv?.qty_on_hand ?? null;
+        if (onHand === null) {
+          note = '❌ 该仓库无此产品库存，无法出库';
+        } else if (onHand < it.qty) {
+          note = `❌ 库存不足（当前 ${onHand} / 需 ${it.qty}），无法出库`;
+        } else {
+          ok = true; noteCls = 'text-green-700';
+          note = `✅ 可出库（库存 ${onHand}）`;
+        }
+      }
+    }
+    if (ok) anyAvailable = true;
+    rows.push(`
+      <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 ${ok?'cursor-pointer hover:bg-gray-50':'opacity-60 cursor-not-allowed'}">
+        <input type="checkbox" class="deduct-item-chk mt-0.5 accent-orange-500"
+               data-idx="${i}" ${ok?'checked':'disabled'}>
+        <div class="flex-1">
+          <div class="text-sm font-medium text-gray-800">${it.name}</div>
+          <div class="text-xs text-gray-400">${it.model_spec||''} · ${it.qty} ${it.unit}</div>
+          <div class="text-xs ${noteCls} mt-1">${note}</div>
+        </div>
+      </label>`);
+  }
+  box.innerHTML = rows.join('');
+  _setDeductSaveEnabled(anyAvailable);
+}
+
 async function saveDeductInventory() {
   const whId = document.getElementById('deduct-wh').value;
   if (!whId) { alert('请选择仓库'); return; }
   const checked = [...document.querySelectorAll('.deduct-item-chk:checked')];
-  if (!checked.length) { alert('请至少选择一项商品'); return; }
+  if (!checked.length) { alert('没有可出库的商品（无库存或库存不足的已被锁定）'); return; }
   const btn = document.getElementById('deduct-save-btn');
   btn.disabled = true; btn.textContent = '处理中…';
 
   const { data: { user } } = await sb.auth.getUser();
   const ops = [];
   for (const chk of checked) {
-    const qty  = parseFloat(chk.dataset.qty) || 0;
-    const name = chk.dataset.name;
-    if (!qty) continue;
-    // Find matching product by name
-    const { data: prod } = await sb.from('products').select('id').ilike('name', `%${name}%`).limit(1).maybeSingle();
+    const it = _deductItems[parseInt(chk.dataset.idx, 10)];
+    if (!it || !it.qty) continue;
+    const qty = it.qty, name = it.name;
+    const prod = await _resolveDeductProduct(name);
     if (!prod) { ops.push({ name, qty, status: '未找到产品档案，跳过' }); continue; }
     const { data: inv } = await sb.from('inventory').select('id,qty_on_hand').eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
     if (!inv || inv.qty_on_hand < qty) { ops.push({ name, qty, status: `库存不足（当前：${inv?.qty_on_hand||0}）` }); continue; }
