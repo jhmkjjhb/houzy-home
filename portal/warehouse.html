@@ -1217,9 +1217,13 @@ const IMG_BUCKET = 'order-attachments';
 async function uploadProductImageFile(productId, file) {
   if (!file) return null;
   const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
-  const path = `products/${productId}/main.${ext}`;
+  const path = `prod-${productId}-${Date.now()}.${ext}`;
   const { error } = await sb.storage.from(IMG_BUCKET).upload(path, file, { upsert: true });
-  if (error) { console.warn('图片上传失败:', error.message); return null; }
+  if (error) {
+    console.warn('图片上传失败:', error.message);
+    alert('上传失败：' + error.message);
+    return null;
+  }
   return sb.storage.from(IMG_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
