@@ -167,8 +167,18 @@
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🚿 卫浴</button>
             <button data-cat="CT" onclick="selectStockInCat('CT')"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">⬛ 瓷砖</button>
-            <button data-cat="other" onclick="selectStockInCat('other')"
-              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">📦 其他类目</button>
+            <button data-cat="DB" onclick="selectStockInCat('DB')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🪵 地板</button>
+            <button data-cat="CG" onclick="selectStockInCat('CG')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🪞 橱柜</button>
+            <button data-cat="MC" onclick="selectStockInCat('MC')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🚪 门窗</button>
+            <button data-cat="DJ" onclick="selectStockInCat('DJ')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">💡 灯具</button>
+            <button data-cat="WJ" onclick="selectStockInCat('WJ')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🔧 五金</button>
+            <button data-cat="QT" onclick="selectStockInCat('QT')"
+              class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">📦 其他</button>
           </div>
         </div>
 
@@ -299,14 +309,15 @@
     <div id="v-movements" class="hidden p-4 sm:p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-bold text-gray-800">流水记录</h1>
-        <div class="flex gap-2">
-          <select id="mv-type" onchange="renderMovements()" class="input w-32 text-sm">
+        <div class="flex gap-2 flex-wrap">
+          <input type="text" id="mv-search" placeholder="搜索产品名/SKU" oninput="renderMovements()" class="input w-36 text-sm">
+          <select id="mv-type" onchange="renderMovements()" class="input w-28 text-sm">
             <option value="">全部类型</option>
             <option value="in">入库</option>
             <option value="out">出库</option>
             <option value="adjust">调整</option>
           </select>
-          <select id="mv-wh" onchange="renderMovements()" class="input w-40 text-sm">
+          <select id="mv-wh" onchange="renderMovements()" class="input w-36 text-sm">
             <option value="">全部仓库</option>
           </select>
         </div>
@@ -331,6 +342,7 @@
             <select id="np-cat" class="input text-sm" onchange="previewSKU()">
               <option value="">— 选类别 —</option>
               <option value="WY">卫浴</option>
+              <option value="CT">瓷砖</option>
               <option value="DB">地板/地砖</option>
               <option value="CG">橱柜</option>
               <option value="MC">门窗</option>
@@ -487,7 +499,7 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 const ALLOWED_ROLES = ['warehouse','store_manager','regional_manager','general_manager','superadmin','admin'];
-const CAT_LABEL = { WY:'卫浴', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
+const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
 
 let profile = null;
 let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
@@ -963,7 +975,7 @@ async function submitStockIn() {
   if (siNewProduct) {
     const newName = document.getElementById('si-new-name')?.value.trim();
     if (!newName) { err.textContent='请输入新产品名称'; err.classList.remove('hidden'); return; }
-    const cat   = siCat === 'CT' ? 'CT' : siCat === 'WY' ? 'WY' : 'QT';
+    const cat   = siCat || 'QT';
     const unit  = document.getElementById('si-new-unit')?.value || '件';
     const minQ  = parseFloat(document.getElementById('si-new-min')?.value) || 0;
     const attrs = collectSiAttrs();
@@ -1089,9 +1101,11 @@ function renderMovements() {
   const el = document.getElementById('mv-table');
   if (!el) return;
 
+  const sq = (document.getElementById('mv-search')?.value || '').toLowerCase();
   const rows = allMovements.filter(m => {
     if (tf && m.type !== tf) return false;
     if (wf && m.warehouse_id !== wf) return false;
+    if (sq && !`${m.products?.sku||''} ${m.products?.name||''}`.toLowerCase().includes(sq)) return false;
     return true;
   });
 
