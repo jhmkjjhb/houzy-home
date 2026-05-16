@@ -199,8 +199,12 @@
             <option value="">全部状态</option>
             <option value="pending_payment" data-i18n-opt="status_pending_payment">待付款</option>
             <option value="paid" data-i18n-opt="status_paid">已付款</option>
+            <option value="assigned" data-i18n-opt="status_assigned">已派单</option>
+            <option value="accepted" data-i18n-opt="status_accepted">工厂接单</option>
             <option value="in_production" data-i18n-opt="status_in_production">生产中</option>
+            <option value="production_complete" data-i18n-opt="status_production_complete">生产完成</option>
             <option value="shipped" data-i18n-opt="status_shipped">已发货</option>
+            <option value="in_transit" data-i18n-opt="status_in_transit">运输中</option>
             <option value="arrived" data-i18n-opt="status_arrived">已到货</option>
             <option value="installing" data-i18n-opt="status_installing">安装中</option>
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
@@ -764,6 +768,14 @@ function setLang(lang) {
   document.getElementById('m-lang-drop')?.classList.add('hidden');
 }
 
+// 把 ISO 时间转成吉隆坡(UTC+8 固定)当地的 "YYYY-MM-DDTHH:mm..." 串，便于按日期/月份截取
+function klDateStr(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return new Date(d.getTime() + 8 * 3600000).toISOString();
+}
+
 function filterGetCurrent() {
   const q = document.getElementById('f-search')?.value.toLowerCase() || '';
   const s = document.getElementById('f-status')?.value || '';
@@ -772,8 +784,9 @@ function filterGetCurrent() {
   const month = document.getElementById('f-month')?.value || '';
   return allOrders.filter(o => {
     const txt = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
+    const kl  = o.created_at ? klDateStr(o.created_at) : '';
     return (!q || txt.includes(q)) && (!s || o.status === s) && (!store || o.store_id === store)
-        && (!date || o.created_at.slice(0,10) === date) && (!month || o.created_at.slice(0,7) === month);
+        && (!date || kl.slice(0,10) === date) && (!month || kl.slice(0,7) === month);
   });
 }
 
@@ -817,14 +830,16 @@ const TRANSITION_MIN_LEVEL = {
   arrived:             1, installing: 1, completed: 1,
   after_sales:         2,
   cancel_paid:         2,  // 待付款/已付款 → 取消
-  // 生产/发货阶段由厂家操作，人工干预需 L3+
-  in_production:       3,
-  production_complete: 3,
-  shipped:             3,
+  // 门店店员(L1)可把自己已付款的订单推进生产（含 已派单/已接单 中间态）
+  assigned:            1,
+  accepted:            1,
+  in_production:       1,
+  production_complete: 1,
+  shipped:             1,
   cancel_any:          3,  // 其他状态 → 取消
   revert:              5,  // 状态回退仅 superadmin（业务上不允许）
   skip:                3,  // 跳步骤
-  closed:              4,
+  closed:              4,  // 删除/关闭仍需 L4
 };
 
 const FIELD_MIN_LEVEL = {
@@ -865,7 +880,7 @@ async function buildOrdersQuery() {
   let q = sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
     .order('created_at', { ascending: false })
-    .limit(300);
+    .limit(2000);
   if (lvl >= 4) {
     // L4/L5：全公司，不加过滤
   } else if (lvl === 3 && profile?.region) {
@@ -950,9 +965,22 @@ const WARRANTY_SERIES = [
   },
 ];
 
+// 按"日历年"加年份（避免 365.25 天近似导致每年漂移约 6 小时）
+function addYearsIso(iso, years) {
+  const d = new Date(iso);
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString();
+}
+// 把 ISO 时间格式化为吉隆坡(UTC+8，无夏令时)当地日期 YYYY-MM-DD
+function fmtKLDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const kl = new Date(d.getTime() + 8 * 3600000);  // UTC+8 固定偏移
+  return kl.toISOString().slice(0, 10);
+}
+
 function computeWarrantyInfo(orderItems, startIso) {
-  const startMs  = new Date(startIso).getTime();
-  const YEAR_MS  = 365.25 * 24 * 3600000;
   const matched  = new Set();
   const result   = [];
   (orderItems || []).forEach(item => {
@@ -969,7 +997,7 @@ function computeWarrantyInfo(orderItems, startIso) {
           components: series.items.map(c => ({
             name:    c.name,
             years:   c.years,
-            endIso:  new Date(startMs + c.years * YEAR_MS).toISOString(),
+            endIso:  addYearsIso(startIso, c.years),
           })),
         });
       }
@@ -978,7 +1006,7 @@ function computeWarrantyInfo(orderItems, startIso) {
   if (result.length === 0) {
     result.push({
       seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso,
-      components:[{ name:'整体产品', years:1, endIso: new Date(startMs + YEAR_MS).toISOString() }],
+      components:[{ name:'整体产品', years:1, endIso: addYearsIso(startIso, 1) }],
     });
   }
   return result;
@@ -1150,19 +1178,32 @@ function badge(s) {
 const CURRENCY_SYMBOL = { MYR:'RM', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫', CNY:'¥', HKD:'HK$', USD:'US$' };
 const FLAG_CURRENCY   = { '🇲🇾':'MYR', '🇸🇬':'SGD', '🇹🇭':'THB', '🇮🇩':'IDR', '🇵🇭':'PHP', '🇻🇳':'VND', '🇨🇳':'CNY', '🇭🇰':'HKD' };
 
+// 门店代码前缀 → 货币（不再靠解析显示文案里的国旗 emoji）
+const STORE_CODE_CURRENCY = {
+  '001':'MYR','JBN':'MYR','JB':'MYR','KL':'MYR','PG':'MYR',
+  '002':'SGD','SG':'SGD',
+  'BKK':'THB','TH':'THB',
+  'JKT':'IDR','ID':'IDR',
+  'MNL':'PHP','PH':'PHP',
+  'HCM':'VND','VN':'VND',
+};
 function autoSetCurrency() {
   const sel = document.getElementById('o-store');
-  const label = sel.options[sel.selectedIndex]?.text || '';
-  // Extract flag emoji (first grapheme cluster) from option label e.g. "🇲🇾 001 Austin"
-  const flag = [...label][0] + ([...label][1] || '');
-  const cur = FLAG_CURRENCY[flag];
-  if (cur) document.getElementById('o-currency').value = cur;
+  const store = stores.find(s => s.id === sel.value);
+  const code = store?.code || '';
+  // 先整码匹配，再按已知前缀匹配，否则安全兜底为 MYR
+  const cur = STORE_CODE_CURRENCY[code]
+    || Object.entries(STORE_CODE_CURRENCY).find(([p]) => code.startsWith(p))?.[1]
+    || 'MYR';
+  document.getElementById('o-currency').value = cur;
   updateSplitAmounts();
 }
 
 function fmtAmt(v, currency) {
   const sym = CURRENCY_SYMBOL[currency] || (currency || 'RM');
-  return sym + ' ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+  const n = Number(v);
+  if (!isFinite(n)) return sym + ' 0.00';
+  return sym + ' ' + n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
 function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
@@ -1240,7 +1281,7 @@ function renderWarrantyPanel(o, logs, orderId) {
     const seriesTxt    = seriesExp ? '已到期' : '质保中';
     const rows = series.components.map(comp => {
       const expired  = new Date(comp.endIso).getTime() < now;
-      const endDate  = comp.endIso.slice(0, 10);
+      const endDate  = fmtKLDate(comp.endIso);
       const dot      = expired
         ? `<span style="color:#dc2626;font-size:10px;font-weight:600">已到期</span>`
         : `<span style="color:#16a34a;font-size:10px;font-weight:600">质保中</span>`;
@@ -1294,20 +1335,18 @@ function renderWarrantyPanel(o, logs, orderId) {
 async function advanceWarrantyReminder(orderId, startIso) {
   const { data: o } = await sb.from('orders').select('deadline_at').eq('id', orderId).single();
   if (!o) return;
-  const startMs = new Date(startIso).getTime();
-  const YEAR_MS = 365.25 * 24 * 3600000;
   let currentYear = 1;
   if (o.deadline_at) {
     const dlMs = new Date(o.deadline_at).getTime();
     let minDiff = Infinity;
     for (let n = 1; n <= 5; n++) {
-      const diff = Math.abs(dlMs - (startMs + n * YEAR_MS));
+      const diff = Math.abs(dlMs - new Date(addYearsIso(startIso, n)).getTime());
       if (diff < minDiff) { minDiff = diff; currentYear = n; }
     }
   }
   const nextYear = currentYear + 1;
   if (nextYear > 5) return;
-  const nextDeadline = new Date(startMs + nextYear * YEAR_MS).toISOString();
+  const nextDeadline = addYearsIso(startIso, nextYear);
   await sb.from('orders').update({ deadline_at: nextDeadline }).eq('id', orderId);
   await loadOrders();
   openDetail(orderId);
@@ -1541,6 +1580,7 @@ async function loadOrders() {
       ⚠️ 加载订单失败：${error.message}
       <div class="mt-1 text-xs text-gray-500">请联系管理员检查数据库权限设置</div>
     </div>`;
+    return;  // 不要用空数组覆盖已有缓存（否则会把列表清空）
   }
   // Hide supplement orders from main list — they're viewed via the parent's child card
   allOrders = (data || []).filter(o =>
@@ -1630,8 +1670,9 @@ function filterOrders() {
 
   const filtered = allOrders.filter(o => {
     const txt   = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
-    const oDate = o.created_at.slice(0, 10);
-    const oMon  = o.created_at.slice(0, 7);
+    const kl    = o.created_at ? klDateStr(o.created_at) : '';
+    const oDate = kl.slice(0, 10);
+    const oMon  = kl.slice(0, 7);
     return (!q     || txt.includes(q))
         && (!s     || o.status === s)
         && (!store || o.store_id === store)
@@ -1869,7 +1910,8 @@ function getItemRows() {
     const id   = row.dataset.rowId;
     const name = _getItemName(id);
     if (!name) return;
-    const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 1;
+    // 不再把空白/0 默认成 1：保留真实值，由 submitOrder 做提交前校验拦截
+    const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 0;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
     rows.push({
       product_name: name,
@@ -2023,7 +2065,10 @@ function updateSplitAmounts() {
   if (container) container.style.outline = (n > 1 && total !== 100) ? '2px solid #dc2626' : '';
 }
 
+let _submitOrderInFlight = false;
+
 async function submitOrder() {
+  if (_submitOrderInFlight) return;   // 防止重复提交（双击/连点）
   const btn = document.getElementById('submit-btn');
   const err = document.getElementById('create-err');
   err.classList.add('hidden');
@@ -2037,6 +2082,9 @@ async function submitOrder() {
   // Validate items: must have at least one named row, and total must match order amount
   const itemsForCheck = getItemRows();
   if (itemsForCheck.length === 0) { showCreateErr('请至少添加一条商品明细'); return; }
+  if (itemsForCheck.some(r => !(r.quantity > 0))) {
+    showCreateErr('有商品行数量为空或为 0，请填写有效数量'); return;
+  }
   const itemsTotal = itemsForCheck.reduce((s, r) => s + r.total_price, 0);
   if (Math.abs(itemsTotal - amount) > 0.01) {
     const proceed = confirm(
@@ -2046,127 +2094,153 @@ async function submitOrder() {
     if (!proceed) return;
   }
 
-  // Supplement order: customer already known, skip customer form
-  let custId = _supplementCustomerId;
-  if (!custId) {
-    const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
-    const name = document.getElementById('c-name').value.trim();
-    const cc = document.getElementById('c-country').value;
-    if (!cc) { showCreateErr('请选择国家区号'); return; }
-    if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
-    if (!validatePhone()) { showCreateErr('手机号码格式不正确，请重新检查'); return; }
-    const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
-    custId = document.getElementById('customer-found').dataset?.id;
+  _submitOrderInFlight = true;
+  if (btn) { btn.disabled = true; btn.textContent = '提交中…'; }
+
+  // 已插入的资源（用于失败补偿删除）
+  let createdOrderId = null;
+  let payInserted = false;
+  try {
+    // Supplement order: customer already known, skip customer form
+    let custId = _supplementCustomerId;
     if (!custId) {
-      const { data: newCust, error: ce } = await sb.from('customers').insert({
-        name, phone,
-        address: document.getElementById('c-address').value.trim() || null,
-      }).select().single();
-      if (ce) { showCreateErr('创建客户失败: ' + ce.message); btn.textContent='创建订单'; btn.disabled=false; return; }
-      custId = newCust.id;
+      const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+      const name = document.getElementById('c-name').value.trim();
+      const cc = document.getElementById('c-country').value;
+      if (!cc) { showCreateErr('请选择国家区号'); return; }
+      if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
+      if (!validatePhone()) { showCreateErr('手机号码格式不正确，请重新检查'); return; }
+      const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
+      custId = document.getElementById('customer-found').dataset?.id;
+      if (!custId) {
+        const { data: newCust, error: ce } = await sb.from('customers').insert({
+          name, phone,
+          address: document.getElementById('c-address').value.trim() || null,
+        }).select().single();
+        if (ce) { showCreateErr('创建客户失败: ' + ce.message); return; }
+        custId = newCust.id;
+      }
     }
-  }
 
-  // Get store code
-  const store = stores.find(s => s.id === storeId);
-  const { data: orderNo } = await sb.rpc('generate_order_no', { p_store_code: store.code });
+    // Get store code
+    const store = stores.find(s => s.id === storeId);
+    const { data: orderNo } = await sb.rpc('generate_order_no', { p_store_code: store.code });
 
-  const refId = document.getElementById('o-referrer').value || null;
-  const currency = document.getElementById('o-currency').value || 'MYR';
-  const firstPaid = document.getElementById('o-payment').value === 'paid';
-  const initPayMethod = document.getElementById('o-pay-method').value || null;
+    const refId = document.getElementById('o-referrer').value || null;
+    const currency = document.getElementById('o-currency').value || 'MYR';
+    const firstPaid = document.getElementById('o-payment').value === 'paid';
+    const initPayMethod = document.getElementById('o-pay-method').value || null;
 
-  // Read installment plan
-  const instCount = [1, 2, 3].find(i => {
-    const b = document.getElementById(`inst-btn-${i}`);
-    return b?.className.includes('bg-hg');
-  }) || 1;
-  const splits = instCount === 1 ? [100] : Array.from({ length: instCount }, (_, i) => {
-    return parseInt(document.getElementById(`split-${i+1}`)?.value || 0);
-  });
-  if (instCount > 1 && splits.reduce((a, b) => a + b, 0) !== 100) {
-    showCreateErr('各期百分比之和必须等于 100%'); btn.textContent = t('create_btn'); btn.disabled = false; return;
-  }
-
-  const initStatus   = firstPaid ? 'paid' : 'pending_payment';
-  const initPayStatus = !firstPaid ? 'unpaid' : instCount === 1 ? 'paid' : 'partial';
-
-  const parentRedirectId = _supplementParentId;  // remember before clearing
-
-  // Core insert (include parent_order_id here so it's guaranteed to be set)
-  const coreInsert = {
-    order_no: orderNo,
-    store_id: storeId,
-    customer_id: custId,
-    staff_id: profile.id,
-    referrer_id: refId,
-    amount,
-    status: initStatus,
-    payment_status: initPayStatus,
-    description: document.getElementById('o-desc').value.trim() || null,
-    notes: document.getElementById('o-notes').value.trim() || null,
-  };
-  if (_supplementParentId) coreInsert.parent_order_id = _supplementParentId;
-
-  const { data: order, error: oe } = await sb.from('orders').insert(coreInsert).select().single();
-
-  if (oe) { showCreateErr('创建订单失败: ' + oe.message); btn.textContent = t('create_btn'); btn.disabled = false; return; }
-
-  // Extended columns
-  const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits,
-    fulfillment_mode: document.getElementById('o-fulfillment-mode')?.value || 'all_together' };
-  if (initPayMethod) extNew.payment_method = initPayMethod;
-  if (_supplementParentId) {
-    extNew.liability_party  = document.getElementById('o-liability-party')?.value || 'supplier';
-    const lossVal = parseFloat(document.getElementById('o-loss-amount')?.value);
-    if (lossVal > 0) extNew.loss_amount = lossVal;
-  }
-  _supplementParentId = null;
-  _supplementCustomerId = null;
-  const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
-  if (extErr) console.warn('[submitOrder] extended update failed:', extErr.message);
-
-  // Save order items
-  const items = getItemRows();
-  if (items.length > 0) {
-    const { error: itemErr } = await sb.from('order_items').insert(items.map(item => ({ ...item, order_id: order.id })));
-    if (itemErr) {
-      console.warn('[submitOrder] order_items insert failed:', itemErr.message);
-      showCreateErr('订单已创建，但商品明细保存失败: ' + itemErr.message);
-      btn.textContent = t('create_btn'); btn.disabled = false;
-      await loadOrders();
-      openDetail(order.id, 'orders');
-      return;
-    }
-  }
-
-  // Record first payment if already paid
-  if (firstPaid) {
-    const { error: payErr } = await sb.from('order_payments').insert({
-      order_id: order.id, seq: 1,
-      pct: splits[0], amount: amount * splits[0] / 100,
-      method: initPayMethod || null,
-      paid_at: new Date().toISOString(),
-      recorded_by: profile.id,
+    // Read installment plan
+    const instCount = [1, 2, 3].find(i => {
+      const b = document.getElementById(`inst-btn-${i}`);
+      return b?.className.includes('bg-hg');
+    }) || 1;
+    const splits = instCount === 1 ? [100] : Array.from({ length: instCount }, (_, i) => {
+      return parseInt(document.getElementById(`split-${i+1}`)?.value || 0);
     });
-    if (payErr) console.warn('[submitOrder] payment insert failed:', payErr.message);
+    if (instCount > 1 && splits.reduce((a, b) => a + b, 0) !== 100) {
+      showCreateErr('各期百分比之和必须等于 100%'); return;
+    }
+
+    const initStatus   = firstPaid ? 'paid' : 'pending_payment';
+    const initPayStatus = !firstPaid ? 'unpaid' : instCount === 1 ? 'paid' : 'partial';
+
+    const parentRedirectId = _supplementParentId;  // remember before clearing
+
+    // Core insert (include parent_order_id here so it's guaranteed to be set)
+    const coreInsert = {
+      order_no: orderNo,
+      store_id: storeId,
+      customer_id: custId,
+      staff_id: profile.id,
+      referrer_id: refId,
+      amount,
+      status: initStatus,
+      payment_status: initPayStatus,
+      description: document.getElementById('o-desc').value.trim() || null,
+      notes: document.getElementById('o-notes').value.trim() || null,
+    };
+    if (_supplementParentId) coreInsert.parent_order_id = _supplementParentId;
+
+    const { data: order, error: oe } = await sb.from('orders').insert(coreInsert).select().single();
+
+    if (oe) { showCreateErr('创建订单失败: ' + oe.message); return; }
+    createdOrderId = order.id;
+
+    // Extended columns
+    const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits,
+      fulfillment_mode: document.getElementById('o-fulfillment-mode')?.value || 'all_together' };
+    if (initPayMethod) extNew.payment_method = initPayMethod;
+    if (_supplementParentId) {
+      extNew.liability_party  = document.getElementById('o-liability-party')?.value || 'supplier';
+      const lossVal = parseFloat(document.getElementById('o-loss-amount')?.value);
+      if (lossVal > 0) extNew.loss_amount = lossVal;
+    }
+    const { error: extErr } = await sb.from('orders').update(extNew).eq('id', order.id);
+    if (extErr) console.warn('[submitOrder] extended update failed:', extErr.message);
+
+    // Record first payment if already paid
+    if (firstPaid) {
+      const { error: payErr } = await sb.from('order_payments').insert({
+        order_id: order.id, seq: 1,
+        pct: splits[0], amount: amount * splits[0] / 100,
+        method: initPayMethod || null,
+        paid_at: new Date().toISOString(),
+        recorded_by: profile.id,
+      });
+      if (payErr) console.warn('[submitOrder] payment insert failed:', payErr.message);
+      else payInserted = true;
+    }
+
+    // Save order items — 失败则回滚整张订单（保持原子性）
+    const items = getItemRows();
+    if (items.length > 0) {
+      const { error: itemErr } = await sb.from('order_items').insert(items.map(item => ({ ...item, order_id: order.id })));
+      if (itemErr) {
+        console.warn('[submitOrder] order_items insert failed, rolling back order:', itemErr.message);
+        if (payInserted) await sb.from('order_payments').delete().eq('order_id', order.id);
+        await sb.from('orders').delete().eq('id', order.id);
+        createdOrderId = null;  // 已回滚，无需 finally 重复删除
+        showCreateErr('商品明细保存失败，订单已撤销，请检查后重新提交：' + itemErr.message);
+        return;  // 不导航、不刷新，保留表单让用户重试
+      }
+    }
+
+    // 提交成功，清空补件单上下文
+    _supplementParentId = null;
+    _supplementCustomerId = null;
+    createdOrderId = null;  // 成功，禁止 finally 误删
+
+    // Log initial status
+    const { error: logErr } = await sb.from('order_logs').insert({
+      order_id: order.id,
+      status: order.status,
+      operator_id: profile.id,
+      operator_role: profile.role,
+      operator_name: profile.name,
+      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}`,
+    });
+    if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
+
+    await loadOrders();
+    // For supplement orders, return to the parent order so user can create more if needed
+    openDetail(parentRedirectId || order.id, 'orders');
+  } catch (ex) {
+    console.error('[submitOrder] unexpected error:', ex);
+    // 未知异常：尽力补偿，避免留下半张订单
+    if (createdOrderId) {
+      try {
+        if (payInserted) await sb.from('order_payments').delete().eq('order_id', createdOrderId);
+        await sb.from('order_items').delete().eq('order_id', createdOrderId);
+        await sb.from('orders').delete().eq('id', createdOrderId);
+      } catch (_) {}
+    }
+    showCreateErr('创建订单时发生异常，已尽力撤销，请重试：' + (ex?.message || ex));
+  } finally {
+    _submitOrderInFlight = false;
+    if (btn) { btn.textContent = t('create_btn'); btn.disabled = false; }
   }
-
-  // Log initial status
-  const { error: logErr } = await sb.from('order_logs').insert({
-    order_id: order.id,
-    status: order.status,
-    operator_id: profile.id,
-    operator_role: profile.role,
-    operator_name: profile.name,
-    notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}`,
-  });
-  if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
-
-  btn.textContent = t('create_btn'); btn.disabled = false;
-  await loadOrders();
-  // For supplement orders, return to the parent order so user can create more if needed
-  openDetail(parentRedirectId || order.id, 'orders');
 }
 
 function showCreateErr(msg) {
@@ -2200,6 +2274,21 @@ function renderCustomersTable(customers) {
     : `<p class="text-gray-400 text-sm text-center py-10">${t('no_customers')}</p>`;
 }
 
+// 精确解析产品：先按 SKU 精确匹配，再按名称精确匹配。
+// 取最多 2 行(按 id 排序)：恰好 1 行才返回；0 行或 ≥2 行(歧义)一律返回 null，
+// 绝不在多条里"随便挑一个"。
+async function resolveProductExact(sku, name) {
+  const trySel = async (col, val) => {
+    if (!val) return null;
+    const { data } = await sb.from('products').select('*')
+      .eq(col, val).order('id', { ascending: true }).limit(2);
+    return (data && data.length === 1) ? data[0] : null;
+  };
+  return (await trySel('sku', (sku || '').trim()))
+      || (await trySel('name', (name || '').trim()))
+      || null;
+}
+
 // ── Order Detail ──
 async function openDetail(id, backView) {
   _openDetailId = id;
@@ -2220,30 +2309,18 @@ async function openDetail(id, backView) {
     { data: items, error: itemsErr },
     { data: attachments },
     { data: childByFk },
-    { data: childByDesc },
-    { data: childByCustomer },
   ] = await Promise.all([
     sb.from('suppliers').select('id,name,supplier_code,product_types').eq('active', true),
     sb.from('order_payments').select('*').eq('order_id', id).order('seq'),
     sb.from('order_items').select('*').eq('order_id', id).order('sort_order'),
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
     sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').eq('parent_order_id', id).order('created_at'),
-    sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').like('description', `%${o.order_no}%`).order('created_at'),
-    o?.customer_id
-      ? sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description,customer_id').eq('customer_id', o.customer_id).like('description', '补件单%').order('created_at')
-      : Promise.resolve({ data: [] }),
   ]);
-  // Merge children: parent_order_id FK > description-by-orderno > customer + 补件 desc fallback (older orphan data)
-  const childMap = new Map();
-  (childByFk || []).forEach(c => childMap.set(c.id, c));
-  (childByDesc || []).forEach(c => { if (c.id !== id) childMap.set(c.id, c); });
-  (childByCustomer || []).forEach(c => {
-    if (c.id === id) return;
-    // Only include orphans (parent_order_id null) that mention this parent's order_no, OR have no other parent set
-    if (!c.parent_order_id || c.parent_order_id === id) childMap.set(c.id, c);
-  });
-  const childOrders = Array.from(childMap.values()).sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
-  console.log('[openDetail] childOrders for', o.order_no, '— FK:', childByFk?.length, 'desc:', childByDesc?.length, 'customer:', childByCustomer?.length, 'merged:', childOrders.length);
+  // 子单(补件单)只认 parent_order_id 外键，严格按 FK 关联，不再用描述模糊匹配/客户兜底
+  const childOrders = (childByFk || [])
+    .filter(c => c.id !== id && c.parent_order_id === id)
+    .sort((a,b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  console.log('[openDetail] childOrders for', o.order_no, '— FK:', childOrders.length);
   console.log('[openDetail] items for', o.order_no, ':', items?.length, itemsErr ? '错误:'+itemsErr.message : '');
 
   // 按真实库存判断每件商品是否"走仓库出库"：
@@ -2252,17 +2329,17 @@ async function openDetail(id, backView) {
   await Promise.all((items || []).map(async (it) => {
     it._stockQty = 0;
     it._fromStock = false;
-    const nm  = (it.product_name || '').trim();
     const qty = parseFloat(it.quantity) || 0;
-    if (!nm || qty <= 0) return;
-    const { data: prod } = await sb.from('products').select('id')
-      .ilike('name', `%${nm}%`).limit(1).maybeSingle();
-    if (!prod) return;
+    if (qty <= 0) return;
+    const prod = await resolveProductExact(it.sku_ref || it.sku, it.product_name);
+    if (!prod) return;   // 0 或多条匹配 → 视为需供应商，不走现货
     const { data: invRows } = await sb.from('inventory')
-      .select('qty_on_hand').eq('product_id', prod.id);
-    const maxQty = (invRows || []).reduce((m, r) => Math.max(m, Number(r.qty_on_hand) || 0), 0);
-    it._stockQty  = maxQty;
-    it._fromStock = maxQty >= qty;
+      .select('qty_on_hand,qty_reserved').eq('product_id', prod.id);
+    // 单仓可用量 = 在库 - 已预留；只有某一个仓库可用量 ≥ 需求才算现货
+    const maxAvail = (invRows || []).reduce(
+      (m, r) => Math.max(m, (Number(r.qty_on_hand) || 0) - (Number(r.qty_reserved) || 0)), 0);
+    it._stockQty  = maxAvail;
+    it._fromStock = maxAvail >= qty;
   }));
 
   const logsHtml = (logs || []).map((l, i, arr) => {
@@ -2657,10 +2734,6 @@ function confirmDelete(id) {
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
       <h3 class="font-bold text-gray-800 text-lg mb-1">${t('del_title')}</h3>
       <p class="text-gray-500 text-sm mb-4">${t('del_msg')}</p>
-      <label class="block text-xs font-medium text-gray-600 mb-1">${t('del_pw_lbl')}</label>
-      <input type="password" id="del-pw" placeholder="${t('del_pw_ph')}"
-             class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 mb-3">
-      <p id="del-err" class="text-red-500 text-xs mb-3 hidden">${t('del_err_pw')}</p>
       <div class="flex gap-2">
         <button onclick="document.getElementById('delete-modal').remove()"
                 class="flex-1 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">
@@ -2673,27 +2746,18 @@ function confirmDelete(id) {
       </div>
     </div>`;
   document.body.appendChild(modal);
-  document.getElementById('del-pw').focus();
 }
 
 async function doDelete(id) {
   if (!canDo(FIELD_MIN_LEVEL.delete_order)) { alert('权限不足'); return; }
-  const pw = document.getElementById('del-pw').value;
-  if (pw !== '12345678') {
-    document.getElementById('del-err').classList.remove('hidden');
+  if (!confirm('确认彻底删除该订单?此操作不可恢复')) return;
+  document.getElementById('delete-modal')?.remove();
+
+  const { error } = await sb.from('orders').delete().eq('id', id);
+  if (error) {
+    alert('删除失败：' + error.message + '\n（可能权限不足或数据库已拒绝该操作）');
     return;
   }
-  document.getElementById('delete-modal').remove();
-
-  await sb.from('orders').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', id);
-  await sb.from('order_logs').insert({
-    order_id: id,
-    status: 'closed',
-    operator_id: profile.id,
-    operator_role: profile.role,
-    operator_name: profile.name,
-    notes: `[已删除] 操作账户：${profile.name}（${profile.role}）`,
-  });
 
   await loadOrders();
   goto('orders');
@@ -2885,6 +2949,8 @@ function renderItemsCard(items, o, supList) {
   const collapsed  = false;
   const uid        = 'items-body-' + o.id.slice(0,8);
   const total      = items.reduce((s,i) => s + Number(i.total_price || (i.quantity * i.unit_price)), 0);
+  // 单一判定：有「非现货且未分配供应商」的商品 → 既驱动徽标也驱动保存按钮
+  const hasUnassigned = items.some(i => !i._fromStock && !i.supplier_id);
   const unassigned = items.filter(i => !i._fromStock && !i.supplier_id).length;
 
   const supOpts = (curId, itemType) => {
@@ -2934,6 +3000,11 @@ function renderItemsCard(items, o, supList) {
                        data-item-id="${item.id}">
                  ${supOpts(item.supplier_id, item.product_type)}
                </select>`
+            : canAssign
+              ? `<select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
+                         data-item-id="${item.id}">
+                   ${supOpts(item.supplier_id, item.product_type)}
+                 </select>`
             : supName
               ? `<span class="text-xs text-gray-700">${supName}</span>`
               : `<span class="text-xs text-red-400">未分配</span>`
@@ -2999,8 +3070,8 @@ function renderItemsCard(items, o, supList) {
             </button>` : ''}
           </div>
           ${canAssign ? `
-            ${(items.some(i => !i._fromStock && !i.supplier_id) || canDo(4))
-              ? `<button onclick="saveItemSuppliers('${o.id}')"
+            ${(hasUnassigned || canDo(4))
+              ? `<button onclick="saveItemSuppliers(event,'${o.id}')"
                           class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                      保存供应商分配
                    </button>`
@@ -3194,14 +3265,23 @@ function renderChecklistPanel(o, items, childOrders) {
 }
 
 // ── Checklist actions ──
-async function saveItemSuppliers(orderId) {
-  const btn = event.currentTarget;
-  btn.textContent = '保存中…'; btn.disabled = true;
-  const updates = Array.from(document.querySelectorAll('.item-sup-sel')).map(sel =>
+async function saveItemSuppliers(ev, orderId) {
+  const btn = ev?.currentTarget || ev?.target;
+  if (btn) { btn.textContent = '保存中…'; btn.disabled = true; }
+  const sels = Array.from(document.querySelectorAll('.item-sup-sel'));
+  // 逐条捕获每次更新的 error —— 不能用 blind Promise.all 吞掉 RLS 拒绝
+  const results = await Promise.all(sels.map(sel =>
     sb.from('order_items').update({ supplier_id: sel.value || null }).eq('id', sel.dataset.itemId)
-  );
-  await Promise.all(updates);
-  btn.textContent = '已保存 ✓';
+  ));
+  const failed = results.filter(r => r.error);
+  if (failed.length) {
+    console.error('[saveItemSuppliers] update errors:', failed.map(r => r.error?.message));
+    alert(`供应商分配保存失败（${failed.length} 条未保存，可能权限不足/被数据库拒绝）：\n` +
+          failed.map(r => r.error?.message).join('\n'));
+    if (btn) { btn.textContent = '保存供应商分配'; btn.disabled = false; }
+    return;
+  }
+  if (btn) btn.textContent = '已保存 ✓';
   setTimeout(() => openDetail(orderId), 600);
 }
 
@@ -3280,20 +3360,17 @@ async function saveLogisticsInfo(orderId) {
 }
 
 async function markArrived(orderId) {
-  if (!confirm('确认货物已到达？到货后将自动进入安装阶段。')) return;
+  if (!confirm('确认货物已到达？')) return;
   const now = new Date().toISOString();
-  await sb.from('orders').update({ status: 'arrived', updated_at: now }).eq('id', orderId);
+  const { error } = await sb.from('orders').update({ status: 'arrived', updated_at: now }).eq('id', orderId);
+  if (error) { alert('操作失败：' + error.message); return; }
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'arrived',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
     notes: '物流确认货物已到达',
   });
-  await sb.from('orders').update({ status: 'installing', updated_at: now }).eq('id', orderId);
-  await sb.from('order_logs').insert({
-    order_id: orderId, status: 'installing',
-    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: '货物到达，自动进入安装阶段',
-  });
+  // 不再自动跳到「安装中」：由正常的 updateOrder 流程推进
+  // （那里会强制校验安装日期 + 款项已付清）
   await loadOrders();
   openDetail(orderId);
 }
@@ -3398,7 +3475,7 @@ async function submitSignOff(orderId) {
   // deadline_at = max warranty years across all matched components
   let maxYears = 1;
   warrantyData.forEach(s => s.components.forEach(c => { if (c.years > maxYears) maxYears = c.years; }));
-  const warrantyEnd = new Date(Date.now() + maxYears * 365.25 * 24 * 3600000).toISOString();
+  const warrantyEnd = addYearsIso(now, maxYears);
 
   // Core: status → after_sales
   const { error: e1 } = await sb.from('orders').update({
@@ -3616,191 +3693,6 @@ function renderProdStagePanel(o) {
       ${cur ? `当前阶段：${PROD_STAGE_LABELS[cur] || cur}` : '厂家尚未更新生产阶段'}
     </p>
   </div>`;
-}
-
-function renderSupplierActionCard(o, items) {
-  if (profile?.role !== 'supplier' || !mySupplierId) return '';
-  const myItems = (items || []).filter(i => i.supplier_id === mySupplierId);
-  if (!myItems.length) return '';
-  const itemNames = myItems.map(i => i.product_name).join('、');
-  if (o.status === 'paid') {
-    return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
-      <p class="text-sm text-gray-500 mb-1">订单已付款，请确认接单后开始生产。</p>
-      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
-      <button onclick="acceptOrder('${o.id}')"
-              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
-        ✓ 接单，开始生产
-      </button>
-    </div>`;
-  }
-  if (o.status === 'in_production') {
-    return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-2">厂家操作</h3>
-      <p class="text-sm text-gray-500 mb-1">生产中，货物备好后请确认发货。</p>
-      <p class="text-xs text-gray-400 mb-3">本单货品：${itemNames}</p>
-      <button onclick="shipOrder('${o.id}')"
-              class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition">
-        🚚 确认发货
-      </button>
-    </div>`;
-  }
-  return '';
-}
-
-function renderLogisticsCard(o, logisticsProfiles, logisticsPerson) {
-  const isLogistics = profile?.role === 'logistics';
-  const isManager   = canDo(2);
-  if (!isLogistics && !isManager) return '';
-  const relevant = ['shipped','arrived','installing','completed'];
-  if (!relevant.includes(o.status)) return '';
-
-  const fmtDT = s => s ? new Date(s).toLocaleString('zh-CN',
-    { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-  const toLocal = s => s ? new Date(s).toISOString().slice(0,16) : '';
-
-  const SHIP_METHOD_LABEL = { land:'陆运', sea:'海运', air:'空运' };
-  const infoLines = [];
-  if (logisticsPerson) infoLines.push(`物流：${logisticsPerson.name}${logisticsPerson.phone?' · '+logisticsPerson.phone:''}`);
-  if (o.ship_method) infoLines.push(`运输方式：${SHIP_METHOD_LABEL[o.ship_method]||o.ship_method}`);
-  if (o.ship_carrier) infoLines.push(`物流公司：${o.ship_carrier}`);
-  if (o.ship_time) infoLines.push(`发货时间：${fmtDT(o.ship_time)}`);
-  if (o.eta_time)  infoLines.push(`预计到货：${fmtDT(o.eta_time)}`);
-  if (o.ship_notes) infoLines.push(`备注：${o.ship_notes}`);
-  const infoHtml = infoLines.length
-    ? `<div class="text-xs text-gray-500 space-y-0.5 mb-3 bg-gray-50 rounded-lg p-2">
-        ${infoLines.map(l=>`<div>${l}</div>`).join('')}
-       </div>`
-    : '';
-
-  // Compute default ETA days from ship_time → eta_time
-  const etaDays = (() => {
-    if (o.eta_time && o.ship_time) {
-      const d = Math.round((new Date(o.eta_time) - new Date(o.ship_time)) / 86400000);
-      return d > 0 ? d : 7;
-    }
-    return 7;
-  })();
-
-  const confirmBtn = `<button onclick="markArrived('${o.id}')"
-    class="w-full py-2.5 bg-hg text-white text-sm font-semibold rounded-xl hover:bg-green-900 transition mt-3">
-    📦 确认到货，进入安装
-  </button>`;
-
-  // Logistics: ETA days + confirm arrival
-  if (isLogistics && o.status === 'shipped') {
-    return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">物流操作</h3>
-      ${infoHtml}
-      <div class="flex items-center gap-2 mb-3">
-        <label class="text-xs text-gray-500 whitespace-nowrap">预计到货天数</label>
-        <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
-               class="input text-sm py-1.5 w-20 text-center">
-        <span class="text-xs text-gray-400">天</span>
-        <button onclick="saveEtaDays('${o.id}')"
-                class="ml-auto px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition whitespace-nowrap">
-          保存
-        </button>
-      </div>
-      ${confirmBtn}
-    </div>`;
-  }
-
-  // Manager: full logistics form + confirm arrival
-  if (isManager && o.status === 'shipped') {
-    const logOpts = (logisticsProfiles || []).map(p =>
-      `<option value="${p.id}" ${p.id===o.logistics_profile_id?'selected':''}>${p.name}${p.phone?' · '+p.phone:''}</option>`
-    ).join('');
-    const knownCarriers = ['J&T Express','Ninja Van','Pos Laju','DHL Malaysia','FedEx Malaysia','GDex','Teleport','COSCO 中远','Evergreen 长荣','Maersk 马士基','PIL','ONE','骐盛国际物流'];
-    const isCustomCarrier = o.ship_carrier && !knownCarriers.includes(o.ship_carrier);
-    const customCarrierStyle = isCustomCarrier ? '' : 'hidden';
-    const carrierSelVal = isCustomCarrier ? '__custom__' : (o.ship_carrier || '');
-    return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">物流信息</h3>
-      ${infoHtml}
-      <div class="space-y-3">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-gray-400 mb-1 block">运输方式</label>
-            <select id="ship-method" class="input text-sm py-1.5 w-full">
-              <option value="">— 请选择 —</option>
-              <option value="land" ${o.ship_method==='land'?'selected':''}>🚛 陆运</option>
-              <option value="sea"  ${o.ship_method==='sea' ?'selected':''}>🚢 海运</option>
-              <option value="air"  ${o.ship_method==='air' ?'selected':''}>✈️ 空运</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-gray-400 mb-1 block">物流公司</label>
-            <select id="ship-carrier" class="input text-sm py-1.5 w-full" onchange="toggleCustomCarrier(this)">
-              <option value="" ${carrierSelVal===''?'selected':''}>— 请选择 —</option>
-              <optgroup label="马来西亚物流">
-                <option ${carrierSelVal==='J&T Express'?'selected':''}>J&T Express</option>
-                <option ${carrierSelVal==='Ninja Van'?'selected':''}>Ninja Van</option>
-                <option ${carrierSelVal==='Pos Laju'?'selected':''}>Pos Laju</option>
-                <option ${carrierSelVal==='DHL Malaysia'?'selected':''}>DHL Malaysia</option>
-                <option ${carrierSelVal==='FedEx Malaysia'?'selected':''}>FedEx Malaysia</option>
-                <option ${carrierSelVal==='GDex'?'selected':''}>GDex</option>
-                <option ${carrierSelVal==='Teleport'?'selected':''}>Teleport</option>
-              </optgroup>
-              <optgroup label="海运船公司">
-                <option ${carrierSelVal==='COSCO 中远'?'selected':''}>COSCO 中远</option>
-                <option ${carrierSelVal==='Evergreen 长荣'?'selected':''}>Evergreen 长荣</option>
-                <option ${carrierSelVal==='Maersk 马士基'?'selected':''}>Maersk 马士基</option>
-                <option ${carrierSelVal==='PIL'?'selected':''}>PIL</option>
-                <option ${carrierSelVal==='ONE'?'selected':''}>ONE</option>
-                <option ${carrierSelVal==='骐盛国际物流'?'selected':''}>骐盛国际物流</option>
-              </optgroup>
-              <option value="__custom__" ${carrierSelVal==='__custom__'?'selected':''}>其他（自填）</option>
-            </select>
-            <input type="text" id="ship-carrier-custom" class="input text-sm py-1.5 w-full mt-1.5 ${customCarrierStyle}"
-                   placeholder="填写物流公司名称"
-                   value="${isCustomCarrier ? o.ship_carrier : ''}">
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">物流供应商</label>
-          <select id="logistics-sel" class="input text-sm py-1.5 w-full">
-            <option value="">— 未分配 —</option>
-            ${logOpts}
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs text-gray-400 mb-1 block">发货时间</label>
-            <input type="datetime-local" id="ship-time" class="input text-sm py-1.5 w-full"
-                   value="${toLocal(o.ship_time)}">
-          </div>
-          <div>
-            <label class="text-xs text-gray-400 mb-1 block">预计天数</label>
-            <div class="flex items-center gap-1.5">
-              <input type="number" id="eta-days" min="1" max="60" value="${etaDays}"
-                     class="input text-sm py-1.5 flex-1 text-center">
-              <span class="text-xs text-gray-400">天</span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-gray-400 mb-1 block">备注</label>
-          <input type="text" id="ship-notes" class="input text-sm py-1.5 w-full"
-                 value="${o.ship_notes||''}" placeholder="运货单号等">
-        </div>
-        <button onclick="saveLogisticsInfo('${o.id}')"
-                class="w-full py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200 transition">
-          保存物流信息
-        </button>
-        ${confirmBtn}
-      </div>
-    </div>`;
-  }
-
-  // Read-only info for arrived/installing/completed
-  if (infoLines.length) {
-    return `<div class="card p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-2">物流信息</h3>
-      ${infoHtml}
-    </div>`;
-  }
-  return '';
 }
 
 function renderPaymentPanel(o, payments) {
@@ -4769,15 +4661,18 @@ async function saveAddedItems() {
 // ── Deduct Inventory ──
 let _deductOrderId = '';
 let _deductItems = [];   // 当前订单的商品行快照
+let _deductDone = new Set();   // 本次弹窗会话已成功出库的行索引（幂等，避免重复扣减）
 
 async function openDeductModal(orderId) {
   _deductOrderId = orderId;
+  _deductDone = new Set();   // 重置本次弹窗会话的"已出库"记录（幂等）
   const [{ data: items }, { data: warehouses }] = await Promise.all([
     sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
     sb.from('warehouses').select('*').order('name'),
   ]);
   _deductItems = (items || []).map(it => ({
     name: it.product_name || '',
+    sku:  it.sku_ref || it.sku || '',
     qty:  parseFloat(it.quantity) || 0,
     unit: it.unit || '套',
     model_spec: it.model_spec || '',
@@ -4795,11 +4690,9 @@ function closeDeductModal() {
 }
 
 // 把订单商品行匹配到仓库产品（与实际出库用同一规则，保证一致）
-async function _resolveDeductProduct(name) {
-  if (!name) return null;
-  const { data: prod } = await sb.from('products').select('id,name')
-    .ilike('name', `%${name}%`).limit(1).maybeSingle();
-  return prod || null;
+// 走精确解析：SKU 优先、名称次之；0 或多条匹配返回 null（不猜）。
+async function _resolveDeductProduct(sku, name) {
+  return await resolveProductExact(sku, name);
 }
 
 function _setDeductSaveEnabled(enabled) {
@@ -4843,23 +4736,27 @@ async function evaluateDeductStock() {
   for (let i = 0; i < _deductItems.length; i++) {
     const it = _deductItems[i];
     let ok = false, note = '', noteCls = 'text-red-500';
-    if (!it.qty) {
+    if (_deductDone.has(i)) {
+      note = '✅ 本次已出库（不重复扣减）'; noteCls = 'text-gray-400';
+    } else if (!it.qty) {
       note = '数量为 0，无法出库';
     } else {
-      const prod = await _resolveDeductProduct(it.name);
+      const prod = await _resolveDeductProduct(it.sku, it.name);
       if (!prod) {
-        note = '❌ 该产品未在仓库建档，无法出库';
+        note = '❌ 无法唯一确定产品(0或多条匹配)，请人工处理';
       } else {
-        const { data: inv } = await sb.from('inventory').select('qty_on_hand')
+        const { data: inv } = await sb.from('inventory').select('qty_on_hand,qty_reserved')
           .eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
-        const onHand = inv?.qty_on_hand ?? null;
-        if (onHand === null) {
+        if (!inv) {
           note = '❌ 该仓库无此产品库存，无法出库';
-        } else if (onHand < it.qty) {
-          note = `❌ 库存不足（当前 ${onHand} / 需 ${it.qty}），无法出库`;
         } else {
-          ok = true; noteCls = 'text-green-700';
-          note = `✅ 可出库（库存 ${onHand}）`;
+          const avail = (Number(inv.qty_on_hand) || 0) - (Number(inv.qty_reserved) || 0);
+          if (avail < it.qty) {
+            note = `❌ 可用库存不足（可用 ${avail} / 需 ${it.qty}），无法出库`;
+          } else {
+            ok = true; noteCls = 'text-green-700';
+            note = `✅ 可出库（可用 ${avail}）`;
+          }
         }
       }
     }
@@ -4884,26 +4781,50 @@ async function saveDeductInventory() {
   if (!whId) { alert('请选择仓库'); return; }
   const checked = [...document.querySelectorAll('.deduct-item-chk:checked')];
   if (!checked.length) { alert('没有可出库的商品（无库存或库存不足的已被锁定）'); return; }
+  if (!profile?.id) { alert('账户信息缺失，无法记录出库流水，请重新登录后再试'); return; }
   const btn = document.getElementById('deduct-save-btn');
   btn.disabled = true; btn.textContent = '处理中…';
 
-  const { data: { user } } = await sb.auth.getUser();
   const ops = [];
   for (const chk of checked) {
-    const it = _deductItems[parseInt(chk.dataset.idx, 10)];
+    const idx = parseInt(chk.dataset.idx, 10);
+    const it  = _deductItems[idx];
     if (!it || !it.qty) continue;
     const qty = it.qty, name = it.name;
-    const prod = await _resolveDeductProduct(name);
-    if (!prod) { ops.push({ name, qty, status: '未找到产品档案，跳过' }); continue; }
-    const { data: inv } = await sb.from('inventory').select('id,qty_on_hand').eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
-    if (!inv || inv.qty_on_hand < qty) { ops.push({ name, qty, status: `库存不足（当前：${inv?.qty_on_hand||0}）` }); continue; }
-    await sb.from('inventory').update({ qty_on_hand: inv.qty_on_hand - qty, updated_at: new Date().toISOString() }).eq('id', inv.id);
-    await sb.from('inventory_movements').insert({ product_id: prod.id, warehouse_id: whId, type: 'out', qty, notes: `订单出库：${name}`, operator_id: user?.id });
-    ops.push({ name, qty, status: '✅ 已出库' });
+    if (_deductDone.has(idx)) { ops.push({ name, qty, status: '本次已出库，已跳过（幂等）' }); continue; }
+    const prod = await _resolveDeductProduct(it.sku, name);
+    if (!prod) { ops.push({ name, qty, status: '无法唯一确定产品(0或多条匹配)，已跳过' }); continue; }
+
+    // 乐观并发：读当前 → 带 qty_on_hand 条件更新；命中 0 行说明被并发改动，重读重试
+    let done = false;
+    for (let attempt = 0; attempt < 3 && !done; attempt++) {
+      const { data: inv } = await sb.from('inventory')
+        .select('id,qty_on_hand').eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
+      if (!inv) { ops.push({ name, qty, status: '该仓库无此产品库存，未扣减' }); break; }
+      const cur = Number(inv.qty_on_hand) || 0;
+      if (cur < qty) { ops.push({ name, qty, status: `库存被并发改动/不足（当前 ${cur}），未扣减` }); break; }
+      const { data: upd } = await sb.from('inventory')
+        .update({ qty_on_hand: cur - qty, updated_at: new Date().toISOString() })
+        .eq('id', inv.id).eq('qty_on_hand', cur).select();
+      if (upd && upd.length === 1) {
+        await sb.from('inventory_movements').insert({
+          product_id: prod.id, warehouse_id: whId, type: 'out', qty,
+          notes: `订单出库：${name}`, operator_id: profile.id,
+        });
+        _deductDone.add(idx);
+        ops.push({ name, qty, status: '✅ 已出库' });
+        done = true;
+      }
+      // 命中 0 行 → 被并发改动，循环重读重试
+    }
+    if (!done && !ops.some(o => o.name === name && o.qty === qty)) {
+      ops.push({ name, qty, status: '库存被并发改动/不足，未扣减（重试 3 次仍失败）' });
+    }
   }
 
-  closeDeductModal();
   btn.disabled = false; btn.textContent = '确认出库';
+  // 重新核对剩余项（已出库的会显示"已出库"并锁定，避免重复操作）
+  await evaluateDeductStock();
   const summary = ops.map(o => `${o.name}（${o.qty}）：${o.status}`).join('\n');
   alert('出库结果：\n\n' + summary);
 }

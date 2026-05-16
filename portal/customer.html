@@ -132,21 +132,24 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let myPhone = '', myOrders = [];
 
+// step  = real progress index (drives % bar)
+// disp  = which CORE_STEPS indicator this status highlights (0..6)
+// term  = terminal state (cancelled/closed): no progress bar, no step highlight
 const STATUS = {
-  pending_payment:    { label:'待付款', cls:'bg-yellow-100 text-yellow-800', step:0 },
-  paid:               { label:'已付款', cls:'bg-blue-100 text-blue-700',    step:1 },
-  in_production:      { label:'生产中', cls:'bg-violet-100 text-violet-700',step:2 },
-  shipped:            { label:'已发货', cls:'bg-orange-100 text-orange-700',step:3 },
-  arrived:            { label:'已到货', cls:'bg-teal-100 text-teal-700',    step:4 },
-  installing:         { label:'安装中', cls:'bg-teal-100 text-teal-700',    step:5 },
-  completed:          { label:'已完成', cls:'bg-green-100 text-green-700',  step:6 },
-  after_sales:        { label:'质保服务',cls:'bg-blue-100 text-blue-700',   step:-1 },
-  closed:             { label:'已关闭', cls:'bg-gray-100 text-gray-500',    step:-1 },
-  // legacy
-  assigned:           { label:'已分配', cls:'bg-blue-100 text-blue-700',    step:1 },
-  accepted:           { label:'已接单', cls:'bg-violet-100 text-violet-700',step:2 },
-  production_complete:{ label:'生产完成',cls:'bg-indigo-100 text-indigo-700',step:2 },
-  in_transit:         { label:'运输中', cls:'bg-orange-100 text-orange-700',step:3 },
+  pending_payment:    { label:'待付款', cls:'bg-yellow-100 text-yellow-800', step:0, disp:0 },
+  paid:               { label:'已付款', cls:'bg-blue-100 text-blue-700',    step:1, disp:1 },
+  assigned:           { label:'已派单', cls:'bg-blue-100 text-blue-700',    step:1, disp:1 },
+  accepted:           { label:'工厂接单',cls:'bg-violet-100 text-violet-700',step:2, disp:2 },
+  in_production:      { label:'生产中', cls:'bg-violet-100 text-violet-700',step:2, disp:2 },
+  production_complete:{ label:'生产完成',cls:'bg-indigo-100 text-indigo-700',step:2, disp:2 },
+  shipped:            { label:'已发货', cls:'bg-orange-100 text-orange-700',step:3, disp:3 },
+  in_transit:         { label:'运输中', cls:'bg-orange-100 text-orange-700',step:3, disp:3 },
+  arrived:            { label:'已到货', cls:'bg-teal-100 text-teal-700',    step:4, disp:4 },
+  installing:         { label:'安装中', cls:'bg-teal-100 text-teal-700',    step:5, disp:5 },
+  completed:          { label:'已完成', cls:'bg-green-100 text-green-700',  step:6, disp:6 },
+  after_sales:        { label:'质保服务',cls:'bg-blue-100 text-blue-700',   step:6, disp:6 },
+  closed:             { label:'已关闭', cls:'bg-gray-100 text-gray-500',    step:-1, disp:-1, term:true },
+  cancelled:          { label:'已取消', cls:'bg-red-100 text-red-700',      step:-1, disp:-1, term:true },
 };
 const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived','installing','completed'];
 
@@ -158,19 +161,34 @@ function show(id) {
 
 function badge(status) {
   const s = STATUS[status] || { label: status, cls: 'bg-gray-100 text-gray-600' };
-  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}">${s.label}</span>`;
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}">${esc(s.label)}</span>`;
+}
+
+// 转义用户/数据库字符串后再拼进 innerHTML，防止 XSS
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function fmtAmt(v) {
-  return 'RM ' + Number(v).toLocaleString('en-MY', { minimumFractionDigits: 2 });
+  const n = Number(v);
+  if (v == null || !isFinite(n)) return 'RM —';
+  return 'RM ' + n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtDate(d) {
-  return new Date(d).toLocaleDateString('zh-CN', { year:'numeric', month:'short', day:'numeric' });
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return dt.toLocaleDateString('zh-CN', { year:'numeric', month:'short', day:'numeric' });
 }
 
 function fmtDateTime(d) {
-  return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '—';
+  return dt.toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 async function searchOrders() {
@@ -184,11 +202,14 @@ async function searchOrders() {
   const err = document.getElementById('phone-err');
   btn.textContent = '查询中...'; btn.disabled = true; err.classList.add('hidden');
 
-  // Try with country code first, fallback to local number
+  // 用「区号+本地号」做唯一规范查询。
+  // 不再在结果为空时回退到裸号码：裸号码会跨区号匹配，
+  // 可能返回另一位客户的订单(隐私泄露)。只有首次查询真正报错(网络/服务异常)
+  // 时才用裸号码重试一次,空结果属正常的「无此订单」,不重试。
   let { data, error } = await sb.rpc('get_orders_by_phone', { p_phone: phone });
-  if (!error && (!data || data.length === 0)) {
+  if (error) {
     const r2 = await sb.rpc('get_orders_by_phone', { p_phone: localNum });
-    if (r2.data?.length) { data = r2.data; }
+    if (!r2.error) { data = r2.data; error = null; }
   }
   btn.textContent = '查询订单'; btn.disabled = false;
 
@@ -224,12 +245,12 @@ function renderOrders() {
          class="bg-white rounded-xl shadow-sm p-5 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-100 active:scale-[0.99]">
       <div class="flex items-start justify-between mb-2">
         <div>
-          <div class="font-mono font-bold text-hg text-sm">${o.order_no}</div>
-          <div class="text-gray-400 text-xs mt-0.5">${o.store_name} · ${fmtDate(o.created_at)}</div>
+          <div class="font-mono font-bold text-hg text-sm">${esc(o.order_no)}</div>
+          <div class="text-gray-400 text-xs mt-0.5">${esc(o.store_name)} · ${fmtDate(o.created_at)}</div>
         </div>
         ${badge(o.status)}
       </div>
-      ${o.description ? `<p class="text-gray-600 text-sm mb-3 line-clamp-2">${o.description}</p>` : ''}
+      ${o.description ? `<p class="text-gray-600 text-sm mb-3 line-clamp-2">${esc(o.description)}</p>` : ''}
       <div class="flex items-center justify-between pt-2 border-t border-gray-50">
         <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
         <span class="text-gray-400 text-xs flex items-center gap-1">
@@ -272,16 +293,16 @@ function renderCustomerWarranty(o, logs) {
         ? `<span style="color:#dc2626;font-size:10px;font-weight:600">已到期</span>`
         : `<span style="color:#16a34a;font-size:10px;font-weight:600">质保中</span>`;
       return `<tr>
-        <td style="padding:4px 8px;font-size:12px;color:#374151">${comp.name}</td>
-        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${comp.years}年</td>
-        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${comp.endIso.slice(0,10)}</td>
+        <td style="padding:4px 8px;font-size:12px;color:#374151">${esc(comp.name)}</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(comp.years)}年</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(String(comp.endIso).slice(0,10))}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center">${dot}</td>
       </tr>`;
     }).join('');
     return `<div class="mb-3">
       <div class="flex items-center gap-1 mb-1">
-        <span>${series.icon}</span>
-        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${series.seriesName}</span>
+        <span>${esc(series.icon)}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${esc(series.seriesName)}</span>
         <span style="font-size:10px;color:${sExp?'#dc2626':'#16a34a'};margin-left:4px">${sExp?'已到期':'质保中'}</span>
       </div>
       <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb">
@@ -322,8 +343,11 @@ async function openDetail(id) {
 
   const [{ data: logs }, { data: freshOrder }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
-    sb.from('orders').select('sign_image,signed_at,signed_by,warranty_info').eq('id', id).single(),
+    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info').eq('id', id).single(),
   ]);
+
+  // 以服务器最新 status 为准(缓存列表可能已过期),签收面板按最新状态判断
+  const freshStatus = freshOrder?.status || o.status;
 
   // 用最新数据更新本地缓存，防止重新搜索后签名状态丢失
   if (freshOrder) {
@@ -344,20 +368,30 @@ async function openDetail(id) {
         ${!isLast ? '<div class="w-0.5 bg-gray-200 flex-1 my-1"></div>' : ''}
       </div>
       <div class="pb-3 flex-1">
-        <span class="font-medium text-sm text-gray-800">${st.label}</span>
+        <span class="font-medium text-sm text-gray-800">${esc(st.label)}</span>
         <span class="text-gray-400 text-xs ml-2">${fmtDateTime(l.created_at)}</span>
       </div>
     </div>`;
   }).join('');
 
   // Build progress bar + step timeline
-  const curStep = STATUS[o.status]?.step ?? 0;
-  const isTerminal = ['completed','closed','after_sales'].includes(o.status);
-  const progressPct = curStep < 0 ? 100 : Math.round(((curStep + 1) / 7) * 100);
-  const progressBar = isTerminal && o.status !== 'completed' ? '' : `
+  const sInfo    = STATUS[o.status] || { label:o.status, step:0, disp:0 };
+  // dispStep = 该状态对应的「已展示核心步骤」序号(0..6),用于进度条 + 横向步骤高亮
+  const dispStep = sInfo.disp ?? 0;
+  // 终态(已取消/已关闭):不画进度条、不高亮任何步骤,显示明确的终止徽标
+  const isClosedTerminal = sInfo.term === true;
+  // after_sales 视作已完成进度满格;completed 同理
+  const isDone = o.status === 'completed' || o.status === 'after_sales';
+  const progressPct = isClosedTerminal ? 0 : isDone ? 100 : Math.round(((dispStep + 1) / 7) * 100);
+  const progressBar = isClosedTerminal ? `
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <div class="rounded-lg px-4 py-3 text-center text-sm font-medium ${o.status==='cancelled' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'}">
+        ${o.status === 'cancelled' ? '此订单已取消' : '此订单已关闭'}
+      </div>
+    </div>` : `
     <div class="mt-4 pt-4 border-t border-gray-100">
       <div class="flex justify-between items-center mb-1">
-        <span class="text-xs font-medium" style="color:#1a3a2a">${STATUS[o.status]?.label || o.status}</span>
+        <span class="text-xs font-medium" style="color:#1a3a2a">${esc(sInfo.label)}</span>
         <span class="text-xs text-gray-400">${progressPct}%</span>
       </div>
       <div class="h-1.5 rounded-full bg-gray-100 mb-2">
@@ -365,8 +399,9 @@ async function openDetail(id) {
       </div>
     </div>`;
 
-  // Signature section for installing status
-  const signatureSection = o.status === 'installing' ? `
+  // Signature section for installing status — 用服务器最新 status 判断(防御缓存过期;
+  // 服务器端 customer_submit_signature RPC 仍是最终权威)
+  const signatureSection = freshStatus === 'installing' ? `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-1">安装签收确认</h3>
       ${o.sign_image
@@ -393,9 +428,10 @@ async function openDetail(id) {
       <div class="overflow-x-auto pb-1 -mx-1 px-1">
         <div class="flex items-start min-w-max gap-0">
           ${CORE_STEPS.map((s, i) => {
-            const done    = i < curStep || o.status === 'completed';
-            const current = s === o.status || (STATUS[o.status]?.step === i);
-            const log     = (logs || []).find(l => l.status === s || STATUS[l.status]?.step === i && i <= curStep);
+            // 终态不点亮任何步骤;否则按 disp(已展示核心步骤序号)判断 已完成/当前
+            const done    = !isClosedTerminal && (i < dispStep || isDone);
+            const current = !isClosedTerminal && !isDone && i === dispStep;
+            const log     = (logs || []).find(l => (STATUS[l.status]?.disp ?? -1) === i);
             let bg, color, icon;
             if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
             else if (current) { bg='#c8a96e'; color='#fff'; icon='●'; }
@@ -408,7 +444,7 @@ async function openDetail(id) {
                       <div class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 w-14 text-xs font-medium"
                            style="background:${bg};color:${color};border:2px solid ${current?'#1a3a2a':'transparent'}">
                         <span class="text-sm leading-none">${icon}</span>
-                        <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${STATUS[s].label}</span>
+                        <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${esc(STATUS[s].label)}</span>
                       </div>
                       <span class="text-center mt-0.5 px-0.5" style="font-size:9px;color:#9ca3af;min-width:60px;word-break:break-all">${timeText}</span>
                     </div>${connector}`;
@@ -417,6 +453,7 @@ async function openDetail(id) {
       </div>
       ${o.status === 'after_sales' ? `<div class="mt-3 text-xs text-blue-600 font-medium">质保服务中</div>` : ''}
       ${o.status === 'closed'      ? `<div class="mt-3 text-xs text-gray-400">订单已关闭</div>` : ''}
+      ${o.status === 'cancelled'   ? `<div class="mt-3 text-xs text-red-600 font-medium">订单已取消</div>` : ''}
     </div>`;
 
   document.getElementById('detail-content').innerHTML = `
@@ -424,12 +461,12 @@ async function openDetail(id) {
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="font-mono font-bold text-hg text-lg">${o.order_no}</div>
-          <div class="text-gray-400 text-sm">${o.store_name}</div>
+          <div class="font-mono font-bold text-hg text-lg">${esc(o.order_no)}</div>
+          <div class="text-gray-400 text-sm">${esc(o.store_name)}</div>
         </div>
         ${badge(o.status)}
       </div>
-      ${o.description ? `<p class="text-gray-600 text-sm pb-3 mb-3 border-b border-gray-100">${o.description}</p>` : ''}
+      ${o.description ? `<p class="text-gray-600 text-sm pb-3 mb-3 border-b border-gray-100">${esc(o.description)}</p>` : ''}
       <div class="space-y-2 text-sm">
         <div class="flex justify-between">
           <span class="text-gray-500">订单金额</span>

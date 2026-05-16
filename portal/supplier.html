@@ -78,7 +78,7 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-let profile = null, supplier = null, allOrders = [], currentFilter = '', currentDetailData = null;
+let profile = null, supplier = null, allOrders = [], currentFilter = '', currentDetailData = null, loadError = null;
 
 const STATUS = {
   pending_payment:    {label:'待支付',   cls:'bg-yellow-100 text-yellow-700'},
@@ -119,8 +119,21 @@ function maskPhone(p) {
   const s = String(p);
   return s.length >= 7 ? s.slice(0,3) + '****' + s.slice(-4) : s;
 }
-function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN',{month:'short',day:'numeric'}); }
-function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+// Escape DB text before interpolating into innerHTML (prevent XSS)
+function esc(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  return isNaN(dt) ? '-' : dt.toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
+}
+function fmtDateTime(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  return isNaN(dt) ? '-' : dt.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
 
 function show(id) {
   ['v-orders','v-detail'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
@@ -155,9 +168,11 @@ async function loadOrders() {
   if (itemOrderIds.length && supId)   q = q.or(`id.in.(${itemOrderIds.join(',')}),supplier_id.eq.${supId}`);
   else if (itemOrderIds.length)       q = q.in('id', itemOrderIds);
   else if (supId)                     q = q.eq('supplier_id', supId);
-  else { allOrders = []; renderOrders(); return; }
+  else { loadError = null; allOrders = []; renderOrders(); return; }
 
   const {data, error} = await q;
+  // Fail loud: surface query errors (e.g. RLS denial) instead of an empty state
+  loadError = error || null;
   if (error) console.error('[supplier loadOrders]', error.message);
   allOrders = data || [];
   renderOrders();
@@ -203,9 +218,21 @@ function renderOrders() {
       ? allOrders.filter(o => o.status === currentFilter)
       : allOrders;
 
+  const el = document.getElementById('orders-list');
+
+  // Fail loud: distinct visible error (RLS denial ≠ genuinely empty)
+  if (loadError) {
+    document.getElementById('order-count').textContent = '';
+    el.innerHTML = `<div class="text-center py-16">
+      <div class="text-4xl mb-3">⚠️</div>
+      <p class="text-red-600 font-medium">订单加载失败</p>
+      <p class="text-gray-400 text-sm mt-1">${esc(loadError.message || '可能是权限不足，请联系管理员')}</p>
+    </div>`;
+    return;
+  }
+
   document.getElementById('order-count').textContent = `共 ${filtered.length} 条`;
 
-  const el = document.getElementById('orders-list');
   if (!filtered.length) {
     el.innerHTML = `<div class="text-center py-16">
       <div class="text-4xl mb-3">📦</div>
@@ -273,14 +300,14 @@ function orderCard(o) {
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3">
     <div class="flex items-start justify-between mb-3">
       <div>
-        <div class="font-mono font-bold text-hg text-sm">${o.order_no}</div>
-        <div class="text-gray-400 text-xs mt-0.5">${o.stores?.name||'-'} · ${fmtDate(o.created_at)}</div>
+        <div class="font-mono font-bold text-hg text-sm">${esc(o.order_no)}</div>
+        <div class="text-gray-400 text-xs mt-0.5">${esc(o.stores?.name)||'-'} · ${fmtDate(o.created_at)}</div>
       </div>
       ${badge(o.status)}
     </div>
-    ${o.description ? `<p class="text-sm text-gray-600 mb-3 line-clamp-2">${o.description}</p>` : ''}
+    ${o.description ? `<p class="text-sm text-gray-600 mb-3 line-clamp-2">${esc(o.description)}</p>` : ''}
     <div class="flex items-center justify-between">
-      <span class="text-xs text-gray-400">${o.customers?.name||''}</span>
+      <span class="text-xs text-gray-400">${esc(o.customers?.name)}</span>
       <div class="flex gap-2">${actionBtns}</div>
     </div>
   </div>`;
@@ -307,12 +334,20 @@ async function rejectOrder(e, orderId) {
   const reason = prompt('请填写拒绝原因（必填）：');
   if (reason === null) return;
   if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
-  await sb.from('orders').update({status:'paid'}).eq('id', orderId);
+  // S1: 拒单回退到 'paid'（staff.html 的核心步骤,店长在此重新派单）。
+  // 关键:必须同时清掉本厂家的关联,否则订单仍显示"已派给本厂家",
+  // 会留在本厂家列表里并可能被静默重新触发。
+  // 派单在 order_items.supplier_id 上做(见 staff.html),orders.supplier_id 一并清空。
+  await sb.from('orders').update({status:'paid', supplier_id:null}).eq('id', orderId);
+  if (supplier?.id) {
+    await sb.from('order_items').update({supplier_id:null})
+      .eq('order_id', orderId).eq('supplier_id', supplier.id);
+  }
   await sb.from('order_logs').insert({
     order_id:orderId, status:'paid',
     operator_id:profile.id, operator_role:'supplier',
     operator_name:supplier?.name||profile.name,
-    notes:`❌ 厂商拒绝接单：${reason.trim()}`,
+    notes:`❌ 厂商拒绝接单（需店长重新派单）：${reason.trim()}`,
   });
   await loadOrders();
 }
@@ -370,8 +405,8 @@ async function openDetail(id) {
         <div class="flex items-center gap-2 flex-wrap">${badge(l.status)}
           <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
         </div>
-        ${l.notes?`<p class="text-gray-600 text-sm mt-0.5">${l.notes}</p>`:''}
-        <p class="text-gray-400 text-xs">${l.operator_name||''}</p>
+        ${l.notes?`<p class="text-gray-600 text-sm mt-0.5">${esc(l.notes)}</p>`:''}
+        <p class="text-gray-400 text-xs">${esc(l.operator_name)}</p>
       </div>
     </div>`;
   }).join('');
@@ -507,12 +542,12 @@ async function openDetail(id) {
       <div class="space-y-2">
         ${(items||[]).map(it=>`
           <div class="bg-gray-50 rounded-lg p-3 text-sm">
-            <div class="font-medium text-gray-800">${it.product_name||'-'}</div>
-            ${it.model_spec?`<div class="text-gray-500 text-xs mt-0.5">型号：${it.model_spec}</div>`:''}
+            <div class="font-medium text-gray-800">${esc(it.product_name)||'-'}</div>
+            ${it.model_spec?`<div class="text-gray-500 text-xs mt-0.5">型号：${esc(it.model_spec)}</div>`:''}
             <div class="flex gap-4 mt-1 text-xs text-gray-500">
-              <span>数量：<span class="font-medium text-gray-700">${it.quantity} ${it.unit||''}</span></span>
+              <span>数量：<span class="font-medium text-gray-700">${esc(it.quantity)} ${esc(it.unit)}</span></span>
             </div>
-            ${it.notes?`<div class="text-gray-500 text-xs mt-1 italic">${it.notes}</div>`:''}
+            ${it.notes?`<div class="text-gray-500 text-xs mt-1 italic">${esc(it.notes)}</div>`:''}
           </div>`).join('')}
       </div>
     </div>` : '';
@@ -523,7 +558,7 @@ async function openDetail(id) {
       <div>
         <div class="text-xs font-medium" style="color:#92400e">此为补件单，关联原单：</div>
         <div class="font-mono font-bold cursor-pointer hover:underline" style="color:#78350f"
-             onclick="openDetail('${parentOrder.id}')">${parentOrder.order_no}</div>
+             onclick="openDetail('${parentOrder.id}')">${esc(parentOrder.order_no)}</div>
       </div>
     </div>` : '';
 
@@ -537,7 +572,7 @@ async function openDetail(id) {
         const st = STATUS[c.status] || { label: c.status, cls: 'bg-gray-100 text-gray-600' };
         return `<div onclick="openDetail('${c.id}')"
              class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:opacity-80">
-          <div class="font-mono text-sm font-semibold text-hg">${c.order_no}</div>
+          <div class="font-mono text-sm font-semibold text-hg">${esc(c.order_no)}</div>
           <div class="flex items-center gap-3">
             <span class="text-xs px-2 py-0.5 rounded-full font-medium ${st.cls}">${st.label}</span>
             <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -551,30 +586,30 @@ async function openDetail(id) {
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
-          <div class="text-gray-400 text-sm">${o.stores?.name||''}</div>
+          <div class="font-mono font-bold text-hg text-xl">${esc(o.order_no)}</div>
+          <div class="text-gray-400 text-sm">${esc(o.stores?.name)}</div>
         </div>
         ${badge(o.status)}
       </div>
       <div class="divide-y divide-gray-50 text-sm space-y-2">
         <div class="flex justify-between pb-2">
           <span class="text-gray-400">客户</span>
-          <span class="font-medium">${o.customers?.name||'-'}</span>
+          <span class="font-medium">${esc(o.customers?.name)||'-'}</span>
         </div>
         <div class="flex justify-between py-2">
           <span class="text-gray-400">电话</span>
-          <span class="font-mono">${maskPhone(o.customers?.phone)}</span>
+          <span class="font-mono">${esc(maskPhone(o.customers?.phone))}</span>
         </div>
-        ${o.customers?.address?`<div class="py-2"><span class="text-gray-400">地址</span><p class="mt-1 text-gray-700">${o.customers.address}</p></div>`:''}
+        ${o.customers?.address?`<div class="py-2"><span class="text-gray-400">地址</span><p class="mt-1 text-gray-700">${esc(o.customers.address)}</p></div>`:''}
         <div class="flex justify-between py-2">
           <span class="text-gray-400">创建日期</span>
           <span>${fmtDate(o.created_at)}</span>
         </div>
-        ${o.ship_method?`<div class="flex justify-between py-2"><span class="text-gray-400">运输方式</span><span class="font-medium">${{land:'🚛 陆运',sea:'🚢 海运',air:'✈️ 空运'}[o.ship_method]||o.ship_method}</span></div>`:''}
-        ${o.ship_carrier?`<div class="flex justify-between py-2"><span class="text-gray-400">物流公司</span><span class="font-medium">${o.ship_carrier}</span></div>`:''}
-        ${o.tracking_no?`<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${o.tracking_no}</span></div>`:''}
-        ${o.description?`<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${o.description}</p></div>`:''}
-        ${o.notes?`<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${o.notes}</p></div>`:''}
+        ${o.ship_method?`<div class="flex justify-between py-2"><span class="text-gray-400">运输方式</span><span class="font-medium">${{land:'🚛 陆运',sea:'🚢 海运',air:'✈️ 空运'}[o.ship_method]||esc(o.ship_method)}</span></div>`:''}
+        ${o.ship_carrier?`<div class="flex justify-between py-2"><span class="text-gray-400">物流公司</span><span class="font-medium">${esc(o.ship_carrier)}</span></div>`:''}
+        ${o.tracking_no?`<div class="flex justify-between py-2"><span class="text-gray-400">物流单号</span><span class="font-mono font-medium text-orange-600">${esc(o.tracking_no)}</span></div>`:''}
+        ${o.description?`<div class="pt-2"><span class="text-gray-400">描述</span><p class="mt-1 text-gray-600">${esc(o.description)}</p></div>`:''}
+        ${o.notes?`<div class="pt-2"><span class="text-gray-400">备注</span><p class="mt-1 text-gray-600">${esc(o.notes)}</p></div>`:''}
       </div>
     </div>
 
@@ -615,12 +650,17 @@ async function detailReject(id) {
   const reason = prompt('请填写拒绝原因（必填）：');
   if (reason === null) return;
   if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
-  await sb.from('orders').update({status:'paid'}).eq('id', id);
+  // S1: 同 rejectOrder —— 回退 'paid' 并清空本厂家关联,等店长重新派单。
+  await sb.from('orders').update({status:'paid', supplier_id:null}).eq('id', id);
+  if (supplier?.id) {
+    await sb.from('order_items').update({supplier_id:null})
+      .eq('order_id', id).eq('supplier_id', supplier.id);
+  }
   await sb.from('order_logs').insert({
     order_id:id, status:'paid',
     operator_id:profile.id, operator_role:'supplier',
     operator_name:supplier?.name||profile.name,
-    notes:`❌ 厂商拒绝接单：${reason.trim()}`,
+    notes:`❌ 厂商拒绝接单（需店长重新派单）：${reason.trim()}`,
   });
   show('v-orders');
   await loadOrders();
@@ -779,29 +819,29 @@ function printTaskSheet() {
 
   const itemRows = (items||[]).map(it => `
     <tr>
-      <td style="padding:8px 6px;border-bottom:1px solid #eee">${it.product_name||'-'}</td>
-      <td style="padding:8px 6px;border-bottom:1px solid #eee">${it.model_spec||'-'}</td>
-      <td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:center">${it.quantity} ${it.unit||''}</td>
-      <td style="padding:8px 6px;border-bottom:1px solid #eee;color:#555">${it.notes||''}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee">${esc(it.product_name)||'-'}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee">${esc(it.model_spec)||'-'}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:center">${esc(it.quantity)} ${esc(it.unit)}</td>
+      <td style="padding:8px 6px;border-bottom:1px solid #eee;color:#555">${esc(it.notes)}</td>
     </tr>`).join('');
 
   document.getElementById('print-content').innerHTML = `
     <div style="border-bottom:3px solid #1a3a2a;padding-bottom:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end">
       <div>
         <h1 style="font-size:22px;font-weight:bold;color:#1a3a2a;margin:0">生产任务单</h1>
-        <div style="font-size:12px;color:#999;margin-top:3px">${supplier?.name||'HOUZY HOME'}</div>
+        <div style="font-size:12px;color:#999;margin-top:3px">${esc(supplier?.name)||'HOUZY HOME'}</div>
       </div>
       <div style="font-size:11px;color:#bbb">打印：${new Date().toLocaleString('zh-CN')}</div>
     </div>
     <table style="width:100%;font-size:13px;margin-bottom:18px;border-collapse:collapse">
       <tr><td style="color:#888;width:90px;padding:5px 0;vertical-align:top">订单编号</td>
-          <td style="font-weight:bold;font-family:monospace;font-size:15px">${o.order_no}</td></tr>
-      <tr><td style="color:#888;padding:5px 0">门店</td><td>${o.stores?.name||'-'}</td></tr>
-      <tr><td style="color:#888;padding:5px 0">客户姓名</td><td>${o.customers?.name||'-'}</td></tr>
-      <tr><td style="color:#888;padding:5px 0;vertical-align:top">送货地址</td><td>${o.customers?.address||'-'}</td></tr>
+          <td style="font-weight:bold;font-family:monospace;font-size:15px">${esc(o.order_no)}</td></tr>
+      <tr><td style="color:#888;padding:5px 0">门店</td><td>${esc(o.stores?.name)||'-'}</td></tr>
+      <tr><td style="color:#888;padding:5px 0">客户姓名</td><td>${esc(o.customers?.name)||'-'}</td></tr>
+      <tr><td style="color:#888;padding:5px 0;vertical-align:top">送货地址</td><td>${esc(o.customers?.address)||'-'}</td></tr>
       <tr><td style="color:#888;padding:5px 0">创建日期</td><td>${fmtDate(o.created_at)}</td></tr>
-      ${o.description?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">订单描述</td><td>${o.description}</td></tr>`:''}
-      ${o.notes?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">备注</td><td>${o.notes}</td></tr>`:''}
+      ${o.description?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">订单描述</td><td>${esc(o.description)}</td></tr>`:''}
+      ${o.notes?`<tr><td style="color:#888;padding:5px 0;vertical-align:top">备注</td><td>${esc(o.notes)}</td></tr>`:''}
     </table>
     <h3 style="font-size:14px;font-weight:bold;margin-bottom:10px;padding-top:14px;border-top:1px solid #ddd">商品明细</h3>
     ${items?.length ? `

@@ -242,7 +242,7 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                  <span>系统编码预览：</span>
+                  <span>系统编码预览(仅供参考，正式编号以保存时为准)：</span>
                   <span id="si-new-sku" class="font-mono font-bold text-sm" style="color:#1a3a2a">—</span>
                 </div>
               </div>
@@ -392,7 +392,7 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <div class="text-xs text-gray-400">SKU 预览：<span id="np-sku-preview" class="font-mono font-bold text-hg text-sm">—</span></div>
+          <div class="text-xs text-gray-400">SKU 预览(仅供参考，正式编号以保存时为准)：<span id="np-sku-preview" class="font-mono font-bold text-hg text-sm">—</span></div>
           <button onclick="submitNewProduct()" class="btn-gold px-6 py-2 text-sm">保存</button>
           <button onclick="document.getElementById('prod-add-form').classList.add('hidden')"
                   class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
@@ -509,6 +509,38 @@ let profile = null;
 let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
 let soTab = 'out';
 let siCat = '', siSub = '', siNewProduct = false;
+
+// HTML-escape DB / user text before interpolating into innerHTML or template literals
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+// Safe number formatter — guards NaN/null, caps to 2 decimals
+function fmtNum(v, dp = 2) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: dp }) : '0';
+}
+// Safe date/time formatter — guards invalid dates
+function fmtDateTime(v) {
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+// Compute next SKU for a category (best-effort, count-based — non-authoritative)
+async function nextSku(cat) {
+  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
+  return `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+}
+// Insert a product, retrying with a fresh SKU on uniqueness collision (up to 5 times)
+async function insertProductWithSku(cat, fields) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const sku = await nextSku(cat);
+    const { data, error } = await sb.from('products')
+      .insert({ sku, ...fields }).select('id').single();
+    if (!error) return { sku, id: data.id };
+    const dup = error.code === '23505' || /duplicate|unique/i.test(error.message || '');
+    if (!dup) return { error };
+  }
+  return { error: { message: 'SKU 编号冲突，多次重试仍失败，请稍后再试' } };
+}
 
 const SI_FIELDS = {
   WY: {
@@ -700,13 +732,13 @@ async function loadAll() {
 }
 
 function populateSelects() {
-  const whOpts = '<option value="">— 选择仓库 —</option>' + allWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  const prodOpts = '<option value="">— 选择产品 —</option>' + allProducts.map(p => `<option value="${p.id}">[${p.sku}] ${p.name} (${p.unit})</option>`).join('');
+  const whOpts = '<option value="">— 选择仓库 —</option>' + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+  const prodOpts = '<option value="">— 选择产品 —</option>' + allProducts.map(p => `<option value="${esc(p.id)}">[${esc(p.sku)}] ${esc(p.name)} (${esc(p.unit)})</option>`).join('');
 
   ['si-wh','so-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whOpts; });
   ['si-prod','so-prod'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = prodOpts; });
 
-  const whFilterOpts = '<option value="">全部仓库</option>' + allWarehouses.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  const whFilterOpts = '<option value="">全部仓库</option>' + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   ['ov-wh','mv-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whFilterOpts; });
 
   // Inv stats
@@ -796,10 +828,10 @@ function renderOverview() {
           const avail = (row.qty_on_hand || 0) - (row.qty_reserved || 0);
           const low = p.min_stock_qty > 0 && avail <= p.min_stock_qty;
           return `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'} hover:bg-green-50/30 transition-colors">
-            <td class="px-4 py-3 font-mono text-xs font-bold text-hg">${p.sku||'—'}</td>
-            <td class="px-4 py-3 font-medium text-gray-800">${p.name||'—'}</td>
-            <td class="px-4 py-3 text-xs text-gray-400">${CAT_LABEL[p.category]||p.category||'—'}</td>
-            <td class="px-4 py-3 text-gray-500">${row.warehouses?.name||'—'}</td>
+            <td class="px-4 py-3 font-mono text-xs font-bold text-hg">${esc(p.sku||'—')}</td>
+            <td class="px-4 py-3 font-medium text-gray-800">${esc(p.name||'—')}</td>
+            <td class="px-4 py-3 text-xs text-gray-400">${esc(CAT_LABEL[p.category]||p.category||'—')}</td>
+            <td class="px-4 py-3 text-gray-500">${esc(row.warehouses?.name||'—')}</td>
             <td class="px-4 py-3 text-right">${row.qty_on_hand ?? 0}</td>
             <td class="px-4 py-3 text-right text-orange-500">${row.qty_reserved || 0}</td>
             <td class="px-4 py-3 text-right font-bold ${avail > 0 ? 'text-green-700' : 'text-red-500'}">${avail}</td>
@@ -914,8 +946,7 @@ async function previewNewSku() {
   const cat = siCat === 'CT' ? 'CT' : siCat === 'WY' ? 'WY' : 'QT';
   const el  = document.getElementById('si-new-sku');
   if (!el) return;
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  el.textContent = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+  el.textContent = await nextSku(cat);
 }
 
 async function lookupCode() {
@@ -946,15 +977,15 @@ async function lookupCode() {
   el.innerHTML = items.map(({ p, codes }) => `
     <div class="border border-gray-100 rounded-lg p-3 mb-2 bg-white">
       <div class="flex flex-wrap items-center gap-2 mb-1.5">
-        <span class="font-mono text-sm font-bold" style="color:#1a3a2a">${p.sku}</span>
+        <span class="font-mono text-sm font-bold" style="color:#1a3a2a">${esc(p.sku)}</span>
         <span class="text-gray-300 text-xs">→</span>
-        <span class="font-medium text-gray-800 text-sm">${p.name}</span>
-        <span class="tag tag-adj ml-auto">${CAT_LABEL[p.category]||p.category||'—'}</span>
+        <span class="font-medium text-gray-800 text-sm">${esc(p.name)}</span>
+        <span class="tag tag-adj ml-auto">${esc(CAT_LABEL[p.category]||p.category||'—')}</span>
       </div>
       <div class="text-xs">
         <span class="text-gray-400 font-medium">厂家编码：</span>
         ${codes.length
-          ? codes.map(c => `<span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 mr-1">${c.supplier_code}</span><span class="text-gray-400">${c.suppliers?.name ? '('+c.suppliers.name+')' : ''}</span>`).join('&ensp;')
+          ? codes.map(c => `<span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700 mr-1">${esc(c.supplier_code)}</span><span class="text-gray-400">${c.suppliers?.name ? '('+esc(c.suppliers.name)+')' : ''}</span>`).join('&ensp;')
           : '<span class="text-gray-300">暂无厂家编码，可在下方产品列表中绑定</span>'}
       </div>
     </div>`).join('');
@@ -984,15 +1015,11 @@ async function submitStockIn() {
     const minQ  = parseFloat(document.getElementById('si-new-min')?.value) || 0;
     const attrs = collectSiAttrs();
     const specs = Object.entries(attrs).map(([k,v])=>`${k}:${v}`).join(' | ') || null;
-    const { count } = await sb.from('products').select('id',{count:'exact',head:true}).like('sku',`HH-${cat}-%`);
-    const sku = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
-    const { data: np, error: npErr } = await sb.from('products')
-      .insert({ sku, name: newName, category: cat, unit, specs, min_stock_qty: minQ })
-      .select('id').single();
-    if (npErr) { err.textContent='建档失败: '+npErr.message; err.classList.remove('hidden'); return; }
-    prodId = np.id;
+    const res = await insertProductWithSku(cat, { name: newName, category: cat, unit, specs, min_stock_qty: minQ });
+    if (res.error) { err.textContent='建档失败: '+res.error.message; err.classList.remove('hidden'); return; }
+    prodId = res.id;
     await loadAll();
-    newProductSku = sku; newProductName = newName;
+    newProductSku = res.sku; newProductName = newName;
   } else if (!prodId) {
     err.textContent='请选择产品'; err.classList.remove('hidden'); return;
   }
@@ -1007,11 +1034,28 @@ async function submitStockIn() {
   if (userNotes) notesStr += (notesStr ? '\n备注: ' : '') + userNotes;
   notesStr = notesStr.trim() || null;
 
-  const existing = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
-  if (existing) {
-    await sb.from('inventory').update({ qty_on_hand: (existing.qty_on_hand||0) + qty, ...(cost?{unit_cost:cost}:{}), updated_at: new Date().toISOString() }).eq('id', existing.id);
-  } else {
-    await sb.from('inventory').insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0, ...(cost?{unit_cost:cost}:{}) });
+  // Optimistic-concurrency stock-in: re-read current row, conditional update on qty_on_hand
+  let applied = false;
+  for (let attempt = 0; attempt < 3 && !applied; attempt++) {
+    const { data: cur } = await sb.from('inventory')
+      .select('id, qty_on_hand').eq('product_id', prodId).eq('warehouse_id', whId).maybeSingle();
+    if (cur) {
+      const curVal = cur.qty_on_hand || 0;
+      const { data: upd } = await sb.from('inventory')
+        .update({ qty_on_hand: curVal + qty, ...(cost?{unit_cost:cost}:{}), updated_at: new Date().toISOString() })
+        .eq('id', cur.id).eq('qty_on_hand', curVal).select('id');
+      if (upd && upd.length) applied = true;
+    } else {
+      const { data: ins } = await sb.from('inventory')
+        .insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0, ...(cost?{unit_cost:cost}:{}) }).select('id');
+      if (ins && ins.length) applied = true;
+      // insert race: row appeared concurrently → loop retries via update path
+    }
+  }
+  if (!applied) {
+    err.textContent = '库存刚被他人改动,请重试'; err.classList.remove('hidden');
+    await loadAll();
+    return;
   }
   await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'in', qty, notes: notesStr, operator_id: profile.id });
 
@@ -1071,25 +1115,72 @@ async function submitStockOut() {
   err.classList.add('hidden');
   if (!whId)        { err.textContent='请选择仓库'; err.classList.remove('hidden'); return; }
   if (!prodId)      { err.textContent='请选择产品'; err.classList.remove('hidden'); return; }
-  if (!qty || qty<0){ err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
   if (!notes)       { err.textContent='请填写备注说明'; err.classList.remove('hidden'); return; }
+  if (soTab === 'out') {
+    if (!qty || qty<0) { err.textContent='请输入有效数量'; err.classList.remove('hidden'); return; }
+  } else {
+    // adjust: qty = new actual on-hand value — must be a non-blank finite number >= 0
+    const rawQty = (document.getElementById('so-qty')?.value || '').trim();
+    if (rawQty === '' || !Number.isFinite(qty) || qty < 0) {
+      err.textContent='请输入有效的调整后库存数量(>= 0)'; err.classList.remove('hidden'); return;
+    }
+    if (qty > 1000000 && !confirm(`调整后库存将设为 ${qty}，数值异常巨大，确认继续？`)) return;
+  }
 
   const existing = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
   if (soTab === 'out') {
-    if (!existing || (existing.qty_on_hand||0) < qty) {
-      err.textContent = `库存不足（当前在库：${existing?.qty_on_hand||0}）`; err.classList.remove('hidden'); return;
+    if (!existing) {
+      err.textContent = '该产品在此仓库无库存记录,无法出库'; err.classList.remove('hidden'); return;
     }
-    await sb.from('inventory').update({ qty_on_hand: existing.qty_on_hand - qty, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    // Optimistic-concurrency stock-out: re-read, validate, conditional update
+    let applied = false, lastCur = existing.qty_on_hand || 0;
+    for (let attempt = 0; attempt < 3 && !applied; attempt++) {
+      const { data: cur } = await sb.from('inventory')
+        .select('id, qty_on_hand').eq('product_id', prodId).eq('warehouse_id', whId).maybeSingle();
+      if (!cur) { lastCur = 0; break; }
+      const curVal = cur.qty_on_hand || 0;
+      lastCur = curVal;
+      if (curVal < qty) break;
+      const { data: upd } = await sb.from('inventory')
+        .update({ qty_on_hand: curVal - qty, updated_at: new Date().toISOString() })
+        .eq('id', cur.id).eq('qty_on_hand', curVal).select('id');
+      if (upd && upd.length) applied = true;
+    }
+    if (!applied) {
+      err.textContent = lastCur < qty ? `库存不足（当前在库：${lastCur}）` : '库存刚被他人改动,请重试';
+      err.classList.remove('hidden');
+      await loadAll();
+      return;
+    }
     await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'out', qty, notes, operator_id: profile.id });
   } else {
     // adjust: qty = new actual on_hand value
-    const diff = qty - (existing?.qty_on_hand || 0);
-    if (existing) {
-      await sb.from('inventory').update({ qty_on_hand: qty, updated_at: new Date().toISOString() }).eq('id', existing.id);
-    } else {
-      await sb.from('inventory').insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0 });
+    if (!existing && !confirm('该产品在此仓库原本没有库存记录,调整将新建一条库存记录,确认继续？')) return;
+    let applied = false, diff = 0;
+    for (let attempt = 0; attempt < 3 && !applied; attempt++) {
+      const { data: cur } = await sb.from('inventory')
+        .select('id, qty_on_hand').eq('product_id', prodId).eq('warehouse_id', whId).maybeSingle();
+      if (cur) {
+        const curVal = cur.qty_on_hand || 0;
+        diff = qty - curVal;
+        const { data: upd } = await sb.from('inventory')
+          .update({ qty_on_hand: qty, updated_at: new Date().toISOString() })
+          .eq('id', cur.id).eq('qty_on_hand', curVal).select('id');
+        if (upd && upd.length) applied = true;
+      } else {
+        diff = qty;
+        const { data: ins } = await sb.from('inventory')
+          .insert({ product_id: prodId, warehouse_id: whId, qty_on_hand: qty, qty_reserved: 0 }).select('id');
+        if (ins && ins.length) applied = true;
+        // insert race: row appeared concurrently → loop retries via update path
+      }
     }
-    await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'adjust', qty: Math.abs(diff), notes: `调整：${notes}（差值${diff>=0?'+':''}${diff}）`, operator_id: profile.id });
+    if (!applied) {
+      err.textContent = '库存刚被他人改动,请重试'; err.classList.remove('hidden');
+      await loadAll();
+      return;
+    }
+    await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'adjust', qty: diff, notes: `调整：${notes}（差值${diff>=0?'+':''}${diff}）`, operator_id: profile.id });
   }
 
   ['so-qty','so-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
@@ -1130,20 +1221,24 @@ function renderMovements() {
       <tbody>
         ${rows.map((m, i) => {
           const tagCls = m.type==='in' ? 'tag-in' : m.type==='out' ? 'tag-out' : 'tag-adj';
+          // Direction: in=+, out=−, adjust=signed by m.qty (legacy rows stored abs → treated as +)
+          const qNum = Number(m.qty);
+          const up = m.type==='in' ? true : m.type==='out' ? false : !(qNum < 0);
+          const qAbs = Number.isFinite(qNum) ? Math.abs(qNum) : 0;
           return `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
-            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${new Date(m.created_at).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
-            <td class="px-4 py-3"><span class="tag ${tagCls}">${typeLabel[m.type]||m.type}</span></td>
-            <td class="px-4 py-3">${m.products ? `<span class="font-mono text-xs text-hg">[${m.products.sku}]</span> ${m.products.name}` : '—'}</td>
-            <td class="px-4 py-3 text-gray-500">${m.warehouses?.name||'—'}</td>
-            <td class="px-4 py-3 text-right font-bold font-mono ${m.type==='in'?'text-green-700':'text-red-600'}">${m.type==='in'?'+':'−'}${m.qty}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${fmtDateTime(m.created_at)}</td>
+            <td class="px-4 py-3"><span class="tag ${tagCls}">${esc(typeLabel[m.type]||m.type)}</span></td>
+            <td class="px-4 py-3">${m.products ? `<span class="font-mono text-xs text-hg">[${esc(m.products.sku)}]</span> ${esc(m.products.name)}` : '—'}</td>
+            <td class="px-4 py-3 text-gray-500">${esc(m.warehouses?.name||'—')}</td>
+            <td class="px-4 py-3 text-right font-bold font-mono ${up?'text-green-700':'text-red-600'}">${up?'+':'−'}${qAbs}</td>
             <td class="px-4 py-3 text-xs max-w-xs">
               ${(() => {
                 const n = m.notes || '';
                 const bm = n.match(/批次:([^\s|]+)/);
                 const batch = bm ? bm[1] : null;
                 const display = n.replace(/批次:[^\s|]+\s*\|?\s*/,'').trim().replace(/^\|/,'').trim();
-                return `${batch ? `<span class="inline-block px-1.5 py-0.5 rounded text-xs font-bold mr-1" style="background:#fef9ee;color:#92400e;border:1px solid #fcd34d">批次 ${batch}</span>` : ''}
-                        <span class="text-gray-400">${display||'—'}</span>`;
+                return `${batch ? `<span class="inline-block px-1.5 py-0.5 rounded text-xs font-bold mr-1" style="background:#fef9ee;color:#92400e;border:1px solid #fcd34d">批次 ${esc(batch)}</span>` : ''}
+                        <span class="text-gray-400">${esc(display||'—')}</span>`;
               })()
             }
             </td>
@@ -1182,29 +1277,29 @@ function renderProducts() {
         ${filtered.map((p, i) => `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
           <td class="px-4 py-3">
             ${p.image_url
-              ? `<img src="${p.image_url}" class="w-10 h-10 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80" onclick="viewProductImage('${p.image_url}')">`
+              ? `<img src="${esc(p.image_url)}" class="w-10 h-10 object-cover rounded-lg border border-gray-100 cursor-pointer hover:opacity-80" onclick="viewProductImage('${esc(p.image_url)}')">`
               : `<label class="cursor-pointer w-10 h-10 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg hover:border-hg text-gray-300 hover:text-hg transition-colors" title="上传图片">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                   <input type="file" class="hidden" accept="image/*" onchange="uploadExistingProductImage('${p.id}',this)">
                 </label>`}
           </td>
-          <td class="px-4 py-3 font-mono font-bold text-hg text-xs">${p.sku}</td>
-          <td class="px-4 py-3 font-medium text-gray-800">${p.name}</td>
-          <td class="px-4 py-3 text-xs text-gray-400">${CAT_LABEL[p.category]||p.category||'—'}</td>
-          <td class="px-4 py-3 text-gray-500">${p.unit||'—'}</td>
+          <td class="px-4 py-3 font-mono font-bold text-hg text-xs">${esc(p.sku)}</td>
+          <td class="px-4 py-3 font-medium text-gray-800">${esc(p.name)}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">${esc(CAT_LABEL[p.category]||p.category||'—')}</td>
+          <td class="px-4 py-3 text-gray-500">${esc(p.unit||'—')}</td>
           <td class="px-4 py-3 text-right">
             <input type="number" value="${p.price||''}" placeholder="—" min="0" step="0.01"
               class="w-20 text-right text-sm border border-transparent rounded px-1 hover:border-gray-300 focus:border-hg focus:outline-none"
               onchange="updateProductPrice('${p.id}',this.value)">
           </td>
-          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${p.specs||'—'}</td>
+          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${esc(p.specs||'—')}</td>
           <td class="px-4 py-3 text-right text-gray-400">${p.min_stock_qty||0}</td>
           <td class="px-4 py-3">
-            <button onclick="manageSupplierCodes('${p.id}','${p.name.replace(/'/g,"\\'")}')" 
+            <button data-act="codes" data-id="${esc(p.id)}" data-name="${esc(p.name)}"
                     class="text-xs text-blue-600 hover:underline">绑定/查看</button>
           </td>
           <td class="px-4 py-3">
-            <button onclick="showQR('${p.sku}','${p.name.replace(/'/g,"\\'")}')" 
+            <button data-act="qr" data-sku="${esc(p.sku)}" data-name="${esc(p.name)}"
                     class="text-xs font-medium hover:underline" style="color:#1a3a2a">🔲 生成</button>
           </td>
           <td class="px-4 py-3">
@@ -1216,6 +1311,14 @@ function renderProducts() {
     </table>
   </div>`;
 }
+
+// Delegated handler for product-table buttons (avoids XSS via inline onclick string args)
+document.getElementById('prod-table')?.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  if (btn.dataset.act === 'codes') manageSupplierCodes(btn.dataset.id, btn.dataset.name);
+  else if (btn.dataset.act === 'qr') showQR(btn.dataset.sku, btn.dataset.name);
+});
 
 async function updateProductPrice(productId, val) {
   const price = parseFloat(val) || null;
@@ -1281,8 +1384,7 @@ async function previewSKU() {
   const cat = document.getElementById('np-cat')?.value;
   const el  = document.getElementById('np-sku-preview');
   if (!el || !cat) { if(el) el.textContent='—'; return; }
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  el.textContent = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+  el.textContent = await nextSku(cat);
 }
 
 async function submitNewProduct() {
@@ -1296,16 +1398,14 @@ async function submitNewProduct() {
   if (!cat)  { err.textContent='请选择类别'; err.classList.remove('hidden'); return; }
   if (!name) { err.textContent='请填写产品名称'; err.classList.remove('hidden'); return; }
 
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  const sku = `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
   const price = parseFloat(document.getElementById('np-price')?.value) || null;
-  const { data: np, error } = await sb.from('products').insert({ sku, name, category: cat, unit, specs, min_stock_qty: minQ, price }).select('id').single();
-  if (error) { err.textContent='保存失败: '+error.message; err.classList.remove('hidden'); return; }
+  const res = await insertProductWithSku(cat, { name, category: cat, unit, specs, min_stock_qty: minQ, price });
+  if (res.error) { err.textContent='保存失败: '+res.error.message; err.classList.remove('hidden'); return; }
 
   const file = document.getElementById('np-image')?.files[0];
-  if (file && np?.id) {
-    const url = await uploadProductImageFile(np.id, file);
-    if (url) await sb.from('products').update({ image_url: url }).eq('id', np.id);
+  if (file && res.id) {
+    const url = await uploadProductImageFile(res.id, file);
+    if (url) await sb.from('products').update({ image_url: url }).eq('id', res.id);
   }
 
   document.getElementById('prod-add-form').classList.add('hidden');
@@ -1381,9 +1481,9 @@ function renderWarehouses() {
     const totalOn = inv.reduce((s,r) => s+(r.qty_on_hand||0), 0);
     return `<div class="card p-5 flex items-center justify-between">
       <div>
-        <div class="font-semibold text-gray-800">${w.name}</div>
-        ${w.location ? `<div class="text-xs text-gray-400 mt-0.5">${w.location}</div>` : ''}
-        <div class="text-xs text-gray-400 mt-1">${inv.length} 种产品 · 在库合计 ${totalOn.toFixed(0)} 件</div>
+        <div class="font-semibold text-gray-800">${esc(w.name)}</div>
+        ${w.location ? `<div class="text-xs text-gray-400 mt-0.5">${esc(w.location)}</div>` : ''}
+        <div class="text-xs text-gray-400 mt-1">${inv.length} 种产品 · 在库合计 ${fmtNum(totalOn, 0)} 件</div>
       </div>
       <button onclick="deleteWarehouse('${w.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>
     </div>`;
