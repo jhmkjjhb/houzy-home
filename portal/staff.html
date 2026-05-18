@@ -1270,6 +1270,23 @@ function deadlineRowInfo(o) {
   return fmtCountdown(o.deadline_at);
 }
 
+// 订单列表：每秒就地刷新每行倒计时（不重渲染整表，保留滚动位置）
+function tickOrderListCountdowns() {
+  const v = document.getElementById('v-orders');
+  if (!v || v.classList.contains('hidden')) return;
+  document.querySelectorAll('.ord-cd').forEach(el => {
+    const dl = el.getAttribute('data-dl');
+    if (!dl) return;
+    const cd = fmtCountdown(dl);
+    if (!cd) return;
+    el.textContent = cd.text;
+    el.style.color = cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a';
+    el.classList.remove('cd-tick');
+    void el.offsetWidth;
+    el.classList.add('cd-tick');
+  });
+}
+
 // ── Warranty panel (5-year, annual reminders) ──
 function renderWarrantyPanel(o, logs, orderId) {
   const startLog = (logs || []).find(l => l.status === 'after_sales');
@@ -1472,6 +1489,8 @@ async function init() {
     void el.offsetWidth;
     el.classList.add('cd-tick');
   }, 1000);
+  // 订单列表倒计时每秒跳动
+  setInterval(tickOrderListCountdowns, 1000);
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
 
@@ -1768,7 +1787,7 @@ function renderOrdersTable(orders) {
 
   const rowsData = orders.map(o => {
     const cd = deadlineRowInfo(o);
-    const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
+    const cdHtml = cd ? `<div class="ord-cd text-sm mt-0.5 font-bold" data-dl="${o.deadline_at||''}" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#16a34a'}">${cd.text}</div>` : '';
     const alarmBadge = cd?.overdue
       ? `<span class="row-overdue-badge text-xs px-1.5 py-0.5 rounded-full font-bold ml-1" style="background:#dc2626;color:#fff">⚠ ${t('overdue')}</span>`
       : '';
@@ -2551,7 +2570,12 @@ async function openDetail(id, backView) {
       <div class="mb-3">
         <label class="label">${t('lbl_deadline')} <span class="text-gray-400 font-normal text-xs">${slaHint}</span></label>
         ${canDo(FIELD_MIN_LEVEL.edit_deadline)
-          ? `<input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input">`
+          ? `<div class="flex gap-2">
+               <input type="datetime-local" id="upd-deadline" value="${dlLocal}" class="input flex-1">
+               <button type="button" onclick="saveDeadlineOnly('${o.id}')"
+                       class="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                       style="background:#1a3a2a;color:#fff">保存时间</button>
+             </div>`
           : `<div class="input bg-gray-50 text-gray-600 cursor-not-allowed">
                ${o.deadline_at ? fmtDateTime(o.deadline_at) : '—'}
                <input type="hidden" id="upd-deadline" value="${dlLocal}">
@@ -3984,6 +4008,21 @@ async function toggleFulfillmentMode(orderId, currentMode) {
   if (error) { alert('切换失败：' + error.message); return; }
   await loadOrders();
   openDetail(orderId);
+}
+
+// 只保存截止时间：独立于状态变更，不受状态权限拦截，成功/失败都明确反馈（不静默吞错）
+async function saveDeadlineOnly(id) {
+  const inp = document.getElementById('upd-deadline');
+  const v   = inp?.value;
+  if (!v) { alert('请先选择截止时间'); return; }
+  const iso = new Date(v).toISOString();
+  const { error } = await sb.from('orders')
+    .update({ deadline_at: iso, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { alert('截止时间保存失败：' + error.message); return; }
+  alert('✅ 截止时间已保存');
+  await loadOrders();
+  await openDetail(id);
 }
 
 async function updateOrder(id) {
