@@ -562,7 +562,7 @@ async function insertProductWithSku(cat, fields) {
 
 // ── Bulk Stock-In via Excel ──────────────────────────────────────────────
 // Template/export columns (Chinese headers, matched by name on upload)
-const BULK_COLS = ['SKU','产品名称','单位','规格说明','入库数量','仓库','单位成本','供应商名称','厂家编号','最低库存预警','批次号','备注'];
+const BULK_COLS = ['SKU','产品名称','单位','颜色','规格说明','入库数量','仓库','单位成本','供应商名称','厂家编号','最低库存预警','批次号','备注'];
 // Sheet name = "<code> <label>"; '/' is illegal in Excel sheet names → replace
 function bulkSheetName(code) { return code + ' ' + String(CAT_LABEL[code] || code).replace(/[\/\\?*\[\]:]/g, '·'); }
 function bulkCodeFromSheet(name) {
@@ -621,7 +621,7 @@ async function downloadStockInTemplate() {
     ['2. 带 * 为必填:产品名称、入库数量、仓库。'],
     ['3. SKU 留空 → 系统自动生成;填了且系统已存在 → 只补库存,不重复建产品。'],
     ['4. 「仓库」请填下方清单里的准确名称。'],
-    ['5. 「规格说明」自由填写,例:品牌:科勒 | 颜色:哑光黑 | 尺寸:600×120mm。'],
+    ['5. 「颜色」单独一列填,例:哑光黑、米黄。「规格说明」填其余,例:品牌:科勒 | 尺寸:600×120mm。'],
     ['6. 瓷砖类目「批次号」必填。'],
     ['7. 单位默认「件」,可改。'],
     ['8. 「供应商名称」+「厂家编号」用于溯源:要填都填,只填一个会报错。'],
@@ -637,8 +637,8 @@ async function downloadStockInTemplate() {
   const sampleWh = whNames[0] || '';
   Object.keys(CAT_LABEL).forEach(code => {
     const example = code === 'CT'
-      ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, '示例供应商（可删）', 'X1DM918218Y', 2, 'PG20260518', '示例行,正式填写前请删除']
-      : ['', '示例:产品名（可删）', '件', '品牌:示例 | 颜色:示例', 5, sampleWh, 100, '示例供应商（可删）', 'MFG-0001', 1, '', '示例行,正式填写前请删除'];
+      ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '米黄', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, '示例供应商（可删）', 'X1DM918218Y', 2, 'PG20260518', '示例行,正式填写前请删除']
+      : ['', '示例:产品名（可删）', '件', '哑光黑', '品牌:示例 | 材质:示例', 5, sampleWh, 100, '示例供应商（可删）', 'MFG-0001', 1, '', '示例行,正式填写前请删除'];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BULK_COLS, example]), bulkSheetName(code));
   });
   XLSX.writeFile(wb, 'HOUZY入库模版.xlsx');
@@ -694,7 +694,8 @@ async function handleBulkStockIn(input) {
         cat, name, sku, qty, where,
         whId: wh.id,
         unit:  String(r['单位'] ?? '').trim() || '件',
-        specs: String(r['规格说明'] ?? '').trim() || null,
+        specs: [ (String(r['颜色'] ?? '').trim() ? '颜色:' + String(r['颜色']).trim() : ''),
+                 String(r['规格说明'] ?? '').trim() ].filter(Boolean).join(' | ') || null,
         cost:  parseFloat(r['单位成本']) || null,
         minQ:  parseFloat(r['最低库存预警']) || 0,
         batch: String(r['批次号'] ?? '').trim(),
