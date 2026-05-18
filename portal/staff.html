@@ -489,6 +489,7 @@
             <div class="flex flex-wrap gap-x-4 gap-y-1.5">
               <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="WY"><span class="text-xs text-gray-700">卫浴</span></label>
               <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="CG"><span class="text-xs text-gray-700">橱柜</span></label>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DZ"><span class="text-xs text-gray-700">定制柜</span></label>
               <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DB"><span class="text-xs text-gray-700">地板/地砖</span></label>
               <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="DJ"><span class="text-xs text-gray-700">灯具</span></label>
               <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="sup-pt-check accent-yellow-600" value="MC"><span class="text-xs text-gray-700">门窗</span></label>
@@ -1893,11 +1894,13 @@ function addItemRow(data = {}) {
 function addBundle(kind) {
   const mods = QUOTE_BUNDLES[kind];
   if (!mods) return;
+  const ptype = { '橱柜':'CG', '衣柜':'DZ' }[kind] || '';   // 橱柜→橱柜，衣柜→定制柜
   mods.forEach(section => {
     const sub = section.split('·')[1] || section;
     addItemRow({
       section,
       product_name: `${kind} ${sub}`,                         // 默认名，员工可改成实际规格
+      product_type: ptype,
       unit:        QUOTE_SECTION_UNIT[section] || '套',
       unit_price:  QUOTE_SECTION_REF_PRICE[section] || '',
     });
@@ -2858,6 +2861,7 @@ function itemStatusBadge(s) {
 const PRODUCT_TYPES = [
   { code:'WY', label:'卫浴' },
   { code:'CG', label:'橱柜' },
+  { code:'DZ', label:'定制柜' },
   { code:'DB', label:'地板/地砖' },
   { code:'DJ', label:'灯具' },
   { code:'MC', label:'门窗' },
@@ -4205,6 +4209,7 @@ async function editSupplierTypes(id, currentTypes) {
       <div class="grid grid-cols-2 gap-2 mb-4">
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="WY" ${currentTypes.includes('WY')?'checked':''}><span class="text-sm">卫浴</span></label>
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="CG" ${currentTypes.includes('CG')?'checked':''}><span class="text-sm">橱柜</span></label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="DZ" ${currentTypes.includes('DZ')?'checked':''}><span class="text-sm">定制柜</span></label>
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="DB" ${currentTypes.includes('DB')?'checked':''}><span class="text-sm">地板/地砖</span></label>
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="DJ" ${currentTypes.includes('DJ')?'checked':''}><span class="text-sm">灯具</span></label>
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="modal-pt accent-yellow-600" value="MC" ${currentTypes.includes('MC')?'checked':''}><span class="text-sm">门窗</span></label>
