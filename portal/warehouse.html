@@ -156,6 +156,23 @@
     <!-- 入库操作 -->
     <div id="v-stockin" class="hidden p-4 sm:p-6 max-w-4xl mx-auto">
       <h1 class="text-xl font-bold text-gray-800 mb-4">入库操作</h1>
+
+      <!-- 批量入库（Excel） -->
+      <div class="card p-6 mb-4">
+        <h3 class="font-semibold text-gray-800 mb-1">📦 批量入库（Excel）</h3>
+        <p class="text-xs text-gray-500 mb-4">SKU 太多时用这里:下载模版填好 → 一键上传,系统自动建产品并入库。</p>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="exportInventoryExcel()"
+            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">📥 导出当前库存 Excel</button>
+          <button onclick="downloadStockInTemplate()"
+            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">📄 下载入库模版</button>
+          <button onclick="document.getElementById('bulk-si-file').click()"
+            class="px-4 py-2 text-sm rounded-lg btn-gold">📤 批量上传入库</button>
+          <input type="file" id="bulk-si-file" accept=".xlsx,.xls" class="hidden" onchange="handleBulkStockIn(this)">
+        </div>
+        <div id="bulk-si-result" class="hidden mt-4 text-sm"></div>
+      </div>
+
       <div class="card p-6 mb-4">
         <h3 class="font-semibold text-gray-800 mb-5">新建入库单</h3>
 
@@ -497,6 +514,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -540,6 +558,199 @@ async function insertProductWithSku(cat, fields) {
     if (!dup) return { error };
   }
   return { error: { message: 'SKU 编号冲突，多次重试仍失败，请稍后再试' } };
+}
+
+// ── Bulk Stock-In via Excel ──────────────────────────────────────────────
+// Template/export columns (Chinese headers, matched by name on upload)
+const BULK_COLS = ['SKU','产品名称','单位','规格说明','入库数量','仓库','单位成本','最低库存预警','批次号','备注'];
+// Sheet name = "<code> <label>"; '/' is illegal in Excel sheet names → replace
+function bulkSheetName(code) { return code + ' ' + String(CAT_LABEL[code] || code).replace(/[\/\\?*\[\]:]/g, '·'); }
+function bulkCodeFromSheet(name) {
+  const tok = String(name || '').trim().split(/\s+/)[0];
+  return CAT_LABEL[tok] ? tok : null;
+}
+function bulkLibReady() {
+  if (typeof XLSX === 'undefined') { alert('表格组件还没加载好,请刷新页面后重试'); return false; }
+  return true;
+}
+
+// ① 导出当前库存 → 按 11 类目分 sheet
+function exportInventoryExcel() {
+  if (!bulkLibReady()) return;
+  const wb = XLSX.utils.book_new();
+  const whs = allWarehouses.slice();
+  Object.keys(CAT_LABEL).forEach(code => {
+    const head = ['SKU','名称','单位','规格', ...whs.map(w => w.name), '总库存', '单位成本'];
+    const rows = [head];
+    allProducts.filter(p => (p.category || 'QT') === code).forEach(p => {
+      const invs = allInventory.filter(r => r.product_id === p.id);
+      const perWh = whs.map(w => {
+        const r = invs.find(x => x.warehouse_id === w.id);
+        return r ? (r.qty_on_hand || 0) : 0;
+      });
+      const total = perWh.reduce((a, b) => a + b, 0);
+      const cost = (invs.find(x => x.unit_cost != null) || {}).unit_cost ?? '';
+      rows.push([p.sku || '', p.name || '', p.unit || '', p.specs || '', ...perWh, total, cost]);
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), bulkSheetName(code));
+  });
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `HOUZY库存导出_${stamp}.xlsx`);
+}
+
+// ② 下载入库模版（11 类目 sheet + 填写说明页）
+function downloadStockInTemplate() {
+  if (!bulkLibReady()) return;
+  const wb = XLSX.utils.book_new();
+  const whNames = allWarehouses.map(w => w.name);
+  const info = [
+    ['HOUZY HOME 批量入库模版 — 填写说明'],
+    [],
+    ['1. 每个类目一个表页(sheet),在对应类目页里填写,一行一个产品。'],
+    ['2. 带 * 为必填:产品名称、入库数量、仓库。'],
+    ['3. SKU 留空 → 系统自动生成;填了且系统已存在 → 只补库存,不重复建产品。'],
+    ['4. 「仓库」请填下方清单里的准确名称。'],
+    ['5. 「规格说明」自由填写,例:品牌:科勒 | 颜色:哑光黑 | 尺寸:600×120mm。'],
+    ['6. 瓷砖类目「批次号」必填。'],
+    ['7. 单位默认「件」,可改。'],
+    [],
+    ['可用仓库名称(照抄到「仓库」列):'],
+    ...(whNames.length ? whNames.map(n => [n]) : [['(暂无仓库,请先在「仓库设置」里创建)']]),
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), '填写说明');
+  const sampleWh = whNames[0] || '';
+  Object.keys(CAT_LABEL).forEach(code => {
+    const example = code === 'CT'
+      ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, 2, 'PG20260518', '示例行,正式填写前请删除']
+      : ['', '示例:产品名（可删）', '件', '品牌:示例 | 颜色:示例', 5, sampleWh, 100, 1, '', '示例行,正式填写前请删除'];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BULK_COLS, example]), bulkSheetName(code));
+  });
+  XLSX.writeFile(wb, 'HOUZY入库模版.xlsx');
+}
+
+// ③ 批量上传入库
+async function handleBulkStockIn(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || !bulkLibReady()) return;
+  const box = document.getElementById('bulk-si-result');
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="text-gray-500">正在读取文件…</div>';
+
+  let wb;
+  try {
+    wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  } catch (e) {
+    box.innerHTML = '<div class="text-red-600">文件读取失败,请确认是从模版填写的 Excel 文件。</div>';
+    return;
+  }
+
+  // Collect valid data rows across category sheets
+  const queue = [];
+  const fails = [];
+  for (const sheetName of wb.SheetNames) {
+    if (sheetName === '填写说明') continue;
+    const cat = bulkCodeFromSheet(sheetName);
+    if (!cat) continue; // unrecognized sheet, ignore silently
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+    rows.forEach((r, idx) => {
+      const rowNo = idx + 2; // header is row 1
+      const name  = String(r['产品名称'] ?? '').trim();
+      const sku   = String(r['SKU'] ?? '').trim();
+      const qty   = parseFloat(r['入库数量']);
+      const whNm  = String(r['仓库'] ?? '').trim();
+      // skip blank rows
+      if (!name && !sku && !whNm && !(qty > 0)) return;
+      // skip the bundled example row
+      if (/示例/.test(name) || /示例行/.test(String(r['备注'] ?? ''))) return;
+      const where = `${CAT_LABEL[cat]}·第${rowNo}行`;
+      if (!name && !sku) { fails.push({ where, reason: '缺产品名称' }); return; }
+      if (!(qty > 0))    { fails.push({ where, reason: '入库数量无效' }); return; }
+      const wh = allWarehouses.find(w => w.name === whNm);
+      if (!wh)           { fails.push({ where, reason: `仓库「${whNm}」不存在` }); return; }
+      if (cat === 'CT' && !String(r['批次号'] ?? '').trim()) { fails.push({ where, reason: '瓷砖必须填批次号' }); return; }
+      queue.push({
+        cat, name, sku, qty, where,
+        whId: wh.id,
+        unit:  String(r['单位'] ?? '').trim() || '件',
+        specs: String(r['规格说明'] ?? '').trim() || null,
+        cost:  parseFloat(r['单位成本']) || null,
+        minQ:  parseFloat(r['最低库存预警']) || 0,
+        batch: String(r['批次号'] ?? '').trim(),
+        note:  String(r['备注'] ?? '').trim(),
+      });
+    });
+  }
+
+  if (!queue.length && !fails.length) {
+    box.innerHTML = '<div class="text-amber-600">没找到可导入的数据。请确认用的是下载的模版,并在对应类目页里填写。</div>';
+    return;
+  }
+
+  let ok = 0;
+  for (let i = 0; i < queue.length; i++) {
+    const it = queue[i];
+    box.innerHTML = `<div class="text-gray-500">处理中… ${i+1}/${queue.length}</div>`;
+    try {
+      // resolve product: existing by SKU, else create
+      let prodId = null;
+      if (it.sku) {
+        const ex = allProducts.find(p => (p.sku || '') === it.sku);
+        if (ex) prodId = ex.id;
+      }
+      if (!prodId) {
+        const res = await insertProductWithSku(it.cat, {
+          name: it.name || it.sku, category: it.cat, unit: it.unit,
+          specs: it.specs, min_stock_qty: it.minQ,
+        });
+        if (res.error) { fails.push({ where: it.where, reason: '建档失败:' + res.error.message }); continue; }
+        prodId = res.id;
+        allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat });
+      }
+      // optimistic-concurrency inbound (same pattern as submitStockIn)
+      let applied = false;
+      for (let a = 0; a < 3 && !applied; a++) {
+        const { data: cur } = await sb.from('inventory')
+          .select('id, qty_on_hand').eq('product_id', prodId).eq('warehouse_id', it.whId).maybeSingle();
+        if (cur) {
+          const v = cur.qty_on_hand || 0;
+          const { data: upd } = await sb.from('inventory')
+            .update({ qty_on_hand: v + it.qty, ...(it.cost ? { unit_cost: it.cost } : {}), updated_at: new Date().toISOString() })
+            .eq('id', cur.id).eq('qty_on_hand', v).select('id');
+          if (upd && upd.length) applied = true;
+        } else {
+          const { data: ins } = await sb.from('inventory')
+            .insert({ product_id: prodId, warehouse_id: it.whId, qty_on_hand: it.qty, qty_reserved: 0, ...(it.cost ? { unit_cost: it.cost } : {}) }).select('id');
+          if (ins && ins.length) applied = true;
+        }
+      }
+      if (!applied) { fails.push({ where: it.where, reason: '库存被并发改动,未入库' }); continue; }
+      let notes = [];
+      if (it.batch) notes.push('批次:' + it.batch);
+      if (it.specs) notes.push(it.specs);
+      if (it.note)  notes.push('备注:' + it.note);
+      await sb.from('inventory_movements').insert({
+        product_id: prodId, warehouse_id: it.whId, type: 'in', qty: it.qty,
+        notes: (notes.join(' | ') + ' | 批量导入').trim(), operator_id: profile.id,
+      });
+      ok++;
+    } catch (e) {
+      fails.push({ where: it.where, reason: '异常:' + (e.message || e) });
+    }
+  }
+
+  await loadAll();
+  const failHtml = fails.length
+    ? `<div class="mt-2 font-semibold text-red-600">失败 ${fails.length} 条:</div>
+       <div class="mt-1 max-h-48 overflow-auto border border-gray-100 rounded">
+       ${fails.map(f => `<div class="px-3 py-1 border-b border-gray-50 text-xs text-gray-600">${esc(f.where)} — ${esc(f.reason)}</div>`).join('')}</div>`
+    : '';
+  box.innerHTML = `<div class="p-3 rounded-lg ${fails.length ? 'bg-amber-50' : 'bg-green-50'}">
+      <div class="font-semibold ${fails.length ? 'text-amber-700' : 'text-green-700'}">
+        ✅ 成功入库 ${ok} 条${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}
+      </div>${failHtml}
+    </div>`;
 }
 
 const SI_FIELDS = {
