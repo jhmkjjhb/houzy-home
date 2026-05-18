@@ -1818,7 +1818,7 @@ function addItemRow(data = {}) {
   const row = document.createElement('div');
   row.className = 'item-row bg-gray-50 rounded-lg p-3 relative mb-2';
   row.dataset.rowId = id;
-  const units = ['套','件','片','米','平方米','个','箱','批'];
+  const units = ['延米','尺','平方尺','米','平方米','套','件','片','个','箱','批','项'];
   row.innerHTML = `
     <button type="button" onclick="removeItemRow(this)"
             class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none font-light w-6 h-6 flex items-center justify-center">×</button>
@@ -1830,6 +1830,13 @@ function addItemRow(data = {}) {
                class="input text-sm w-full font-mono">
         <input type="hidden" id="item-actual-name-${id}" value="${data.product_name||''}">
         <div id="item-name-badge-${id}" class="text-xs text-green-800 mt-1 px-1 ${data.product_name&&data.sku_ref?'':'hidden'}">${data.product_name||''}</div>
+      </div>
+      <div class="col-span-2">
+        <select id="item-section-${id}" onchange="onSectionChange(${id})" class="input text-sm w-full"
+                style="${data.section?'border-color:#1a3a2a':''}">
+          <option value="">— 模块（选填，橱柜/衣柜分模块报价用）—</option>
+          ${QUOTE_SECTIONS.map(s => `<option value="${s}" ${data.section===s?'selected':''}>${s}</option>`).join('')}
+        </select>
       </div>
       <div>
         <select id="item-type-${id}" class="input text-sm w-full"
@@ -1879,6 +1886,22 @@ function removeItemRow(btn) {
   calcItemsTotal();
 }
 
+function onSectionChange(id) {
+  const sel = document.getElementById(`item-section-${id}`);
+  if (!sel) return;
+  const section = sel.value;
+  sel.style.borderColor = section ? '#1a3a2a' : '';
+  // 选了有参考价的模块（如 橱柜·地柜）且单价还空白 → 预填参考价 + 单位带「延米」
+  const ref = QUOTE_SECTION_REF_PRICE[section];
+  if (ref) {
+    const priceEl = document.getElementById(`item-price-${id}`);
+    if (priceEl && !priceEl.value) { priceEl.value = ref; }
+    const unitEl = document.getElementById(`item-unit-${id}`);
+    if (unitEl && (!unitEl.value || unitEl.value === '延米' || unitEl.selectedIndex === 0)) unitEl.value = '延米';
+    calcItemRow(id);
+  }
+}
+
 function calcItemRow(id) {
   const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 0;
   const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
@@ -1918,16 +1941,19 @@ function getItemRows() {
     // 不再把空白/0 默认成 1：保留真实值，由 submitOrder 做提交前校验拦截
     const qty   = parseFloat(document.getElementById(`item-qty-${id}`)?.value)   || 0;
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
+    const unitVal = document.getElementById(`item-unit-${id}`)?.value || '套';
     rows.push({
       product_name: name,
       model_spec:   document.getElementById(`item-spec-${id}`)?.value.trim() || null,
       quantity:     qty,
-      unit:         document.getElementById(`item-unit-${id}`)?.value || '套',
+      unit:         unitVal,
       unit_price:   price,
       total_price:  qty * price,
       sort_order:        idx,
       product_type:      document.getElementById(`item-type-${id}`)?.value || null,
       fulfillment_type:  document.getElementById(`item-ft-${id}`)?.value || 'custom',
+      section:           document.getElementById(`item-section-${id}`)?.value || null,
+      uom:               unitVal,
     });
   });
   return rows;
@@ -2563,6 +2589,39 @@ async function downloadOrderPDF(orderId) {
   const payColor = o.payment_status === 'paid' ? '#1a3a2a' : o.payment_status === 'partial' ? '#d97706' : '#dc2626';
   const dateStr = new Date(o.created_at).toLocaleDateString(pdfLang);
 
+  // 单行渲染（跨分组共用，斑马纹用全局计数器）
+  let _zebra = 0;
+  const _pdfItemRow = (item) => {
+    const sub = Number(item.total_price || (item.quantity * item.unit_price));
+    const bg  = (_zebra++ % 2 === 0) ? '#fff' : '#f9f9f7';
+    return `<tr style="background:${bg}">
+      <td style="padding:7px 10px;border-bottom:1px solid #eee">${item.product_name}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;color:#666">${item.model_spec || '—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:center">${item.quantity} ${item.uom || item.unit}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right">${sym} ${Number(item.unit_price).toFixed(2)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${sym} ${sub.toFixed(2)}</td>
+    </tr>`;
+  };
+  // 分模块报价：任一明细带 section → 按模块分组、每组出小计；否则平铺（老订单不受影响）
+  const _hasSections = (items || []).some(it => it.section);
+  let _bodyRows;
+  if (!_hasSections) {
+    _bodyRows = (items || []).map(_pdfItemRow).join('');
+  } else {
+    const _grp = {};
+    (items || []).forEach(it => { const k = it.section || '__ungrouped__'; (_grp[k] = _grp[k] || []).push(it); });
+    const _order = [...QUOTE_SECTIONS, '__ungrouped__'];
+    _bodyRows = _order.filter(k => _grp[k]).map(k => {
+      const gi  = _grp[k];
+      const lbl = (k === '__ungrouped__') ? '其他项目' : k;
+      const gs  = gi.reduce((s,it) => s + Number(it.total_price || (it.quantity * it.unit_price)), 0);
+      return `<tr><td colspan="5" style="padding:7px 10px;background:#1a3a2a;color:#c8a96e;font-weight:700;font-size:12px;letter-spacing:0.5px">${lbl}</td></tr>
+        ${gi.map(_pdfItemRow).join('')}
+        <tr><td colspan="4" style="padding:6px 10px;background:#f5f2ed;text-align:right;font-weight:600;color:#555;font-size:11.5px">${lbl} · ${L.pdf_subtotal}</td>
+          <td style="padding:6px 10px;background:#f5f2ed;text-align:right;font-weight:700;color:#1a3a2a">${sym} ${gs.toFixed(2)}</td></tr>`;
+    }).join('');
+  }
+
   const itemsHtml = (items && items.length) ? `
     <div style="margin-top:20px">
       <table style="width:100%;border-collapse:collapse;font-size:12.5px">
@@ -2576,16 +2635,7 @@ async function downloadOrderPDF(orderId) {
           </tr>
         </thead>
         <tbody>
-          ${items.map((item, i) => {
-            const sub = Number(item.total_price || (item.quantity * item.unit_price));
-            return `<tr style="background:${i%2===0?'#fff':'#f9f9f7'}">
-              <td style="padding:7px 10px;border-bottom:1px solid #eee">${item.product_name}</td>
-              <td style="padding:7px 10px;border-bottom:1px solid #eee;color:#666">${item.model_spec || '—'}</td>
-              <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:center">${item.quantity} ${item.unit}</td>
-              <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right">${sym} ${Number(item.unit_price).toFixed(2)}</td>
-              <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${sym} ${sub.toFixed(2)}</td>
-            </tr>`;
-          }).join('')}
+          ${_bodyRows}
         </tbody>
         <tfoot>
           <tr style="background:#f5f2ed">
@@ -2796,6 +2846,16 @@ const PRODUCT_TYPES = [
 const ptLabel = code => PRODUCT_TYPES.find(p => p.code === code)?.label || code;
 const ptBadge = code => `<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">${ptLabel(code)}</span>`;
 
+// ── 分模块报价：预设模块清单（橱柜/衣柜分模块拆解，用户 2026-05-18 确认）──
+// 报价单 PDF 会按 section 分组、每组出小计；不选模块的行归到「未分组」平铺（兼容老订单）
+const QUOTE_SECTIONS = [
+  '橱柜·地柜', '橱柜·吊柜', '橱柜·台面', '橱柜·五金升级', '橱柜·电器开孔', '橱柜·安装人工',
+  '衣柜·柜体', '衣柜·柜门', '衣柜·内部配件', '衣柜·五金升级', '衣柜·安装人工',
+  '其他',
+];
+// 参考单价（S59 确认：地柜 RM 1,800/延米，员工可手改）；仅在单价空白时预填
+const QUOTE_SECTION_REF_PRICE = { '橱柜·地柜': 1800 };
+
 const PRODUCT_TYPE_KEYWORDS = {
   WY: ['卫浴','浴室','马桶','花洒','浴缸','洗手盆','淋浴','水龙头','镜柜','浴室柜'],
   CG: ['橱柜','厨柜','厨房柜','整体橱柜'],
@@ -2985,6 +3045,7 @@ function renderItemsCard(items, o, supList) {
         <td class="py-2 pr-3">
           <div class="text-sm text-gray-800">${item.product_name}</div>
           <div class="mt-0.5 flex items-center gap-1 flex-wrap">
+            ${item.section ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#1a3a2a;color:#c8a96e">${item.section}</span>` : ''}
             ${item.product_type ? ptBadge(item.product_type) : `<span class="text-xs text-orange-400">未设类型</span>`}
             ${item.fulfillment_type === 'stock'
               ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#d1fae5;color:#065f46">现货</span>`
@@ -3425,6 +3486,7 @@ async function openSupplementOrder(orderId, orderNo) {
         model_spec:   item.model_spec,
         quantity:     item.quantity,
         unit:         item.unit,
+        section:      item.section,
       }));
     } else {
       addItemRow();
