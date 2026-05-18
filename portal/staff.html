@@ -496,6 +496,10 @@
         </div>
         <!-- Suppliers list -->
         <div class="card overflow-hidden">
+          <div class="p-3 border-b border-gray-100">
+            <input type="text" id="sup-search" placeholder="🔍 搜索供应商(名称 / 电话 / 发货地)"
+                   oninput="filterSuppliers(this.value)" class="input w-full text-sm">
+          </div>
           <div id="suppliers-table"></div>
         </div>
       </div>
@@ -4020,10 +4024,11 @@ async function renderSuppliersPage() {
     ? `<div class="divide-y divide-gray-100">${rows.map(s => {
         const types = (s.product_types || []);
         const sfEsc = String(s.ship_from || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const searchKey = `${s.name||''} ${s.phone||''} ${s.ship_from||''}`.toLowerCase().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const typeBadges = types.map(c => ptBadge(c)).join(' ');
         const sid = s.id || '';
         return `
-        <div class="px-4 py-3 hover:bg-gc">
+        <div class="supplier-row px-4 py-3 hover:bg-gc" data-search="${searchKey}">
           <div class="flex items-start justify-between gap-2 flex-wrap">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -4052,6 +4057,12 @@ async function renderSuppliersPage() {
                       class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50">
                 编辑类型
               </button>
+              <button onclick="editSupplierInfo('${sid}', this.dataset.nm, this.dataset.ph)"
+                      data-nm="${String(s.name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}"
+                      data-ph="${String(s.phone||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}"
+                      class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50">
+                编辑信息
+              </button>
               <button onclick="editSupplierShipFrom('${sid}', this.dataset.sf)" data-sf="${sfEsc}"
                       class="text-xs px-2 py-1 rounded border border-amber-200 text-amber-700 hover:bg-amber-50">
                 编辑发货地
@@ -4076,6 +4087,9 @@ async function addSupplier() {
   const errEl = document.getElementById('sup-err');
   if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
+  // 重复提醒:已存在同名(忽略大小写)供应商时让用户确认
+  const { data: dup } = await sb.from('suppliers').select('id,name').ilike('name', name).limit(1);
+  if (dup && dup.length && !confirm(`已存在同名供应商「${dup[0].name}」,确定还要再建一个吗?`)) return;
   const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, ship_from: shipFrom || null, tier, active: true, product_types: types });
   if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
   document.getElementById('sup-name').value = '';
@@ -4133,6 +4147,27 @@ async function editSupplierShipFrom(id, current) {
   const v = prompt('发货地(填地址或城市;留空可清除):', current || '');
   if (v === null) return; // 取消
   const { error } = await sb.from('suppliers').update({ ship_from: v.trim() || null }).eq('id', id);
+  if (error) { alert('保存失败: ' + error.message); return; }
+  await renderSuppliersPage();
+}
+
+// 列表内实时搜索(按 名称/电话/发货地,无需重新拉取)
+function filterSuppliers(q) {
+  const kw = String(q || '').trim().toLowerCase();
+  document.querySelectorAll('#suppliers-table .supplier-row').forEach(el => {
+    el.style.display = (!kw || (el.dataset.search || '').includes(kw)) ? '' : 'none';
+  });
+}
+
+// 编辑已有供应商的名称 / 电话
+async function editSupplierInfo(id, curName, curPhone) {
+  const name = prompt('供应商名称:', curName || '');
+  if (name === null) return;            // 取消
+  if (!name.trim()) { alert('名称不能为空'); return; }
+  const phone = prompt('联系电话(可留空):', curPhone || '');
+  if (phone === null) return;           // 取消
+  const { error } = await sb.from('suppliers')
+    .update({ name: name.trim(), phone: phone.trim() || null }).eq('id', id);
   if (error) { alert('保存失败: ' + error.message); return; }
   await renderSuppliersPage();
 }
