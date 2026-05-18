@@ -562,7 +562,7 @@ async function insertProductWithSku(cat, fields) {
 
 // ── Bulk Stock-In via Excel ──────────────────────────────────────────────
 // Template/export columns (Chinese headers, matched by name on upload)
-const BULK_COLS = ['SKU','产品名称','单位','规格说明','入库数量','仓库','单位成本','最低库存预警','批次号','备注'];
+const BULK_COLS = ['SKU','产品名称','单位','规格说明','入库数量','仓库','单位成本','供应商名称','厂家编号','最低库存预警','批次号','备注'];
 // Sheet name = "<code> <label>"; '/' is illegal in Excel sheet names → replace
 function bulkSheetName(code) { return code + ' ' + String(CAT_LABEL[code] || code).replace(/[\/\\?*\[\]:]/g, '·'); }
 function bulkCodeFromSheet(name) {
@@ -575,12 +575,20 @@ function bulkLibReady() {
 }
 
 // ① 导出当前库存 → 按 11 类目分 sheet
-function exportInventoryExcel() {
+async function exportInventoryExcel() {
   if (!bulkLibReady()) return;
   const wb = XLSX.utils.book_new();
   const whs = allWarehouses.slice();
+  // product_id → "厂家编号(供应商) ; …"  (for traceability)
+  const { data: codeRows } = await sb.from('product_supplier_codes')
+    .select('product_id, supplier_code, suppliers(name)');
+  const codeMap = {};
+  (codeRows || []).forEach(c => {
+    const tag = `${c.supplier_code || ''}${c.suppliers?.name ? '(' + c.suppliers.name + ')' : ''}`;
+    (codeMap[c.product_id] = codeMap[c.product_id] || []).push(tag);
+  });
   Object.keys(CAT_LABEL).forEach(code => {
-    const head = ['SKU','名称','单位','规格', ...whs.map(w => w.name), '总库存', '单位成本'];
+    const head = ['SKU','名称','单位','规格', ...whs.map(w => w.name), '总库存', '单位成本', '厂家编号(供应商)'];
     const rows = [head];
     allProducts.filter(p => (p.category || 'QT') === code).forEach(p => {
       const invs = allInventory.filter(r => r.product_id === p.id);
@@ -590,7 +598,7 @@ function exportInventoryExcel() {
       });
       const total = perWh.reduce((a, b) => a + b, 0);
       const cost = (invs.find(x => x.unit_cost != null) || {}).unit_cost ?? '';
-      rows.push([p.sku || '', p.name || '', p.unit || '', p.specs || '', ...perWh, total, cost]);
+      rows.push([p.sku || '', p.name || '', p.unit || '', p.specs || '', ...perWh, total, cost, (codeMap[p.id] || []).join(' ; ')]);
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), bulkSheetName(code));
   });
@@ -600,10 +608,12 @@ function exportInventoryExcel() {
 }
 
 // ② 下载入库模版（11 类目 sheet + 填写说明页）
-function downloadStockInTemplate() {
+async function downloadStockInTemplate() {
   if (!bulkLibReady()) return;
   const wb = XLSX.utils.book_new();
   const whNames = allWarehouses.map(w => w.name);
+  const { data: sups } = await sb.from('suppliers').select('name').order('name');
+  const supNames = (sups || []).map(s => s.name).filter(Boolean);
   const info = [
     ['HOUZY HOME 批量入库模版 — 填写说明'],
     [],
@@ -614,16 +624,21 @@ function downloadStockInTemplate() {
     ['5. 「规格说明」自由填写,例:品牌:科勒 | 颜色:哑光黑 | 尺寸:600×120mm。'],
     ['6. 瓷砖类目「批次号」必填。'],
     ['7. 单位默认「件」,可改。'],
+    ['8. 「供应商名称」+「厂家编号」用于溯源:要填都填,只填一个会报错。'],
+    ['   供应商若系统里没有,会按填写的名称自动新建(注意别打错字)。'],
     [],
     ['可用仓库名称(照抄到「仓库」列):'],
     ...(whNames.length ? whNames.map(n => [n]) : [['(暂无仓库,请先在「仓库设置」里创建)']]),
+    [],
+    ['现有供应商名称(照抄到「供应商名称」列,没有则可新写):'],
+    ...(supNames.length ? supNames.map(n => [n]) : [['(暂无供应商,填写新名称将自动创建)']]),
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), '填写说明');
   const sampleWh = whNames[0] || '';
   Object.keys(CAT_LABEL).forEach(code => {
     const example = code === 'CT'
-      ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, 2, 'PG20260518', '示例行,正式填写前请删除']
-      : ['', '示例:产品名（可删）', '件', '品牌:示例 | 颜色:示例', 5, sampleWh, 100, 1, '', '示例行,正式填写前请删除'];
+      ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, '示例供应商（可删）', 'X1DM918218Y', 2, 'PG20260518', '示例行,正式填写前请删除']
+      : ['', '示例:产品名（可删）', '件', '品牌:示例 | 颜色:示例', 5, sampleWh, 100, '示例供应商（可删）', 'MFG-0001', 1, '', '示例行,正式填写前请删除'];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([BULK_COLS, example]), bulkSheetName(code));
   });
   XLSX.writeFile(wb, 'HOUZY入库模版.xlsx');
@@ -670,6 +685,11 @@ async function handleBulkStockIn(input) {
       const wh = allWarehouses.find(w => w.name === whNm);
       if (!wh)           { fails.push({ where, reason: `仓库「${whNm}」不存在` }); return; }
       if (cat === 'CT' && !String(r['批次号'] ?? '').trim()) { fails.push({ where, reason: '瓷砖必须填批次号' }); return; }
+      const supName = String(r['供应商名称'] ?? '').trim();
+      const facCode = String(r['厂家编号'] ?? '').trim();
+      if ((supName && !facCode) || (!supName && facCode)) {
+        fails.push({ where, reason: '供应商名称与厂家编号需成对填写(用于溯源)' }); return;
+      }
       queue.push({
         cat, name, sku, qty, where,
         whId: wh.id,
@@ -679,6 +699,7 @@ async function handleBulkStockIn(input) {
         minQ:  parseFloat(r['最低库存预警']) || 0,
         batch: String(r['批次号'] ?? '').trim(),
         note:  String(r['备注'] ?? '').trim(),
+        supName, facCode,
       });
     });
   }
@@ -686,6 +707,19 @@ async function handleBulkStockIn(input) {
   if (!queue.length && !fails.length) {
     box.innerHTML = '<div class="text-amber-600">没找到可导入的数据。请确认用的是下载的模版,并在对应类目页里填写。</div>';
     return;
+  }
+
+  // Supplier name → id cache (auto-create on miss, per user's choice)
+  const { data: supAll } = await sb.from('suppliers').select('id,name');
+  const supMap = new Map();
+  (supAll || []).forEach(s => { if (s.name) supMap.set(s.name.trim(), s.id); });
+  async function resolveSupplierId(nm) {
+    const key = nm.trim();
+    if (supMap.has(key)) return { id: supMap.get(key) };
+    const { data, error } = await sb.from('suppliers').insert({ name: key }).select('id').single();
+    if (error || !data) return { error: error || { message: '供应商建档失败' } };
+    supMap.set(key, data.id);
+    return { id: data.id, created: true };
   }
 
   let ok = 0;
@@ -707,6 +741,14 @@ async function handleBulkStockIn(input) {
         if (res.error) { fails.push({ where: it.where, reason: '建档失败:' + res.error.message }); continue; }
         prodId = res.id;
         allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat });
+      }
+      // resolve supplier BEFORE inbound (auto-create on miss) so a supplier
+      // failure never leaves stock with no traceable source
+      let supplierId = null;
+      if (it.supName) {
+        const sr = await resolveSupplierId(it.supName);
+        if (sr.error) { fails.push({ where: it.where, reason: '供应商建档失败:' + sr.error.message }); continue; }
+        supplierId = sr.id;
       }
       // optimistic-concurrency inbound (same pattern as submitStockIn)
       let applied = false;
@@ -734,6 +776,16 @@ async function handleBulkStockIn(input) {
         product_id: prodId, warehouse_id: it.whId, type: 'in', qty: it.qty,
         notes: (notes.join(' | ') + ' | 批量导入').trim(), operator_id: profile.id,
       });
+      // bind supplier + factory code for traceability (skip duplicates)
+      if (supplierId && it.facCode) {
+        const { data: exC } = await sb.from('product_supplier_codes')
+          .select('id').eq('product_id', prodId).eq('supplier_code', it.facCode).maybeSingle();
+        if (!exC) {
+          const { error: cErr } = await sb.from('product_supplier_codes')
+            .insert({ product_id: prodId, supplier_id: supplierId, supplier_code: it.facCode });
+          if (cErr) { fails.push({ where: it.where, reason: '已入库,但厂家编号绑定失败,请手工补绑:' + cErr.message }); continue; }
+        }
+      }
       ok++;
     } catch (e) {
       fails.push({ where: it.where, reason: '异常:' + (e.message || e) });

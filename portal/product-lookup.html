@@ -78,6 +78,18 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
+// Roles allowed to see sourcing info (厂家编号/供应商). 店员(staff) & 未登录 不可见。
+const SOURCE_ROLES = ['warehouse','store_manager','regional_manager','general_manager','superadmin','admin'];
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+// Is the current logged-in user allowed to see factory code / supplier?
+async function canSeeSource() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return false;
+  const { data: prof } = await sb.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
+  return !!prof && SOURCE_ROLES.includes(prof.role);
+}
 
 (async () => {
   const sku = new URLSearchParams(location.search).get('sku');
@@ -114,10 +126,15 @@ const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', M
     }
   }
 
-  const [{ data: inv }, { data: codes }] = await Promise.all([
+  const showSource = await canSeeSource();
+  const [{ data: inv }, codesRes] = await Promise.all([
     sb.from('inventory').select('qty_on_hand,qty_reserved,warehouses(name)').eq('product_id', prod.id),
-    sb.from('product_supplier_codes').select('supplier_code,suppliers(name)').eq('product_id', prod.id),
+    // only query sourcing info for privileged roles — 店员/未登录 不查不显示
+    showSource
+      ? sb.from('product_supplier_codes').select('supplier_code,suppliers(name)').eq('product_id', prod.id)
+      : Promise.resolve({ data: null }),
   ]);
+  const codes = codesRes.data;
 
   const invEl = document.getElementById('p-inv');
   if (inv?.length) {
@@ -132,12 +149,12 @@ const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', M
     invEl.textContent = '暂无库存记录';
   }
 
-  if (codes?.length) {
+  if (showSource && codes?.length) {
     document.getElementById('p-codes-card').classList.remove('hidden');
     document.getElementById('p-codes').innerHTML = codes.map(c =>
       `<div class="flex items-center justify-between py-2">
-        <span class="font-mono text-gray-700">${c.supplier_code}</span>
-        <span class="text-gray-400">${c.suppliers?.name || ''}</span>
+        <span class="font-mono text-gray-700">${esc(c.supplier_code)}</span>
+        <span class="text-gray-400">${esc(c.suppliers?.name || '')}</span>
       </div>`).join('');
   }
 })();
