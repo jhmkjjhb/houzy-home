@@ -1270,6 +1270,45 @@ function deadlineRowInfo(o) {
   return fmtCountdown(o.deadline_at);
 }
 
+// 详情页大倒计时条：未超时绿/橙「距超时还剩 …」，超时红「已超时 …」，均每秒跳动
+function fmtBigCd(deadlineIso) {
+  if (!deadlineIso) return null;
+  const diff = new Date(deadlineIso).getTime() - Date.now();
+  const over = diff < 0;
+  let s = Math.floor(Math.abs(diff) / 1000);
+  const d = Math.floor(s / 86400); s %= 86400;
+  const h = Math.floor(s / 3600);  s %= 3600;
+  const m = Math.floor(s / 60);    s %= 60;
+  const pad = n => String(n).padStart(2, '0');
+  const clock = (d > 0 ? `${d}天 ` : '') + `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return over
+    ? { text: `🚨 已超时 ${clock}`, bg: '#dc2626', over: true }
+    : { text: `⏱ 距超时还剩 ${clock}`, bg: diff < 4 * 3600000 ? '#d97706' : '#16a34a', over: false };
+}
+
+function bigCountdownBar(o) {
+  if (['completed', 'closed', 'cancelled'].includes(o.status)) return '';
+  if (!o.deadline_at) return '';
+  const c = fmtBigCd(o.deadline_at);
+  if (!c) return '';
+  return `<div id="detail-bigcd" data-dl="${o.deadline_at}"
+    class="mb-3 rounded-xl px-4 py-3 text-center font-bold ${c.over ? 'row-overdue-badge' : ''}"
+    style="font-size:20px;letter-spacing:1px;color:#fff;background:${c.bg}">${c.text}</div>`;
+}
+
+function tickDetailBigCd() {
+  const el = document.getElementById('detail-bigcd');
+  if (!el) return;
+  const c = fmtBigCd(el.getAttribute('data-dl'));
+  if (!c) return;
+  el.textContent = c.text;
+  el.style.background = c.bg;
+  el.classList.toggle('row-overdue-badge', c.over);
+  el.classList.remove('cd-tick');
+  void el.offsetWidth;
+  el.classList.add('cd-tick');
+}
+
 // 订单列表：每秒就地刷新每行倒计时（不重渲染整表，保留滚动位置）
 function tickOrderListCountdowns() {
   const v = document.getElementById('v-orders');
@@ -1491,6 +1530,8 @@ async function init() {
   }, 1000);
   // 订单列表倒计时每秒跳动
   setInterval(tickOrderListCountdowns, 1000);
+  // 订单详情大倒计时条每秒跳动（超时也持续走，显示已超时多久）
+  setInterval(tickDetailBigCd, 1000);
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
 
@@ -2559,6 +2600,7 @@ async function openDetail(id, backView) {
         <label class="label mb-2">${t('lbl_order_status')}</label>
         ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage)}
       </div>
+      ${bigCountdownBar(o)}
       <div id="sla-days-row" class="mb-3 hidden">
         <label class="label text-xs">${t('lbl_sla_days')}</label>
         <div class="flex items-center gap-3">
