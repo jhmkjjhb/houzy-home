@@ -293,14 +293,22 @@
 
       <!-- Step 2: Order Items -->
       <div class="card p-6 mb-4">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h2 class="font-semibold text-gray-800">2. 商品明细</h2>
-          <button type="button" onclick="addItemRow()"
-                  class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
-            <span class="text-lg leading-none">+</span> 添加商品
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="addBundle('橱柜')"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    style="background:#1a3a2a;color:#c8a96e">+ 橱柜（全套模块）</button>
+            <button type="button" onclick="addBundle('衣柜')"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    style="background:#1a3a2a;color:#c8a96e">+ 衣柜（全套模块）</button>
+            <button type="button" onclick="addItemRow()"
+                    class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
+              <span class="text-lg leading-none">+</span> 单个商品
+            </button>
+          </div>
         </div>
-        <div class="text-xs text-gray-400 mb-3">名称、数量、单价填写后自动合计到订单金额</div>
+        <div class="text-xs text-gray-400 mb-3">点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」</div>
         <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
@@ -1881,6 +1889,22 @@ function addItemRow(data = {}) {
   document.getElementById('items-list').appendChild(row);
 }
 
+// 一键带出整套模块行（橱柜/衣柜），员工逐项填数量单价、用不到的按 × 删
+function addBundle(kind) {
+  const mods = QUOTE_BUNDLES[kind];
+  if (!mods) return;
+  mods.forEach(section => {
+    const sub = section.split('·')[1] || section;
+    addItemRow({
+      section,
+      product_name: `${kind} ${sub}`,                         // 默认名，员工可改成实际规格
+      unit:        QUOTE_SECTION_UNIT[section] || '套',
+      unit_price:  QUOTE_SECTION_REF_PRICE[section] || '',
+    });
+  });
+  calcItemsTotal();
+}
+
 function removeItemRow(btn) {
   btn.closest('.item-row').remove();
   calcItemsTotal();
@@ -2855,6 +2879,16 @@ const QUOTE_SECTIONS = [
 ];
 // 参考单价（S59 确认：地柜 RM 1,800/延米，员工可手改）；仅在单价空白时预填
 const QUOTE_SECTION_REF_PRICE = { '橱柜·地柜': 1800 };
+// 一键整套：点「橱柜/衣柜」直接带出整套模块行，员工逐项填、用不到的删（用户 2026-05-18 反馈：逐个选易漏）
+const QUOTE_BUNDLES = {
+  '橱柜': ['橱柜·地柜','橱柜·吊柜','橱柜·台面','橱柜·五金升级','橱柜·电器开孔','橱柜·安装人工'],
+  '衣柜': ['衣柜·柜体','衣柜·柜门','衣柜·内部配件','衣柜·五金升级','衣柜·安装人工'],
+};
+// 各模块默认单位（员工可改）
+const QUOTE_SECTION_UNIT = {
+  '橱柜·地柜':'延米','橱柜·吊柜':'延米','橱柜·台面':'延米','橱柜·五金升级':'套','橱柜·电器开孔':'个','橱柜·安装人工':'项',
+  '衣柜·柜体':'延米','衣柜·柜门':'延米','衣柜·内部配件':'个','衣柜·五金升级':'套','衣柜·安装人工':'项',
+};
 
 const PRODUCT_TYPE_KEYWORDS = {
   WY: ['卫浴','浴室','马桶','花洒','浴缸','洗手盆','淋浴','水龙头','镜柜','浴室柜'],
