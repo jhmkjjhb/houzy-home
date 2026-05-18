@@ -469,6 +469,7 @@
           <div class="flex flex-wrap gap-2 mb-3">
             <input type="text" id="sup-name" placeholder="供应商名称 *" data-i18n-ph="th_name" class="input flex-1 min-w-36">
             <input type="tel" id="sup-phone" placeholder="联系电话" data-i18n-ph="th_phone" class="input w-36">
+            <input type="text" id="sup-shipfrom" placeholder="发货地（地址/城市）" class="input w-44">
             <select id="sup-tier" class="input w-28">
               <option value="3">⭐⭐⭐</option>
               <option value="2" selected>⭐⭐</option>
@@ -4018,6 +4019,7 @@ async function renderSuppliersPage() {
   document.getElementById('suppliers-table').innerHTML = rows.length
     ? `<div class="divide-y divide-gray-100">${rows.map(s => {
         const types = (s.product_types || []);
+        const sfEsc = String(s.ship_from || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const typeBadges = types.map(c => ptBadge(c)).join(' ');
         const sid = s.id || '';
         return `
@@ -4036,6 +4038,7 @@ async function renderSuppliersPage() {
                 ${typeBadges || '<span class="text-xs text-gray-400">未设置产品类型</span>'}
               </div>
               <div class="text-xs text-gray-400 mt-1">${s.phone || '—'}</div>
+              <div class="text-xs text-gray-400 mt-0.5">📦 发货地：${s.ship_from ? sfEsc : '<span class="text-gray-300">未填</span>'}</div>
             </div>
             ${sid ? `
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -4048,6 +4051,10 @@ async function renderSuppliersPage() {
                       data-types="${JSON.stringify(types).replace(/"/g,'&quot;')}"
                       class="text-xs px-2 py-1 rounded border border-blue-200 text-blue-600 hover:bg-blue-50">
                 编辑类型
+              </button>
+              <button onclick="editSupplierShipFrom('${sid}', this.dataset.sf)" data-sf="${sfEsc}"
+                      class="text-xs px-2 py-1 rounded border border-amber-200 text-amber-700 hover:bg-amber-50">
+                编辑发货地
               </button>
               <button onclick="toggleSupplier('${sid}',${s.active})"
                       class="text-xs px-2 py-1 rounded border ${s.active?'border-gray-300 text-gray-500 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}">
@@ -4063,15 +4070,17 @@ async function renderSuppliersPage() {
 async function addSupplier() {
   const name  = document.getElementById('sup-name').value.trim();
   const phone = document.getElementById('sup-phone').value.trim();
+  const shipFrom = document.getElementById('sup-shipfrom').value.trim();
   const tier  = parseInt(document.getElementById('sup-tier').value);
   const types = [...document.querySelectorAll('.sup-pt-check:checked')].map(el => el.value);
   const errEl = document.getElementById('sup-err');
   if (!name) { errEl.textContent = '请填写供应商名称'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
-  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, tier, active: true, product_types: types });
+  const { error } = await sb.from('suppliers').insert({ name, phone: phone || null, ship_from: shipFrom || null, tier, active: true, product_types: types });
   if (error) { errEl.textContent = '添加失败: ' + error.message; errEl.classList.remove('hidden'); return; }
   document.getElementById('sup-name').value = '';
   document.getElementById('sup-phone').value = '';
+  document.getElementById('sup-shipfrom').value = '';
   document.getElementById('sup-tier').value = '2';
   document.querySelectorAll('.sup-pt-check').forEach(el => el.checked = false);
   await renderSuppliersPage();
@@ -4117,6 +4126,14 @@ async function toggleSupplier(id, active) {
 
 async function setSupplierTier(id, tier) {
   await sb.from('suppliers').update({ tier: parseInt(tier) }).eq('id', id);
+  await renderSuppliersPage();
+}
+
+async function editSupplierShipFrom(id, current) {
+  const v = prompt('发货地(填地址或城市;留空可清除):', current || '');
+  if (v === null) return; // 取消
+  const { error } = await sb.from('suppliers').update({ ship_from: v.trim() || null }).eq('id', id);
+  if (error) { alert('保存失败: ' + error.message); return; }
   await renderSuppliersPage();
 }
 
