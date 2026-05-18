@@ -625,7 +625,7 @@ async function downloadStockInTemplate() {
     ['6. 瓷砖类目「批次号」必填。'],
     ['7. 单位默认「件」,可改。'],
     ['8. 「供应商名称」+「厂家编号」用于溯源:要填都填,只填一个会报错。'],
-    ['   供应商若系统里没有,会按填写的名称自动新建(注意别打错字)。'],
+    ['   供应商必须是下方清单里已有的;系统里没有的:货照常入库,但溯源不绑,导入结果会红字报警提示补绑。'],
     [],
     ['可用仓库名称(照抄到「仓库」列):'],
     ...(whNames.length ? whNames.map(n => [n]) : [['(暂无仓库,请先在「仓库设置」里创建)']]),
@@ -710,20 +710,13 @@ async function handleBulkStockIn(input) {
     return;
   }
 
-  // Supplier name → id cache (auto-create on miss, per user's choice)
+  // Supplier name → id (EXISTING only — 不放权:仓库无权新建供应商)
   const { data: supAll } = await sb.from('suppliers').select('id,name');
   const supMap = new Map();
   (supAll || []).forEach(s => { if (s.name) supMap.set(s.name.trim(), s.id); });
-  async function resolveSupplierId(nm) {
-    const key = nm.trim();
-    if (supMap.has(key)) return { id: supMap.get(key) };
-    const { data, error } = await sb.from('suppliers').insert({ name: key }).select('id').single();
-    if (error || !data) return { error: error || { message: '供应商建档失败' } };
-    supMap.set(key, data.id);
-    return { id: data.id, created: true };
-  }
 
   let ok = 0;
+  const warns = []; // 已入库但溯源未绑(需人工跟进)
   for (let i = 0; i < queue.length; i++) {
     const it = queue[i];
     box.innerHTML = `<div class="text-gray-500">处理中… ${i+1}/${queue.length}</div>`;
@@ -742,14 +735,6 @@ async function handleBulkStockIn(input) {
         if (res.error) { fails.push({ where: it.where, reason: '建档失败:' + res.error.message }); continue; }
         prodId = res.id;
         allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat });
-      }
-      // resolve supplier BEFORE inbound (auto-create on miss) so a supplier
-      // failure never leaves stock with no traceable source
-      let supplierId = null;
-      if (it.supName) {
-        const sr = await resolveSupplierId(it.supName);
-        if (sr.error) { fails.push({ where: it.where, reason: '供应商建档失败:' + sr.error.message }); continue; }
-        supplierId = sr.id;
       }
       // optimistic-concurrency inbound (same pattern as submitStockIn)
       let applied = false;
@@ -777,14 +762,19 @@ async function handleBulkStockIn(input) {
         product_id: prodId, warehouse_id: it.whId, type: 'in', qty: it.qty,
         notes: (notes.join(' | ') + ' | 批量导入').trim(), operator_id: profile.id,
       });
-      // bind supplier + factory code for traceability (skip duplicates)
-      if (supplierId && it.facCode) {
-        const { data: exC } = await sb.from('product_supplier_codes')
-          .select('id').eq('product_id', prodId).eq('supplier_code', it.facCode).maybeSingle();
-        if (!exC) {
-          const { error: cErr } = await sb.from('product_supplier_codes')
-            .insert({ product_id: prodId, supplier_id: supplierId, supplier_code: it.facCode });
-          if (cErr) { fails.push({ where: it.where, reason: '已入库,但厂家编号绑定失败,请手工补绑:' + cErr.message }); continue; }
+      // 货已入库。再尝试绑供应商溯源 —— 仓库无权建供应商,查无则只报警不卡流程
+      if (it.supName) {
+        const supplierId = supMap.get(it.supName.trim());
+        if (!supplierId) {
+          warns.push({ where: it.where, reason: `供应商「${it.supName}」系统里没有,已入库但未绑溯源 —— 请经理/管理员先建好该供应商,再补绑厂家编号` });
+        } else if (it.facCode) {
+          const { data: exC } = await sb.from('product_supplier_codes')
+            .select('id').eq('product_id', prodId).eq('supplier_code', it.facCode).maybeSingle();
+          if (!exC) {
+            const { error: cErr } = await sb.from('product_supplier_codes')
+              .insert({ product_id: prodId, supplier_id: supplierId, supplier_code: it.facCode });
+            if (cErr) warns.push({ where: it.where, reason: '已入库,但厂家编号绑定失败,请手工补绑:' + cErr.message });
+          }
         }
       }
       ok++;
@@ -795,15 +785,23 @@ async function handleBulkStockIn(input) {
 
   await loadAll();
   const failHtml = fails.length
-    ? `<div class="mt-2 font-semibold text-red-600">失败 ${fails.length} 条:</div>
+    ? `<div class="mt-2 font-semibold text-red-600">失败 ${fails.length} 条(未入库,已跳过):</div>
        <div class="mt-1 max-h-48 overflow-auto border border-gray-100 rounded">
        ${fails.map(f => `<div class="px-3 py-1 border-b border-gray-50 text-xs text-gray-600">${esc(f.where)} — ${esc(f.reason)}</div>`).join('')}</div>`
     : '';
+  // 显眼报警:已入库但供应商溯源没绑上,需人工跟进
+  const warnHtml = warns.length
+    ? `<div class="mt-3 p-3 rounded-lg border-2 border-red-400 bg-red-50">
+         <div class="font-bold text-red-700 text-sm">🚨 报警:${warns.length} 条已入库,但供应商溯源未绑定 —— 需人工补绑</div>
+         <div class="mt-2 max-h-48 overflow-auto bg-white/60 border border-red-200 rounded">
+         ${warns.map(w => `<div class="px-3 py-1.5 border-b border-red-100 text-xs text-red-700">${esc(w.where)} — ${esc(w.reason)}</div>`).join('')}</div>
+       </div>`
+    : '';
   box.innerHTML = `<div class="p-3 rounded-lg ${fails.length ? 'bg-amber-50' : 'bg-green-50'}">
       <div class="font-semibold ${fails.length ? 'text-amber-700' : 'text-green-700'}">
-        ✅ 成功入库 ${ok} 条${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}
+        ✅ 成功入库 ${ok} 条${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}${warns.length ? ` · 🚨 ${warns.length} 条溯源待补` : ''}
       </div>${failHtml}
-    </div>`;
+    </div>${warnHtml}`;
 }
 
 const SI_FIELDS = {
