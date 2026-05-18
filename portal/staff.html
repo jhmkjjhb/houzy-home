@@ -548,7 +548,7 @@ const STAFF_I18N = {
     nav_suppliers:'供应商管理', sup_add:'添加供应商', sup_add_btn:'添加', no_suppliers:'暂无供应商',
     lbl_sup_tier:'级别', sup_active:'活跃', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'启用',
     pay_method:'支付方式', pay_cash:'💵 现金', pay_transfer:'🏦 银行转账', pay_ewallet:'📱 电子钱包', pay_card:'💳 刷卡',
-    overdue:'已逾期', overdue_banner:'个订单已逾期', lbl_deadline:'截止时间', sla_default:'默认', lbl_sla_days:'预计天数',
+    overdue:'已逾期', overdue_banner:'个订单已逾期', paid_stuck_banner:'个已付款订单超120分钟未推进', lbl_deadline:'截止时间', sla_default:'默认', lbl_sla_days:'预计天数',
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接单',
     status_in_production:'生产中', status_production_complete:'生产完成', status_shipped:'已发货',
     status_in_transit:'运输中', status_arrived:'已到货', status_installing:'安装中',
@@ -593,7 +593,7 @@ const STAFF_I18N = {
     nav_suppliers:'供應商管理', sup_add:'添加供應商', sup_add_btn:'添加', no_suppliers:'暫無供應商',
     lbl_sup_tier:'級別', sup_active:'活躍', sup_inactive:'已禁用', sup_disable:'禁用', sup_enable:'啟用',
     pay_method:'支付方式', pay_cash:'💵 現金', pay_transfer:'🏦 銀行轉賬', pay_ewallet:'📱 電子錢包', pay_card:'💳 刷卡',
-    overdue:'已逾期', overdue_banner:'個訂單已逾期', lbl_deadline:'截止時間', sla_default:'預設', lbl_sla_days:'預計天數',
+    overdue:'已逾期', overdue_banner:'個訂單已逾期', paid_stuck_banner:'個已付款訂單超120分鐘未推進', lbl_deadline:'截止時間', sla_default:'預設', lbl_sla_days:'預計天數',
     status_pending_payment:'待付款', status_paid:'已付款', status_assigned:'已分配', status_accepted:'已接單',
     status_in_production:'生產中', status_production_complete:'生產完成', status_shipped:'已發貨',
     status_in_transit:'運輸中', status_arrived:'已到貨', status_installing:'安裝中',
@@ -638,7 +638,7 @@ const STAFF_I18N = {
     nav_suppliers:'Supplier Management', sup_add:'Add Supplier', sup_add_btn:'Add', no_suppliers:'No suppliers',
     lbl_sup_tier:'Tier', sup_active:'Active', sup_inactive:'Disabled', sup_disable:'Disable', sup_enable:'Enable',
     pay_method:'Payment Method', pay_cash:'💵 Cash', pay_transfer:'🏦 Bank Transfer', pay_ewallet:'📱 E-Wallet', pay_card:'💳 Card',
-    overdue:'Overdue', overdue_banner:'orders overdue', lbl_deadline:'Deadline', sla_default:'default', lbl_sla_days:'Est. Days',
+    overdue:'Overdue', overdue_banner:'orders overdue', paid_stuck_banner:'paid orders stuck >120 min', lbl_deadline:'Deadline', sla_default:'default', lbl_sla_days:'Est. Days',
     status_pending_payment:'Pending', status_paid:'Paid', status_assigned:'Assigned', status_accepted:'Accepted',
     status_in_production:'In Prod.', status_production_complete:'Prod. Done', status_shipped:'Shipped',
     status_in_transit:'In Transit', status_arrived:'Arrived', status_installing:'Installing',
@@ -683,7 +683,7 @@ const STAFF_I18N = {
     nav_suppliers:'Pengurusan Pembekal', sup_add:'Tambah Pembekal', sup_add_btn:'Tambah', no_suppliers:'Tiada pembekal',
     lbl_sup_tier:'Tahap', sup_active:'Aktif', sup_inactive:'Dilumpuhkan', sup_disable:'Lumpuhkan', sup_enable:'Aktifkan',
     pay_method:'Kaedah Pembayaran', pay_cash:'💵 Tunai', pay_transfer:'🏦 Pindahan Bank', pay_ewallet:'📱 E-Dompet', pay_card:'💳 Kad',
-    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', lbl_deadline:'Tarikh Akhir', sla_default:'lalai', lbl_sla_days:'Est. Hari',
+    overdue:'Tertunggak', overdue_banner:'pesanan tertunggak', paid_stuck_banner:'pesanan dibayar tersekat >120 min', lbl_deadline:'Tarikh Akhir', sla_default:'lalai', lbl_sla_days:'Est. Hari',
     status_pending_payment:'Belum Bayar', status_paid:'Dibayar', status_assigned:'Ditetapkan', status_accepted:'Diterima',
     status_in_production:'Pengeluaran', status_production_complete:'Siap Keluar', status_shipped:'Dihantar',
     status_in_transit:'Transit', status_arrived:'Tiba', status_installing:'Pasang',
@@ -728,7 +728,7 @@ const STAFF_I18N = {
     nav_suppliers:'จัดการซัพพลายเออร์', sup_add:'เพิ่มซัพพลายเออร์', sup_add_btn:'เพิ่ม', no_suppliers:'ไม่มีซัพพลายเออร์',
     lbl_sup_tier:'ระดับ', sup_active:'ใช้งานอยู่', sup_inactive:'ปิดใช้งาน', sup_disable:'ปิด', sup_enable:'เปิด',
     pay_method:'วิธีชำระเงิน', pay_cash:'💵 เงินสด', pay_transfer:'🏦 โอนธนาคาร', pay_ewallet:'📱 E-Wallet', pay_card:'💳 บัตร',
-    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น', lbl_sla_days:'จำนวนวัน',
+    overdue:'เกินกำหนด', overdue_banner:'คำสั่งซื้อเกินกำหนด', paid_stuck_banner:'ออเดอร์ที่ชำระแล้วค้าง >120 นาที', lbl_deadline:'กำหนดเวลา', sla_default:'ค่าเริ่มต้น', lbl_sla_days:'จำนวนวัน',
     status_pending_payment:'รอชำระ', status_paid:'ชำระแล้ว', status_assigned:'มอบหมาย', status_accepted:'รับงาน',
     status_in_production:'ผลิต', status_production_complete:'ผลิตเสร็จ', status_shipped:'จัดส่ง',
     status_in_transit:'ขนส่ง', status_arrived:'ถึงแล้ว', status_installing:'ติดตั้ง',
@@ -1750,10 +1750,16 @@ function renderMonthlyStats(orders, period, specificDate) {
 }
 
 function renderOrdersTable(orders) {
-  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < Date.now()).length;
-  const banner = overdueCount > 0
-    ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
-    : '';
+  const _now = Date.now();
+  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < _now).length;
+  const paidStuckCount = orders.filter(o => o.status === 'paid' && o.deadline_at && new Date(o.deadline_at) < _now).length;
+  const banner =
+    (overdueCount > 0
+      ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
+      : '')
+    + (paidStuckCount > 0
+      ? `<div class="row-overdue-badge px-4 py-2 text-sm font-bold" style="background:#dc2626;color:#fff;border-bottom:1px solid #b91c1c">🚨 ${paidStuckCount} ${t('paid_stuck_banner')}</div>`
+      : '');
 
   if (!orders.length) {
     document.getElementById('orders-table').innerHTML = `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
@@ -1763,7 +1769,10 @@ function renderOrdersTable(orders) {
   const rowsData = orders.map(o => {
     const cd = deadlineRowInfo(o);
     const cdHtml = cd ? `<div class="text-xs mt-0.5 font-medium" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#6b7280'}">${cd.text}</div>` : '';
-    return { o, cd, cdHtml };
+    const alarmBadge = cd?.overdue
+      ? `<span class="row-overdue-badge text-xs px-1.5 py-0.5 rounded-full font-bold ml-1" style="background:#dc2626;color:#fff">⚠ ${t('overdue')}</span>`
+      : '';
+    return { o, cd, cdHtml, alarmBadge };
   });
 
   // Desktop: table (hidden on mobile)
@@ -1772,7 +1781,7 @@ function renderOrdersTable(orders) {
       <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th>
       <th class="px-4 py-3">${t('th_store')}</th><th class="px-4 py-3">${t('th_amount')}</th>
       <th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
-    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml }) => {
+    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge }) => {
       const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
       return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
         <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
@@ -1782,6 +1791,7 @@ function renderOrdersTable(orders) {
         <td class="px-4 py-3">
           ${badge(o.status)}
           ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium ml-1" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+          ${alarmBadge}
         </td>
         <td class="px-4 py-3 text-gray-400 text-xs">${fmtDate(o.created_at)}${cdHtml}</td>
       </tr>`;
@@ -1789,7 +1799,7 @@ function renderOrdersTable(orders) {
   </div>`;
 
   // Mobile: card list (hidden on md+)
-  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml }) => {
+  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml, alarmBadge }) => {
     const borderColor = cd?.overdue ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
       <div class="flex items-start justify-between gap-2 mb-1.5">
@@ -1797,6 +1807,7 @@ function renderOrdersTable(orders) {
         <div class="flex items-center gap-1 flex-wrap justify-end">
           ${badge(o.status)}
           ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
+          ${alarmBadge}
         </div>
       </div>
       <div class="flex items-center justify-between">
