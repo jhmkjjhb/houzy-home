@@ -394,11 +394,14 @@ async function openDetail(id) {
   document.getElementById('detail-content').innerHTML =
     '<div class="text-center py-10 text-gray-400">加载中…</div>';
 
-  const [{data:o}, {data:items}, {data:logs}] = await Promise.all([
+  const [{data:o}, {data:_rawItems}, {data:logs}] = await Promise.all([
     sb.from('orders').select('*, stores(name), customers(name,phone,address)').eq('id',id).single(),
     sb.from('order_items').select('*').eq('order_id',id).order('sort_order'),
     sb.from('order_logs').select('*').eq('order_id',id).order('created_at',{ascending:true}),
   ]);
+  // 厂家只看分给自己的商品（详情/打印/缓存都用过滤后的 items，防信息越界）
+  const items = (_rawItems || []).filter(it =>
+    String(it.supplier_id || '') === String(supplier?.id || ''));
 
   const [{ data: parentOrder }, { data: childByFk }, { data: childByDesc }] = await Promise.all([
     o?.parent_order_id
