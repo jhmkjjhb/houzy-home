@@ -1081,12 +1081,12 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked)
       ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
       : '';
     return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:64px">
-              <button id="step-${s}" ${done ? '' : `onclick="selectStep('${s}')"`}
+              <div id="step-${s}"
                 class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all w-16"
-                style="background:${bg};color:${color};${border}cursor:${done ? 'default' : 'pointer'};">
+                style="background:${bg};color:${color};${border}cursor:default;">
                 <span class="step-icon text-sm leading-none">${icon}</span>
                 <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${lbl}</span>
-              </button>
+              </div>
               <span id="step-time-${s}" class="text-center mt-0.5 leading-tight px-0.5"
                     style="font-size:9px;color:${subColor};min-width:64px;word-break:break-all">${subText}</span>
             </div>${connector}`;
@@ -1097,11 +1097,11 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked)
     const lbl    = t('status_' + s) || STATUS[s].label;
     const tl     = active ? stepTimeLabel(s, -1, curStep, true) : { text: fmtSla(s), color: '#d1d5db' };
     return `<div class="flex flex-col items-center">
-              <button id="step-${s}" onclick="selectStep('${s}')"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium border transition"
-                style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:pointer;">
+              <div id="step-${s}"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium border"
+                style="${active ? STATUS[s].s+';border-color:#1a3a2a' : 'background:white;color:#6b7280;border-color:#e5e7eb'};cursor:default;">
                 ${lbl}
-              </button>
+              </div>
               <span id="step-time-${s}" style="font-size:9px;color:${tl.color}">${tl.text}</span>
             </div>`;
   }).join('');
@@ -2658,6 +2658,23 @@ async function openDetail(id, backView) {
         ${t('btn_save')}
       </button>
       <p id="upd-msg" class="text-sm mt-2 text-center hidden font-semibold" style="color:#1a3a2a">✓ ${t('msg_saved')}</p>
+
+      ${canDo(3) ? `
+      <div class="mt-4 pt-4 border-t border-dashed border-red-200">
+        <p class="text-xs font-semibold text-red-600 mb-2">⚠ 管理员强制改状态（异常处理用，会记原因到日志）</p>
+        <div class="flex flex-col gap-2">
+          <select id="force-status" class="input text-sm">
+            ${['paid','in_production','shipped','arrived','installing','cancelled','closed']
+              .map(s => `<option value="${s}">${STATUS[s]?.label||s}</option>`).join('')}
+          </select>
+          <input type="text" id="force-reason" placeholder="必填：强制改状态的原因" class="input text-sm">
+          <button onclick="forceStatus('${o.id}')"
+                  class="w-full py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition">
+            强制改状态
+          </button>
+        </div>
+        <p class="text-[11px] text-gray-400 mt-1">注：「已付款」仍只能由收款驱动、「已完成」仍只能客户签名，强制也绕不过这两道防虚假关卡。</p>
+      </div>` : ''}
     </div>
 
     <!-- 临时环节卡片：紧跟订单状态栏下方（现货单无生产环节，不显示）-->
@@ -3382,6 +3399,13 @@ function renderChecklistPanel(o, items, childOrders) {
             </a>`
           : `<p class="text-xs text-gray-400 mt-2">保存安装日期和安装人后可发送 WhatsApp 通知</p>`
         }
+        ${o.install_date ? `
+          <button onclick="enterInstalling('${o.id}')"
+                  class="w-full py-2.5 mt-3 bg-hg text-white text-sm font-bold rounded-lg hover:bg-green-900 transition">
+            ✅ 进入安装中
+          </button>
+          <p class="text-[11px] text-gray-400 mt-1 text-center">需全部验货完成 + 已约安装日 + 款项达里程碑，系统会校验</p>
+        ` : ''}
       </div>` : '';
 
     return `
@@ -3687,6 +3711,30 @@ async function saveInstallDate(orderId) {
     return;
   }
   openDetail(orderId);
+}
+
+// 「进入安装中」专用触发：复用 updateOrder 的全部关卡(验货完成/已约安装日/
+// 款项里程碑)与副作用(质保表、deadline、日志)。状态栏锁死后这是 arrived→
+// installing 的唯一入口。
+async function enterInstalling(orderId) {
+  const el = document.getElementById('upd-status');
+  if (el) el.value = 'installing';
+  await updateOrder(orderId);
+}
+
+// 管理员强制改状态(L3+)：复用 updateOrder 的权限/_forcedJump/留痕引擎与
+// 各防虚假硬关卡(已付款须收款驱动、已完成须客户签名仍绕不过)。
+async function forceStatus(orderId) {
+  if (!canDo(3)) { alert('仅区域负责人及以上可强制改状态'); return; }
+  const target = document.getElementById('force-status')?.value;
+  const reason = document.getElementById('force-reason')?.value?.trim();
+  if (!target) { alert('请选择目标状态'); return; }
+  if (!reason) { alert('请填写强制改状态的原因'); return; }
+  const st = document.getElementById('upd-status');
+  const nt = document.getElementById('upd-notes');
+  if (st) st.value = target;
+  if (nt) nt.value = reason;            // updateOrder 的 _forcedJump 会要求并写入此原因
+  await updateOrder(orderId);
 }
 
 async function submitSignOff(orderId) {
