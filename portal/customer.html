@@ -275,10 +275,25 @@ function renderCustomerWarranty(o, logs) {
   if (!warrantyData || warrantyData.length === 0) {
     warrantyData = [{
       seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso: startLog.created_at,
-      components:[{ name:'整体产品', years:1,
-        endIso: new Date(new Date(startLog.created_at).getTime() + 365.25*24*3600000).toISOString() }],
+      components:[{ name:'整体产品', years:1 }],
     }];
   }
+
+  // 到期日一律按「真实质保起始 = 客户签收时间」+ 各部件年限重算（按日历年），
+  // 不依赖 warranty_info 里存的旧 endIso（可能锚定下单时间）
+  const _wStart = new Date(startLog.created_at);
+  warrantyData.forEach(s => {
+    s.startIso = startLog.created_at;
+    s.components.forEach(c => {
+      const e = new Date(_wStart);
+      e.setFullYear(e.getFullYear() + Number(c.years || 1));
+      c.endIso = e.toISOString();
+    });
+  });
+  // 总质保期 = 所有部件中最长年限
+  const _maxYears = Math.max(1, ...warrantyData.flatMap(s => s.components.map(c => Number(c.years || 1))));
+  const _totEnd = new Date(_wStart);
+  _totEnd.setFullYear(_totEnd.getFullYear() + _maxYears);
 
   const now = Date.now();
   const allExpired = warrantyData.every(s => s.components.every(c => new Date(c.endIso).getTime() < now));
@@ -328,7 +343,10 @@ function renderCustomerWarranty(o, logs) {
         ${allExpired ? '全部已到期' : '质保中'}
       </span>
     </div>
-    <div class="text-xs text-gray-400 mb-3">质保开始：${new Date(startLog.created_at).toLocaleDateString()}</div>
+    <div class="rounded-lg px-3 py-2 mb-3" style="background:#eff6ff;border:1px solid #1e40af22">
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f">总质保期：最长 ${_maxYears} 年</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px">质保开始 ${new Date(startLog.created_at).toLocaleDateString()} · 最长保至 ${_totEnd.toISOString().slice(0,10)}（各部件年限见下表）</div>
+    </div>
     ${seriesHtml}
     <p class="text-xs text-gray-400 text-center mt-2">如有质保问题，请联系客服</p>
   </div>`;

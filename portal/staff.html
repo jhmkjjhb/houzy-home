@@ -2384,6 +2384,10 @@ async function submitOrder() {
         showCreateErr('商品明细保存失败，订单已撤销，请检查后重新提交：' + itemErr.message);
         return;  // 不导航、不刷新，保留表单让用户重试
       }
+      // 下单即按商品明细算好质保表存档（客户端只能读 warranty_info，无权读商品明细）
+      await sb.from('orders').update({
+        warranty_info: JSON.stringify(computeWarrantyInfo(items, order.created_at || new Date().toISOString())),
+      }).eq('id', order.id);
     }
 
     // 提交成功，清空补件单上下文
