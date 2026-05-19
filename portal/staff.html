@@ -2601,21 +2601,7 @@ async function openDetail(id, backView) {
       ${deadlineBanner}
     </div>
 
-    ${renderItemsCard(items, o, supList)}
-
-    ${renderChildOrdersCard(childOrders)}
-
-    ${renderProdStagePanel(o)}
-
-    ${renderChecklistPanel(o, items, childOrders)}
-
-    ${renderAttachmentsCard(attachments, o.id)}
-
-    ${['after_sales','completed'].includes(o.status) ? renderWarrantyPanel(o, logs, o.id) : ''}
-
-    ${renderPaymentPanel(o, payments)}
-
-    <!-- Update status -->
+    <!-- Update status（订单状态栏：上移到信息卡正下方）-->
     <div class="card p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
@@ -2640,6 +2626,21 @@ async function openDetail(id, backView) {
       </button>
       <p id="upd-msg" class="text-sm mt-2 text-center hidden font-semibold" style="color:#1a3a2a">✓ ${t('msg_saved')}</p>
     </div>
+
+    <!-- 临时环节卡片：紧跟订单状态栏下方 -->
+    ${renderProdStagePanel(o)}
+
+    ${renderChecklistPanel(o, items, childOrders)}
+
+    ${renderItemsCard(items, o, supList)}
+
+    ${renderChildOrdersCard(childOrders)}
+
+    ${renderAttachmentsCard(attachments, o.id)}
+
+    ${['after_sales','completed'].includes(o.status) ? renderWarrantyPanel(o, logs, o.id) : ''}
+
+    ${renderPaymentPanel(o, payments)}
 
     <!-- Timeline -->
     <div class="card p-5">
