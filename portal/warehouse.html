@@ -549,6 +549,9 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 const ALLOWED_ROLES = ['warehouse','store_manager','regional_manager','general_manager','superadmin','admin'];
+// 店长及以上（可清样发货）
+const WH_MGR_ROLES = ['store_manager','regional_manager','general_manager','superadmin','admin'];
+function isWhMgr() { return WH_MGR_ROLES.includes(profile?.role); }
 const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
 
 let profile = null;
@@ -1139,6 +1142,11 @@ async function renderDispatch() {
                       class="shrink-0 px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition">
                 确认发货
               </button>
+              ${isWhMgr() ? `<button id="clr-btn-${it.item_id}" onclick="confirmShip('${it.item_id}','${oid}',true)"
+                      title="连最后样品一并发出，库存扣到底（店长权限，会记日志）"
+                      class="shrink-0 px-2.5 py-1.5 border border-amber-400 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-50 transition">
+                清样发货
+              </button>` : ''}
               <button id="rej-tgl-${it.item_id}" onclick="toggleReject('${it.item_id}')"
                       class="shrink-0 px-2.5 py-1.5 border border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50 transition">
                 拒绝
@@ -1174,21 +1182,23 @@ async function renderDispatch() {
   }).join('');
 }
 
-async function confirmShip(itemId, orderId) {
+async function confirmShip(itemId, orderId, allowSample = false) {
   if (_dispatching.has(itemId)) return;            // 防重复点击（决策④）
   const whId = document.getElementById('dispatch-wh')?.value;
   if (!whId) { alert('请先在上方选择「从哪个仓库发货」'); return; }
   const carrier  = document.getElementById('carrier-' + orderId)?.value?.trim() || null;
   const tracking = document.getElementById('tracking-' + orderId)?.value?.trim() || null;
   const warn = tracking ? '' : '\n（未填物流单号——若是自取/上门可忽略）';
-  if (!confirm('确认发货？此操作会扣减该仓库库存，不可撤销。' + warn)) return;
+  if (allowSample) {
+    if (!confirm('⚠ 清样发货：会把最后的样品一并发出、库存扣到底，不可撤销，且会记入日志。确定继续？')) return;
+  } else if (!confirm('确认发货？此操作会扣减该仓库库存，不可撤销。' + warn)) return;
 
   _dispatching.add(itemId);
-  const btn = document.getElementById('ship-btn-' + itemId);
+  const btn = document.getElementById(allowSample ? 'clr-btn-' + itemId : 'ship-btn-' + itemId);
   if (btn) { btn.disabled = true; btn.textContent = '处理中…'; btn.classList.add('opacity-50'); }
 
   const { data, error } = await sb.rpc('warehouse_confirm_ship',
-    { p_item_id: itemId, p_warehouse_id: whId, p_carrier: carrier, p_tracking_no: tracking });
+    { p_item_id: itemId, p_warehouse_id: whId, p_carrier: carrier, p_tracking_no: tracking, p_allow_sample: allowSample });
 
   _dispatching.delete(itemId);
   if (error) {

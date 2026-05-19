@@ -72,14 +72,16 @@ END;
 $$;
 
 -- ── 2. 确认发货：扣库存 + 标记 shipped + 写物流 + 写流水/日志 + 聚合订单状态 ──
--- 新增物流参数（用户 2026-05-19 反馈）：发货时填物流公司/单号 → 写入订单，
--- 客户端即可看到追踪号。新增参数=签名变更 → 先 DROP 旧 2 参版本。
+-- 物流参数 + 清样参数（用户 2026-05-19）：发货填物流公司/单号；p_allow_sample
+-- =true 时连最后样品一起发(扣到0)，仅店长及以上可用。签名变更 → 先 DROP 旧版。
 DROP FUNCTION IF EXISTS warehouse_confirm_ship(UUID, UUID);
+DROP FUNCTION IF EXISTS warehouse_confirm_ship(UUID, UUID, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION warehouse_confirm_ship(
   p_item_id      UUID,
   p_warehouse_id UUID,
   p_carrier      TEXT DEFAULT NULL,
-  p_tracking_no  TEXT DEFAULT NULL
+  p_tracking_no  TEXT DEFAULT NULL,
+  p_allow_sample BOOLEAN DEFAULT false
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_role     TEXT;
@@ -93,12 +95,24 @@ DECLARE
   v_qty      NUMERIC;
   v_remain   INT;
   v_advanced BOOLEAN := false;
+  v_is_mgr   BOOLEAN := false;
+  v_min_keep NUMERIC := 1;   -- 默认留 1 件样品
 BEGIN
   SELECT role, name INTO v_role, v_name FROM profiles WHERE id = auth.uid();
   IF v_role IS NULL OR v_role NOT IN ('warehouse','store_manager',
         'regional_manager','general_manager','admin','superadmin') THEN
     RETURN jsonb_build_object('ok', false, 'code', 'forbidden',
                               'message', '无仓库发货权限');
+  END IF;
+  v_is_mgr := v_role IN ('store_manager','regional_manager',
+                         'general_manager','admin','superadmin');  -- 店长及以上
+  -- 清样：仅店长及以上可连最后样品一起发(扣到 0)；其余仍须留 1 件样品
+  IF p_allow_sample THEN
+    IF NOT v_is_mgr THEN
+      RETURN jsonb_build_object('ok', false, 'code', 'sample_forbidden',
+        'message', '清样发货需店长及以上权限，请联系店长操作');
+    END IF;
+    v_min_keep := 0;
   END IF;
 
   -- 锁定该商品行（防并发重复发货）
@@ -144,12 +158,14 @@ BEGIN
       'message', '该仓库无此产品库存，无法发货');
   END IF;
   v_on_hand := COALESCE(v_on_hand, 0);
-  -- 样品保留：永远留最后 1 件做样品，可发 = 在库 - 1（用户 2026-05-19 决策）
-  IF v_on_hand - v_qty < 1 THEN
+  -- 样品保留：默认留最后 1 件做样品(v_min_keep=1)；店长清样时 v_min_keep=0
+  IF v_on_hand - v_qty < v_min_keep THEN
     RETURN jsonb_build_object('ok', false, 'code', 'insufficient',
-      'message', '可发数量不足（在库 ' || v_on_hand || ' / 需 ' || v_qty ||
-                 '）。系统永远保留最后 1 件作样品，当前最多可发 ' ||
-                 GREATEST(v_on_hand - 1, 0) || ' 件。如需清样请联系店长。');
+      'message', CASE WHEN v_min_keep > 0
+        THEN '可发数量不足（在库 ' || v_on_hand || ' / 需 ' || v_qty ||
+             '）。系统保留最后 1 件作样品，当前最多可发 ' ||
+             GREATEST(v_on_hand - 1, 0) || ' 件。如需清样请店长操作。'
+        ELSE '库存不足（在库 ' || v_on_hand || ' / 需 ' || v_qty || '）' END);
   END IF;
 
   -- 扣库存（行已锁，原子安全）+ 写出库流水
@@ -179,7 +195,9 @@ BEGIN
                           operator_name, notes)
   VALUES (v_oi.order_id, COALESCE(v_ord.status,'paid'), auth.uid(),
           v_role, v_name,
-          '仓库确认发货：' || COALESCE(v_oi.product_name,'') ||
+          CASE WHEN p_allow_sample THEN '⚠ 清样发货（连样品一并发出，库存扣至 '
+                 || (v_on_hand - v_qty) || '）：' ELSE '仓库确认发货：' END ||
+          COALESCE(v_oi.product_name,'') ||
           '，已扣减库存 ' || v_qty ||
           CASE WHEN NULLIF(btrim(COALESCE(p_tracking_no,'')),'') IS NOT NULL
                THEN '；物流单号 ' || btrim(p_tracking_no) ELSE '' END ||
