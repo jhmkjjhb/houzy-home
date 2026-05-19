@@ -5172,10 +5172,11 @@ async function confirmDispatch(orderId) {
     if (!prod) { blocked.push({ name: it.product_name || '(未命名)', reason: '产品档案匹配不到' }); continue; }
     const { data: invs } = await sb.from('inventory')
       .select('qty_on_hand,qty_reserved').eq('product_id', prod.id);
+    // 样品保留：每个仓库各留最后 1 件样品，可发 = 在库 - 1 - 预占
     const avail = (invs || []).reduce((s, r) =>
-      s + Math.max(0, (Number(r.qty_on_hand) || 0) - (Number(r.qty_reserved) || 0)), 0);
+      s + Math.max(0, (Number(r.qty_on_hand) || 0) - 1 - (Number(r.qty_reserved) || 0)), 0);
     if (avail >= need && need > 0) eligible.push(it);
-    else blocked.push({ name: it.product_name || '(未命名)', reason: `仓库无货/不足（可用 ${avail} / 需 ${need}）` });
+    else blocked.push({ name: it.product_name || '(未命名)', reason: `仓库无货/不足（末件留样品，可发 ${avail} / 需 ${need}）` });
   }
 
   const blockMsg = blocked.length

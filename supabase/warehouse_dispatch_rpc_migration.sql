@@ -144,9 +144,12 @@ BEGIN
       'message', '该仓库无此产品库存，无法发货');
   END IF;
   v_on_hand := COALESCE(v_on_hand, 0);
-  IF v_on_hand < v_qty THEN
+  -- 样品保留：永远留最后 1 件做样品，可发 = 在库 - 1（用户 2026-05-19 决策）
+  IF v_on_hand - v_qty < 1 THEN
     RETURN jsonb_build_object('ok', false, 'code', 'insufficient',
-      'message', '库存不足（在库 ' || v_on_hand || ' / 需 ' || v_qty || '）');
+      'message', '可发数量不足（在库 ' || v_on_hand || ' / 需 ' || v_qty ||
+                 '）。系统永远保留最后 1 件作样品，当前最多可发 ' ||
+                 GREATEST(v_on_hand - 1, 0) || ' 件。如需清样请联系店长。');
   END IF;
 
   -- 扣库存（行已锁，原子安全）+ 写出库流水
