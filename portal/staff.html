@@ -1317,6 +1317,23 @@ function bigCountdownBar(o) {
     style="color:${c.fg};background:${c.bg};border:1px solid ${c.fg}33">${c.text}</div>`;
 }
 
+// 延期按钮：发货→到货 +7天x2；安装 +5天x1。用完置灰
+function extendBtn(o) {
+  let cfg = null;
+  if (o.status === 'shipped')    cfg = { kind:'ship',    used:o.ship_extend_count||0,    max:2, days:7, label:'发货延期' };
+  if (o.status === 'installing') cfg = { kind:'install', used:o.install_extend_count||0, max:1, days:5, label:'安装延期' };
+  if (!cfg) return '';
+  const left = cfg.max - cfg.used;
+  if (left <= 0) {
+    return `<div class="mb-3"><button type="button" disabled
+      class="px-3 py-1.5 rounded-lg text-sm font-semibold cursor-not-allowed"
+      style="background:#e5e7eb;color:#9ca3af">${cfg.label}已用完（${cfg.used}/${cfg.max}）</button></div>`;
+  }
+  return `<div class="mb-3"><button type="button" onclick="extendDeadline('${o.id}','${cfg.kind}')"
+    class="px-3 py-1.5 rounded-lg text-sm font-semibold"
+    style="background:#c8a96e;color:#1a3a2a">＋${cfg.label} +${cfg.days}天（还可 ${left} 次）</button></div>`;
+}
+
 function tickDetailBigCd() {
   const el = document.getElementById('detail-bigcd');
   if (!el) return;
@@ -2609,6 +2626,7 @@ async function openDetail(id, backView) {
         ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o))}
       </div>
       ${bigCountdownBar(o)}
+      ${extendBtn(o)}
       <div id="sla-days-row" class="mb-3 hidden">
         <label class="label text-xs">${t('lbl_sla_days')}</label>
         <div class="flex items-center gap-3">
@@ -3901,6 +3919,33 @@ function renderProdStagePanel(o) {
 }
 
 // 厂家更新预计生产天数：deadline_at = 今天 + N 天（1≤N≤30），写日志，明确反馈
+// 延期：在原截止时间上加天数，计数+1，写日志；用完不允许
+async function extendDeadline(orderId, kind) {
+  const cfg = kind === 'ship'
+    ? { col:'ship_extend_count',    max:2, days:7, label:'发货→到货' }
+    : { col:'install_extend_count', max:1, days:5, label:'安装' };
+  const { data: o, error: e1 } = await sb.from('orders')
+    .select(`deadline_at,status,${cfg.col}`).eq('id', orderId).single();
+  if (e1) { alert('读取失败：' + e1.message); return; }
+  const used = o[cfg.col] || 0;
+  if (used >= cfg.max) { alert(`${cfg.label}延期次数已用完（${used}/${cfg.max}）`); return; }
+  if (!confirm(`确认${cfg.label}延期 +${cfg.days} 天？用完后还剩 ${cfg.max - used - 1} 次`)) return;
+  const base = o.deadline_at ? new Date(o.deadline_at).getTime() : Date.now();
+  const newDl = new Date(base + cfg.days * 86400000).toISOString();
+  const { error } = await sb.from('orders')
+    .update({ deadline_at: newDl, [cfg.col]: used + 1, updated_at: new Date().toISOString() })
+    .eq('id', orderId);
+  if (error) { alert('延期失败：' + error.message); return; }
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: o.status,
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: `${cfg.label}延期 +${cfg.days} 天（第 ${used + 1}/${cfg.max} 次）`,
+  });
+  alert(`✅ 已延期 +${cfg.days} 天`);
+  await loadOrders();
+  await openDetail(orderId);
+}
+
 async function saveProdDays(orderId) {
   let n = parseInt(document.getElementById('prod-days')?.value, 10);
   if (!Number.isFinite(n) || n < 1) { alert('请输入有效天数（1~30）'); return; }
