@@ -1270,8 +1270,14 @@ function deadlineRowInfo(o) {
   return fmtCountdown(o.deadline_at);
 }
 
+// 超时后是否已被员工操作过（最后更新时间晚于超时时间）→ 视为「已有人跟进」，停止超时报警
+function ackedAfterOverdue(o) {
+  return !!(o && o.deadline_at && o.updated_at
+    && new Date(o.updated_at).getTime() > new Date(o.deadline_at).getTime());
+}
+
 // 详情页大倒计时条：未超时绿/橙「距超时还剩 …」，超时红「已超时 …」，均每秒跳动
-function fmtBigCd(deadlineIso) {
+function fmtBigCd(deadlineIso, acked) {
   if (!deadlineIso) return null;
   const diff = new Date(deadlineIso).getTime() - Date.now();
   const over = diff < 0;
@@ -1281,6 +1287,7 @@ function fmtBigCd(deadlineIso) {
   const m = Math.floor(s / 60);    s %= 60;
   const pad = n => String(n).padStart(2, '0');
   const clock = (d > 0 ? `${d}天 ` : '') + `${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (over && acked)     return { text: `✓ 已超时 ${clock}·跟进中`, fg: '#6b7280', bg: '#f3f4f6', over: false };
   if (over)              return { text: `⚠ 已超时 ${clock}`,    fg: '#dc2626', bg: '#fef2f2', over: true };
   if (diff < 4*3600000)  return { text: `⏱ 距超时 ${clock}`,    fg: '#d97706', bg: '#fffbeb', over: false };
   return                        { text: `⏱ 距超时 ${clock}`,    fg: '#15803d', bg: '#ecfdf5', over: false };
@@ -1289,9 +1296,10 @@ function fmtBigCd(deadlineIso) {
 function bigCountdownBar(o) {
   if (['completed', 'closed', 'cancelled'].includes(o.status)) return '';
   if (!o.deadline_at) return '';
-  const c = fmtBigCd(o.deadline_at);
+  const acked = ackedAfterOverdue(o);
+  const c = fmtBigCd(o.deadline_at, acked);
   if (!c) return '';
-  return `<div id="detail-bigcd" data-dl="${o.deadline_at}"
+  return `<div id="detail-bigcd" data-dl="${o.deadline_at}" data-ack="${acked ? 1 : ''}"
     class="mb-3 inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${c.over ? 'row-overdue-badge' : ''}"
     style="color:${c.fg};background:${c.bg};border:1px solid ${c.fg}33">${c.text}</div>`;
 }
@@ -1299,7 +1307,7 @@ function bigCountdownBar(o) {
 function tickDetailBigCd() {
   const el = document.getElementById('detail-bigcd');
   if (!el) return;
-  const c = fmtBigCd(el.getAttribute('data-dl'));
+  const c = fmtBigCd(el.getAttribute('data-dl'), el.getAttribute('data-ack') === '1');
   if (!c) return;
   el.textContent = c.text;
   el.style.color = c.fg;
@@ -1320,8 +1328,9 @@ function tickOrderListCountdowns() {
     if (!dl) return;
     const cd = fmtCountdown(dl);
     if (!cd) return;
+    const acked = el.getAttribute('data-ack') === '1';
     el.textContent = cd.text;
-    el.style.color = cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a';
+    el.style.color = (cd.overdue && !acked) ? '#dc2626' : (cd.overdue && acked) ? '#6b7280' : cd.warn ? '#d97706' : '#16a34a';
     el.classList.remove('cd-tick');
     void el.offsetWidth;
     el.classList.add('cd-tick');
@@ -1813,8 +1822,8 @@ function renderMonthlyStats(orders, period, specificDate) {
 
 function renderOrdersTable(orders) {
   const _now = Date.now();
-  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < _now).length;
-  const paidStuckCount = orders.filter(o => o.status === 'paid' && o.deadline_at && new Date(o.deadline_at) < _now).length;
+  const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < _now && !ackedAfterOverdue(o)).length;
+  const paidStuckCount = orders.filter(o => o.status === 'paid' && o.deadline_at && new Date(o.deadline_at) < _now && !ackedAfterOverdue(o)).length;
   const banner =
     (overdueCount > 0
       ? `<div class="px-4 py-2 text-sm font-semibold" style="background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca">⚠️ ${overdueCount} ${t('overdue_banner')}</div>`
@@ -1830,11 +1839,14 @@ function renderOrdersTable(orders) {
 
   const rowsData = orders.map(o => {
     const cd = deadlineRowInfo(o);
-    const cdHtml = cd ? `<div class="ord-cd text-sm mt-0.5 font-bold" data-dl="${o.deadline_at||''}" style="color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#16a34a'}">${cd.text}</div>` : '';
-    const alarmBadge = cd?.overdue
+    const acked = ackedAfterOverdue(o);
+    const alarming = !!cd?.overdue && !acked;          // 真正要报警：超时且没人跟进过
+    const cdColor = alarming ? '#dc2626' : (cd?.overdue && acked) ? '#6b7280' : cd?.warn ? '#d97706' : '#16a34a';
+    const cdHtml = cd ? `<div class="ord-cd text-sm mt-0.5 font-bold" data-dl="${o.deadline_at||''}" data-ack="${acked?1:''}" style="color:${cdColor}">${cd.text}</div>` : '';
+    const alarmBadge = alarming
       ? `<span class="row-overdue-badge text-xs px-1.5 py-0.5 rounded-full font-bold ml-1" style="background:#dc2626;color:#fff">⚠ ${t('overdue')}</span>`
       : '';
-    return { o, cd, cdHtml, alarmBadge };
+    return { o, cd, cdHtml, alarmBadge, alarming };
   });
 
   // Desktop: table (hidden on mobile)
@@ -1843,10 +1855,10 @@ function renderOrdersTable(orders) {
       <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th>
       <th class="px-4 py-3">${t('th_store')}</th><th class="px-4 py-3">${t('th_amount')}</th>
       <th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
-    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge }) => {
-      const rowBg = cd?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
+      const rowBg = alarming ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
       return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
-        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
         <td class="px-4 py-3"><div class="font-medium">${o.customers?.name||'-'}</div><div class="text-gray-400 text-xs">${o.customers?.phone||''}</div></td>
         <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name||'-'}</td>
         <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount,o.currency)}</td>
@@ -1861,11 +1873,11 @@ function renderOrdersTable(orders) {
   </div>`;
 
   // Mobile: card list (hidden on md+)
-  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml, alarmBadge }) => {
-    const borderColor = cd?.overdue ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
+  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
+    const borderColor = alarming ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
       <div class="flex items-start justify-between gap-2 mb-1.5">
-        <span class="font-mono text-sm font-bold" style="color:${cd?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</span>
+        <span class="font-mono text-sm font-bold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}</span>
         <div class="flex items-center gap-1 flex-wrap justify-end">
           ${badge(o.status)}
           ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
