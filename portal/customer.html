@@ -30,7 +30,17 @@
       <div class="w-7 h-7 bg-gd flex items-center justify-center text-hg font-bold text-sm">H</div>
       <span class="text-white font-semibold text-sm tracking-wide">HOUZY HOME</span>
     </a>
-    <span class="text-gd text-xs tracking-widest">订单查询</span>
+    <div class="flex items-center gap-3">
+      <span class="text-gd text-xs tracking-widest" data-i18n="nav_sub">订单查询</span>
+      <select onchange="setCLang(this.value)" id="lang-sel"
+              class="bg-transparent text-gd text-xs border border-gd/40 rounded px-1.5 py-1">
+        <option value="en">EN</option>
+        <option value="zh-CN">简体</option>
+        <option value="zh-TW">繁體</option>
+        <option value="ms">BM</option>
+        <option value="th">ไทย</option>
+      </select>
+    </div>
   </div>
 </nav>
 
@@ -42,13 +52,13 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
       </svg>
     </div>
-    <h1 class="text-2xl font-bold text-hg mb-1">查询订单进度</h1>
-    <p class="text-gray-500 text-sm">输入您登记的手机号码</p>
+    <h1 class="text-2xl font-bold text-hg mb-1" data-i18n="title">查询订单进度</h1>
+    <p class="text-gray-500 text-sm" data-i18n="sub">输入您登记的手机号码</p>
   </div>
 
   <div class="bg-white rounded-2xl shadow-sm p-6">
-    <label class="block text-sm font-medium text-gray-700 mb-2">手机号码</label>
-    <p class="text-xs text-gray-400 mb-2">区号已自动添加，直接输入本地号码即可</p>
+    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="lbl_phone">手机号码</label>
+    <p class="text-xs text-gray-400 mb-2" data-i18n="phone_hint">区号已自动添加，直接输入本地号码即可</p>
     <div class="flex gap-2 mb-4">
       <select id="country-code" class="border border-gray-200 rounded-lg px-2 py-3 text-sm bg-gray-50 flex-shrink-0" style="max-width:130px">
         <option value="60">🇲🇾 +60 MY</option>
@@ -94,23 +104,24 @@
              onkeydown="if(event.key==='Enter')searchOrders()">
     </div>
     <button onclick="searchOrders()" id="search-btn"
-            class="w-full py-3 bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition text-sm">
+            class="w-full py-3 bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition text-sm"
+            data-i18n="btn_search">
       查询订单
     </button>
     <p id="phone-err" class="text-red-500 text-xs mt-2 hidden"></p>
   </div>
 
   <p class="text-center text-gray-400 text-xs mt-6">
-    如需帮助请
-    <a href="https://wa.me/60105898786" class="text-hg underline">WhatsApp 联系我们</a>
+    <span data-i18n="need_help">如需帮助请</span>
+    <a href="https://wa.me/60105898786" class="text-hg underline" data-i18n="wa_us">WhatsApp 联系我们</a>
   </p>
 </div>
 
 <!-- Screen: orders list -->
 <div id="s-orders" class="hidden max-w-2xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-5">
-    <h2 class="text-lg font-bold text-hg">我的订单</h2>
-    <button onclick="show('s-phone')" class="text-sm text-gray-400 hover:text-hg">← 重新查询</button>
+    <h2 class="text-lg font-bold text-hg" data-i18n="my_orders">我的订单</h2>
+    <button onclick="show('s-phone')" class="text-sm text-gray-400 hover:text-hg" data-i18n="research">← 重新查询</button>
   </div>
   <div id="orders-list"></div>
 </div>
@@ -118,8 +129,8 @@
 <!-- Screen: order detail -->
 <div id="s-detail" class="hidden max-w-2xl mx-auto px-4 py-8">
   <div class="flex items-center justify-between mb-5">
-    <h2 class="text-lg font-bold text-hg">订单详情</h2>
-    <button onclick="show('s-orders')" class="text-sm text-gray-400 hover:text-hg">← 返回列表</button>
+    <h2 class="text-lg font-bold text-hg" data-i18n="order_detail">订单详情</h2>
+    <button onclick="show('s-orders')" class="text-sm text-gray-400 hover:text-hg" data-i18n="back_list">← 返回列表</button>
   </div>
   <div id="detail-content"></div>
 </div>
@@ -130,6 +141,40 @@
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ── 多语言（en / zh-CN / zh-TW / ms / th），与员工端共用 localStorage 'houzy-lang' ──
+const CI18N = {
+ 'en':{nav_sub:'Order Tracking',title:'Track Your Order',sub:'Enter your registered phone number',lbl_phone:'Phone Number',phone_hint:'Country code auto-added — just enter your local number',btn_search:'Search Order',searching:'Searching...',need_help:'Need help?',wa_us:'Contact us on WhatsApp',my_orders:'My Orders',research:'← Search again',order_detail:'Order Details',back_list:'← Back to list',err_no_phone:'Please enter your phone number',err_query_fail:'Search failed, please try again later',no_orders:'No orders found',no_orders_sub:'Please check your phone number, or contact us',wa_cs:'Contact Support on WhatsApp',view_progress:'View progress',loading:'Loading…',o_cancelled:'This order has been cancelled',o_closed:'This order has been closed',order_status:'Order Status',in_after_sales:'Under warranty service',order_closed:'Order closed',order_cancelled:'Order cancelled',amount:'Amount',pay_status:'Payment',paid_yes:'Paid ✓',paid_no:'Unpaid',created:'Created',completed_at:'Completed',progress_log:'Progress Log',no_log:'No progress records yet',signoff_title:'Installation Sign-off',signed_done:'You have completed sign-off',sig_submitted:'✓ Signature submitted',sig_prompt:'Please sign below to confirm installation is complete',sign_here:'Sign here',clear:'Clear',confirm_sig:'Confirm Signature',err_sign_first:'Please sign first',submitting:'Submitting…',submit_fail:'Submission failed, please retry',expired:'Expired',in_warranty:'Active',th_part:'Part',th_period:'Warranty',th_expiry:'Expiry',th_status:'Status',warranty_title:'Warranty Service',all_expired:'All expired',w_active:'Active',total_warranty:'Total warranty: up to',years:'years',w_start:'Warranty start',w_until:'covered until',w_seedetail:'(see parts below)',gen_card:'Generate Warranty Card',warranty_help:'For warranty issues, please contact support',generic_series:'Product Warranty',generic_comp:'Whole product',wa_msg:'Hello, I would like to check the status of order ',card_brandsub:'Integrated Home Tech',card_title:'WARRANTY CARD',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'MAX WARRANTY',card_until:'covered until',card_order:'Order',card_from:'Start',card_thanks1:'Thank you for entrusting your home to HOUZY.',card_thanks2:'This warranty is our heartfelt, lasting promise—<br>live with ease; the rest, we will safeguard.',slogan:'Harmonize Heart & Home',slogan_sub:'SE-Asia Premium Interior · Transparent Warranty · Lifelong Service',ov_longpress:'Long-press the image above to save',ov_share:'then share it anywhere',ov_download:'Download',ov_close:'Close',card_notready:'Warranty info not ready, please retry',card_fail:'Generation failed, please retry',
+   st_pending_payment:'Pending Payment',st_paid:'Paid',st_assigned:'Assigned',st_accepted:'Factory Accepted',st_in_production:'In Production',st_production_complete:'Production Done',st_shipped:'Shipped',st_in_transit:'In Transit',st_arrived:'Arrived',st_installing:'Installing',st_completed:'Completed',st_after_sales:'Warranty',st_closed:'Closed',st_cancelled:'Cancelled'},
+ 'zh-CN':{nav_sub:'订单查询',title:'查询订单进度',sub:'输入您登记的手机号码',lbl_phone:'手机号码',phone_hint:'区号已自动添加，直接输入本地号码即可',btn_search:'查询订单',searching:'查询中...',need_help:'如需帮助请',wa_us:'WhatsApp 联系我们',my_orders:'我的订单',research:'← 重新查询',order_detail:'订单详情',back_list:'← 返回列表',err_no_phone:'请输入手机号码',err_query_fail:'查询失败，请稍后再试',no_orders:'未找到相关订单',no_orders_sub:'请确认手机号码，或联系我们',wa_cs:'WhatsApp 联系客服',view_progress:'查看进度',loading:'加载中…',o_cancelled:'此订单已取消',o_closed:'此订单已关闭',order_status:'订单状态',in_after_sales:'质保服务中',order_closed:'订单已关闭',order_cancelled:'订单已取消',amount:'订单金额',pay_status:'支付状态',paid_yes:'已支付 ✓',paid_no:'待支付',created:'创建时间',completed_at:'完成时间',progress_log:'进度记录',no_log:'暂无进度记录',signoff_title:'安装签收确认',signed_done:'您已完成签收确认',sig_submitted:'✓ 签名已提交',sig_prompt:'请在下方手写签名，确认安装完成',sign_here:'在此签名',clear:'清除',confirm_sig:'确认签名',err_sign_first:'请先签名',submitting:'提交中…',submit_fail:'提交失败，请重试',expired:'已到期',in_warranty:'质保中',th_part:'配件',th_period:'质保期',th_expiry:'到期日',th_status:'状态',warranty_title:'质保服务详情',all_expired:'全部已到期',w_active:'质保中',total_warranty:'总质保期：最长',years:'年',w_start:'质保开始',w_until:'最长保至',w_seedetail:'（各部件年限见下表）',gen_card:'一键生成质保卡',warranty_help:'如有质保问题，请联系客服',generic_series:'产品质保',generic_comp:'整体产品',wa_msg:'您好，我想查询订单 ',card_brandsub:'合屋整装科技',card_title:'品 质 质 保 卡',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'最 长 质 保',card_until:'保至',card_order:'订单',card_from:'质保起',card_thanks1:'感谢您将家，托付于 HOUZY。',card_thanks2:'这一纸质保，是我们以匠心立下的长情承诺——<br>往后岁月，您安心生活，余下皆由我们守护。',slogan:'合心筑家 · 整装焕新',slogan_sub:'东南亚高端家居整装 · 透明质保 · 终身服务',ov_longpress:'长按上方图片 → 保存到相册',ov_share:'即可发朋友圈 / 发给朋友',ov_download:'下载图片',ov_close:'关闭',card_notready:'质保信息未就绪，请稍候重试',card_fail:'生成失败，请重试',
+   st_pending_payment:'待付款',st_paid:'已付款',st_assigned:'已派单',st_accepted:'工厂接单',st_in_production:'生产中',st_production_complete:'生产完成',st_shipped:'已发货',st_in_transit:'运输中',st_arrived:'已到货',st_installing:'安装中',st_completed:'已完成',st_after_sales:'质保服务',st_closed:'已关闭',st_cancelled:'已取消'},
+ 'zh-TW':{nav_sub:'訂單查詢',title:'查詢訂單進度',sub:'輸入您登記的手機號碼',lbl_phone:'手機號碼',phone_hint:'區號已自動添加，直接輸入本地號碼即可',btn_search:'查詢訂單',searching:'查詢中...',need_help:'如需協助請',wa_us:'WhatsApp 聯絡我們',my_orders:'我的訂單',research:'← 重新查詢',order_detail:'訂單詳情',back_list:'← 返回列表',err_no_phone:'請輸入手機號碼',err_query_fail:'查詢失敗，請稍後再試',no_orders:'未找到相關訂單',no_orders_sub:'請確認手機號碼，或聯絡我們',wa_cs:'WhatsApp 聯絡客服',view_progress:'查看進度',loading:'載入中…',o_cancelled:'此訂單已取消',o_closed:'此訂單已關閉',order_status:'訂單狀態',in_after_sales:'質保服務中',order_closed:'訂單已關閉',order_cancelled:'訂單已取消',amount:'訂單金額',pay_status:'付款狀態',paid_yes:'已付款 ✓',paid_no:'待付款',created:'建立時間',completed_at:'完成時間',progress_log:'進度記錄',no_log:'暫無進度記錄',signoff_title:'安裝簽收確認',signed_done:'您已完成簽收確認',sig_submitted:'✓ 簽名已提交',sig_prompt:'請在下方手寫簽名，確認安裝完成',sign_here:'在此簽名',clear:'清除',confirm_sig:'確認簽名',err_sign_first:'請先簽名',submitting:'提交中…',submit_fail:'提交失敗，請重試',expired:'已到期',in_warranty:'質保中',th_part:'配件',th_period:'質保期',th_expiry:'到期日',th_status:'狀態',warranty_title:'質保服務詳情',all_expired:'全部已到期',w_active:'質保中',total_warranty:'總質保期：最長',years:'年',w_start:'質保開始',w_until:'最長保至',w_seedetail:'（各部件年限見下表）',gen_card:'一鍵生成質保卡',warranty_help:'如有質保問題，請聯絡客服',generic_series:'產品質保',generic_comp:'整體產品',wa_msg:'您好，我想查詢訂單 ',card_brandsub:'合屋整裝科技',card_title:'品 質 質 保 卡',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'最 長 質 保',card_until:'保至',card_order:'訂單',card_from:'質保起',card_thanks1:'感謝您將家，託付於 HOUZY。',card_thanks2:'這一紙質保，是我們以匠心立下的長情承諾——<br>往後歲月，您安心生活，餘下皆由我們守護。',slogan:'合心築家 · 整裝煥新',slogan_sub:'東南亞高端家居整裝 · 透明質保 · 終身服務',ov_longpress:'長按上方圖片 → 儲存到相簿',ov_share:'即可分享',ov_download:'下載圖片',ov_close:'關閉',card_notready:'質保資訊未就緒，請稍候重試',card_fail:'生成失敗，請重試',
+   st_pending_payment:'待付款',st_paid:'已付款',st_assigned:'已派單',st_accepted:'工廠接單',st_in_production:'生產中',st_production_complete:'生產完成',st_shipped:'已發貨',st_in_transit:'運輸中',st_arrived:'已到貨',st_installing:'安裝中',st_completed:'已完成',st_after_sales:'質保服務',st_closed:'已關閉',st_cancelled:'已取消'},
+ 'ms':{nav_sub:'Semakan Pesanan',title:'Jejak Pesanan Anda',sub:'Masukkan nombor telefon berdaftar anda',lbl_phone:'Nombor Telefon',phone_hint:'Kod negara ditambah automatik — masukkan nombor tempatan sahaja',btn_search:'Cari Pesanan',searching:'Mencari...',need_help:'Perlukan bantuan?',wa_us:'Hubungi kami di WhatsApp',my_orders:'Pesanan Saya',research:'← Cari semula',order_detail:'Butiran Pesanan',back_list:'← Kembali',err_no_phone:'Sila masukkan nombor telefon',err_query_fail:'Carian gagal, sila cuba lagi',no_orders:'Tiada pesanan dijumpai',no_orders_sub:'Sila semak nombor telefon, atau hubungi kami',wa_cs:'Hubungi Sokongan WhatsApp',view_progress:'Lihat kemajuan',loading:'Memuatkan…',o_cancelled:'Pesanan ini telah dibatalkan',o_closed:'Pesanan ini telah ditutup',order_status:'Status Pesanan',in_after_sales:'Dalam khidmat waranti',order_closed:'Pesanan ditutup',order_cancelled:'Pesanan dibatalkan',amount:'Jumlah',pay_status:'Pembayaran',paid_yes:'Dibayar ✓',paid_no:'Belum bayar',created:'Dicipta',completed_at:'Selesai',progress_log:'Log Kemajuan',no_log:'Tiada rekod kemajuan',signoff_title:'Pengesahan Pemasangan',signed_done:'Anda telah selesai mengesahkan',sig_submitted:'✓ Tandatangan dihantar',sig_prompt:'Sila tandatangan di bawah untuk sahkan pemasangan selesai',sign_here:'Tandatangan di sini',clear:'Padam',confirm_sig:'Sahkan Tandatangan',err_sign_first:'Sila tandatangan dahulu',submitting:'Menghantar…',submit_fail:'Penghantaran gagal, cuba lagi',expired:'Tamat',in_warranty:'Aktif',th_part:'Bahagian',th_period:'Waranti',th_expiry:'Tamat',th_status:'Status',warranty_title:'Khidmat Waranti',all_expired:'Semua tamat',w_active:'Aktif',total_warranty:'Jumlah waranti: sehingga',years:'tahun',w_start:'Mula waranti',w_until:'dilindungi hingga',w_seedetail:'(lihat senarai di bawah)',gen_card:'Jana Kad Waranti',warranty_help:'Untuk isu waranti, sila hubungi sokongan',generic_series:'Waranti Produk',generic_comp:'Keseluruhan produk',wa_msg:'Helo, saya ingin menyemak status pesanan ',card_brandsub:'Teknologi Rumah Bersepadu',card_title:'KAD WARANTI',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'WARANTI MAKS',card_until:'lindung hingga',card_order:'Pesanan',card_from:'Mula',card_thanks1:'Terima kasih kerana mempercayakan rumah anda kepada HOUZY.',card_thanks2:'Waranti ini ialah janji ikhlas kami—<br>hidup dengan tenang; selebihnya kami jaga.',slogan:'Harmoni Rumah, Transformasi Hidup',slogan_sub:'Reka Bentuk Premium Asia Tenggara · Waranti Telus · Khidmat Seumur Hidup',ov_longpress:'Tekan lama imej di atas untuk simpan',ov_share:'kemudian kongsi',ov_download:'Muat Turun',ov_close:'Tutup',card_notready:'Maklumat waranti belum sedia, cuba lagi',card_fail:'Penjanaan gagal, cuba lagi',
+   st_pending_payment:'Menunggu Bayaran',st_paid:'Dibayar',st_assigned:'Ditugaskan',st_accepted:'Kilang Terima',st_in_production:'Pengeluaran',st_production_complete:'Siap Dikeluarkan',st_shipped:'Dihantar',st_in_transit:'Dalam Transit',st_arrived:'Tiba',st_installing:'Pemasangan',st_completed:'Selesai',st_after_sales:'Waranti',st_closed:'Ditutup',st_cancelled:'Dibatalkan'},
+ 'th':{nav_sub:'ติดตามคำสั่งซื้อ',title:'ติดตามคำสั่งซื้อของคุณ',sub:'กรอกเบอร์โทรที่ลงทะเบียนไว้',lbl_phone:'เบอร์โทรศัพท์',phone_hint:'เพิ่มรหัสประเทศอัตโนมัติ — กรอกเฉพาะเบอร์ในประเทศ',btn_search:'ค้นหาคำสั่งซื้อ',searching:'กำลังค้นหา...',need_help:'ต้องการความช่วยเหลือ?',wa_us:'ติดต่อเราทาง WhatsApp',my_orders:'คำสั่งซื้อของฉัน',research:'← ค้นหาใหม่',order_detail:'รายละเอียดคำสั่งซื้อ',back_list:'← กลับ',err_no_phone:'กรุณากรอกเบอร์โทร',err_query_fail:'ค้นหาล้มเหลว โปรดลองใหม่',no_orders:'ไม่พบคำสั่งซื้อ',no_orders_sub:'โปรดตรวจสอบเบอร์โทร หรือติดต่อเรา',wa_cs:'ติดต่อฝ่ายบริการ WhatsApp',view_progress:'ดูความคืบหน้า',loading:'กำลังโหลด…',o_cancelled:'คำสั่งซื้อนี้ถูกยกเลิก',o_closed:'คำสั่งซื้อนี้ถูกปิด',order_status:'สถานะคำสั่งซื้อ',in_after_sales:'อยู่ในบริการประกัน',order_closed:'คำสั่งซื้อปิดแล้ว',order_cancelled:'คำสั่งซื้อถูกยกเลิก',amount:'ยอดรวม',pay_status:'การชำระเงิน',paid_yes:'ชำระแล้ว ✓',paid_no:'ยังไม่ชำระ',created:'สร้างเมื่อ',completed_at:'เสร็จเมื่อ',progress_log:'บันทึกความคืบหน้า',no_log:'ยังไม่มีบันทึก',signoff_title:'ยืนยันการติดตั้ง',signed_done:'คุณยืนยันเรียบร้อยแล้ว',sig_submitted:'✓ ส่งลายเซ็นแล้ว',sig_prompt:'กรุณาเซ็นด้านล่างเพื่อยืนยันการติดตั้งเสร็จ',sign_here:'เซ็นที่นี่',clear:'ล้าง',confirm_sig:'ยืนยันลายเซ็น',err_sign_first:'กรุณาเซ็นก่อน',submitting:'กำลังส่ง…',submit_fail:'ส่งล้มเหลว โปรดลองใหม่',expired:'หมดอายุ',in_warranty:'คุ้มครอง',th_part:'ชิ้นส่วน',th_period:'ประกัน',th_expiry:'หมดอายุ',th_status:'สถานะ',warranty_title:'บริการประกัน',all_expired:'หมดอายุทั้งหมด',w_active:'คุ้มครอง',total_warranty:'ประกันรวม: สูงสุด',years:'ปี',w_start:'เริ่มประกัน',w_until:'คุ้มครองถึง',w_seedetail:'(ดูรายการด้านล่าง)',gen_card:'สร้างบัตรประกัน',warranty_help:'หากมีปัญหาประกัน โปรดติดต่อฝ่ายบริการ',generic_series:'ประกันสินค้า',generic_comp:'สินค้าทั้งหมด',wa_msg:'สวัสดี ฉันต้องการสอบถามสถานะคำสั่งซื้อ ',card_brandsub:'เทคโนโลยีบ้านครบวงจร',card_title:'บัตรประกัน',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'ประกันสูงสุด',card_until:'คุ้มครองถึง',card_order:'คำสั่งซื้อ',card_from:'เริ่ม',card_thanks1:'ขอบคุณที่ไว้วางใจ HOUZY ดูแลบ้านของคุณ',card_thanks2:'ประกันนี้คือคำมั่นจากใจเรา—<br>คุณใช้ชีวิตอย่างสบายใจ ที่เหลือเราดูแลเอง',slogan:'สร้างบ้านด้วยใจ เปลี่ยนชีวิตให้ดีขึ้น',slogan_sub:'ดีไซน์พรีเมียมเอเชียตะวันออกเฉียงใต้ · ประกันโปร่งใส · บริการตลอดชีพ',ov_longpress:'กดค้างที่รูปด้านบนเพื่อบันทึก',ov_share:'แล้วแชร์ได้เลย',ov_download:'ดาวน์โหลด',ov_close:'ปิด',card_notready:'ข้อมูลประกันยังไม่พร้อม โปรดลองใหม่',card_fail:'สร้างล้มเหลว โปรดลองใหม่',
+   st_pending_payment:'รอชำระเงิน',st_paid:'ชำระแล้ว',st_assigned:'มอบหมายแล้ว',st_accepted:'โรงงานรับแล้ว',st_in_production:'กำลังผลิต',st_production_complete:'ผลิตเสร็จ',st_shipped:'จัดส่งแล้ว',st_in_transit:'กำลังขนส่ง',st_arrived:'ถึงแล้ว',st_installing:'กำลังติดตั้ง',st_completed:'เสร็จสิ้น',st_after_sales:'ประกัน',st_closed:'ปิดแล้ว',st_cancelled:'ยกเลิกแล้ว'},
+};
+let CL = localStorage.getItem('houzy-lang') || 'en';
+if (!CI18N[CL]) CL = 'en';
+function ct(k){ return (CI18N[CL]||CI18N['en'])[k] || (CI18N['en'][k]) || k; }
+function stLabel(status){ return ct('st_'+status) || status; }
+function setCLang(l){
+  if(!CI18N[l]) return;
+  CL=l; localStorage.setItem('houzy-lang',l);
+  document.documentElement.lang=l;
+  document.title = 'HOUZY HOME — ' + ct('nav_sub');
+  applyStaticI18n();
+  // 重渲染当前可见动态屏
+  if(!document.getElementById('s-detail').classList.contains('hidden') && _lastDetailId){ openDetail(_lastDetailId); }
+  else if(!document.getElementById('s-orders').classList.contains('hidden')){ renderOrders(); }
+}
+function applyStaticI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = ct(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ /* placeholder 保持示例号码不译 */ });
+  const sb2=document.getElementById('search-btn'); if(sb2 && !sb2.disabled) sb2.textContent=ct('btn_search');
+}
+let _lastDetailId = null;
 
 let myPhone = '', myOrders = [];
 
@@ -161,9 +206,10 @@ function show(id) {
 }
 
 function badge(status) {
-  const s = STATUS[status] || { label: status, cls: 'bg-gray-100 text-gray-600' };
-  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}">${esc(s.label)}</span>`;
+  const s = STATUS[status] || { cls: 'bg-gray-100 text-gray-600' };
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}">${esc(stLabel(status))}</span>`;
 }
+function _loc(){ return ({'en':'en-MY','zh-CN':'zh-CN','zh-TW':'zh-TW','ms':'ms-MY','th':'th-TH'})[CL]||'en-MY'; }
 
 // 转义用户/数据库字符串后再拼进 innerHTML，防止 XSS
 function esc(s) {
@@ -182,26 +228,26 @@ function fmtDate(d) {
   if (!d) return '—';
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return '—';
-  return dt.toLocaleDateString('zh-CN', { year:'numeric', month:'short', day:'numeric' });
+  return dt.toLocaleDateString(_loc(), { year:'numeric', month:'short', day:'numeric' });
 }
 
 function fmtDateTime(d) {
   if (!d) return '—';
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return '—';
-  return dt.toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  return dt.toLocaleString(_loc(), { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 async function searchOrders() {
   const raw = document.getElementById('phone-in').value.trim().replace(/[\s\-\(\)]/g, '');
-  if (!raw) { showErr('请输入手机号码'); return; }
+  if (!raw) { showErr(ct('err_no_phone')); return; }
   const countryCode = document.getElementById('country-code').value;
   const localNum = raw.replace(/^0+/, '');
   const phone = countryCode + localNum;
 
   const btn = document.getElementById('search-btn');
   const err = document.getElementById('phone-err');
-  btn.textContent = '查询中...'; btn.disabled = true; err.classList.add('hidden');
+  btn.textContent = ct('searching'); btn.disabled = true; err.classList.add('hidden');
 
   // 用「区号+本地号」做唯一规范查询。
   // 不再在结果为空时回退到裸号码：裸号码会跨区号匹配，
@@ -212,9 +258,9 @@ async function searchOrders() {
     const r2 = await sb.rpc('get_orders_by_phone', { p_phone: localNum });
     if (!r2.error) { data = r2.data; error = null; }
   }
-  btn.textContent = '查询订单'; btn.disabled = false;
+  btn.textContent = ct('btn_search'); btn.disabled = false;
 
-  if (error) { showErr('查询失败，请稍后再试'); return; }
+  if (error) { showErr(ct('err_query_fail')); return; }
 
   myPhone = phone;
   myOrders = data || [];
@@ -232,11 +278,11 @@ function renderOrders() {
   if (!myOrders.length) {
     el.innerHTML = `<div class="text-center py-16">
       <div class="text-5xl mb-3">📦</div>
-      <p class="text-gray-500 font-medium">未找到相关订单</p>
-      <p class="text-gray-400 text-sm mt-1">请确认手机号码，或联系我们</p>
+      <p class="text-gray-500 font-medium">${ct('no_orders')}</p>
+      <p class="text-gray-400 text-sm mt-1">${ct('no_orders_sub')}</p>
       <a href="https://wa.me/60105898786" target="_blank"
          class="inline-block mt-4 px-5 py-2 bg-green-500 text-white text-sm rounded-lg">
-        WhatsApp 联系客服
+        ${ct('wa_cs')}
       </a>
     </div>`;
     return;
@@ -255,7 +301,7 @@ function renderOrders() {
       <div class="flex items-center justify-between pt-2 border-t border-gray-50">
         <span class="font-bold text-hg">${fmtAmt(o.amount)}</span>
         <span class="text-gray-400 text-xs flex items-center gap-1">
-          查看进度
+          ${ct('view_progress')}
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
@@ -275,8 +321,8 @@ function renderCustomerWarranty(o, logs) {
   }
   if (!warrantyData || warrantyData.length === 0) {
     warrantyData = [{
-      seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso: startLog.created_at,
-      components:[{ name:'整体产品', years:1 }],
+      seriesId:'generic', seriesName:ct('generic_series'), icon:'🛡️', startIso: startLog.created_at,
+      components:[{ name:ct('generic_comp'), years:1 }],
     }];
   }
 
@@ -306,11 +352,11 @@ function renderCustomerWarranty(o, logs) {
     const rows = series.components.map(comp => {
       const expired = new Date(comp.endIso).getTime() < now;
       const dot     = expired
-        ? `<span style="color:#dc2626;font-size:10px;font-weight:600">已到期</span>`
-        : `<span style="color:#16a34a;font-size:10px;font-weight:600">质保中</span>`;
+        ? `<span style="color:#dc2626;font-size:10px;font-weight:600">${ct('expired')}</span>`
+        : `<span style="color:#16a34a;font-size:10px;font-weight:600">${ct('in_warranty')}</span>`;
       return `<tr>
         <td style="padding:4px 8px;font-size:12px;color:#374151">${esc(comp.name)}</td>
-        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(comp.years)}年</td>
+        <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(comp.years)} ${ct('years')}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(String(comp.endIso).slice(0,10))}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center">${dot}</td>
       </tr>`;
@@ -319,15 +365,15 @@ function renderCustomerWarranty(o, logs) {
       <div class="flex items-center gap-1 mb-1">
         <span>${esc(series.icon)}</span>
         <span style="font-size:13px;font-weight:600;color:#1e3a5f">${esc(series.seriesName)}</span>
-        <span style="font-size:10px;color:${sExp?'#dc2626':'#16a34a'};margin-left:4px">${sExp?'已到期':'质保中'}</span>
+        <span style="font-size:10px;color:${sExp?'#dc2626':'#16a34a'};margin-left:4px">${sExp?ct('expired'):ct('in_warranty')}</span>
       </div>
       <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb">
         <thead>
           <tr style="background:#f9fafb">
-            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:left;font-weight:500">配件</th>
-            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">质保期</th>
-            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">到期日</th>
-            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">状态</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:left;font-weight:500">${ct('th_part')}</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">${ct('th_period')}</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">${ct('th_expiry')}</th>
+            <th style="padding:4px 8px;font-size:11px;color:#6b7280;text-align:center;font-weight:500">${ct('th_status')}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -350,23 +396,23 @@ function renderCustomerWarranty(o, logs) {
   return `<div class="bg-white rounded-xl shadow-sm p-5 mb-4" style="border-left:3px solid ${borderClr}">
     <div class="flex items-center gap-2 mb-2">
       <span class="text-lg">${allExpired ? '⚠️' : '🛡️'}</span>
-      <h3 class="font-semibold text-gray-800">质保服务详情</h3>
+      <h3 class="font-semibold text-gray-800">${ct('warranty_title')}</h3>
       <span class="text-xs px-2 py-0.5 rounded-full ml-auto"
             style="background:${allExpired?'#fef2f2':'#eff6ff'};color:${borderClr};border:1px solid ${borderClr}33">
-        ${allExpired ? '全部已到期' : '质保中'}
+        ${allExpired ? ct('all_expired') : ct('w_active')}
       </span>
     </div>
     <div class="rounded-lg px-3 py-2 mb-3" style="background:#eff6ff;border:1px solid #1e40af22">
-      <div style="font-size:13px;font-weight:700;color:#1e3a5f">总质保期：最长 ${_maxYears} 年</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:2px">质保开始 ${new Date(startLog.created_at).toLocaleDateString()} · 最长保至 ${_totEnd.toISOString().slice(0,10)}（各部件年限见下表）</div>
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f">${ct('total_warranty')} ${_maxYears} ${ct('years')}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px">${ct('w_start')} ${new Date(startLog.created_at).toLocaleDateString(_loc())} · ${ct('w_until')} ${_totEnd.toISOString().slice(0,10)} ${ct('w_seedetail')}</div>
     </div>
     ${seriesHtml}
     <button onclick="genWarrantyCard()"
       class="w-full mt-3 py-2.5 rounded-lg text-sm font-bold"
       style="background:linear-gradient(135deg,#1A3A2A,#2D5E43);color:#C8A96E;letter-spacing:1px">
-      一键生成质保卡
+      ${ct('gen_card')}
     </button>
-    <p class="text-xs text-gray-400 text-center mt-2">如有质保问题，请联系客服</p>
+    <p class="text-xs text-gray-400 text-center mt-2">${ct('warranty_help')}</p>
   </div>`;
 }
 
@@ -376,8 +422,9 @@ let _wcStash = null;
 async function openDetail(id) {
   const o = myOrders.find(x => x.id === id);
   if (!o) return;
+  _lastDetailId = id;
   document.getElementById('detail-content').innerHTML =
-    `<div class="text-center py-10 text-gray-400">加载中…</div>`;
+    `<div class="text-center py-10 text-gray-400">${ct('loading')}</div>`;
   show('s-detail');
 
   const [{ data: logs }, { data: freshOrder }] = await Promise.all([
@@ -398,7 +445,6 @@ async function openDetail(id) {
 
   // 进度记录：只显示状态名 + 时间，不显示备注和操作人
   const logsHtml = (logs || []).map((l, i, arr) => {
-    const st = STATUS[l.status] || { label: l.status };
     const isLast = i === arr.length - 1;
     return `
     <div class="flex gap-3">
@@ -407,14 +453,14 @@ async function openDetail(id) {
         ${!isLast ? '<div class="w-0.5 bg-gray-200 flex-1 my-1"></div>' : ''}
       </div>
       <div class="pb-3 flex-1">
-        <span class="font-medium text-sm text-gray-800">${esc(st.label)}</span>
+        <span class="font-medium text-sm text-gray-800">${esc(stLabel(l.status))}</span>
         <span class="text-gray-400 text-xs ml-2">${fmtDateTime(l.created_at)}</span>
       </div>
     </div>`;
   }).join('');
 
   // Build progress bar + step timeline
-  const sInfo    = STATUS[o.status] || { label:o.status, step:0, disp:0 };
+  const sInfo    = STATUS[o.status] || { step:0, disp:0 };
   // dispStep = 该状态对应的「已展示核心步骤」序号(0..6),用于进度条 + 横向步骤高亮
   const dispStep = sInfo.disp ?? 0;
   // 终态(已取消/已关闭):不画进度条、不高亮任何步骤,显示明确的终止徽标
@@ -425,12 +471,12 @@ async function openDetail(id) {
   const progressBar = isClosedTerminal ? `
     <div class="mt-4 pt-4 border-t border-gray-100">
       <div class="rounded-lg px-4 py-3 text-center text-sm font-medium ${o.status==='cancelled' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'}">
-        ${o.status === 'cancelled' ? '此订单已取消' : '此订单已关闭'}
+        ${o.status === 'cancelled' ? ct('o_cancelled') : ct('o_closed')}
       </div>
     </div>` : `
     <div class="mt-4 pt-4 border-t border-gray-100">
       <div class="flex justify-between items-center mb-1">
-        <span class="text-xs font-medium" style="color:#1a3a2a">${esc(sInfo.label)}</span>
+        <span class="text-xs font-medium" style="color:#1a3a2a">${esc(stLabel(o.status))}</span>
         <span class="text-xs text-gray-400">${progressPct}%</span>
       </div>
       <div class="h-1.5 rounded-full bg-gray-100 mb-2">
@@ -442,19 +488,19 @@ async function openDetail(id) {
   // 服务器端 customer_submit_signature RPC 仍是最终权威)
   const signatureSection = freshStatus === 'installing' ? `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-1">安装签收确认</h3>
+      <h3 class="font-semibold text-gray-800 mb-1">${ct('signoff_title')}</h3>
       ${o.sign_image
-        ? `<p class="text-xs text-gray-400 mb-3">您已完成签收确认</p>
-           <img src="${o.sign_image}" alt="电子签名" class="w-full max-w-xs mx-auto block border border-gray-200 rounded-lg">
-           <p class="text-center text-green-600 text-sm font-medium mt-3">✓ 签名已提交</p>`
-        : `<p class="text-sm text-gray-500 mb-3">请在下方手写签名，确认安装完成</p>
+        ? `<p class="text-xs text-gray-400 mb-3">${ct('signed_done')}</p>
+           <img src="${o.sign_image}" alt="signature" class="w-full max-w-xs mx-auto block border border-gray-200 rounded-lg">
+           <p class="text-center text-green-600 text-sm font-medium mt-3">${ct('sig_submitted')}</p>`
+        : `<p class="text-sm text-gray-500 mb-3">${ct('sig_prompt')}</p>
            <div class="relative rounded-lg overflow-hidden" style="border:2px dashed #d1d5db;background:#fafafa">
              <canvas id="sig-canvas" style="display:block;touch-action:none;width:100%;height:150px"></canvas>
-             <span class="absolute bottom-2 right-3 text-xs text-gray-300 pointer-events-none select-none">在此签名</span>
+             <span class="absolute bottom-2 right-3 text-xs text-gray-300 pointer-events-none select-none">${ct('sign_here')}</span>
            </div>
            <div class="flex gap-2 mt-3">
-             <button onclick="clearSig()" class="flex-1 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">清除</button>
-             <button onclick="submitSig('${o.id}')" class="flex-none py-2 px-5 text-sm bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition">确认签名</button>
+             <button onclick="clearSig()" class="flex-1 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">${ct('clear')}</button>
+             <button onclick="submitSig('${o.id}')" class="flex-none py-2 px-5 text-sm bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition">${ct('confirm_sig')}</button>
            </div>
            <p id="sig-err" class="text-red-500 text-xs mt-2 hidden"></p>`
       }
@@ -463,7 +509,7 @@ async function openDetail(id) {
   // Horizontal step timeline
   const stepTimeline = `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-4">订单状态</h3>
+      <h3 class="font-semibold text-gray-800 mb-4">${ct('order_status')}</h3>
       <div class="overflow-x-auto pb-1 -mx-1 px-1">
         <div class="flex items-start min-w-max gap-0">
           ${CORE_STEPS.map((s, i) => {
@@ -483,16 +529,16 @@ async function openDetail(id) {
                       <div class="flex flex-col items-center gap-1 rounded-xl px-2 py-2 w-14 text-xs font-medium"
                            style="background:${bg};color:${color};border:2px solid ${current?'#1a3a2a':'transparent'}">
                         <span class="text-sm leading-none">${icon}</span>
-                        <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${esc(STATUS[s].label)}</span>
+                        <span class="leading-tight text-center" style="font-size:10px;word-break:keep-all">${esc(stLabel(s))}</span>
                       </div>
                       <span class="text-center mt-0.5 px-0.5" style="font-size:9px;color:#9ca3af;min-width:60px;word-break:break-all">${timeText}</span>
                     </div>${connector}`;
           }).join('')}
         </div>
       </div>
-      ${o.status === 'after_sales' ? `<div class="mt-3 text-xs text-blue-600 font-medium">质保服务中</div>` : ''}
-      ${o.status === 'closed'      ? `<div class="mt-3 text-xs text-gray-400">订单已关闭</div>` : ''}
-      ${o.status === 'cancelled'   ? `<div class="mt-3 text-xs text-red-600 font-medium">订单已取消</div>` : ''}
+      ${o.status === 'after_sales' ? `<div class="mt-3 text-xs text-blue-600 font-medium">${ct('in_after_sales')}</div>` : ''}
+      ${o.status === 'closed'      ? `<div class="mt-3 text-xs text-gray-400">${ct('order_closed')}</div>` : ''}
+      ${o.status === 'cancelled'   ? `<div class="mt-3 text-xs text-red-600 font-medium">${ct('order_cancelled')}</div>` : ''}
     </div>`;
 
   document.getElementById('detail-content').innerHTML = `
@@ -508,21 +554,21 @@ async function openDetail(id) {
       ${o.description ? `<p class="text-gray-600 text-sm pb-3 mb-3 border-b border-gray-100">${esc(o.description)}</p>` : ''}
       <div class="space-y-2 text-sm">
         <div class="flex justify-between">
-          <span class="text-gray-500">订单金额</span>
+          <span class="text-gray-500">${ct('amount')}</span>
           <span class="font-bold text-hg text-base">${fmtAmt(o.amount)}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-500">支付状态</span>
+          <span class="text-gray-500">${ct('pay_status')}</span>
           <span class="font-medium ${o.payment_status === 'paid' ? 'text-green-600' : 'text-red-500'}">
-            ${o.payment_status === 'paid' ? '已支付 ✓' : '待支付'}
+            ${o.payment_status === 'paid' ? ct('paid_yes') : ct('paid_no')}
           </span>
         </div>
         <div class="flex justify-between">
-          <span class="text-gray-500">创建时间</span>
+          <span class="text-gray-500">${ct('created')}</span>
           <span class="text-gray-700">${fmtDate(o.created_at)}</span>
         </div>
         ${o.completed_at ? `<div class="flex justify-between">
-          <span class="text-gray-500">完成时间</span>
+          <span class="text-gray-500">${ct('completed_at')}</span>
           <span class="text-gray-700">${fmtDate(o.completed_at)}</span>
         </div>` : ''}
       </div>
@@ -535,20 +581,20 @@ async function openDetail(id) {
 
     <!-- Timeline log -->
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-4">进度记录</h3>
-      ${logsHtml || '<p class="text-gray-400 text-sm">暂无进度记录</p>'}
+      <h3 class="font-semibold text-gray-800 mb-4">${ct('progress_log')}</h3>
+      ${logsHtml || `<p class="text-gray-400 text-sm">${ct('no_log')}</p>`}
     </div>
 
     ${renderCustomerWarranty(o, logs)}
 
     <!-- WhatsApp CTA -->
-    <a href="https://wa.me/60105898786?text=${encodeURIComponent('您好，我想查询订单 ' + o.order_no + ' 的状态')}"
+    <a href="https://wa.me/60105898786?text=${encodeURIComponent(ct('wa_msg') + o.order_no)}"
        target="_blank"
        class="flex items-center justify-center gap-2 w-full py-3.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition text-sm">
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
       </svg>
-      WhatsApp 联系客服
+      ${ct('wa_cs')}
     </a>`;
 
   initSigCanvas();
@@ -591,12 +637,12 @@ function clearSig() {
 async function submitSig(orderId) {
   if (!_sigCanvas || !_sigHasContent) {
     const e = document.getElementById('sig-err');
-    if (e) { e.textContent = '请先签名'; e.classList.remove('hidden'); }
+    if (e) { e.textContent = ct('err_sign_first'); e.classList.remove('hidden'); }
     return;
   }
   const dataURL = _sigCanvas.toDataURL('image/png');
   const btn = event?.currentTarget;
-  if (btn) { btn.textContent = '提交中…'; btn.disabled = true; }
+  if (btn) { btn.textContent = ct('submitting'); btn.disabled = true; }
 
   const { data, error } = await sb.rpc('customer_submit_signature', {
     p_order_id:   orderId,
@@ -605,9 +651,9 @@ async function submitSig(orderId) {
   });
 
   if (error || !data) {
-    if (btn) { btn.textContent = '确认签名'; btn.disabled = false; }
+    if (btn) { btn.textContent = ct('confirm_sig'); btn.disabled = false; }
     const e = document.getElementById('sig-err');
-    if (e) { e.textContent = error?.message || '提交失败，请重试'; e.classList.remove('hidden'); }
+    if (e) { e.textContent = error?.message || ct('submit_fail'); e.classList.remove('hidden'); }
     return;
   }
 
@@ -620,7 +666,7 @@ async function submitSig(orderId) {
 function _wcEsc(s){ return String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
 async function genWarrantyCard() {
-  if (!_wcStash) { alert('质保信息未就绪，请稍候重试'); return; }
+  if (!_wcStash) { alert(ct('card_notready')); return; }
   const d = _wcStash;
   // 汇总部件（最多 9 条，保持卡面精致）
   const comps = [];
@@ -640,30 +686,30 @@ async function genWarrantyCard() {
       <div style="border:1.5px solid rgba(200,169,110,0.55);border-radius:14px;padding:24px 20px">
         <div style="text-align:center">
           <div style="font-size:22px;font-weight:800;letter-spacing:3px;color:#C8A96E">HOUZY HOME</div>
-          <div style="font-size:11px;letter-spacing:4px;color:#9db5a3;margin-top:3px">合屋整装科技</div>
+          <div style="font-size:11px;letter-spacing:4px;color:#9db5a3;margin-top:3px">${_wcEsc(ct('card_brandsub'))}</div>
           <div style="width:46px;height:2px;background:#C8A96E;margin:13px auto"></div>
-          <div style="font-size:16px;font-weight:700;letter-spacing:2px;color:#F5F2ED">品 质 质 保 卡</div>
-          <div style="font-size:9px;letter-spacing:3px;color:#9db5a3;margin-top:3px">WARRANTY CERTIFICATE</div>
+          <div style="font-size:16px;font-weight:700;letter-spacing:2px;color:#F5F2ED">${_wcEsc(ct('card_title'))}</div>
+          <div style="font-size:9px;letter-spacing:3px;color:#9db5a3;margin-top:3px">${_wcEsc(ct('card_sub'))}</div>
         </div>
         <div style="text-align:center;margin:20px 0 16px">
-          <div style="font-size:12px;color:#9db5a3;letter-spacing:1px">最 长 质 保</div>
-          <div style="font-size:48px;font-weight:800;color:#C8A96E;line-height:1.1">${_wcEsc(d.maxYears)}<span style="font-size:20px;margin-left:4px">年</span></div>
-          <div style="font-size:11px;color:#9db5a3;margin-top:2px">保至 ${_wcEsc(d.totEnd)}</div>
+          <div style="font-size:12px;color:#9db5a3;letter-spacing:1px">${_wcEsc(ct('card_maxlabel'))}</div>
+          <div style="font-size:48px;font-weight:800;color:#C8A96E;line-height:1.1">${_wcEsc(d.maxYears)}<span style="font-size:20px;margin-left:4px">${_wcEsc(ct('years'))}</span></div>
+          <div style="font-size:11px;color:#9db5a3;margin-top:2px">${_wcEsc(ct('card_until'))} ${_wcEsc(d.totEnd)}</div>
         </div>
         <div style="background:rgba(0,0,0,0.16);border-radius:10px;padding:6px 14px 10px;margin-bottom:16px">
           ${rowsHtml}
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#9db5a3;letter-spacing:0.5px">
-          <span>订单 ${_wcEsc(d.orderNo)}</span><span>质保起 ${_wcEsc(d.startDate)}</span>
+          <span>${_wcEsc(ct('card_order'))} ${_wcEsc(d.orderNo)}</span><span>${_wcEsc(ct('card_from'))} ${_wcEsc(d.startDate)}</span>
         </div>
         <div style="text-align:center;margin-top:18px">
           <div style="font-size:12.5px;color:#F5F2ED;letter-spacing:1px;line-height:1.85;padding:0 6px">
-            感谢您将家，托付于 HOUZY。<br>
-            <span style="color:#E0C992">这一纸质保，是我们以匠心立下的长情承诺——<br>往后岁月，您安心生活，余下皆由我们守护。</span>
+            ${ct('card_thanks1')}<br>
+            <span style="color:#E0C992">${ct('card_thanks2')}</span>
           </div>
           <div style="width:40px;height:1.5px;background:rgba(200,169,110,0.5);margin:14px auto"></div>
-          <div style="font-size:14px;font-weight:700;color:#C8A96E;letter-spacing:3px">合心筑家 · 整装焕新</div>
-          <div style="font-size:9px;color:#9db5a3;letter-spacing:2px;margin-top:4px">东南亚高端家居整装 · 透明质保 · 终身服务</div>
+          <div style="font-size:14px;font-weight:700;color:#C8A96E;letter-spacing:3px">${_wcEsc(ct('slogan'))}</div>
+          <div style="font-size:9px;color:#9db5a3;letter-spacing:2px;margin-top:4px">${_wcEsc(ct('slogan_sub'))}</div>
         </div>
       </div>
     </div>`;
@@ -676,7 +722,7 @@ async function genWarrantyCard() {
     showCardOverlay(url, d.orderNo);
   } catch (e) {
     if (card.parentNode) document.body.removeChild(card);
-    alert('生成失败，请重试');
+    alert(ct('card_fail'));
   }
 }
 
@@ -684,18 +730,27 @@ function showCardOverlay(url, orderNo) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;overflow:auto';
   ov.innerHTML = `
-    <img src="${url}" alt="质保卡" style="max-width:100%;width:340px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5)">
+    <img src="${url}" alt="warranty card" style="max-width:100%;width:340px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5)">
     <div style="color:#fff;font-size:13px;margin-top:14px;text-align:center;line-height:1.7">
-      📲 <b>长按上方图片</b> → 保存到相册<br><span style="color:#C8A96E">即可发朋友圈 / 发给朋友</span>
+      📲 <b>${_wcEsc(ct('ov_longpress'))}</b><br><span style="color:#C8A96E">${_wcEsc(ct('ov_share'))}</span>
     </div>
     <div style="display:flex;gap:12px;margin-top:16px">
-      <a href="${url}" download="HOUZY质保卡_${_wcEsc(orderNo)}.png"
-         style="padding:9px 18px;background:#C8A96E;color:#1A3A2A;font-weight:700;font-size:13px;border-radius:8px;text-decoration:none">下载图片</a>
+      <a href="${url}" download="HOUZY-warranty-${_wcEsc(orderNo)}.png"
+         style="padding:9px 18px;background:#C8A96E;color:#1A3A2A;font-weight:700;font-size:13px;border-radius:8px;text-decoration:none">${_wcEsc(ct('ov_download'))}</a>
       <button onclick="this.closest('div[style*=fixed]').remove()"
-         style="padding:9px 18px;background:rgba(255,255,255,0.15);color:#fff;font-size:13px;border:none;border-radius:8px">关闭</button>
+         style="padding:9px 18px;background:rgba(255,255,255,0.15);color:#fff;font-size:13px;border:none;border-radius:8px">${_wcEsc(ct('ov_close'))}</button>
     </div>`;
   document.body.appendChild(ov);
 }
+
+// 启动：套用已选语言
+(function initLang(){
+  const sel = document.getElementById('lang-sel');
+  if (sel) sel.value = CL;
+  document.documentElement.lang = CL;
+  document.title = 'HOUZY HOME — ' + ct('nav_sub');
+  applyStaticI18n();
+})();
 </script>
 </body>
 </html>
