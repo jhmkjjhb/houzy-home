@@ -1450,13 +1450,13 @@ async function advanceWarrantyReminder(orderId, startIso) {
   if (o.deadline_at) {
     const dlMs = new Date(o.deadline_at).getTime();
     let minDiff = Infinity;
-    for (let n = 1; n <= 5; n++) {
+    for (let n = 1; n <= 6; n++) {
       const diff = Math.abs(dlMs - new Date(addYearsIso(startIso, n)).getTime());
       if (diff < minDiff) { minDiff = diff; currentYear = n; }
     }
   }
   const nextYear = currentYear + 1;
-  if (nextYear > 5) return;
+  if (nextYear > 6) return;  // 总质保服务 6 年，每年提醒一次
   const nextDeadline = addYearsIso(startIso, nextYear);
   await sb.from('orders').update({ deadline_at: nextDeadline }).eq('id', orderId);
   await loadOrders();
