@@ -569,22 +569,27 @@ async function openDetail(id) {
     </div>` : '';
 
   // Horizontal step timeline
+  // 现货单(无定制项)不经生产环节 → 客户端时间线也不显示「生产中」
+  const _hasCustomC = !Array.isArray(itemsResp?.items) || !itemsResp.items.length
+    || itemsResp.items.some(it => (it.fulfillment_type || 'custom') === 'custom');
+  const _cSteps = _hasCustomC ? CORE_STEPS : CORE_STEPS.filter(s => s !== 'in_production');
   const stepTimeline = `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">${ct('order_status')}</h3>
       <div class="overflow-x-auto pb-1 -mx-1 px-1">
         <div class="flex items-start min-w-max gap-0">
-          ${CORE_STEPS.map((s, i) => {
-            // 终态不点亮任何步骤;否则按 disp(已展示核心步骤序号)判断 已完成/当前
-            const done    = !isClosedTerminal && (i < dispStep || isDone);
-            const current = !isClosedTerminal && !isDone && i === dispStep;
-            const log     = (logs || []).find(l => (STATUS[l.status]?.disp ?? -1) === i);
+          ${_cSteps.map((s, i) => {
+            // 按 disp(状态展示序号)判断已完成/当前，过滤生产中后仍正确
+            const sDisp   = STATUS[s]?.disp ?? i;
+            const done    = !isClosedTerminal && (sDisp < dispStep || isDone);
+            const current = !isClosedTerminal && !isDone && sDisp === dispStep;
+            const log     = (logs || []).find(l => (STATUS[l.status]?.disp ?? -1) === sDisp);
             let bg, color, icon;
             if (done)         { bg='#1a3a2a'; color='#fff'; icon='✓'; }
             else if (current) { bg='#c8a96e'; color='#fff'; icon='●'; }
             else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
             const timeText = done && log ? fmtDateTime(log.created_at) : current && log ? fmtDateTime(log.created_at) : '';
-            const connector = i < CORE_STEPS.length - 1
+            const connector = i < _cSteps.length - 1
               ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${done?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
               : '';
             return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:60px">
