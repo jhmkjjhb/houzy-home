@@ -1958,9 +1958,10 @@ function addItemRow(data = {}) {
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
         <input type="text" id="item-name-${id}" value="${data.sku_ref||data.product_name||''}"
-               placeholder="产品编号（如 HH-WY-0001）或货品名称" list="staff-product-datalist"
+               placeholder="产品编号（如 HH-WY-0001）或货品名称" list="staff-product-datalist-${id}"
                oninput="autoDetectProductType(${id}); autoDetectItemFT(${id}); onProductSelect(${id})"
                class="input text-sm w-full font-mono">
+        <datalist id="staff-product-datalist-${id}"></datalist>
         <input type="hidden" id="item-actual-name-${id}" value="${data.product_name||''}">
         <div id="item-name-badge-${id}" class="text-xs text-green-800 mt-1 px-1 ${data.product_name&&data.sku_ref?'':'hidden'}">${data.product_name||''}</div>
       </div>
@@ -1973,7 +1974,7 @@ function addItemRow(data = {}) {
       </div>
       <div>
         <select id="item-type-${id}" class="input text-sm w-full"
-                onchange="document.getElementById('item-type-${id}').classList.toggle('border-blue-400',!!this.value)">
+                onchange="document.getElementById('item-type-${id}').classList.toggle('border-blue-400',!!this.value); refreshItemDatalist(${id})">
           <option value="">⚠ 产品类型</option>
           ${PRODUCT_TYPES.map(pt => `<option value="${pt.code}" ${data.product_type===pt.code?'selected':''}>${pt.label}</option>`).join('')}
         </select>
@@ -2012,6 +2013,20 @@ function addItemRow(data = {}) {
       </div>
     </div>`;
   document.getElementById('items-list').appendChild(row);
+  refreshItemDatalist(id);
+}
+
+// 按该行选的「产品类型」过滤产品编号联想：选了卫浴就只列卫浴的编号，
+// 没选类型则列全部(与原行为一致)。每行独立 datalist。
+function refreshItemDatalist(id) {
+  const dl = document.getElementById('staff-product-datalist-' + id);
+  if (!dl) return;
+  const type = document.getElementById('item-type-' + id)?.value || '';
+  const list = (staffProducts || []).filter(p => !type || p.category === type);
+  dl.innerHTML = list.flatMap(p => [
+    `<option value="${p.sku}">${(p.name||'').replace(/"/g,'&quot;')}</option>`,
+    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
+  ]).join('');
 }
 
 // 一键带出整套模块行（橱柜/衣柜），员工逐项填数量单价、用不到的按 × 删
@@ -3064,6 +3079,9 @@ async function loadStaffProducts() {
     `<option value="${p.sku}">${p.name}</option>`,
     `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
   ]).join('');
+  // 产品加载完成后，刷新已存在行的按类型过滤联想
+  document.querySelectorAll('select[id^="item-type-"]').forEach(s =>
+    refreshItemDatalist(s.id.replace('item-type-', '')));
 }
 
 function _findProductMatch(typed) {
