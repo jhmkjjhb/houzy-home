@@ -2540,8 +2540,9 @@ async function openDetail(id, backView) {
     const { data: invRows } = await sb.from('inventory')
       .select('qty_on_hand,qty_reserved').eq('product_id', prod.id);
     // 单仓可用量 = 在库 - 已预留；只有某一个仓库可用量 ≥ 需求才算现货
+    // 样品保留：每仓永远留 1 件样品，可发 = 在库 - 1 - 预留（与发货/防呆口径一致）
     const maxAvail = (invRows || []).reduce(
-      (m, r) => Math.max(m, (Number(r.qty_on_hand) || 0) - (Number(r.qty_reserved) || 0)), 0);
+      (m, r) => Math.max(m, Math.max(0, (Number(r.qty_on_hand) || 0) - 1 - (Number(r.qty_reserved) || 0))), 0);
     it._stockQty  = maxAvail;
     it._fromStock = maxAvail >= qty;
   }));
@@ -3261,7 +3262,7 @@ function renderItemsCard(items, o, supList) {
         `}
         <td class="py-2 pr-2">
           ${item._fromStock
-            ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#d1fae5;color:#065f46">现货 · 库存${item._stockQty}，走仓库出库</span>`
+            ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#d1fae5;color:#065f46">现货 · 可发${item._stockQty}（已留样品），走仓库出库</span>`
             : itemCanAssign
             ? `<select class="item-sup-sel border border-gray-200 rounded px-1 py-1 text-xs" style="max-width:140px"
                        data-item-id="${item.id}">
