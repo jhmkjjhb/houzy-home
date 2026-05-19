@@ -2660,8 +2660,8 @@ async function openDetail(id, backView) {
       <p id="upd-msg" class="text-sm mt-2 text-center hidden font-semibold" style="color:#1a3a2a">✓ ${t('msg_saved')}</p>
     </div>
 
-    <!-- 临时环节卡片：紧跟订单状态栏下方 -->
-    ${renderProdStagePanel(o)}
+    <!-- 临时环节卡片：紧跟订单状态栏下方（现货单无生产环节，不显示）-->
+    ${orderHasCustom(items) ? renderProdStagePanel(o) : ''}
 
     ${renderChecklistPanel(o, items, childOrders)}
 
