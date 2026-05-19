@@ -4205,6 +4205,11 @@ async function updateOrder(id) {
 
   // ── Extended update (migrated columns — silently skip if column missing) ──
   const extUpd = { deadline_at: isTerminal ? null : deadline_at };
+  // 进入「安装中」即按商品明细算好详细质保表存档，客户自助签收后能看到完整部件年限表
+  if (status === 'installing') {
+    const { data: _wi } = await sb.from('order_items').select('product_name').eq('order_id', id);
+    extUpd.warranty_info = JSON.stringify(computeWarrantyInfo(_wi || [], new Date().toISOString()));
+  }
   await sb.from('orders').update(extUpd).eq('id', id); // ignore error — column may not exist yet
   await sb.from('order_logs').insert({
     order_id: id, status,
