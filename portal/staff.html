@@ -3476,7 +3476,7 @@ async function saveItemSuppliers(ev, orderId) {
 
 async function acceptOrder(orderId) {
   if (!confirm('确认接单，开始生产？')) return;
-  await sb.from('orders').update({ status: 'in_production', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('orders').update({ status: 'in_production', updated_at: new Date().toISOString(), deadline_at: calcDeadline('in_production') }).eq('id', orderId);
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'in_production',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
@@ -3488,7 +3488,7 @@ async function acceptOrder(orderId) {
 
 async function shipOrder(orderId) {
   if (!confirm('确认发货？')) return;
-  await sb.from('orders').update({ status: 'shipped', updated_at: new Date().toISOString() }).eq('id', orderId);
+  await sb.from('orders').update({ status: 'shipped', updated_at: new Date().toISOString(), deadline_at: calcDeadline('shipped') }).eq('id', orderId);
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'shipped',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
@@ -3551,7 +3551,7 @@ async function saveLogisticsInfo(orderId) {
 async function markArrived(orderId) {
   if (!confirm('确认货物已到达？')) return;
   const now = new Date().toISOString();
-  const { error } = await sb.from('orders').update({ status: 'arrived', updated_at: now }).eq('id', orderId);
+  const { error } = await sb.from('orders').update({ status: 'arrived', updated_at: now, deadline_at: calcDeadline('arrived') }).eq('id', orderId);
   if (error) { alert('操作失败：' + error.message); return; }
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'arrived',
@@ -3876,13 +3876,46 @@ function renderProdStagePanel(o) {
       <div>${label}</div>
     </div>`;
   }).join('');
+  // 厂家可调「预计生产天数」（≤30），保存即把生产截止时间重设为「今天 + N 天」
+  const _remainDays = o.deadline_at
+    ? Math.max(1, Math.round((new Date(o.deadline_at).getTime() - Date.now()) / 86400000))
+    : 25;
   return `<div class="card p-5 mb-4">
     <h3 class="font-semibold text-gray-800 mb-3">🏭 生产进度</h3>
     <div class="grid grid-cols-4 gap-2">${stagesHtml}</div>
     <p class="mt-2 text-xs text-center ${cur ? 'text-amber-600 font-medium' : 'text-gray-400'}">
       ${cur ? `当前阶段：${PROD_STAGE_LABELS[cur] || cur}` : '厂家尚未更新生产阶段'}
     </p>
+    <div class="mt-3 pt-3 border-t border-gray-100">
+      <label class="text-xs text-gray-500">预计生产天数（厂家可调，从今天重新起算，最多 30 天）</label>
+      <div class="flex gap-2 mt-1">
+        <input type="number" id="prod-days" min="1" max="30" value="${_remainDays}"
+               class="input flex-1 text-sm">
+        <button type="button" onclick="saveProdDays('${o.id}')"
+                class="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                style="background:#1a3a2a;color:#fff">更新生产期</button>
+      </div>
+    </div>
   </div>`;
+}
+
+// 厂家更新预计生产天数：deadline_at = 今天 + N 天（1≤N≤30），写日志，明确反馈
+async function saveProdDays(orderId) {
+  let n = parseInt(document.getElementById('prod-days')?.value, 10);
+  if (!Number.isFinite(n) || n < 1) { alert('请输入有效天数（1~30）'); return; }
+  if (n > 30) { alert('生产天数最多 30 天'); return; }
+  const dl = new Date(Date.now() + n * 86400000).toISOString();
+  const { error } = await sb.from('orders')
+    .update({ deadline_at: dl, updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { alert('保存失败：' + error.message); return; }
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'in_production',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: `厂家更新预计生产天数为 ${n} 天（从今天起算）`,
+  });
+  alert(`✅ 预计生产期已更新为 ${n} 天`);
+  await loadOrders();
+  await openDetail(orderId);
 }
 
 function renderPaymentPanel(o, payments) {
