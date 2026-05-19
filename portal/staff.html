@@ -799,7 +799,8 @@ function filterGetCurrent() {
   return allOrders.filter(o => {
     const txt = (o.order_no + (o.customers?.name||'') + (o.customers?.phone||'')).toLowerCase();
     const kl  = o.created_at ? klDateStr(o.created_at) : '';
-    return (!q || txt.includes(q)) && (!s || o.status === s) && (!store || o.store_id === store)
+    // 默认（未选状态）不显示「质保服务」单；选了某状态才按该状态显示
+    return (!q || txt.includes(q)) && (s ? o.status === s : o.status !== 'after_sales') && (!store || o.store_id === store)
         && (!date || kl.slice(0,10) === date) && (!month || kl.slice(0,7) === month);
   });
 }
@@ -1794,7 +1795,7 @@ function filterOrders() {
     const oDate = kl.slice(0, 10);
     const oMon  = kl.slice(0, 7);
     return (!q     || txt.includes(q))
-        && (!s     || o.status === s)
+        && (s ? o.status === s : o.status !== 'after_sales')
         && (!store || o.store_id === store)
         && (!date  || oDate === date)
         && (!month || oMon  === month);
