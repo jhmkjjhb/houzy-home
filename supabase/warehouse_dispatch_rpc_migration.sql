@@ -183,6 +183,8 @@ $$;
 
 -- ── 3. 客户端按手机号查本单各商品进度（混合单 分批 决策②③ 客户端展示）──
 -- 客户端用 anon key，order_items 受 RLS 保护读不到 → 凭手机号校验归属后返回。
+-- 线上已存在同名旧函数（返回类型不同，仓库内无任何调用）→ 先删后建。
+DROP FUNCTION IF EXISTS get_order_items_by_phone(UUID, TEXT);
 CREATE OR REPLACE FUNCTION get_order_items_by_phone(p_order_id UUID, p_phone TEXT)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
