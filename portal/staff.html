@@ -2520,6 +2520,8 @@ async function openDetail(id, backView) {
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
     sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').eq('parent_order_id', id).order('created_at'),
   ]);
+  // 图纸三方确认数据(按 order×supplier)
+  const { data: _drawings } = await sb.rpc('drawing_get_for_order', { p_order_id: id });
   // 子单(补件单)只认 parent_order_id 外键，严格按 FK 关联，不再用描述模糊匹配/客户兜底
   const childOrders = (childByFk || [])
     .filter(c => c.id !== id && c.parent_order_id === id)
@@ -2697,6 +2699,8 @@ async function openDetail(id, backView) {
     ${orderHasCustom(items) ? renderProdStagePanel(o) : ''}
 
     ${renderChecklistPanel(o, items, childOrders)}
+
+    ${renderDrawingCard(o, items, supList, _drawings)}
 
     ${renderItemsCard(items, o, supList)}
 
@@ -3206,6 +3210,68 @@ function setFulfillmentMode(mode) {
   const inactiveStyle = 'flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600';
   if (allBtn) allBtn.className = mode === 'all_together' ? activeStyle : inactiveStyle;
   if (phsBtn) phsBtn.className = mode === 'phased'       ? activeStyle : inactiveStyle;
+}
+
+// 图纸三方确认卡（按供应商各一份；运营在此上传/确认/看状态）
+function renderDrawingCard(o, items, supList, drawings) {
+  if (['completed','closed','cancelled'].includes(o.status)) return '';
+  const _e = s => String(s==null?'':s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const supIds = [...new Set((items||[]).map(i=>i.supplier_id).filter(Boolean))];
+  if (!supIds.length) return '';
+  const dArr = drawings || [];
+  const blocks = supIds.map(sid => {
+    const sup = (supList||[]).find(s=>s.id===sid);
+    const d   = dArr.find(x=>x.supplier_id===sid);
+    const chip = (ok, at) => ok
+      ? `<span class="text-green-700">✓ ${at?fmtDateTime(at):''}</span>`
+      : `<span class="text-gray-400">未确认</span>`;
+    const ready = d && d.drawing_url && d.cust_confirmed_at && d.staff_confirmed_at && d.sup_confirmed_at;
+    return `<div class="border border-gray-100 rounded-lg p-3 mb-2">
+      <div class="text-sm font-semibold text-gray-800 mb-1">${_e(sup?.name||'供应商')}</div>
+      ${d?.drawing_url
+        ? `<div class="text-xs mb-2">当前图纸 v${d.version}：<a href="${_e(d.drawing_url)}" target="_blank" class="text-blue-600 underline break-all">查看图纸</a></div>`
+        : `<div class="text-xs text-red-500 mb-2">尚未上传图纸</div>`}
+      <div class="flex gap-2 mb-2">
+        <input id="dwg-url-${sid}" type="text" value="${_e(d?.drawing_url||'')}"
+               placeholder="粘贴图纸链接（网盘/图片URL）" class="input text-xs flex-1">
+        <button onclick="drawingUpload('${o.id}','${sid}')"
+          class="shrink-0 px-3 py-1.5 border border-hg text-hg text-xs font-semibold rounded-lg hover:bg-green-50">上传/更新</button>
+      </div>
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div>客户 ${chip(d?.cust_confirmed_at)} · 运营 ${chip(d?.staff_confirmed_at)} · 厂家 ${chip(d?.sup_confirmed_at)}</div>
+        <button onclick="drawingConfirm('${o.id}','${sid}')" ${d?.drawing_url?'':'disabled'}
+          class="shrink-0 px-3 py-1.5 ${d?.drawing_url?'bg-hg text-white hover:bg-green-900':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">运营确认</button>
+      </div>
+      <div class="mt-2 text-xs font-medium ${ready?'text-green-700':'text-amber-600'}">
+        ${ready?'✅ 三方已确认，厂家可进生产加工':'⏳ 三方未齐：上传图纸 + 客户/运营/厂家都确认后，厂家才能进生产加工'}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="card p-5 mb-4">
+    <h3 class="font-semibold text-gray-800 mb-3">📐 图纸三方确认（防生产追责）</h3>
+    ${blocks}
+    <p class="text-[11px] text-gray-400 mt-1">传新版图纸会作废已有三方确认、需重新确认；每次上传/确认都记入订单日志可追责。</p>
+  </div>`;
+}
+
+async function drawingUpload(orderId, supId) {
+  const url = document.getElementById('dwg-url-'+supId)?.value?.trim();
+  if (!url) { alert('请先填写图纸链接'); return; }
+  const { data, error } = await sb.rpc('drawing_upload',
+    { p_order_id: orderId, p_supplier_id: supId, p_url: url });
+  if (error) { alert('上传失败：'+error.message); return; }
+  if (!data?.ok) { alert(data?.message||'上传失败'); return; }
+  alert(`✅ 图纸已上传（v${data.version}）`+(data.version>1?'\n（已有三方确认作废，需重新确认）':''));
+  openDetail(orderId);
+}
+async function drawingConfirm(orderId, supId) {
+  if (!confirm('确认此图纸无误？确认后将记录你的身份+时间，用于事后追责。')) return;
+  const { data, error } = await sb.rpc('drawing_confirm',
+    { p_order_id: orderId, p_supplier_id: supId });
+  if (error) { alert('确认失败：'+error.message); return; }
+  if (!data?.ok) { alert(data?.message||'确认失败'); return; }
+  alert(`✅ ${data.party}已确认图纸`);
+  openDetail(orderId);
 }
 
 function renderItemsCard(items, o, supList) {

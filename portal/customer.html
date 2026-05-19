@@ -204,6 +204,11 @@ const IT_I18N = {
 };
 const ITX = {
   items_progress: {en:'Item-by-item Progress','zh-CN':'各商品进度','zh-TW':'各商品進度',ms:'Kemajuan Setiap Item',th:'ความคืบหน้ารายชิ้น'},
+  dwg_title:{en:'Drawing Confirmation','zh-CN':'图纸确认','zh-TW':'圖紙確認',ms:'Pengesahan Lukisan',th:'ยืนยันแบบ'},
+  dwg_view:{en:'View drawing','zh-CN':'查看图纸','zh-TW':'查看圖紙',ms:'Lihat lukisan',th:'ดูแบบ'},
+  dwg_confirm:{en:'I confirm this drawing','zh-CN':'我确认此图纸无误','zh-TW':'我確認此圖紙無誤',ms:'Saya sahkan lukisan ini',th:'ฉันยืนยันแบบนี้'},
+  dwg_ok:{en:'You have confirmed','zh-CN':'您已确认','zh-TW':'您已確認',ms:'Anda telah sahkan',th:'คุณยืนยันแล้ว'},
+  dwg_tip:{en:'Production starts only after customer, operations and factory all confirm.','zh-CN':'图纸需客户、运营、厂家三方都确认后才会开始生产，请仔细核对。','zh-TW':'圖紙需客戶、營運、廠家三方都確認後才會開始生產，請仔細核對。',ms:'Pengeluaran bermula selepas pelanggan, operasi & kilang semua sahkan.',th:'จะเริ่มผลิตเมื่อ ลูกค้า/ฝ่ายปฏิบัติการ/โรงงาน ยืนยันครบ'},
   pay_first: {en:'Final payment not settled yet. Please pay the balance before signing off — contact the store for help.','zh-CN':'尾款尚未结清，请先付清尾款后再签收，如有疑问请联系门店。','zh-TW':'尾款尚未結清，請先付清尾款後再簽收，如有疑問請聯絡門市。',ms:'Baki bayaran belum dijelaskan. Sila jelaskan baki sebelum menandatangani — hubungi kedai untuk bantuan.',th:'ยังชำระเงินงวดสุดท้ายไม่ครบ กรุณาชำระส่วนที่เหลือก่อนเซ็นรับ หากมีข้อสงสัยติดต่อร้าน'},
 };
 function itLabel(status, ft){
@@ -488,11 +493,13 @@ async function openDetail(id) {
     `<div class="text-center py-10 text-gray-400">${ct('loading')}</div>`;
   show('s-detail');
 
-  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }] = await Promise.all([
+  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
     sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info').eq('id', id).single(),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
+    sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
   ]);
+  const _draws = Array.isArray(drawResp) ? drawResp : [];
 
   // 以服务器最新 status 为准(缓存列表可能已过期),签收面板按最新状态判断
   const freshStatus = freshOrder?.status || o.status;
@@ -634,6 +641,25 @@ async function openDetail(id) {
       </div>
     </div>` : '';
 
+  const _dchip = (ok) => ok ? '<span style="color:#15803d">✓</span>' : '<span style="color:#9ca3af">—</span>';
+  const drawingSection = (_draws.length && !isClosedTerminal) ? `
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
+      <h3 class="font-semibold text-gray-800 mb-3">📐 ${itx('dwg_title')}</h3>
+      ${_draws.map(dw => `
+        <div class="border border-gray-100 rounded-lg p-3 mb-2">
+          <div class="text-sm font-medium text-gray-800 mb-1">${esc(dw.supplier_name||'')}</div>
+          ${dw.drawing_url ? `<a href="${esc(dw.drawing_url)}" target="_blank" class="text-sm text-blue-600 underline break-all">${itx('dwg_view')}</a>` : ''}
+          <div class="text-xs text-gray-500 mt-2">
+            ${ct('th_status')||'状态'}：客户 ${_dchip(dw.cust_confirmed_at)} · 运营 ${_dchip(dw.staff_confirmed_at)} · 厂家 ${_dchip(dw.sup_confirmed_at)}
+          </div>
+          ${dw.cust_confirmed_at
+            ? `<p class="text-green-600 text-sm font-medium mt-2">✓ ${itx('dwg_ok')}</p>`
+            : `<button onclick="custDrawingConfirm('${id}','${dw.supplier_id}')"
+                 class="mt-2 w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900">${itx('dwg_confirm')}</button>`}
+        </div>`).join('')}
+      <p class="text-xs text-gray-400 mt-1">${itx('dwg_tip')}</p>
+    </div>` : '';
+
   document.getElementById('detail-content').innerHTML = `
     <!-- Info card -->
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
@@ -671,6 +697,8 @@ async function openDetail(id) {
     ${stepTimeline}
 
     ${itemsProgressSection}
+
+    ${drawingSection}
 
     ${signatureSection}
 
@@ -727,6 +755,15 @@ function initSigCanvas() {
 
 function clearSig() {
   if (_sigCtx) { _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height); _sigHasContent = false; }
+}
+
+async function custDrawingConfirm(orderId, supId) {
+  if (!confirm(itx('dwg_confirm') + ' ?')) return;
+  const { data, error } = await sb.rpc('drawing_customer_confirm',
+    { p_order_id: orderId, p_phone: myPhone, p_supplier_id: supId });
+  if (error) { alert(error.message); return; }
+  if (!data || !data.ok) { alert((data && data.message) || ct('submit_fail')); return; }
+  openDetail(orderId);
 }
 
 async function submitSig(orderId) {
