@@ -155,6 +155,42 @@ const CI18N = {
  'th':{nav_sub:'ติดตามคำสั่งซื้อ',title:'ติดตามคำสั่งซื้อของคุณ',sub:'กรอกเบอร์โทรที่ลงทะเบียนไว้',lbl_phone:'เบอร์โทรศัพท์',phone_hint:'เพิ่มรหัสประเทศอัตโนมัติ — กรอกเฉพาะเบอร์ในประเทศ',btn_search:'ค้นหาคำสั่งซื้อ',searching:'กำลังค้นหา...',need_help:'ต้องการความช่วยเหลือ?',wa_us:'ติดต่อเราทาง WhatsApp',my_orders:'คำสั่งซื้อของฉัน',research:'← ค้นหาใหม่',order_detail:'รายละเอียดคำสั่งซื้อ',back_list:'← กลับ',err_no_phone:'กรุณากรอกเบอร์โทร',err_query_fail:'ค้นหาล้มเหลว โปรดลองใหม่',no_orders:'ไม่พบคำสั่งซื้อ',no_orders_sub:'โปรดตรวจสอบเบอร์โทร หรือติดต่อเรา',wa_cs:'ติดต่อฝ่ายบริการ WhatsApp',view_progress:'ดูความคืบหน้า',loading:'กำลังโหลด…',o_cancelled:'คำสั่งซื้อนี้ถูกยกเลิก',o_closed:'คำสั่งซื้อนี้ถูกปิด',order_status:'สถานะคำสั่งซื้อ',in_after_sales:'อยู่ในบริการประกัน',order_closed:'คำสั่งซื้อปิดแล้ว',order_cancelled:'คำสั่งซื้อถูกยกเลิก',amount:'ยอดรวม',pay_status:'การชำระเงิน',paid_yes:'ชำระแล้ว ✓',paid_no:'ยังไม่ชำระ',created:'สร้างเมื่อ',completed_at:'เสร็จเมื่อ',progress_log:'บันทึกความคืบหน้า',no_log:'ยังไม่มีบันทึก',signoff_title:'ยืนยันการติดตั้ง',signed_done:'คุณยืนยันเรียบร้อยแล้ว',sig_submitted:'✓ ส่งลายเซ็นแล้ว',sig_prompt:'กรุณาเซ็นด้านล่างเพื่อยืนยันการติดตั้งเสร็จ',sign_here:'เซ็นที่นี่',clear:'ล้าง',confirm_sig:'ยืนยันลายเซ็น',err_sign_first:'กรุณาเซ็นก่อน',submitting:'กำลังส่ง…',submit_fail:'ส่งล้มเหลว โปรดลองใหม่',expired:'หมดอายุ',in_warranty:'คุ้มครอง',th_part:'ชิ้นส่วน',th_period:'ประกัน',th_expiry:'หมดอายุ',th_status:'สถานะ',warranty_title:'บริการประกัน',all_expired:'หมดอายุทั้งหมด',w_active:'คุ้มครอง',total_warranty:'ประกันรวม: สูงสุด',years:'ปี',w_start:'เริ่มประกัน',w_until:'คุ้มครองถึง',w_seedetail:'(ดูรายการด้านล่าง)',gen_card:'สร้างบัตรประกัน',warranty_help:'หากมีปัญหาประกัน โปรดติดต่อฝ่ายบริการ',generic_series:'ประกันสินค้า',generic_comp:'สินค้าทั้งหมด',wa_msg:'สวัสดี ฉันต้องการสอบถามสถานะคำสั่งซื้อ ',card_brandsub:'เทคโนโลยีบ้านครบวงจร',card_title:'บัตรประกัน',card_sub:'WARRANTY CERTIFICATE',card_maxlabel:'ประกันสูงสุด',card_until:'คุ้มครองถึง',card_order:'คำสั่งซื้อ',card_from:'เริ่ม',card_thanks1:'ขอบคุณที่ไว้วางใจ HOUZY ดูแลบ้านของคุณ',card_thanks2:'ประกันนี้คือคำมั่นจากใจเรา—<br>คุณใช้ชีวิตอย่างสบายใจ ที่เหลือเราดูแลเอง',slogan:'สร้างบ้านด้วยใจ เปลี่ยนชีวิตให้ดีขึ้น',slogan_sub:'ดีไซน์พรีเมียมเอเชียตะวันออกเฉียงใต้ · ประกันโปร่งใส · บริการตลอดชีพ',ov_longpress:'กดค้างที่รูปด้านบนเพื่อบันทึก',ov_share:'แล้วแชร์ได้เลย',ov_download:'ดาวน์โหลด',ov_close:'ปิด',card_notready:'ข้อมูลประกันยังไม่พร้อม โปรดลองใหม่',card_fail:'สร้างล้มเหลว โปรดลองใหม่',
    st_pending_payment:'รอชำระเงิน',st_paid:'ชำระแล้ว',st_assigned:'มอบหมายแล้ว',st_accepted:'โรงงานรับแล้ว',st_in_production:'กำลังผลิต',st_production_complete:'ผลิตเสร็จ',st_shipped:'จัดส่งแล้ว',st_in_transit:'กำลังขนส่ง',st_arrived:'ถึงแล้ว',st_installing:'กำลังติดตั้ง',st_completed:'เสร็จสิ้น',st_after_sales:'ประกัน',st_closed:'ปิดแล้ว',st_cancelled:'ยกเลิกแล้ว'},
 };
+// 质保系列/部件名翻译表（与 staff.html WARRANTY_SERIES 一致；zh-CN=原名）
+const WNAME = {
+  '厨房系列':{en:'Kitchen Series','zh-TW':'廚房系列',ms:'Siri Dapur',th:'ชุดครัว'},
+  '卫浴系列':{en:'Bathroom Series','zh-TW':'衛浴系列',ms:'Siri Bilik Air',th:'ชุดห้องน้ำ'},
+  '门窗系列':{en:'Doors & Windows','zh-TW':'門窗系列',ms:'Siri Pintu & Tingkap',th:'ชุดประตูหน้าต่าง'},
+  '瓷砖系列':{en:'Tile Series','zh-TW':'瓷磚系列',ms:'Siri Jubin',th:'ชุดกระเบื้อง'},
+  '产品质保':{en:'Product Warranty','zh-TW':'產品質保',ms:'Waranti Produk',th:'ประกันสินค้า'},
+  '全铝合金橱柜柜体':{en:'Full-Aluminium Cabinet Body','zh-TW':'全鋁合金櫥櫃櫃體',ms:'Badan Kabinet Aluminium Penuh',th:'โครงตู้อะลูมิเนียมเต็ม'},
+  '橱柜门板':{en:'Cabinet Doors','zh-TW':'櫥櫃門板',ms:'Pintu Kabinet',th:'บานตู้'},
+  '橱柜五金':{en:'Cabinet Hardware','zh-TW':'櫥櫃五金',ms:'Perkakas Kabinet',th:'อุปกรณ์ตู้'},
+  '台面':{en:'Countertop','zh-TW':'檯面',ms:'Permukaan Meja',th:'ท็อปเคาน์เตอร์'},
+  '水槽':{en:'Sink','zh-TW':'水槽',ms:'Sinki',th:'อ่างล้าง'},
+  '厨房龙头':{en:'Kitchen Faucet','zh-TW':'廚房龍頭',ms:'Paip Dapur',th:'ก๊อกครัว'},
+  '抽屉系统':{en:'Drawer System','zh-TW':'抽屜系統',ms:'Sistem Laci',th:'ระบบลิ้นชัก'},
+  '淋浴房框架':{en:'Shower Frame','zh-TW':'淋浴房框架',ms:'Rangka Pancuran',th:'โครงห้องอาบน้ำ'},
+  '淋浴房玻璃':{en:'Shower Glass','zh-TW':'淋浴房玻璃',ms:'Kaca Pancuran',th:'กระจกห้องอาบน้ำ'},
+  '淋浴房五金':{en:'Shower Hardware','zh-TW':'淋浴房五金',ms:'Perkakas Pancuran',th:'อุปกรณ์ห้องอาบน้ำ'},
+  '马桶陶瓷本体':{en:'Toilet Ceramic Body','zh-TW':'馬桶陶瓷本體',ms:'Badan Seramik Tandas',th:'ตัวเซรามิกสุขภัณฑ์'},
+  '马桶冲水机构':{en:'Toilet Flush Mechanism','zh-TW':'馬桶沖水機構',ms:'Mekanisme Pam Tandas',th:'ระบบชักโครก'},
+  '智能马桶电路':{en:'Smart Toilet Circuit','zh-TW':'智能馬桶電路',ms:'Litar Tandas Pintar',th:'วงจรสุขภัณฑ์อัจฉริยะ'},
+  '卫浴五金PVD':{en:'Bathroom Hardware (PVD)','zh-TW':'衛浴五金PVD',ms:'Perkakas Bilik Air PVD',th:'อุปกรณ์ห้องน้ำ PVD'},
+  '浴室柜':{en:'Bathroom Cabinet','zh-TW':'浴室櫃',ms:'Kabinet Bilik Air',th:'ตู้ห้องน้ำ'},
+  '卫浴龙头':{en:'Bathroom Faucet','zh-TW':'衛浴龍頭',ms:'Paip Bilik Air',th:'ก๊อกห้องน้ำ'},
+  '花洒':{en:'Shower Head','zh-TW':'花灑',ms:'Kepala Pancuran',th:'ฝักบัว'},
+  '铝合金窗框/门框型材':{en:'Aluminium Frame Profile','zh-TW':'鋁合金窗框/門框型材',ms:'Profil Rangka Aluminium',th:'โปรไฟล์กรอบอะลูมิเนียม'},
+  'Low-E玻璃':{en:'Low-E Glass','zh-TW':'Low-E玻璃',ms:'Kaca Low-E',th:'กระจก Low-E'},
+  '门窗五金':{en:'Door/Window Hardware','zh-TW':'門窗五金',ms:'Perkakas Pintu/Tingkap',th:'อุปกรณ์ประตูหน้าต่าง'},
+  '密封胶条':{en:'Sealing Strip','zh-TW':'密封膠條',ms:'Jalur Pengedap',th:'ยางขอบซีล'},
+  '纱窗':{en:'Window Screen','zh-TW':'紗窗',ms:'Skrin Tingkap',th:'มุ้งลวด'},
+  '瓷砖本体':{en:'Tile Body','zh-TW':'瓷磚本體',ms:'Badan Jubin',th:'ตัวกระเบื้อง'},
+  '釉面层':{en:'Glaze Layer','zh-TW':'釉面層',ms:'Lapisan Glaze',th:'ชั้นเคลือบ'},
+  '防滑性能':{en:'Anti-Slip Performance','zh-TW':'防滑性能',ms:'Prestasi Anti-Gelincir',th:'คุณสมบัติกันลื่น'},
+  '整体产品':{en:'Whole Product','zh-TW':'整體產品',ms:'Keseluruhan Produk',th:'สินค้าทั้งหมด'},
+};
+function wname(n){ const m=WNAME[n]; if(!m) return n; if(CL==='zh-CN') return n; return m[CL]||n; }
+
 let CL = localStorage.getItem('houzy-lang') || 'en';
 if (!CI18N[CL]) CL = 'en';
 function ct(k){ return (CI18N[CL]||CI18N['en'])[k] || (CI18N['en'][k]) || k; }
@@ -355,7 +391,7 @@ function renderCustomerWarranty(o, logs) {
         ? `<span style="color:#dc2626;font-size:10px;font-weight:600">${ct('expired')}</span>`
         : `<span style="color:#16a34a;font-size:10px;font-weight:600">${ct('in_warranty')}</span>`;
       return `<tr>
-        <td style="padding:4px 8px;font-size:12px;color:#374151">${esc(comp.name)}</td>
+        <td style="padding:4px 8px;font-size:12px;color:#374151">${esc(wname(comp.name))}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(comp.years)} ${ct('years')}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center;color:#6b7280">${esc(String(comp.endIso).slice(0,10))}</td>
         <td style="padding:4px 8px;font-size:12px;text-align:center">${dot}</td>
@@ -364,7 +400,7 @@ function renderCustomerWarranty(o, logs) {
     return `<div class="mb-3">
       <div class="flex items-center gap-1 mb-1">
         <span>${esc(series.icon)}</span>
-        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${esc(series.seriesName)}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f">${esc(wname(series.seriesName))}</span>
         <span style="font-size:10px;color:${sExp?'#dc2626':'#16a34a'};margin-left:4px">${sExp?ct('expired'):ct('in_warranty')}</span>
       </div>
       <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:6px;overflow:hidden;border:1px solid #e5e7eb">
@@ -388,8 +424,8 @@ function renderCustomerWarranty(o, logs) {
     maxYears: _maxYears,
     totEnd:  _totEnd.toISOString().slice(0,10),
     series:  warrantyData.map(s => ({
-      name: s.seriesName, icon: s.icon,
-      comps: s.components.map(c => ({ name: c.name, years: c.years })),
+      name: wname(s.seriesName), icon: s.icon,
+      comps: s.components.map(c => ({ name: wname(c.name), years: c.years })),
     })),
   };
 
