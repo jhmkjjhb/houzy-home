@@ -1281,9 +1281,9 @@ function fmtBigCd(deadlineIso) {
   const m = Math.floor(s / 60);    s %= 60;
   const pad = n => String(n).padStart(2, '0');
   const clock = (d > 0 ? `${d}天 ` : '') + `${pad(h)}:${pad(m)}:${pad(s)}`;
-  return over
-    ? { text: `🚨 已超时 ${clock}`, bg: '#dc2626', over: true }
-    : { text: `⏱ 距超时还剩 ${clock}`, bg: diff < 4 * 3600000 ? '#d97706' : '#16a34a', over: false };
+  if (over)              return { text: `⚠ 已超时 ${clock}`,    fg: '#dc2626', bg: '#fef2f2', over: true };
+  if (diff < 4*3600000)  return { text: `⏱ 距超时 ${clock}`,    fg: '#d97706', bg: '#fffbeb', over: false };
+  return                        { text: `⏱ 距超时 ${clock}`,    fg: '#15803d', bg: '#ecfdf5', over: false };
 }
 
 function bigCountdownBar(o) {
@@ -1292,8 +1292,8 @@ function bigCountdownBar(o) {
   const c = fmtBigCd(o.deadline_at);
   if (!c) return '';
   return `<div id="detail-bigcd" data-dl="${o.deadline_at}"
-    class="mb-3 rounded-xl px-4 py-3 text-center font-bold ${c.over ? 'row-overdue-badge' : ''}"
-    style="font-size:20px;letter-spacing:1px;color:#fff;background:${c.bg}">${c.text}</div>`;
+    class="mb-3 inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${c.over ? 'row-overdue-badge' : ''}"
+    style="color:${c.fg};background:${c.bg};border:1px solid ${c.fg}33">${c.text}</div>`;
 }
 
 function tickDetailBigCd() {
@@ -1302,7 +1302,9 @@ function tickDetailBigCd() {
   const c = fmtBigCd(el.getAttribute('data-dl'));
   if (!c) return;
   el.textContent = c.text;
+  el.style.color = c.fg;
   el.style.background = c.bg;
+  el.style.borderColor = c.fg + '33';
   el.classList.toggle('row-overdue-badge', c.over);
   el.classList.remove('cd-tick');
   void el.offsetWidth;
