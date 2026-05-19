@@ -2178,6 +2178,11 @@ async function lookupCustomer() {
 }
 
 function setInstallments(n) {
+  // Step C：3 期付款模式创建需店长(L2)及以上；1/2 期店员可
+  if (n === 3 && !canDo(2)) {
+    alert('3 期付款模式需「店长」及以上权限创建，已为你切回 2 期。\n如需 3 期请让店长操作。');
+    return setInstallments(2);
+  }
   [1, 2, 3].forEach(i => {
     const btn = document.getElementById(`inst-btn-${i}`);
     if (!btn) return;
@@ -4160,18 +4165,32 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   openDetail(orderId);
 }
 
-// 只统计"已计入"的收款：电子方式 或 已核对的现金；据此判断付款状态/推进
-async function _recalcPaymentStatus(orderId) {
-  const { data: pays } = await sb.from('order_payments')
-    .select('pct,method,verified_at').eq('order_id', orderId);
-  const { data: ord }  = await sb.from('orders').select('status').eq('id', orderId).single();
-  const counted = (pays || []).filter(p => p.method !== 'cash' || p.verified_at);
+// 统一收款快照：只计入"电子方式 或 已核对现金"；返回期数/各期占比/已计入%
+// 两处(付款状态推进、进安装里程碑)共用，保证口径一致(Step B/C)
+async function _paymentSnapshot(orderId) {
+  const [{ data: pays }, { data: ord }] = await Promise.all([
+    sb.from('order_payments').select('pct,method,verified_at').eq('order_id', orderId),
+    sb.from('orders').select('status,installments,pay_splits').eq('id', orderId).single(),
+  ]);
+  const counted    = (pays || []).filter(p => p.method !== 'cash' || p.verified_at);
   const countedPct = counted.reduce((s, p) => s + (p.pct || 0), 0);
-  const anyRec = (pays || []).length > 0;
-  const newPayStatus = countedPct >= 100 ? 'paid' : (anyRec ? 'partial' : 'unpaid');
+  const anyRec     = (pays || []).length > 0;
+  let n = ord?.installments || 1;
+  let splits = Array.isArray(ord?.pay_splits) && ord.pay_splits.length ? ord.pay_splits.slice() : null;
+  if (!splits || !splits.length) { n = n || 1; splits = Array.from({ length: n }, () => Math.floor(100 / n)); splits[n-1] += 100 - splits.reduce((a,b)=>a+b,0); }
+  n = splits.length;
+  const firstPct = splits[0] || 100;                       // 订金(首期)
+  const beforeInstallPct = n >= 3 ? (splits[0] + splits[1]) : 100; // 进安装前需收齐(2期=全款,3期=前两期)
+  return { ord, countedPct, anyRec, n, splits, firstPct, beforeInstallPct };
+}
+
+// 据已计入收款判断付款状态/推进（Step B Option A + Step C 分期里程碑）
+async function _recalcPaymentStatus(orderId) {
+  const s = await _paymentSnapshot(orderId);
+  const newPayStatus = s.countedPct >= 100 ? 'paid' : (s.anyRec ? 'partial' : 'unpaid');
   const statusUpd = { payment_status: newPayStatus };
-  // Option A：仅当"已计入"足额才自动 待付款→已付款；不允许手动空点
-  if (countedPct >= 100 && ord?.status === 'pending_payment') statusUpd.status = 'paid';
+  // 订金(首期)收齐 → 待付款→已付款(=可进生产)；不允许手动空点(Option A)
+  if (s.countedPct >= s.firstPct && s.ord?.status === 'pending_payment') statusUpd.status = 'paid';
   await sb.from('orders').update(statusUpd).eq('id', orderId);
 }
 
@@ -4253,9 +4272,16 @@ async function updateOrder(id) {
     return;
   }
 
-  // 安装前必须付清所有款项（从订单缓存读取，不依赖表单）
-  if (status === 'installing' && origOrder?.payment_status !== 'paid') {
-    alert('⚠️ 请先确认收取所有期款项后，才能进入安装阶段。'); return;
+  // 进安装中里程碑（Step C·乙）：1/2 期需全款收齐；3 期需前两期收齐
+  // （3 期尾款"完工时收"，由客户签收前的服务端关卡兜底，不卡安装）
+  if (status === 'installing' && origOrder && origOrder.status !== 'installing') {
+    const ps = await _paymentSnapshot(id);
+    if (ps.countedPct < ps.beforeInstallPct) {
+      alert(ps.n >= 3
+        ? `⚠️ 3 期单进入安装前，需先收齐第 1、2 期（合计 ${ps.beforeInstallPct}%）。\n现已计入 ${ps.countedPct}%。现金需店长「核对确认」后才计入。`
+        : `⚠️ 进入安装前需先收齐全部款项（${ps.beforeInstallPct}%）。\n现已计入 ${ps.countedPct}%。现金需店长「核对确认」后才计入。`);
+      return;
+    }
   }
 
   // 发货前：所有商品行必须已备货（厂家已确认生产完成则跳过）

@@ -204,6 +204,7 @@ const IT_I18N = {
 };
 const ITX = {
   items_progress: {en:'Item-by-item Progress','zh-CN':'各商品进度','zh-TW':'各商品進度',ms:'Kemajuan Setiap Item',th:'ความคืบหน้ารายชิ้น'},
+  pay_first: {en:'Final payment not settled yet. Please pay the balance before signing off — contact the store for help.','zh-CN':'尾款尚未结清，请先付清尾款后再签收，如有疑问请联系门店。','zh-TW':'尾款尚未結清，請先付清尾款後再簽收，如有疑問請聯絡門市。',ms:'Baki bayaran belum dijelaskan. Sila jelaskan baki sebelum menandatangani — hubungi kedai untuk bantuan.',th:'ยังชำระเงินงวดสุดท้ายไม่ครบ กรุณาชำระส่วนที่เหลือก่อนเซ็นรับ หากมีข้อสงสัยติดต่อร้าน'},
 };
 function itLabel(status, ft){
   if(status==='pending'||!status){
@@ -742,7 +743,12 @@ async function submitSig(orderId) {
   if (error || !data) {
     if (btn) { btn.textContent = ct('confirm_sig'); btn.disabled = false; }
     const e = document.getElementById('sig-err');
-    if (e) { e.textContent = error?.message || ct('submit_fail'); e.classList.remove('hidden'); }
+    // 签收失败且本单未付清 → 多半是尾款未结清（Step C·乙 服务端关卡）
+    const ord = myOrders.find(x => x.id === orderId);
+    const msg = (!error && ord && ord.payment_status !== 'paid')
+      ? itx('pay_first')
+      : (error?.message || ct('submit_fail'));
+    if (e) { e.textContent = msg; e.classList.remove('hidden'); }
     return;
   }
 
