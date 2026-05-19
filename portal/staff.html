@@ -1054,7 +1054,7 @@ function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   return { text: fmtSla(s), color: '#d1d5db' };
 }
 
-function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked) {
+function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked, hasCustom = true) {
   _tlLogs     = logs     || _tlLogs;
   _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
   _tlStatus   = currentStatus;
@@ -1062,9 +1062,12 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked)
 
   const curStep  = STATUS[currentStatus]?.step ?? -1;
   const isSpecial = STATUS[currentStatus]?.step === -1;
+  // 现货单(无定制项)不经生产环节 → 状态栏不显示「生产中」这一步
+  const steps = hasCustom ? CORE_STEPS : CORE_STEPS.filter(s => s !== 'in_production');
 
-  const stepsHtml = CORE_STEPS.map((s, i) => {
-    const done    = i < curStep || (!isSpecial && currentStatus === 'completed' && i <= 6);
+  const stepsHtml = steps.map((s, i) => {
+    const sStep   = STATUS[s]?.step ?? i;          // 按 STATUS.step 算，过滤后仍正确
+    const done    = sStep < curStep || (!isSpecial && currentStatus === 'completed');
     const current = s === currentStatus;
     const lbl     = t('status_' + s) || STATUS[s].label;
     let bg, color, icon;
@@ -1072,13 +1075,13 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked)
     else if (current) { bg=STATUS[s].s.match(/background:([^;]+)/)?.[1]||'#e5e7eb'; color=STATUS[s].s.match(/color:([^;]+)/)?.[1]||'#333'; icon='●'; }
     else              { bg='#f3f4f6'; color='#9ca3af'; icon=String(i+1); }
     const border  = current ? 'border:2px solid #1a3a2a;' : 'border:2px solid transparent;';
-    const tl      = stepTimeLabel(s, i, curStep, current);
+    const tl      = stepTimeLabel(s, sStep, curStep, current);
     const subText = (s === 'in_production' && current && prodStage)
       ? (PROD_STAGE_LABELS[prodStage] || prodStage)
       : tl.text;
     const subColor = (s === 'in_production' && current && prodStage) ? '#b45309' : tl.color;
-    const connector = i < CORE_STEPS.length - 1
-      ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${i<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
+    const connector = i < steps.length - 1
+      ? `<div class="flex-shrink-0 w-3" style="height:2px;background:${sStep<curStep?'#1a3a2a':'#e5e7eb'};margin-top:20px;align-self:flex-start"></div>`
       : '';
     return `<div class="flex flex-col items-center flex-shrink-0" style="min-width:64px">
               <div id="step-${s}"
@@ -2638,7 +2641,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o))}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o), orderHasCustom(items))}
       </div>
       ${bigCountdownBar(o)}
       ${extendBtn(o)}
