@@ -49,10 +49,12 @@ BEGIN
     RAISE EXCEPTION '无仓库发货权限';
   END IF;
   RETURN QUERY
-    SELECT oi.id, o.id, o.order_no,
-           c.name, COALESCE(o.fulfillment_mode, 'all_together'),
-           oi.product_name, oi.model_spec,
-           oi.quantity::numeric, oi.unit, o.created_at
+    -- 显式 ::text：线上这些列多为 varchar，RETURNS TABLE 声明 text，
+    -- 不强转会报 "structure of query does not match function result type"
+    SELECT oi.id, o.id, o.order_no::text,
+           c.name::text, COALESCE(o.fulfillment_mode, 'all_together')::text,
+           oi.product_name::text, oi.model_spec::text,
+           oi.quantity::numeric, oi.unit::text, o.created_at
     FROM order_items oi
     JOIN orders o   ON o.id = oi.order_id
     LEFT JOIN customers c ON c.id = o.customer_id
