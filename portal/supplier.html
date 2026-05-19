@@ -154,10 +154,16 @@ async function init() {
   await loadOrders();
 }
 
+let _myPendingOrderIds = new Set();   // 分给我、且我还有未接单(pending)商品的订单
+function isMinePending(o) { return _myPendingOrderIds.has(o?.id); }
+
 async function loadOrders() {
   const {data:items} = await sb.from('order_items')
-    .select('order_id').eq('supplier_id', supplier?.id);
+    .select('order_id,item_status').eq('supplier_id', supplier?.id);
 
+  _myPendingOrderIds = new Set(
+    (items||[]).filter(i => !i.item_status || i.item_status === 'pending')
+               .map(i => i.order_id).filter(Boolean));
   const itemOrderIds = (items||[]).map(i => i.order_id).filter(Boolean);
   const supId = supplier?.id;
 
@@ -187,7 +193,8 @@ function setFilter(val, btn) {
 
 function renderOrders() {
   // Update "待接单" badge count
-  const assignedOrders = allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status));
+  // 待接单 = 我还有 pending 商品的单（不管订单总状态，乙方案多厂家子状态）
+  const assignedOrders = allOrders.filter(o => isMinePending(o) || !SUPPLIER_CONFIRMED.includes(o.status));
   const btnAssigned = document.getElementById('btn-assigned');
   if (btnAssigned) {
     btnAssigned.innerHTML = assignedOrders.length
@@ -213,9 +220,9 @@ function renderOrders() {
   }
 
   const filtered = currentFilter === '__pending__'
-    ? allOrders.filter(o => !SUPPLIER_CONFIRMED.includes(o.status))
+    ? allOrders.filter(o => isMinePending(o) || !SUPPLIER_CONFIRMED.includes(o.status))
     : currentFilter
-      ? allOrders.filter(o => o.status === currentFilter)
+      ? allOrders.filter(o => !isMinePending(o) && o.status === currentFilter)
       : allOrders;
 
   const el = document.getElementById('orders-list');
@@ -254,7 +261,10 @@ function renderOrders() {
     const shown = new Set();
     let html = '';
     for (const g of groups) {
-      const gOrders = filtered.filter(o => g.statuses.includes(o.status));
+      // 我还有 pending 商品的单只进「待接单」组（多厂家子状态：互斥分组）
+      const gOrders = filtered.filter(o => isMinePending(o)
+        ? g.label === '待接单'
+        : g.statuses.includes(o.status));
       if (!gOrders.length) continue;
       gOrders.forEach(o => shown.add(o.id));
       html += `<div class="mb-5">
@@ -276,10 +286,11 @@ function renderOrders() {
 
 function orderCard(o) {
   const st = o.status;
+  const minePending = isMinePending(o);
   let actionBtns = `<button onclick="openDetail('${o.id}')"
     class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">详情</button>`;
 
-  if (!SUPPLIER_CONFIRMED.includes(st)) {
+  if (minePending || !SUPPLIER_CONFIRMED.includes(st)) {
     actionBtns += `
       <button onclick="rejectOrder(event,'${o.id}')"
               class="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-500 hover:bg-red-50">拒绝</button>
@@ -303,7 +314,7 @@ function orderCard(o) {
         <div class="font-mono font-bold text-hg text-sm">${esc(o.order_no)}</div>
         <div class="text-gray-400 text-xs mt-0.5">${esc(o.stores?.name)||'-'} · ${fmtDate(o.created_at)}</div>
       </div>
-      ${badge(o.status)}
+      ${minePending ? `<span class="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700">待接单</span>` : badge(o.status)}
     </div>
     ${o.description ? `<p class="text-sm text-gray-600 mb-3 line-clamp-2">${esc(o.description)}</p>` : ''}
     <div class="flex items-center justify-between">
@@ -315,16 +326,26 @@ function orderCard(o) {
 
 // ── Quick actions from card ──────────────────────────────────────────
 
+// 乙·多厂家：只接"我自己的"商品(pending→in_production)，不碰别的厂家；
+// 订单总状态绝不回退，仅当还在接单前阶段才推进到 in_production
+async function _acceptMyItems(orderId) {
+  await sb.from('order_items').update({ item_status: 'in_production' })
+    .eq('order_id', orderId).eq('supplier_id', supplier?.id)
+    .or('item_status.is.null,item_status.eq.pending');
+  await sb.from('orders').update({ status: 'in_production' })
+    .eq('id', orderId).in('status', ['pending_payment','paid','assigned','accepted']);
+}
+
 async function acceptOrder(e, orderId) {
   e.stopPropagation();
   const notes = prompt('接单备注（可选，如：预计X个工作日完成）：');
   if (notes === null) return;
-  await sb.from('orders').update({status:'accepted'}).eq('id', orderId);
+  await _acceptMyItems(orderId);
   await sb.from('order_logs').insert({
-    order_id:orderId, status:'accepted',
+    order_id:orderId, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
     operator_name:supplier?.name||profile.name,
-    notes: notes||'厂商已接单',
+    notes: (notes||'厂商已接单') + '（本厂家商品已接单进入生产）',
   });
   await loadOrders();
 }
@@ -412,9 +433,10 @@ async function openDetail(id) {
   }).join('');
 
   const st = o?.status;
+  const minePending = isMinePending(o);
   let actionSection = '';
 
-  if (!SUPPLIER_CONFIRMED.includes(st)) {
+  if (minePending || !SUPPLIER_CONFIRMED.includes(st)) {
     // Any pre-confirmation status (assigned, paid, pending_payment, etc.) → show accept panel
     actionSection = `
     <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
@@ -635,12 +657,12 @@ function selectStage(btn) {
 
 async function detailAccept(id) {
   const notes = document.getElementById('accept-notes')?.value.trim();
-  await sb.from('orders').update({status:'accepted'}).eq('id', id);
+  await _acceptMyItems(id);
   await sb.from('order_logs').insert({
-    order_id:id, status:'accepted',
+    order_id:id, status:'in_production',
     operator_id:profile.id, operator_role:'supplier',
     operator_name:supplier?.name||profile.name,
-    notes: notes||'厂商已接单',
+    notes: (notes||'厂商已接单') + '（本厂家商品已接单进入生产）',
   });
   await loadOrders();
   openDetail(id);

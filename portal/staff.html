@@ -3546,10 +3546,21 @@ async function saveItemSuppliers(ev, orderId) {
   const btn = ev?.currentTarget || ev?.target;
   if (btn) { btn.textContent = '保存中…'; btn.disabled = true; }
   const sels = Array.from(document.querySelectorAll('.item-sup-sel'));
+  // 取当前供应商，判断哪些是"改派到不同厂家"——这些要把 item_status 退回 pending，
+  // 新厂家才会在「待接单」收到（多厂家子状态：乙方案 Slice 1）
+  const { data: curItems } = await sb.from('order_items')
+    .select('id,supplier_id').eq('order_id', orderId);
+  const curMap = {}; (curItems || []).forEach(i => { curMap[i.id] = i.supplier_id || ''; });
   // 逐条捕获每次更新的 error —— 不能用 blind Promise.all 吞掉 RLS 拒绝
-  const results = await Promise.all(sels.map(sel =>
-    sb.from('order_items').update({ supplier_id: sel.value || null }).eq('id', sel.dataset.itemId)
-  ));
+  const results = await Promise.all(sels.map(sel => {
+    const itemId = sel.dataset.itemId;
+    const newSup = sel.value || null;
+    const changed = newSup && newSup !== (curMap[itemId] || '');
+    const upd = changed
+      ? { supplier_id: newSup, item_status: 'pending' }   // 改派 → 重置给新厂家接单
+      : { supplier_id: newSup };
+    return sb.from('order_items').update(upd).eq('id', itemId);
+  }));
   const failed = results.filter(r => r.error);
   if (failed.length) {
     console.error('[saveItemSuppliers] update errors:', failed.map(r => r.error?.message));
