@@ -1036,12 +1036,13 @@ function fmtSla(s) {
 }
 
 // Cached for live countdown updates
-let _tlLogs = [], _tlDeadline = null, _tlStatus = '';
+let _tlLogs = [], _tlDeadline = null, _tlStatus = '', _tlAcked = false;
 
 function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   if (isCurrentStatus) {
     const cd = fmtCountdown(_tlDeadline);
     if (!cd) return { text: fmtSla(s), color: '#9ca3af' };
+    if (cd.overdue && _tlAcked) return { text: '跟进中', color: '#6b7280' }; // 有人跟进→不报红
     return { text: cd.text, color: cd.overdue ? '#dc2626' : cd.warn ? '#d97706' : '#16a34a' };
   }
   if (i < curStep) {
@@ -1052,10 +1053,11 @@ function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   return { text: fmtSla(s), color: '#d1d5db' };
 }
 
-function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage) {
+function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked) {
   _tlLogs     = logs     || _tlLogs;
   _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
   _tlStatus   = currentStatus;
+  if (acked !== undefined) _tlAcked = acked;
 
   const curStep  = STATUS[currentStatus]?.step ?? -1;
   const isSpecial = STATUS[currentStatus]?.step === -1;
@@ -1239,11 +1241,22 @@ const STATUS_VAR_DAYS = {
   shipped:       { max: 30, default: 20 },
 };
 
-function calcDeadline(status, customDays) {
+// hasCustom: 该订单是否含定制商品。纯现货单(hasCustom===false)「已付款」后不排产，
+// 直接给 1 天发货；定制单维持 2h 排产。其它阶段按 STATUS_SLA_HOURS。
+function calcDeadline(status, customDays, hasCustom) {
   if (customDays) return new Date(Date.now() + customDays * 86400000).toISOString();
+  if (status === 'paid' && hasCustom === false) {
+    return new Date(Date.now() + 24 * 3600000).toISOString(); // 现货：1 天发货
+  }
   const h = STATUS_SLA_HOURS[status];
   if (!h) return null;
   return new Date(Date.now() + h * 3600000).toISOString();
+}
+
+// 订单是否含定制商品（无明细或查不到时按定制处理，保守不缩短）
+function orderHasCustom(items) {
+  if (!items || !items.length) return true;
+  return items.some(i => (i.fulfillment_type || 'custom') === 'custom');
 }
 
 function fmtCountdown(deadlineAt) {
@@ -2311,8 +2324,9 @@ async function submitOrder() {
     if (oe) { showCreateErr('创建订单失败: ' + oe.message); return; }
     createdOrderId = order.id;
 
-    // Extended columns
-    const extNew = { deadline_at: calcDeadline(initStatus), currency, installments: instCount, pay_splits: splits,
+    // Extended columns（按本单是否含定制商品决定「已付款」时长：现货 1 天 / 定制 2h）
+    const _hasCustomNew = orderHasCustom(getItemRows());
+    const extNew = { deadline_at: calcDeadline(initStatus, null, _hasCustomNew), currency, installments: instCount, pay_splits: splits,
       fulfillment_mode: document.getElementById('o-fulfillment-mode')?.value || 'all_together' };
     if (initPayMethod) extNew.payment_method = initPayMethod;
     if (_supplementParentId) {
@@ -2522,14 +2536,8 @@ async function openDetail(id, backView) {
 
   const pmLabels = { cash: t('pay_cash'), transfer: t('pay_transfer'), ewallet: t('pay_ewallet'), card: t('pay_card') };
 
-  // Deadline display for info card
-  const cd = fmtCountdown(o.deadline_at);
-  const deadlineBanner = cd ? `
-    <div class="mt-3 rounded-lg px-3 py-2 text-sm font-medium flex items-center gap-2"
-         style="background:${cd.overdue?'#fef2f2':cd.warn?'#fffbeb':'#f5f2ed'};color:${cd.overdue?'#dc2626':cd.warn?'#d97706':'#1a3a2a'}">
-      ${cd.text}
-      <span class="text-xs font-normal opacity-70">${t('lbl_deadline')}: ${fmtDateTime(o.deadline_at)}</span>
-    </div>` : '';
+  // 信息卡这条旧「已逾期」红条已移除：全店统一只用状态卡里的倒计时小标（避免重复/口径打架）
+  const deadlineBanner = '';
 
   // Pre-format deadline for datetime-local input
   // If DB has no deadline, auto-compute from current status SLA so field is never blank
@@ -2612,7 +2620,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage)}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o))}
       </div>
       ${bigCountdownBar(o)}
       <div id="sla-days-row" class="mb-3 hidden">
@@ -4099,8 +4107,11 @@ async function updateOrder(id) {
     }
   }
 
+  // 按本单是否含定制商品决定时长（现货单「已付款」给 1 天发货，不排产）
+  const { data: _ftItems } = await sb.from('order_items').select('fulfillment_type').eq('order_id', id);
+  const _hasCustom = orderHasCustom(_ftItems);
   // Use manual deadline if set, else slider days, else auto-calc from SLA
-  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays);
+  const deadline_at = dlVal ? new Date(dlVal).toISOString() : calcDeadline(status, customDays, _hasCustom);
   const isTerminal  = status === 'completed' || status === 'closed' || status === 'cancelled';
 
   // ── Core update (original schema columns — always works) ──
