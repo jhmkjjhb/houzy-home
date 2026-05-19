@@ -4998,7 +4998,7 @@ async function saveAddedItems() {
 // 已 awaiting_dispatch / shipped 再点 = 0 行 no-op。
 async function confirmDispatch(orderId) {
   const [{ data: items }, { data: ord }] = await Promise.all([
-    sb.from('order_items').select('id,product_name,fulfillment_type,item_status').eq('order_id', orderId),
+    sb.from('order_items').select('id,product_name,model_spec,quantity,fulfillment_type,item_status').eq('order_id', orderId),
     sb.from('orders').select('status').eq('id', orderId).single(),
   ]);
   const stock = (items || []).filter(i => (i.fulfillment_type || 'custom') === 'stock');
@@ -5009,13 +5009,39 @@ async function confirmDispatch(orderId) {
     alert(already.length ? '现货商品已全部交仓库处理，无需重复出库' : '没有可出库的现货商品');
     return;
   }
-  if (!confirm(`确认把以下 ${todo.length} 件现货商品交仓库发货？\n（此操作不扣库存，库存由仓库实际发货时扣减）\n\n` +
-               todo.map(i => '· ' + (i.product_name || '')).join('\n'))) return;
 
-  // 条件更新：仅 fulfillment_type='stock' 且 item_status='pending' 的行 → awaiting_dispatch
+  // ── 阶段二·防呆：逐件查产品档案匹配 + 仓库是否真有货 ──
+  // 匹配不到 / 全仓无货或不足 → 不让走仓库，提示改厂家直发（用户 2026-05-19 决策）
+  const eligible = [];   // 可走仓库（有货）
+  const blocked  = [];   // {name, reason} 仓库走不通，需改厂家直发
+  for (const it of todo) {
+    const need = Number(it.quantity) || 0;
+    const prod = await resolveProductExact(it.model_spec, it.product_name);
+    if (!prod) { blocked.push({ name: it.product_name || '(未命名)', reason: '产品档案匹配不到' }); continue; }
+    const { data: invs } = await sb.from('inventory')
+      .select('qty_on_hand,qty_reserved').eq('product_id', prod.id);
+    const avail = (invs || []).reduce((s, r) =>
+      s + Math.max(0, (Number(r.qty_on_hand) || 0) - (Number(r.qty_reserved) || 0)), 0);
+    if (avail >= need && need > 0) eligible.push(it);
+    else blocked.push({ name: it.product_name || '(未命名)', reason: `仓库无货/不足（可用 ${avail} / 需 ${need}）` });
+  }
+
+  const blockMsg = blocked.length
+    ? `\n\n⚠ 以下商品仓库无货，不能走仓库，请改厂家直发\n（在「商品明细」把它从「现货」改为「定制」并分配供应商）：\n` +
+      blocked.map(b => `· ${b.name}（${b.reason}）`).join('\n')
+    : '';
+
+  if (!eligible.length) {
+    alert('没有可走仓库的现货商品。' + blockMsg);
+    return;
+  }
+  if (!confirm(`确认把以下 ${eligible.length} 件现货商品交仓库发货？\n（此操作不扣库存，库存由仓库实际发货时扣减）\n\n` +
+               eligible.map(i => '· ' + (i.product_name || '')).join('\n') + blockMsg)) return;
+
+  // 条件更新：仅这些"有货"的行、且仍 pending → awaiting_dispatch
   const { data: upd, error } = await sb.from('order_items')
     .update({ item_status: 'awaiting_dispatch' })
-    .eq('order_id', orderId).eq('fulfillment_type', 'stock').eq('item_status', 'pending')
+    .in('id', eligible.map(i => i.id)).eq('item_status', 'pending')
     .select('id');
   if (error) { alert('操作失败：' + error.message); return; }
   const n = (upd || []).length;
@@ -5024,9 +5050,10 @@ async function confirmDispatch(orderId) {
   await sb.from('order_logs').insert({
     order_id: orderId, status: ord?.status || 'paid',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: `确认出库：${n} 件现货商品已交仓库，待仓库实际发货`,
+    notes: `确认出库：${n} 件现货商品已交仓库，待仓库实际发货` +
+           (blocked.length ? `；另有 ${blocked.length} 件仓库无货需改厂家直发：${blocked.map(b=>b.name).join('、')}` : ''),
   });
-  alert(`✅ 已通知仓库：${n} 件现货商品待发货`);
+  alert(`✅ 已通知仓库：${n} 件现货商品待发货` + blockMsg);
   await loadOrders();
   openDetail(orderId);
 }
