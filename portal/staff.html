@@ -2023,10 +2023,7 @@ function refreshItemDatalist(id) {
   if (!dl) return;
   const type = document.getElementById('item-type-' + id)?.value || '';
   const list = (staffProducts || []).filter(p => !type || p.category === type);
-  dl.innerHTML = list.flatMap(p => [
-    `<option value="${p.sku}">${(p.name||'').replace(/"/g,'&quot;')}</option>`,
-    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
-  ]).join('');
+  dl.innerHTML = list.map(_prodOption).join('');   // 单行去重，编号/名字皆可命中
 }
 
 // 一键带出整套模块行（橱柜/衣柜），员工逐项填数量单价、用不到的按 × 删
@@ -3074,20 +3071,26 @@ async function loadStaffProducts() {
   staffProducts = data || [];
   const dl = document.getElementById('staff-product-datalist');
   if (!dl) return;
-  // Both SKU and name as searchable values
-  dl.innerHTML = staffProducts.flatMap(p => [
-    `<option value="${p.sku}">${p.name}</option>`,
-    `<option value="${(p.name||'').replace(/"/g,'&quot;')}">${p.sku}</option>`,
-  ]).join('');
+  // 每个产品一行：value = "编号 名称"，输编号或输名字关键词都能命中、且不重复
+  dl.innerHTML = staffProducts.map(_prodOption).join('');
   // 产品加载完成后，刷新已存在行的按类型过滤联想
   document.querySelectorAll('select[id^="item-type-"]').forEach(s =>
     refreshItemDatalist(s.id.replace('item-type-', '')));
 }
 
+// 单行联想项：value="SKU 名称"（去重，原生框按 value 子串匹配，编号/名字皆可）
+function _prodOption(p) {
+  const v = `${p.sku} ${p.name || ''}`.trim().replace(/"/g, '&quot;');
+  return `<option value="${v}"></option>`;
+}
+
 function _findProductMatch(typed) {
   if (!typed) return null;
-  return staffProducts.find(p => p.sku.toLowerCase() === typed.toLowerCase())
-    || staffProducts.find(p => p.name === typed);
+  const t = typed.trim(), tl = t.toLowerCase();
+  return staffProducts.find(p => (p.sku || '').toLowerCase() === tl)
+    || staffProducts.find(p => p.name === t)
+    || staffProducts.find(p => `${p.sku} ${p.name || ''}`.trim() === t)
+    || staffProducts.find(p => p.sku && tl.startsWith((p.sku + ' ').toLowerCase()));
 }
 
 async function onProductSelect(id) {
