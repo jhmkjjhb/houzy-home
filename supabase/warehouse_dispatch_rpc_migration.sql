@@ -31,12 +31,17 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
 $$;
 
 -- ── 1. 待发货清单：现货项已被店员「确认出库」、等仓库实际发货 ──
+-- 含收货地址/电话，仓库才知道发到哪（用户 2026-05-19 反馈补）。
+-- 返回字段增加 → 必须先 DROP 再建（CREATE OR REPLACE 不能改返回类型）。
+DROP FUNCTION IF EXISTS warehouse_pending_dispatch();
 CREATE OR REPLACE FUNCTION warehouse_pending_dispatch()
 RETURNS TABLE (
   item_id          UUID,
   order_id         UUID,
   order_no         TEXT,
   customer_name    TEXT,
+  customer_phone   TEXT,
+  customer_address TEXT,
   fulfillment_mode TEXT,
   product_name     TEXT,
   model_spec       TEXT,
@@ -52,7 +57,8 @@ BEGIN
     -- 显式 ::text：线上这些列多为 varchar，RETURNS TABLE 声明 text，
     -- 不强转会报 "structure of query does not match function result type"
     SELECT oi.id, o.id, o.order_no::text,
-           c.name::text, COALESCE(o.fulfillment_mode, 'all_together')::text,
+           c.name::text, c.phone::text, c.address::text,
+           COALESCE(o.fulfillment_mode, 'all_together')::text,
            oi.product_name::text, oi.model_spec::text,
            oi.quantity::numeric, oi.unit::text, o.created_at
     FROM order_items oi
@@ -65,10 +71,15 @@ BEGIN
 END;
 $$;
 
--- ── 2. 确认发货：扣库存 + 标记 shipped + 写流水/日志 + 按模式聚合订单状态 ──
+-- ── 2. 确认发货：扣库存 + 标记 shipped + 写物流 + 写流水/日志 + 聚合订单状态 ──
+-- 新增物流参数（用户 2026-05-19 反馈）：发货时填物流公司/单号 → 写入订单，
+-- 客户端即可看到追踪号。新增参数=签名变更 → 先 DROP 旧 2 参版本。
+DROP FUNCTION IF EXISTS warehouse_confirm_ship(UUID, UUID);
 CREATE OR REPLACE FUNCTION warehouse_confirm_ship(
   p_item_id      UUID,
-  p_warehouse_id UUID
+  p_warehouse_id UUID,
+  p_carrier      TEXT DEFAULT NULL,
+  p_tracking_no  TEXT DEFAULT NULL
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_role     TEXT;
@@ -149,12 +160,28 @@ BEGIN
 
   -- 商品标记已发货
   UPDATE order_items SET item_status = 'shipped' WHERE id = p_item_id;
+
+  -- 写物流信息到订单（填了才写，空值不覆盖已有；首次发货补 ship_time）
+  IF NULLIF(btrim(COALESCE(p_carrier,'')),    '') IS NOT NULL
+     OR NULLIF(btrim(COALESCE(p_tracking_no,'')), '') IS NOT NULL THEN
+    UPDATE orders SET
+      ship_carrier = COALESCE(NULLIF(btrim(p_carrier),''),     ship_carrier),
+      tracking_no  = COALESCE(NULLIF(btrim(p_tracking_no),''),  tracking_no),
+      ship_time    = COALESCE(ship_time, NOW()),
+      updated_at   = NOW()
+    WHERE id = v_oi.order_id;
+  END IF;
+
   INSERT INTO order_logs (order_id, status, operator_id, operator_role,
                           operator_name, notes)
   VALUES (v_oi.order_id, COALESCE(v_ord.status,'paid'), auth.uid(),
           v_role, v_name,
           '仓库确认发货：' || COALESCE(v_oi.product_name,'') ||
-          '，已扣减库存 ' || v_qty);
+          '，已扣减库存 ' || v_qty ||
+          CASE WHEN NULLIF(btrim(COALESCE(p_tracking_no,'')),'') IS NOT NULL
+               THEN '；物流单号 ' || btrim(p_tracking_no) ELSE '' END ||
+          CASE WHEN NULLIF(btrim(COALESCE(p_carrier,'')),'') IS NOT NULL
+               THEN '（' || btrim(p_carrier) || '）' ELSE '' END);
 
   -- 聚合：全部商品都已发/到货/破损 且 订单还在 paid/in_production → 整单进「已发货」
   -- （决策②③：订单单一状态，跟最慢项；分批单的分项进度由客户端按 item 展示）

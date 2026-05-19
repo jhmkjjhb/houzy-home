@@ -1112,14 +1112,21 @@ async function renderDispatch() {
   rows.forEach(r => { (byOrder[r.order_id] = byOrder[r.order_id] || []).push(r); });
   box.innerHTML = Object.values(byOrder).map(items => {
     const h = items[0];
+    const oid = h.order_id;
     const modeLabel = (h.fulfillment_mode === 'phased') ? '分批安装' : '等齐安装';
     return `<div class="card p-4">
-      <div class="flex items-center justify-between mb-2 flex-wrap gap-1">
+      <div class="flex items-center justify-between mb-1 flex-wrap gap-1">
         <div class="text-sm font-bold text-gray-800">单号 ${esc(h.order_no || '—')}</div>
-        <div class="text-xs text-gray-500">${esc(h.customer_name || '—')} ·
-          <span class="px-1.5 py-0.5 rounded-full bg-gray-100">${modeLabel}</span></div>
+        <span class="text-xs px-1.5 py-0.5 rounded-full bg-gray-100">${modeLabel}</span>
       </div>
-      <div class="divide-y divide-gray-100">
+      <div class="text-xs text-gray-600 mb-1">
+        👤 ${esc(h.customer_name || '—')}
+        ${h.customer_phone ? ` · 📞 <a href="tel:${esc(h.customer_phone)}" class="text-hg underline">${esc(h.customer_phone)}</a>` : ''}
+      </div>
+      <div class="text-xs ${h.customer_address ? 'text-gray-700' : 'text-red-500'} mb-2 leading-snug">
+        📍 ${h.customer_address ? esc(h.customer_address) : '⚠ 该客户无收货地址，请联系店员补充后再发货'}
+      </div>
+      <div class="divide-y divide-gray-100 mb-3">
         ${items.map(it => `
           <div class="flex items-center justify-between gap-3 py-2">
             <div class="flex-1 min-w-0">
@@ -1127,28 +1134,38 @@ async function renderDispatch() {
               <div class="text-xs text-gray-400">${esc(it.model_spec || '')} ·
                 ${esc(String(it.quantity))} ${esc(it.unit || '')}</div>
             </div>
-            <button id="ship-btn-${it.item_id}" onclick="confirmShip('${it.item_id}')"
+            <button id="ship-btn-${it.item_id}" onclick="confirmShip('${it.item_id}','${oid}')"
                     class="shrink-0 px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition">
               确认发货
             </button>
           </div>`).join('')}
       </div>
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+        <input id="carrier-${oid}" type="text" placeholder="物流公司（选填）"
+               class="input text-xs py-1.5">
+        <input id="tracking-${oid}" type="text" placeholder="物流单号（建议填）"
+               class="input text-xs py-1.5">
+      </div>
+      <p class="text-[11px] text-gray-400 mt-1">填好物流公司/单号后再点上面「确认发货」，客户即可看到追踪号</p>
     </div>`;
   }).join('');
 }
 
-async function confirmShip(itemId) {
+async function confirmShip(itemId, orderId) {
   if (_dispatching.has(itemId)) return;            // 防重复点击（决策④）
   const whId = document.getElementById('dispatch-wh')?.value;
   if (!whId) { alert('请先在上方选择「从哪个仓库发货」'); return; }
-  if (!confirm('确认发货？此操作会扣减该仓库库存，不可撤销。')) return;
+  const carrier  = document.getElementById('carrier-' + orderId)?.value?.trim() || null;
+  const tracking = document.getElementById('tracking-' + orderId)?.value?.trim() || null;
+  const warn = tracking ? '' : '\n（未填物流单号——若是自取/上门可忽略）';
+  if (!confirm('确认发货？此操作会扣减该仓库库存，不可撤销。' + warn)) return;
 
   _dispatching.add(itemId);
   const btn = document.getElementById('ship-btn-' + itemId);
   if (btn) { btn.disabled = true; btn.textContent = '处理中…'; btn.classList.add('opacity-50'); }
 
   const { data, error } = await sb.rpc('warehouse_confirm_ship',
-    { p_item_id: itemId, p_warehouse_id: whId });
+    { p_item_id: itemId, p_warehouse_id: whId, p_carrier: carrier, p_tracking_no: tracking });
 
   _dispatching.delete(itemId);
   if (error) {
