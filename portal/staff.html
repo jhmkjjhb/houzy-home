@@ -4263,7 +4263,13 @@ async function _recalcPaymentStatus(orderId) {
   const newPayStatus = s.countedPct >= 100 ? 'paid' : (s.anyRec ? 'partial' : 'unpaid');
   const statusUpd = { payment_status: newPayStatus };
   // 订金(首期)收齐 → 待付款→已付款(=可进生产)；不允许手动空点(Option A)
-  if (s.countedPct >= s.firstPct && s.ord?.status === 'pending_payment') statusUpd.status = 'paid';
+  if (s.countedPct >= s.firstPct && s.ord?.status === 'pending_payment') {
+    statusUpd.status = 'paid';
+    // 关键：转「已付款」要同步设本阶段截止时间，否则倒计时不显示/不跳
+    const { data: _ft } = await sb.from('order_items')
+      .select('fulfillment_type').eq('order_id', orderId);
+    statusUpd.deadline_at = calcDeadline('paid', null, orderHasCustom(_ft));
+  }
   await sb.from('orders').update(statusUpd).eq('id', orderId);
 }
 
