@@ -125,6 +125,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -334,6 +335,18 @@ function renderCustomerWarranty(o, logs) {
     </div>`;
   }).join('');
 
+  _wcStash = {
+    orderNo: o.order_no || '',
+    store:   o.store_name || '',
+    startDate: new Date(startLog.created_at).toLocaleDateString(),
+    maxYears: _maxYears,
+    totEnd:  _totEnd.toISOString().slice(0,10),
+    series:  warrantyData.map(s => ({
+      name: s.seriesName, icon: s.icon,
+      comps: s.components.map(c => ({ name: c.name, years: c.years })),
+    })),
+  };
+
   return `<div class="bg-white rounded-xl shadow-sm p-5 mb-4" style="border-left:3px solid ${borderClr}">
     <div class="flex items-center gap-2 mb-2">
       <span class="text-lg">${allExpired ? '⚠️' : '🛡️'}</span>
@@ -348,9 +361,17 @@ function renderCustomerWarranty(o, logs) {
       <div style="font-size:11px;color:#6b7280;margin-top:2px">质保开始 ${new Date(startLog.created_at).toLocaleDateString()} · 最长保至 ${_totEnd.toISOString().slice(0,10)}（各部件年限见下表）</div>
     </div>
     ${seriesHtml}
+    <button onclick="genWarrantyCard()"
+      class="w-full mt-3 py-2.5 rounded-lg text-sm font-bold"
+      style="background:linear-gradient(135deg,#1A3A2A,#2D5E43);color:#C8A96E;letter-spacing:1px">
+      🎴 一键生成质保卡（可保存发朋友圈）
+    </button>
     <p class="text-xs text-gray-400 text-center mt-2">如有质保问题，请联系客服</p>
   </div>`;
 }
+
+// 暂存当前订单质保卡所需数据（renderCustomerWarranty 渲染时写入）
+let _wcStash = null;
 
 async function openDetail(id) {
   const o = myOrders.find(x => x.id === id);
@@ -593,6 +614,83 @@ async function submitSig(orderId) {
   const o = myOrders.find(x => x.id === orderId);
   if (o) o.sign_image = dataURL;
   openDetail(orderId);
+}
+
+// ── 一键生成质保卡（HOUZY VI 色，可保存发朋友圈）──
+function _wcEsc(s){ return String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+async function genWarrantyCard() {
+  if (!_wcStash) { alert('质保信息未就绪，请稍候重试'); return; }
+  const d = _wcStash;
+  // 汇总部件（最多 9 条，保持卡面精致）
+  const comps = [];
+  d.series.forEach(s => s.comps.forEach(c => comps.push(c)));
+  comps.sort((a,b)=>b.years-a.years);
+  const top = comps.slice(0, 9);
+  const rowsHtml = top.map(c => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(200,169,110,0.18)">
+      <span style="font-size:14px;color:#F5F2ED">${_wcEsc(c.name)}</span>
+      <span style="font-size:14px;font-weight:700;color:#E0C992">${_wcEsc(c.years)} 年</span>
+    </div>`).join('');
+
+  const card = document.createElement('div');
+  card.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;font-family:\'PingFang SC\',\'Noto Sans SC\',sans-serif';
+  card.innerHTML = `
+    <div style="background:linear-gradient(160deg,#1A3A2A 0%,#22432F 55%,#1A3A2A 100%);padding:30px 26px 26px;color:#F5F2ED;position:relative">
+      <div style="border:1.5px solid rgba(200,169,110,0.55);border-radius:14px;padding:24px 20px">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;letter-spacing:3px;color:#C8A96E">HOUZY HOME</div>
+          <div style="font-size:11px;letter-spacing:4px;color:#9db5a3;margin-top:3px">合屋整装科技</div>
+          <div style="width:46px;height:2px;background:#C8A96E;margin:13px auto"></div>
+          <div style="font-size:16px;font-weight:700;letter-spacing:2px;color:#F5F2ED">品 质 质 保 卡</div>
+          <div style="font-size:9px;letter-spacing:3px;color:#9db5a3;margin-top:3px">WARRANTY CERTIFICATE</div>
+        </div>
+        <div style="text-align:center;margin:20px 0 16px">
+          <div style="font-size:12px;color:#9db5a3;letter-spacing:1px">最 长 质 保</div>
+          <div style="font-size:48px;font-weight:800;color:#C8A96E;line-height:1.1">${_wcEsc(d.maxYears)}<span style="font-size:20px;margin-left:4px">年</span></div>
+          <div style="font-size:11px;color:#9db5a3;margin-top:2px">保至 ${_wcEsc(d.totEnd)}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.16);border-radius:10px;padding:6px 14px 10px;margin-bottom:16px">
+          ${rowsHtml}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#9db5a3;letter-spacing:0.5px">
+          <span>订单 ${_wcEsc(d.orderNo)}</span><span>质保起 ${_wcEsc(d.startDate)}</span>
+        </div>
+        <div style="text-align:center;margin-top:18px">
+          <div style="font-size:14px;font-weight:700;color:#C8A96E;letter-spacing:3px">合心筑家 · 整装焕新</div>
+          <div style="font-size:9px;color:#9db5a3;letter-spacing:2px;margin-top:4px">东南亚高端家居整装 · 透明质保 · 终身服务</div>
+        </div>
+      </div>
+      <div style="position:absolute;top:18px;right:20px;font-size:26px;opacity:0.85">🛡️</div>
+    </div>`;
+  document.body.appendChild(card);
+
+  try {
+    const canvas = await html2canvas(card.firstElementChild, { scale: 2, useCORS: true, backgroundColor: null, logging: false });
+    const url = canvas.toDataURL('image/png');
+    document.body.removeChild(card);
+    showCardOverlay(url, d.orderNo);
+  } catch (e) {
+    if (card.parentNode) document.body.removeChild(card);
+    alert('生成失败，请重试');
+  }
+}
+
+function showCardOverlay(url, orderNo) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;overflow:auto';
+  ov.innerHTML = `
+    <img src="${url}" alt="质保卡" style="max-width:100%;width:340px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5)">
+    <div style="color:#fff;font-size:13px;margin-top:14px;text-align:center;line-height:1.7">
+      📲 <b>长按上方图片</b> → 保存到相册<br><span style="color:#C8A96E">即可发朋友圈 / 发给朋友</span>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:16px">
+      <a href="${url}" download="HOUZY质保卡_${_wcEsc(orderNo)}.png"
+         style="padding:9px 18px;background:#C8A96E;color:#1A3A2A;font-weight:700;font-size:13px;border-radius:8px;text-decoration:none">下载图片</a>
+      <button onclick="this.closest('div[style*=fixed]').remove()"
+         style="padding:9px 18px;background:rgba(255,255,255,0.15);color:#fff;font-size:13px;border:none;border-radius:8px">关闭</button>
+    </div>`;
+  document.body.appendChild(ov);
 }
 </script>
 </body>
