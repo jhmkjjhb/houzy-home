@@ -2960,16 +2960,19 @@ async function doDelete(id) {
 }
 
 const ITEM_STATUS = {
-  pending:       { label:'待生产', cls:'bg-gray-100 text-gray-500' },
-  in_production: { label:'生产中', cls:'bg-violet-100 text-violet-600' },
-  ready:         { label:'已备货', cls:'bg-amber-100 text-amber-700' },
-  shipped:       { label:'已发货', cls:'bg-orange-100 text-orange-700' },
-  arrived:       { label:'已到货', cls:'bg-green-100 text-green-700' },
-  damaged:       { label:'破损⚠', cls:'bg-red-100 text-red-600' },
+  pending:           { label:'待生产', cls:'bg-gray-100 text-gray-500' },
+  in_production:     { label:'生产中', cls:'bg-violet-100 text-violet-600' },
+  ready:             { label:'已备货', cls:'bg-amber-100 text-amber-700' },
+  awaiting_dispatch: { label:'待仓库发货', cls:'bg-sky-100 text-sky-700' },
+  shipped:           { label:'已发货', cls:'bg-orange-100 text-orange-700' },
+  arrived:           { label:'已到货', cls:'bg-green-100 text-green-700' },
+  damaged:           { label:'破损⚠', cls:'bg-red-100 text-red-600' },
 };
-function itemStatusBadge(s) {
-  const d = ITEM_STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
-  return `<span class="text-xs px-1.5 py-0.5 rounded-full font-medium ${d.cls}">${d.label}</span>`;
+// 现货项尚未出库时显示「待出库」（而非定制项的「待生产」）—— ft = fulfillment_type
+function itemStatusBadge(s, ft) {
+  let d = ITEM_STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
+  if ((s === 'pending' || !s) && ft === 'stock') d = { label:'待出库', cls:'bg-gray-100 text-gray-500' };
+  return `<span class="text-xs px-1.5 py-0.5 rounded-full font-medium ${d.label?d.cls:'bg-gray-100 text-gray-500'}">${d.label||s}</span>`;
 }
 
 const PRODUCT_TYPES = [
@@ -3228,7 +3231,7 @@ function renderItemsCard(items, o, supList) {
               : `<span class="text-xs text-red-400">未分配</span>`
           }
         </td>
-        <td class="py-2 whitespace-nowrap">${itemStatusBadge(item.item_status||'pending')}</td>
+        <td class="py-2 whitespace-nowrap">${itemStatusBadge(item.item_status||'pending', item.fulfillment_type)}</td>
       </tr>`;
   }).join('');
 
@@ -3281,10 +3284,12 @@ function renderItemsCard(items, o, supList) {
                     class="px-3 py-1.5 border border-hg text-hg text-sm font-semibold rounded-lg hover:bg-green-50 transition">
               ＋ 补录商品明细
             </button>
-            ${!isSupplier && !['completed','closed','cancelled'].includes(o.status) ? `
-            <button onclick="openDeductModal('${o.id}')"
+            ${!isSupplier && !['completed','closed','cancelled'].includes(o.status)
+              && (items||[]).some(i => (i.fulfillment_type||'custom')==='stock'
+                                       && (!i.item_status || i.item_status==='pending')) ? `
+            <button onclick="confirmDispatch('${o.id}')"
                     class="px-3 py-1.5 border border-orange-400 text-orange-600 text-sm font-semibold rounded-lg hover:bg-orange-50 transition">
-              📦 确认出库
+              📦 确认出库（交仓库发货）
             </button>` : ''}
           </div>
           ${canAssign ? `
@@ -4186,7 +4191,11 @@ async function updateOrder(id) {
     if (chkItems && chkItems.length > 0) {
       const notReady = chkItems.filter(i => !['ready','shipped','arrived'].includes(i.item_status));
       if (notReady.length > 0) {
-        alert(`装柜核对未完成：${notReady.map(i=>i.product_name).join('、')} 尚未确认备货`);
+        const waitWh  = notReady.filter(i => i.item_status === 'awaiting_dispatch').map(i=>i.product_name);
+        const notMade = notReady.filter(i => i.item_status !== 'awaiting_dispatch').map(i=>i.product_name);
+        alert('订单暂不能整单发货：\n'
+          + (waitWh.length  ? `\n· 等待仓库发货：${waitWh.join('、')}（请仓库在仓管端点「确认发货」）` : '')
+          + (notMade.length ? `\n· 尚未确认备货：${notMade.join('、')}` : ''));
         return;
       }
     }
@@ -4981,199 +4990,45 @@ async function saveAddedItems() {
   </div>
 </div>
 
-<!-- Deduct Inventory Modal -->
-<div id="deduct-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style="background:rgba(0,0,0,.4)">
-  <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-      <h3 class="font-semibold text-gray-800">确认出库</h3>
-      <button onclick="closeDeductModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
-    </div>
-    <div class="flex-1 overflow-y-auto p-4">
-      <div class="mb-3">
-        <label class="block text-xs font-semibold text-gray-500 mb-1">选择仓库</label>
-        <select id="deduct-wh" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"><option value="">— 选择仓库 —</option></select>
-      </div>
-      <div class="text-xs font-semibold text-gray-500 mb-2">选择要出库的商品</div>
-      <div id="deduct-items-list" class="space-y-2"></div>
-    </div>
-    <div class="px-5 py-4 border-t border-gray-100 flex gap-2 justify-end">
-      <button onclick="closeDeductModal()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-50">取消</button>
-      <button id="deduct-save-btn" onclick="saveDeductInventory()"
-              class="px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition">确认出库</button>
-    </div>
-  </div>
-</div>
-
 <script>
-// ── Deduct Inventory ──
-let _deductOrderId = '';
-let _deductItems = [];   // 当前订单的商品行快照
-let _deductDone = new Set();   // 本次弹窗会话已成功出库的行索引（幂等，避免重复扣减）
-
-async function openDeductModal(orderId) {
-  _deductOrderId = orderId;
-  _deductDone = new Set();   // 重置本次弹窗会话的"已出库"记录（幂等）
-  const [{ data: items }, { data: warehouses }] = await Promise.all([
-    sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
-    sb.from('warehouses').select('*').order('name'),
+// ── 确认出库（交仓库发货）──
+// 用户决策①：店员点「确认出库」≠ 扣库存，只把现货项标记 awaiting_dispatch（待仓库发货）
+// 并通知仓库；真正扣库存由 warehouse.html 仓管点「确认发货」时做（防超卖）。
+// 防重复（决策④）：服务器条件更新——仅 item_status='pending' 的现货行才被改，
+// 已 awaiting_dispatch / shipped 再点 = 0 行 no-op。
+async function confirmDispatch(orderId) {
+  const [{ data: items }, { data: ord }] = await Promise.all([
+    sb.from('order_items').select('id,product_name,fulfillment_type,item_status').eq('order_id', orderId),
+    sb.from('orders').select('status').eq('id', orderId).single(),
   ]);
-  _deductItems = (items || []).map(it => ({
-    name: it.product_name || '',
-    sku:  it.sku_ref || it.sku || '',
-    qty:  parseFloat(it.quantity) || 0,
-    unit: it.unit || '套',
-    model_spec: it.model_spec || '',
-  }));
-  const whSel = document.getElementById('deduct-wh');
-  whSel.innerHTML = '<option value="">— 选择仓库 —</option>' +
-    (warehouses||[]).map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  whSel.onchange = evaluateDeductStock;
-  renderDeductItems();              // 选仓库前：先不让操作
-  document.getElementById('deduct-modal').classList.remove('hidden');
-}
-
-function closeDeductModal() {
-  document.getElementById('deduct-modal').classList.add('hidden');
-}
-
-// 把订单商品行匹配到仓库产品（与实际出库用同一规则，保证一致）
-// 走精确解析：SKU 优先、名称次之；0 或多条匹配返回 null（不猜）。
-async function _resolveDeductProduct(sku, name) {
-  return await resolveProductExact(sku, name);
-}
-
-function _setDeductSaveEnabled(enabled) {
-  const btn = document.getElementById('deduct-save-btn');
-  if (!btn) return;
-  btn.disabled = !enabled;
-  btn.classList.toggle('opacity-40', !enabled);
-  btn.classList.toggle('cursor-not-allowed', !enabled);
-}
-
-// 选仓库前的初始状态：全部锁定，提示先选仓库
-function renderDeductItems() {
-  const box = document.getElementById('deduct-items-list');
-  if (!_deductItems.length) {
-    box.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">无商品明细</p>';
-    _setDeductSaveEnabled(false);
+  const stock = (items || []).filter(i => (i.fulfillment_type || 'custom') === 'stock');
+  if (!stock.length) { alert('本单没有现货商品，无需出库（定制商品请走生产流程）'); return; }
+  const todo    = stock.filter(i => !i.item_status || i.item_status === 'pending');
+  const already = stock.filter(i => i.item_status === 'awaiting_dispatch' || i.item_status === 'shipped');
+  if (!todo.length) {
+    alert(already.length ? '现货商品已全部交仓库处理，无需重复出库' : '没有可出库的现货商品');
     return;
   }
-  box.innerHTML = _deductItems.map(it => `
-    <div class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 opacity-60">
-      <input type="checkbox" class="mt-0.5" disabled>
-      <div class="flex-1">
-        <div class="text-sm font-medium text-gray-800">${it.name}</div>
-        <div class="text-xs text-gray-400">${it.model_spec||''} · ${it.qty} ${it.unit}</div>
-        <div class="text-xs text-gray-400 mt-1">请先选择仓库</div>
-      </div>
-    </div>`).join('');
-  _setDeductSaveEnabled(false);
-}
+  if (!confirm(`确认把以下 ${todo.length} 件现货商品交仓库发货？\n（此操作不扣库存，库存由仓库实际发货时扣减）\n\n` +
+               todo.map(i => '· ' + (i.product_name || '')).join('\n'))) return;
 
-// 选了仓库后：逐项核对库存，没库存/不足的锁死勾不上
-async function evaluateDeductStock() {
-  const whId = document.getElementById('deduct-wh').value;
-  const box  = document.getElementById('deduct-items-list');
-  if (!whId || !_deductItems.length) { renderDeductItems(); return; }
-  box.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">正在核对库存…</p>';
-  _setDeductSaveEnabled(false);
+  // 条件更新：仅 fulfillment_type='stock' 且 item_status='pending' 的行 → awaiting_dispatch
+  const { data: upd, error } = await sb.from('order_items')
+    .update({ item_status: 'awaiting_dispatch' })
+    .eq('order_id', orderId).eq('fulfillment_type', 'stock').eq('item_status', 'pending')
+    .select('id');
+  if (error) { alert('操作失败：' + error.message); return; }
+  const n = (upd || []).length;
+  if (!n) { alert('现货商品已全部交仓库处理，无需重复出库'); await openDetail(orderId); return; }
 
-  let anyAvailable = false;
-  const rows = [];
-  for (let i = 0; i < _deductItems.length; i++) {
-    const it = _deductItems[i];
-    let ok = false, note = '', noteCls = 'text-red-500';
-    if (_deductDone.has(i)) {
-      note = '✅ 本次已出库（不重复扣减）'; noteCls = 'text-gray-400';
-    } else if (!it.qty) {
-      note = '数量为 0，无法出库';
-    } else {
-      const prod = await _resolveDeductProduct(it.sku, it.name);
-      if (!prod) {
-        note = '❌ 无法唯一确定产品(0或多条匹配)，请人工处理';
-      } else {
-        const { data: inv } = await sb.from('inventory').select('qty_on_hand,qty_reserved')
-          .eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
-        if (!inv) {
-          note = '❌ 该仓库无此产品库存，无法出库';
-        } else {
-          const avail = (Number(inv.qty_on_hand) || 0) - (Number(inv.qty_reserved) || 0);
-          if (avail < it.qty) {
-            note = `❌ 可用库存不足（可用 ${avail} / 需 ${it.qty}），无法出库`;
-          } else {
-            ok = true; noteCls = 'text-green-700';
-            note = `✅ 可出库（可用 ${avail}）`;
-          }
-        }
-      }
-    }
-    if (ok) anyAvailable = true;
-    rows.push(`
-      <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-100 ${ok?'cursor-pointer hover:bg-gray-50':'opacity-60 cursor-not-allowed'}">
-        <input type="checkbox" class="deduct-item-chk mt-0.5 accent-orange-500"
-               data-idx="${i}" ${ok?'checked':'disabled'}>
-        <div class="flex-1">
-          <div class="text-sm font-medium text-gray-800">${it.name}</div>
-          <div class="text-xs text-gray-400">${it.model_spec||''} · ${it.qty} ${it.unit}</div>
-          <div class="text-xs ${noteCls} mt-1">${note}</div>
-        </div>
-      </label>`);
-  }
-  box.innerHTML = rows.join('');
-  _setDeductSaveEnabled(anyAvailable);
-}
-
-async function saveDeductInventory() {
-  const whId = document.getElementById('deduct-wh').value;
-  if (!whId) { alert('请选择仓库'); return; }
-  const checked = [...document.querySelectorAll('.deduct-item-chk:checked')];
-  if (!checked.length) { alert('没有可出库的商品（无库存或库存不足的已被锁定）'); return; }
-  if (!profile?.id) { alert('账户信息缺失，无法记录出库流水，请重新登录后再试'); return; }
-  const btn = document.getElementById('deduct-save-btn');
-  btn.disabled = true; btn.textContent = '处理中…';
-
-  const ops = [];
-  for (const chk of checked) {
-    const idx = parseInt(chk.dataset.idx, 10);
-    const it  = _deductItems[idx];
-    if (!it || !it.qty) continue;
-    const qty = it.qty, name = it.name;
-    if (_deductDone.has(idx)) { ops.push({ name, qty, status: '本次已出库，已跳过（幂等）' }); continue; }
-    const prod = await _resolveDeductProduct(it.sku, name);
-    if (!prod) { ops.push({ name, qty, status: '无法唯一确定产品(0或多条匹配)，已跳过' }); continue; }
-
-    // 乐观并发：读当前 → 带 qty_on_hand 条件更新；命中 0 行说明被并发改动，重读重试
-    let done = false;
-    for (let attempt = 0; attempt < 3 && !done; attempt++) {
-      const { data: inv } = await sb.from('inventory')
-        .select('id,qty_on_hand').eq('product_id', prod.id).eq('warehouse_id', whId).maybeSingle();
-      if (!inv) { ops.push({ name, qty, status: '该仓库无此产品库存，未扣减' }); break; }
-      const cur = Number(inv.qty_on_hand) || 0;
-      if (cur < qty) { ops.push({ name, qty, status: `库存被并发改动/不足（当前 ${cur}），未扣减` }); break; }
-      const { data: upd } = await sb.from('inventory')
-        .update({ qty_on_hand: cur - qty, updated_at: new Date().toISOString() })
-        .eq('id', inv.id).eq('qty_on_hand', cur).select();
-      if (upd && upd.length === 1) {
-        await sb.from('inventory_movements').insert({
-          product_id: prod.id, warehouse_id: whId, type: 'out', qty,
-          notes: `订单出库：${name}`, operator_id: profile.id,
-        });
-        _deductDone.add(idx);
-        ops.push({ name, qty, status: '✅ 已出库' });
-        done = true;
-      }
-      // 命中 0 行 → 被并发改动，循环重读重试
-    }
-    if (!done && !ops.some(o => o.name === name && o.qty === qty)) {
-      ops.push({ name, qty, status: '库存被并发改动/不足，未扣减（重试 3 次仍失败）' });
-    }
-  }
-
-  btn.disabled = false; btn.textContent = '确认出库';
-  // 重新核对剩余项（已出库的会显示"已出库"并锁定，避免重复操作）
-  await evaluateDeductStock();
-  const summary = ops.map(o => `${o.name}（${o.qty}）：${o.status}`).join('\n');
-  alert('出库结果：\n\n' + summary);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: ord?.status || 'paid',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: `确认出库：${n} 件现货商品已交仓库，待仓库实际发货`,
+  });
+  alert(`✅ 已通知仓库：${n} 件现货商品待发货`);
+  await loadOrders();
+  openDetail(orderId);
 }
 </script>
 
