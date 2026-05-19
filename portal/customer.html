@@ -348,8 +348,10 @@ function renderOrders() {
 
 function renderCustomerWarranty(o, logs) {
   if (!['after_sales','completed'].includes(o.status)) return '';
+  // 质保起始时间：after_sales 日志 → 签名时间 → 完成时间 → 创建时间（老单无日志也能显示）
   const startLog = (logs || []).find(l => l.status === 'after_sales');
-  if (!startLog) return '';
+  const wStartIso = startLog?.created_at || o.signed_at || o.completed_at || o.created_at;
+  if (!wStartIso) return '';
 
   let warrantyData = null;
   if (o.warranty_info) {
@@ -357,16 +359,16 @@ function renderCustomerWarranty(o, logs) {
   }
   if (!warrantyData || warrantyData.length === 0) {
     warrantyData = [{
-      seriesId:'generic', seriesName:ct('generic_series'), icon:'🛡️', startIso: startLog.created_at,
+      seriesId:'generic', seriesName:ct('generic_series'), icon:'🛡️', startIso: wStartIso,
       components:[{ name:ct('generic_comp'), years:1 }],
     }];
   }
 
   // 到期日一律按「真实质保起始 = 客户签收时间」+ 各部件年限重算（按日历年），
   // 不依赖 warranty_info 里存的旧 endIso（可能锚定下单时间）
-  const _wStart = new Date(startLog.created_at);
+  const _wStart = new Date(wStartIso);
   warrantyData.forEach(s => {
-    s.startIso = startLog.created_at;
+    s.startIso = wStartIso;
     s.components.forEach(c => {
       const e = new Date(_wStart);
       e.setFullYear(e.getFullYear() + Number(c.years || 1));
@@ -420,7 +422,7 @@ function renderCustomerWarranty(o, logs) {
   _wcStash = {
     orderNo: o.order_no || '',
     store:   o.store_name || '',
-    startDate: new Date(startLog.created_at).toLocaleDateString(),
+    startDate: new Date(wStartIso).toLocaleDateString(),
     maxYears: _maxYears,
     totEnd:  _totEnd.toISOString().slice(0,10),
     series:  warrantyData.map(s => ({
@@ -440,7 +442,7 @@ function renderCustomerWarranty(o, logs) {
     </div>
     <div class="rounded-lg px-3 py-2 mb-3" style="background:#eff6ff;border:1px solid #1e40af22">
       <div style="font-size:13px;font-weight:700;color:#1e3a5f">${ct('total_warranty')} ${_maxYears} ${ct('years')}</div>
-      <div style="font-size:11px;color:#6b7280;margin-top:2px">${ct('w_start')} ${new Date(startLog.created_at).toLocaleDateString(_loc())} · ${ct('w_until')} ${_totEnd.toISOString().slice(0,10)} ${ct('w_seedetail')}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px">${ct('w_start')} ${new Date(wStartIso).toLocaleDateString(_loc())} · ${ct('w_until')} ${_totEnd.toISOString().slice(0,10)} ${ct('w_seedetail')}</div>
     </div>
     ${seriesHtml}
     <button onclick="genWarrantyCard()"
