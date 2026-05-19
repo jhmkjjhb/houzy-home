@@ -4064,15 +4064,25 @@ function renderPaymentPanel(o, payments) {
     const divider = i < n - 1 ? 'border-b border-gray-100' : '';
 
     if (paid) {
+      const pendingVerify = paid.method === 'cash' && !paid.verified_at;
+      const rightSide = pendingVerify
+        ? `<div class="flex flex-col items-end gap-1 flex-shrink-0">
+             <span class="text-xs font-medium text-amber-600">待店长核对</span>
+             ${canDo(2)
+               ? `<button onclick="verifyCashPayment('${paid.id}','${o.id}')"
+                          class="text-xs px-2.5 py-1 bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition">核对确认</button>`
+               : `<span class="text-[11px] text-gray-400">需店长核对</span>`}
+           </div>`
+        : `<span class="text-xs font-medium text-green-600">已收款${paid.method==='cash'?' ✓已核对':''}</span>`;
       return `<div class="flex items-center justify-between py-3 ${divider}">
         <div class="flex items-center gap-3">
-          <span class="text-green-500 text-base">✅</span>
+          <span class="${pendingVerify?'text-amber-500':'text-green-500'} text-base">${pendingVerify?'⏳':'✅'}</span>
           <div>
             <div class="text-sm font-medium text-gray-800">${n > 1 ? `第${seq}期 · ${pct}%` : '全款'}</div>
             <div class="text-xs text-gray-400">${fmtAmt(instAmt, currency)} · ${pmLabel[paid.method]||paid.method||'—'} · ${fmtDate(paid.paid_at)}</div>
           </div>
         </div>
-        <span class="text-xs font-medium text-green-600">已收款</span>
+        ${rightSide}
       </div>`;
     }
     return `<div class="py-3 ${divider}">
@@ -4122,30 +4132,65 @@ async function recordPayment(orderId, seq, pct, amount, currency) {
   const pmLabel = { cash:'现金', transfer:'银行转账', ewallet:'电子钱包', card:'刷卡' };
   if (!confirm(`确认收款：第${seq}期 ${pct}% · ${CURRENCY_SYMBOL[currency]||currency} ${amount}？`)) return;
 
+  const nowIso = new Date().toISOString();
+  const isCash = method === 'cash';
+  // 电子方式记账即视为已核对、直接计入；现金留待店长核对（Step B）
   const { error } = await sb.from('order_payments').insert({
     order_id: orderId, seq, pct,
     amount: parseFloat(amount),
     method,
-    paid_at: new Date().toISOString(),
+    paid_at: nowIso,
     recorded_by: profile.id,
+    verified_by: isCash ? null : profile.id,
+    verified_at: isCash ? null : nowIso,
   });
   if (error) { alert('记录失败: ' + error.message); return; }
 
-  // 用已收百分比总和判断是否全款到位，避免 installments 列缺失时误判
-  const { data: allPaid } = await sb.from('order_payments').select('seq,pct').eq('order_id', orderId);
-  const { data: ord }     = await sb.from('orders').select('installments,status').eq('id', orderId).single();
-  const totalPaidPct  = allPaid?.reduce((s, p) => s + (p.pct || 0), 0) || 0;
-  const newPayStatus  = totalPaidPct >= 100 ? 'paid' : 'partial';
-  const statusUpd = { payment_status: newPayStatus };
-  if (newPayStatus === 'paid' && ord?.status === 'pending_payment') statusUpd.status = 'paid';
-  await sb.from('orders').update(statusUpd).eq('id', orderId);
+  await _recalcPaymentStatus(orderId);
 
   await sb.from('order_logs').insert({
-    order_id: orderId, status: ord?.status || '',
+    order_id: orderId, status: '',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: `确认收款 第${seq}期 ${pct}% · ${pmLabel[method]||method}`,
+    notes: `确认收款 第${seq}期 ${pct}% · ${pmLabel[method]||method}` +
+           (isCash ? '（现金，待店长核对后才计入）' : ''),
   });
 
+  if (isCash) alert('已记录现金收款，需店长在「付款进度」点「核对确认」后才计入、才会推进订单状态。');
+  await loadOrders();
+  openDetail(orderId);
+}
+
+// 只统计"已计入"的收款：电子方式 或 已核对的现金；据此判断付款状态/推进
+async function _recalcPaymentStatus(orderId) {
+  const { data: pays } = await sb.from('order_payments')
+    .select('pct,method,verified_at').eq('order_id', orderId);
+  const { data: ord }  = await sb.from('orders').select('status').eq('id', orderId).single();
+  const counted = (pays || []).filter(p => p.method !== 'cash' || p.verified_at);
+  const countedPct = counted.reduce((s, p) => s + (p.pct || 0), 0);
+  const anyRec = (pays || []).length > 0;
+  const newPayStatus = countedPct >= 100 ? 'paid' : (anyRec ? 'partial' : 'unpaid');
+  const statusUpd = { payment_status: newPayStatus };
+  // Option A：仅当"已计入"足额才自动 待付款→已付款；不允许手动空点
+  if (countedPct >= 100 && ord?.status === 'pending_payment') statusUpd.status = 'paid';
+  await sb.from('orders').update(statusUpd).eq('id', orderId);
+}
+
+// 店长核对现金收款（L2 店长及以上）
+async function verifyCashPayment(paymentId, orderId) {
+  if (!canDo(2)) { alert('只有店长及以上可以核对现金收款'); return; }
+  if (!confirm('确认你已核对此笔现金收款无误？核对后该笔现金才计入收款、才会推进订单。')) return;
+  const { data: upd, error } = await sb.from('order_payments')
+    .update({ verified_by: profile.id, verified_at: new Date().toISOString() })
+    .eq('id', paymentId).is('verified_at', null).select('id,seq,pct');
+  if (error) { alert('核对失败: ' + error.message); return; }
+  if (!upd || !upd.length) { alert('该笔已被核对或不存在，无需重复操作'); await openDetail(orderId); return; }
+  await _recalcPaymentStatus(orderId);
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: '',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: `店长核对现金收款 第${upd[0].seq}期 ${upd[0].pct}%（核对人：${profile.name}）`,
+  });
+  alert('✅ 已核对，该笔现金已计入收款');
   await loadOrders();
   openDetail(orderId);
 }
@@ -4197,6 +4242,14 @@ async function updateOrder(id) {
   // 硬性关卡：完成/进质保只能由客户电子签名自动触发，店员不可经此路径直接置为该状态
   if ((status === 'completed' || status === 'after_sales') && origOrder && origOrder.status !== status) {
     alert('订单需由客户在「查询端」电子签名后自动完成并进入质保，店员无法直接标记完成。');
+    return;
+  }
+
+  // Step B Option A：「已付款」只能由足额收款驱动（现金需店长核对），
+  // 任何人（含管理强制）都不能手动改为已付款，防虚假账。
+  if (status === 'paid' && origOrder && origOrder.status !== 'paid') {
+    alert('「已付款」由收款驱动：请到下方「付款进度」逐期确认收款（现金需店长「核对确认」），'
+        + '足额后系统会自动转为已付款。不能手动改为已付款。');
     return;
   }
 
