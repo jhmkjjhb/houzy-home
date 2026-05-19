@@ -3231,12 +3231,17 @@ function renderDrawingCard(o, items, supList, drawings) {
       ${d?.drawing_url
         ? `<div class="text-xs mb-2">当前图纸 v${d.version}：<a href="${_e(d.drawing_url)}" target="_blank" class="text-blue-600 underline break-all">查看图纸</a></div>`
         : `<div class="text-xs text-red-500 mb-2">尚未上传图纸</div>`}
-      <div class="flex gap-2 mb-2">
+      <div class="flex gap-2 mb-1">
         <input id="dwg-url-${sid}" type="text" value="${_e(d?.drawing_url||'')}"
                placeholder="粘贴图纸链接（网盘/图片URL）" class="input text-xs flex-1">
         <button onclick="drawingUpload('${o.id}','${sid}')"
-          class="shrink-0 px-3 py-1.5 border border-hg text-hg text-xs font-semibold rounded-lg hover:bg-green-50">上传/更新</button>
+          class="shrink-0 px-3 py-1.5 border border-hg text-hg text-xs font-semibold rounded-lg hover:bg-green-50">用链接</button>
       </div>
+      <label class="inline-flex items-center gap-1 text-xs font-semibold cursor-pointer mb-2" style="color:#c8a96e">
+        📎 选文件直接上传（图片/PDF）
+        <input type="file" accept="image/*,.pdf" class="hidden"
+               onchange="drawingUploadFile('${o.id}','${sid}',this)">
+      </label>
       <div class="flex items-center justify-between gap-2 text-xs">
         <div>客户 ${chip(d?.cust_confirmed_at)} · 运营 ${chip(d?.staff_confirmed_at)} · 厂家 ${chip(d?.sup_confirmed_at)}</div>
         <button onclick="drawingConfirm('${o.id}','${sid}')" ${d?.drawing_url?'':'disabled'}
@@ -3261,6 +3266,24 @@ async function drawingUpload(orderId, supId) {
     { p_order_id: orderId, p_supplier_id: supId, p_url: url });
   if (error) { alert('上传失败：'+error.message); return; }
   if (!data?.ok) { alert(data?.message||'上传失败'); return; }
+  alert(`✅ 图纸已上传（v${data.version}）`+(data.version>1?'\n（已有三方确认作废，需重新确认）':''));
+  openDetail(orderId);
+}
+// 选文件直接上传：传到 Storage(复用附件桶)→ 拿公开链接 → 走 drawing_upload
+async function drawingUploadFile(orderId, supId, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 20*1024*1024) { alert('文件过大（>20MB），请压缩或改用链接'); input.value=''; return; }
+  const ext  = (file.name.split('.').pop()||'dat').toLowerCase();
+  const path = `drawings/${orderId}/${supId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert:false });
+  if (upErr) { alert('文件上传失败：'+upErr.message+'\n可改用「粘贴链接」方式'); input.value=''; return; }
+  const url = sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  const { data, error } = await sb.rpc('drawing_upload',
+    { p_order_id: orderId, p_supplier_id: supId, p_url: url });
+  input.value='';
+  if (error) { alert('登记失败：'+error.message); return; }
+  if (!data?.ok) { alert(data?.message||'登记失败'); return; }
   alert(`✅ 图纸已上传（v${data.version}）`+(data.version>1?'\n（已有三方确认作废，需重新确认）':''));
   openDetail(orderId);
 }
