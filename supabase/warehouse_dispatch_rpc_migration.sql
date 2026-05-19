@@ -243,9 +243,65 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION _wh_caller_ok              TO authenticated;
-GRANT EXECUTE ON FUNCTION warehouse_pending_dispatch TO authenticated;
-GRANT EXECUTE ON FUNCTION warehouse_confirm_ship     TO authenticated;
-GRANT EXECUTE ON FUNCTION get_order_items_by_phone   TO anon, authenticated;
+-- ── 4. 仓库拒绝发货：无货/库存不符/破损 → 退回「待出库」给店员改派 ──
+-- 用户 2026-05-19 决策：阶段一。仅退回状态+留原因日志，不动库存（本就没扣）。
+-- 退回 item_status='pending'（待出库），店员可重新「确认出库」或改厂家直发。
+CREATE OR REPLACE FUNCTION warehouse_reject_dispatch(
+  p_item_id UUID,
+  p_reason  TEXT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_role TEXT;
+  v_name TEXT;
+  v_oi   order_items%ROWTYPE;
+  v_ord  orders%ROWTYPE;
+BEGIN
+  SELECT role, name INTO v_role, v_name FROM profiles WHERE id = auth.uid();
+  IF v_role IS NULL OR v_role NOT IN ('warehouse','store_manager',
+        'regional_manager','general_manager','admin','superadmin') THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'forbidden',
+                              'message', '无仓库发货权限');
+  END IF;
+
+  IF NULLIF(btrim(COALESCE(p_reason,'')), '') IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'no_reason',
+                              'message', '请填写拒绝原因');
+  END IF;
+
+  SELECT * INTO v_oi FROM order_items WHERE id = p_item_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'not_found',
+                              'message', '找不到该商品明细');
+  END IF;
+
+  IF v_oi.item_status <> 'awaiting_dispatch' THEN
+    RETURN jsonb_build_object('ok', false, 'code', 'not_pending',
+      'message', '该商品当前状态为「' || COALESCE(v_oi.item_status,'') ||
+                 '」，不是待发货，无法拒绝');
+  END IF;
+
+  SELECT * INTO v_ord FROM orders WHERE id = v_oi.order_id;
+
+  -- 退回「待出库」（不动库存——出库阶段本就未扣）
+  UPDATE order_items SET item_status = 'pending' WHERE id = p_item_id;
+
+  INSERT INTO order_logs (order_id, status, operator_id, operator_role,
+                          operator_name, notes)
+  VALUES (v_oi.order_id, COALESCE(v_ord.status,'paid'), auth.uid(),
+          v_role, v_name,
+          '⚠ 仓库拒绝发货：' || COALESCE(v_oi.product_name,'') ||
+          '；原因：' || btrim(p_reason) ||
+          '。已退回待出库，请店员改派其它仓库或改厂家直发');
+
+  RETURN jsonb_build_object('ok', true,
+    'message', '已拒绝并退回店员处理');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION _wh_caller_ok               TO authenticated;
+GRANT EXECUTE ON FUNCTION warehouse_pending_dispatch  TO authenticated;
+GRANT EXECUTE ON FUNCTION warehouse_confirm_ship      TO authenticated;
+GRANT EXECUTE ON FUNCTION warehouse_reject_dispatch   TO authenticated;
+GRANT EXECUTE ON FUNCTION get_order_items_by_phone    TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
