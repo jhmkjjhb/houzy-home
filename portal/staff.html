@@ -1113,6 +1113,11 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked)
 }
 
 function selectStep(s) {
+  // 硬性关卡：「已完成 / 质保服务」只能由客户在查询端电子签名后自动触发，店员不可直接选
+  if ((s === 'completed' || s === 'after_sales') && s !== _tlStatus) {
+    alert('订单需由客户在「查询端」完成电子签名后自动完成并进入质保，店员无法直接标记完成。\n\n请把订单推进到「安装中」，并通知客户在订单查询页签名。');
+    return;
+  }
   // 权限检查：阻止无权限的状态迁移
   const current = _tlStatus;
   if (s !== current && !canTransit(current, s)) {
@@ -3671,6 +3676,12 @@ async function saveInstallDate(orderId) {
 
 async function submitSignOff(orderId) {
   const order = allOrders.find(o => o.id === orderId);
+  // 硬性关卡：必须客户已在查询端电子签名，店员才可确认完成（防绕过签名）
+  const { data: _sigChk } = await sb.from('orders').select('sign_image').eq('id', orderId).single();
+  if (!_sigChk?.sign_image) {
+    alert('客户尚未在「查询端」完成电子签名。\n\n请通知客户打开订单查询页手写签名——签名后订单将自动完成并进入质保，无需此按钮。');
+    return;
+  }
   const name  = order?.customers?.name || '';
   const btn   = document.querySelector(`button[onclick="submitSignOff('${orderId}')"]`);
   if (btn) { btn.textContent = '确认中…'; btn.disabled = true; }
@@ -4151,6 +4162,12 @@ async function updateOrder(id) {
   const origOrder = allOrders.find(o => o.id === id);
   if (origOrder && !canTransit(origOrder.status, status)) {
     alert('您的权限不足以执行此状态变更，操作已中止。'); return;
+  }
+
+  // 硬性关卡：完成/进质保只能由客户电子签名自动触发，店员不可经此路径直接置为该状态
+  if ((status === 'completed' || status === 'after_sales') && origOrder && origOrder.status !== status) {
+    alert('订单需由客户在「查询端」电子签名后自动完成并进入质保，店员无法直接标记完成。');
+    return;
   }
 
   // 安装前必须付清所有款项（从订单缓存读取，不依赖表单）
