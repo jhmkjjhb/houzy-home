@@ -4174,6 +4174,26 @@ async function updateOrder(id) {
     alert('您的权限不足以执行此状态变更，操作已中止。'); return;
   }
 
+  // ── Step A：禁止"手动跳步/回退"，管理强制变更必须留痕 ──
+  // 普通店员 canTransit 已挡(跳步需 L3、回退需 L5)；能到这一步做跳步/回退的
+  // 只有管理。规则：管理可跳，但必须在备注填原因，并记一条【管理强制】日志。
+  let _forcedJump = false;
+  if (origOrder && status !== origOrder.status) {
+    const curStep = STATUS[origOrder.status]?.step ?? -1;
+    const tgtStep = STATUS[status]?.step ?? -1;
+    const isCoreJump = curStep >= 0 && tgtStep >= 0 &&
+                       (tgtStep < curStep || tgtStep - curStep > 1);
+    if (isCoreJump) {
+      _forcedJump = true;
+      if (!notes) {
+        alert('这是跨步/回退的「管理员强制改状态」操作，必须在下方备注里填写原因后才能保存。');
+        return;
+      }
+      if (!confirm(`确认强制把状态从「${STATUS[origOrder.status]?.label||origOrder.status}」`
+        + `改为「${STATUS[status]?.label||status}」？\n此操作会记入日志（含原因），不可悄悄进行。`)) return;
+    }
+  }
+
   // 硬性关卡：完成/进质保只能由客户电子签名自动触发，店员不可经此路径直接置为该状态
   if ((status === 'completed' || status === 'after_sales') && origOrder && origOrder.status !== status) {
     alert('订单需由客户在「查询端」电子签名后自动完成并进入质保，店员无法直接标记完成。');
@@ -4247,7 +4267,9 @@ async function updateOrder(id) {
     operator_id: profile.id,
     operator_role: profile.role,
     operator_name: profile.name,
-    notes: notes || null,
+    notes: _forcedJump
+      ? `⚠【管理员强制改状态 ${STATUS[origOrder.status]?.label||origOrder.status}→${STATUS[status]?.label||status}】原因：${notes}`
+      : (notes || null),
   });
 
   document.getElementById('upd-msg').classList.remove('hidden');
