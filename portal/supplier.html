@@ -328,26 +328,30 @@ function orderCard(o) {
 
 // 乙·多厂家：只接"我自己的"商品(pending→in_production)，不碰别的厂家；
 // 订单总状态绝不回退，仅当还在接单前阶段才推进到 in_production
-async function _acceptMyItems(orderId) {
-  await sb.from('order_items').update({ item_status: 'in_production' })
-    .eq('order_id', orderId).eq('supplier_id', supplier?.id)
-    .or('item_status.is.null,item_status.eq.pending');
-  await sb.from('orders').update({ status: 'in_production' })
-    .eq('id', orderId).in('status', ['pending_payment','paid','assigned','accepted']);
+// 走 SECURITY DEFINER 函数：供应商对 order_items 无 UPDATE 权限，直接改会被
+// RLS 静默拒绝。函数内部校验是本厂家、只动自己的 pending 商品、不回退总状态、写日志。
+async function _acceptMyItems(orderId, notes) {
+  const { data, error } = await sb.rpc('supplier_accept_order', { p_order_id: orderId });
+  if (error) { alert('接单失败：' + error.message); return false; }
+  if (!data || !data.ok) { alert('未接单：' + (data?.message || '未知原因')); return false; }
+  const n = (notes || '').trim();
+  if (n) {
+    await sb.from('order_logs').insert({
+      order_id: orderId, status: 'in_production',
+      operator_id: profile.id, operator_role: 'supplier',
+      operator_name: supplier?.name || profile.name,
+      notes: '接单备注：' + n,
+    });
+  }
+  alert('✅ 已接单：' + (data.count || 0) + ' 件商品进入生产');
+  return true;
 }
 
 async function acceptOrder(e, orderId) {
   e.stopPropagation();
   const notes = prompt('接单备注（可选，如：预计X个工作日完成）：');
   if (notes === null) return;
-  await _acceptMyItems(orderId);
-  await sb.from('order_logs').insert({
-    order_id:orderId, status:'in_production',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
-    notes: (notes||'厂商已接单') + '（本厂家商品已接单进入生产）',
-  });
-  await loadOrders();
+  if (await _acceptMyItems(orderId, notes)) await loadOrders();
 }
 
 async function rejectOrder(e, orderId) {
@@ -660,15 +664,7 @@ function selectStage(btn) {
 
 async function detailAccept(id) {
   const notes = document.getElementById('accept-notes')?.value.trim();
-  await _acceptMyItems(id);
-  await sb.from('order_logs').insert({
-    order_id:id, status:'in_production',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
-    notes: (notes||'厂商已接单') + '（本厂家商品已接单进入生产）',
-  });
-  await loadOrders();
-  openDetail(id);
+  if (await _acceptMyItems(id, notes)) { await loadOrders(); openDetail(id); }
 }
 
 async function detailReject(id) {
