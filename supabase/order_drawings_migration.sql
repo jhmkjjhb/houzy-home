@@ -104,12 +104,12 @@ BEGIN
   ELSIF v_lvl >= 1 THEN
     IF v_staff_done IS NOT NULL THEN
       RETURN jsonb_build_object('ok',false,'message',
-        '运营已确认过此版图纸，不能重复确认。如需变更请上传新版图纸（会重置三方确认）');
+        '店面已确认过此版图纸，不能重复确认。如需变更请上传新版图纸（会重置三方确认）');
     END IF;
     UPDATE order_drawings SET staff_confirmed_at=NOW(), staff_confirmed_by=auth.uid(),
-      staff_confirmed_name=COALESCE(v_name,'运营'), updated_at=NOW()
+      staff_confirmed_name=COALESCE(v_name,'店面'), updated_at=NOW()
       WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
-    v_party := '运营';
+    v_party := '店面';
   ELSE
     RETURN jsonb_build_object('ok',false,'message','无权确认该图纸');
   END IF;

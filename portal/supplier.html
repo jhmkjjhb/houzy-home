@@ -759,7 +759,7 @@ async function supDrawingUpload(orderId) {
   openDetail(orderId);
 }
 async function supDrawingConfirm(orderId) {
-  if (!confirm('确认此图纸无误？将记录你的身份+时间，用于事后追责。')) return;
+  if (!confirm('确认本版图纸是即将投产的最终版？\n厂家将依此图纸开始/继续生产，过程中不再变更。')) return;
   const { data, error } = await sb.rpc('drawing_confirm',
     { p_order_id: orderId, p_supplier_id: supplier?.id });
   if (error) { alert('确认失败：' + error.message); return; }
