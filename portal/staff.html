@@ -2551,7 +2551,7 @@ async function openDetail(id, backView) {
     it._fromStock = maxAvail >= qty;
   }));
 
-  const logsHtml = (logs || []).map((l, i, arr) => {
+  const _logItems = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
     return `<div class="flex gap-3">
       <div class="flex flex-col items-center flex-shrink-0 w-4">
@@ -2566,7 +2566,14 @@ async function openDetail(id, backView) {
         <p class="text-gray-400 text-xs">${l.operator_name || ''}${l.operator_role ? ' · '+l.operator_role : ''}</p>
       </div>
     </div>`;
-  }).join('');
+  });
+  const _LOG_LIMIT = 3;
+  const _logVis  = _logItems.slice(0, _LOG_LIMIT).join('');
+  const _logRest = _logItems.slice(_LOG_LIMIT).join('');
+  const logsHtml = _logVis + (_logItems.length > _LOG_LIMIT ? `
+    <div id="log-rest" class="hidden">${_logRest}</div>
+    <button onclick="(function(b){var r=document.getElementById('log-rest');if(!r)return;var open=r.classList.contains('hidden');r.classList.toggle('hidden');b.textContent=open?'收起':'展开全部 ${_logItems.length} 条';})(this)"
+            class="text-xs text-hg hover:underline mt-1">展开全部 ${_logItems.length} 条 ▾</button>` : '');
 
   // Progress bar for info card
   const curStep = STATUS[o.status]?.step ?? 0;
