@@ -495,7 +495,7 @@ async function openDetail(id) {
 
   const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
-    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info').eq('id', id).single(),
+    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info,needs_install').eq('id', id).single(),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
   ]);
@@ -562,7 +562,10 @@ async function openDetail(id) {
 
   // Signature section for installing status — 用服务器最新 status 判断(防御缓存过期;
   // 服务器端 customer_submit_signature RPC 仍是最终权威)
-  const signatureSection = freshStatus === 'installing' ? `
+  const _needsInstall = freshOrder?.needs_install !== false;   // 默认true
+  const _canSignNow = freshStatus === 'installing'
+    || (freshStatus === 'arrived' && !_needsInstall);
+  const signatureSection = _canSignNow ? `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-1">${ct('signoff_title')}</h3>
       ${o.sign_image
@@ -586,7 +589,8 @@ async function openDetail(id) {
   // 现货单(无定制项)不经生产环节 → 客户端时间线也不显示「生产中」
   const _hasCustomC = !Array.isArray(itemsResp?.items) || !itemsResp.items.length
     || itemsResp.items.some(it => (it.fulfillment_type || 'custom') === 'custom');
-  const _cSteps = _hasCustomC ? CORE_STEPS : CORE_STEPS.filter(s => s !== 'in_production');
+  let _cSteps = _hasCustomC ? CORE_STEPS : CORE_STEPS.filter(s => s !== 'in_production');
+  if (!_needsInstall) _cSteps = _cSteps.filter(s => s !== 'installing');
   const stepTimeline = `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">${ct('order_status')}</h3>

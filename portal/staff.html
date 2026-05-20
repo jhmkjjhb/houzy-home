@@ -377,6 +377,18 @@
           <div id="fulfillment-mode-hint" class="text-xs text-amber-600"></div>
           <input type="hidden" id="o-fulfillment-mode" value="all_together">
         </div>
+        <!-- 是否需要安装服务 -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="o-needs-install" checked onchange="toggleInstallFee()" class="accent-hg">
+            <span class="label">需要安装服务</span>
+          </label>
+          <div id="install-fee-row" class="mt-2">
+            <label class="text-xs text-gray-500">安装费（含进订单总额,免费填 0）</label>
+            <input type="number" id="o-install-fee" value="0" min="0" step="0.01" class="input text-sm">
+          </div>
+          <p class="text-[11px] text-gray-400 mt-1">取消勾选 = 客户自取/自装,订单不进"安装中"阶段,到货后客户直接签收完成。</p>
+        </div>
         <div>
           <label class="label" data-i18n="lbl_notes">备注</label>
           <textarea id="o-notes" rows="2" placeholder="内部备注（客户不可见）" data-i18n-ph="ph_notes" class="input resize-none"></textarea>
@@ -1059,7 +1071,7 @@ function stepTimeLabel(s, i, curStep, isCurrentStatus) {
   return { text: fmtSla(s), color: '#d1d5db' };
 }
 
-function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked, hasCustom = true) {
+function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked, hasCustom = true, needsInstall = true) {
   _tlLogs     = logs     || _tlLogs;
   _tlDeadline = deadlineAt !== undefined ? deadlineAt : _tlDeadline;
   _tlStatus   = currentStatus;
@@ -1067,8 +1079,10 @@ function renderStatusTimeline(currentStatus, logs, deadlineAt, prodStage, acked,
 
   const curStep  = STATUS[currentStatus]?.step ?? -1;
   const isSpecial = STATUS[currentStatus]?.step === -1;
-  // 现货单(无定制项)不经生产环节 → 状态栏不显示「生产中」这一步
-  const steps = hasCustom ? CORE_STEPS : CORE_STEPS.filter(s => s !== 'in_production');
+  // 现货单(无定制项)不经生产 → 跳「生产中」；不需安装的订单 → 跳「安装中」
+  let steps = CORE_STEPS;
+  if (!hasCustom)    steps = steps.filter(s => s !== 'in_production');
+  if (!needsInstall) steps = steps.filter(s => s !== 'installing');
 
   const stepsHtml = steps.map((s, i) => {
     const sStep   = STATUS[s]?.step ?? i;          // 按 STATUS.step 算，过滤后仍正确
@@ -2308,21 +2322,25 @@ async function submitOrder() {
   err.classList.add('hidden');
 
   const storeId = document.getElementById('o-store').value;
-  const amount = parseFloat(document.getElementById('o-amount').value);
+  const orderAmount = parseFloat(document.getElementById('o-amount').value);
+  // 安装费(若勾选需要安装)→ 含进订单总额 amount(用户决策 2026-05-21)
+  const needsInstall = !!document.getElementById('o-needs-install')?.checked;
+  const installFee   = needsInstall ? (parseFloat(document.getElementById('o-install-fee')?.value) || 0) : 0;
+  const amount = (orderAmount || 0) + installFee;
 
   if (!storeId) { showCreateErr('请选择门店'); return; }
-  if (!amount || amount <= 0) { showCreateErr('请输入有效金额'); return; }
+  if (!orderAmount || orderAmount <= 0) { showCreateErr('请输入有效金额'); return; }
 
-  // Validate items: must have at least one named row, and total must match order amount
+  // Validate items: must have at least one named row, and total must match order amount(不含安装费)
   const itemsForCheck = getItemRows();
   if (itemsForCheck.length === 0) { showCreateErr('请至少添加一条商品明细'); return; }
   if (itemsForCheck.some(r => !(r.quantity > 0))) {
     showCreateErr('有商品行数量为空或为 0，请填写有效数量'); return;
   }
   const itemsTotal = itemsForCheck.reduce((s, r) => s + r.total_price, 0);
-  if (Math.abs(itemsTotal - amount) > 0.01) {
+  if (Math.abs(itemsTotal - orderAmount) > 0.01) {
     const proceed = confirm(
-      `⚠ 注意：商品明细合计 ${itemsTotal.toFixed(2)}，与订单金额 ${amount.toFixed(2)} 不符。\n\n` +
+      `⚠ 注意：商品明细合计 ${itemsTotal.toFixed(2)}，与订单金额 ${orderAmount.toFixed(2)} 不符（不含安装费 ${installFee.toFixed(2)}）。\n\n` +
       `可能有商品行未填写名称导致未被计入。\n\n确认要继续提交吗？`
     );
     if (!proceed) return;
@@ -2394,6 +2412,8 @@ async function submitOrder() {
       payment_status: initPayStatus,
       description: document.getElementById('o-desc').value.trim() || null,
       notes: document.getElementById('o-notes').value.trim() || null,
+      needs_install: needsInstall,
+      install_fee:   installFee,
     };
     if (_supplementParentId) coreInsert.parent_order_id = _supplementParentId;
 
@@ -2664,7 +2684,7 @@ async function openDetail(id, backView) {
         <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
         <div><span class="text-gray-400">${t('lbl_mobile')}</span> <span>${o.customers?.phone}</span></div>
         ${o.customers?.address ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">配送地址</span> <span class="text-gray-700">${o.customers.address}</span></div>` : ''}
-        <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span></div>
+        <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span>${Number(o.install_fee)>0 ? `<span class="text-xs text-gray-400 ml-1">(含安装费 ${fmtAmt(o.install_fee, o.currency)})</span>` : ''}${o.needs_install === false ? `<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium ml-1">不需安装</span>` : ''}</div>
         <div><span class="text-gray-400">${t('lbl_payment')}</span>
           <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':o.payment_status==='partial'?'color:#d97706':'color:#dc2626'}">
             ${o.payment_status==='paid' ? t('opt_paid') : o.payment_status==='partial' ? '部分付款' : t('opt_unpaid')}
@@ -2706,7 +2726,7 @@ async function openDetail(id, backView) {
       <h3 class="font-semibold text-gray-800 mb-3">${t('detail_update')}</h3>
       <div class="mb-3">
         <label class="label mb-2">${t('lbl_order_status')}</label>
-        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o), orderHasCustom(items))}
+        ${renderStatusTimeline(o.status, logs, o.deadline_at, o.prod_stage, ackedAfterOverdue(o), orderHasCustom(items), o.needs_install !== false)}
       </div>
       ${bigCountdownBar(o)}
       ${extendBtn(o)}
@@ -3266,6 +3286,12 @@ function autoSuggestFulfillmentMode() {
   if (hint) hint.textContent = (hasCustom && hasStock) ? '混合单：可选「分批安装」让现货先到先装' : '';
 }
 
+function toggleInstallFee() {
+  const cb = document.getElementById('o-needs-install');
+  const row = document.getElementById('install-fee-row');
+  if (cb && row) row.classList.toggle('hidden', !cb.checked);
+}
+
 function setFulfillmentMode(mode) {
   const hid = document.getElementById('o-fulfillment-mode');
   if (hid) hid.value = mode;
@@ -3739,13 +3765,17 @@ function renderChecklistPanel(o, items, childOrders) {
             </a>`
           : `<p class="text-xs text-gray-400 mt-2">保存安装日期和安装人后可发送 WhatsApp 通知</p>`
         }
-        ${o.install_date ? `
+        ${o.needs_install === false ? `
+          <div class="w-full py-2.5 mt-3 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg text-center">
+            ⏳ 本单不需要安装服务，等客户在查询端电子签字即可直接完成
+          </div>
+        ` : (o.install_date ? `
           <button onclick="enterInstalling('${o.id}')"
                   class="w-full py-2.5 mt-3 bg-hg text-white text-sm font-bold rounded-lg hover:bg-green-900 transition">
             ✅ 进入安装中
           </button>
           <p class="text-[11px] text-gray-400 mt-1 text-center">需全部验货完成 + 已约安装日 + 款项达里程碑，系统会校验</p>
-        ` : ''}
+        ` : '')}
       </div>` : '';
 
     return `
