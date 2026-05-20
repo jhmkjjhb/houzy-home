@@ -2713,6 +2713,16 @@ async function openDetail(id, backView) {
 
     ${renderSupplierStatusCard(o, items, supList, _shipments)}
 
+    ${o.status === 'shipped' ? `
+    <div class="card p-5 mb-4" style="border-left:3px solid #16a34a">
+      <h3 class="font-semibold text-gray-800 mb-2">📦 物流到货确认</h3>
+      <p class="text-xs text-gray-500 mb-3">货物到店后,确认所有"已发货"商品到达。订单将自动进入「已到货」阶段。
+        ${supList && (items||[]).some(i=>i.supplier_id) ? '(多厂家订单也可在上方各厂家进度卡里逐家分别确认。)' : ''}</p>
+      <button onclick="markArrived('${o.id}')" class="w-full py-2.5 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700">
+        ✓ 确认整单全部到货
+      </button>
+    </div>` : ''}
+
     ${renderItemsCard(items, o, supList)}
 
     ${renderChildOrdersCard(childOrders)}
