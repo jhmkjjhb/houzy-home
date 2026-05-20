@@ -3250,8 +3250,12 @@ function renderDrawingCard(o, items, supList, drawings) {
           class="shrink-0 px-3 py-1.5 ${d?.drawing_url?'bg-hg text-white hover:bg-green-900':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">店面确认</button>`}
       </div>
       <div class="mt-2 text-xs font-medium ${ready?'text-green-700':'text-amber-600'}">
-        ${ready?'✅ 三方已确认，厂家可进生产加工':'⏳ 三方未齐：上传图纸 + 客户/运营/厂家都确认后，厂家才能进生产加工'}
+        ${ready?'✅ 三方已确认，厂家可进生产加工':'⏳ 三方未齐：上传图纸 + 客户/店面/厂家都确认后，厂家才能进生产加工'}
       </div>
+      ${d?.cust_sign_image
+        ? `<div class="mt-2 text-xs text-gray-500">客户签名：
+             <img src="${d.cust_sign_image}" alt="客户签名" class="mt-1 border border-gray-200 rounded inline-block" style="max-width:220px">
+           </div>` : ''}
     </div>`;
   }).join('');
   return `<div class="card p-5 mb-4">

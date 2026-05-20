@@ -653,9 +653,23 @@ async function openDetail(id) {
             ${ct('th_status')||'状态'}：客户 ${_dchip(dw.cust_confirmed_at)} · 运营 ${_dchip(dw.staff_confirmed_at)} · 厂家 ${_dchip(dw.sup_confirmed_at)}
           </div>
           ${dw.cust_confirmed_at
-            ? `<p class="text-green-600 text-sm font-medium mt-2">✓ ${itx('dwg_ok')}</p>`
-            : `<button onclick="custDrawingConfirm('${id}','${dw.supplier_id}')"
-                 class="mt-2 w-full py-2 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900">${itx('dwg_confirm')}</button>`}
+            ? `<div class="mt-2">
+                 <p class="text-green-600 text-sm font-medium">✓ ${itx('dwg_ok')}</p>
+                 ${dw.cust_sign_image
+                   ? `<img src="${dw.cust_sign_image}" alt="signature" class="mt-1 border border-gray-200 rounded max-w-[200px]">`
+                   : ''}
+               </div>`
+            : `<div class="mt-2">
+                 <p class="text-sm text-gray-500 mb-2">${ct('sig_prompt')||'请在下方手写签名以确认此版图纸'}</p>
+                 <div class="relative rounded-lg overflow-hidden" style="border:2px dashed #d1d5db;background:#fafafa">
+                   <canvas id="dwg-sig-${dw.supplier_id}" style="display:block;touch-action:none;width:100%;height:140px"></canvas>
+                   <span class="absolute bottom-2 right-3 text-xs text-gray-300 pointer-events-none select-none">${ct('sign_here')||'在此签名'}</span>
+                 </div>
+                 <div class="flex gap-2 mt-2">
+                   <button onclick="clearDwgSig('${dw.supplier_id}')" class="flex-1 py-1.5 text-xs border border-gray-300 rounded-lg text-gray-600">${ct('clear')||'清除'}</button>
+                   <button onclick="submitDwgSig('${id}','${dw.supplier_id}')" class="flex-none py-1.5 px-4 text-xs bg-hg text-white font-semibold rounded-lg">${itx('dwg_confirm')}</button>
+                 </div>
+               </div>`}
         </div>`).join('')}
       <p class="text-xs text-gray-400 mt-1">${itx('dwg_tip')}</p>
     </div>` : '';
@@ -721,6 +735,47 @@ async function openDetail(id) {
     </a>`;
 
   initSigCanvas();
+  // 给每个未确认的图纸签名画板初始化
+  _dwgSigs = {};
+  (_draws||[]).forEach(dw => {
+    if (dw.cust_confirmed_at) return;
+    const c = document.getElementById('dwg-sig-' + dw.supplier_id);
+    if (c) _dwgSigs[dw.supplier_id] = _initDwgSigOn(c);
+  });
+}
+
+// 复用现有签名风格的小画板（多个共存，按 supplier_id 区分）
+let _dwgSigs = {};
+function _initDwgSigOn(canvas){
+  const dpr = window.devicePixelRatio||1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width  = r.width  * dpr;
+  canvas.height = r.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr); ctx.strokeStyle='#1a3a2a'; ctx.lineWidth=2; ctx.lineCap='round';
+  const s = { canvas, ctx, pen:false, has:false };
+  const pos = e => { const b=canvas.getBoundingClientRect(); return [(e.clientX-b.left),(e.clientY-b.top)]; };
+  canvas.addEventListener('mousedown', e=>{ s.pen=true; s.has=true; ctx.beginPath(); ctx.moveTo(...pos(e)); });
+  canvas.addEventListener('mousemove', e=>{ if(!s.pen) return; ctx.lineTo(...pos(e)); ctx.stroke(); });
+  canvas.addEventListener('mouseup',   ()=>{ s.pen=false; });
+  canvas.addEventListener('mouseleave',()=>{ s.pen=false; });
+  canvas.addEventListener('touchstart', e=>{ e.preventDefault(); s.pen=true; s.has=true; ctx.beginPath(); ctx.moveTo(...pos(e.touches[0])); }, {passive:false});
+  canvas.addEventListener('touchmove',  e=>{ e.preventDefault(); if(!s.pen) return; ctx.lineTo(...pos(e.touches[0])); ctx.stroke(); }, {passive:false});
+  canvas.addEventListener('touchend',   ()=>{ s.pen=false; });
+  return s;
+}
+function clearDwgSig(supId){
+  const s=_dwgSigs[supId]; if(!s) return;
+  s.ctx.setTransform(1,0,0,1,0,0);
+  s.ctx.clearRect(0,0,s.canvas.width,s.canvas.height);
+  s.ctx.scale(window.devicePixelRatio||1, window.devicePixelRatio||1);
+  s.ctx.strokeStyle='#1a3a2a'; s.ctx.lineWidth=2; s.ctx.lineCap='round';
+  s.has=false;
+}
+async function submitDwgSig(orderId, supId){
+  const s=_dwgSigs[supId];
+  if(!s || !s.has){ alert(ct('err_sign_first')||'请先签名'); return; }
+  await custDrawingConfirm(orderId, supId, s.canvas.toDataURL('image/png'));
 }
 
 let _sigCanvas, _sigCtx, _sigPen = false, _sigHasContent = false;
@@ -757,10 +812,10 @@ function clearSig() {
   if (_sigCtx) { _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height); _sigHasContent = false; }
 }
 
-async function custDrawingConfirm(orderId, supId) {
-  if (!confirm(itx('dwg_confirm') + ' ?')) return;
+async function custDrawingConfirm(orderId, supId, signDataUrl) {
   const { data, error } = await sb.rpc('drawing_customer_confirm',
-    { p_order_id: orderId, p_phone: myPhone, p_supplier_id: supId });
+    { p_order_id: orderId, p_phone: myPhone, p_supplier_id: supId,
+      p_sign_image: signDataUrl || null });
   if (error) { alert(error.message); return; }
   if (!data || !data.ok) { alert((data && data.message) || ct('submit_fail')); return; }
   openDetail(orderId);

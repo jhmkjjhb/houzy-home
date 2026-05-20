@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS order_drawings (
   UNIQUE (order_id, supplier_id)
 );
 ALTER TABLE order_drawings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_drawings ADD COLUMN IF NOT EXISTS cust_sign_image TEXT;  -- 客户图纸确认签名(data URL)
 -- 不开放宽表策略；一律走下面的 SECURITY DEFINER 函数
 
 -- 调用者是否为该供应商
@@ -154,6 +155,7 @@ BEGIN
     'drawing_url', d.drawing_url,
     'version', d.version,
     'cust_confirmed_at', d.cust_confirmed_at,
+    'cust_sign_image', d.cust_sign_image,
     'staff_confirmed_at', d.staff_confirmed_at,
     'sup_confirmed_at', d.sup_confirmed_at) ORDER BY s.name), '[]'::JSONB)
   INTO v_res FROM order_drawings d
@@ -164,7 +166,9 @@ END;
 $$;
 
 -- ── 客户端(凭手机号)：确认某厂家图纸 ──
-CREATE OR REPLACE FUNCTION drawing_customer_confirm(p_order_id UUID, p_phone TEXT, p_supplier_id UUID)
+DROP FUNCTION IF EXISTS drawing_customer_confirm(UUID, TEXT, UUID);
+CREATE OR REPLACE FUNCTION drawing_customer_confirm(
+  p_order_id UUID, p_phone TEXT, p_supplier_id UUID, p_sign_image TEXT DEFAULT NULL)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_ok INT; v_has TEXT; v_done TIMESTAMPTZ;
 BEGIN
@@ -180,7 +184,11 @@ BEGIN
     RETURN jsonb_build_object('ok',false,'message',
       '您已确认过此版图纸，不能重复确认。如有变更请联系门店重新出图');
   END IF;
-  UPDATE order_drawings SET cust_confirmed_at=NOW(), cust_confirmed_by='客户', updated_at=NOW()
+  IF NULLIF(btrim(COALESCE(p_sign_image,'')),'') IS NULL THEN
+    RETURN jsonb_build_object('ok',false,'message','请先签名再确认');
+  END IF;
+  UPDATE order_drawings SET cust_confirmed_at=NOW(), cust_confirmed_by='客户',
+    cust_sign_image=p_sign_image, updated_at=NOW()
     WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
   INSERT INTO order_logs (order_id, status, operator_id, operator_role, operator_name, notes)
   VALUES (p_order_id, 'in_production', NULL, 'customer', '客户', '✅ 客户确认图纸');
