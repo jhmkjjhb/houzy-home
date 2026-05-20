@@ -155,7 +155,19 @@ async function init() {
 }
 
 let _myPendingOrderIds = new Set();   // 分给我、且我还有未接单(pending)商品的订单
+let _mySubByOrder = {};               // 本厂家在每单的子状态：pending/producing/ready/shipped/arrived
 function isMinePending(o) { return _myPendingOrderIds.has(o?.id); }
+function mySubFor(oid) { return _mySubByOrder[oid] || null; }
+// 从本厂家在某单的商品状态推断子状态(最慢项)
+function _mySubFromItems(arr) {
+  const sts = (arr||[]).map(i => i.item_status || 'pending');
+  if (!sts.length) return null;
+  if (sts.some(s => s==='pending'))       return 'pending';
+  if (sts.some(s => s==='in_production')) return 'producing';
+  if (sts.some(s => s==='ready'))         return 'ready';
+  if (sts.every(s => ['arrived','damaged','completed'].includes(s))) return 'arrived';
+  return 'shipped';
+}
 
 async function loadOrders() {
   const {data:items} = await sb.from('order_items')
@@ -164,6 +176,11 @@ async function loadOrders() {
   _myPendingOrderIds = new Set(
     (items||[]).filter(i => !i.item_status || i.item_status === 'pending')
                .map(i => i.order_id).filter(Boolean));
+  // 按订单分组算本厂家子状态
+  const byOid = {};
+  (items||[]).forEach(it => { (byOid[it.order_id] = byOid[it.order_id] || []).push(it); });
+  _mySubByOrder = {};
+  Object.entries(byOid).forEach(([oid, arr]) => { _mySubByOrder[oid] = _mySubFromItems(arr); });
   const itemOrderIds = (items||[]).map(i => i.order_id).filter(Boolean);
   const supId = supplier?.id;
 
@@ -260,11 +277,14 @@ function renderOrders() {
     ];
     const shown = new Set();
     let html = '';
+    const _subToLabel = { pending:'待接单', producing:'生产中', ready:'待发货', shipped:'已发货', arrived:'已完成' };
     for (const g of groups) {
-      // 我还有 pending 商品的单只进「待接单」组（多厂家子状态：互斥分组）
-      const gOrders = filtered.filter(o => isMinePending(o)
-        ? g.label === '待接单'
-        : g.statuses.includes(o.status));
+      // 互斥分组：本厂家在该单的子状态决定它进哪一组(不看订单总状态)
+      const gOrders = filtered.filter(o => {
+        const sub = mySubFor(o.id);
+        if (sub) return _subToLabel[sub] === g.label;
+        return g.statuses.includes(o.status);  // 无本厂家商品时按全局兜底
+      });
       if (!gOrders.length) continue;
       gOrders.forEach(o => shown.add(o.id));
       html += `<div class="mb-5">
@@ -287,24 +307,26 @@ function renderOrders() {
 function orderCard(o) {
   const st = o.status;
   const minePending = isMinePending(o);
+  const sub = mySubFor(o.id);
   let actionBtns = `<button onclick="openDetail('${o.id}')"
     class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">详情</button>`;
 
-  if (minePending || !SUPPLIER_CONFIRMED.includes(st)) {
+  // 按本厂家子状态决定动作按钮（多厂家互不影响）
+  if (sub === 'pending' || (!sub && (minePending || !SUPPLIER_CONFIRMED.includes(st)))) {
     actionBtns += `
       <button onclick="rejectOrder(event,'${o.id}')"
               class="px-3 py-1.5 text-xs border border-red-200 rounded-lg text-red-500 hover:bg-red-50">拒绝</button>
       <button onclick="acceptOrder(event,'${o.id}')"
               class="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium">接单</button>`;
-  } else if (st === 'accepted') {
-    actionBtns += `<button onclick="quickStartProd(event,'${o.id}')"
-      class="px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700">→ 开始生产</button>`;
-  } else if (st === 'in_production') {
+  } else if (sub === 'producing') {
     actionBtns = `<button onclick="openDetail('${o.id}')"
       class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg">更新进度</button>`;
-  } else if (st === 'production_complete') {
+  } else if (sub === 'ready') {
     actionBtns = `<button onclick="openDetail('${o.id}')"
       class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">📦 填写发货</button>`;
+  } else if (!sub && st === 'accepted') {
+    actionBtns += `<button onclick="quickStartProd(event,'${o.id}')"
+      class="px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700">→ 开始生产</button>`;
   }
 
   return `
@@ -448,9 +470,10 @@ async function openDetail(id) {
 
   const st = o?.status;
   const minePending = isMinePending(o);
+  const mySub = _mySubFromItems(items);   // 按本厂家自己的商品状态驱动动作面板
   let actionSection = '';
 
-  if (minePending || !SUPPLIER_CONFIRMED.includes(st)) {
+  if (mySub === 'pending' || (!mySub && (minePending || !SUPPLIER_CONFIRMED.includes(st)))) {
     // Any pre-confirmation status (assigned, paid, pending_payment, etc.) → show accept panel
     actionSection = `
     <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
@@ -473,7 +496,7 @@ async function openDetail(id) {
       </button>
     </div>`;
 
-  } else if (st === 'accepted') {
+  } else if (!mySub && st === 'accepted') {
     actionSection = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-3">开始生产</h3>
@@ -488,7 +511,7 @@ async function openDetail(id) {
       </button>
     </div>`;
 
-  } else if (st === 'in_production') {
+  } else if (mySub === 'producing' || (!mySub && st === 'in_production')) {
     actionSection = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
       <h3 class="font-semibold text-gray-800 mb-4">更新生产进度</h3>
@@ -520,7 +543,7 @@ async function openDetail(id) {
       <p id="prod-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 进度已更新</p>
     </div>`;
 
-  } else if (st === 'production_complete') {
+  } else if (mySub === 'ready' || (!mySub && st === 'production_complete')) {
     actionSection = `
     <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
       <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
