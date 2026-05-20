@@ -2610,6 +2610,12 @@ async function openDetail(id, backView) {
   })() : '';
 
   document.getElementById('detail-content').innerHTML = `
+    <!-- Sticky 顶部概览栏（滚动时常驻，一眼看到核心） -->
+    <div class="sticky top-0 z-20 -mx-1 mb-3 px-3 py-2 bg-white/95 backdrop-blur border-b border-gray-200 flex items-center justify-between gap-2 text-sm">
+      <span class="font-mono font-bold text-hg truncate">${o.order_no}</span>
+      <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="${STATUS[o.status]?.s||''}">${t('status_'+o.status)||STATUS[o.status]?.label||o.status}</span>
+    </div>
+
     <!-- Info -->
     <div class="card p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
@@ -2704,40 +2710,43 @@ async function openDetail(id, backView) {
       </div>` : ''}
     </div>
 
-    <!-- 临时环节卡片：紧跟订单状态栏下方（现货单无生产环节，不显示）-->
-    ${orderHasCustom(items) ? renderProdStagePanel(o) : ''}
+    <!-- 折叠卡内部样式：把被包装的内部 card 去掉重复的外壳与标题 -->
+    <style>
+      .fold-body > .card { box-shadow:none; padding-top:0; margin-bottom:0; border-radius:0; }
+      .fold-body > .card > h3:first-child,
+      .fold-body > div > .card > h3:first-child { display:none; }
+    </style>
 
-    ${renderChecklistPanel(o, items, childOrders)}
-
-    ${renderDrawingCard(o, items, supList, _drawings)}
-
-    ${renderSupplierStatusCard(o, items, supList, _shipments)}
-
-    ${o.status === 'shipped' ? `
-    <div class="card p-5 mb-4" style="border-left:3px solid #16a34a">
-      <h3 class="font-semibold text-gray-800 mb-2">📦 物流到货确认</h3>
-      <p class="text-xs text-gray-500 mb-3">货物到店后,确认所有"已发货"商品到达。订单将自动进入「已到货」阶段。
-        ${supList && (items||[]).some(i=>i.supplier_id) ? '(多厂家订单也可在上方各厂家进度卡里逐家分别确认。)' : ''}</p>
-      <button onclick="markArrived('${o.id}')" class="w-full py-2.5 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700">
-        ✓ 确认整单全部到货
-      </button>
-    </div>` : ''}
-
-    ${renderItemsCard(items, o, supList)}
-
-    ${renderChildOrdersCard(childOrders)}
-
-    ${renderAttachmentsCard(attachments, o.id)}
-
-    ${['after_sales','completed'].includes(o.status) ? renderWarrantyPanel(o, logs, o.id) : ''}
-
-    ${renderPaymentPanel(o, payments)}
-
-    <!-- Timeline -->
-    <div class="card p-5">
-      <h3 class="font-semibold text-gray-800 mb-4">${t('detail_timeline')}</h3>
-      ${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}
-    </div>
+    ${(() => {
+      const _hasDw = (_drawings||[]).some(d => d && d.drawing_url);
+      const _hasSh = (_shipments||[]).length > 0;
+      const _open  = _smartOpenSet(o, _hasDw, _hasSh);
+      const _arriveCard = (o.status === 'shipped') ? `
+        <div class="card p-5 mb-4" style="border-left:3px solid #16a34a">
+          <h3 class="font-semibold text-gray-800 mb-2">📦 物流到货确认</h3>
+          <p class="text-xs text-gray-500 mb-3">货物到店后,确认所有"已发货"商品到达。订单将自动进入「已到货」阶段。
+            ${supList && (items||[]).some(i=>i.supplier_id) ? '(多厂家订单也可在上方各厂家进度卡里逐家分别确认。)' : ''}</p>
+          <button onclick="markArrived('${o.id}')" class="w-full py-2.5 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700">
+            ✓ 确认整单全部到货
+          </button>
+        </div>` : '';
+      return [
+        // 现货单无生产环节
+        orderHasCustom(items) ? _fold('prod', '🛠', '生产进度', renderProdStagePanel(o), _open.has('prod')) : '',
+        _fold('check',    '🔍', '验货核对 / 预约安装', renderChecklistPanel(o, items, childOrders), _open.has('check')),
+        _fold('drawing',  '📐', '图纸三方确认',         renderDrawingCard(o, items, supList, _drawings),        _open.has('drawing')),
+        _fold('suppliers','🏭', '各厂家进度',           renderSupplierStatusCard(o, items, supList, _shipments), _open.has('suppliers')),
+        _fold('arrive',   '📦', '物流到货确认',         _arriveCard,                                              _open.has('arrive')),
+        _fold('items',    '📋', '商品明细 / 供应商分配', renderItemsCard(items, o, supList),                       _open.has('items')),
+        _fold('children', '📦', '补件 / 子订单',         renderChildOrdersCard(childOrders),                       _open.has('children')),
+        _fold('attach',   '📎', '附件 / 图片',           renderAttachmentsCard(attachments, o.id),                _open.has('attach')),
+        ['after_sales','completed'].includes(o.status) ? _fold('warranty','🛡','质保信息', renderWarrantyPanel(o, logs, o.id), true) : '',
+        _fold('pay',      '💵', '付款进度',             renderPaymentPanel(o, payments),                         _open.has('pay')),
+        _fold('logs',     '📜', '操作日志',
+          `<div>${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}</div>`,
+          _open.has('logs')),
+      ].join('');
+    })()}
 
     <!-- Download -->
     <div class="mt-4">
@@ -3231,6 +3240,38 @@ function setFulfillmentMode(mode) {
   const inactiveStyle = 'flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600';
   if (allBtn) allBtn.className = mode === 'all_together' ? activeStyle : inactiveStyle;
   if (phsBtn) phsBtn.className = mode === 'phased'       ? activeStyle : inactiveStyle;
+}
+
+// 详情页折叠卡片辅助:包装任意一段卡片 HTML,加可点击的标题栏,智能默认展开/收起
+function _fold(key, icon, title, contentHtml, open) {
+  if (!contentHtml || !String(contentHtml).trim()) return '';
+  return `<div class="fold mb-3 bg-white rounded-xl shadow-sm overflow-hidden" data-fold-key="${key}">
+    <button type="button" onclick="toggleFold(this)" class="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition text-left">
+      <span class="font-semibold text-gray-800">${icon} ${title}</span>
+      <span data-chev class="text-gray-400">${open?'▾':'▸'}</span>
+    </button>
+    <div class="fold-body ${open?'':'hidden'} px-5 pb-4">${contentHtml}</div>
+  </div>`;
+}
+function toggleFold(btn) {
+  const body = btn.nextElementSibling; if (!body) return;
+  const closed = body.classList.toggle('hidden');
+  const chev = btn.querySelector('[data-chev]'); if (chev) chev.textContent = closed ? '▸' : '▾';
+}
+// 智能默认展开：根据当前订单状态决定哪些卡默认开
+function _smartOpenSet(o, hasDrawings, hasShipments) {
+  const s = new Set();
+  switch (o?.status) {
+    case 'pending_payment': s.add('pay'); break;
+    case 'paid':            s.add('suppliers'); s.add('pay'); break;
+    case 'in_production':   s.add('prod'); s.add('suppliers'); if (hasDrawings) s.add('drawing'); break;
+    case 'production_complete': s.add('suppliers'); break;
+    case 'shipped':         s.add('arrive'); s.add('suppliers'); break;
+    case 'arrived':         s.add('check'); break;
+    case 'installing':      s.add('check'); break;
+    default: break;
+  }
+  return s;
 }
 
 // 各厂家进度卡：店面在此一眼看到每个厂家走到哪、物流单号(乙·Phase A)
