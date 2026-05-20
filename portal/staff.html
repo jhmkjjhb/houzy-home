@@ -365,8 +365,8 @@
           </div>
           <div id="inst-splits" class="space-y-2 bg-gray-50 rounded-lg p-3 text-sm"></div>
         </div>
-        <!-- Fulfillment Mode -->
-        <div class="mb-3">
+        <!-- Fulfillment Mode (不需要安装时整块隐藏，避免"没安装还选安装方式"的别扭) -->
+        <div class="mb-3" id="fulfillment-mode-block">
           <label class="label">安装方式</label>
           <div class="flex gap-2 mb-1">
             <button type="button" id="fm-btn-all" onclick="setFulfillmentMode('all_together')"
@@ -3289,7 +3289,10 @@ function autoSuggestFulfillmentMode() {
 function toggleInstallFee() {
   const cb = document.getElementById('o-needs-install');
   const row = document.getElementById('install-fee-row');
-  if (cb && row) row.classList.toggle('hidden', !cb.checked);
+  const fmBlock = document.getElementById('fulfillment-mode-block');
+  const checked = !!cb?.checked;
+  if (row)     row.classList.toggle('hidden', !checked);
+  if (fmBlock) fmBlock.classList.toggle('hidden', !checked);   // 不需安装→连"安装方式"一起藏
 }
 
 function setFulfillmentMode(mode) {
