@@ -904,6 +904,11 @@ async function buildOrdersQuery() {
   } else if (profile?.store_id) {
     q = q.eq('store_id', profile.store_id);
   }
+  // 店员(staff) 叠加 staff_id=自己 —— 提成模式只看自己签的单
+  // (店长/区域/总经理 不叠加,看全店/区/公司)
+  if (profile?.role === 'staff') {
+    q = q.eq('staff_id', profile.id);
+  }
   return q;
 }
 
@@ -1735,26 +1740,56 @@ function goto(view) {
 }
 
 // ── Dashboard ──
-function renderDashboard() {
-  const counts = {};
-  allOrders.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
-  const total = allOrders.length;
-  const active = allOrders.filter(o => !['completed','closed'].includes(o.status)).length;
-  const done = counts['completed'] || 0;
-  const revenue = allOrders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + Number(o.amount), 0);
+function setDashPeriod(p) {
+  localStorage.setItem('houzy-dash-period', p);
+  renderDashboard();
+}
+function _dashPeriodStart() {
+  const p = localStorage.getItem('houzy-dash-period') || 'month';
+  const now = new Date();
+  if (p === 'all') return { key:'all', start:null };
+  if (p === 'year') return { key:'year', start: new Date(now.getFullYear(), 0, 1) };
+  if (p === 'quarter') return { key:'quarter',
+    start: new Date(now.getFullYear(), Math.floor(now.getMonth()/3)*3, 1) };
+  return { key:'month', start: new Date(now.getFullYear(), now.getMonth(), 1) };
+}
 
-  document.getElementById('stats').innerHTML = [
-    [t('stat_total'), total, 'bg-hg', 'text-white'],
-    [t('stat_active'), active, 'bg-gg', 'text-white'],
-    [t('stat_done'), done, 'bg-hg', 'text-gd'],
-    [t('stat_revenue'), fmtAmt(revenue), 'bg-gd', 'text-hg'],
-  ].map(([lbl, v, bg, tc]) => `
+function renderDashboard() {
+  const { key:pKey, start } = _dashPeriodStart();
+  const arr = (allOrders||[]).filter(o => !start || (o.created_at && new Date(o.created_at) >= start));
+
+  // 修正语义：进行中=排除终态/取消/已完成/质保；已完成=completed+after_sales(进入质保也是完成)
+  const total   = arr.length;
+  const active  = arr.filter(o => !['completed','closed','cancelled','after_sales'].includes(o.status)).length;
+  const done    = arr.filter(o => ['completed','after_sales'].includes(o.status)).length;
+  const revenue = arr.filter(o => o.payment_status === 'paid').reduce((s,o)=>s+Number(o.amount||0),0);
+
+  // 角色 → 范围文案(店员=自己业绩;店长=本店;L3=本区域;L4+=全公司)
+  const lvl = myLevel();
+  const scope = profile?.role === 'staff' ? '我的'
+              : lvl >= 4 ? '全公司' : lvl === 3 ? '本区域' : '本店';
+
+  const pBtn = (k, lbl) => `<button onclick="setDashPeriod('${k}')"
+    class="px-3 py-1 text-xs rounded-full transition ${pKey===k?'bg-hg text-white':'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'}">${lbl}</button>`;
+  const periodBar = `<div class="col-span-2 md:col-span-4 flex items-center gap-2 -mt-2 mb-1 flex-wrap">
+    ${pBtn('month','本月')}${pBtn('quarter','本季')}${pBtn('year','本年')}${pBtn('all','全部')}
+    <span class="text-xs text-gray-400 ml-auto">范围：${scope}</span>
+  </div>`;
+
+  const cards = [
+    [scope+'订单',  total, 'bg-hg', 'text-white'],
+    ['进行中',       active,'bg-gg', 'text-white'],
+    ['已完成 / 质保', done, 'bg-hg', 'text-gd'],
+    [scope+'已收款', fmtAmt(revenue), 'bg-gd', 'text-hg'],
+  ];
+  document.getElementById('stats').innerHTML = periodBar +
+    cards.map(([lbl, v, bg, tc]) => `
     <div class="${bg} rounded-xl p-4">
       <div class="text-xs ${tc} opacity-70 mb-1">${lbl}</div>
       <div class="text-2xl font-bold ${tc}">${v}</div>
     </div>`).join('');
 
-  const recent = allOrders.slice(0, 8);
+  const recent = arr.slice(0, 8);
   document.getElementById('recent-orders').innerHTML = recent.length
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
         <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
