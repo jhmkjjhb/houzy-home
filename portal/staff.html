@@ -3258,6 +3258,10 @@ function renderSupplierStatusCard(o, items, supList, shipments) {
         ${sh.tracking_no ? `单号：<span class="font-mono text-orange-600">${_e(sh.tracking_no)}</span>` : ''}
         ${sh.ship_time ? `<span class="text-gray-400 ml-1">(${fmtDate(sh.ship_time)})</span>` : ''}
       </div>` : '<div class="text-xs text-gray-400">尚未发货</div>'}
+      ${ss.label==='已发货' || ss.label==='部分到货' ? `<div class="mt-2 flex gap-2">
+        <button onclick="staffMarkSupplierArrived('${o.id}','${sid}')"
+          class="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700">✓ 确认本厂家到货</button>
+      </div>` : ''}
       ${canDo(3) ? `<div class="mt-2 pt-2 border-t border-dashed border-red-200 flex flex-wrap gap-2">
         <span class="text-[11px] text-red-500 font-semibold w-full">⚠ 区域负责人接管(厂家不配合时用，留痕审计)</span>
         ${ss.label==='生产中' ? `<button onclick="staffOverrideMarkReady('${o.id}','${sid}')"
@@ -3271,6 +3275,26 @@ function renderSupplierStatusCard(o, items, supList, shipments) {
     <h3 class="font-semibold text-gray-800 mb-3">🏭 各厂家进度（每家各自推进，互不影响）</h3>
     ${rows}
   </div>`;
+}
+
+// 店面确认本厂家到货：把本厂家 shipped 商品 → arrived(触发器自动聚合主单)
+async function staffMarkSupplierArrived(orderId, supId) {
+  if (!confirm('确认本厂家商品已收到？只把"已发货"商品改为"到货"，不影响其它厂家。')) return;
+  const { data: upd, error } = await sb.from('order_items')
+    .update({ item_status:'arrived' })
+    .eq('order_id', orderId).eq('supplier_id', supId).eq('item_status','shipped')
+    .select('id');
+  if (error) { alert('操作失败：' + error.message); return; }
+  const n = (upd || []).length;
+  if (!n) { alert('该厂家没有"已发货"商品可标记到货'); return; }
+  await sb.from('order_logs').insert({
+    order_id: orderId, status: 'shipped',
+    operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
+    notes: '📥 店面确认本厂家到货 '+n+' 件（已发货 → 到货）；主订单状态由触发器聚合',
+  });
+  alert('✅ 已确认本厂家 '+n+' 件到货');
+  await loadOrders();
+  openDetail(orderId);
 }
 
 // ── 管理代行厂家(L3+, 厂家甩单/拖延时接管) ──
