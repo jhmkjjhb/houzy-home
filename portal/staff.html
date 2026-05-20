@@ -3244,8 +3244,10 @@ function renderDrawingCard(o, items, supList, drawings) {
       </label>
       <div class="flex items-center justify-between gap-2 text-xs">
         <div>客户 ${chip(d?.cust_confirmed_at)} · 运营 ${chip(d?.staff_confirmed_at)} · 厂家 ${chip(d?.sup_confirmed_at)}</div>
-        <button onclick="drawingConfirm('${o.id}','${sid}')" ${d?.drawing_url?'':'disabled'}
-          class="shrink-0 px-3 py-1.5 ${d?.drawing_url?'bg-hg text-white hover:bg-green-900':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">运营确认</button>
+        ${d?.staff_confirmed_at
+          ? `<span class="shrink-0 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-semibold rounded-lg">运营已确认 ✓</span>`
+          : `<button onclick="drawingConfirm('${o.id}','${sid}')" ${d?.drawing_url?'':'disabled'}
+          class="shrink-0 px-3 py-1.5 ${d?.drawing_url?'bg-hg text-white hover:bg-green-900':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">运营确认</button>`}
       </div>
       <div class="mt-2 text-xs font-medium ${ready?'text-green-700':'text-amber-600'}">
         ${ready?'✅ 三方已确认，厂家可进生产加工':'⏳ 三方未齐：上传图纸 + 客户/运营/厂家都确认后，厂家才能进生产加工'}

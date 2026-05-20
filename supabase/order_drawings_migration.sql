@@ -81,8 +81,11 @@ $$;
 CREATE OR REPLACE FUNCTION drawing_confirm(p_order_id UUID, p_supplier_id UUID)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_lvl INT; v_isup BOOLEAN; v_name TEXT; v_has TEXT; v_party TEXT;
+        v_sup_done TIMESTAMPTZ; v_staff_done TIMESTAMPTZ;
 BEGIN
-  SELECT drawing_url INTO v_has FROM order_drawings
+  SELECT drawing_url, sup_confirmed_at, staff_confirmed_at
+    INTO v_has, v_sup_done, v_staff_done
+    FROM order_drawings
     WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
   IF v_has IS NULL THEN
     RETURN jsonb_build_object('ok',false,'message','尚未上传图纸，无法确认');
@@ -90,10 +93,19 @@ BEGIN
   v_lvl := auth_user_level(); v_isup := _is_supplier(p_supplier_id);
   SELECT name INTO v_name FROM profiles WHERE id = auth.uid();
   IF v_isup THEN
+    -- 一旦确认不能二次确认（除非上传新版图纸会重置）
+    IF v_sup_done IS NOT NULL THEN
+      RETURN jsonb_build_object('ok',false,'message',
+        '您（厂家）已确认过此版图纸，不能重复确认。如需变更请上传新版图纸（会重置三方确认）');
+    END IF;
     UPDATE order_drawings SET sup_confirmed_at=NOW(), sup_confirmed_by=auth.uid(), updated_at=NOW()
       WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
     v_party := '厂家';
   ELSIF v_lvl >= 1 THEN
+    IF v_staff_done IS NOT NULL THEN
+      RETURN jsonb_build_object('ok',false,'message',
+        '运营已确认过此版图纸，不能重复确认。如需变更请上传新版图纸（会重置三方确认）');
+    END IF;
     UPDATE order_drawings SET staff_confirmed_at=NOW(), staff_confirmed_by=auth.uid(),
       staff_confirmed_name=COALESCE(v_name,'运营'), updated_at=NOW()
       WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
@@ -154,15 +166,19 @@ $$;
 -- ── 客户端(凭手机号)：确认某厂家图纸 ──
 CREATE OR REPLACE FUNCTION drawing_customer_confirm(p_order_id UUID, p_phone TEXT, p_supplier_id UUID)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v_ok INT; v_has TEXT;
+DECLARE v_ok INT; v_has TEXT; v_done TIMESTAMPTZ;
 BEGIN
   SELECT count(*) INTO v_ok FROM orders o JOIN customers c ON c.id=o.customer_id
     WHERE o.id=p_order_id AND c.phone=p_phone;
   IF v_ok=0 THEN RETURN jsonb_build_object('ok',false,'message','订单核验失败'); END IF;
-  SELECT drawing_url INTO v_has FROM order_drawings
+  SELECT drawing_url, cust_confirmed_at INTO v_has, v_done FROM order_drawings
     WHERE order_id=p_order_id AND supplier_id=p_supplier_id;
   IF v_has IS NULL THEN
     RETURN jsonb_build_object('ok',false,'message','该厂家尚未上传图纸');
+  END IF;
+  IF v_done IS NOT NULL THEN
+    RETURN jsonb_build_object('ok',false,'message',
+      '您已确认过此版图纸，不能重复确认。如有变更请联系门店重新出图');
   END IF;
   UPDATE order_drawings SET cust_confirmed_at=NOW(), cust_confirmed_by='客户', updated_at=NOW()
     WHERE order_id=p_order_id AND supplier_id=p_supplier_id;

@@ -637,8 +637,10 @@ async function openDetail(id) {
       </div>
       <div class="flex items-center justify-between gap-2 text-xs">
         <div>客户 ${_chip(d?.cust_confirmed_at)} · 运营 ${_chip(d?.staff_confirmed_at)} · 厂家 ${_chip(d?.sup_confirmed_at)}</div>
-        <button onclick="supDrawingConfirm('${o.id}')" ${d?.drawing_url?'':'disabled'}
-          class="shrink-0 px-3 py-2 ${d?.drawing_url?'bg-hg text-white':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">厂家确认</button>
+        ${d?.sup_confirmed_at
+          ? `<span class="shrink-0 px-3 py-2 bg-green-50 text-green-700 text-xs font-semibold rounded-lg">厂家已确认 ✓</span>`
+          : `<button onclick="supDrawingConfirm('${o.id}')" ${d?.drawing_url?'':'disabled'}
+          class="shrink-0 px-3 py-2 ${d?.drawing_url?'bg-hg text-white':'bg-gray-200 text-gray-400 cursor-not-allowed'} text-xs font-semibold rounded-lg">厂家确认</button>`}
       </div>
       <div class="mt-2 text-xs font-medium ${_drawReady?'text-green-700':'text-amber-600'}">
         ${_drawReady?'✅ 三方已确认，可进生产加工':'⏳ 三方未齐：客户/运营/厂家都确认前，不能进生产加工'}
