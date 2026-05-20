@@ -2522,6 +2522,8 @@ async function openDetail(id, backView) {
   ]);
   // 图纸三方确认数据(按 order×supplier)
   const { data: _drawings } = await sb.rpc('drawing_get_for_order', { p_order_id: id });
+  // 各厂家发货流水(按 order×supplier；本厂家只动自己,店面汇总查看)
+  const { data: _shipments } = await sb.rpc('supplier_shipments_for_order', { p_order_id: id });
   // 子单(补件单)只认 parent_order_id 外键，严格按 FK 关联，不再用描述模糊匹配/客户兜底
   const childOrders = (childByFk || [])
     .filter(c => c.id !== id && c.parent_order_id === id)
@@ -2701,6 +2703,8 @@ async function openDetail(id, backView) {
     ${renderChecklistPanel(o, items, childOrders)}
 
     ${renderDrawingCard(o, items, supList, _drawings)}
+
+    ${renderSupplierStatusCard(o, items, supList, _shipments)}
 
     ${renderItemsCard(items, o, supList)}
 
@@ -3210,6 +3214,49 @@ function setFulfillmentMode(mode) {
   const inactiveStyle = 'flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600';
   if (allBtn) allBtn.className = mode === 'all_together' ? activeStyle : inactiveStyle;
   if (phsBtn) phsBtn.className = mode === 'phased'       ? activeStyle : inactiveStyle;
+}
+
+// 各厂家进度卡：店面在此一眼看到每个厂家走到哪、物流单号(乙·Phase A)
+function renderSupplierStatusCard(o, items, supList, shipments) {
+  if (['completed','closed','cancelled'].includes(o.status)) return '';
+  const _e = s => String(s==null?'':s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const supIds = [...new Set((items||[]).map(i=>i.supplier_id).filter(Boolean))];
+  if (!supIds.length) return '';
+  const shMap = {}; (shipments||[]).forEach(sh => { shMap[sh.supplier_id] = sh; });
+  const subStatus = (sid) => {
+    const arr = (items||[]).filter(i => i.supplier_id === sid);
+    if (!arr.length) return { label:'未分配', cls:'bg-gray-100 text-gray-500' };
+    const sts = arr.map(i => i.item_status || 'pending');
+    if (sts.some(s => s==='pending'))         return { label:'待接单',   cls:'bg-orange-100 text-orange-700' };
+    if (sts.some(s => s==='in_production'))   return { label:'生产中',   cls:'bg-violet-100 text-violet-700' };
+    if (sts.some(s => s==='ready'))           return { label:'生产完成', cls:'bg-indigo-100 text-indigo-700' };
+    if (sts.every(s => s==='arrived' || s==='damaged')) return { label:'已到货', cls:'bg-green-100 text-green-700' };
+    if (sts.some(s => s==='arrived'))         return { label:'部分到货', cls:'bg-teal-100 text-teal-700' };
+    if (sts.every(s => s==='shipped' || s==='arrived' || s==='damaged')) return { label:'已发货', cls:'bg-orange-100 text-orange-700' };
+    return { label:'生产中', cls:'bg-violet-100 text-violet-700' };
+  };
+  const rows = supIds.map(sid => {
+    const sup = (supList||[]).find(s=>s.id===sid);
+    const ss  = subStatus(sid);
+    const sh  = shMap[sid];
+    const methodLabel = { land:'🚛 陆运', sea:'🚢 海运', air:'✈️ 空运' };
+    return `<div class="border border-gray-100 rounded-lg p-3 mb-2">
+      <div class="flex items-center justify-between mb-1 gap-2 flex-wrap">
+        <span class="text-sm font-semibold text-gray-800">${_e(sup?.name||'供应商')}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${ss.cls}">${ss.label}</span>
+      </div>
+      ${sh ? `<div class="text-xs text-gray-600 leading-relaxed">
+        ${sh.ship_method ? `${methodLabel[sh.ship_method]||sh.ship_method} · ` : ''}
+        ${sh.carrier ? `物流：${_e(sh.carrier)} · ` : ''}
+        ${sh.tracking_no ? `单号：<span class="font-mono text-orange-600">${_e(sh.tracking_no)}</span>` : ''}
+        ${sh.ship_time ? `<span class="text-gray-400 ml-1">(${fmtDate(sh.ship_time)})</span>` : ''}
+      </div>` : '<div class="text-xs text-gray-400">尚未发货</div>'}
+    </div>`;
+  }).join('');
+  return `<div class="card p-5 mb-4">
+    <h3 class="font-semibold text-gray-800 mb-3">🏭 各厂家进度（每家各自推进，互不影响）</h3>
+    ${rows}
+  </div>`;
 }
 
 // 图纸三方确认卡（按供应商各一份；运营在此上传/确认/看状态）

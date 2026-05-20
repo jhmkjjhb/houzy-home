@@ -830,20 +830,17 @@ async function markProdComplete(id) {
   btn.textContent = '提交中...';
   btn.dataset.confirming = '';
 
-  const { error } = await sb.from('orders').update({status:'production_complete', prod_stage:null}).eq('id', id);
-  if (error) {
-    alert('操作失败：' + error.message);
+  // 乙·Phase A：只标记本厂家的商品 ready，不再写全局 orders.status；
+  // 服务端函数兜底权限+只动本厂家。
+  const { data, error } = await sb.rpc('supplier_mark_ready', { p_order_id: id });
+  if (error || !data || !data.ok) {
+    alert('操作失败：' + (error?.message || data?.message || '未知错误'));
     btn.disabled = false;
     btn.textContent = '✓ 生产完成';
     btn.className = 'py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm';
     return;
   }
-  await sb.from('order_logs').insert({
-    order_id:id, status:'production_complete',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
-    notes:'生产完成，准备发货',
-  });
+  alert('✅ 本厂家 '+ data.count +' 件商品已标记生产完成');
   await loadOrders();
   openDetail(id);
 }
@@ -863,42 +860,25 @@ async function submitShipping(id) {
   const btn = document.querySelector(`button[onclick="submitShipping('${id}')"]`);
   if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
 
-  const methodLabel = {land:'陆运', sea:'海运', air:'空运'}[method] || method;
-
-  // 商品行同步标记为已备货（让运营端装柜核对通过）
-  await sb.from('order_items').update({ item_status: 'ready' })
-    .eq('order_id', id)
-    .not('item_status', 'in', '("shipped","arrived","damaged")');
-
-  // 核心更新：状态 + 物流单号（必须成功）
-  const { error: coreErr } = await sb.from('orders').update({
-    status: 'shipped',
-    tracking_no: tracking,
-  }).eq('id', id);
-
-  if (coreErr) {
-    alert('发货失败：' + coreErr.message);
+  // 乙·Phase A：只发本厂家的商品 (ready→shipped) + 写本厂家物流；
+  // 全单是否进"已发货"由服务端按全部商品聚合决定，不会带飞别的厂家。
+  const { data, error } = await sb.rpc('supplier_ship_items', {
+    p_order_id: id,
+    p_carrier: company,
+    p_tracking_no: tracking,
+    p_method: method,
+    p_notes: notes || null,
+  });
+  if (error || !data || !data.ok) {
+    alert('发货失败：' + (error?.message || data?.message || '未知错误'));
     if (btn) { btn.disabled = false; btn.textContent = '确认发货'; }
     return;
   }
-
-  // 扩展更新：运输方式 + 物流公司（列不存在时静默跳过）
-  await sb.from('orders').update({
-    ship_method: method,
-    ship_carrier: company,
-  }).eq('id', id);
-
-  const logNotes = [`运输：${methodLabel}`, `物流：${company}`, `单号：${tracking}`, notes||null].filter(Boolean).join(' | ');
-  await sb.from('order_logs').insert({
-    order_id: id, status: 'shipped',
-    operator_id: profile.id, operator_role: 'supplier',
-    operator_name: supplier?.name || profile.name,
-    notes: logNotes,
-  });
-
+  alert('✅ 本厂家 ' + data.count + ' 件商品已发货' +
+        (data.order_advanced ? '\n（所有厂家都已发齐，订单整单进入「已发货」）' : ''));
   const msg = document.getElementById('ship-msg');
   if (msg) msg.classList.remove('hidden');
-  setTimeout(async () => { await loadOrders(); openDetail(id); }, 1200);
+  setTimeout(async () => { await loadOrders(); openDetail(id); }, 600);
 }
 
 // ── Print task sheet ──────────────────────────────────────────────────
