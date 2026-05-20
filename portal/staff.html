@@ -949,50 +949,51 @@ const CORE_STEPS = ['pending_payment','paid','in_production','shipped','arrived'
 const PROD_STAGE_KEYS   = ['drawing','material','producing','qc'];
 const PROD_STAGE_LABELS = { drawing:'图纸确认', material:'材料采购', producing:'生产加工', qc:'质检中' };
 
+// 每个"部件"自带关键词 kws：用客户实际商品名匹配,只显示买了的部件
 const WARRANTY_SERIES = [
   { id:'kitchen',     name:'厨房系列', icon:'🍳',
     keywords:['厨房','橱柜','水槽','龙头','厨','灶','kitchen'],
     items:[
-      { name:'全铝合金橱柜柜体', years:11 },
-      { name:'橱柜门板',         years:4  },
-      { name:'橱柜五金',         years:6  },
-      { name:'台面',             years:6  },
-      { name:'水槽',             years:11 },
-      { name:'厨房龙头',         years:6  },
-      { name:'抽屉系统',         years:6  },
+      { name:'全铝合金橱柜柜体', years:11, kws:['橱柜','柜体'] },
+      { name:'橱柜门板',         years:4,  kws:['橱柜门','门板'] },
+      { name:'橱柜五金',         years:6,  kws:['橱柜五金','厨房五金'] },
+      { name:'台面',             years:6,  kws:['台面','石英石'] },
+      { name:'水槽',             years:11, kws:['水槽','洗菜盆'] },
+      { name:'厨房龙头',         years:6,  kws:['厨房龙头','厨房水龙头'] },
+      { name:'抽屉系统',         years:6,  kws:['抽屉'] },
     ],
   },
   { id:'bathroom',    name:'卫浴系列', icon:'🚿',
-    keywords:['卫浴','淋浴','马桶','浴室','花洒','卫生间','bathroom','shower'],
+    keywords:['卫浴','淋浴','马桶','浴室','花洒','卫生间','龙头','水龙头','bathroom','shower'],
     items:[
-      { name:'淋浴房框架',       years:6  },
-      { name:'淋浴房玻璃',       years:6  },
-      { name:'淋浴房五金',       years:3  },
-      { name:'马桶陶瓷本体',     years:11 },
-      { name:'马桶冲水机构',     years:4  },
-      { name:'智能马桶电路',     years:3  },
-      { name:'卫浴五金PVD',      years:4  },
-      { name:'浴室柜',           years:4  },
-      { name:'卫浴龙头',         years:6  },
-      { name:'花洒',             years:4  },
+      { name:'淋浴房框架',       years:6,  kws:['淋浴房','淋浴间'] },
+      { name:'淋浴房玻璃',       years:6,  kws:['淋浴房','淋浴间'] },
+      { name:'淋浴房五金',       years:3,  kws:['淋浴房','淋浴间'] },
+      { name:'马桶陶瓷本体',     years:11, kws:['马桶','坐便'] },
+      { name:'马桶冲水机构',     years:4,  kws:['马桶','坐便'] },
+      { name:'智能马桶电路',     years:3,  kws:['智能马桶','智能坐便'] },
+      { name:'卫浴五金PVD',      years:4,  kws:['卫浴五金','浴室五金'] },
+      { name:'浴室柜',           years:4,  kws:['浴室柜','面盆柜'] },
+      { name:'卫浴龙头',         years:6,  kws:['龙头','水龙头'] },
+      { name:'花洒',             years:4,  kws:['花洒','喷头'] },
     ],
   },
   { id:'door_window', name:'门窗系列', icon:'🚪',
     keywords:['门','窗','铝合金门','铝合金窗','推拉','玻璃门','window','door'],
     items:[
-      { name:'铝合金窗框/门框型材', years:11 },
-      { name:'Low-E玻璃',           years:6  },
-      { name:'门窗五金',             years:4  },
-      { name:'密封胶条',             years:3  },
-      { name:'纱窗',                 years:3  },
+      { name:'铝合金窗框/门框型材', years:11, kws:['门','窗','门框','窗框'] },
+      { name:'Low-E玻璃',           years:6,  kws:['玻璃','low-e','low e'] },
+      { name:'门窗五金',             years:4,  kws:['门窗五金'] },
+      { name:'密封胶条',             years:3,  kws:['密封','胶条'] },
+      { name:'纱窗',                 years:3,  kws:['纱窗'] },
     ],
   },
   { id:'tile',        name:'瓷砖系列', icon:'🟫',
     keywords:['瓷砖','地砖','墙砖','砖','tile'],
     items:[
-      { name:'瓷砖本体',   years:11 },
-      { name:'釉面层',     years:6  },
-      { name:'防滑性能',   years:6  },
+      { name:'瓷砖本体',   years:11, kws:['瓷砖','地砖','墙砖','砖','tile'] },
+      { name:'釉面层',     years:6,  kws:['釉','抛釉','釉面','瓷砖'] },
+      { name:'防滑性能',   years:6,  kws:['防滑','地砖'] },
     ],
   },
 ];
@@ -1013,35 +1014,61 @@ function fmtKLDate(iso) {
 }
 
 function computeWarrantyInfo(orderItems, startIso) {
-  const matched  = new Set();
-  const result   = [];
+  // 按"实际买了什么"过滤部件：每个 item → 命中的 series → 该 series 中
+  // 名称/kws 匹配 product_name 的部件 才会进入质保表。
+  const map = {};   // seriesId → { series, comps: Map<name, c> }
   (orderItems || []).forEach(item => {
     const pname = (item.product_name || item.name || '').toLowerCase();
+    if (!pname) return;
     for (const series of WARRANTY_SERIES) {
-      if (matched.has(series.id)) continue;
-      if (series.keywords.some(kw => pname.includes(kw.toLowerCase()))) {
-        matched.add(series.id);
-        result.push({
-          seriesId:   series.id,
-          seriesName: series.name,
-          icon:       series.icon,
-          startIso,
-          components: series.items.map(c => ({
-            name:    c.name,
-            years:   c.years,
-            endIso:  addYearsIso(startIso, c.years),
-          })),
-        });
-      }
+      if (!series.keywords.some(kw => pname.includes(kw.toLowerCase()))) continue;
+      // 只挑该 series 中 kws 命中本商品名的部件
+      const hit = series.items.filter(c =>
+        (c.kws || [c.name]).some(kw => pname.includes(String(kw).toLowerCase())));
+      if (!hit.length) continue;   // series 命中但没有任何部件匹配，跳过(避免列全套)
+      if (!map[series.id]) map[series.id] = { series, comps: new Map() };
+      hit.forEach(c => { if (!map[series.id].comps.has(c.name)) map[series.id].comps.set(c.name, c); });
+      break;   // 一个商品归一个系列，避免重复
     }
   });
-  if (result.length === 0) {
+  const result = Object.values(map).map(({ series, comps }) => ({
+    seriesId:   series.id,
+    seriesName: series.name,
+    icon:       series.icon,
+    startIso,
+    components: Array.from(comps.values()).map(c => ({
+      name:   c.name, years: c.years,
+      endIso: addYearsIso(startIso, c.years),
+    })),
+  }));
+  if (!result.length) {
     result.push({
       seriesId:'generic', seriesName:'产品质保', icon:'🛡️', startIso,
       components:[{ name:'整体产品', years:1, endIso: addYearsIso(startIso, 1) }],
     });
   }
   return result;
+}
+
+// 重算并存储某订单的质保信息(用于修老订单已存的"全套部件"错误数据)
+async function recomputeOrderWarranty(orderId) {
+  if (!canDo(2)) { alert('店长及以上可重新计算质保'); return; }
+  if (!confirm('重新按订单实际商品计算质保表? 将覆盖现有 warranty_info。')) return;
+  const { data: o }   = await sb.from('orders').select('warranty_info,signed_at,completed_at,created_at').eq('id', orderId).single();
+  const { data: its } = await sb.from('order_items').select('product_name').eq('order_id', orderId);
+  // 起始时间优先级:现有 warranty_info.startIso > signed_at > completed_at > created_at
+  let startIso = o?.signed_at || o?.completed_at || o?.created_at || new Date().toISOString();
+  try {
+    if (o?.warranty_info) {
+      const w = JSON.parse(o.warranty_info);
+      if (Array.isArray(w) && w[0]?.startIso) startIso = w[0].startIso;
+    }
+  } catch (_) {}
+  const wi = computeWarrantyInfo(its || [], startIso);
+  const { error } = await sb.from('orders').update({ warranty_info: JSON.stringify(wi) }).eq('id', orderId);
+  if (error) { alert('保存失败：' + error.message); return; }
+  alert('✅ 质保信息已按实际商品重新计算。');
+  openDetail(orderId);
 }
 
 function fmtSla(s) {
@@ -1459,7 +1486,11 @@ function renderWarrantyPanel(o, logs, orderId) {
         ${allExpired ? '全部已到期' : '质保中'}
       </span>
     </div>
-    <div class="text-xs text-gray-400 mb-3">质保开始：${new Date(startIso).toLocaleDateString()}</div>
+    <div class="text-xs text-gray-400 mb-3 flex items-center justify-between gap-2">
+      <span>质保开始：${new Date(startIso).toLocaleDateString()}</span>
+      ${canDo(2) ? `<button onclick="recomputeOrderWarranty('${orderId}')"
+        class="text-xs text-gray-500 hover:text-hg underline">🔁 按实际商品重新计算</button>` : ''}
+    </div>
     ${seriesHtml}
     ${allExpired
       ? `<button onclick="closeAfterWarranty('${orderId}')"
