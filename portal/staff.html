@@ -3288,8 +3288,16 @@ function renderSupplierStatusCard(o, items, supList, shipments) {
 }
 
 // 店面确认本厂家到货：把本厂家 shipped 商品 → arrived(触发器自动聚合主单)
+// 防误按:必填签收人 + 选填单号/备注 + 二次确认
 async function staffMarkSupplierArrived(orderId, supId) {
-  if (!confirm('确认本厂家商品已收到？只把"已发货"商品改为"到货"，不影响其它厂家。')) return;
+  const signedBy = prompt('签收人姓名（必填,谁现场收的货）:');
+  if (signedBy === null) return;
+  if (!signedBy.trim()) { alert('签收人必填'); return; }
+  const receiptNo = prompt('签收单号/快递单号(选填):');
+  if (receiptNo === null) return;
+  const note = prompt('其它备注(选填):');
+  if (note === null) return;
+  if (!confirm(`请最终确认本厂家商品到货:\n• 签收人: ${signedBy.trim()}${receiptNo.trim()?'\n• 签收单号: '+receiptNo.trim():''}${note.trim()?'\n• 备注: '+note.trim():''}\n\n⚠ 我确认本厂家货物已实际到店收讫。继续？`)) return;
   const { data: upd, error } = await sb.from('order_items')
     .update({ item_status:'arrived' })
     .eq('order_id', orderId).eq('supplier_id', supId).eq('item_status','shipped')
@@ -3297,10 +3305,13 @@ async function staffMarkSupplierArrived(orderId, supId) {
   if (error) { alert('操作失败：' + error.message); return; }
   const n = (upd || []).length;
   if (!n) { alert('该厂家没有"已发货"商品可标记到货'); return; }
+  const noteLine = '📥 本厂家到货 '+n+' 件（已发货 → 到货）；签收人：'+signedBy.trim()
+    + (receiptNo.trim() ? '；单号：'+receiptNo.trim() : '')
+    + (note.trim() ? '；备注：'+note.trim() : '');
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'shipped',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: '📥 店面确认本厂家到货 '+n+' 件（已发货 → 到货）；主订单状态由触发器聚合',
+    notes: noteLine,
   });
   alert('✅ 已确认本厂家 '+n+' 件到货');
   await loadOrders();
@@ -3876,7 +3887,15 @@ async function saveLogisticsInfo(orderId) {
 }
 
 async function markArrived(orderId) {
-  if (!confirm('确认所有"已发货"商品到达？\n（仅把 shipped 商品改为 arrived；订单总状态由系统按全部商品自动聚合，不会带飞还没发的厂家）')) return;
+  // 防误按:必填签收人 + 选填单号/备注 + 二次确认"货物已实际到店"
+  const signedBy = prompt('签收人姓名（必填,谁现场收的货）:');
+  if (signedBy === null) return;
+  if (!signedBy.trim()) { alert('签收人必填'); return; }
+  const receiptNo = prompt('签收单号/快递单号(选填,无可留空):');
+  if (receiptNo === null) return;
+  const note = prompt('其它备注(选填,如:验货发现破损/缺件,稍后处理):');
+  if (note === null) return;
+  if (!confirm(`请最终确认:\n• 签收人: ${signedBy.trim()}${receiptNo.trim()?'\n• 签收单号: '+receiptNo.trim():''}${note.trim()?'\n• 备注: '+note.trim():''}\n\n⚠ 我确认货物已实际到店收讫。误标到货会影响后续生产/物流核对。继续吗？`)) return;
   // 乙：不再直接写全局 orders.status。把"已发货"商品标到货，触发器聚合主状态。
   const { data: upd, error } = await sb.from('order_items')
     .update({ item_status: 'arrived' }).eq('order_id', orderId)
@@ -3884,10 +3903,13 @@ async function markArrived(orderId) {
   if (error) { alert('操作失败：' + error.message); return; }
   const n = (upd || []).length;
   if (!n) { alert('当前没有"已发货"商品可标记到货（可能还有厂家未发货）'); return; }
+  const noteLine = '📥 整单确认到货 '+n+' 件（已发货 → 到货）；签收人：'+signedBy.trim()
+    + (receiptNo.trim() ? '；单号：'+receiptNo.trim() : '')
+    + (note.trim() ? '；备注：'+note.trim() : '');
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'arrived',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: '📥 已收到 '+n+' 件商品（已发货 → 到货）；主订单状态由系统按全部商品聚合',
+    notes: noteLine,
   });
   // 不再自动跳到「安装中」：由正常的 updateOrder 流程推进
   // （那里会强制校验安装日期 + 款项已付清）
