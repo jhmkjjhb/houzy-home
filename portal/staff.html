@@ -2610,6 +2610,19 @@ async function openDetail(id, backView) {
   const { data: _drawings } = await sb.rpc('drawing_get_for_order', { p_order_id: id });
   // 各厂家发货流水(按 order×supplier；本厂家只动自己,店面汇总查看)
   const { data: _shipments } = await sb.rpc('supplier_shipments_for_order', { p_order_id: id });
+
+  // 兜底：进入质保/已完成 但 warranty_info 还没算过(不需安装订单跳过了"安装中"
+  // 的自动计算入口,或管理强制跳跃路径) → 第一次有人打开就静默按实际商品算好存进去
+  if (['after_sales','completed'].includes(o.status)) {
+    const _wiEmpty = !o.warranty_info || o.warranty_info === '' || o.warranty_info === '[]' || o.warranty_info === 'null';
+    if (_wiEmpty && (items || []).length) {
+      const startIso = o.signed_at || o.completed_at || o.updated_at || o.created_at || new Date().toISOString();
+      const wi = computeWarrantyInfo(items, startIso);
+      const wiStr = JSON.stringify(wi);
+      const { error: _wiErr } = await sb.from('orders').update({ warranty_info: wiStr }).eq('id', id);
+      if (!_wiErr) { o.warranty_info = wiStr; console.log('[openDetail] 自动计算质保信息已写入'); }
+    }
+  }
   // 子单(补件单)只认 parent_order_id 外键，严格按 FK 关联，不再用描述模糊匹配/客户兜底
   const childOrders = (childByFk || [])
     .filter(c => c.id !== id && c.parent_order_id === id)
