@@ -381,21 +381,13 @@ async function rejectOrder(e, orderId) {
   const reason = prompt('请填写拒绝原因（必填）：');
   if (reason === null) return;
   if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
-  // S1: 拒单回退到 'paid'（staff.html 的核心步骤,店长在此重新派单）。
-  // 关键:必须同时清掉本厂家的关联,否则订单仍显示"已派给本厂家",
-  // 会留在本厂家列表里并可能被静默重新触发。
-  // 派单在 order_items.supplier_id 上做(见 staff.html),orders.supplier_id 一并清空。
-  await sb.from('orders').update({status:'paid', supplier_id:null}).eq('id', orderId);
-  if (supplier?.id) {
-    await sb.from('order_items').update({supplier_id:null})
-      .eq('order_id', orderId).eq('supplier_id', supplier.id);
-  }
-  await sb.from('order_logs').insert({
-    order_id:orderId, status:'paid',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
-    notes:`❌ 厂商拒绝接单（需店长重新派单）：${reason.trim()}`,
-  });
+  // 乙·只动本厂家 items (走 SECURITY DEFINER RPC，不写全局 orders.status；
+  // 触发器会按全单实际进度聚合主状态)
+  const { data, error } = await sb.rpc('supplier_reject_order',
+    { p_order_id: orderId, p_reason: reason.trim() });
+  if (error) { alert('拒单失败：' + error.message); return; }
+  if (!data || !data.ok) { alert('未拒单：' + (data?.message || '未知')); return; }
+  alert('✅ 已拒接 ' + data.count + ' 件商品，已退回店面重新派单');
   await loadOrders();
 }
 
@@ -733,18 +725,11 @@ async function detailReject(id) {
   const reason = prompt('请填写拒绝原因（必填）：');
   if (reason === null) return;
   if (!reason.trim()) { alert('拒绝原因不能为空'); return; }
-  // S1: 同 rejectOrder —— 回退 'paid' 并清空本厂家关联,等店长重新派单。
-  await sb.from('orders').update({status:'paid', supplier_id:null}).eq('id', id);
-  if (supplier?.id) {
-    await sb.from('order_items').update({supplier_id:null})
-      .eq('order_id', id).eq('supplier_id', supplier.id);
-  }
-  await sb.from('order_logs').insert({
-    order_id:id, status:'paid',
-    operator_id:profile.id, operator_role:'supplier',
-    operator_name:supplier?.name||profile.name,
-    notes:`❌ 厂商拒绝接单（需店长重新派单）：${reason.trim()}`,
-  });
+  const { data, error } = await sb.rpc('supplier_reject_order',
+    { p_order_id: id, p_reason: reason.trim() });
+  if (error) { alert('拒单失败：' + error.message); return; }
+  if (!data || !data.ok) { alert('未拒单：' + (data?.message || '未知')); return; }
+  alert('✅ 已拒接 ' + data.count + ' 件，已退回店面');
   show('v-orders');
   await loadOrders();
 }

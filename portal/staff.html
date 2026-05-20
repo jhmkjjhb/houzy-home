@@ -3790,14 +3790,18 @@ async function saveLogisticsInfo(orderId) {
 }
 
 async function markArrived(orderId) {
-  if (!confirm('确认货物已到达？')) return;
-  const now = new Date().toISOString();
-  const { error } = await sb.from('orders').update({ status: 'arrived', updated_at: now, deadline_at: calcDeadline('arrived') }).eq('id', orderId);
+  if (!confirm('确认所有"已发货"商品到达？\n（仅把 shipped 商品改为 arrived；订单总状态由系统按全部商品自动聚合，不会带飞还没发的厂家）')) return;
+  // 乙：不再直接写全局 orders.status。把"已发货"商品标到货，触发器聚合主状态。
+  const { data: upd, error } = await sb.from('order_items')
+    .update({ item_status: 'arrived' }).eq('order_id', orderId)
+    .eq('item_status', 'shipped').select('id');
   if (error) { alert('操作失败：' + error.message); return; }
+  const n = (upd || []).length;
+  if (!n) { alert('当前没有"已发货"商品可标记到货（可能还有厂家未发货）'); return; }
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'arrived',
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
-    notes: '物流确认货物已到达',
+    notes: '📥 已收到 '+n+' 件商品（已发货 → 到货）；主订单状态由系统按全部商品聚合',
   });
   // 不再自动跳到「安装中」：由正常的 updateOrder 流程推进
   // （那里会强制校验安装日期 + 款项已付清）
