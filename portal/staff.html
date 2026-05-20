@@ -3258,12 +3258,54 @@ function renderSupplierStatusCard(o, items, supList, shipments) {
         ${sh.tracking_no ? `单号：<span class="font-mono text-orange-600">${_e(sh.tracking_no)}</span>` : ''}
         ${sh.ship_time ? `<span class="text-gray-400 ml-1">(${fmtDate(sh.ship_time)})</span>` : ''}
       </div>` : '<div class="text-xs text-gray-400">尚未发货</div>'}
+      ${canDo(3) ? `<div class="mt-2 pt-2 border-t border-dashed border-red-200 flex flex-wrap gap-2">
+        <span class="text-[11px] text-red-500 font-semibold w-full">⚠ 区域负责人接管(厂家不配合时用，留痕审计)</span>
+        ${ss.label==='生产中' ? `<button onclick="staffOverrideMarkReady('${o.id}','${sid}')"
+          class="px-2.5 py-1 border border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50">代该厂家·生产完成</button>` : ''}
+        ${ss.label==='生产完成' ? `<button onclick="staffOverrideShip('${o.id}','${sid}')"
+          class="px-2.5 py-1 border border-red-300 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-50">代该厂家·发货</button>` : ''}
+      </div>` : ''}
     </div>`;
   }).join('');
   return `<div class="card p-5 mb-4">
     <h3 class="font-semibold text-gray-800 mb-3">🏭 各厂家进度（每家各自推进，互不影响）</h3>
     ${rows}
   </div>`;
+}
+
+// ── 管理代行厂家(L3+, 厂家甩单/拖延时接管) ──
+async function staffOverrideMarkReady(orderId, supId) {
+  const reason = prompt('代厂家点"生产完成"\n必填原因(如:厂家失联7天,实物已到店,需推进):');
+  if (!reason || !reason.trim()) return;
+  const { data, error } = await sb.rpc('staff_override_mark_ready',
+    { p_order_id: orderId, p_supplier_id: supId, p_reason: reason.trim() });
+  if (error) { alert('代行失败：' + error.message); return; }
+  if (!data?.ok) { alert(data?.message || '代行失败'); return; }
+  alert('✅ 已代该厂家标记 ' + data.count + ' 件生产完成（已记 ⚠ 管理代行 日志）');
+  openDetail(orderId);
+}
+async function staffOverrideShip(orderId, supId) {
+  const method = prompt('代该厂家发货\n步骤 1/4 运输方式:输入 land(陆运)/sea(海运)/air(空运)');
+  if (!method) return;
+  if (!['land','sea','air'].includes(method.trim())) { alert('运输方式必须是 land / sea / air'); return; }
+  const carrier = prompt('步骤 2/4 物流公司(如:骐盛国际物流):');
+  if (carrier === null) return;
+  const tracking = prompt('步骤 3/4 物流单号:');
+  if (tracking === null) return;
+  const reason = prompt('步骤 4/4 必填代行原因:');
+  if (!reason || !reason.trim()) return;
+  if (!confirm('⚠ 代厂家发货将记入 ⚠ 管理代行 日志，不可撤销。确认继续？')) return;
+  const { data, error } = await sb.rpc('staff_override_ship_items', {
+    p_order_id: orderId, p_supplier_id: supId,
+    p_carrier: carrier.trim() || null,
+    p_tracking_no: tracking.trim() || null,
+    p_method: method.trim(),
+    p_reason: reason.trim(),
+  });
+  if (error) { alert('代行失败：' + error.message); return; }
+  if (!data?.ok) { alert(data?.message || '代行失败'); return; }
+  alert('✅ 已代该厂家发货 ' + data.count + ' 件（已记 ⚠ 管理代行 日志）');
+  openDetail(orderId);
 }
 
 // 图纸三方确认卡（按供应商各一份；运营在此上传/确认/看状态）
@@ -3490,10 +3532,13 @@ function renderItemsCard(items, o, supList) {
           </div>
           ${canAssign ? `
             ${(hasUnassigned || canDo(4))
-              ? `<button onclick="saveItemSuppliers(event,'${o.id}')"
+              ? `<div class="flex items-center gap-2 flex-wrap">
+                 <button onclick="saveItemSuppliers(event,'${o.id}')"
                           class="px-4 py-1.5 bg-hg text-white text-sm font-semibold rounded-lg hover:bg-green-900 transition">
                      保存供应商分配
-                   </button>`
+                 </button>
+                 <span class="text-[11px] text-gray-400">改派到新厂家 = 接管;原厂家工作会重置回「待接单」</span>
+               </div>`
               : `<button disabled
                           class="px-4 py-1.5 bg-gray-200 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
                      已完成分配
