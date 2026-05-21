@@ -77,6 +77,7 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()">💰 <span>商品价目</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -134,6 +135,9 @@
       <div class="nav-link" id="nav-customers" onclick="goto('customers')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         <span data-i18n="nav_customers">客户管理</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-pricing" data-perm="pricing" onclick="goto('pricing')">
+        💰 <span>商品价目</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -430,6 +434,38 @@
       </div>
     </div>
 
+    <!-- ── 商品价目(店长 L2+) ── -->
+    <div id="v-pricing" class="hidden p-6 max-w-6xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-2">💰 商品价目</h1>
+      <p class="text-sm text-gray-500 mb-5">这里维护开单时自动带的零售标价。每个 SKU 一个标价,留空则开单时手填。
+        成本来自仓库入库,只读;改成本请去仓库后台。</p>
+
+      <div class="card p-4 mb-4 flex flex-wrap gap-2">
+        <input type="text" id="pricing-search" placeholder="搜索 SKU / 名称" oninput="renderPricingTable()"
+               class="input flex-1 min-w-[200px] text-sm">
+        <select id="pricing-cat" onchange="renderPricingTable()" class="input text-sm" style="max-width:200px">
+          <option value="">全部分类</option>
+        </select>
+        <select id="pricing-pricestate" onchange="renderPricingTable()" class="input text-sm" style="max-width:160px">
+          <option value="">全部 SKU</option>
+          <option value="missing">⚠ 未定价</option>
+          <option value="set">已定价</option>
+        </select>
+      </div>
+
+      <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center">
+        <button onclick="downloadPricingTemplate()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">📥 下载现有价表 (Excel)</button>
+        <button onclick="document.getElementById('pricing-upload').click()" class="px-4 py-2 text-sm rounded-lg btn-gold">📤 上传价表 (Excel)</button>
+        <input type="file" id="pricing-upload" accept=".xlsx,.xls" class="hidden" onchange="uploadPricingXlsx(this)">
+        <span id="pricing-upload-result" class="text-xs text-gray-500 ml-2"></span>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div id="pricing-summary" class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100"></div>
+        <div id="pricing-table" class="overflow-x-auto"></div>
+      </div>
+    </div>
+
     <!-- ── ORDER DETAIL ── -->
     <div id="v-detail" class="hidden p-6 max-w-3xl mx-auto">
       <div class="flex items-center gap-3 mb-5">
@@ -530,6 +566,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // ── i18n ──
 const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -878,6 +915,7 @@ const FIELD_MIN_LEVEL = {
   approve_reg:      4,
   nav_registrations:4,
   nav_users:        4,
+  nav_pricing:      2,   // 商品价目:店长 L2+ 可查/改价
   store_filter:     2,
 };
 
@@ -1607,6 +1645,9 @@ async function init() {
   document.querySelectorAll('.admin-nav[data-perm="users"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_users)) el.classList.remove('hidden');
   });
+  document.querySelectorAll('.admin-nav[data-perm="pricing"]').forEach(el => {
+    if (canDo(FIELD_MIN_LEVEL.nav_pricing)) el.classList.remove('hidden');
+  });
   setLang(currentLang);
 
   // Request notification permission for overdue alerts
@@ -1771,7 +1812,7 @@ async function loadCustomers() {
 function goto(view) {
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
-  ['dashboard','orders','create','customers','detail','registrations','users'].forEach(v => {
+  ['dashboard','orders','create','customers','detail','registrations','users','pricing'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     const navId = v === 'detail' ? 'orders' : v;
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
@@ -1782,6 +1823,7 @@ function goto(view) {
   if (view === 'create') resetCreateForm();
   if (view === 'registrations') loadRegistrations();
   if (view === 'users') loadUsersPage();
+  if (view === 'pricing') loadPricingPage();
 }
 
 // ── Dashboard ──
@@ -5078,6 +5120,202 @@ async function editSupplierInfo(id, curName, curPhone) {
     .update({ name: name.trim(), phone: phone.trim() || null }).eq('id', id);
   if (error) { alert('保存失败: ' + error.message); return; }
   await renderSuppliersPage();
+}
+
+// ── 商品价目 (店长 L2+) ──
+let _pricingAll = [];          // 全部 SKU 缓存,字段{ id, sku, name, category, unit, price, _cost }
+let _pricingDirty = new Set(); // 行 id → 待保存
+let _pricingCatLabel = {       // 与仓库端 CAT_LABEL 同步;开新分类时记得这两边都加
+  CG:'橱柜', CB:'卫浴', MZ:'门窗', YG:'衣柜', WY:'卫浴五金', DZ:'定制柜',
+  CT:'瓷砖', DB:'地板', JD:'家电', TL:'涂料', QT:'其他',
+};
+
+async function loadPricingPage() {
+  if (!canDo(FIELD_MIN_LEVEL.nav_pricing)) {
+    document.getElementById('pricing-table').innerHTML = '<div class="p-8 text-center text-gray-400">权限不足</div>';
+    return;
+  }
+  document.getElementById('pricing-table').innerHTML = '<div class="p-8 text-center text-gray-400">加载中…</div>';
+  // 一次拉全部 products + 全部 inventory 的成本(用最低成本作为参考)
+  const [{ data: prods }, { data: invs }] = await Promise.all([
+    sb.from('products').select('id,sku,name,category,unit,price').order('sku'),
+    sb.from('inventory').select('product_id,unit_cost'),
+  ]);
+  // product_id → 最近一次有成本的值(任一仓库,取第一条非空)
+  const costMap = {};
+  (invs || []).forEach(r => {
+    if (r.unit_cost == null || costMap[r.product_id] != null) return;
+    costMap[r.product_id] = Number(r.unit_cost) || 0;
+  });
+  _pricingAll = (prods || []).map(p => ({ ...p, _cost: costMap[p.id] || 0 }));
+  _pricingDirty.clear();
+  // 填分类下拉
+  const sel = document.getElementById('pricing-cat');
+  const cats = Array.from(new Set(_pricingAll.map(p => p.category || 'QT'))).sort();
+  sel.innerHTML = '<option value="">全部分类</option>' +
+    cats.map(c => `<option value="${c}">${_pricingCatLabel[c] || c}</option>`).join('');
+  renderPricingTable();
+}
+
+function renderPricingTable() {
+  const q   = (document.getElementById('pricing-search')?.value || '').trim().toLowerCase();
+  const cat = document.getElementById('pricing-cat')?.value || '';
+  const st  = document.getElementById('pricing-pricestate')?.value || '';
+  let list = _pricingAll;
+  if (q)   list = list.filter(p =>
+    (p.sku||'').toLowerCase().includes(q) || (p.name||'').toLowerCase().includes(q));
+  if (cat) list = list.filter(p => (p.category||'QT') === cat);
+  if (st === 'missing') list = list.filter(p => !p.price || Number(p.price) === 0);
+  if (st === 'set')     list = list.filter(p => p.price && Number(p.price) > 0);
+
+  // 顶部小结
+  const totalCnt = _pricingAll.length;
+  const setCnt   = _pricingAll.filter(p => p.price && Number(p.price) > 0).length;
+  document.getElementById('pricing-summary').innerHTML =
+    `共 <b>${totalCnt}</b> 个 SKU,已定价 <b style="color:#1a3a2a">${setCnt}</b> 个 · 未定价 <b style="color:#c83a3a">${totalCnt-setCnt}</b> 个 ` +
+    (list.length !== totalCnt ? `· 当前筛选 <b>${list.length}</b> 行` : '');
+
+  if (!list.length) {
+    document.getElementById('pricing-table').innerHTML =
+      '<div class="p-8 text-center text-gray-400">没有匹配的 SKU。换个搜索词或切分类试试。</div>';
+    return;
+  }
+  const rows = list.map(p => {
+    const cost = p._cost || 0;
+    const price = Number(p.price || 0);
+    let marginHtml = '<span class="text-gray-300">—</span>';
+    if (cost > 0 && price > 0) {
+      const m = ((price - cost) / price) * 100;
+      const cls = m < 0 ? 'text-red-600' : m < 10 ? 'text-amber-600' : 'text-emerald-700';
+      marginHtml = `<span class="${cls} font-semibold">${m.toFixed(1)}%</span>`;
+    }
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+      <td class="px-3 py-2 text-xs font-mono text-gray-500">${escHtml(p.sku || '')}</td>
+      <td class="px-3 py-2 text-sm">${escHtml(p.name || '')}</td>
+      <td class="px-3 py-2 text-xs text-gray-500">${escHtml(_pricingCatLabel[p.category]||p.category||'')}</td>
+      <td class="px-3 py-2 text-xs text-gray-500 text-right">${cost > 0 ? cost.toFixed(2) : '<span class="text-gray-300">—</span>'}</td>
+      <td class="px-3 py-2 text-right">
+        <input type="number" step="0.01" min="0" value="${price > 0 ? price.toFixed(2) : ''}"
+               placeholder="未定价" data-prod-id="${p.id}" onchange="onPricingEdit(this)"
+               class="input text-sm text-right w-24" style="${price > 0 ? '' : 'border-color:#fca5a5;background:#fef2f2'}">
+      </td>
+      <td class="px-3 py-2 text-xs text-right">${marginHtml}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pricing-table').innerHTML = `
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase">
+          <th class="px-3 py-2">SKU</th>
+          <th class="px-3 py-2">名称</th>
+          <th class="px-3 py-2">分类</th>
+          <th class="px-3 py-2 text-right">成本</th>
+          <th class="px-3 py-2 text-right">零售价</th>
+          <th class="px-3 py-2 text-right">毛利率</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function onPricingEdit(input) {
+  const id  = input.dataset.prodId;
+  const val = parseFloat(input.value);
+  if (input.value === '' || isNaN(val) || val < 0) {
+    input.style.borderColor = '#fca5a5'; input.style.background = '#fef2f2';
+    // 清空 → 写 null
+    const { error } = await sb.from('products').update({ price: null }).eq('id', id);
+    if (error) { alert('保存失败:' + error.message); return; }
+    const row = _pricingAll.find(p => p.id === id); if (row) row.price = null;
+    return;
+  }
+  const { error } = await sb.from('products').update({ price: val }).eq('id', id);
+  if (error) { alert('保存失败:' + error.message); input.style.borderColor='#ef4444'; return; }
+  input.style.borderColor = ''; input.style.background = '';
+  const row = _pricingAll.find(p => p.id === id);
+  if (row) row.price = val;
+  // 重渲染让汇总数字 / 毛利率刷新
+  renderPricingTable();
+}
+
+function downloadPricingTemplate() {
+  if (typeof XLSX === 'undefined') { alert('表格组件还没加载好,请刷新页面后重试'); return; }
+  const head = ['SKU','产品名称','分类','单位','当前零售价','建议零售价(改这里)'];
+  const rows = [head];
+  _pricingAll.forEach(p => {
+    rows.push([
+      p.sku || '', p.name || '',
+      _pricingCatLabel[p.category] || p.category || '',
+      p.unit || '',
+      p.price ? Number(p.price).toFixed(2) : '',
+      '',   // 老板填这一列
+    ]);
+  });
+  rows.push([], ['== 说明 =='], ['1. 只改最右边「建议零售价(改这里)」一列,留空则不动。']);
+  rows.push(['2. SKU 必须匹配系统里已有的;系统里没有的:那一行跳过,不会建新产品。']);
+  rows.push(['3. 上传后,有填值的 SKU 会立刻更新零售价;留空的 SKU 保持原价。']);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '商品价目');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `HOUZY价目表_${stamp}.xlsx`);
+}
+
+async function uploadPricingXlsx(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { alert('表格组件还没加载好,请刷新页面后重试'); return; }
+  const box = document.getElementById('pricing-upload-result');
+  box.style.color = '#6b7280';
+  box.textContent = '正在读取文件…';
+  let wb;
+  try {
+    wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+  } catch (e) {
+    box.style.color = '#dc2626'; box.textContent = '文件读取失败,请确认是从下载的模板填写的 Excel 文件。';
+    return;
+  }
+  // 取第一个非空 sheet 的所有行
+  let rows = [];
+  for (const name of wb.SheetNames) {
+    rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '' });
+    if (rows.length) break;
+  }
+  // 容错:列名兼容若干常见叫法
+  const skuKey = ['SKU','sku','编号','产品编号'];
+  const priceKey = ['建议零售价(改这里)','建议零售价','零售价','单价','价格','price'];
+  const norm = (r, keys) => { for (const k of keys) { if (r[k] != null && String(r[k]).trim() !== '') return String(r[k]).trim(); } return ''; };
+  const skuMap = new Map();
+  _pricingAll.forEach(p => { if (p.sku) skuMap.set(p.sku.trim().toUpperCase(), p.id); });
+
+  let ok = 0, miss = 0, skipped = 0, fail = 0;
+  for (const r of rows) {
+    const sku = norm(r, skuKey).toUpperCase();
+    const priceStr = norm(r, priceKey);
+    if (!sku) { skipped++; continue; }
+    if (!priceStr) { skipped++; continue; }   // 留空 = 跳过(沿用原价)
+    const v = parseFloat(priceStr);
+    if (isNaN(v) || v < 0) { skipped++; continue; }
+    const id = skuMap.get(sku);
+    if (!id) { miss++; continue; }
+    const { error } = await sb.from('products').update({ price: v }).eq('id', id);
+    if (error) { fail++; continue; }
+    const row = _pricingAll.find(p => p.id === id); if (row) row.price = v;
+    ok++;
+  }
+  box.style.color = ok ? '#1a3a2a' : '#dc2626';
+  box.innerHTML = `✓ 已更新 <b>${ok}</b> 个 SKU` +
+    (skipped ? ` · 跳过 ${skipped}(空/格式错)` : '') +
+    (miss    ? ` · ⚠ ${miss} 个 SKU 系统里没有,未更新` : '') +
+    (fail    ? ` · ❌ ${fail} 个保存失败` : '');
+  renderPricingTable();
+  // staff 端开单选择器用的本地缓存也刷一下
+  await loadStaffProducts();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Registrations (admin) ──
