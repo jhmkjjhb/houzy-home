@@ -295,6 +295,10 @@
               <label class="label">单位成本（选填）</label>
               <input type="number" id="si-cost" placeholder="0.00" min="0" step="0.01" class="input text-sm">
             </div>
+            <div>
+              <label class="label">建议零售价（选填）<span class="text-xs text-gray-400 font-normal ml-1">开单自动带价用</span></label>
+              <input type="number" id="si-price" placeholder="0.00" min="0" step="0.01" class="input text-sm">
+            </div>
             <div id="si-batch-row" class="hidden sm:col-span-2">
               <label class="label font-bold" style="color:#1a3a2a">瓷砖批次号 <span class="text-red-500">*</span><span class="text-xs text-gray-400 font-normal ml-1">（色差追踪专用）</span></label>
               <input type="text" id="si-batch-no" placeholder="如：2024-05-A 或厂家批次号" class="input text-sm" style="border-color:#c8a96e">
@@ -1499,6 +1503,7 @@ async function submitStockIn() {
   const whId      = document.getElementById('si-wh')?.value;
   const qty       = parseFloat(document.getElementById('si-qty')?.value);
   const cost      = parseFloat(document.getElementById('si-cost')?.value) || null;
+  const price     = parseFloat(document.getElementById('si-price')?.value) || null;
   const userNotes = document.getElementById('si-notes')?.value.trim() || '';
   const batchNo   = document.getElementById('si-batch-no')?.value.trim() || '';
   const err       = document.getElementById('si-err');
@@ -1518,13 +1523,17 @@ async function submitStockIn() {
     const minQ  = parseFloat(document.getElementById('si-new-min')?.value) || 0;
     const attrs = collectSiAttrs();
     const specs = Object.entries(attrs).map(([k,v])=>`${k}:${v}`).join(' | ') || null;
-    const res = await insertProductWithSku(cat, { name: newName, category: cat, unit, specs, min_stock_qty: minQ });
+    const res = await insertProductWithSku(cat, { name: newName, category: cat, unit, specs, min_stock_qty: minQ,
+      ...(price ? { price } : {}) });   // 新建产品时一并写零售价
     if (res.error) { err.textContent='建档失败: '+res.error.message; err.classList.remove('hidden'); return; }
     prodId = res.id;
     await loadAll();
     newProductSku = res.sku; newProductName = newName;
   } else if (!prodId) {
     err.textContent='请选择产品'; err.classList.remove('hidden'); return;
+  } else if (price) {
+    // 选已有产品 + 填了零售价 → 覆盖更新(以最新一次入库的报价为准;留空不动)
+    await sb.from('products').update({ price }).eq('id', prodId);
   }
 
   const attrs = collectSiAttrs();
@@ -1562,7 +1571,7 @@ async function submitStockIn() {
   }
   await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'in', qty, notes: notesStr, operator_id: profile.id });
 
-  ['si-qty','si-cost','si-notes','si-batch-no','si-new-name','si-new-min'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['si-qty','si-cost','si-price','si-notes','si-batch-no','si-new-name','si-new-min'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('si-batch-row')?.classList.add('hidden');
   document.getElementById('si-prod').value = '';
   document.getElementById('si-new-sku').textContent = '—';
