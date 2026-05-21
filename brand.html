@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HOUZY HOME Brand System v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#153927;
+  --green-2:#245640;
+  --green-3:#0d2519;
+  --gold:#c8a96e;
+  --gold-2:#e4cf9b;
+  --cream:#f4efe5;
+  --paper:#fbf8f1;
+  --ink:#171717;
+  --muted:#7c776e;
+  --stone:#c9c4ba;
+  --line:rgba(200,169,110,.28);
+  --ff-en-serif:'Playfair Display','DM Serif Display','Didot','Times New Roman',Georgia,serif;
+  --ff-en-sans:Inter,-apple-system,BlinkMacSystemFont,'Helvetica Neue','Segoe UI',Arial,sans-serif;
+  --ff-cn-serif:'Noto Serif SC','Songti SC','Source Han Serif SC','STSong',SimSun,serif;
+  --ff-cn-sans:'Noto Sans SC','PingFang SC','Source Han Sans SC','Microsoft YaHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+@page{size:A4 landscape;margin:0}
+body{
+  background:#050505;
+  color:#fff;
+  font-family:var(--ff-en-sans),var(--ff-cn-sans);
+  -webkit-font-smoothing:antialiased;
+}
+.slide{
+  width:297mm;
+  height:210mm;
+  page-break-after:always;
+  overflow:hidden;
+  position:relative;
+  padding:15mm 20mm;
+  background:var(--green);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.slide.cover{justify-content:flex-start;padding-top:22mm}
+.slide > .grid-2{flex:0 0 auto;height:auto}
+.slide:last-child{page-break-after:auto}
+.dark{background:#0b0b0b}
+.deep{background:linear-gradient(135deg,var(--green),var(--green-3))}
+.light{background:var(--cream);color:var(--ink)}
+.paper{background:var(--paper);color:var(--ink)}
+.num{
+  position:absolute;right:16mm;top:12mm;
+  font-size:8px;letter-spacing:3px;color:rgba(200,169,110,.45);
+}
+.label{
+  font-size:8px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:8px;
+}
+.h1{
+  font-family:var(--ff-cn-serif);
+  font-size:34px;
+  line-height:1.2;
+  letter-spacing:2.5px;
+  font-weight:900;
+}
+.h1-en{
+  margin-top:8px;
+  font-family:var(--ff-en-serif);
+  font-size:14px;
+  letter-spacing:2px;
+  color:var(--gold-2);
+}
+.h2{
+  font-family:var(--ff-cn-serif);
+  font-size:25px;
+  line-height:1.3;
+  letter-spacing:1.5px;
+  font-weight:800;
+}
+.h2-en{
+  margin-top:6px;
+  font-family:var(--ff-en-serif);
+  font-size:11px;
+  color:rgba(255,255,255,.52);
+  letter-spacing:1.2px;
+}
+.light .h2-en,.paper .h2-en{color:rgba(21,57,39,.56)}
+.body{
+  font-size:11px;
+  line-height:1.9;
+  color:rgba(255,255,255,.72);
+}
+.body-en{
+  font-size:8.5px;
+  line-height:1.7;
+  color:rgba(255,255,255,.38);
+}
+.light .body,.paper .body{color:rgba(23,23,23,.72)}
+.light .body-en,.paper .body-en{color:rgba(23,23,23,.42)}
+.hl{color:var(--gold);font-weight:700}
+.rule{height:1px;background:linear-gradient(90deg,var(--gold),transparent);width:58px;margin:14px 0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:15mm;align-items:center;height:100%}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.panel{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:10px;
+  padding:14px;
+}
+.light .panel,.paper .panel{
+  background:rgba(255,255,255,.55);
+  border-color:rgba(21,57,39,.14);
+}
+.panel-k{
+  font-size:8px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:6px;
+}
+.panel-cn{
+  font-size:12px;
+  line-height:1.7;
+  font-weight:600;
+}
+.panel-en{
+  margin-top:5px;
+  font-size:8px;
+  line-height:1.55;
+  color:rgba(255,255,255,.42);
+}
+.light .panel-en,.paper .panel-en{color:rgba(23,23,23,.45)}
+.mark{
+  color:var(--gold-2);
+  display:block;
+}
+.mark-hero{width:220px;height:160px}
+.mark-small{width:46px;height:34px}
+.lockup{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.brand-cn{
+  font-family:var(--ff-cn-serif);
+  font-size:22px;
+  letter-spacing:2px;
+  font-weight:900;
+}
+.brand-en{
+  font-family:var(--ff-en-serif);
+  font-size:10px;
+  letter-spacing:3px;
+  color:var(--gold-2);
+  margin-top:4px;
+}
+.cover-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  height:100%;
+  background:rgba(255,255,255,.035);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+.cover-card:after{
+  content:'TOUCH · COMPARE · CREATE';
+  position:absolute;
+  bottom:18px;
+  left:24px;
+  right:24px;
+  text-align:center;
+  font-size:8px;
+  letter-spacing:4px;
+  color:rgba(228,207,155,.62);
+}
+.journey{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:6px;
+  margin-top:16px;
+}
+.step{
+  min-height:105px;
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.03);
+  border-radius:8px;
+  padding:10px;
+  position:relative;
+}
+.step-no{
+  font-family:var(--ff-en-serif);
+  font-size:21px;
+  color:var(--gold);
+  line-height:1;
+}
+.step-cn{
+  margin-top:8px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+.step-en{
+  margin-top:4px;
+  font-size:7px;
+  color:rgba(255,255,255,.4);
+  line-height:1.45;
+}
+.light .step,.paper .step{background:rgba(255,255,255,.55);border-color:rgba(21,57,39,.14)}
+.light .step-en,.paper .step-en{color:rgba(23,23,23,.45)}
+.logo-frame{
+  height:112px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  border:1px solid rgba(200,169,110,.18);
+  background:var(--green);
+}
+.logo-frame.light-box{background:var(--cream)}
+.logo-frame.light-box .mark{color:var(--green)}
+.logo-frame.gold-box{background:var(--gold)}
+.logo-frame.gold-box .mark{color:var(--green)}
+.lockup-system{
+  display:grid;
+  grid-template-columns:1.15fr .85fr;
+  gap:12px;
+  align-items:stretch;
+  margin-top:14px;
+}
+.lockup-demo{
+  border:1px solid rgba(200,169,110,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  padding:18px;
+  min-height:130px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.paper .lockup-demo,.light .lockup-demo{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.logo-lockup-h{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.logo-lockup-v{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:10px;
+}
+.word-houzy{
+  font-family:var(--ff-en-serif);
+  font-size:28px;
+  letter-spacing:5px;
+  font-weight:700;
+  color:var(--green);
+  line-height:1;
+}
+.dark .word-houzy,.deep .word-houzy{color:#fff}
+.word-home{
+  font-size:8px;
+  letter-spacing:4px;
+  color:var(--gold);
+  margin-top:5px;
+}
+.word-cn{
+  font-family:var(--ff-cn-serif);
+  font-size:15px;
+  letter-spacing:4px;
+  font-weight:800;
+  color:var(--green);
+  margin-top:8px;
+}
+.dark .word-cn,.deep .word-cn{color:#fff}
+.clearspace{
+  border:1px dashed rgba(200,169,110,.55);
+  padding:18px 24px;
+  border-radius:10px;
+  position:relative;
+}
+.clearspace:before{
+  content:'X';
+  position:absolute;
+  top:6px;
+  left:8px;
+  font-size:8px;
+  color:var(--gold);
+  letter-spacing:1px;
+}
+.wrong-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  margin-top:10px;
+}
+.wrong{
+  min-height:82px;
+  border:1px solid rgba(180,70,70,.32);
+  border-radius:8px;
+  background:rgba(180,70,70,.06);
+  padding:9px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  gap:5px;
+}
+.wrong span{
+  font-size:7px;
+  color:rgba(255,255,255,.46);
+  line-height:1.4;
+}
+.paper .wrong span,.light .wrong span{color:rgba(23,23,23,.5)}
+.swatch{
+  height:86px;border-radius:8px;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;
+}
+.swatch b{font-size:10px;letter-spacing:1px}
+.swatch span{font-size:7px;margin-top:3px;opacity:.68}
+.prop-bar{
+  display:flex;height:34px;border-radius:6px;overflow:hidden;margin-top:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.18);
+}
+.prop-seg{
+  display:flex;align-items:flex-end;justify-content:flex-start;
+  padding:5px 8px;font-size:8px;letter-spacing:1.2px;font-weight:700;
+}
+.prop-label{
+  display:grid;grid-template-columns:repeat(4,auto);gap:14px;margin-top:6px;
+  font-size:7px;letter-spacing:1.5px;color:rgba(255,255,255,.55);
+}
+.paper .prop-label,.light .prop-label{color:rgba(23,23,23,.55)}
+.type-sample{
+  border-left:2px solid var(--gold);
+  padding:12px 14px;
+  background:rgba(255,255,255,.04);
+  border-radius:0 8px 8px 0;
+  margin-bottom:10px;
+}
+.type-cn{font-family:var(--ff-cn-serif);font-size:24px;letter-spacing:4px;font-weight:900}
+.type-en{font-family:var(--ff-en-serif);font-size:25px;letter-spacing:1px}
+.zone-card{
+  height:128px;
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid rgba(200,169,110,.18);
+  background:#171717;
+  display:flex;
+  flex-direction:column;
+}
+.zone-top{
+  background:var(--green);
+  padding:10px 12px;
+}
+.zone-cn{font-family:var(--ff-cn-serif);font-size:13px;letter-spacing:2px;font-weight:800}
+.zone-en{font-size:7px;letter-spacing:2px;color:var(--gold);margin-top:3px;text-transform:uppercase}
+.zone-body{
+  flex:1;
+  background:linear-gradient(135deg,#d8d1c6,#b8b2a8);
+  position:relative;
+}
+.zone-body:after{
+  content:'';
+  position:absolute;left:12px;right:12px;bottom:12px;height:18px;
+  background:var(--paper);
+  border-left:3px solid var(--gold);
+}
+.price-card{
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 10px 28px rgba(0,0,0,.2);
+}
+.price-head{
+  background:var(--green);
+  color:#fff;
+  padding:10px 12px;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.price-name{font-family:var(--ff-cn-serif);font-size:13px;letter-spacing:2px;font-weight:800}
+.price-code{font-size:7px;color:rgba(255,255,255,.5);text-align:right;line-height:1.35}
+.price-body{padding:13px}
+.price-num{font-family:var(--ff-en-serif);font-size:26px;color:var(--green)}
+.price-note{font-size:8px;color:#777;margin-top:3px}
+.price-row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(21,57,39,.12);font-size:8px;padding:5px 0;color:#555}
+.qr{
+  width:28px;height:28px;background:
+  linear-gradient(90deg,var(--green) 2px,transparent 2px) 0 0/7px 7px,
+  linear-gradient(var(--green) 2px,transparent 2px) 0 0/7px 7px,#fff;
+  border:3px solid #fff;box-shadow:0 0 0 1px rgba(21,57,39,.18)
+}
+.tool{
+  border:1px solid rgba(200,169,110,.18);
+  border-radius:10px;
+  padding:12px;
+  min-height:110px;
+  background:rgba(255,255,255,.03);
+}
+.tool-cn{font-size:12px;font-weight:700;line-height:1.55}
+.tool-en{font-size:7.5px;line-height:1.5;color:rgba(255,255,255,.38);margin-top:5px}
+.signage{
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(200,169,110,.2);
+  box-shadow:0 15px 38px rgba(0,0,0,.25);
+}
+.sign-top{
+  height:62px;background:var(--green);
+  display:flex;align-items:center;justify-content:center;gap:14px;
+}
+.sign-wall{
+  height:138px;background:linear-gradient(180deg,#e3ddd3,#c9c2b7);
+  padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.bay{background:rgba(21,57,39,.13);border:1px solid rgba(21,57,39,.12);border-radius:4px;position:relative}
+.bay:after{content:'';position:absolute;left:9px;right:9px;bottom:9px;height:16px;background:#f8f4ea;border-left:3px solid var(--gold)}
+.copy-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:12px}
+.copy{
+  border:1px solid rgba(200,169,110,.18);
+  border-radius:9px;
+  padding:12px;
+  background:rgba(255,255,255,.03);
+}
+.copy-cn{font-size:10px;line-height:1.65}
+.copy-en{font-size:7.4px;line-height:1.45;color:rgba(255,255,255,.38);margin-top:5px}
+.mock-row{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;align-items:center}
+.card-mock{
+  aspect-ratio:1.72/1;
+  background:linear-gradient(135deg,var(--green),var(--green-3));
+  border-radius:10px;
+  padding:18px;
+  position:relative;
+  box-shadow:0 18px 40px rgba(0,0,0,.3);
+}
+.card-info{position:absolute;left:18px;bottom:16px;font-size:8px;line-height:1.7;color:rgba(255,255,255,.62)}
+.checklist{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.check{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:9px;
+  padding:12px;
+  min-height:104px;
+}
+.check b{font-size:10px;color:var(--gold);letter-spacing:1px}
+.check p{font-size:8px;line-height:1.55;color:rgba(255,255,255,.58);margin-top:7px}
+.light .check,.paper .check{background:rgba(255,255,255,.56);border-color:rgba(21,57,39,.14)}
+.light .check p,.paper .check p{color:rgba(23,23,23,.56)}
+.spec-table{
+  display:grid;
+  gap:7px;
+  margin-top:12px;
+}
+.spec-row{
+  display:grid;
+  grid-template-columns:1.1fr 1.2fr 1.2fr 1.1fr;
+  gap:8px;
+  align-items:stretch;
+}
+.spec-cell{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:8px;
+  padding:9px;
+  min-height:58px;
+}
+.paper .spec-cell,.light .spec-cell{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.spec-h{
+  font-size:7px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:5px;
+}
+.spec-cn{font-size:9px;line-height:1.55;font-weight:600}
+.spec-en{font-size:7px;line-height:1.45;color:rgba(255,255,255,.4);margin-top:3px}
+.paper .spec-en,.light .spec-en{color:rgba(23,23,23,.45)}
+.asset-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-top:12px;
+}
+.asset-card{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:9px;
+  padding:11px;
+  min-height:112px;
+}
+.paper .asset-card,.light .asset-card{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.asset-card b{font-size:10px;color:var(--gold);letter-spacing:1px}
+.asset-card p{font-size:8px;line-height:1.55;color:rgba(255,255,255,.58);margin-top:7px}
+.paper .asset-card p,.light .asset-card p{color:rgba(23,23,23,.56)}
+.device-grid{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:12px;
+  align-items:stretch;
+  margin-top:14px;
+}
+.web-wire{
+  border:1px solid rgba(21,57,39,.14);
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 16px 36px rgba(0,0,0,.12);
+}
+.web-nav{
+  height:38px;
+  background:#fff;
+  border-bottom:1px solid rgba(21,57,39,.1);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+}
+.web-dot{width:52px;height:8px;background:var(--green);border-radius:999px}
+.web-links{display:flex;gap:8px}
+.web-links span{width:34px;height:5px;background:#ddd;border-radius:99px}
+.web-hero{
+  height:138px;
+  background:linear-gradient(135deg,var(--green),#1f4f3a);
+  display:flex;
+  align-items:center;
+  padding:22px;
+  color:#fff;
+}
+.web-title{font-family:var(--ff-cn-serif);font-size:22px;letter-spacing:3px;line-height:1.2}
+.web-sub{font-size:8px;color:var(--gold-2);letter-spacing:2px;margin-top:8px}
+.web-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px}
+.web-card{height:58px;background:var(--cream);border-radius:6px;border-left:3px solid var(--gold)}
+.spec-mini{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:12px;
+}
+.spec-mini .mini{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:8px;
+  padding:10px;
+  min-height:86px;
+}
+.paper .spec-mini .mini,.light .spec-mini .mini{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.mini b{font-size:9px;color:var(--gold);letter-spacing:1px}
+.mini p{font-size:7.5px;line-height:1.5;color:rgba(255,255,255,.55);margin-top:6px}
+.paper .mini p,.light .mini p{color:rgba(23,23,23,.56)}
+.platform-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:9px;
+  margin-top:14px;
+}
+.platform{
+  border:1px solid rgba(200,169,110,.18);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+  padding:11px;
+  min-height:126px;
+}
+.paper .platform,.light .platform{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.platform .p-size{font-family:var(--ff-en-serif);font-size:18px;color:var(--gold);line-height:1}
+.platform .p-name{font-size:10px;font-weight:700;margin-top:8px}
+.platform .p-note{font-size:7.5px;line-height:1.45;color:rgba(255,255,255,.48);margin-top:6px}
+.paper .p-note,.light .p-note{color:rgba(23,23,23,.52)}
+.post-card{
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+  color:var(--ink);
+  box-shadow:0 14px 34px rgba(0,0,0,.18);
+}
+.post-cover{
+  height:122px;
+  background:linear-gradient(135deg,var(--green),var(--green-2));
+  padding:14px;
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.post-title{font-family:var(--ff-cn-serif);font-size:18px;letter-spacing:2px;line-height:1.25;font-weight:900}
+.post-tag{font-size:7px;letter-spacing:2px;color:var(--gold-2)}
+.post-body{padding:10px;font-size:8px;line-height:1.6;color:#555}
+.video-frame{
+  aspect-ratio:9/16;
+  max-height:390px;
+  border-radius:16px;
+  background:#111;
+  border:1px solid rgba(200,169,110,.18);
+  overflow:hidden;
+  position:relative;
+  margin:auto;
+}
+.video-safe{
+  position:absolute;
+  inset:42px 22px 72px;
+  border:1px dashed rgba(200,169,110,.55);
+  border-radius:10px;
+}
+.video-hook{
+  position:absolute;
+  top:58px;
+  left:24px;
+  right:24px;
+  font-family:var(--ff-cn-serif);
+  font-size:18px;
+  line-height:1.25;
+  letter-spacing:2px;
+}
+.video-cta{
+  position:absolute;
+  left:24px;
+  right:24px;
+  bottom:28px;
+  background:var(--gold);
+  color:var(--green);
+  border-radius:999px;
+  padding:9px 12px;
+  text-align:center;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+.rule-matrix{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:9px;
+  margin-top:12px;
+}
+.matrix-item{
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.035);
+  border-radius:9px;
+  padding:11px;
+  min-height:94px;
+}
+.paper .matrix-item,.light .matrix-item{background:rgba(255,255,255,.58);border-color:rgba(21,57,39,.14)}
+.matrix-item b{font-size:10px;color:var(--gold);letter-spacing:1px}
+.matrix-item p{font-size:8px;line-height:1.55;color:rgba(255,255,255,.56);margin-top:7px}
+.paper .matrix-item p,.light .matrix-item p{color:rgba(23,23,23,.56)}
+.field-list{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin-top:12px;
+}
+.field{
+  border-left:2px solid var(--gold);
+  background:rgba(255,255,255,.035);
+  border-radius:0 8px 8px 0;
+  padding:10px 12px;
+}
+.field-cn{font-size:10px;font-weight:700;line-height:1.55}
+.field-en{font-size:7px;color:rgba(255,255,255,.4);line-height:1.45;margin-top:3px}
+.paper .field,.light .field{background:rgba(255,255,255,.58)}
+.paper .field-en,.light .field-en{color:rgba(23,23,23,.45)}
+.tone-bar{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;
+}
+.tone-bar span{
+  border:1px solid rgba(200,169,110,.32);
+  color:var(--gold-2);
+  font-size:9px;letter-spacing:2px;
+  padding:7px 13px;border-radius:999px;
+}
+.paper .tone-bar span,.light .tone-bar span{
+  border-color:rgba(21,57,39,.28);color:var(--green);
+}
+.size-stress{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;
+}
+.size-stress > div{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  border:1px solid rgba(200,169,110,.18);
+  background:rgba(255,255,255,.5);
+  border-radius:10px;padding:14px 10px;min-height:120px;
+}
+.dark .size-stress > div,.deep .size-stress > div{background:rgba(255,255,255,.03)}
+.ss-label{
+  font-size:8px;letter-spacing:1.5px;color:rgba(23,23,23,.55);
+}
+.dark .ss-label,.deep .ss-label{color:rgba(255,255,255,.55)}
+.proposal-mock{
+  background:var(--paper);
+  border-radius:8px;
+  padding:14px;
+  position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;
+  box-shadow:0 18px 40px rgba(0,0,0,.28);
+  height:100%;
+}
+.proposal-mock .p-corner{
+  position:absolute;right:0;top:0;width:40%;height:18px;background:var(--green);border-bottom-left-radius:8px;
+}
+.proposal-mock .p-title{font-family:var(--ff-cn-serif);font-size:13px;letter-spacing:2px;color:var(--green);line-height:1.3;font-weight:900}
+.proposal-mock .p-meta{font-size:7px;color:#777;line-height:1.6;letter-spacing:1px}
+.badge-mock{
+  background:linear-gradient(180deg,var(--green),var(--green-3));
+  border-radius:8px;padding:14px;display:flex;flex-direction:column;justify-content:space-between;
+  box-shadow:0 18px 40px rgba(0,0,0,.28);color:#fff;
+  height:100%;
+}
+.badge-mock .b-name{font-family:var(--ff-cn-serif);font-size:11px;letter-spacing:2px;font-weight:800}
+.badge-mock .b-role{font-size:7px;color:var(--gold-2);letter-spacing:2px;margin-top:3px}
+.badge-mock .b-qr{width:36px;height:36px;background:#fff;border-radius:4px;align-self:flex-end}
+.end-contact{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;
+}
+.end-contact div{font-size:9px;line-height:1.7;color:rgba(255,255,255,.62);letter-spacing:1px}
+.end-contact b{font-size:7px;letter-spacing:2px;color:var(--gold);display:block;margin-bottom:5px;text-transform:uppercase}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px}
+.photo{
+  border-radius:8px;overflow:hidden;border:1px solid rgba(200,169,110,.2);
+  display:flex;flex-direction:column;background:rgba(255,255,255,.04);
+}
+.paper .photo,.light .photo{background:rgba(255,255,255,.65);border-color:rgba(21,57,39,.14)}
+.photo-thumb{
+  height:78px;position:relative;overflow:hidden;
+}
+.photo-thumb:after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.18));
+}
+.photo-thumb.t1{background:radial-gradient(circle at 30% 65%,#3a5e4c,#15301f 70%),linear-gradient(180deg,#244837,#0f2517)}
+.photo-thumb.t2{background:linear-gradient(135deg,#d8c39b 0%,#a8804f 60%,#6b4626 100%)}
+.photo-thumb.t3{background:linear-gradient(180deg,#1c4233 0%,#2c5841 50%,#cfa86d 50%,#e6cb9a 100%)}
+.photo-thumb.t4{background:linear-gradient(90deg,#bdb4a3 0%,#bdb4a3 50%,#244837 50%,#1a3a2a 100%)}
+.photo-thumb .pt-tag{
+  position:absolute;left:8px;top:8px;font-size:6.5px;letter-spacing:1.5px;
+  color:rgba(255,255,255,.85);background:rgba(0,0,0,.4);padding:2px 6px;border-radius:3px;
+  text-transform:uppercase;z-index:1;
+}
+.photo-body{padding:9px 10px}
+.photo-body b{font-size:9px;color:var(--gold);letter-spacing:1px}
+.photo-body p{font-size:7.5px;line-height:1.5;color:rgba(255,255,255,.55);margin-top:5px}
+.paper .photo-body p,.light .photo-body p{color:rgba(23,23,23,.6)}
+.photo-rules{
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px;
+}
+.photo-rules .panel-k{margin-bottom:4px}
+.photo-do,.photo-dont{
+  border-radius:8px;padding:10px 12px;font-size:8px;line-height:1.6;
+}
+.photo-do{background:rgba(60,150,90,.08);border:1px solid rgba(60,150,90,.25);color:rgba(255,255,255,.72)}
+.photo-dont{background:rgba(180,70,70,.06);border:1px solid rgba(180,70,70,.28);color:rgba(255,255,255,.72)}
+.paper .photo-do,.light .photo-do{color:rgba(23,23,23,.72)}
+.paper .photo-dont,.light .photo-dont{color:rgba(23,23,23,.72)}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+  <symbol id="houzy-logo-mark" viewBox="0 0 320 240">
+    <g fill="currentColor">
+      <rect x="64" y="22" width="54" height="14"/>
+      <rect x="64" y="204" width="54" height="14"/>
+      <rect x="64" y="22" width="17" height="90"/>
+      <rect x="101" y="22" width="17" height="90"/>
+      <rect x="64" y="120" width="17" height="98"/>
+      <rect x="101" y="120" width="17" height="98"/>
+      <path d="M128 106 L194 78 L194 132 L128 160 Z"/>
+      <rect x="202" y="22" width="54" height="14"/>
+      <rect x="202" y="204" width="54" height="14"/>
+      <rect x="202" y="22" width="17" height="90"/>
+      <rect x="239" y="22" width="17" height="90"/>
+      <rect x="202" y="120" width="17" height="98"/>
+      <rect x="239" y="120" width="17" height="98"/>
+    </g>
+  </symbol>
+</svg>
+
+<!-- 01 COVER -->
+<section class="slide deep">
+  <div class="num">01</div>
+  <div class="grid-2">
+    <div>
+      <div class="label">Brand System v3 · 品牌全案系统</div>
+      <div class="h1">新山一站式<br>家居整装体验馆</div>
+      <div class="h1-en">A showroom-led home solutions brand in Johor Bahru.</div>
+      <div class="rule"></div>
+      <div class="body">HOUZY HOME 的核心不是单纯“装修”，而是让客户走进展厅，<span class="hl">触摸材料、对比方案、看见价格、理解流程</span>，然后放心交给一个负责到底的团队。</div>
+      <div class="body-en" style="margin-top:8px">HOUZY HOME is not just renovation. It is a showroom-led system where customers can touch materials, compare options, understand pricing, and trust one accountable team.</div>
+    </div>
+    <div class="cover-card">
+      <svg class="mark mark-hero"><use href="#houzy-logo-mark"/></svg>
+    </div>
+  </div>
+</section>
+
+<!-- 02 IDEA -->
+<section class="slide dark">
+  <div class="num">02</div>
+  <div class="label">Core Idea · 核心品牌概念</div>
+  <div class="h2">触摸、对比、创造理想家</div>
+  <div class="h2-en">Touch · Compare · Create</div>
+  <div class="grid-3" style="margin-top:18px">
+    <div class="panel"><div class="panel-k">Touch / 触摸</div><div class="panel-cn">客户先触摸真实材料，而不是只看效果图。</div><div class="panel-en">Customers touch real materials before trusting a design render.</div></div>
+    <div class="panel"><div class="panel-k">Compare / 对比</div><div class="panel-cn">在同一展厅里对比价格、质感、配置和风格。</div><div class="panel-en">They compare price, texture, specification, and style in one showroom.</div></div>
+    <div class="panel"><div class="panel-k">Create / 创造</div><div class="panel-cn">顾问把材料、预算和生活方式整合为可执行方案。</div><div class="panel-en">Consultants turn materials, budget, and lifestyle into one executable plan.</div></div>
+  </div>
+  <div class="panel" style="margin-top:18px">
+    <div class="panel-k">Brand Definition / 品牌定义</div>
+    <div class="panel-cn">HOUZY HOME 合屋整装科技，是服务新山家庭的一站式家居整装体验馆，整合设计、选材、施工、软装与售后。</div>
+    <div class="panel-en">HOUZY HOME is a one-stop home solutions showroom for families in Johor Bahru, integrating design, material selection, construction, furnishing, and aftercare.</div>
+  </div>
+  <div class="tone-bar">
+    <span>沉稳 Calm</span>
+    <span>可信 Trust</span>
+    <span>温暖 Warm</span>
+    <span>清晰 Clear</span>
+    <span>透明 Transparent</span>
+    <span>负责 Accountable</span>
+  </div>
+</section>
+
+<!-- 03 POSITIONING -->
+<section class="slide paper">
+  <div class="num">03</div>
+  <div class="grid-2">
+    <div>
+      <div class="label">Positioning · 品牌定位</div>
+      <div class="h2">不是装修公司，<br>是整装决策中心。</div>
+      <div class="h2-en">Not a renovation company, but a home-decision centre.</div>
+    </div>
+    <div>
+      <div class="panel"><div class="panel-k">For Whom / 服务对象</div><div class="panel-cn">新山正在装修、翻新、置业或升级住宅的家庭。</div><div class="panel-en">Families in Johor Bahru renovating, upgrading, or preparing a new home.</div></div>
+      <div class="panel" style="margin-top:10px"><div class="panel-k">Difference / 差异化</div><div class="panel-cn">把设计灵感、材料样板、套餐报价、顾问服务和施工交付放进同一套清晰流程。</div><div class="panel-en">A single clear process for inspiration, materials, package pricing, consultant support, and delivery.</div></div>
+      <div class="panel" style="margin-top:10px"><div class="panel-k">Promise / 品牌承诺</div><div class="panel-cn">价格看得见，材料摸得到，流程有人管。</div><div class="panel-en">Visible pricing, touchable materials, and one accountable process.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 JOURNEY -->
+<section class="slide deep">
+  <div class="num">04</div>
+  <div class="label">Customer Journey · 客户成交路径</div>
+  <div class="h2">品牌要服务从进店到售后的每一步</div>
+  <div class="h2-en">The brand must guide every step from entry to aftercare.</div>
+  <div class="journey">
+    <div class="step"><div class="step-no">01</div><div class="step-cn">看见门头</div><div class="step-en">Recognise the storefront</div></div>
+    <div class="step"><div class="step-no">02</div><div class="step-cn">进入展厅</div><div class="step-en">Enter the showroom</div></div>
+    <div class="step"><div class="step-no">03</div><div class="step-cn">触摸材料</div><div class="step-en">Touch materials</div></div>
+    <div class="step"><div class="step-no">04</div><div class="step-cn">对比价格</div><div class="step-en">Compare pricing</div></div>
+    <div class="step"><div class="step-no">05</div><div class="step-cn">顾问洽谈</div><div class="step-en">Consult with advisor</div></div>
+    <div class="step"><div class="step-no">06</div><div class="step-cn">方案报价</div><div class="step-en">Receive proposal</div></div>
+    <div class="step"><div class="step-no">07</div><div class="step-cn">施工售后</div><div class="step-en">Delivery & aftercare</div></div>
+  </div>
+  <div class="body" style="margin-top:18px">所有 VI 和文案都围绕这条路径设计：先建立信任，再降低选择成本，最后促成清晰成交。</div>
+  <div class="body-en">Every touchpoint is designed around this journey: build trust, reduce decision friction, and support a clear purchase decision.</div>
+</section>
+
+<!-- 05 IDENTITY -->
+<section class="slide dark">
+  <div class="num">05</div>
+  <div class="grid-2">
+    <div>
+      <div class="label">Identity Concept · 识别概念</div>
+      <div class="h2">南洋现代 × 东方秩序 × 展厅信任感</div>
+      <div class="h2-en">Tropical Modern × Chinese Order × Showroom Trust</div>
+      <div class="rule"></div>
+      <div class="body">深绿不是奢华，是信任。鎏金不是炫耀，是识别。几何不是装饰，是秩序。展厅不是陈列，是成交路径。</div>
+      <div class="body-en" style="margin-top:8px">Green signals trust, not luxury alone. Gold creates recognition, not excess. Geometry creates order, not decoration. The showroom is not a display; it is a conversion journey.</div>
+    </div>
+    <div class="grid-2" style="gap:10px;height:auto">
+      <div class="panel"><div class="panel-k">Form</div><div class="panel-cn">建筑比例、门洞结构、柜体秩序</div><div class="panel-en">Architectural proportion, doorway structure, cabinet order</div></div>
+      <div class="panel"><div class="panel-k">Mood</div><div class="panel-cn">沉稳、可信、温暖、清晰</div><div class="panel-en">Calm, trustworthy, warm, clear</div></div>
+      <div class="panel"><div class="panel-k">Use</div><div class="panel-cn">门头、导视、标价牌、报价单、社媒</div><div class="panel-en">Signage, wayfinding, price cards, proposal, social media</div></div>
+      <div class="panel"><div class="panel-k">Voice</div><div class="panel-cn">不夸张促销，强调透明与负责</div><div class="panel-en">No loud discounts; focus on clarity and accountability</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 LOGO -->
+<section class="slide paper">
+  <div class="num">06</div>
+  <div class="label">Logo System · 标志系统</div>
+  <div class="h2">主标必须在小尺寸和大场景都能成立</div>
+  <div class="h2-en">The mark must work from product labels to storefront signage.</div>
+  <div class="grid-3" style="margin-top:16px">
+    <div class="logo-frame"><svg class="mark" style="width:116px;height:86px"><use href="#houzy-logo-mark"/></svg></div>
+    <div class="logo-frame light-box"><svg class="mark" style="width:116px;height:86px"><use href="#houzy-logo-mark"/></svg></div>
+    <div class="logo-frame gold-box"><svg class="mark" style="width:116px;height:86px"><use href="#houzy-logo-mark"/></svg></div>
+  </div>
+  <div class="grid-3" style="margin-top:12px">
+    <div class="panel"><div class="panel-k">Primary / 主标</div><div class="panel-cn">深绿底鎏金标，优先用于门头、封面、展厅主墙。</div><div class="panel-en">Gold mark on green for storefront, covers, and main showroom walls.</div></div>
+    <div class="panel"><div class="panel-k">Reverse / 反白</div><div class="panel-cn">浅色背景使用深绿标，保持对比度和高级感。</div><div class="panel-en">Green mark on light backgrounds for contrast and calmness.</div></div>
+    <div class="panel"><div class="panel-k">Minimum / 最小尺寸</div><div class="panel-cn">印刷不低于 18mm 宽，数字界面不低于 48px 宽。</div><div class="panel-en">Minimum 18mm in print and 48px in digital applications.</div></div>
+  </div>
+  <div class="label" style="margin-top:14px">Size Stress Test · 尺寸压力测试</div>
+  <div class="size-stress">
+    <div><svg class="mark" style="width:140px;height:104px;color:var(--green)"><use href="#houzy-logo-mark"/></svg><div class="ss-label">100mm · 门头</div></div>
+    <div><svg class="mark" style="width:84px;height:62px;color:var(--green)"><use href="#houzy-logo-mark"/></svg><div class="ss-label">60mm · 报价单</div></div>
+    <div><svg class="mark" style="width:46px;height:34px;color:var(--green)"><use href="#houzy-logo-mark"/></svg><div class="ss-label">30mm · 名片</div></div>
+    <div><svg class="mark" style="width:26px;height:20px;color:var(--green)"><use href="#houzy-logo-mark"/></svg><div class="ss-label">18mm · 最小</div></div>
+  </div>
+</section>
+
+<!-- 07 COLOR TYPE -->
+<section class="slide paper">
+  <div class="num">07</div>
+  <div class="label">Logo Lockup · 标志组合规范</div>
+  <div class="h2">HOUZY HOME 与图形标必须形成固定组合</div>
+  <div class="h2-en">The symbol and HOUZY HOME wordmark must work as one fixed system.</div>
+  <div class="lockup-system">
+    <div>
+      <div class="lockup-demo">
+        <div class="logo-lockup-h">
+          <svg class="mark" style="width:70px;height:52px;color:var(--green)"><use href="#houzy-logo-mark"/></svg>
+          <div>
+            <div class="word-houzy">HOUZY HOME</div>
+            <div class="word-home">ONE-STOP HOME SOLUTIONS</div>
+            <div class="word-cn">合屋整装科技</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:10px">
+        <div class="panel"><div class="panel-k">Primary Horizontal</div><div class="panel-cn">横版主组合用于门头、官网导航、报价单封面、社媒封面。</div><div class="panel-en">Use the horizontal lockup for storefront, website header, proposal cover, and social covers.</div></div>
+        <div class="panel"><div class="panel-k">Hierarchy</div><div class="panel-cn">英文 HOUZY HOME 是第一识别，中文合屋整装科技作为第二识别。</div><div class="panel-en">HOUZY HOME is the primary identifier; the Chinese name supports it as secondary recognition.</div></div>
+        <div class="panel"><div class="panel-k">Spacing</div><div class="panel-cn">图形标与字标之间至少保留一个标志竖柱宽度的距离。</div><div class="panel-en">Keep at least one vertical-bar width between the symbol and wordmark.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="lockup-demo">
+        <div class="logo-lockup-v">
+          <svg class="mark" style="width:86px;height:64px;color:var(--green)"><use href="#houzy-logo-mark"/></svg>
+          <div>
+            <div class="word-houzy" style="font-size:22px">HOUZY HOME</div>
+            <div class="word-home">HOME SOLUTIONS</div>
+            <div class="word-cn" style="font-size:12px">合屋整装科技</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <div class="panel-k">Secondary Vertical</div>
+        <div class="panel-cn">竖版组合用于名片、产品标价牌、员工工牌、较窄空间和正方形头像。</div>
+        <div class="panel-en">Use the vertical lockup for business cards, price labels, staff badges, narrow layouts, and square avatars.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 LOCKUP RULES -->
+<section class="slide dark">
+  <div class="num">08</div>
+  <div class="label">Lockup Rules · 组合使用规则</div>
+  <div class="h2">组合关系固定，才能在所有物料里保持识别度</div>
+  <div class="h2-en">A fixed relationship keeps the identity recognisable across all materials.</div>
+  <div class="grid-2" style="margin-top:14px;height:auto">
+    <div class="panel">
+      <div class="panel-k">Clear Space / 安全留白</div>
+      <div class="clearspace" style="margin-top:10px">
+        <div class="logo-lockup-h">
+          <svg class="mark" style="width:56px;height:42px"><use href="#houzy-logo-mark"/></svg>
+          <div>
+            <div class="word-houzy" style="font-size:22px">HOUZY HOME</div>
+            <div class="word-home">ONE-STOP HOME SOLUTIONS</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-cn" style="margin-top:12px">组合四周至少保留 X 的安全区，X 取图形标单个竖柱的宽度。</div>
+      <div class="panel-en">Keep at least X clear space around the lockup. X equals the width of one vertical bar in the symbol.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-k">Minimum Size / 最小尺寸</div>
+      <div class="grid-2" style="height:auto;gap:10px">
+        <div><div class="panel-cn">横版组合</div><div class="panel-en">Print: 42mm wide<br>Digital: 160px wide</div></div>
+        <div><div class="panel-cn">竖版组合</div><div class="panel-en">Print: 26mm wide<br>Digital: 96px wide</div></div>
+      </div>
+      <div class="rule"></div>
+      <div class="panel-cn">当尺寸更小时，只使用图形标，不强行放入中文或副标题。</div>
+      <div class="panel-en">At smaller sizes, use the symbol only. Do not force the Chinese name or descriptor into limited space.</div>
+    </div>
+  </div>
+  <div class="wrong-grid">
+    <div class="wrong"><svg class="mark" style="width:58px;height:28px;transform:scaleX(1.5)"><use href="#houzy-logo-mark"/></svg><span>不可拉伸变形<br>Do not stretch</span></div>
+    <div class="wrong"><svg class="mark" style="width:52px;height:38px;transform:rotate(-12deg)"><use href="#houzy-logo-mark"/></svg><span>不可旋转倾斜<br>Do not rotate</span></div>
+    <div class="wrong"><svg class="mark" style="width:52px;height:38px;color:#c44b4b"><use href="#houzy-logo-mark"/></svg><span>不可更改颜色<br>Do not recolor</span></div>
+    <div class="wrong"><svg class="mark" style="width:52px;height:38px;color:#fff;filter:drop-shadow(0 0 8px #fff)"><use href="#houzy-logo-mark"/></svg><span>不可加发光阴影<br>Do not add effects</span></div>
+    <div class="wrong"><svg class="mark" style="width:52px;height:38px;color:transparent;-webkit-text-stroke:1px var(--gold);stroke:var(--gold);stroke-width:4;fill:none"><use href="#houzy-logo-mark"/></svg><span>不可改成描边<br>Do not outline</span></div>
+    <div class="wrong" style="background:rgba(60,200,120,.18);border-color:rgba(60,200,120,.32)"><svg class="mark" style="width:52px;height:38px;color:var(--gold);background:linear-gradient(90deg,#ff7a3a,#c8a96e);padding:4px;border-radius:4px"><use href="#houzy-logo-mark"/></svg><span>不可加渐变背板<br>No gradient panel</span></div>
+    <div class="wrong"><div class="word-houzy" style="font-size:15px;color:var(--gold);letter-spacing:1px">HOME HOUZY</div><span>不可调换字标顺序<br>Do not reorder</span></div>
+    <div class="wrong"><svg class="mark" style="width:52px;height:38px;color:rgba(200,169,110,.3)"><use href="#houzy-logo-mark"/></svg><span>不可低对比度<br>Keep contrast</span></div>
+  </div>
+</section>
+
+<!-- 09 COLOR TYPE -->
+<section class="slide dark">
+  <div class="num">09</div>
+  <div class="grid-2">
+    <div>
+      <div class="label">Colour System · 色彩系统</div>
+      <div class="h2">色彩比例决定品牌是否高级</div>
+      <div class="h2-en">Premium feeling comes from proportion, not more colours.</div>
+      <div class="grid-3" style="margin-top:14px">
+        <div class="swatch" style="background:var(--green)"><b>墨松绿 60%</b><span>#153927 · Trust Green</span></div>
+        <div class="swatch" style="background:var(--cream);color:var(--ink)"><b>素纸白 25%</b><span>#F4EFE5 · Warm Paper</span></div>
+        <div class="swatch" style="background:var(--gold);color:var(--ink)"><b>鎏金 10%</b><span>#C8A96E · Recognition Gold</span></div>
+      </div>
+      <div class="swatch" style="background:#171717;margin-top:8px"><b>玄墨黑 5%</b><span>#171717 · Ink Black</span></div>
+      <div class="prop-bar" title="60 / 25 / 10 / 5 proportion">
+        <div class="prop-seg" style="flex:60;background:var(--green);color:var(--gold-2)">60</div>
+        <div class="prop-seg" style="flex:25;background:var(--cream);color:var(--ink)">25</div>
+        <div class="prop-seg" style="flex:10;background:var(--gold);color:var(--green)">10</div>
+        <div class="prop-seg" style="flex:5;background:#171717;color:var(--gold)">5</div>
+      </div>
+      <div class="prop-label">
+        <span>绿 GREEN 60</span><span>纸 PAPER 25</span><span>金 GOLD 10</span><span>黑 INK 5</span>
+      </div>
+    </div>
+    <div>
+      <div class="label">Typography · 字体层级</div>
+      <div class="type-sample"><div class="type-cn">合屋整装科技</div><div class="body-en">Chinese headlines: Noto Serif SC Bold / SemiBold</div></div>
+      <div class="type-sample"><div class="type-en">HOUZY HOME</div><div class="body-en">English headlines: Playfair Display / body: Inter</div></div>
+      <div class="panel"><div class="panel-k">Rule / 规则</div><div class="panel-cn">中文标题用宋体建立正式感；价格数字用衬线英文字体；导视与说明用无衬线保证阅读效率。</div><div class="panel-en">Use serif Chinese for formality, serif numerals for price impact, and sans-serif body text for clarity.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 SHOWROOM -->
+<section class="slide paper">
+  <div class="num">10</div>
+  <div class="label">Showroom Zone System · 展厅分区系统</div>
+  <div class="h2">展厅不是摆货，而是把选择变简单</div>
+  <div class="h2-en">The showroom should simplify decisions, not just display products.</div>
+  <div class="grid-4" style="margin-top:16px">
+    <div class="zone-card"><div class="zone-top"><div class="zone-cn">厨房</div><div class="zone-en">Kitchen</div></div><div class="zone-body"></div></div>
+    <div class="zone-card"><div class="zone-top"><div class="zone-cn">衣柜</div><div class="zone-en">Wardrobe</div></div><div class="zone-body"></div></div>
+    <div class="zone-card"><div class="zone-top"><div class="zone-cn">卫浴</div><div class="zone-en">Bathroom</div></div><div class="zone-body"></div></div>
+    <div class="zone-card"><div class="zone-top"><div class="zone-cn">瓷砖</div><div class="zone-en">Tiles</div></div><div class="zone-body"></div></div>
+  </div>
+  <div class="grid-3" style="margin-top:14px">
+    <div class="panel"><div class="panel-k">Zone Sign / 分区牌</div><div class="panel-cn">每区统一使用深绿顶部、金色英文、中文主标题。</div><div class="panel-en">Each zone uses a green header, gold English label, and clear Chinese title.</div></div>
+    <div class="panel"><div class="panel-k">Price Clarity / 价格清晰</div><div class="panel-cn">每个展示单元必须有价格范围、规格、配置和咨询入口。</div><div class="panel-en">Every display unit needs price range, specification, configuration, and enquiry access.</div></div>
+    <div class="panel"><div class="panel-k">Consultation / 洽谈承接</div><div class="panel-cn">每区引导客户进入洽谈，而不是只停留在看产品。</div><div class="panel-en">Each zone should guide customers toward consultation, not passive browsing.</div></div>
+  </div>
+</section>
+
+<!-- 11 LABEL -->
+<section class="slide light">
+  <div class="num">11</div>
+  <div class="label">Product Label System · 产品标价牌系统</div>
+  <div class="h2">价格公开，配置清楚，顾问负责解释</div>
+  <div class="h2-en">Open price, clear specification, consultant-led explanation.</div>
+  <div class="grid-3" style="margin-top:16px">
+    <div class="price-card"><div class="price-head"><div><div class="price-name">厨房配套</div><div class="zone-en">Kitchen Package</div></div><div class="price-code">K-A01<br>3.3m × 4.0m</div></div><div class="price-body"><div class="price-num">RM 29,999</div><div class="price-note">Standard Package · 适合 80m² 户型</div><div class="price-row"><span>柜体长度</span><b>3m</b></div><div class="price-row"><span>五金配置</span><b>Basic</b></div><div class="price-row"><span>报价方式</span><b>Package</b></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="price-note">扫码查看材料明细</span><div class="qr"></div></div></div></div>
+    <div class="price-card"><div class="price-head"><div><div class="price-name">瓷砖选材</div><div class="zone-en">Tile Selection</div></div><div class="price-code">T-M02<br>1200×1600</div></div><div class="price-body"><div class="price-num">RM 18.90</div><div class="price-note">per sqft · 以实际面积核算</div><div class="price-row"><span>材质风格</span><b>Marble</b></div><div class="price-row"><span>适用空间</span><b>Floor / Wall</b></div><div class="price-row"><span>顾问支持</span><b>Design Match</b></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="price-note">Touch · Compare · Create</span><div class="qr"></div></div></div></div>
+    <div class="price-card"><div class="price-head"><div><div class="price-name">卫浴套组</div><div class="zone-en">Bathroom Set</div></div><div class="price-code">B-S03<br>Full Set</div></div><div class="price-body"><div class="price-num">RM 4,999</div><div class="price-note">Package from · 以配置为准</div><div class="price-row"><span>包含项目</span><b>Vanity / Basin</b></div><div class="price-row"><span>质保说明</span><b>5 Years</b></div><div class="price-row"><span>建议动作</span><b>Book Visit</b></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><span class="price-note">最终报价由顾问核算</span><div class="qr"></div></div></div></div>
+  </div>
+</section>
+
+<!-- 12 PRICING -->
+<section class="slide dark">
+  <div class="num">12</div>
+  <div class="label">Pricing Communication · 价格沟通系统</div>
+  <div class="h2">价格不是促销工具，是信任工具</div>
+  <div class="h2-en">Pricing is not only a sales tool. It is a trust tool.</div>
+  <div class="grid-3" style="margin-top:16px">
+    <div class="panel"><div class="panel-k">Must Show / 必须展示</div><div class="panel-cn">基础价格、适用面积、包含项目、排除项目、最终核算条件。</div><div class="panel-en">Base price, applicable area, included items, excluded items, and final quotation conditions.</div></div>
+    <div class="panel"><div class="panel-k">Must Say / 必须说明</div><div class="panel-cn">最终报价根据户型、面积、材料等级、现场条件和安装要求确认。</div><div class="panel-en">Final quote depends on layout, area, material grade, site condition, and installation requirement.</div></div>
+    <div class="panel"><div class="panel-k">Avoid / 避免</div><div class="panel-cn">避免“全城最低”“今天不买就没了”“豪华爆款”等低信任促销话术。</div><div class="panel-en">Avoid low-trust discount language such as “lowest price” or “today only”.</div></div>
+  </div>
+  <div class="panel" style="margin-top:16px"><div class="panel-k">Standard Sentence / 标准说明</div><div class="panel-cn">价格公开，配置清楚。最终报价将根据户型、面积、材料与现场条件，由顾问核算确认。</div><div class="panel-en">Transparent pricing with clear specifications. Final quotation depends on layout, area, materials, and site conditions, confirmed by a consultant.</div></div>
+</section>
+
+<!-- 13 SALES TOOLS -->
+<section class="slide deep">
+  <div class="num">13</div>
+  <div class="label">Sales Tools · 销售工具系统</div>
+  <div class="h2">每个销售动作都需要一个品牌工具承接</div>
+  <div class="h2-en">Every sales action needs a branded support tool.</div>
+  <div class="grid-4" style="margin-top:16px">
+    <div class="tool"><div class="panel-k">Consultant Card</div><div class="tool-cn">顾问名片</div><div class="tool-en">Name, role, WhatsApp, QR, showroom address.</div></div>
+    <div class="tool"><div class="panel-k">Proposal Cover</div><div class="tool-cn">报价单封面</div><div class="tool-en">Project name, package, version, consultant contact.</div></div>
+    <div class="tool"><div class="panel-k">Process Sheet</div><div class="tool-cn">施工流程单</div><div class="tool-en">Consult, measure, quote, confirm, build, handover, aftercare.</div></div>
+    <div class="tool"><div class="panel-k">Review Card</div><div class="tool-cn">评价引导卡</div><div class="tool-en">Google review, referral message, aftercare contact.</div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="panel-k">Rule / 规则</div><div class="panel-cn">所有工具都必须回答客户的一个顾虑：谁负责、多少钱、怎么做、出了问题找谁。</div><div class="panel-en">Every tool must answer one concern: who is responsible, how much it costs, how it works, and who to contact if something happens.</div></div>
+</section>
+
+<!-- 14 SIGNAGE -->
+<section class="slide paper">
+  <div class="num">14</div>
+  <div class="grid-2">
+    <div>
+      <div class="label">Storefront & Signage · 门店与导视</div>
+      <div class="h2">门店第一眼必须讲清楚：这是整装体验馆</div>
+      <div class="h2-en">The storefront must immediately say: this is a home-solutions showroom.</div>
+      <div class="rule"></div>
+      <div class="body">门头主标不负责讲所有服务，入口墙负责建立信任，分区导视负责让客户知道下一步该看什么。</div>
+      <div class="body-en">The storefront creates recognition, the entrance wall builds trust, and zone signage guides the next decision.</div>
+    </div>
+    <div class="signage">
+      <div class="sign-top"><svg class="mark mark-small"><use href="#houzy-logo-mark"/></svg><div><div class="brand-cn" style="font-size:18px">合屋整装科技</div><div class="brand-en">HOUZY HOME · TOUCH · COMPARE · CREATE</div></div></div>
+      <div class="sign-wall"><div class="bay"></div><div class="bay"></div><div class="bay"></div><div class="bay"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 STAFF -->
+<section class="slide dark">
+  <div class="num">15</div>
+  <div class="label">Staff & Service VI · 员工与服务识别</div>
+  <div class="h2">顾问的出现方式，也是品牌的一部分</div>
+  <div class="h2-en">How consultants appear is part of the brand system.</div>
+  <div class="grid-3" style="margin-top:16px">
+    <div class="panel"><div class="panel-k">Uniform / 工服</div><div class="panel-cn">深绿 polo 或衬衫，左胸使用金色小标。避免大面积口号。</div><div class="panel-en">Deep green polo or shirt with small gold mark on the left chest. Avoid large slogans.</div></div>
+    <div class="panel"><div class="panel-k">Name Badge / 工牌</div><div class="panel-cn">姓名、职位、语言能力、WhatsApp QR。客户必须知道找谁。</div><div class="panel-en">Name, role, language capability, and WhatsApp QR. Customers must know who to contact.</div></div>
+    <div class="panel"><div class="panel-k">Service Voice / 服务话术</div><div class="panel-cn">少说“这个很便宜”，多说“这个配置适合您的预算和使用方式”。</div><div class="panel-en">Say less “this is cheap”; say more “this specification fits your budget and usage.”</div></div>
+  </div>
+</section>
+
+<!-- 16 SOCIAL -->
+<section class="slide paper">
+  <div class="num">16</div>
+  <div class="label">Social Media System · 社媒系统</div>
+  <div class="h2">线上内容要把客户带回展厅</div>
+  <div class="h2-en">Social content should lead customers back to the showroom.</div>
+  <div class="grid-4" style="margin-top:16px">
+    <div class="panel"><div class="panel-k">Before / After</div><div class="panel-cn">改造前后</div><div class="panel-en">Show transformation with clear scope and cost range.</div></div>
+    <div class="panel"><div class="panel-k">Material Compare</div><div class="panel-cn">材料对比</div><div class="panel-en">Compare texture, price, cleaning, and suitable room.</div></div>
+    <div class="panel"><div class="panel-k">Package Explain</div><div class="panel-cn">套餐解释</div><div class="panel-en">Explain what is included, excluded, and customisable.</div></div>
+    <div class="panel"><div class="panel-k">Showroom Clip</div><div class="panel-cn">展厅短视频</div><div class="panel-en">Use the showroom as proof, not just background decoration.</div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="panel-k">CTA / 统一行动</div><div class="panel-cn">每条内容都只引导一个动作：预约到店 / WhatsApp 咨询 / 查看套餐。</div><div class="panel-en">Every post should guide one action only: book a showroom visit, WhatsApp consultation, or view packages.</div></div>
+</section>
+
+<!-- 17 COPY -->
+<section class="slide deep">
+  <div class="num">17</div>
+  <div class="label">Copywriting System · 中英文文案系统</div>
+  <div class="h2">统一官网、门店、销售和标价牌话术</div>
+  <div class="h2-en">One voice across website, showroom, sales, and labels.</div>
+  <div class="copy-grid">
+    <div class="copy"><div class="panel-k">Positioning</div><div class="copy-cn">HOUZY HOME 合屋整装科技，新山一站式家居整装体验馆。</div><div class="copy-en">HOUZY HOME, Johor Bahru's one-stop home solutions showroom.</div></div>
+    <div class="copy"><div class="panel-k">Showroom</div><div class="copy-cn">到店触摸材料、对比方案，与顾问一起把家的可能性看清楚。</div><div class="copy-en">Visit the showroom to touch materials, compare options, and shape your home with a consultant.</div></div>
+    <div class="copy"><div class="panel-k">Pricing</div><div class="copy-cn">价格公开，配置清楚。最终报价以户型、面积、材料和现场条件核算。</div><div class="copy-en">Transparent pricing with clear specifications. Final quotation depends on layout, area, materials, and site conditions.</div></div>
+    <div class="copy"><div class="panel-k">WhatsApp</div><div class="copy-cn">您好，感谢联系 HOUZY HOME。请发送户型、面积、预算和喜欢的风格，我们为您安排顾问。</div><div class="copy-en">Thank you for contacting HOUZY HOME. Please share your layout, area, budget, and preferred style so we can arrange a consultant.</div></div>
+    <div class="copy"><div class="panel-k">Promise</div><div class="copy-cn">一个团队负责设计、选材、施工与交付，让整装过程更清楚、更省心。</div><div class="copy-en">One team manages design, materials, construction, and handover, making the process clearer and easier.</div></div>
+    <div class="copy"><div class="panel-k">Avoid</div><div class="copy-cn">避免“全城最低、限时疯抢、豪华爆款”；多用“透明、可比较、可执行、有人负责”。</div><div class="copy-en">Avoid loud discount language. Use clarity, comparison, execution, and accountability.</div></div>
+  </div>
+</section>
+
+<!-- 18 MOCKUPS -->
+<section class="slide dark">
+  <div class="num">18</div>
+  <div class="label">Application Mockups · 落物料应用</div>
+  <div class="h2">品牌系统必须能立刻变成门店物料</div>
+  <div class="h2-en">A brand system must become usable showroom materials immediately.</div>
+  <div style="display:grid;grid-template-columns:1.25fr .55fr .9fr;gap:14px;margin-top:16px;align-items:stretch;min-height:220px">
+    <div class="card-mock">
+      <div class="lockup"><svg class="mark mark-small"><use href="#houzy-logo-mark"/></svg><div><div class="brand-cn" style="font-size:18px">合屋整装科技</div><div class="brand-en">HOUZY HOME SDN. BHD.</div></div></div>
+      <div class="card-info">陈 佳 颖 · Design Consultant<br>+60 10-589 8786 · hello@houzyhome.com<br>141, Jalan Mutiara Emas 10/19, Mount Austin, JB</div>
+    </div>
+    <div class="badge-mock">
+      <div>
+        <svg class="mark" style="width:34px;height:25px;color:var(--gold)"><use href="#houzy-logo-mark"/></svg>
+        <div class="b-name" style="margin-top:10px">陈 佳 颖</div>
+        <div class="b-role">DESIGN CONSULTANT</div>
+        <div class="b-role" style="color:rgba(255,255,255,.5)">中 · 英 · 马来</div>
+      </div>
+      <div class="b-qr"></div>
+    </div>
+    <div class="proposal-mock">
+      <div class="p-corner"></div>
+      <div>
+        <div style="font-size:7px;letter-spacing:2px;color:var(--gold);text-transform:uppercase">Proposal · 报价单</div>
+        <div class="p-title" style="margin-top:8px">家居整装<br>方案与报价</div>
+      </div>
+      <div>
+        <div class="p-meta">Project · Mount Austin 4BR<br>Version 2 · 2025.10<br>Consultant · 陈 佳 颖</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+          <svg class="mark" style="width:22px;height:16px;color:var(--green)"><use href="#houzy-logo-mark"/></svg>
+          <div style="font-size:7px;letter-spacing:1.5px;color:var(--green);font-weight:700">HOUZY HOME · TOUCH · COMPARE · CREATE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-4" style="margin-top:12px">
+    <div class="panel" style="padding:10px"><div class="panel-k">Name Card</div><div class="panel-cn" style="font-size:11px">名片</div><div class="panel-en">First brand handover</div></div>
+    <div class="panel" style="padding:10px"><div class="panel-k">Staff Badge</div><div class="panel-cn" style="font-size:11px">员工工牌</div><div class="panel-en">Who to contact, at a glance</div></div>
+    <div class="panel" style="padding:10px"><div class="panel-k">Proposal</div><div class="panel-cn" style="font-size:11px">报价单</div><div class="panel-en">Clear project decision</div></div>
+    <div class="panel" style="padding:10px"><div class="panel-k">Review Card</div><div class="panel-cn" style="font-size:11px">评价卡</div><div class="panel-en">Aftercare and referral</div></div>
+  </div>
+</section>
+
+<!-- 19 PRODUCTION SPECS -->
+<section class="slide paper">
+  <div class="num">19</div>
+  <div class="label">Production Specification · 生产落地规格</div>
+  <div class="h2">每个物料都要能被制作、安装和替换</div>
+  <div class="h2-en">Every item must be printable, installable, and replaceable.</div>
+  <div class="spec-table">
+    <div class="spec-row">
+      <div class="spec-cell"><div class="spec-h">Item</div><div class="spec-cn">产品标价牌</div><div class="spec-en">Product price card</div></div>
+      <div class="spec-cell"><div class="spec-h">Size</div><div class="spec-cn">A6 105×148mm / 桌牌 120×180mm</div><div class="spec-en">A6 print or 120×180mm acrylic stand</div></div>
+      <div class="spec-cell"><div class="spec-h">Material</div><div class="spec-cn">300gsm 哑粉卡 / 3mm 亚克力夹</div><div class="spec-en">300gsm matte card or 3mm acrylic holder</div></div>
+      <div class="spec-cell"><div class="spec-h">Use</div><div class="spec-cn">放在样板右下角，统一 15° 面向客户</div><div class="spec-en">Lower-right of sample, angled 15° to customer</div></div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-cell"><div class="spec-cn">顾问名片</div><div class="spec-en">Consultant card</div></div>
+      <div class="spec-cell"><div class="spec-cn">90×54mm，出血 3mm，安全边距 5mm</div><div class="spec-en">90×54mm, 3mm bleed, 5mm safe margin</div></div>
+      <div class="spec-cell"><div class="spec-cn">350gsm 棉纸 / 深绿特种纸 + 烫金</div><div class="spec-en">350gsm cotton paper or green stock with foil</div></div>
+      <div class="spec-cell"><div class="spec-cn">顾问递交、展厅前台、报价单夹页</div><div class="spec-en">Consultant handover, reception, proposal insert</div></div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-cell"><div class="spec-cn">分区导视牌</div><div class="spec-en">Zone signage</div></div>
+      <div class="spec-cell"><div class="spec-cn">600×180mm / 900×240mm 两档</div><div class="spec-en">600×180mm or 900×240mm</div></div>
+      <div class="spec-cell"><div class="spec-cn">5mm 亚克力背喷 / 金属字贴</div><div class="spec-en">5mm acrylic reverse print or metal lettering</div></div>
+      <div class="spec-cell"><div class="spec-cn">厨房、衣柜、卫浴、瓷砖各一套</div><div class="spec-en">One set for each main showroom zone</div></div>
+    </div>
+    <div class="spec-row">
+      <div class="spec-cell"><div class="spec-cn">报价单封面</div><div class="spec-en">Proposal cover</div></div>
+      <div class="spec-cell"><div class="spec-cn">A4 竖版 / PDF 线上发送版本</div><div class="spec-en">A4 portrait and digital PDF version</div></div>
+      <div class="spec-cell"><div class="spec-cn">160gsm 内页 + 透明文件夹</div><div class="spec-en">160gsm inner page with clear folder</div></div>
+      <div class="spec-cell"><div class="spec-cn">客户名、户型、版本号、顾问联系方式</div><div class="spec-en">Client, layout, version, consultant contact</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 CONTENT FIELDS -->
+<section class="slide dark">
+  <div class="num">20</div>
+  <div class="label">Content Field Standard · 内容字段标准</div>
+  <div class="h2">可落地的关键，是每张物料该写什么都固定</div>
+  <div class="h2-en">Execution works when every material has fixed content fields.</div>
+  <div class="field-list">
+    <div class="field"><div class="field-cn">标价牌必须包含：产品区、产品名、型号、尺寸、价格、单位、包含项目、排除项目、QR。</div><div class="field-en">Price cards must include zone, product name, code, size, price, unit, inclusions, exclusions, and QR.</div></div>
+    <div class="field"><div class="field-cn">分区牌必须包含：中文区名、英文区名、三词利益点、咨询引导。</div><div class="field-en">Zone signs must include Chinese name, English name, three benefit words, and consultation prompt.</div></div>
+    <div class="field"><div class="field-cn">名片必须包含：姓名、职位、语言能力、WhatsApp、邮箱、门店地址。</div><div class="field-en">Business cards must include name, role, languages, WhatsApp, email, and showroom address.</div></div>
+    <div class="field"><div class="field-cn">报价单必须包含：项目范围、材料等级、施工边界、付款节点、质保说明。</div><div class="field-en">Proposals must include scope, material grade, construction boundary, payment milestones, and warranty.</div></div>
+    <div class="field"><div class="field-cn">员工工牌必须包含：姓名、岗位、可服务语言、个人 WhatsApp QR。</div><div class="field-en">Staff badges must include name, role, service languages, and personal WhatsApp QR.</div></div>
+    <div class="field"><div class="field-cn">售后卡必须包含：质保范围、响应时间、报修方式、Google Review 引导。</div><div class="field-en">Aftercare cards must include warranty scope, response time, support channel, and Google Review prompt.</div></div>
+  </div>
+  <div class="panel" style="margin-top:12px"><div class="panel-k">Rule / 规则</div><div class="panel-cn">任何物料如果无法回答“这是什么、多少钱、包含什么、下一步找谁”，就不允许进入门店使用。</div><div class="panel-en">If a material cannot answer what it is, how much it costs, what is included, and who to contact next, it should not enter the showroom.</div></div>
+</section>
+
+<!-- 21 ASSET DELIVERY -->
+<section class="slide paper">
+  <div class="num">21</div>
+  <div class="label">Asset Delivery Pack · 交付文件包</div>
+  <div class="h2">设计稿必须交付成可复用资产，而不是只交一张图</div>
+  <div class="h2-en">Deliver reusable assets, not only presentation images.</div>
+  <div class="asset-grid">
+    <div class="asset-card"><b>01 Logo Master</b><p>AI / SVG / PDF / PNG。包含主标、横版、竖版、单色、反白。<br>Primary, horizontal, vertical, mono, reverse.</p></div>
+    <div class="asset-card"><b>02 Print Files</b><p>CMYK、3mm 出血、字体转曲、PDF/X-1a。<br>CMYK, 3mm bleed, outlined fonts, print-ready PDF.</p></div>
+    <div class="asset-card"><b>03 Editable Templates</b><p>名片、标价牌、报价单、流程单、评价卡。<br>Cards, labels, proposal, process sheet, review card.</p></div>
+    <div class="asset-card"><b>04 Signage Files</b><p>门头、入口墙、分区牌、导视牌，按实际尺寸输出。<br>Storefront, wall, zone signs, wayfinding in real sizes.</p></div>
+    <div class="asset-card"><b>05 Digital Kit</b><p>官网图标、WhatsApp 头像、社媒封面、短视频封面。<br>Website icons, WhatsApp avatar, social covers, video covers.</p></div>
+    <div class="asset-card"><b>06 Copy Bank</b><p>中英双语文案库：品牌、销售、价格、售后。<br>Bilingual copy bank for brand, sales, pricing, aftercare.</p></div>
+    <div class="asset-card"><b>07 Production Notes</b><p>尺寸、材质、工艺、安装位置、替换周期。<br>Size, material, finish, placement, replacement cycle.</p></div>
+    <div class="asset-card"><b>08 Photo Direction</b><p>展厅、样板、材料、顾问服务照片拍摄规范。<br>Showroom, sample, material, and consultant photography rules.</p></div>
+  </div>
+</section>
+
+<!-- 22 PHOTO DIRECTION -->
+<section class="slide dark">
+  <div class="num">22</div>
+  <div class="label">Photo Direction · 摄影方向</div>
+  <div class="h2">展厅照片,是品牌最便宜也最贵的资产</div>
+  <div class="h2-en">Photography is the cheapest, and the most expensive, brand asset.</div>
+  <div class="photo-grid">
+    <div class="photo"><div class="photo-thumb t1"><span class="pt-tag">Showroom</span></div><div class="photo-body"><b>展厅广角</b><p>低视角广角,展示门头+主墙+人物动线,避免空场。</p></div></div>
+    <div class="photo"><div class="photo-thumb t2"><span class="pt-tag">Material</span></div><div class="photo-body"><b>材料微距</b><p>侧光打在木纹/石材表面,呈现质感,客户能"摸到"。</p></div></div>
+    <div class="photo"><div class="photo-thumb t3"><span class="pt-tag">Consultant</span></div><div class="photo-body"><b>顾问场景</b><p>顾问与客户在材料前对谈,展现服务,不摆拍。</p></div></div>
+    <div class="photo"><div class="photo-thumb t4"><span class="pt-tag">Before · After</span></div><div class="photo-body"><b>前后对比</b><p>同机位、同构图、同光线,只换"前/后"状态。</p></div></div>
+  </div>
+  <div class="photo-rules">
+    <div class="photo-do"><div class="panel-k">DO · 推荐</div>真实展厅 · 自然光为主 · 顾问出镜 · 中景特写交替 · 横竖各拍一版 · RAW 保留</div>
+    <div class="photo-dont"><div class="panel-k">DON'T · 禁用</div>大面积 stock 图 · 过曝 HDR · 强滤镜 · 表情夸张摆拍 · 把 logo 强压在人物脸上</div>
+  </div>
+</section>
+
+<!-- 23 QUALITY CONTROL -->
+<section class="slide deep">
+  <div class="num">23</div>
+  <div class="label">Quality Control · 落地验收标准</div>
+  <div class="h2">不是做出来就算完成，要能被验收</div>
+  <div class="h2-en">Execution is not finished until it can be checked and approved.</div>
+  <div class="checklist">
+    <div class="check"><b>Visual / 视觉</b><p>颜色是否接近标准色；logo 是否变形；留白是否足够；字距是否被压缩。<br>Check colour, distortion, clear space, and letter spacing.</p></div>
+    <div class="check"><b>Reading / 阅读</b><p>客户站在 1m / 3m / 8m 处是否能读清对应信息。<br>Check readability from 1m, 3m, and 8m.</p></div>
+    <div class="check"><b>Material / 材质</b><p>纸张、亚克力、金属字、贴膜是否符合使用场景和耐久度。<br>Check paper, acrylic, metal letters, films, and durability.</p></div>
+    <div class="check"><b>Sales / 销售</b><p>物料是否能帮助顾问解释价格、配置、流程和下一步行动。<br>Check whether materials help explain price, specification, process, and next action.</p></div>
+    <div class="check"><b>Maintenance / 维护</b><p>价格、套餐、顾问信息是否可以低成本替换，不必整套重做。<br>Check whether pricing, packages, and staff info can be replaced cheaply.</p></div>
+    <div class="check"><b>Consistency / 一致</b><p>官网、门店、社媒、报价单是否使用同一套 logo、色彩和话术。<br>Check consistency across website, showroom, social media, and proposals.</p></div>
+  </div>
+</section>
+
+<!-- 24 CHECKLIST -->
+<section class="slide paper">
+  <div class="num">24</div>
+  <div class="label">Implementation Checklist · 落地清单</div>
+  <div class="h2">先做能影响成交的物料</div>
+  <div class="h2-en">Start with materials that improve trust and conversion.</div>
+  <div class="checklist">
+    <div class="check"><b>Phase 1 / 第一阶段</b><p>门头主标、入口品牌墙、四大分区牌、产品标价牌、顾问名片。<br>Storefront, entrance wall, zone signs, price cards, consultant cards.</p></div>
+    <div class="check"><b>Phase 2 / 第二阶段</b><p>报价单封面、套餐说明页、施工流程单、WhatsApp 自动回复、Google Review 卡。<br>Proposal cover, package sheet, process sheet, WhatsApp reply, review card.</p></div>
+    <div class="check"><b>Phase 3 / 第三阶段</b><p>社媒模板、短视频封面、员工工服、购物袋、车辆贴纸、工地围挡。<br>Social templates, video covers, uniforms, shopping bags, vehicle decals, hoarding.</p></div>
+  </div>
+  <div class="panel" style="margin-top:16px"><div class="panel-k">Final Principle / 最终原则</div><div class="panel-cn">不是让品牌更“漂亮”，而是让客户在每一个触点都更容易相信、更容易理解、更容易行动。</div><div class="panel-en">The goal is not only to make the brand prettier. It is to make customers trust faster, understand easier, and act with more confidence.</div></div>
+</section>
+
+<!-- 25 WEBSITE UI -->
+<section class="slide paper">
+  <div class="num">25</div>
+  <div class="label">Website UI System · 官网界面标准</div>
+  <div class="h2">官网必须像展厅一样清楚：看得懂、比得了、约得到</div>
+  <div class="h2-en">The website should work like the showroom: clear, comparable, and bookable.</div>
+  <div class="device-grid">
+    <div class="web-wire">
+      <div class="web-nav"><div class="web-dot"></div><div class="web-links"><span></span><span></span><span></span><span></span></div></div>
+      <div class="web-hero"><div><div class="web-title">新山一站式<br>家居整装体验馆</div><div class="web-sub">TOUCH · COMPARE · CREATE</div></div></div>
+      <div class="web-cards"><div class="web-card"></div><div class="web-card"></div><div class="web-card"></div></div>
+    </div>
+    <div>
+      <div class="panel"><div class="panel-k">UI Rule / 界面规则</div><div class="panel-cn">官网第一屏只讲三件事：HOUZY 是谁、能解决什么、如何预约到店。</div><div class="panel-en">The first screen should answer three things only: who HOUZY is, what it solves, and how to book a showroom visit.</div></div>
+      <div class="panel" style="margin-top:10px"><div class="panel-k">CTA Rule / 行动按钮</div><div class="panel-cn">主按钮固定为“预约到店”，副按钮固定为“WhatsApp 咨询”。不要同时出现过多行动。</div><div class="panel-en">Primary CTA: Book a Visit. Secondary CTA: WhatsApp Enquiry. Avoid too many competing actions.</div></div>
+      <div class="panel" style="margin-top:10px"><div class="panel-k">Mobile Rule / 移动端</div><div class="panel-cn">移动端底部固定 WhatsApp 按钮；价格卡和案例卡优先用单列阅读。</div><div class="panel-en">Use a sticky WhatsApp button on mobile. Price cards and case cards should read in one column.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 26 DIGITAL SIZES -->
+<section class="slide dark">
+  <div class="num">26</div>
+  <div class="label">Digital Asset Sizes · 数字资产尺寸表</div>
+  <div class="h2">每个平台都需要独立画布，不要让系统自动裁切</div>
+  <div class="h2-en">Each platform needs its own canvas. Do not rely on auto-cropping.</div>
+  <div class="platform-grid">
+    <div class="platform"><div class="p-size">1920×900</div><div class="p-name">Website Hero</div><div class="p-note">官网首屏横幅。重要文字放左中区域，移动端另做 1080×1350 裁切。</div></div>
+    <div class="platform"><div class="p-size">1080×1440</div><div class="p-name">Xiaohongshu Cover</div><div class="p-note">小红书封面建议 3:4。标题不超过两行，底部保留账号与系列标签。</div></div>
+    <div class="platform"><div class="p-size">1080×1350</div><div class="p-name">IG / FB Feed</div><div class="p-note">4:5 竖版信息流。适合案例、套餐、材料对比和活动预约。</div></div>
+    <div class="platform"><div class="p-size">1080×1920</div><div class="p-name">Reels / TikTok / Story</div><div class="p-note">9:16 短视频。上下保留安全区，字幕和 logo 不贴边。</div></div>
+  </div>
+  <div class="spec-mini">
+    <div class="mini"><b>Safe Area</b><p>所有竖屏视频文字放在中间 70% 区域，避开顶部账号栏和底部按钮。</p></div>
+    <div class="mini"><b>Export</b><p>静态图导出 JPG/PNG，视频导出 MP4 H.264，保留可编辑源文件。</p></div>
+    <div class="mini"><b>Naming</b><p>文件名统一：HOUZY_platform_topic_date_version。</p></div>
+  </div>
+</section>
+
+<!-- 27 XHS -->
+<section class="slide paper">
+  <div class="num">27</div>
+  <div class="label">Xiaohongshu System · 小红书内容系统</div>
+  <div class="h2">小红书负责“种草和搜索”，不是硬广海报</div>
+  <div class="h2-en">Xiaohongshu should drive discovery and trust, not hard-sell posters.</div>
+  <div class="grid-2" style="margin-top:14px;height:auto">
+    <div class="post-card"><div class="post-cover"><div class="post-tag">HOUZY HOME · JB RENOVATION</div><div class="post-title">新山装修预算<br>到底怎么估？</div><div class="post-tag">材料 · 套餐 · 展厅对比</div></div><div class="post-body">封面标题要像用户会搜索的问题；正文用真实经验、材料对比和预算解释建立信任。</div></div>
+    <div>
+      <div class="panel"><div class="panel-k">Cover Formula / 封面公式</div><div class="panel-cn">问题型标题 + 真实场景图 + HOUZY 小标 + 系列标签。</div><div class="panel-en">Question-led title + real scene image + small HOUZY mark + series tag.</div></div>
+      <div class="panel" style="margin-top:9px"><div class="panel-k">Content Pillars / 内容栏目</div><div class="panel-cn">新山装修预算、材料避坑、展厅探店、套餐解释、真实案例、施工流程。</div><div class="panel-en">JB renovation budget, material tips, showroom visit, package explainer, real cases, process guide.</div></div>
+      <div class="panel" style="margin-top:9px"><div class="panel-k">CTA / 转化</div><div class="panel-cn">结尾统一引导：留言户型 / 私信预算 / WhatsApp 预约到店。</div><div class="panel-en">End with one action: comment layout, DM budget, or WhatsApp to book a visit.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 28 META -->
+<section class="slide dark">
+  <div class="num">28</div>
+  <div class="label">Meta Social System · Facebook / Instagram 内容标准</div>
+  <div class="h2">Meta 用于本地获客、案例展示和预约转化</div>
+  <div class="h2-en">Meta channels should drive local leads, cases, and showroom bookings.</div>
+  <div class="grid-4" style="margin-top:14px">
+    <div class="tool"><div class="panel-k">Feed 4:5</div><div class="tool-cn">案例前后对比</div><div class="tool-en">Before/after case with location, scope, and budget range.</div></div>
+    <div class="tool"><div class="panel-k">Carousel 1:1</div><div class="tool-cn">材料和套餐解释</div><div class="tool-en">Material comparison and package breakdown.</div></div>
+    <div class="tool"><div class="panel-k">Reels 9:16</div><div class="tool-cn">展厅走拍和顾问讲解</div><div class="tool-en">Showroom walk-through and consultant explanation.</div></div>
+    <div class="tool"><div class="panel-k">Story 9:16</div><div class="tool-cn">活动、预约、限时提醒</div><div class="tool-en">Campaigns, booking prompts, and timely reminders.</div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="panel-k">Ad Rule / 广告规则</div><div class="panel-cn">Facebook/Instagram 广告不要直接堆满文字。一个画面只放一个卖点、一个价格或一个行动按钮。</div><div class="panel-en">Do not overload ad visuals with text. One visual should carry one benefit, one price point, or one action.</div></div>
+</section>
+
+<!-- 29 TIKTOK -->
+<section class="slide deep">
+  <div class="num">29</div>
+  <div class="label">TikTok Video System · TikTok 短视频系统</div>
+  <div class="h2">TikTok 要像真实探店，不像电视广告</div>
+  <div class="h2-en">TikTok should feel like a real showroom visit, not a TV commercial.</div>
+  <div class="grid-2" style="margin-top:12px">
+    <div class="video-frame">
+      <div class="video-safe"></div>
+      <div class="video-hook">新山装修前<br>先来摸一摸材料</div>
+      <div class="video-cta">Book a Showroom Visit</div>
+    </div>
+    <div>
+      <div class="panel"><div class="panel-k">Script / 脚本结构</div><div class="panel-cn">0-3 秒：痛点问题；3-12 秒：展厅/材料证据；12-25 秒：价格或流程解释；最后 3 秒：预约到店。</div><div class="panel-en">0-3s hook, 3-12s showroom/material proof, 12-25s price or process explanation, final 3s booking CTA.</div></div>
+      <div class="panel" style="margin-top:9px"><div class="panel-k">Visual Rule / 视觉规则</div><div class="panel-cn">字幕白字深绿半透明底；HOUZY 标志只在开头 1 秒或结尾出现，不压住人物脸和产品。</div><div class="panel-en">Use white subtitles on translucent green. Show HOUZY mark only at the start or end; never cover faces or products.</div></div>
+      <div class="panel" style="margin-top:9px"><div class="panel-k">Compliance / 平台合规</div><div class="panel-cn">不要把 TikTok 官方 logo 当作画面装饰；平台图标只按官方资源和规则使用。</div><div class="panel-en">Do not use TikTok's official logo as decoration. Platform marks should only follow official resources and rules.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 30 CROSS PLATFORM -->
+<section class="slide paper">
+  <div class="num">30</div>
+  <div class="label">Cross-Platform Rules · 跨平台统一规则</div>
+  <div class="h2">每个平台要像自己，但都必须像 HOUZY</div>
+  <div class="h2-en">Each platform can behave differently, but all must feel like HOUZY.</div>
+  <div class="rule-matrix">
+    <div class="matrix-item"><b>Logo / 标志</b><p>官网和物料可用完整 lockup；社媒封面用小标 + HOUZY HOME；短视频只在开头/结尾出现。</p></div>
+    <div class="matrix-item"><b>Title / 标题</b><p>中文主标题优先，英文作为气质和解释补充。标题不超过两行。</p></div>
+    <div class="matrix-item"><b>Price / 价格</b><p>价格数字统一用衬线字体；必须配“from / 起”或核算条件，避免误导。</p></div>
+    <div class="matrix-item"><b>Photo / 图片</b><p>优先真实展厅、材料触摸、顾问讲解、案例现场；少用纯 stock 图。</p></div>
+    <div class="matrix-item"><b>CTA / 行动</b><p>统一三个动作：预约到店、WhatsApp 咨询、查看套餐。每张图只保留一个主行动。</p></div>
+    <div class="matrix-item"><b>Do Not / 禁用</b><p>不要用满屏金色、过度滤镜、平台 logo 装饰、夸张促销、无来源价格对比。</p></div>
+  </div>
+</section>
+
+<!-- 31 END -->
+<section class="slide deep">
+  <div class="num">31</div>
+  <div class="grid-2">
+    <div>
+      <div class="lockup"><svg class="mark mark-small"><use href="#houzy-logo-mark"/></svg><div><div class="brand-cn">合屋整装科技</div><div class="brand-en">HOUZY HOME SDN. BHD.</div></div></div>
+      <div class="rule"></div>
+      <div class="h2">标志即秩序，展厅即证据。</div>
+      <div class="h2-en">A clear mark. A real showroom. One accountable home solution.</div>
+      <div class="end-contact">
+        <div><b>Showroom</b>141, Jalan Mutiara Emas 10/19<br>Mount Austin, 81100<br>Johor Bahru</div>
+        <div><b>Contact</b>+60 10-589 8786<br>hello@houzyhome.com<br>WhatsApp · WeChat</div>
+        <div><b>Online</b>houzyhome.com<br>IG / FB / 小红书 / TikTok<br>@houzyhome</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-k">Brand System v4</div>
+      <div class="panel-cn">新山一站式家居整装体验馆<br>Touch · Compare · Create</div>
+      <div class="panel-en">Johor Bahru's one-stop home solutions showroom.<br>Visible pricing, touchable materials, and one accountable process.</div>
+      <div class="rule" style="margin-top:18px"></div>
+      <div class="panel-k">Thanks · 谢谢</div>
+      <div class="panel-cn" style="font-size:10px;line-height:1.7">让每一次到店都成为一次值得的选择。<br>Let every visit become a decision worth keeping.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Floating PDF download button + admin password modal -->
+<style>
+  .dl-fab{
+    position:fixed;right:24px;bottom:24px;z-index:9999;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:12px 18px;border-radius:999px;cursor:pointer;
+    background:var(--gold,#c8a96e);color:var(--green,#153927);
+    font-family:var(--ff-en-sans,system-ui,sans-serif);
+    font-size:13px;font-weight:700;letter-spacing:1.5px;
+    border:none;box-shadow:0 10px 30px rgba(0,0,0,.35);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .dl-fab:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(0,0,0,.45)}
+  .dl-fab svg{width:16px;height:16px}
+  @media print{.dl-fab{display:none}}
+  .dl-mask{
+    position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);
+    display:none;align-items:center;justify-content:center;
+  }
+  .dl-mask.show{display:flex}
+  .dl-modal{
+    width:min(380px,90vw);background:#0e1f17;color:#fff;
+    border:1px solid rgba(200,169,110,.32);border-radius:14px;padding:24px;
+    font-family:var(--ff-en-sans,system-ui,sans-serif);
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+  }
+  .dl-modal h3{font-size:14px;letter-spacing:2px;color:var(--gold,#c8a96e);margin:0 0 6px;font-weight:700}
+  .dl-modal p{font-size:12px;color:rgba(255,255,255,.62);margin:0 0 16px;line-height:1.55}
+  .dl-modal input{
+    width:100%;padding:11px 12px;border-radius:8px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(200,169,110,.28);
+    color:#fff;font-size:14px;letter-spacing:2px;outline:none;
+  }
+  .dl-modal input:focus{border-color:var(--gold,#c8a96e)}
+  .dl-err{font-size:11px;color:#e87a7a;margin-top:8px;min-height:14px}
+  .dl-actions{display:flex;gap:10px;margin-top:14px}
+  .dl-btn{
+    flex:1;padding:11px 14px;border-radius:8px;cursor:pointer;border:none;
+    font-size:12px;letter-spacing:1.5px;font-weight:700;
+  }
+  .dl-btn.primary{background:var(--gold,#c8a96e);color:var(--green,#153927)}
+  .dl-btn.ghost{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15)}
+</style>
+
+<button class="dl-fab" onclick="openDl()" aria-label="Download PDF">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+  下载 PDF · DOWNLOAD
+</button>
+
+<div class="dl-mask" id="dlMask" onclick="if(event.target===this)closeDl()">
+  <div class="dl-modal" role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+    <h3 id="dlTitle">管理员下载 · ADMIN DOWNLOAD</h3>
+    <p>请输入管理员密码以下载完整 PDF 版本品牌方案。<br>Enter admin password to download the full PDF.</p>
+    <input id="dlPwd" type="password" placeholder="管理员密码 / Password" autocomplete="off" onkeydown="if(event.key==='Enter')dlSubmit()" />
+    <div class="dl-err" id="dlErr"></div>
+    <div class="dl-actions">
+      <button class="dl-btn ghost" onclick="closeDl()">取消 Cancel</button>
+      <button class="dl-btn primary" onclick="dlSubmit()">下载 Download</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const HOUZY_BRAND_HASH = 'c1fbf1087afa75786d23e6a4e0fc1b1fb06f16aae31f70125f0bf1ef100509c0';
+  function openDl(){
+    document.getElementById('dlMask').classList.add('show');
+    document.getElementById('dlErr').textContent='';
+    setTimeout(()=>document.getElementById('dlPwd').focus(),50);
+  }
+  function closeDl(){
+    document.getElementById('dlMask').classList.remove('show');
+    document.getElementById('dlPwd').value='';
+  }
+  async function sha256(s){
+    const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  async function dlSubmit(){
+    const pw=document.getElementById('dlPwd').value;
+    if(!pw){document.getElementById('dlErr').textContent='请输入密码 / Password required';return;}
+    const h=await sha256(pw);
+    if(h===HOUZY_BRAND_HASH){
+      const a=document.createElement('a');
+      a.href='brand.pdf';
+      a.download='HOUZY_HOME_Brand_System_v4.pdf';
+      document.body.appendChild(a);a.click();a.remove();
+      closeDl();
+    }else{
+      document.getElementById('dlErr').textContent='密码错误,请重试 / Wrong password';
+    }
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDl()});
+</script>
+</body>
+</html>
