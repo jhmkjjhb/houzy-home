@@ -2193,7 +2193,43 @@ function calcItemRow(id) {
   const sub   = qty * price;
   const subEl = document.getElementById(`item-sub-${id}`);
   if (subEl) subEl.value = sub > 0 ? sub.toFixed(2) : '';
+  // 卖价 vs 成本检测(只有店长 L2+ 能看到成本提示;店员看不到敏感数据但提交会被拦)
+  _flagCostState(id, price);
   calcItemsTotal();
+}
+
+// 卖跌破成本:实付 < 成本 红;< 成本×110% 黄;否则正常。
+// 标记写到行 dataset.costState(none/warn/under),提示文字仅 L2+ 显示。
+function _flagCostState(id, price) {
+  const row = document.querySelector(`.item-row[data-row-id="${id}"]`);
+  if (!row) return;
+  const cost = parseFloat(row.dataset.unitCost) || 0;
+  const priceEl = document.getElementById(`item-price-${id}`);
+  // 清旧 hint
+  const oldHint = row.querySelector('.cost-hint'); if (oldHint) oldHint.remove();
+  if (priceEl) priceEl.style.borderColor = '';
+  if (cost <= 0 || price <= 0) { row.dataset.costState = 'none'; return; }
+
+  let state = 'none', txt = '', borderColor = '', bg = '#fff7ed';
+  if (price < cost) {
+    state = 'under'; borderColor = '#dc2626';
+    txt = `⚠ 卖跌破成本(成本 ${cost.toFixed(2)})${canDo(2) ? '' : ',需店长账号才能提交'}`;
+    bg = '#fef2f2';
+  } else if (price < cost * 1.1) {
+    state = 'warn'; borderColor = '#d97706';
+    txt = `⚠ 接近成本(成本 ${cost.toFixed(2)},毛利 <10%)`;
+  }
+  row.dataset.costState = state;
+  if (priceEl && borderColor) priceEl.style.borderColor = borderColor;
+  // 提示文字只给店长及以上看;店员看到的是单价红边框(知道有问题但不知道具体成本)
+  if (state !== 'none' && canDo(2)) {
+    const hint = document.createElement('div');
+    hint.className = 'cost-hint text-xs mt-1';
+    hint.style.cssText = `color:${borderColor};background:${bg};padding:2px 6px;border-radius:4px;display:inline-block`;
+    hint.textContent = txt;
+    const priceCell = priceEl?.parentElement;
+    if (priceCell) priceCell.appendChild(hint);
+  }
 }
 
 function calcItemsTotal() {
@@ -2410,6 +2446,22 @@ async function submitOrder() {
   if (itemsForCheck.some(r => !(r.quantity > 0))) {
     showCreateErr('有商品行数量为空或为 0，请填写有效数量'); return;
   }
+  // 卖跌破成本拦截:店员 L1 直接拒绝;店长 L2+ 二次确认才放行
+  let _underCostNote = '';
+  const underRows = Array.from(document.querySelectorAll('.item-row'))
+    .filter(r => r.dataset.costState === 'under');
+  if (underRows.length) {
+    if (!canDo(2)) {
+      showCreateErr(`有 ${underRows.length} 行卖跌破成本,需店长账号才能提交`);
+      return;
+    }
+    const names = underRows.map(r => {
+      const idR = r.dataset.rowId;
+      return _getItemName(idR) || `第 ${idR} 行`;
+    }).join('、');
+    if (!confirm(`⚠ 以下 ${underRows.length} 行单价低于成本:\n  ${names}\n\n确认按此价格提交?(会写入操作日志)`)) return;
+    _underCostNote = `；⚠ 含 ${underRows.length} 件跌破成本(店长确认):${names}`;
+  }
   const itemsTotal = itemsForCheck.reduce((s, r) => s + r.total_price, 0);
   if (Math.abs(itemsTotal - orderAmount) > 0.01) {
     const proceed = confirm(
@@ -2551,7 +2603,7 @@ async function submitOrder() {
       operator_id: profile.id,
       operator_role: profile.role,
       operator_name: profile.name,
-      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}`,
+      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}${_underCostNote}`,
     });
     if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
 
@@ -3244,8 +3296,18 @@ function detectProductType(name) {
   return '';
 }
 async function loadStaffProducts() {
-  const { data } = await sb.from('products').select('id,sku,name,unit,specs,category,price').order('sku');
-  staffProducts = data || [];
+  // 同时拉成本 → 开单时实时检测「卖跌破成本」(店长可见才会显示)
+  const [{ data }, { data: invs }] = await Promise.all([
+    sb.from('products').select('id,sku,name,unit,specs,category,price').order('sku'),
+    sb.from('inventory').select('product_id,unit_cost'),
+  ]);
+  // 每个产品取「最低非零成本」作为参考(更保守,避免用旧批高价掩盖跌破)
+  const costMap = {};
+  (invs || []).forEach(r => {
+    const c = Number(r.unit_cost) || 0; if (c <= 0) return;
+    if (costMap[r.product_id] == null || c < costMap[r.product_id]) costMap[r.product_id] = c;
+  });
+  staffProducts = (data || []).map(p => ({ ...p, unit_cost: costMap[p.id] || 0 }));
   const dl = document.getElementById('staff-product-datalist');
   if (!dl) return;
   // 每个产品一行：value = "编号 名称"，输编号或输名字关键词都能命中、且不重复
@@ -3285,6 +3347,12 @@ async function onProductSelect(id) {
       badge.textContent = match.sku.toLowerCase() === typed.toLowerCase() ? match.name : match.sku;
       badge.classList.remove('hidden');
     }
+    // 把成本贴到行上,给「卖跌破成本」实时警告用(不显示成本数字,只用比对)
+    const row = inp.closest('.item-row');
+    if (row) row.dataset.unitCost = String(match.unit_cost || 0);
+    // 命中商品后立刻按当前价格刷一次警告(覆盖"先填价后选 SKU"的场景)
+    const _curPrice = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
+    if (_curPrice > 0) _flagCostState(id, _curPrice);
     // Auto-fill unit
     const unitEl = document.getElementById(`item-unit-${id}`);
     if (unitEl && match.unit) {
@@ -3324,6 +3392,10 @@ async function onProductSelect(id) {
   } else {
     if (hidden) hidden.value = typed;
     if (badge) badge.classList.add('hidden');
+    // 换成了一个非目录里的商品 → 清掉之前贴的成本 + 移除旧警告
+    const row = inp.closest('.item-row');
+    if (row) row.dataset.unitCost = '0';
+    _flagCostState(id, parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0);
   }
 }
 
