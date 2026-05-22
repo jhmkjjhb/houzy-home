@@ -1425,6 +1425,72 @@ function fmtAmt(v, currency) {
 function fmtDate(d) { return new Date(d).toLocaleDateString('zh-CN', { month:'short', day:'numeric' }); }
 function fmtDateTime(d) { return new Date(d).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
+// 运营端订单详情:合作设计师卡(显示完整信息 — 折扣 + 返点 + 结算状态)
+function renderDesignerCard(o, items) {
+  const d = o.designers || {};
+  const cur = o.currency || 'MYR';
+  const f = v => fmtAmt(Number(v || 0), cur);
+  const itemsTotal = (items || []).reduce((s, it) => s + (Number(it.total_price) || 0), 0);
+  const discPct = Number(o.designer_discount_pct || 0);
+  const commPct = Number(o.designer_commission_pct || 0);
+  const commAmt = Number(o.designer_commission_amount || 0);
+  const modeLabel = { discount:'💰 折扣型', commission:'💵 返点型', mixed:'🎁 混合型' }[d.model_type] || '';
+  const settled = !!o.designer_settled_at;
+
+  let rows = '';
+  if (itemsTotal > 0) {
+    rows += `<div class="flex justify-between text-gray-500"><span>商品原价</span><span>${f(itemsTotal)}</span></div>`;
+    if (discPct > 0) {
+      const discAmt = itemsTotal * discPct / 100;
+      rows += `<div class="flex justify-between" style="color:#1a3a2a"><span>客户专享 -${discPct}%</span><span>- ${f(discAmt)}</span></div>`;
+      rows += `<div class="flex justify-between font-bold border-t border-gray-200 pt-1"><span>客户实付</span><span>${f(itemsTotal - discAmt)}</span></div>`;
+    }
+  }
+  let commRow = '';
+  if (commPct > 0) {
+    commRow = `<div class="mt-2 pt-2 border-t border-dashed border-amber-300">
+      <div class="flex justify-between" style="color:#c8a96e">
+        <span>🔒 应返设计师 ${commPct}%</span>
+        <span class="font-bold">${f(commAmt)}</span>
+      </div>
+      <div class="flex justify-between items-center mt-1">
+        <span class="text-xs ${settled ? 'text-emerald-600' : 'text-amber-600'}">
+          ${settled ? '✓ 已结算 ' + fmtDateTime(o.designer_settled_at) : '○ 未结算'}
+        </span>
+        ${canDo(2) ? `<button onclick="toggleDesignerSettled('${o.id}', ${settled})"
+          class="text-xs ${settled ? 'text-gray-400' : 'text-hg'} hover:underline">
+          ${settled ? '撤销结算' : '标记已结算'}</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  return `<div class="card p-5 mb-4" style="border-left:3px solid #c8a96e">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-lg">🎨</span>
+      <h3 class="font-semibold text-gray-800">${escHtml(d.name || '合作设计师')}</h3>
+      ${modeLabel ? `<span class="text-xs px-2 py-0.5 rounded-full ml-auto" style="background:#fdf6ec;color:#c8a96e;border:1px solid #e8d5b0">${modeLabel}</span>` : ''}
+    </div>
+    ${d.studio ? `<div class="text-xs text-gray-400 mb-1">${escHtml(d.studio)}</div>` : ''}
+    ${d.phone ? `<div class="text-xs text-gray-400 mb-3">📞 ${escHtml(d.phone)}</div>` : ''}
+    <div class="text-sm space-y-1 bg-gray-50 rounded-lg p-3">${rows}${commRow}</div>
+    <p class="text-xs text-gray-400 mt-2">折扣/返点率为下单时锁定的快照,改设计师档案不影响本单。</p>
+  </div>`;
+}
+
+async function toggleDesignerSettled(orderId, currentlySettled) {
+  if (!canDo(2)) { alert('店长及以上可操作结算'); return; }
+  if (currentlySettled) {
+    if (!confirm('撤销该单的"已结算"标记?')) return;
+    const { error } = await sb.from('orders').update({ designer_settled_at: null }).eq('id', orderId);
+    if (error) { alert('失败:' + error.message); return; }
+  } else {
+    if (!confirm('标记该单设计师返点为"已结算"?(用于月度对账)')) return;
+    const { error } = await sb.from('orders').update({ designer_settled_at: new Date().toISOString() }).eq('id', orderId);
+    if (error) { alert('失败:' + error.message); return; }
+  }
+  openDetail(orderId);
+}
+
 // ── Deadline / SLA ──
 // Default SLA in hours per status (admin can override per-order)
 const STATUS_SLA_HOURS = {
@@ -2873,7 +2939,7 @@ async function openDetail(id, backView) {
   goto('detail');
 
   const { data: o } = await sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
+    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
     .eq('id', id).single();
   if (!o) return;
 
@@ -3129,6 +3195,7 @@ async function openDetail(id, backView) {
         _fold('attach',   '📎', '附件 / 图片',           renderAttachmentsCard(attachments, o.id),                _open.has('attach')),
         ['after_sales','completed'].includes(o.status) ? _fold('warranty','🛡','质保信息', renderWarrantyPanel(o, logs, o.id), true) : '',
         _fold('pay',      '💵', '付款进度',             renderPaymentPanel(o, payments),                         _open.has('pay')),
+        o.designer_id ? _fold('designer', '🎨', '合作设计师', renderDesignerCard(o, items), _open.has('designer')) : '',
         _fold('logs',     '📜', '操作日志',
           `<div>${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}</div>`,
           _open.has('logs')),

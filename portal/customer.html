@@ -204,6 +204,7 @@ const IT_I18N = {
 };
 const ITX = {
   items_progress: {en:'Item-by-item Progress','zh-CN':'各商品进度','zh-TW':'各商品進度',ms:'Kemajuan Setiap Item',th:'ความคืบหน้ารายชิ้น'},
+  designer_discount: {en:'Designer Exclusive','zh-CN':'设计师专享','zh-TW':'設計師專享',ms:'Eksklusif Pereka',th:'สิทธิพิเศษนักออกแบบ'},
   dwg_title:{en:'Drawing Confirmation','zh-CN':'图纸确认','zh-TW':'圖紙確認',ms:'Pengesahan Lukisan',th:'ยืนยันแบบ'},
   dwg_view:{en:'View drawing','zh-CN':'查看图纸','zh-TW':'查看圖紙',ms:'Lihat lukisan',th:'ดูแบบ'},
   dwg_confirm:{en:'I confirm this drawing','zh-CN':'我确认此图纸无误','zh-TW':'我確認此圖紙無誤',ms:'Saya sahkan lukisan ini',th:'ฉันยืนยันแบบนี้'},
@@ -495,7 +496,7 @@ async function openDetail(id) {
 
   const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
-    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info,needs_install').eq('id', id).single(),
+    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info,needs_install,designer_discount_pct,amount').eq('id', id).single(),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
   ]);
@@ -701,6 +702,11 @@ async function openDetail(id) {
           <span class="text-gray-500">${ct('amount')}</span>
           <span class="font-bold text-hg text-base">${fmtAmt(o.amount)}</span>
         </div>
+        ${(freshOrder?.designer_discount_pct > 0) ? `
+        <div class="flex justify-between">
+          <span style="color:#c8a96e">🎨 ${itx('designer_discount')}</span>
+          <span class="font-medium" style="color:#c8a96e">-${Number(freshOrder.designer_discount_pct)}%</span>
+        </div>` : ''}
         <div class="flex justify-between">
           <span class="text-gray-500">${ct('pay_status')}</span>
           <span class="font-medium ${o.payment_status === 'paid' ? 'text-green-600' : 'text-red-500'}">
