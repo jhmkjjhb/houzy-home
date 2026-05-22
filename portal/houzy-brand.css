@@ -67,3 +67,11 @@ thead th{ text-transform:uppercase; letter-spacing:.8px; }
 .hz-label{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--hz-gold); font-weight:600; }
 /* 金色发丝分隔线 */
 .hz-rule{ height:1px; background:linear-gradient(90deg,var(--hz-gold),transparent); border:0; }
+
+/* 侧栏渐变深度 + 分组标签(提升质感) */
+#sidebar, #mobile-overlay aside{ background:linear-gradient(180deg,var(--hz-green) 0%,var(--hz-green3) 100%) !important; }
+.nav-link{ padding:9px 12px !important; font-size:13.5px !important; }
+.nav-sec{ font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:rgba(228,207,155,.55); margin:15px 12px 6px; font-weight:600; }
+.nav-sec:first-child{ margin-top:4px; }
+/* 侧栏品牌区底部金色发丝线 */
+#sidebar > a:first-child, #sidebar [class*="border-b"]:first-child{ position:relative; }

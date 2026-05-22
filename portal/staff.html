@@ -81,13 +81,16 @@
       <button onclick="toggleMobileMenu()" class="text-gray-400 hover:text-white">✕</button>
     </div>
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-sec">主面板</div>
       <div class="nav-link" data-hz-icon="dashboard" onclick="goto('dashboard');toggleMobileMenu()"><span data-i18n="nav_dashboard">总览</span></div>
       <div class="nav-link" data-hz-icon="orders" onclick="goto('orders');toggleMobileMenu()"><span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" data-hz-icon="create" onclick="goto('create');toggleMobileMenu()"><span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" data-hz-icon="customers" onclick="goto('customers');toggleMobileMenu()"><span data-i18n="nav_customers">客户管理</span></div>
+      <div class="nav-sec hidden admin-nav" data-perm="pricing">经营</div>
       <div class="nav-link hidden admin-nav" data-hz-icon="pricing" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()"><span>商品价目</span></div>
       <div class="nav-link hidden admin-nav" data-hz-icon="designers" data-perm="designers" onclick="goto('designers');toggleMobileMenu()"><span>合作设计师</span></div>
       <div class="nav-link hidden admin-nav" data-hz-icon="settle" data-perm="settle" onclick="goto('settle');toggleMobileMenu()"><span>设计师对账</span></div>
+      <div class="nav-sec hidden admin-nav" data-perm="registrations">管理</div>
       <div class="nav-link hidden admin-nav" data-hz-icon="registrations" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()"><span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-hz-icon="users" data-perm="users" onclick="goto('users');toggleMobileMenu()"><span>用户管理</span></div>
       <!-- Language selector -->
@@ -130,6 +133,7 @@
 
     <!-- Nav -->
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <div class="nav-sec">主面板</div>
       <div class="nav-link active" id="nav-dashboard" data-hz-icon="dashboard" onclick="goto('dashboard')">
         <span data-i18n="nav_dashboard">总览</span>
       </div>
@@ -142,6 +146,7 @@
       <div class="nav-link" id="nav-customers" data-hz-icon="customers" onclick="goto('customers')">
         <span data-i18n="nav_customers">客户管理</span>
       </div>
+      <div class="nav-sec hidden admin-nav" data-perm="pricing">经营</div>
       <div class="nav-link hidden admin-nav" id="nav-pricing" data-hz-icon="pricing" data-perm="pricing" onclick="goto('pricing')">
         <span>商品价目</span>
       </div>
@@ -151,6 +156,7 @@
       <div class="nav-link hidden admin-nav" id="nav-settle" data-hz-icon="settle" data-perm="settle" onclick="goto('settle')">
         <span>设计师对账</span>
       </div>
+      <div class="nav-sec hidden admin-nav" data-perm="registrations">管理</div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-hz-icon="registrations" data-perm="registrations" onclick="goto('registrations')">
         <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
       </div>
@@ -648,11 +654,11 @@
       <div class="flex gap-1 mb-5 border-b border-gray-200">
         <button id="utab-btn-staff" onclick="switchUserTab('staff')"
                 class="hidden px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 -mb-px hover:text-gray-800 transition">
-          👤 员工
+          员工
         </button>
         <button id="utab-btn-supplier" onclick="switchUserTab('supplier')"
                 class="px-4 py-2 text-sm font-medium border-b-2 border-hg text-hg -mb-px">
-          🏭 供应商
+          供应商
         </button>
       </div>
 
