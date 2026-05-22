@@ -1,0 +1,62 @@
+/* ============================================================================
+   houzy-brand.css — HOUZY HOME 后台统一品牌视觉层(Brand System v4)
+   在各端 <head> 里、tailwind 之后引入。一处改,全站变。
+   设计:浅底 + 深绿侧栏 / 墨松绿 #153927 + 鎏金 #c8a96e / 衬线标题 + 金色发丝线
+   ============================================================================ */
+:root{
+  --hz-green:#153927; --hz-green2:#245640; --hz-green3:#0d2519;
+  --hz-gold:#c8a96e; --hz-gold2:#e4cf9b;
+  --hz-cream:#f4efe5; --hz-paper:#fbf8f1; --hz-ink:#1a1a1a; --hz-muted:#7c776e;
+  --hz-line:rgba(200,169,110,.30); --hz-line-soft:rgba(21,57,39,.08);
+  --hz-serif:'Playfair Display','Noto Serif SC','Songti SC',Georgia,serif;
+  --hz-sans:Inter,'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --hz-shadow:0 1px 2px rgba(21,57,39,.04),0 8px 24px rgba(21,57,39,.05);
+}
+
+/* 字体 */
+body{ font-family:var(--hz-sans) !important; -webkit-font-smoothing:antialiased; }
+.hz-serif,.serif{ font-family:var(--hz-serif) !important; }
+
+/* 卡片:金色发丝边 + 柔和阴影 */
+.card{
+  border:1px solid var(--hz-line) !important;
+  border-radius:14px !important;
+  box-shadow:var(--hz-shadow) !important;
+}
+
+/* 按钮 */
+.btn-primary{ background:var(--hz-green) !important; border-radius:10px !important; }
+.btn-primary:hover{ background:var(--hz-green2) !important; }
+.btn-gold{ background:var(--hz-gold) !important; color:var(--hz-green) !important; border-radius:10px !important; font-weight:600; }
+.btn-gold:hover{ filter:brightness(1.06); }
+
+/* 输入:金色聚焦环 */
+.input:focus,input:focus,select:focus,textarea:focus{
+  outline:none !important;
+  border-color:var(--hz-green) !important;
+  box-shadow:0 0 0 3px rgba(200,169,110,.25) !important;
+}
+
+/* 侧边栏菜单:圆角 + 选中态金色左边条 + 图标 */
+.nav-link{ border-radius:9px !important; gap:11px; }
+.nav-link svg{ width:18px; height:18px; flex-shrink:0; stroke:currentColor; opacity:.85; }
+.nav-link.active{ background:rgba(200,169,110,.14) !important; color:#fff !important; position:relative; }
+.nav-link.active::before{
+  content:''; position:absolute; left:0; top:7px; bottom:7px;
+  width:3px; border-radius:2px; background:var(--hz-gold);
+}
+.nav-link.active svg{ color:var(--hz-gold2); opacity:1; }
+
+/* 侧边栏品牌锁定区(LOGO + 衬线名 + 金线) */
+.hz-brand{ display:flex; align-items:center; gap:11px; padding:18px 16px; border-bottom:1px solid rgba(200,169,110,.18); }
+.hz-brand img{ width:40px; height:40px; border-radius:10px; box-shadow:0 0 0 1px rgba(200,169,110,.35); flex-shrink:0; }
+.hz-brand .cn{ font-family:var(--hz-serif); font-size:16px; font-weight:700; letter-spacing:1px; color:#fff; line-height:1.1; }
+.hz-brand .en{ font-size:8px; letter-spacing:2.5px; color:var(--hz-gold2); margin-top:3px; text-transform:uppercase; }
+
+/* 表头:大写宽字距金标签风 */
+thead th{ text-transform:uppercase; letter-spacing:.8px; }
+
+/* 金色小标签工具类 */
+.hz-label{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--hz-gold); font-weight:600; }
+/* 金色发丝分隔线 */
+.hz-rule{ height:1px; background:linear-gradient(90deg,var(--hz-gold),transparent); border:0; }
