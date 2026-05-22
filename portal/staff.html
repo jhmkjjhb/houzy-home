@@ -2426,30 +2426,32 @@ let _winSeq = 0, _winAddonSeq = 0;
 // 阿尔维门窗系列库(取自 2026 价格目录;选系列自动带 壁厚/标配玻璃/五金。
 // 不准的地方直接改这里一处即可。价格按订单手填,不入库)
 const WIN_DEFAULT = { frame:'1.8', glass:'信义5白+20A+5白（中空）', hw:'阿尔维/希美克全套五金' };
+const WIN_MARKUP = 1.8;  // 参考售价 = 出厂价(成本,当 RM) × 1.8;不准就改这里
+// p = 各开启方式出厂价(=成本 RM/m²,目录抽取 best-effort,可改)
 const WIN_CATALOG = {
-  '星盾70平开窗':            { frame:'1.4', glass:'信义5白+20A+5白（中空）', hw:'阿尔维五金' },
-  '鸣镝60平开窗':            { frame:'1.4' },
-  '鸣镝90单平开系统':        { frame:'1.8' },
-  '鸣镝98注胶单平开系统':    { frame:'1.8' },
-  '星链102平开窗纱一体':     { frame:'1.8', glass:'信义5白+20A+5白（中空）', hw:'阿尔维不锈钢静音铰链+304防坠绳' },
-  '悟空100双内开内倒窗':     { frame:'1.8', hw:'希美克黑色无基座执手' },
-  '祝融112平开窗纱一体':     { frame:'2.0', hw:'美国希美克全套五金' },
-  '鲲龙120窗纱一体':         { frame:'2.0', hw:'美国希美克全套五金' },
-  '北斗四号118三轨断桥推拉窗':{ frame:'1.8' },
-  '北斗魁首125全景推拉窗':   { frame:'1.8' },
-  '北斗瞭望126提升推拉窗':   { frame:'1.8' },
-  '东方红一号101漂移窗':     { frame:'1.8' },
-  '羲和电动提升窗':          { frame:'1.8' },
-  '望舒126侧压窗':           { frame:'1.8', hw:'HOPO全套侧压五金' },
-  '天枢48非断桥推拉门':      { frame:'1.4' },
-  '星舟两轨推拉门':          { frame:'1.4' },
-  '完美4013吊趟门':          { frame:'1.8' },
-  '夔龙4516推拉门':          { frame:'1.8' },
-  '探索昆仑推拉门':          { frame:'1.8' },
-  '哈勃重型推拉门':          { frame:'2.0' },
-  '隐境X135全景门':          { frame:'2.0' },
-  '绝影三号68折叠门窗':      { frame:'1.8' },
-  '平开门（单包/双包）':     { frame:'1.8' },
+  '星盾70平开窗':            { frame:'1.4', hw:'阿尔维五金', p:{固定:580,平开:1000,外开:1750} },
+  '鸣镝60平开窗':            { frame:'1.4', p:{固定:680,平开:1000,外开:1750} },
+  '鸣镝90单平开系统':        { frame:'1.8', p:{固定:980,平开:1500,外开:1950} },
+  '鸣镝98注胶单平开系统':    { frame:'1.8', p:{固定:1080,外开:2050} },
+  '星链102平开窗纱一体':     { frame:'1.8', glass:'信义5白+20A+5白（中空）', hw:'阿尔维不锈钢静音铰链+304防坠绳', p:{固定:780,平开:1400,外开:2150} },
+  '悟空100双内开内倒窗':     { frame:'1.8', hw:'希美克黑色无基座执手', p:{固定:880,平开:1400,外开:1700} },
+  '祝融112平开窗纱一体':     { frame:'2.0', hw:'美国希美克全套五金', p:{固定:880,平开:1600,外开:2350} },
+  '鲲龙120窗纱一体':         { frame:'2.0', hw:'美国希美克全套五金', p:{固定:1080,平开:1700,外开:2450} },
+  '北斗四号118三轨断桥推拉窗':{ frame:'1.8', p:{推拉:1380} },
+  '北斗魁首125全景推拉窗':   { frame:'1.8', p:{推拉:1380} },
+  '北斗瞭望126提升推拉窗':   { frame:'1.8', p:{推拉:1580} },
+  '东方红一号101漂移窗':     { frame:'1.8', p:{固定:870,推拉:1130} },
+  '羲和电动提升窗':          { frame:'1.8', p:{推拉:3980} },
+  '望舒126侧压窗':           { frame:'1.8', hw:'HOPO全套侧压五金', p:{固定:1380,推拉:1130} },
+  '天枢48非断桥推拉门':      { frame:'1.4', p:{推拉:980} },
+  '星舟两轨推拉门':          { frame:'1.4', p:{推拉:880} },
+  '完美4013吊趟门':          { frame:'1.8', p:{推拉:980} },
+  '夔龙4516推拉门':          { frame:'1.8', p:{推拉:1180} },
+  '探索昆仑推拉门':          { frame:'1.8', p:{推拉:1580} },
+  '哈勃重型推拉门':          { frame:'2.0', p:{固定:1680,推拉:1913} },
+  '隐境X135全景门':          { frame:'2.0', p:{推拉:2580} },
+  '绝影三号68折叠门窗':      { frame:'1.8', p:{折叠:2180} },
+  '平开门（单包/双包）':     { frame:'1.8', p:{平开:980} },
   '阳光房系列':              { frame:'3.0' },
 };
 const WIN_DL = {
@@ -2491,6 +2493,7 @@ function addWindowRow() {
       <label class="flex items-center text-xs text-gray-500 gap-1"><input type="checkbox" id="win-min1-${id}" checked onchange="calcWindowRow(${id})">不足1㎡按1㎡</label>
       <input id="win-price-${id}" type="number" class="input text-sm" placeholder="单价 RM/m²" oninput="calcWindowRow(${id})">
       <div class="flex items-center text-sm font-bold gap-1" style="color:#1a3a2a"><span>合计</span><span id="win-total-${id}">0.00</span></div>
+      <div id="win-cost-${id}" class="col-span-2 text-xs" style="color:#c8a96e"></div>
     </div>
     <div id="win-addons-${id}" class="mt-2 space-y-1"></div>
     <button type="button" onclick="addWindowAddon(${id})" class="text-xs mt-2" style="color:#c8a96e">+ 附加项(开启扇/纱窗/护栏…)</button>`;
@@ -2504,11 +2507,28 @@ function onWinSeries(id) {
   fill(`win-wall-${id}`,  c.frame || WIN_DEFAULT.frame);
   fill(`win-glass-${id}`, c.glass || WIN_DEFAULT.glass);
   fill(`win-hw-${id}`,    c.hw    || WIN_DEFAULT.hw);
+  applyWinPrice(id);
+}
+function applyWinPrice(id) {
+  const series = (document.getElementById(`win-series-${id}`)?.value || '').trim();
+  const mode = document.getElementById(`win-mode-${id}`)?.value || '';
+  const c = WIN_CATALOG[series];
+  const cost = c && c.p && c.p[mode];
+  const hint = document.getElementById(`win-cost-${id}`);
+  if (!cost) { if (hint) hint.textContent = ''; return; }
+  const sell = Math.round(cost * WIN_MARKUP);
+  const priceEl = document.getElementById(`win-price-${id}`);
+  if (priceEl && !priceEl.value) { priceEl.value = sell; }   // 参考售价(成本×1.8),可改
+  if (hint) hint.textContent = canDo(2)
+    ? `成本参考 RM ${cost} · 建议售价 RM ${sell}(成本×${WIN_MARKUP})`
+    : `参考售价 RM ${sell}`;
+  calcWindowRow(id);
 }
 function onWinMode(id) {
   const m = document.getElementById(`win-mode-${id}`)?.value;
   const cb = document.getElementById(`win-min1-${id}`);
   if (cb) cb.checked = (m === '平开' || m === '外开');
+  applyWinPrice(id);
   calcWindowRow(id);
 }
 function addWindowAddon(winId) {
