@@ -2743,8 +2743,18 @@ async function submitOrder() {
   if (itemsForCheck.some(r => !(r.quantity > 0))) {
     showCreateErr('有商品行数量为空或为 0，请填写有效数量'); return;
   }
-  // 卖跌破成本拦截:店员 L1 直接拒绝;店长 L2+ 二次确认才放行
+  // 卖跌破成本拦截
   let _underCostNote = '';
+  // L1 看不到成本 → 服务端 RPC 校验(只回计数,不下发成本数字)
+  if (!canDo(2)) {
+    const _lines = itemsForCheck.map(r => ({ name: r.product_name, price: r.unit_price }));
+    const { data: _cc, error: _ccErr } = await sb.rpc('cost_check_lines', { p_lines: _lines });
+    if (!_ccErr && _cc && Number(_cc.under) > 0) {
+      showCreateErr(`有 ${_cc.under} 行卖跌破成本,需店长账号才能提交`);
+      return;
+    }
+  }
+  // 店长 L2+:本地实时边框已标记,二次确认才放行
   const underRows = Array.from(document.querySelectorAll('.item-row'))
     .filter(r => r.dataset.costState === 'under');
   if (underRows.length) {
@@ -3608,10 +3618,12 @@ function detectProductType(name) {
   return '';
 }
 async function loadStaffProducts() {
-  // 同时拉成本 → 开单时实时检测「卖跌破成本」(店长可见才会显示)
+  // 成本(unit_cost)是敏感数据:只有店长 L2+ 才把成本下载到浏览器(用于实时红/黄边框 +
+  // 显示成本数字)。普通店员 L1 不下载成本,改由服务端 RPC cost_check_lines 在提交时校验。
+  const wantCost = canDo(2);
   const [{ data }, { data: invs }] = await Promise.all([
     sb.from('products').select('id,sku,name,unit,specs,category,price').order('sku'),
-    sb.from('inventory').select('product_id,unit_cost'),
+    wantCost ? sb.from('inventory').select('product_id,unit_cost') : Promise.resolve({ data: [] }),
   ]);
   // 每个产品取「最低非零成本」作为参考(更保守,避免用旧批高价掩盖跌破)
   const costMap = {};
@@ -3690,13 +3702,15 @@ async function onProductSelect(id) {
       }
     }
     // Check inventory: auto-switch to 现货 if stock available
+    // 成本仅 L2+ 取(unit_cost 敏感);L1 只取库存量,不下载成本
+    const _invCols = canDo(2) ? 'qty_on_hand,qty_reserved,unit_cost' : 'qty_on_hand,qty_reserved';
     const { data: invRows } = await sb.from('inventory')
-      .select('qty_on_hand,qty_reserved,unit_cost').eq('product_id', match.id);
+      .select(_invCols).eq('product_id', match.id);
     if (invRows?.length) {
       const totalAvail = invRows.reduce((s, r) => s + (r.qty_on_hand||0) - (r.qty_reserved||0), 0);
       if (totalAvail > 0) setItemFT(id, 'stock');
-      // If no product price, fall back to unit_cost
-      if (priceEl && !priceEl.value) {
+      // If no product price, fall back to unit_cost(仅 L2+ 有 cost 字段)
+      if (priceEl && !priceEl.value && canDo(2)) {
         const cost = invRows.find(r => r.unit_cost > 0)?.unit_cost;
         if (cost) { priceEl.value = Number(cost).toFixed(2); calcItemRow(id); }
       }
