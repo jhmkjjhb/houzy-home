@@ -24,7 +24,7 @@ body{font-family:var(--ff-sans);background:var(--paper);color:var(--ink);-webkit
 /* ── Sidebar ── */
 .sidebar{width:248px;flex-shrink:0;background:linear-gradient(180deg,var(--green),var(--green-3));color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .brand{padding:22px 22px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(200,169,110,.18)}
-.brand .mark{width:38px;height:38px;flex-shrink:0;border:1.5px solid var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--gold-2);font-family:var(--ff-serif);font-size:20px;font-weight:700}
+.brand .mark{width:42px;height:42px;flex-shrink:0;border-radius:10px;display:block;box-shadow:0 0 0 1px rgba(200,169,110,.35)}
 .brand-cn{font-family:var(--ff-serif);font-size:17px;letter-spacing:1.5px;font-weight:700;line-height:1.1}
 .brand-en{font-size:8px;letter-spacing:3px;color:var(--gold-2);margin-top:3px}
 .nav{flex:1;padding:14px 12px;overflow-y:auto}
@@ -65,7 +65,7 @@ body{font-family:var(--ff-sans);background:var(--paper);color:var(--ink);-webkit
 .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .kpi::after{content:'';position:absolute;right:-12px;top:-12px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.12),transparent 70%)}
 .kpi .label{margin-bottom:10px}
-.kpi .v{font-family:var(--ff-serif);font-size:30px;font-weight:700;color:var(--green);line-height:1}
+.kpi .v{font-family:var(--ff-serif);font-size:25px;font-weight:700;color:var(--green);line-height:1.05;white-space:nowrap}
 .kpi .sub{font-size:11px;color:var(--muted);margin-top:7px}
 .kpi .up{color:#3d7a52;font-weight:600}
 
@@ -124,7 +124,7 @@ tbody tr:hover{background:rgba(244,239,229,.5)}
 <!-- ════ SIDEBAR ════ -->
 <aside class="sidebar">
   <div class="brand">
-    <div class="mark">合</div>
+    <img class="mark" src="/favicon.svg" alt="合屋 HOUZY HOME">
     <div>
       <div class="brand-cn">HOUZY HOME</div>
       <div class="brand-en">合屋整装 · OMS</div>
@@ -160,9 +160,9 @@ tbody tr:hover{background:rgba(244,239,229,.5)}
     <!-- KPI -->
     <div class="kpis">
       <div class="kpi"><div class="label">本月订单</div><div class="v">38</div><div class="sub"><span class="up">↑ 12%</span> 较上月</div></div>
-      <div class="kpi"><div class="label">本月收款</div><div class="v">RM 214k</div><div class="sub"><span class="up">↑ 8%</span> 较上月</div></div>
+      <div class="kpi"><div class="label">本月收款</div><div class="v">RM 214,000</div><div class="sub"><span class="up">↑ 8%</span> 较上月</div></div>
       <div class="kpi"><div class="label">进行中</div><div class="v">17</div><div class="sub">3 单待今日跟进</div></div>
-      <div class="kpi"><div class="label">设计师返点</div><div class="v">RM 9.6k</div><div class="sub">本月待结算</div></div>
+      <div class="kpi"><div class="label">设计师返点</div><div class="v">RM 9,600</div><div class="sub">本月待结算</div></div>
     </div>
 
     <!-- Orders table -->
