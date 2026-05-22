@@ -3061,6 +3061,18 @@ async function openDetail(id, backView) {
       if (!_wiErr) { o.warranty_info = wiStr; console.log('[openDetail] 自动计算质保信息已写入'); }
     }
   }
+
+  // 兜底:进行中的订单却没有倒计时(deadline_at 为空)→ 自动按当前阶段补上,
+  // 否则列表/仪表盘不显示计时。终态(完成/质保/取消/关闭)不补。
+  if (!o.deadline_at
+      && !['completed','after_sales','cancelled','closed'].includes(o.status)
+      && STATUS_SLA_HOURS[o.status]) {
+    const _dl = calcDeadline(o.status, null, orderHasCustom(items));
+    if (_dl) {
+      const { error: _dlErr } = await sb.from('orders').update({ deadline_at: _dl }).eq('id', id);
+      if (!_dlErr) { o.deadline_at = _dl; console.log('[openDetail] 自动补倒计时 deadline_at'); }
+    }
+  }
   // 子单(补件单)只认 parent_order_id 外键，严格按 FK 关联，不再用描述模糊匹配/客户兜底
   const childOrders = (childByFk || [])
     .filter(c => c.id !== id && c.parent_order_id === id)
