@@ -2423,7 +2423,23 @@ function addBundle(kind) {
 
 // ── 铝合金门窗定制模块(行业报价单:位置/系列/玻璃/五金/宽高→面积→单价→合计;平开不足1㎡按1㎡;附加项按件)──
 let _winSeq = 0, _winAddonSeq = 0;
+// 门窗常用项(来自阿尔维报价单;可下拉选也可手打,员工可逐步补充)
+const WIN_DL = {
+  series: ['星链102注胶系统外开窗纱一体','揽月望舒126侧压门','祝融112注胶系统外开窗纱一体','鲲龙120注胶系统外开窗纱一体'],
+  glass:  ['信义5白+20A+5白（充氩气）','信义5白+1.14pvb+18A+5白（充氩气）','信义5白+27A+5白（充氩气）','10白+18A+10白（双层大玻璃）'],
+  hw:     ['阿尔维定制双高执手+304不锈钢静音摩擦铰链+304不锈钢防坠绳','HOPO全套侧压五金','美国希美克全套五金','美国希美克全套五金（A010636-01）'],
+  addon:  ['开启扇','开启扇+304高透纱窗','开启扇（外开下悬）+304高透纱窗','固定护栏','断桥转角','F2二层大玻璃'],
+  wall:   ['1.4','1.8','2.0'],
+};
+function _ensureWinDatalists() {
+  if (document.getElementById('win-dl-series')) return;
+  const mk = (id, arr) => `<datalist id="${id}">${arr.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}"></option>`).join('')}</datalist>`;
+  const box = document.createElement('div');
+  box.innerHTML = mk('win-dl-series',WIN_DL.series)+mk('win-dl-glass',WIN_DL.glass)+mk('win-dl-hw',WIN_DL.hw)+mk('win-dl-addon',WIN_DL.addon)+mk('win-dl-wall',WIN_DL.wall);
+  document.body.appendChild(box);
+}
 function addWindowRow() {
+  _ensureWinDatalists();
   _winSeq++; const id = _winSeq;
   const wrap = document.getElementById('windows-list'); if (!wrap) return;
   const div = document.createElement('div');
@@ -2434,13 +2450,13 @@ function addWindowRow() {
     <div class="text-xs font-semibold mb-2" style="color:#1a3a2a">铝合金门窗 #${id}</div>
     <div class="grid grid-cols-2 gap-2 pr-6">
       <input id="win-pos-${id}" class="input text-sm" placeholder="安装位置(如 客厅)">
-      <input id="win-series-${id}" class="input text-sm" placeholder="窗型系列(如 星链102外开窗纱一体)">
+      <input id="win-series-${id}" class="input text-sm" list="win-dl-series" placeholder="窗型系列(如 星链102外开窗纱一体)">
       <select id="win-mode-${id}" class="input text-sm" onchange="onWinMode(${id})">
         <option value="平开">平开</option><option value="外开">外开</option><option value="推拉">推拉</option><option value="折叠">折叠</option><option value="固定">固定</option>
       </select>
-      <input id="win-wall-${id}" class="input text-sm" placeholder="壁厚 mm(如 2)">
-      <input id="win-glass-${id}" class="input text-sm col-span-2" placeholder="玻璃配置(如 信义5白+20A+5白)">
-      <input id="win-hw-${id}" class="input text-sm col-span-2" placeholder="标配五金(如 HOPO全套侧压)">
+      <input id="win-wall-${id}" class="input text-sm" list="win-dl-wall" placeholder="壁厚 mm(如 2)">
+      <input id="win-glass-${id}" class="input text-sm col-span-2" list="win-dl-glass" placeholder="玻璃配置(如 信义5白+20A+5白)">
+      <input id="win-hw-${id}" class="input text-sm col-span-2" list="win-dl-hw" placeholder="标配五金(如 HOPO全套侧压)">
       <input id="win-w-${id}" type="number" class="input text-sm" placeholder="宽 mm" oninput="calcWindowRow(${id})">
       <input id="win-h-${id}" type="number" class="input text-sm" placeholder="高 mm" oninput="calcWindowRow(${id})">
       <div class="flex items-center text-sm text-gray-600 gap-1"><span>面积</span><b id="win-area-${id}">0</b><span>m²</span></div>
@@ -2465,7 +2481,7 @@ function addWindowAddon(winId) {
   const row = document.createElement('div');
   row.className = 'win-addon grid grid-cols-12 gap-1 items-center'; row.dataset.aid = aid;
   row.innerHTML = `
-    <input class="input text-xs col-span-5" id="wa-name-${aid}" placeholder="附加项(开启扇/纱窗/护栏)">
+    <input class="input text-xs col-span-5" id="wa-name-${aid}" list="win-dl-addon" placeholder="附加项(开启扇/纱窗/护栏)">
     <input class="input text-xs col-span-2" id="wa-qty-${aid}" type="number" value="1" placeholder="数量" oninput="calcWindowRow(${winId})">
     <input class="input text-xs col-span-2" id="wa-price-${aid}" type="number" placeholder="单价/件" oninput="calcWindowRow(${winId})">
     <span class="col-span-2 text-xs text-right text-gray-600" id="wa-sub-${aid}">0</span>
