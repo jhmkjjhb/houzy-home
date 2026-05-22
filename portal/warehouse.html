@@ -43,6 +43,7 @@
 <div id="auth-gate" class="min-h-screen flex items-center justify-center p-4">
   <div class="card p-8 w-full max-w-sm">
     <div class="text-center mb-6">
+      <img src="/favicon.svg" alt="HOUZY HOME" class="w-14 h-14 rounded-lg mx-auto mb-3" style="box-shadow:0 0 0 1px rgba(200,169,110,.35)">
       <div class="text-2xl font-bold text-hg tracking-wide">HOUZY HOME</div>
       <div class="text-sm text-gray-400 mt-1">仓库管理系统</div>
     </div>
@@ -64,9 +65,12 @@
 
   <!-- Mobile Top Header -->
   <div class="sm:hidden fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 border-b border-white/10" style="background:#1a3a2a">
-    <div>
-      <div class="text-xs font-bold text-white tracking-wide">HOUZY HOME</div>
-      <div class="text-xs font-semibold" style="color:#c8a96e" id="mob-page-title">库存总览</div>
+    <div class="flex items-center gap-2">
+      <img src="/favicon.svg" alt="HOUZY" class="w-7 h-7 rounded-md flex-shrink-0">
+      <div>
+        <div class="text-xs font-bold text-white tracking-wide">HOUZY HOME</div>
+        <div class="text-xs font-semibold" style="color:#c8a96e" id="mob-page-title">库存总览</div>
+      </div>
     </div>
     <div class="flex items-center gap-3">
       <span id="mob-user-name" class="text-xs text-gray-300 max-w-[90px] truncate"></span>
@@ -78,9 +82,12 @@
 
   <!-- Sidebar (desktop only) -->
   <aside class="hidden sm:flex w-56 flex-shrink-0 flex-col sticky top-0 h-screen" style="background:#1a3a2a">
-    <div class="p-4 border-b border-white/10">
-      <div class="font-bold text-white text-base tracking-wide">HOUZY HOME</div>
-      <div class="text-xs text-gd mt-0.5">仓库管理系统</div>
+    <div class="p-4 border-b border-white/10 flex items-center gap-2">
+      <img src="/favicon.svg" alt="HOUZY" class="w-9 h-9 rounded-lg flex-shrink-0" style="box-shadow:0 0 0 1px rgba(200,169,110,.35)">
+      <div>
+        <div class="font-bold text-white text-base tracking-wide">HOUZY HOME</div>
+        <div class="text-xs text-gd mt-0.5">仓库管理系统</div>
+      </div>
     </div>
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
       <div class="nav-link active" id="nav-overview" onclick="goto('overview')">
