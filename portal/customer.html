@@ -496,7 +496,7 @@ async function openDetail(id) {
 
   const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
-    sb.from('orders').select('status,sign_image,signed_at,signed_by,warranty_info,needs_install,designer_discount_pct,amount').eq('id', id).single(),
+    sb.rpc('get_order_detail_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
   ]);
