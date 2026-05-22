@@ -38,8 +38,10 @@ body{ font-family:var(--hz-sans) !important; -webkit-font-smoothing:antialiased;
 }
 
 /* 侧边栏菜单:深底浅字 + 行内图标 + 圆角 + 选中态金色左边条 */
+/* ⚠ display:flex 只给"未隐藏"的项,否则会盖过 .hidden(display:none) 把受权限隐藏的菜单露出来 */
+.nav-link:not(.hidden){ display:flex !important; }
 .nav-link{
-  display:flex !important; align-items:center !important; gap:11px !important;
+  align-items:center !important; gap:11px !important;
   border-radius:9px !important;
   color:rgba(255,255,255,.82) !important;   /* 深绿底上必须浅字 */
 }
@@ -73,5 +75,3 @@ thead th{ text-transform:uppercase; letter-spacing:.8px; }
 .nav-link{ padding:9px 12px !important; font-size:13.5px !important; }
 .nav-sec{ font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:rgba(228,207,155,.55); margin:15px 12px 6px; font-weight:600; }
 .nav-sec:first-child{ margin-top:4px; }
-/* 侧栏品牌区底部金色发丝线 */
-#sidebar > a:first-child, #sidebar [class*="border-b"]:first-child{ position:relative; }
