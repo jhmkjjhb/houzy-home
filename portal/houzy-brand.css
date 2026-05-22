@@ -95,3 +95,6 @@ h1{ font-weight:700 !important; }
 /* 精致顶栏问候 */
 .hz-greet-label{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--hz-gold); font-weight:600; }
 .hz-greet-title{ font-family:var(--hz-serif); font-size:22px; font-weight:700; color:var(--hz-green); letter-spacing:.5px; margin-top:2px; }
+
+/* 深绿底按钮强制白字(防深绿底配深字看不清) */
+.btn-primary, button.bg-hg, a.bg-hg{ color:#fff !important; }
