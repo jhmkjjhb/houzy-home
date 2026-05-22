@@ -1,5 +1,6 @@
 /* houzy-icons.js — HOUZY 线性图标集(Lucide 风格,1.8 描边,currentColor)
-   用法:给元素加 data-hz-icon="dashboard",DOMContentLoaded 后自动注入 SVG。 */
+   用法:给元素加 data-hz-icon="dashboard",DOMContentLoaded 后自动注入 SVG。
+   注入的 svg 自带 1.15em 尺寸 → 不依赖外部 CSS,永不撑大。 */
 (function(){
   var P='stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"';
   window.HZ_ICONS={
@@ -20,12 +21,13 @@
     truck:'<svg viewBox="0 0 24 24" '+P+'><path d="M14 18V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h1"/><path d="M14 9h4l3 3v5a1 1 0 0 1-1 1h-1"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
     factory:'<svg viewBox="0 0 24 24" '+P+'><path d="M2 20h20M4 20V9l5 4V9l5 4V9l5 4v7"/></svg>',
   };
+  var STY='style="width:1.15em;height:1.15em;flex-shrink:0;display:inline-block;vertical-align:middle;"';
   function inject(){
     var els=document.querySelectorAll('[data-hz-icon]');
     for(var i=0;i<els.length;i++){
       var el=els[i], k=el.getAttribute('data-hz-icon');
       if(window.HZ_ICONS[k] && !el.querySelector('svg.hz-ic')){
-        el.insertAdjacentHTML('afterbegin', window.HZ_ICONS[k].replace('<svg ','<svg class="hz-ic" '));
+        el.insertAdjacentHTML('afterbegin', window.HZ_ICONS[k].replace('<svg ','<svg class="hz-ic" '+STY+' '));
       }
     }
   }
