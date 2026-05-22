@@ -327,6 +327,9 @@
             <button type="button" onclick="addBundle('衣柜')"
                     class="text-xs font-semibold px-2.5 py-1 rounded-full"
                     style="background:#1a3a2a;color:#c8a96e">+ 衣柜（全套模块）</button>
+            <button type="button" onclick="addWindowRow()"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    style="background:#1a3a2a;color:#c8a96e">+ 铝合金门窗</button>
             <button type="button" onclick="addItemRow()"
                     class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
               <span class="text-lg leading-none">+</span> 单个商品
@@ -336,6 +339,7 @@
         <div class="text-xs text-gray-400 mb-3">点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」</div>
         <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
+        <div id="windows-list"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
           <span class="text-sm text-gray-500">商品合计（原价）</span>
           <span id="items-total" class="font-bold text-hg text-base">MYR 0.00</span>
@@ -2417,6 +2421,118 @@ function addBundle(kind) {
   calcItemsTotal();
 }
 
+// ── 铝合金门窗定制模块(行业报价单:位置/系列/玻璃/五金/宽高→面积→单价→合计;平开不足1㎡按1㎡;附加项按件)──
+let _winSeq = 0, _winAddonSeq = 0;
+function addWindowRow() {
+  _winSeq++; const id = _winSeq;
+  const wrap = document.getElementById('windows-list'); if (!wrap) return;
+  const div = document.createElement('div');
+  div.className = 'window-row'; div.dataset.winId = id;
+  div.style.cssText = 'border:1px solid #e5d9c0;border-radius:10px;padding:12px;margin-bottom:10px;background:#fcfaf5;position:relative';
+  div.innerHTML = `
+    <button type="button" onclick="removeWindowRow(${id})" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-xl leading-none">×</button>
+    <div class="text-xs font-semibold mb-2" style="color:#1a3a2a">铝合金门窗 #${id}</div>
+    <div class="grid grid-cols-2 gap-2 pr-6">
+      <input id="win-pos-${id}" class="input text-sm" placeholder="安装位置(如 客厅)">
+      <input id="win-series-${id}" class="input text-sm" placeholder="窗型系列(如 星链102外开窗纱一体)">
+      <select id="win-mode-${id}" class="input text-sm" onchange="onWinMode(${id})">
+        <option value="平开">平开</option><option value="外开">外开</option><option value="推拉">推拉</option><option value="折叠">折叠</option><option value="固定">固定</option>
+      </select>
+      <input id="win-wall-${id}" class="input text-sm" placeholder="壁厚 mm(如 2)">
+      <input id="win-glass-${id}" class="input text-sm col-span-2" placeholder="玻璃配置(如 信义5白+20A+5白)">
+      <input id="win-hw-${id}" class="input text-sm col-span-2" placeholder="标配五金(如 HOPO全套侧压)">
+      <input id="win-w-${id}" type="number" class="input text-sm" placeholder="宽 mm" oninput="calcWindowRow(${id})">
+      <input id="win-h-${id}" type="number" class="input text-sm" placeholder="高 mm" oninput="calcWindowRow(${id})">
+      <div class="flex items-center text-sm text-gray-600 gap-1"><span>面积</span><b id="win-area-${id}">0</b><span>m²</span></div>
+      <label class="flex items-center text-xs text-gray-500 gap-1"><input type="checkbox" id="win-min1-${id}" checked onchange="calcWindowRow(${id})">不足1㎡按1㎡</label>
+      <input id="win-price-${id}" type="number" class="input text-sm" placeholder="单价 RM/m²" oninput="calcWindowRow(${id})">
+      <div class="flex items-center text-sm font-bold gap-1" style="color:#1a3a2a"><span>合计</span><span id="win-total-${id}">0.00</span></div>
+    </div>
+    <div id="win-addons-${id}" class="mt-2 space-y-1"></div>
+    <button type="button" onclick="addWindowAddon(${id})" class="text-xs mt-2" style="color:#c8a96e">+ 附加项(开启扇/纱窗/护栏…)</button>`;
+  wrap.appendChild(div);
+  calcWindowRow(id);
+}
+function onWinMode(id) {
+  const m = document.getElementById(`win-mode-${id}`)?.value;
+  const cb = document.getElementById(`win-min1-${id}`);
+  if (cb) cb.checked = (m === '平开' || m === '外开');
+  calcWindowRow(id);
+}
+function addWindowAddon(winId) {
+  _winAddonSeq++; const aid = _winAddonSeq;
+  const box = document.getElementById(`win-addons-${winId}`); if (!box) return;
+  const row = document.createElement('div');
+  row.className = 'win-addon grid grid-cols-12 gap-1 items-center'; row.dataset.aid = aid;
+  row.innerHTML = `
+    <input class="input text-xs col-span-5" id="wa-name-${aid}" placeholder="附加项(开启扇/纱窗/护栏)">
+    <input class="input text-xs col-span-2" id="wa-qty-${aid}" type="number" value="1" placeholder="数量" oninput="calcWindowRow(${winId})">
+    <input class="input text-xs col-span-2" id="wa-price-${aid}" type="number" placeholder="单价/件" oninput="calcWindowRow(${winId})">
+    <span class="col-span-2 text-xs text-right text-gray-600" id="wa-sub-${aid}">0</span>
+    <button type="button" onclick="this.parentElement.remove();calcWindowRow(${winId})" class="col-span-1 text-gray-300 hover:text-red-500">×</button>`;
+  box.appendChild(row);
+}
+function calcWindowRow(id) {
+  const w = parseFloat(document.getElementById(`win-w-${id}`)?.value) || 0;
+  const h = parseFloat(document.getElementById(`win-h-${id}`)?.value) || 0;
+  const area = (w * h) / 1e6;
+  const min1 = document.getElementById(`win-min1-${id}`)?.checked;
+  const eff = (min1 && area > 0 && area < 1) ? 1 : area;
+  const price = parseFloat(document.getElementById(`win-price-${id}`)?.value) || 0;
+  const aEl = document.getElementById(`win-area-${id}`); if (aEl) aEl.textContent = area.toFixed(2);
+  let total = eff * price;
+  document.querySelectorAll(`#win-addons-${id} .win-addon`).forEach(r => {
+    const aid = r.dataset.aid;
+    const q = parseFloat(document.getElementById(`wa-qty-${aid}`)?.value) || 0;
+    const p = parseFloat(document.getElementById(`wa-price-${aid}`)?.value) || 0;
+    const sub = q * p; const sEl = document.getElementById(`wa-sub-${aid}`); if (sEl) sEl.textContent = sub.toFixed(0);
+    total += sub;
+  });
+  const tEl = document.getElementById(`win-total-${id}`); if (tEl) tEl.textContent = total.toFixed(2);
+  calcItemsTotal();
+}
+function removeWindowRow(id) { document.querySelector(`.window-row[data-win-id="${id}"]`)?.remove(); calcItemsTotal(); }
+function _windowsTotal() {
+  let t = 0;
+  document.querySelectorAll('.window-row').forEach(div => {
+    t += parseFloat(document.getElementById(`win-total-${div.dataset.winId}`)?.textContent || '0') || 0;
+  });
+  return t;
+}
+function collectWindowRows() {
+  const out = [];
+  document.querySelectorAll('.window-row').forEach((div, idx) => {
+    const id = div.dataset.winId;
+    const series = (document.getElementById(`win-series-${id}`)?.value || '').trim();
+    if (!series) return;
+    const pos   = (document.getElementById(`win-pos-${id}`)?.value || '').trim();
+    const mode  = document.getElementById(`win-mode-${id}`)?.value || '';
+    const wall  = (document.getElementById(`win-wall-${id}`)?.value || '').trim();
+    const glass = (document.getElementById(`win-glass-${id}`)?.value || '').trim();
+    const hw    = (document.getElementById(`win-hw-${id}`)?.value || '').trim();
+    const w = parseFloat(document.getElementById(`win-w-${id}`)?.value) || 0;
+    const h = parseFloat(document.getElementById(`win-h-${id}`)?.value) || 0;
+    const area = (w * h) / 1e6;
+    const min1 = document.getElementById(`win-min1-${id}`)?.checked;
+    const eff = (min1 && area > 0 && area < 1) ? 1 : area;
+    const price = parseFloat(document.getElementById(`win-price-${id}`)?.value) || 0;
+    const spec = [pos && '位置:'+pos, mode && '开启:'+mode, wall && '壁厚:'+wall+'mm', glass && '玻璃:'+glass, hw && '五金:'+hw, (w&&h) && `${w}×${h}mm`].filter(Boolean).join(' | ') || null;
+    out.push({ product_name: series, model_spec: spec, quantity: Number(eff.toFixed(4)),
+      unit: 'm²', uom: 'm²', unit_price: price, total_price: Number((eff*price).toFixed(2)),
+      sort_order: 1000+idx, product_type: 'MZ', fulfillment_type: 'custom', section: '铝合金门窗' });
+    document.querySelectorAll(`#win-addons-${id} .win-addon`).forEach(r => {
+      const aid = r.dataset.aid;
+      const nm = (document.getElementById(`wa-name-${aid}`)?.value || '').trim(); if (!nm) return;
+      const q = parseFloat(document.getElementById(`wa-qty-${aid}`)?.value) || 0;
+      const p = parseFloat(document.getElementById(`wa-price-${aid}`)?.value) || 0;
+      out.push({ product_name: `${series} - ${nm}`, model_spec: pos ? ('位置:'+pos) : null,
+        quantity: q, unit: '件', uom: '件', unit_price: p, total_price: Number((q*p).toFixed(2)),
+        sort_order: 1000+idx, product_type: 'MZ', fulfillment_type: 'custom', section: '铝合金门窗' });
+    });
+  });
+  return out;
+}
+
 function removeItemRow(btn) {
   btn.closest('.item-row').remove();
   calcItemsTotal();
@@ -2493,6 +2609,7 @@ function calcItemsTotal() {
     const price = parseFloat(document.getElementById(`item-price-${id}`)?.value) || 0;
     total += qty * price;
   });
+  total += _windowsTotal();
   const currency = document.getElementById('o-currency')?.value || 'MYR';
   const sym = CURRENCY_SYMBOL[currency] || currency;
   const totalEl = document.getElementById('items-total');
@@ -2501,7 +2618,7 @@ function calcItemsTotal() {
   const bd = calcDesignerBreakdown(total);
   renderDesignerBreakdown(total, bd, currency);
   // Sync to amount field when items have values(同步成"客户实付")
-  if (document.querySelectorAll('.item-row').length > 0 && total > 0) {
+  if (total > 0) {
     const amtEl = document.getElementById('o-amount');
     if (amtEl) { amtEl.value = bd.payable.toFixed(2); updateSplitAmounts(); }
   }
@@ -2593,6 +2710,7 @@ function getItemRows() {
       uom:               unitVal,
     });
   });
+  collectWindowRows().forEach(r => rows.push(r));
   return rows;
 }
 
@@ -2618,6 +2736,7 @@ function resetCreateForm() {
   const hint = document.getElementById('fulfillment-mode-hint');
   if (hint) hint.textContent = '';
   // Reset items
+  const wl = document.getElementById('windows-list'); if (wl) wl.innerHTML = '';
   const list = document.getElementById('items-list');
   if (list) { list.innerHTML = ''; itemRowCount = 0; addItemRow(); calcItemsTotal(); }
 }
