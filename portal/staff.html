@@ -78,6 +78,7 @@
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
       <div class="nav-link hidden admin-nav" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()">💰 <span>商品价目</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="designers" onclick="goto('designers');toggleMobileMenu()">🎨 <span>合作设计师</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -138,6 +139,9 @@
       </div>
       <div class="nav-link hidden admin-nav" id="nav-pricing" data-perm="pricing" onclick="goto('pricing')">
         💰 <span>商品价目</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-designers" data-perm="designers" onclick="goto('designers')">
+        🎨 <span>合作设计师</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -463,6 +467,100 @@
       <div class="card overflow-hidden">
         <div id="pricing-summary" class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100"></div>
         <div id="pricing-table" class="overflow-x-auto"></div>
+      </div>
+    </div>
+
+    <!-- ── 合作设计师档案(店长 L2+) ── -->
+    <div id="v-designers" class="hidden p-6 max-w-6xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-2">🎨 合作设计师</h1>
+      <p class="text-sm text-gray-500 mb-5">这里维护合作设计师档案。开单时选了某位设计师 → 系统自动按其设置应用折扣或返点。
+        改设计师档案不影响历史订单的财务(订单已锁定当时的折扣/返点率)。</p>
+
+      <div class="card p-4 mb-4 flex flex-wrap gap-2">
+        <input type="text" id="dz-search" placeholder="搜索姓名 / 电话 / 工作室" oninput="renderDesignersTable()"
+               class="input flex-1 min-w-[200px] text-sm">
+        <select id="dz-filter-active" onchange="renderDesignersTable()" class="input text-sm" style="max-width:160px">
+          <option value="">全部</option>
+          <option value="1" selected>仅启用</option>
+          <option value="0">仅停用</option>
+        </select>
+        <button onclick="openDesignerModal()" class="btn-gold px-4 py-2 text-sm">＋ 新增设计师</button>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div id="designers-summary" class="px-4 py-2 text-xs text-gray-500 border-b border-gray-100"></div>
+        <div id="designers-table" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- 编辑/新增弹窗 -->
+      <div id="dz-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between mb-4">
+            <h2 id="dz-modal-title" class="text-lg font-bold text-gray-800">新增设计师</h2>
+            <button onclick="closeDesignerModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          </div>
+          <input type="hidden" id="dz-id">
+
+          <div class="space-y-3">
+            <div>
+              <label class="label">姓名 *</label>
+              <input id="dz-name" placeholder="如:陈设计 / Wong Designer" class="input text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="label">电话</label>
+                <input id="dz-phone" placeholder="60-12-345 6789" class="input text-sm">
+              </div>
+              <div>
+                <label class="label">工作室 / 公司</label>
+                <input id="dz-studio" placeholder="如:陈氏设计工作室" class="input text-sm">
+              </div>
+            </div>
+
+            <div>
+              <label class="label">合作模式 *</label>
+              <div class="flex gap-2 flex-wrap" id="dz-model-row">
+                <button type="button" onclick="setDesignerModel('discount')"   id="dz-m-discount"
+                        class="flex-1 min-w-[120px] py-2 text-xs rounded border font-semibold">折扣型<br><span class="font-normal text-[10px] opacity-70">让客户</span></button>
+                <button type="button" onclick="setDesignerModel('commission')" id="dz-m-commission"
+                        class="flex-1 min-w-[120px] py-2 text-xs rounded border font-semibold">返点型<br><span class="font-normal text-[10px] opacity-70">背后给钱</span></button>
+                <button type="button" onclick="setDesignerModel('mixed')"      id="dz-m-mixed"
+                        class="flex-1 min-w-[120px] py-2 text-xs rounded border font-semibold">混合型<br><span class="font-normal text-[10px] opacity-70">折扣+返点</span></button>
+              </div>
+              <input type="hidden" id="dz-model" value="discount">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3" id="dz-rates">
+              <div id="dz-discount-wrap">
+                <label class="label">客户专享折扣 %</label>
+                <input id="dz-discount" type="number" min="0" max="100" step="0.1" placeholder="如 15 表示 -15%" class="input text-sm">
+                <p class="text-[10px] text-gray-400 mt-0.5">客户实付 = 原价 × (1 − 折扣%)</p>
+              </div>
+              <div id="dz-commission-wrap">
+                <label class="label">设计师返点 %</label>
+                <input id="dz-commission" type="number" min="0" max="100" step="0.1" placeholder="如 5 表示返 5%" class="input text-sm">
+                <p class="text-[10px] text-gray-400 mt-0.5">返点 = 客户实付 × 返点%(月底结)</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="label">备注</label>
+              <textarea id="dz-notes" rows="2" placeholder="如:Insta 引流来源 / 长期合作 / 银行账号 etc." class="input text-sm"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <input type="checkbox" id="dz-active" checked>
+              <label for="dz-active" class="text-sm text-gray-700">启用(在开单时可被选中)</label>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-5">
+            <button id="dz-del-btn" onclick="deleteDesigner()" class="hidden flex-1 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50">删除</button>
+            <button onclick="closeDesignerModal()" class="flex-1 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50">取消</button>
+            <button onclick="saveDesigner()" class="flex-1 py-2 text-sm rounded-lg btn-gold">保存</button>
+          </div>
+          <p id="dz-err" class="hidden text-red-600 text-xs mt-2"></p>
+        </div>
       </div>
     </div>
 
@@ -916,6 +1014,7 @@ const FIELD_MIN_LEVEL = {
   nav_registrations:4,
   nav_users:        4,
   nav_pricing:      2,   // 商品价目:店长 L2+ 可查/改价
+  nav_designers:    2,   // 合作设计师档案:店长 L2+
   store_filter:     2,
 };
 
@@ -1632,7 +1731,7 @@ async function init() {
   if (mobileInfo) mobileInfo.innerHTML = userHtml;
 
   await loadStores(); // 必须先完成，buildOrdersQuery 的区域过滤依赖 stores 数组
-  await Promise.all([loadReferrers(), loadOrders(), loadCustomers(), loadStaffProducts()]);
+  await Promise.all([loadReferrers(), loadOrders(), loadCustomers(), loadStaffProducts(), loadDesigners()]);
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
@@ -1647,6 +1746,9 @@ async function init() {
   });
   document.querySelectorAll('.admin-nav[data-perm="pricing"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_pricing)) el.classList.remove('hidden');
+  });
+  document.querySelectorAll('.admin-nav[data-perm="designers"]').forEach(el => {
+    if (canDo(FIELD_MIN_LEVEL.nav_designers)) el.classList.remove('hidden');
   });
   setLang(currentLang);
 
@@ -1812,7 +1914,7 @@ async function loadCustomers() {
 function goto(view) {
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
-  ['dashboard','orders','create','customers','detail','registrations','users','pricing'].forEach(v => {
+  ['dashboard','orders','create','customers','detail','registrations','users','pricing','designers'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     const navId = v === 'detail' ? 'orders' : v;
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
@@ -1824,6 +1926,7 @@ function goto(view) {
   if (view === 'registrations') loadRegistrations();
   if (view === 'users') loadUsersPage();
   if (view === 'pricing') loadPricingPage();
+  if (view === 'designers') loadDesignersPage();
 }
 
 // ── Dashboard ──
@@ -5388,6 +5491,187 @@ async function uploadPricingXlsx(input) {
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 合作设计师 (店长 L2+) ──
+let _designersAll = [];   // 全量缓存 (开单选择器也用)
+
+async function loadDesignersPage() {
+  if (!canDo(FIELD_MIN_LEVEL.nav_designers)) {
+    document.getElementById('designers-table').innerHTML = '<div class="p-8 text-center text-gray-400">权限不足</div>';
+    return;
+  }
+  document.getElementById('designers-table').innerHTML = '<div class="p-8 text-center text-gray-400">加载中…</div>';
+  await loadDesigners();
+  renderDesignersTable();
+}
+
+// 复用型:被 loadAll 或开单页都调用,刷新 _designersAll 缓存
+async function loadDesigners() {
+  const { data, error } = await sb.from('designers')
+    .select('*').order('active', { ascending: false }).order('name');
+  if (error) { console.warn('[loadDesigners]', error.message); _designersAll = []; return; }
+  _designersAll = data || [];
+}
+
+function renderDesignersTable() {
+  const q  = (document.getElementById('dz-search')?.value || '').trim().toLowerCase();
+  const af = document.getElementById('dz-filter-active')?.value || '';
+  let list = _designersAll;
+  if (q)  list = list.filter(d =>
+    (d.name||'').toLowerCase().includes(q) ||
+    (d.phone||'').toLowerCase().includes(q) ||
+    (d.studio||'').toLowerCase().includes(q));
+  if (af === '1') list = list.filter(d => d.active);
+  if (af === '0') list = list.filter(d => !d.active);
+
+  document.getElementById('designers-summary').innerHTML =
+    `共 <b>${_designersAll.length}</b> 位设计师 · 启用 <b style="color:#1a3a2a">${_designersAll.filter(d=>d.active).length}</b>` +
+    (list.length !== _designersAll.length ? ` · 当前筛选 <b>${list.length}</b>` : '');
+
+  if (!list.length) {
+    document.getElementById('designers-table').innerHTML =
+      '<div class="p-8 text-center text-gray-400">没有匹配的设计师。点右上「＋ 新增设计师」开始建档。</div>';
+    return;
+  }
+
+  const modeLabel = { discount:'💰 折扣型', commission:'💵 返点型', mixed:'🎁 混合型' };
+  const rows = list.map(d => {
+    const showDisc = d.model_type !== 'commission';
+    const showComm = d.model_type !== 'discount';
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50 ${d.active ? '' : 'opacity-50'}">
+      <td class="px-3 py-2">
+        <div class="text-sm font-semibold text-gray-800">${escHtml(d.name||'')}</div>
+        ${d.studio ? `<div class="text-xs text-gray-400">${escHtml(d.studio)}</div>` : ''}
+      </td>
+      <td class="px-3 py-2 text-xs text-gray-500 font-mono">${escHtml(d.phone||'')}</td>
+      <td class="px-3 py-2 text-xs">${modeLabel[d.model_type] || d.model_type}</td>
+      <td class="px-3 py-2 text-xs text-right">${showDisc ? `<b style="color:#1a3a2a">-${Number(d.discount_pct).toFixed(1)}%</b>` : '<span class="text-gray-300">—</span>'}</td>
+      <td class="px-3 py-2 text-xs text-right">${showComm ? `<b style="color:#c8a96e">+${Number(d.commission_pct).toFixed(1)}%</b>` : '<span class="text-gray-300">—</span>'}</td>
+      <td class="px-3 py-2 text-xs text-center">${d.active ? '<span style="color:#10b981">● 启用</span>' : '<span class="text-gray-400">○ 停用</span>'}</td>
+      <td class="px-3 py-2 text-right">
+        <button onclick="openDesignerModal('${d.id}')" class="text-xs text-hg hover:underline">编辑</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('designers-table').innerHTML = `
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase">
+          <th class="px-3 py-2">姓名 / 工作室</th>
+          <th class="px-3 py-2">电话</th>
+          <th class="px-3 py-2">合作模式</th>
+          <th class="px-3 py-2 text-right">客户折扣</th>
+          <th class="px-3 py-2 text-right">设计师返点</th>
+          <th class="px-3 py-2 text-center">状态</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function openDesignerModal(id) {
+  document.getElementById('dz-err').classList.add('hidden');
+  if (id) {
+    const d = _designersAll.find(x => x.id === id);
+    if (!d) { alert('设计师不存在'); return; }
+    document.getElementById('dz-modal-title').textContent = '编辑设计师';
+    document.getElementById('dz-id').value         = d.id;
+    document.getElementById('dz-name').value       = d.name || '';
+    document.getElementById('dz-phone').value      = d.phone || '';
+    document.getElementById('dz-studio').value     = d.studio || '';
+    document.getElementById('dz-discount').value   = d.discount_pct || '';
+    document.getElementById('dz-commission').value = d.commission_pct || '';
+    document.getElementById('dz-notes').value      = d.notes || '';
+    document.getElementById('dz-active').checked   = !!d.active;
+    setDesignerModel(d.model_type || 'discount');
+    document.getElementById('dz-del-btn').classList.remove('hidden');
+  } else {
+    document.getElementById('dz-modal-title').textContent = '新增设计师';
+    ['dz-id','dz-name','dz-phone','dz-studio','dz-discount','dz-commission','dz-notes'].forEach(k => document.getElementById(k).value = '');
+    document.getElementById('dz-active').checked = true;
+    setDesignerModel('discount');
+    document.getElementById('dz-del-btn').classList.add('hidden');
+  }
+  document.getElementById('dz-modal').classList.remove('hidden');
+}
+
+function closeDesignerModal() {
+  document.getElementById('dz-modal').classList.add('hidden');
+}
+
+function setDesignerModel(m) {
+  document.getElementById('dz-model').value = m;
+  ['discount','commission','mixed'].forEach(k => {
+    const btn = document.getElementById('dz-m-'+k);
+    if (!btn) return;
+    if (k === m) {
+      btn.style.background = '#1a3a2a'; btn.style.color = 'white'; btn.style.borderColor = '#1a3a2a';
+    } else {
+      btn.style.background = 'white'; btn.style.color = '#666'; btn.style.borderColor = '#ddd';
+    }
+  });
+  // 控制可见输入:discount 隐藏返点;commission 隐藏折扣;mixed 都显示
+  document.getElementById('dz-discount-wrap').style.display   = (m === 'commission') ? 'none' : '';
+  document.getElementById('dz-commission-wrap').style.display = (m === 'discount')   ? 'none' : '';
+}
+
+async function saveDesigner() {
+  const errEl = document.getElementById('dz-err');
+  errEl.classList.add('hidden');
+  const id     = document.getElementById('dz-id').value || null;
+  const name   = (document.getElementById('dz-name').value || '').trim();
+  const phone  = (document.getElementById('dz-phone').value || '').trim() || null;
+  const studio = (document.getElementById('dz-studio').value || '').trim() || null;
+  const model  = document.getElementById('dz-model').value;
+  const disc   = parseFloat(document.getElementById('dz-discount').value)   || 0;
+  const comm   = parseFloat(document.getElementById('dz-commission').value) || 0;
+  const notes  = (document.getElementById('dz-notes').value || '').trim() || null;
+  const active = !!document.getElementById('dz-active').checked;
+  if (!name) { errEl.textContent='请填姓名'; errEl.classList.remove('hidden'); return; }
+  if (model === 'discount'   && !(disc > 0)) { errEl.textContent='折扣型必须填客户折扣 %'; errEl.classList.remove('hidden'); return; }
+  if (model === 'commission' && !(comm > 0)) { errEl.textContent='返点型必须填设计师返点 %'; errEl.classList.remove('hidden'); return; }
+  if (model === 'mixed' && !(disc > 0) && !(comm > 0)) { errEl.textContent='混合型至少填一项 %'; errEl.classList.remove('hidden'); return; }
+
+  const payload = {
+    name, phone, studio, notes, active,
+    model_type:     model,
+    discount_pct:   (model === 'commission') ? 0 : disc,
+    commission_pct: (model === 'discount')   ? 0 : comm,
+  };
+  if (id) {
+    const { error } = await sb.from('designers').update(payload).eq('id', id);
+    if (error) { errEl.textContent='保存失败:'+error.message; errEl.classList.remove('hidden'); return; }
+  } else {
+    const { error } = await sb.from('designers').insert(payload);
+    if (error) { errEl.textContent='新增失败:'+error.message; errEl.classList.remove('hidden'); return; }
+  }
+  closeDesignerModal();
+  await loadDesigners();
+  renderDesignersTable();
+}
+
+async function deleteDesigner() {
+  const id = document.getElementById('dz-id').value;
+  if (!id) return;
+  // 检查是否有订单引用此设计师 → 不能删,只能停用
+  const { count } = await sb.from('orders').select('id', { count:'exact', head:true }).eq('designer_id', id);
+  if (count && count > 0) {
+    if (!confirm(`该设计师已被 ${count} 个订单引用,无法删除。要不要改成停用?(停用后开单时不会再列出)`)) return;
+    const { error } = await sb.from('designers').update({ active: false }).eq('id', id);
+    if (error) { alert('停用失败:'+error.message); return; }
+    closeDesignerModal();
+    await loadDesigners();
+    renderDesignersTable();
+    return;
+  }
+  if (!confirm('确认删除此设计师档案?该操作不可恢复。')) return;
+  const { error } = await sb.from('designers').delete().eq('id', id);
+  if (error) { alert('删除失败:'+error.message); return; }
+  closeDesignerModal();
+  await loadDesigners();
+  renderDesignersTable();
 }
 
 // ── Registrations (admin) ──
