@@ -25,10 +25,17 @@ body{ font-family:var(--hz-sans) !important; -webkit-font-smoothing:antialiased;
 }
 
 /* 按钮 */
-.btn-primary{ background:var(--hz-green) !important; border-radius:10px !important; }
+.btn-primary{ background:var(--hz-green) !important; border-radius:10px !important; box-shadow:0 2px 8px rgba(21,57,39,.18); }
 .btn-primary:hover{ background:var(--hz-green2) !important; }
-.btn-gold{ background:var(--hz-gold) !important; color:var(--hz-green) !important; border-radius:10px !important; font-weight:600; }
-.btn-gold:hover{ filter:brightness(1.06); }
+.btn-gold{
+  background:linear-gradient(180deg,#d4b884,var(--hz-gold)) !important;
+  color:var(--hz-green) !important; border-radius:10px !important;
+  font-weight:600 !important; letter-spacing:.5px;
+  box-shadow:0 2px 8px rgba(200,169,110,.35);
+  display:inline-flex !important; align-items:center; justify-content:center; gap:6px;
+}
+.btn-gold:hover{ filter:brightness(1.04); box-shadow:0 3px 12px rgba(200,169,110,.45); }
+.btn-gold svg{ width:16px; height:16px; stroke:currentColor; flex-shrink:0; }
 
 /* 输入:金色聚焦环 */
 .input:focus,input:focus,select:focus,textarea:focus{

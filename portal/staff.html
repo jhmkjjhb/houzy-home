@@ -209,7 +209,7 @@
     <div id="v-orders" class="hidden p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-5">
         <h1 class="text-xl font-bold text-gray-800" data-i18n="orders_title">订单管理</h1>
-        <button onclick="goto('create')" class="btn-gold" data-i18n="orders_new_btn">+ 新建订单</button>
+        <button onclick="goto('create')" class="btn-gold" data-hz-icon="plus"><span data-i18n="orders_new_btn">新建订单</span></button>
       </div>
       <!-- Filters -->
       <div class="card p-4 mb-4 space-y-2">
@@ -736,7 +736,7 @@ const STAFF_I18N = {
     stat_total:'总订单', stat_active:'进行中', stat_done:'已完成', stat_revenue:'已收款',
     stat_total_ord:'总订单数', stat_paid_cnt:'已付款', stat_unpaid_cnt:'待付款', stat_revenue_total:'总收款金额', stat_store_detail:'门店明细',
     stat_day_pfx:'日', stat_month_pfx:'月',
-    orders_title:'订单管理', orders_new_btn:'+ 新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
+    orders_title:'订单管理', orders_new_btn:'新建订单', filter_search:'搜索订单号 / 客户', filter_all_status:'全部状态', filter_all_stores:'全部门店', filter_clear_date:'清除日期',
     create_title:'新建订单', create_step1:'1. 客户信息', create_step2:'3. 订单信息', create_btn:'创建订单', creating:'创建中…',
     lbl_country:'区号', lbl_phone:'手机号', lbl_name:'姓名', lbl_address:'地址',
     lbl_store:'国家/地区', lbl_amount:'订单金额', lbl_desc:'产品描述', lbl_referrer:'推荐人',
@@ -781,7 +781,7 @@ const STAFF_I18N = {
     stat_total:'總訂單', stat_active:'進行中', stat_done:'已完成', stat_revenue:'已收款',
     stat_total_ord:'總訂單數', stat_paid_cnt:'已付款', stat_unpaid_cnt:'待付款', stat_revenue_total:'總收款金額', stat_store_detail:'門店明細',
     stat_day_pfx:'日', stat_month_pfx:'月',
-    orders_title:'訂單管理', orders_new_btn:'+ 新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
+    orders_title:'訂單管理', orders_new_btn:'新建訂單', filter_search:'搜尋訂單號 / 客戶', filter_all_status:'全部狀態', filter_all_stores:'全部門店', filter_clear_date:'清除日期',
     create_title:'新建訂單', create_step1:'1. 客戶資訊', create_step2:'3. 訂單資訊', create_btn:'創建訂單', creating:'創建中…',
     lbl_country:'區號', lbl_phone:'手機號', lbl_name:'姓名', lbl_address:'地址',
     lbl_store:'國家/地區', lbl_amount:'訂單金額', lbl_desc:'產品描述', lbl_referrer:'推薦人',
@@ -826,7 +826,7 @@ const STAFF_I18N = {
     stat_total:'Total Orders', stat_active:'In Progress', stat_done:'Completed', stat_revenue:'Revenue',
     stat_total_ord:'Total Orders', stat_paid_cnt:'Paid', stat_unpaid_cnt:'Unpaid', stat_revenue_total:'Total Revenue', stat_store_detail:'Store Details',
     stat_day_pfx:'D', stat_month_pfx:'M',
-    orders_title:'Order Management', orders_new_btn:'+ New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
+    orders_title:'Order Management', orders_new_btn:'New Order', filter_search:'Search order / customer', filter_all_status:'All Status', filter_all_stores:'All Stores', filter_clear_date:'Clear Date',
     create_title:'New Order', create_step1:'1. Customer Info', create_step2:'3. Order Details', create_btn:'Create Order', creating:'Creating…',
     lbl_country:'Code', lbl_phone:'Phone', lbl_name:'Name', lbl_address:'Address',
     lbl_store:'Country/Region', lbl_amount:'Order Amount', lbl_desc:'Description', lbl_referrer:'Referrer',
@@ -871,7 +871,7 @@ const STAFF_I18N = {
     stat_total:'Jumlah Pesanan', stat_active:'Sedang Berjalan', stat_done:'Selesai', stat_revenue:'Hasil',
     stat_total_ord:'Jumlah Pesanan', stat_paid_cnt:'Telah Dibayar', stat_unpaid_cnt:'Belum Dibayar', stat_revenue_total:'Jumlah Hasil', stat_store_detail:'Butiran Kedai',
     stat_day_pfx:'H', stat_month_pfx:'B',
-    orders_title:'Pengurusan Pesanan', orders_new_btn:'+ Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
+    orders_title:'Pengurusan Pesanan', orders_new_btn:'Pesanan Baru', filter_search:'Cari pesanan / pelanggan', filter_all_status:'Semua Status', filter_all_stores:'Semua Kedai', filter_clear_date:'Kosongkan Tarikh',
     create_title:'Pesanan Baru', create_step1:'1. Maklumat Pelanggan', create_step2:'3. Butiran Pesanan', create_btn:'Buat Pesanan', creating:'Sedang dibuat…',
     lbl_country:'Kod', lbl_phone:'Telefon', lbl_name:'Nama', lbl_address:'Alamat',
     lbl_store:'Negara/Wilayah', lbl_amount:'Jumlah Pesanan', lbl_desc:'Penerangan', lbl_referrer:'Perujuk',
@@ -916,7 +916,7 @@ const STAFF_I18N = {
     stat_total:'คำสั่งซื้อทั้งหมด', stat_active:'กำลังดำเนินการ', stat_done:'เสร็จสิ้น', stat_revenue:'รายได้',
     stat_total_ord:'คำสั่งซื้อทั้งหมด', stat_paid_cnt:'ชำระแล้ว', stat_unpaid_cnt:'ยังไม่ชำระ', stat_revenue_total:'รายได้รวม', stat_store_detail:'รายละเอียดสาขา',
     stat_day_pfx:'วัน', stat_month_pfx:'เดือน',
-    orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'+ สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
+    orders_title:'จัดการคำสั่งซื้อ', orders_new_btn:'สร้างคำสั่งซื้อ', filter_search:'ค้นหาคำสั่ง / ลูกค้า', filter_all_status:'ทุกสถานะ', filter_all_stores:'ทุกสาขา', filter_clear_date:'ล้างวันที่',
     create_title:'สร้างคำสั่งซื้อ', create_step1:'1. ข้อมูลลูกค้า', create_step2:'3. รายละเอียดคำสั่งซื้อ', create_btn:'สร้างคำสั่งซื้อ', creating:'กำลังสร้าง…',
     lbl_country:'รหัส', lbl_phone:'โทรศัพท์', lbl_name:'ชื่อ', lbl_address:'ที่อยู่',
     lbl_store:'ประเทศ/ภูมิภาค', lbl_amount:'จำนวนเงิน', lbl_desc:'รายละเอียด', lbl_referrer:'ผู้แนะนำ',
