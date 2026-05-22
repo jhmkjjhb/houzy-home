@@ -37,9 +37,16 @@ body{ font-family:var(--hz-sans) !important; -webkit-font-smoothing:antialiased;
   box-shadow:0 0 0 3px rgba(200,169,110,.25) !important;
 }
 
-/* 侧边栏菜单:圆角 + 选中态金色左边条 + 图标 */
-.nav-link{ border-radius:9px !important; gap:11px; }
-.nav-link svg{ width:18px; height:18px; flex-shrink:0; stroke:currentColor; opacity:.85; }
+/* 侧边栏菜单:深底浅字 + 行内图标 + 圆角 + 选中态金色左边条 */
+.nav-link{
+  display:flex !important; align-items:center !important; gap:11px !important;
+  border-radius:9px !important;
+  color:rgba(255,255,255,.82) !important;   /* 深绿底上必须浅字 */
+}
+.nav-link:hover{ color:#fff !important; }
+/* 退出按钮保留红色,不被上面的浅字覆盖 */
+.nav-link.text-red-400, .nav-link.text-red-400:hover{ color:#f87171 !important; }
+.nav-link svg{ width:18px !important; height:18px !important; flex-shrink:0; stroke:currentColor; opacity:.85; }
 .nav-link.active{ background:rgba(200,169,110,.14) !important; color:#fff !important; position:relative; }
 .nav-link.active::before{
   content:''; position:absolute; left:0; top:7px; bottom:7px;
