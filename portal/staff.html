@@ -77,9 +77,9 @@
       <div class="nav-link" onclick="goto('orders');toggleMobileMenu()">📋 <span data-i18n="nav_orders">订单管理</span></div>
       <div class="nav-link" onclick="goto('create');toggleMobileMenu()">＋ <span data-i18n="nav_new">新建订单</span></div>
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
-      <div class="nav-link hidden admin-nav" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()">💰 <span>商品价目</span></div>
-      <div class="nav-link hidden admin-nav" data-perm="designers" onclick="goto('designers');toggleMobileMenu()">🎨 <span>合作设计师</span></div>
-      <div class="nav-link hidden admin-nav" data-perm="settle" onclick="goto('settle');toggleMobileMenu()">📊 <span>设计师对账</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()"><span>商品价目</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="designers" onclick="goto('designers');toggleMobileMenu()"><span>合作设计师</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="settle" onclick="goto('settle');toggleMobileMenu()"><span>设计师对账</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -139,13 +139,13 @@
         <span data-i18n="nav_customers">客户管理</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-pricing" data-perm="pricing" onclick="goto('pricing')">
-        💰 <span>商品价目</span>
+        <span>商品价目</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-designers" data-perm="designers" onclick="goto('designers')">
-        🎨 <span>合作设计师</span>
+        <span>合作设计师</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-settle" data-perm="settle" onclick="goto('settle')">
-        📊 <span>设计师对账</span>
+        <span>设计师对账</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -330,7 +330,7 @@
 
         <!-- 合作设计师(选填) -->
         <div class="pt-3 mt-3 border-t border-gray-100">
-          <label class="label flex items-center gap-1">🎨 合作设计师<span class="text-xs text-gray-400 font-normal">（选填）</span></label>
+          <label class="label flex items-center gap-1">合作设计师<span class="text-xs text-gray-400 font-normal">（选填）</span></label>
           <select id="o-designer" onchange="onDesignerSelect()" class="input text-sm">
             <option value="">无 / 散客</option>
           </select>
@@ -453,7 +453,7 @@
 
     <!-- ── 商品价目(店长 L2+) ── -->
     <div id="v-pricing" class="hidden p-6 max-w-6xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-2">💰 商品价目</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-2">商品价目</h1>
       <p class="text-sm text-gray-500 mb-5">这里维护开单时自动带的零售标价。每个 SKU 一个标价,留空则开单时手填。
         成本来自仓库入库,只读;改成本请去仓库后台。</p>
 
@@ -485,7 +485,7 @@
 
     <!-- ── 合作设计师档案(店长 L2+) ── -->
     <div id="v-designers" class="hidden p-6 max-w-6xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-2">🎨 合作设计师</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-2">合作设计师</h1>
       <p class="text-sm text-gray-500 mb-5">这里维护合作设计师档案。开单时选了某位设计师 → 系统自动按其设置应用折扣或返点。
         改设计师档案不影响历史订单的财务(订单已锁定当时的折扣/返点率)。</p>
 
@@ -579,7 +579,7 @@
 
     <!-- ── 设计师对账(店长 L2+) ── -->
     <div id="v-settle" class="hidden p-6 max-w-6xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-2">📊 设计师对账</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-2">设计师对账</h1>
       <p class="text-sm text-gray-500 mb-5">按月统计每位设计师应返的返点(返点 = 客户实付 × 返点率,下单时锁定)。
         只含「返点型 / 混合型」且有返点金额的订单。范围跟随你的权限:店长看本店、区域看本区、公司看全部。</p>
 
@@ -1476,7 +1476,7 @@ function renderDesignerCard(o, items) {
   const discPct = Number(o.designer_discount_pct || 0);
   const commPct = Number(o.designer_commission_pct || 0);
   const commAmt = Number(o.designer_commission_amount || 0);
-  const modeLabel = { discount:'💰 折扣型', commission:'💵 返点型', mixed:'🎁 混合型' }[d.model_type] || '';
+  const modeLabel = { discount:'折扣型', commission:'💵 返点型', mixed:'🎁 混合型' }[d.model_type] || '';
   const settled = !!o.designer_settled_at;
 
   // 从订单"锁定的金额"反推,而非当前商品明细(避免下单后改明细导致显示漂移)
@@ -2184,7 +2184,7 @@ function renderMonthlyStats(orders, period, specificDate) {
   ).join('');
 
   const dayPfx = t('stat_day_pfx'); const monPfx = t('stat_month_pfx');
-  const title = specificDate ? `📅 ${specificDate} (${dayPfx})` : `📊 ${period} (${monPfx})`;
+  const title = specificDate ? `📅 ${specificDate} (${dayPfx})` : `${period} (${monPfx})`;
 
   panel.classList.remove('hidden');
   panel.innerHTML = `
@@ -2924,7 +2924,7 @@ async function submitOrder() {
       operator_id: profile.id,
       operator_role: profile.role,
       operator_name: profile.name,
-      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}${_dz ? `；🎨 合作设计师：${_dz.name}${_dzBd.discountPct>0?`（客户专享 -${_dzBd.discountPct}%）`:''}${_dzBd.commPct>0?`（应返 ${_dzBd.commPct}%=${_dzBd.commAmt.toFixed(2)}）`:''}` : ''}${_underCostNote}`,
+      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}${_dz ? `；合作设计师：${_dz.name}${_dzBd.discountPct>0?`（客户专享 -${_dzBd.discountPct}%）`:''}${_dzBd.commPct>0?`（应返 ${_dzBd.commPct}%=${_dzBd.commAmt.toFixed(2)}）`:''}` : ''}${_underCostNote}`,
     });
     if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
 
@@ -5758,7 +5758,7 @@ function renderDesignersTable() {
     return;
   }
 
-  const modeLabel = { discount:'💰 折扣型', commission:'💵 返点型', mixed:'🎁 混合型' };
+  const modeLabel = { discount:'折扣型', commission:'💵 返点型', mixed:'🎁 混合型' };
   const rows = list.map(d => {
     const showDisc = d.model_type !== 'commission';
     const showComm = d.model_type !== 'discount';
