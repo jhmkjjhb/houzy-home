@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOUZY HOME — 后台视觉升级预览</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#153927; --green-2:#245640; --green-3:#0d2519;
+  --gold:#c8a96e; --gold-2:#e4cf9b;
+  --cream:#f4efe5; --paper:#fbf8f1; --ink:#1a1a1a; --muted:#7c776e; --stone:#e7e2d8;
+  --line:rgba(200,169,110,.30);
+  --line-soft:rgba(21,57,39,.08);
+  --ff-serif:'Playfair Display','Noto Serif SC',Georgia,serif;
+  --ff-sans:Inter,'Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --shadow:0 1px 2px rgba(21,57,39,.04),0 8px 24px rgba(21,57,39,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-sans);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+.serif{font-family:var(--ff-serif)}
+.label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+/* ── Sidebar ── */
+.sidebar{width:248px;flex-shrink:0;background:linear-gradient(180deg,var(--green),var(--green-3));color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:22px 22px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(200,169,110,.18)}
+.brand .mark{width:38px;height:38px;flex-shrink:0;border:1.5px solid var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--gold-2);font-family:var(--ff-serif);font-size:20px;font-weight:700}
+.brand-cn{font-family:var(--ff-serif);font-size:17px;letter-spacing:1.5px;font-weight:700;line-height:1.1}
+.brand-en{font-size:8px;letter-spacing:3px;color:var(--gold-2);margin-top:3px}
+.nav{flex:1;padding:14px 12px;overflow-y:auto}
+.nav-sec{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(228,207,155,.5);margin:16px 12px 7px}
+.nav-sec:first-child{margin-top:4px}
+.nav-link{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:13.5px;color:rgba(255,255,255,.74);cursor:pointer;transition:.15s;position:relative;margin-bottom:1px}
+.nav-link svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;opacity:.85}
+.nav-link:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-link.active{background:rgba(200,169,110,.13);color:#fff;font-weight:500}
+.nav-link.active::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:2px;background:var(--gold)}
+.nav-link.active svg{color:var(--gold-2);opacity:1}
+.side-foot{padding:14px 18px;border-top:1px solid rgba(200,169,110,.18);display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--gold);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.side-foot .nm{font-size:13px;font-weight:500}
+.side-foot .rl{font-size:10px;color:rgba(228,207,155,.6)}
+
+/* ── Main ── */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:64px;background:rgba(251,248,241,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}
+.topbar .pg-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:600}
+.topbar h1{font-family:var(--ff-serif);font-size:21px;font-weight:700;color:var(--green);letter-spacing:.5px}
+.top-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line-soft);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:.15s}
+.icon-btn:hover{border-color:var(--gold);color:var(--green)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor}
+.content{padding:26px 28px;max-width:1180px}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.card-pad{padding:20px}
+.card-hd{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line-soft)}
+.card-hd .ci{width:30px;height:30px;border-radius:8px;background:var(--cream);display:flex;align-items:center;justify-content:center;color:var(--green)}
+.card-hd .ci svg{width:17px;height:17px;stroke:currentColor}
+.card-hd h3{font-family:var(--ff-serif);font-size:15.5px;font-weight:700;color:var(--ink)}
+
+/* ── KPI ── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;right:-12px;top:-12px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.12),transparent 70%)}
+.kpi .label{margin-bottom:10px}
+.kpi .v{font-family:var(--ff-serif);font-size:30px;font-weight:700;color:var(--green);line-height:1}
+.kpi .sub{font-size:11px;color:var(--muted);margin-top:7px}
+.kpi .up{color:#3d7a52;font-weight:600}
+
+/* ── Table ── */
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:11px 16px;background:var(--cream);border-bottom:1px solid var(--line-soft)}
+tbody td{padding:13px 16px;font-size:13.5px;border-bottom:1px solid var(--line-soft)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(244,239,229,.5)}
+.mono{font-family:'SF Mono',ui-monospace,monospace;font-size:12px;color:var(--muted)}
+.amt{font-family:var(--ff-serif);font-weight:600;color:var(--green)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.15s;font-family:var(--ff-sans)}
+.btn svg{width:16px;height:16px;stroke:currentColor}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green-2)}
+.btn-gold{background:var(--gold);color:var(--green)}
+.btn-gold:hover{filter:brightness(1.06)}
+.btn-ghost{background:#fff;color:var(--green);border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--gold);background:var(--cream)}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-green{background:#e8f0eb;color:#2d6a45}
+.b-gold{background:#faf3e3;color:#a8842f}
+.b-blue{background:#e7eef5;color:#3a6ea5}
+.b-gray{background:#eee;color:#777}
+.b-red{background:#fbeaea;color:#b84444}
+
+/* ── Inputs ── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.3px}
+.inp{width:100%;border:1px solid var(--stone);border-radius:10px;padding:10px 13px;font-size:13.5px;font-family:var(--ff-sans);background:#fff;transition:.15s}
+.inp:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(200,169,110,.22)}
+
+/* ── Section heads ── */
+.sec-hd{display:flex;align-items:center;gap:12px;margin:34px 0 16px}
+.sec-hd .rule{height:1px;flex:1;background:linear-gradient(90deg,var(--line),transparent)}
+.sec-hd .label{white-space:nowrap}
+
+/* ── Icon gallery ── */
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.ic-cell{border:1px solid var(--line-soft);border-radius:11px;padding:16px 8px;text-align:center;background:#fff}
+.ic-cell svg{width:22px;height:22px;stroke:var(--green);margin-bottom:8px}
+.ic-cell span{display:block;font-size:10px;color:var(--muted)}
+
+.note{margin:30px 28px 24px;padding:14px 18px;border:1px dashed var(--line);border-radius:12px;background:#fff;font-size:12.5px;color:var(--muted);line-height:1.8}
+.note b{color:var(--green)}
+@media(max-width:860px){.sidebar{display:none}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="mark">合</div>
+    <div>
+      <div class="brand-cn">HOUZY HOME</div>
+      <div class="brand-en">合屋整装 · OMS</div>
+    </div>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="side-foot">
+    <div class="avatar">陈</div>
+    <div style="flex:1">
+      <div class="nm">陈店长</div>
+      <div class="rl">Mount Austin · 店长</div>
+    </div>
+    <span style="color:rgba(255,255,255,.4);cursor:pointer" id="logout"></span>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <header class="topbar">
+    <div>
+      <div class="pg-label">Dashboard · 总览</div>
+      <h1>早安,陈店长</h1>
+    </div>
+    <div class="top-actions">
+      <div class="icon-btn" id="ic-search"></div>
+      <div class="icon-btn" id="ic-bell"></div>
+      <button class="btn btn-gold" id="btn-new"><span></span>新建订单</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- KPI -->
+    <div class="kpis">
+      <div class="kpi"><div class="label">本月订单</div><div class="v">38</div><div class="sub"><span class="up">↑ 12%</span> 较上月</div></div>
+      <div class="kpi"><div class="label">本月收款</div><div class="v">RM 214k</div><div class="sub"><span class="up">↑ 8%</span> 较上月</div></div>
+      <div class="kpi"><div class="label">进行中</div><div class="v">17</div><div class="sub">3 单待今日跟进</div></div>
+      <div class="kpi"><div class="label">设计师返点</div><div class="v">RM 9.6k</div><div class="sub">本月待结算</div></div>
+    </div>
+
+    <!-- Orders table -->
+    <div class="card" style="margin-bottom:6px">
+      <div class="card-hd">
+        <div class="ci" id="ci-orders"></div>
+        <h3>近期订单</h3>
+        <span style="margin-left:auto;font-size:12px;color:var(--gold);cursor:pointer;font-weight:600">查看全部 →</span>
+      </div>
+      <table>
+        <thead><tr><th>订单号</th><th>客户</th><th>金额</th><th>设计师</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">001-20260522-0007</td><td>李先生</td><td class="amt">RM 42,999</td><td>陈氏设计</td><td><span class="badge b-gold">生产中</span></td></tr>
+          <tr><td class="mono">001-20260522-0006</td><td>Wong</td><td class="amt">RM 5,800</td><td>—</td><td><span class="badge b-blue">已发货</span></td></tr>
+          <tr><td class="mono">001-20260521-0011</td><td>陳小姐</td><td class="amt">RM 18,000</td><td>林工作室</td><td><span class="badge b-green">已完成</span></td></tr>
+          <tr><td class="mono">001-20260521-0009</td><td>Ahmad</td><td class="amt">RM 2,800</td><td>—</td><td><span class="badge b-gray">待付款</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Components showcase -->
+    <div class="sec-hd"><span class="label">Components · 组件</span><span class="rule"></span></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- detail-style card -->
+      <div class="card">
+        <div class="card-hd"><div class="ci" id="ci-designer"></div><h3>合作设计师</h3>
+          <span class="badge b-gold" style="margin-left:auto">混合型</span></div>
+        <div class="card-pad" style="font-size:13px;line-height:2">
+          <div style="display:flex;justify-content:space-between;color:var(--muted)"><span>商品原价</span><span>RM 1,000.00</span></div>
+          <div style="display:flex;justify-content:space-between;color:var(--green)"><span>客户专享 -10%</span><span>- RM 100.00</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--line-soft);padding-top:6px;margin-top:4px"><span>客户实付</span><span class="amt">RM 900.00</span></div>
+          <div style="display:flex;justify-content:space-between;color:#a8842f;border-top:1px dashed var(--line);padding-top:8px;margin-top:8px"><span>🔒 应返设计师 5%</span><span style="font-weight:700">RM 45.00</span></div>
+        </div>
+      </div>
+
+      <!-- buttons + badges + form -->
+      <div class="card card-pad">
+        <div class="label" style="margin-bottom:10px">Buttons</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+          <button class="btn btn-primary"><span id="b1"></span>确认</button>
+          <button class="btn btn-gold">鎏金按钮</button>
+          <button class="btn btn-ghost">幽灵</button>
+        </div>
+        <div class="label" style="margin-bottom:10px">Badges</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px">
+          <span class="badge b-green">已完成</span><span class="badge b-gold">生产中</span>
+          <span class="badge b-blue">已发货</span><span class="badge b-red">逾期</span><span class="badge b-gray">待付款</span>
+        </div>
+        <div class="label" style="margin-bottom:10px">Inputs</div>
+        <div class="field"><label>客户姓名</label><input class="inp" placeholder="点我看金色聚焦环" value="李先生"></div>
+        <div class="field" style="margin-bottom:0"><label>订单金额</label><input class="inp" value="RM 42,999"></div>
+      </div>
+    </div>
+
+    <!-- Icon set -->
+    <div class="sec-hd"><span class="label">Icon Set · 图标系统(替换 emoji)</span><span class="rule"></span></div>
+    <div class="card card-pad"><div class="icon-grid" id="gallery"></div></div>
+
+  </div>
+
+  <div class="note">
+    这是 <b>独立预览页</b>,不影响任何真后台。视觉取自 <b>HOUZY HOME Brand System v4</b>:墨松绿 #153927 + 鎏金 #c8a96e、
+    衬线标题(Playfair + 思源宋体)、金色发丝线、大写金标签、线性 SVG 图标。<br>
+    满意的话,我把这套样式与图标套进 <b>staff.html</b>(浅底 + 深绿侧栏 / 中度改造),再逐步推到其他端。
+  </div>
+</div>
+
+<script>
+// ── 线性 SVG 图标集(Lucide 风格,1.8 描边,currentColor)──
+const P='stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+const ICONS={
+  dashboard:`<svg viewBox="0 0 24 24" ${P}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>`,
+  orders:`<svg viewBox="0 0 24 24" ${P}><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>`,
+  create:`<svg viewBox="0 0 24 24" ${P}><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`,
+  customers:`<svg viewBox="0 0 24 24" ${P}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  pricing:`<svg viewBox="0 0 24 24" ${P}><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg>`,
+  designers:`<svg viewBox="0 0 24 24" ${P}><circle cx="13.5" cy="6.5" r=".6"/><circle cx="17.5" cy="10.5" r=".6"/><circle cx="8.5" cy="7.5" r=".6"/><circle cx="6.5" cy="12.5" r=".6"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1a1.6 1.6 0 0 1 1.6-1.6h2c3 0 5.6-2.5 5.6-5.6C22 6 17.5 2 12 2z"/></svg>`,
+  settle:`<svg viewBox="0 0 24 24" ${P}><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5" rx="1"/><rect x="13" y="8" width="3" height="9" rx="1"/></svg>`,
+  registrations:`<svg viewBox="0 0 24 24" ${P}><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>`,
+  users:`<svg viewBox="0 0 24 24" ${P}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>`,
+  logout:`<svg viewBox="0 0 24 24" ${P}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  search:`<svg viewBox="0 0 24 24" ${P}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+  bell:`<svg viewBox="0 0 24 24" ${P}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>`,
+  plus:`<svg viewBox="0 0 24 24" ${P}><path d="M12 5v14M5 12h14"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" ${P}><polyline points="20 6 9 17 4 12"/></svg>`,
+};
+// 侧边栏菜单
+const NAV=[
+  {sec:'主面板'},
+  {k:'dashboard',t:'总览',active:true},{k:'orders',t:'订单管理'},{k:'create',t:'新建订单'},{k:'customers',t:'客户管理'},
+  {sec:'经营'},
+  {k:'pricing',t:'商品价目'},{k:'designers',t:'合作设计师'},{k:'settle',t:'设计师对账'},
+  {sec:'管理'},
+  {k:'registrations',t:'注册审核'},{k:'users',t:'用户管理'},
+];
+document.getElementById('nav').innerHTML=NAV.map(n=>
+  n.sec?`<div class="nav-sec">${n.sec}</div>`
+       :`<div class="nav-link${n.active?' active':''}">${ICONS[n.k]}<span>${n.t}</span></div>`).join('');
+// 杂项图标
+document.getElementById('logout').innerHTML=ICONS.logout;
+document.getElementById('ic-search').innerHTML=ICONS.search;
+document.getElementById('ic-bell').innerHTML=ICONS.bell;
+document.getElementById('btn-new').querySelector('span').innerHTML=ICONS.plus;
+document.getElementById('ci-orders').innerHTML=ICONS.orders;
+document.getElementById('ci-designer').innerHTML=ICONS.designers;
+document.getElementById('b1').innerHTML=ICONS.check;
+// 图标画廊
+const GAL=[['dashboard','总览'],['orders','订单'],['create','新建'],['customers','客户'],['pricing','价目'],['designers','设计师'],['settle','对账'],['registrations','审核'],['users','用户'],['search','搜索'],['bell','通知'],['logout','退出']];
+document.getElementById('gallery').innerHTML=GAL.map(([k,t])=>`<div class="ic-cell">${ICONS[k]}<span>${t}</span></div>`).join('');
+</script>
+</body>
+</html>
