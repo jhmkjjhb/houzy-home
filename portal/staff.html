@@ -2426,7 +2426,8 @@ let _winSeq = 0, _winAddonSeq = 0;
 // 阿尔维门窗系列库(取自 2026 价格目录;选系列自动带 壁厚/标配玻璃/五金。
 // 不准的地方直接改这里一处即可。价格按订单手填,不入库)
 const WIN_DEFAULT = { frame:'1.8', glass:'信义5白+20A+5白（中空）', hw:'阿尔维/希美克全套五金' };
-const WIN_MARKUP = 1.8;  // 参考售价 = 出厂价(成本,当 RM) × 1.8;不准就改这里
+const WIN_RMB2RM = 0.7;  // 出厂价(人民币) × 0.7 = 成本(RM);汇率变改这里
+const WIN_MARKUP = 1.8;  // 参考售价 = 成本(RM) × 1.8;倍率变改这里
 // p = 各开启方式出厂价(=成本 RM/m²,目录抽取 best-effort,可改)
 const WIN_CATALOG = {
   '星盾70平开窗':            { frame:'1.4', hw:'阿尔维五金', p:{固定:580,平开:1000,外开:1750} },
@@ -2513,14 +2514,15 @@ function applyWinPrice(id) {
   const series = (document.getElementById(`win-series-${id}`)?.value || '').trim();
   const mode = document.getElementById(`win-mode-${id}`)?.value || '';
   const c = WIN_CATALOG[series];
-  const cost = c && c.p && c.p[mode];
+  const cat = c && c.p && c.p[mode];   // 目录出厂价(人民币)
   const hint = document.getElementById(`win-cost-${id}`);
-  if (!cost) { if (hint) hint.textContent = ''; return; }
-  const sell = Math.round(cost * WIN_MARKUP);
+  if (!cat) { if (hint) hint.textContent = ''; return; }
+  const costRM = Math.round(cat * WIN_RMB2RM);   // 成本(RM) = 出厂价 × 0.7
+  const sell   = Math.round(costRM * WIN_MARKUP); // 参考售价(RM) = 成本 × 1.8
   const priceEl = document.getElementById(`win-price-${id}`);
-  if (priceEl && !priceEl.value) { priceEl.value = sell; }   // 参考售价(成本×1.8),可改
+  if (priceEl && !priceEl.value) { priceEl.value = sell; }   // 参考售价,可改
   if (hint) hint.textContent = canDo(2)
-    ? `成本参考 RM ${cost} · 建议售价 RM ${sell}(成本×${WIN_MARKUP})`
+    ? `成本 RM ${costRM}(出厂价${cat}×${WIN_RMB2RM}) · 建议售价 RM ${sell}(×${WIN_MARKUP})`
     : `参考售价 RM ${sell}`;
   calcWindowRow(id);
 }
