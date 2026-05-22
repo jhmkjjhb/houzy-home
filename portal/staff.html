@@ -542,6 +542,10 @@
                 <input id="dz-studio" placeholder="如:陈氏设计工作室" class="input text-sm">
               </div>
             </div>
+            <div>
+              <label class="label">归属门店<span class="text-xs text-gray-400 font-normal ml-1">(开单按门店筛选;留空=全部门店通用)</span></label>
+              <select id="dz-store" class="input text-sm"><option value="">全部门店(通用)</option></select>
+            </div>
 
             <div>
               <label class="label">合作模式 *</label>
@@ -1470,6 +1474,7 @@ function autoSetCurrency() {
     || 'MYR';
   document.getElementById('o-currency').value = cur;
   updateSplitAmounts();
+  try { populateDesignerDropdown(); } catch(e) {}
 }
 
 function fmtAmt(v, currency) {
@@ -2552,7 +2557,9 @@ function populateDesignerDropdown() {
   const sel = document.getElementById('o-designer');
   if (!sel) return;
   const cur = sel.value;
-  const active = (_designersAll || []).filter(d => d.active);
+  const sid = document.getElementById('o-store')?.value || profile?.store_id || '';
+  // 只列「本店」+「通用(未绑门店)」的设计师;无法确定门店时全列
+  const active = (_designersAll || []).filter(d => d.active && (!d.store_id || !sid || d.store_id === sid));
   sel.innerHTML = '<option value="">无 / 散客</option>' + active.map(d => {
     const tag = d.model_type === 'discount' ? `专享 -${d.discount_pct}%`
               : d.model_type === 'commission' ? `返点 ${d.commission_pct}%`
@@ -5786,6 +5793,7 @@ function renderDesignersTable() {
         ${d.studio ? `<div class="text-xs text-gray-400">${escHtml(d.studio)}</div>` : ''}
       </td>
       <td class="px-3 py-2 text-xs text-gray-500 font-mono">${escHtml(d.phone||'')}</td>
+      <td class="px-3 py-2 text-xs text-gray-500">${escHtml((stores.find(s=>s.id===d.store_id)||{}).name || '通用')}</td>
       <td class="px-3 py-2 text-xs">${modeLabel[d.model_type] || d.model_type}</td>
       <td class="px-3 py-2 text-xs text-right">${showDisc ? `<b style="color:#1a3a2a">-${Number(d.discount_pct).toFixed(1)}%</b>` : '<span class="text-gray-300">—</span>'}</td>
       <td class="px-3 py-2 text-xs text-right">${showComm ? `<b style="color:#c8a96e">+${Number(d.commission_pct).toFixed(1)}%</b>` : '<span class="text-gray-300">—</span>'}</td>
@@ -5801,6 +5809,7 @@ function renderDesignersTable() {
         <tr class="text-xs text-gray-500 uppercase">
           <th class="px-3 py-2">姓名 / 工作室</th>
           <th class="px-3 py-2">电话</th>
+          <th class="px-3 py-2">归属门店</th>
           <th class="px-3 py-2">合作模式</th>
           <th class="px-3 py-2 text-right">客户折扣</th>
           <th class="px-3 py-2 text-right">设计师返点</th>
@@ -5814,6 +5823,8 @@ function renderDesignersTable() {
 
 function openDesignerModal(id) {
   document.getElementById('dz-err').classList.add('hidden');
+  const _ds = document.getElementById('dz-store');
+  if (_ds) _ds.innerHTML = '<option value="">全部门店(通用)</option>' + (stores||[]).map(st=>`<option value="${st.id}">${escHtml(st.name||st.code||'')}</option>`).join('');
   if (id) {
     const d = _designersAll.find(x => x.id === id);
     if (!d) { alert('设计师不存在'); return; }
@@ -5826,12 +5837,14 @@ function openDesignerModal(id) {
     document.getElementById('dz-commission').value = d.commission_pct || '';
     document.getElementById('dz-notes').value      = d.notes || '';
     document.getElementById('dz-active').checked   = !!d.active;
+    document.getElementById('dz-store').value = d.store_id || '';
     setDesignerModel(d.model_type || 'discount');
     document.getElementById('dz-del-btn').classList.remove('hidden');
   } else {
     document.getElementById('dz-modal-title').textContent = '新增设计师';
     ['dz-id','dz-name','dz-phone','dz-studio','dz-discount','dz-commission','dz-notes'].forEach(k => document.getElementById(k).value = '');
     document.getElementById('dz-active').checked = true;
+    document.getElementById('dz-store').value = profile?.store_id || '';
     setDesignerModel('discount');
     document.getElementById('dz-del-btn').classList.add('hidden');
   }
@@ -5870,13 +5883,14 @@ async function saveDesigner() {
   const comm   = parseFloat(document.getElementById('dz-commission').value) || 0;
   const notes  = (document.getElementById('dz-notes').value || '').trim() || null;
   const active = !!document.getElementById('dz-active').checked;
+  const store_id = document.getElementById('dz-store').value || null;
   if (!name) { errEl.textContent='请填姓名'; errEl.classList.remove('hidden'); return; }
   if (model === 'discount'   && !(disc > 0)) { errEl.textContent='折扣型必须填客户折扣 %'; errEl.classList.remove('hidden'); return; }
   if (model === 'commission' && !(comm > 0)) { errEl.textContent='返点型必须填设计师返点 %'; errEl.classList.remove('hidden'); return; }
   if (model === 'mixed' && !(disc > 0) && !(comm > 0)) { errEl.textContent='混合型至少填一项 %'; errEl.classList.remove('hidden'); return; }
 
   const payload = {
-    name, phone, studio, notes, active,
+    name, phone, studio, notes, active, store_id,
     model_type:     model,
     discount_pct:   (model === 'commission') ? 0 : disc,
     commission_pct: (model === 'discount')   ? 0 : comm,
