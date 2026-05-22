@@ -484,8 +484,8 @@
       </div>
 
       <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center">
-        <button onclick="downloadPricingTemplate()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">📥 下载现有价表 (Excel)</button>
-        <button onclick="document.getElementById('pricing-upload').click()" class="px-4 py-2 text-sm rounded-lg btn-gold">📤 上传价表 (Excel)</button>
+        <button onclick="downloadPricingTemplate()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">下载现有价表 (Excel)</button>
+        <button onclick="document.getElementById('pricing-upload').click()" class="px-4 py-2 text-sm rounded-lg btn-gold">上传价表 (Excel)</button>
         <input type="file" id="pricing-upload" accept=".xlsx,.xls" class="hidden" onchange="uploadPricingXlsx(this)">
         <span id="pricing-upload-result" class="text-xs text-gray-500 ml-2"></span>
       </div>
@@ -618,7 +618,7 @@
       </div>
 
       <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center">
-        <button onclick="exportSettleXlsx()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">📥 导出对账单 (Excel)</button>
+        <button onclick="exportSettleXlsx()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">导出对账单 (Excel)</button>
         <button onclick="batchMarkSettled()" class="px-4 py-2 text-sm rounded-lg btn-gold">✓ 批量标记已结算(当前筛选的未结算)</button>
       </div>
 
@@ -716,7 +716,7 @@
         <!-- Suppliers list -->
         <div class="card overflow-hidden">
           <div class="p-3 border-b border-gray-100">
-            <input type="text" id="sup-search" placeholder="🔍 搜索供应商(名称 / 电话 / 发货地)"
+            <input type="text" id="sup-search" placeholder="搜索供应商(名称 / 电话 / 发货地)"
                    oninput="filterSuppliers(this.value)" class="input w-full text-sm">
           </div>
           <div id="suppliers-table"></div>
@@ -1489,7 +1489,7 @@ function renderDesignerCard(o, items) {
   const discPct = Number(o.designer_discount_pct || 0);
   const commPct = Number(o.designer_commission_pct || 0);
   const commAmt = Number(o.designer_commission_amount || 0);
-  const modeLabel = { discount:'折扣型', commission:'💵 返点型', mixed:'🎁 混合型' }[d.model_type] || '';
+  const modeLabel = { discount:'折扣型', commission:'返点型', mixed:'混合型' }[d.model_type] || '';
   const settled = !!o.designer_settled_at;
 
   // 从订单"锁定的金额"反推,而非当前商品明细(避免下单后改明细导致显示漂移)
@@ -5776,7 +5776,7 @@ function renderDesignersTable() {
     return;
   }
 
-  const modeLabel = { discount:'折扣型', commission:'💵 返点型', mixed:'🎁 混合型' };
+  const modeLabel = { discount:'折扣型', commission:'返点型', mixed:'混合型' };
   const rows = list.map(d => {
     const showDisc = d.model_type !== 'commission';
     const showComm = d.model_type !== 'discount';

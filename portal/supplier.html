@@ -70,7 +70,7 @@
   <div class="flex items-center gap-3 mb-5">
     <button onclick="show('v-orders')" class="text-gray-400 hover:text-gray-600">← 返回</button>
     <h1 class="text-lg font-bold text-gray-800">订单详情</h1>
-    <button onclick="printTaskSheet()" class="ml-auto text-xs border border-gray-200 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-gray-50">🖨 打印任务单</button>
+    <button onclick="printTaskSheet()" class="ml-auto text-xs border border-gray-200 px-3 py-1.5 rounded-lg text-gray-500 hover:bg-gray-50">打印任务单</button>
   </div>
   <div id="detail-content"></div>
 </div>
@@ -331,7 +331,7 @@ function orderCard(o) {
       class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg">更新进度</button>`;
   } else if (sub === 'ready') {
     actionBtns = `<button onclick="openDetail('${o.id}')"
-      class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">📦 填写发货</button>`;
+      class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">填写发货</button>`;
   } else if (!sub && st === 'accepted') {
     actionBtns += `<button onclick="quickStartProd(event,'${o.id}')"
       class="px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg hover:bg-violet-700">→ 开始生产</button>`;
@@ -553,7 +553,7 @@ async function openDetail(id) {
   } else if (mySub === 'ready' || (!mySub && st === 'production_complete')) {
     actionSection = `
     <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
-      <h3 class="font-semibold text-indigo-700 mb-4">📦 填写发货信息</h3>
+      <h3 class="font-semibold text-indigo-700 mb-4">填写发货信息</h3>
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1">运输方式 <span class="text-red-500">*</span></label>
         <select id="ship-method"
@@ -654,7 +654,7 @@ async function openDetail(id) {
   const d = _myDrawing;
   const drawingHtml = ['completed','closed','cancelled'].includes(o.status) ? '' : `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">📐 图纸三方确认（生产前必须三方齐）</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">图纸三方确认（生产前必须三方齐）</h3>
       ${d?.drawing_url
         ? `<div class="text-xs mb-2">当前图纸 v${d.version}：<a href="${_eD(d.drawing_url)}" target="_blank" class="text-blue-600 underline break-all">查看图纸</a></div>`
         : `<div class="text-xs text-red-500 mb-2">尚未上传图纸</div>`}

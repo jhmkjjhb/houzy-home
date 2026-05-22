@@ -198,15 +198,15 @@
 
       <!-- 批量入库（Excel） -->
       <div class="card p-6 mb-4">
-        <h3 class="font-semibold text-gray-800 mb-1">📦 批量入库（Excel）</h3>
+        <h3 class="font-semibold text-gray-800 mb-1">批量入库（Excel）</h3>
         <p class="text-xs text-gray-500 mb-4">SKU 太多时用这里:下载模版填好 → 一键上传,系统自动建产品并入库。</p>
         <div class="flex flex-wrap gap-3">
           <button onclick="exportInventoryExcel()"
-            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">📥 导出当前库存 Excel</button>
+            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">导出当前库存 Excel</button>
           <button onclick="downloadStockInTemplate()"
-            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">📄 下载入库模版</button>
+            class="px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-700 font-medium hover:border-gray-400">下载入库模版</button>
           <button onclick="document.getElementById('bulk-si-file').click()"
-            class="px-4 py-2 text-sm rounded-lg btn-gold">📤 批量上传入库</button>
+            class="px-4 py-2 text-sm rounded-lg btn-gold">批量上传入库</button>
           <input type="file" id="bulk-si-file" accept=".xlsx,.xls" class="hidden" onchange="handleBulkStockIn(this)">
         </div>
         <div id="bulk-si-result" class="hidden mt-4 text-sm"></div>
@@ -461,7 +461,7 @@
       </div>
       <!-- 编码查询 -->
       <div class="card p-4 mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 mb-3">🔍 产品编码查询</h3>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">产品编码查询</h3>
         <div class="flex gap-2 mb-3">
           <input type="text" id="code-search" placeholder="输入系统编码（HH-WY-0001）或厂家原编码"
                  class="input text-sm flex-1" onkeydown="if(event.key==='Enter')lookupCode()">
@@ -519,7 +519,7 @@
       <div id="qr-canvas" class="flex justify-center mb-3"></div>
       <div class="text-xs text-gray-400 mb-4">店员扫描二维码查看产品详情与库存</div>
       <div class="flex gap-2">
-        <button onclick="printQR()" class="btn-gold flex-1 py-2.5 text-sm">🖨 打印</button>
+        <button onclick="printQR()" class="btn-gold flex-1 py-2.5 text-sm">打印</button>
         <button onclick="closeQR()" class="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-500">关闭</button>
       </div>
     </div>

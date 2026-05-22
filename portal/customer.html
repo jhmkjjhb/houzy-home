@@ -664,7 +664,7 @@ async function openDetail(id) {
   const _dchip = (ok) => ok ? '<span style="color:#15803d">✓</span>' : '<span style="color:#9ca3af">—</span>';
   const drawingSection = (_draws.length && !isClosedTerminal) ? `
     <div class="bg-white rounded-xl shadow-sm p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">📐 ${itx('dwg_title')}</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">${itx('dwg_title')}</h3>
       ${_draws.map(dw => `
         <div class="border border-gray-100 rounded-lg p-3 mb-2">
           <div class="text-sm font-medium text-gray-800 mb-1">${esc(dw.supplier_name||'')}</div>
