@@ -12,8 +12,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#153927','gg':'#245640','gd':'#c8a96e','gc':'#fbf8f1'}}}}</script>
-<link rel="stylesheet" href="houzy-brand.css?v=2">
-<script src="houzy-icons.js?v=2"></script>
+<link rel="stylesheet" href="houzy-brand.css?v=3">
+<script src="houzy-icons.js?v=3"></script>
 <style>
   .nav-link { @apply flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 hover:text-white transition cursor-pointer; }
   .nav-link.active { @apply bg-white/15 text-white font-semibold; }
@@ -194,7 +194,10 @@
 
     <!-- ── DASHBOARD ── -->
     <div id="v-dashboard" class="p-6 max-w-5xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-6" data-i18n="dash_title">总览 Dashboard</h1>
+      <div class="mb-6">
+        <div class="hz-greet-label" data-i18n="dash_title">总览 Dashboard</div>
+        <div class="hz-greet-title" id="dash-greet">总览</div>
+      </div>
       <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
       <div class="card p-5">
         <div class="flex items-center justify-between mb-4">
@@ -2104,16 +2107,19 @@ function renderDashboard() {
   </div>`;
 
   const cards = [
-    [scope+'订单',  total, 'bg-hg', 'text-white'],
-    ['进行中',       active,'bg-gg', 'text-white'],
-    ['已完成 / 质保', done, 'bg-hg', 'text-gd'],
-    [scope+'已收款', fmtAmt(revenue), 'bg-gd', 'text-hg'],
+    [scope+'订单',    total],
+    ['进行中',         active],
+    ['已完成 / 质保',   done],
+    [scope+'已收款',   fmtAmt(revenue)],
   ];
+  const _h = new Date().getHours();
+  const _greet = _h<11?'早安':_h<13?'午安':_h<18?'下午好':'晚上好';
+  const _ge = document.getElementById('dash-greet'); if (_ge) _ge.textContent = `${_greet},${profile?.name||''}`;
   document.getElementById('stats').innerHTML = periodBar +
-    cards.map(([lbl, v, bg, tc]) => `
-    <div class="${bg} rounded-xl p-4">
-      <div class="text-xs ${tc} opacity-70 mb-1">${lbl}</div>
-      <div class="text-2xl font-bold ${tc}">${v}</div>
+    cards.map(([lbl, v]) => `
+    <div class="card hz-kpi p-4">
+      <div class="hz-kpi-label">${lbl}</div>
+      <div class="hz-kpi-val">${v}</div>
     </div>`).join('');
 
   const recent = arr.slice(0, 8);

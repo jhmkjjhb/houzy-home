@@ -82,3 +82,16 @@ thead th{ text-transform:uppercase; letter-spacing:.8px; }
 .nav-link{ padding:9px 12px !important; font-size:13.5px !important; }
 .nav-sec{ font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:rgba(228,207,155,.55); margin:15px 12px 6px; font-weight:600; }
 .nav-sec:first-child{ margin-top:4px; }
+
+/* ── 页面标题衬线化(画册感)── */
+h1, h2, h3.hz-serif-h{ font-family:var(--hz-serif) !important; letter-spacing:.5px; }
+h1{ font-weight:700 !important; }
+/* KPI 卡(预览同款:金标签 + Playfair 大数字 + 金光角)*/
+.hz-kpi{ position:relative; overflow:hidden; }
+.hz-kpi::after{ content:''; position:absolute; right:-14px; top:-14px; width:66px; height:66px; border-radius:50%; background:radial-gradient(circle,rgba(200,169,110,.14),transparent 70%); }
+.hz-kpi .hz-kpi-label{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--hz-gold); font-weight:600; }
+.hz-kpi .hz-kpi-val{ font-family:var(--hz-serif); font-size:26px; font-weight:700; color:var(--hz-green); line-height:1.05; margin-top:8px; white-space:nowrap; }
+.hz-kpi .hz-kpi-sub{ font-size:11px; color:var(--hz-muted); margin-top:6px; }
+/* 精致顶栏问候 */
+.hz-greet-label{ font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--hz-gold); font-weight:600; }
+.hz-greet-title{ font-family:var(--hz-serif); font-size:22px; font-weight:700; color:var(--hz-green); letter-spacing:.5px; margin-top:2px; }
