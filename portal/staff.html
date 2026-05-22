@@ -1473,20 +1473,25 @@ function renderDesignerCard(o, items) {
   const d = o.designers || {};
   const cur = o.currency || 'MYR';
   const f = v => fmtAmt(Number(v || 0), cur);
-  const itemsTotal = (items || []).reduce((s, it) => s + (Number(it.total_price) || 0), 0);
   const discPct = Number(o.designer_discount_pct || 0);
   const commPct = Number(o.designer_commission_pct || 0);
   const commAmt = Number(o.designer_commission_amount || 0);
   const modeLabel = { discount:'💰 折扣型', commission:'💵 返点型', mixed:'🎁 混合型' }[d.model_type] || '';
   const settled = !!o.designer_settled_at;
 
+  // 从订单"锁定的金额"反推,而非当前商品明细(避免下单后改明细导致显示漂移)
+  // amount = 商品客户实付 + 安装费;客户实付(商品) = amount - install_fee
+  const installFee = Number(o.install_fee || 0);
+  const payable    = Math.max(0, Number(o.amount || 0) - installFee);
+  const orig       = discPct > 0 ? payable / (1 - discPct / 100) : payable;
+  const discAmt    = orig - payable;
+
   let rows = '';
-  if (itemsTotal > 0) {
-    rows += `<div class="flex justify-between text-gray-500"><span>商品原价</span><span>${f(itemsTotal)}</span></div>`;
+  if (payable > 0) {
+    rows += `<div class="flex justify-between text-gray-500"><span>商品原价</span><span>${f(orig)}</span></div>`;
     if (discPct > 0) {
-      const discAmt = itemsTotal * discPct / 100;
       rows += `<div class="flex justify-between" style="color:#1a3a2a"><span>客户专享 -${discPct}%</span><span>- ${f(discAmt)}</span></div>`;
-      rows += `<div class="flex justify-between font-bold border-t border-gray-200 pt-1"><span>客户实付</span><span>${f(itemsTotal - discAmt)}</span></div>`;
+      rows += `<div class="flex justify-between font-bold border-t border-gray-200 pt-1"><span>客户实付</span><span>${f(payable)}</span></div>`;
     }
   }
   let commRow = '';

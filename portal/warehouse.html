@@ -664,8 +664,8 @@ async function downloadStockInTemplate() {
     ['   供应商必须是下方清单里已有的;系统里没有的:货照常入库,但溯源不绑,导入结果会红字报警提示补绑。'],
     ['9. 「建议零售价」选填:开单时自动带价用。'],
     ['   • 新建产品时,这一列写进商品档案;留空 → 开单要手填价格。'],
-    ['   • 已有产品再次入库时,若填了 → 覆盖更新最新报价;留空 → 沿用原价不动。'],
-    ['   • 跟「单位成本」(进货价)是两个字段,不冲突。零售价由老板/店长定,成本由仓库填。'],
+    ['   • 已有产品:仅当它"还没定价"时,这一列才会补上;已定价的以店长「商品价目」为准,不覆盖。'],
+    ['   • 跟「单位成本」(进货价)是两个字段,不冲突。零售价最终由老板/店长定,成本由仓库填。'],
     [],
     ['可用仓库名称(照抄到「仓库」列):'],
     ...(whNames.length ? whNames.map(n => [n]) : [['(暂无仓库,请先在「仓库设置」里创建)']]),
@@ -763,10 +763,10 @@ async function handleBulkStockIn(input) {
     box.innerHTML = `<div class="text-gray-500">处理中… ${i+1}/${queue.length}</div>`;
     try {
       // resolve product: existing by SKU, else create
-      let prodId = null;
+      let prodId = null, exProd = null;
       if (it.sku) {
-        const ex = allProducts.find(p => (p.sku || '') === it.sku);
-        if (ex) prodId = ex.id;
+        exProd = allProducts.find(p => (p.sku || '') === it.sku) || null;
+        if (exProd) prodId = exProd.id;
       }
       if (!prodId) {
         const res = await insertProductWithSku(it.cat, {
@@ -776,10 +776,11 @@ async function handleBulkStockIn(input) {
         });
         if (res.error) { fails.push({ where: it.where, reason: '建档失败:' + res.error.message }); continue; }
         prodId = res.id;
-        allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat });
-      } else if (it.price) {
-        // 已存在产品 + Excel 填了零售价 → 覆盖更新(以最新一次入库的报价为准;留空不动)
+        allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat, price: it.price || null });
+      } else if (it.price && !(Number(exProd?.price) > 0)) {
+        // 仓库填的零售价只补"还没定价"的商品;已定价以店长价目后台为准,不覆盖
         await sb.from('products').update({ price: it.price }).eq('id', prodId);
+        if (exProd) exProd.price = it.price;
       }
       // optimistic-concurrency inbound (same pattern as submitStockIn)
       let applied = false;
@@ -1532,8 +1533,9 @@ async function submitStockIn() {
   } else if (!prodId) {
     err.textContent='请选择产品'; err.classList.remove('hidden'); return;
   } else if (price) {
-    // 选已有产品 + 填了零售价 → 覆盖更新(以最新一次入库的报价为准;留空不动)
-    await sb.from('products').update({ price }).eq('id', prodId);
+    // 仓库填的零售价只补"还没定价"的商品;已定价以店长价目后台为准,不覆盖
+    const exP = allProducts.find(p => p.id === prodId);
+    if (!(Number(exP?.price) > 0)) await sb.from('products').update({ price }).eq('id', prodId);
   }
 
   const attrs = collectSiAttrs();
