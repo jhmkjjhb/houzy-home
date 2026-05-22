@@ -320,8 +320,17 @@
         <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
-          <span class="text-sm text-gray-500">商品合计</span>
+          <span class="text-sm text-gray-500">商品合计（原价）</span>
           <span id="items-total" class="font-bold text-hg text-base">MYR 0.00</span>
+        </div>
+
+        <!-- 合作设计师(选填) -->
+        <div class="pt-3 mt-3 border-t border-gray-100">
+          <label class="label flex items-center gap-1">🎨 合作设计师<span class="text-xs text-gray-400 font-normal">（选填）</span></label>
+          <select id="o-designer" onchange="onDesignerSelect()" class="input text-sm">
+            <option value="">无 / 散客</option>
+          </select>
+          <div id="designer-breakdown" class="hidden mt-2 text-sm bg-gray-50 rounded-lg p-3 space-y-1"></div>
         </div>
       </div>
 
@@ -2349,11 +2358,74 @@ function calcItemsTotal() {
   const sym = CURRENCY_SYMBOL[currency] || currency;
   const totalEl = document.getElementById('items-total');
   if (totalEl) totalEl.textContent = `${sym} ${total.toFixed(2)}`;
-  // Sync to amount field when items have values
+  // 设计师折扣联动:商品原价 → 客户实付(扣折扣)
+  const bd = calcDesignerBreakdown(total);
+  renderDesignerBreakdown(total, bd, currency);
+  // Sync to amount field when items have values(同步成"客户实付")
   if (document.querySelectorAll('.item-row').length > 0 && total > 0) {
     const amtEl = document.getElementById('o-amount');
-    if (amtEl) { amtEl.value = total.toFixed(2); updateSplitAmounts(); }
+    if (amtEl) { amtEl.value = bd.payable.toFixed(2); updateSplitAmounts(); }
   }
+}
+
+// 当前开单选中的设计师对象(无 → null)
+function _selectedDesigner() {
+  const id = document.getElementById('o-designer')?.value || '';
+  if (!id) return null;
+  return (_designersAll || []).find(d => d.id === id) || null;
+}
+
+// 算折扣明细:折扣型只让客户;返点型只返设计师;混合型都有。返点基于"客户实付"。
+function calcDesignerBreakdown(itemsTotal) {
+  const d = _selectedDesigner();
+  if (!d) return { hasD:false, discountPct:0, discountAmt:0, payable:itemsTotal, commPct:0, commAmt:0 };
+  const discountPct = (d.model_type === 'commission') ? 0 : Number(d.discount_pct || 0);
+  const discountAmt = itemsTotal * discountPct / 100;
+  const payable     = Math.max(0, itemsTotal - discountAmt);
+  const commPct     = (d.model_type === 'discount') ? 0 : Number(d.commission_pct || 0);
+  const commAmt     = payable * commPct / 100;
+  return { hasD:true, d, discountPct, discountAmt, payable, commPct, commAmt };
+}
+
+function renderDesignerBreakdown(itemsTotal, bd, currency) {
+  const box = document.getElementById('designer-breakdown');
+  if (!box) return;
+  if (!bd.hasD || itemsTotal <= 0) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  const sym = CURRENCY_SYMBOL[currency] || currency;
+  const f = v => `${sym} ${Number(v).toFixed(2)}`;
+  let html = `<div class="flex justify-between text-gray-500"><span>原价</span><span>${f(itemsTotal)}</span></div>`;
+  if (bd.discountPct > 0) {
+    html += `<div class="flex justify-between" style="color:#1a3a2a"><span>设计师专享 -${bd.discountPct}%</span><span>- ${f(bd.discountAmt)}</span></div>`;
+    html += `<div class="flex justify-between font-bold border-t border-gray-200 pt-1 mt-1"><span>客户实付</span><span style="color:#1a3a2a">${f(bd.payable)}</span></div>`;
+  } else {
+    html += `<div class="flex justify-between font-bold"><span>客户实付(原价)</span><span>${f(bd.payable)}</span></div>`;
+  }
+  if (bd.commPct > 0) {
+    html += `<div class="flex justify-between mt-1 pt-1 border-t border-dashed border-amber-200" style="color:#c8a96e">
+      <span>🔒 应返设计师 ${bd.commPct}%(内部·客户看不到)</span><span>${f(bd.commAmt)}</span></div>`;
+  }
+  box.innerHTML = html;
+  box.classList.remove('hidden');
+}
+
+// 设计师下拉变化 → 重算金额明细
+function onDesignerSelect() {
+  calcItemsTotal();
+}
+
+// 填充设计师下拉(开单页用;只列启用的)
+function populateDesignerDropdown() {
+  const sel = document.getElementById('o-designer');
+  if (!sel) return;
+  const cur = sel.value;
+  const active = (_designersAll || []).filter(d => d.active);
+  sel.innerHTML = '<option value="">无 / 散客</option>' + active.map(d => {
+    const tag = d.model_type === 'discount' ? `专享 -${d.discount_pct}%`
+              : d.model_type === 'commission' ? `返点 ${d.commission_pct}%`
+              : `-${d.discount_pct}% / 返 ${d.commission_pct}%`;
+    return `<option value="${d.id}">${escHtml(d.name)}${d.studio ? ' · '+escHtml(d.studio) : ''}(${tag})</option>`;
+  }).join('');
+  if (cur) sel.value = cur;
 }
 
 function getItemRows() {
@@ -2396,6 +2468,10 @@ function resetCreateForm() {
   document.getElementById('customer-found').classList.add('hidden');
   document.getElementById('o-currency').value = 'MYR';
   document.getElementById('create-err').classList.add('hidden');
+  // 设计师下拉重置 + 填充
+  const dzSel = document.getElementById('o-designer'); if (dzSel) dzSel.value = '';
+  populateDesignerDropdown();
+  const dzBox = document.getElementById('designer-breakdown'); if (dzBox) { dzBox.classList.add('hidden'); dzBox.innerHTML = ''; }
   setInstallments(1);
   setFulfillmentMode('all_together');
   const hint = document.getElementById('fulfillment-mode-hint');
@@ -2566,9 +2642,14 @@ async function submitOrder() {
     _underCostNote = `；⚠ 含 ${underRows.length} 件跌破成本(店长确认):${names}`;
   }
   const itemsTotal = itemsForCheck.reduce((s, r) => s + r.total_price, 0);
-  if (Math.abs(itemsTotal - orderAmount) > 0.01) {
+  // 设计师折扣:期望订单金额 = 商品原价 - 设计师折扣(快照本次率)
+  const _dzBd = calcDesignerBreakdown(itemsTotal);
+  const expectedAmount = _dzBd.payable;   // 客户实付
+  if (Math.abs(expectedAmount - orderAmount) > 0.01) {
+    const discNote = _dzBd.discountAmt > 0
+      ? `\n(已含设计师专享 -${_dzBd.discountPct}% = -${_dzBd.discountAmt.toFixed(2)})` : '';
     const proceed = confirm(
-      `⚠ 注意：商品明细合计 ${itemsTotal.toFixed(2)}，与订单金额 ${orderAmount.toFixed(2)} 不符（不含安装费 ${installFee.toFixed(2)}）。\n\n` +
+      `⚠ 注意：商品折后应付 ${expectedAmount.toFixed(2)}，与订单金额 ${orderAmount.toFixed(2)} 不符（不含安装费 ${installFee.toFixed(2)}）。${discNote}\n\n` +
       `可能有商品行未填写名称导致未被计入。\n\n确认要继续提交吗？`
     );
     if (!proceed) return;
@@ -2643,6 +2724,15 @@ async function submitOrder() {
       needs_install: needsInstall,
       install_fee:   installFee,
     };
+    // 设计师快照(写入时锁定当时的折扣/返点率,以后改档案不影响本单财务)
+    const _dz = _selectedDesigner();
+    if (_dz) {
+      const _bd = calcDesignerBreakdown(itemsTotal);
+      coreInsert.designer_id                = _dz.id;
+      coreInsert.designer_discount_pct      = _bd.discountPct;
+      coreInsert.designer_commission_pct    = _bd.commPct;
+      coreInsert.designer_commission_amount = Number(_bd.commAmt.toFixed(2));
+    }
     if (_supplementParentId) coreInsert.parent_order_id = _supplementParentId;
 
     const { data: order, error: oe } = await sb.from('orders').insert(coreInsert).select().single();
@@ -2706,7 +2796,7 @@ async function submitOrder() {
       operator_id: profile.id,
       operator_role: profile.role,
       operator_name: profile.name,
-      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}${_underCostNote}`,
+      notes: `订单创建${instCount > 1 ? `（${instCount}期付款）` : ''}${_dz ? `；🎨 合作设计师：${_dz.name}${_dzBd.discountPct>0?`（客户专享 -${_dzBd.discountPct}%）`:''}${_dzBd.commPct>0?`（应返 ${_dzBd.commPct}%=${_dzBd.commAmt.toFixed(2)}）`:''}` : ''}${_underCostNote}`,
     });
     if (logErr) console.warn('[submitOrder] log insert failed:', logErr.message);
 
