@@ -20,6 +20,12 @@
     box:'<svg viewBox="0 0 24 24" '+P+'><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>',
     truck:'<svg viewBox="0 0 24 24" '+P+'><path d="M14 18V6a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h1"/><path d="M14 9h4l3 3v5a1 1 0 0 1-1 1h-1"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>',
     factory:'<svg viewBox="0 0 24 24" '+P+'><path d="M2 20h20M4 20V9l5 4V9l5 4V9l5 4v7"/></svg>',
+    wrench:'<svg viewBox="0 0 24 24" '+P+'><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    ruler:'<svg viewBox="0 0 24 24" '+P+'><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></svg>',
+    receipt:'<svg viewBox="0 0 24 24" '+P+'><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>',
+    shield:'<svg viewBox="0 0 24 24" '+P+'><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>',
+    image:'<svg viewBox="0 0 24 24" '+P+'><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>',
+    scroll:'<svg viewBox="0 0 24 24" '+P+'><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6M9 11h6"/></svg>',
   };
   var STY='style="width:1.15em;height:1.15em;flex-shrink:0;display:inline-block;vertical-align:middle;"';
   function inject(){
@@ -31,6 +37,13 @@
       }
     }
   }
+  // emoji → 图标键(供 _fold 等把旧 emoji 转成线性图标)
+  window.HZ_EMO2ICON={'🛠':'wrench','🔧':'wrench','🔍':'search','📐':'ruler','🏭':'factory','📦':'box','📋':'orders','📎':'image','🖼':'image','🛡':'shield','🛡️':'shield','💵':'receipt','💰':'receipt','📜':'scroll','🎨':'designers','🚚':'truck','👤':'customers','👥':'users'};
+  window.hzIconSvg=function(key,opt){
+    var sv=window.HZ_ICONS[key]; if(!sv) return '';
+    var st=(opt&&opt.style)||'width:1.05em;height:1.05em;display:inline-block;vertical-align:-2px;flex-shrink:0;';
+    return sv.replace('<svg ','<svg style="'+st+'" ');
+  };
   window.hzInjectIcons=inject;
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',inject);
   else inject();
