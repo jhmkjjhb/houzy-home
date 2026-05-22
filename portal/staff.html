@@ -79,6 +79,7 @@
       <div class="nav-link" onclick="goto('customers');toggleMobileMenu()">👤 <span data-i18n="nav_customers">客户管理</span></div>
       <div class="nav-link hidden admin-nav" data-perm="pricing" onclick="goto('pricing');toggleMobileMenu()">💰 <span>商品价目</span></div>
       <div class="nav-link hidden admin-nav" data-perm="designers" onclick="goto('designers');toggleMobileMenu()">🎨 <span>合作设计师</span></div>
+      <div class="nav-link hidden admin-nav" data-perm="settle" onclick="goto('settle');toggleMobileMenu()">📊 <span>设计师对账</span></div>
       <div class="nav-link hidden admin-nav" data-perm="registrations" onclick="goto('registrations');toggleMobileMenu()">📝 <span>注册审核</span><span id="reg-badge-m" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span></div>
       <div class="nav-link hidden admin-nav" data-perm="users" onclick="goto('users');toggleMobileMenu()">👥 <span>用户管理</span></div>
       <!-- Language selector -->
@@ -142,6 +143,9 @@
       </div>
       <div class="nav-link hidden admin-nav" id="nav-designers" data-perm="designers" onclick="goto('designers')">
         🎨 <span>合作设计师</span>
+      </div>
+      <div class="nav-link hidden admin-nav" id="nav-settle" data-perm="settle" onclick="goto('settle')">
+        📊 <span>设计师对账</span>
       </div>
       <div class="nav-link hidden admin-nav" id="nav-registrations" data-perm="registrations" onclick="goto('registrations')">
         📝 <span>注册审核</span><span id="reg-badge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5">0</span>
@@ -570,6 +574,44 @@
           </div>
           <p id="dz-err" class="hidden text-red-600 text-xs mt-2"></p>
         </div>
+      </div>
+    </div>
+
+    <!-- ── 设计师对账(店长 L2+) ── -->
+    <div id="v-settle" class="hidden p-6 max-w-6xl mx-auto">
+      <h1 class="text-xl font-bold text-gray-800 mb-2">📊 设计师对账</h1>
+      <p class="text-sm text-gray-500 mb-5">按月统计每位设计师应返的返点(返点 = 客户实付 × 返点率,下单时锁定)。
+        只含「返点型 / 混合型」且有返点金额的订单。范围跟随你的权限:店长看本店、区域看本区、公司看全部。</p>
+
+      <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center">
+        <div>
+          <label class="text-xs text-gray-400 block mb-0.5">月份</label>
+          <input type="month" id="settle-month" onchange="renderSettleTable()" class="input text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-0.5">设计师</label>
+          <select id="settle-designer" onchange="renderSettleTable()" class="input text-sm" style="max-width:220px">
+            <option value="">全部设计师</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-0.5">结算状态</label>
+          <select id="settle-status" onchange="renderSettleTable()" class="input text-sm" style="max-width:140px">
+            <option value="">全部</option>
+            <option value="unsettled" selected>未结算</option>
+            <option value="settled">已结算</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card p-4 mb-4 flex flex-wrap gap-2 items-center">
+        <button onclick="exportSettleXlsx()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">📥 导出对账单 (Excel)</button>
+        <button onclick="batchMarkSettled()" class="px-4 py-2 text-sm rounded-lg btn-gold">✓ 批量标记已结算(当前筛选的未结算)</button>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div id="settle-summary" class="px-4 py-3 text-sm border-b border-gray-100 bg-gray-50"></div>
+        <div id="settle-table" class="overflow-x-auto"></div>
       </div>
     </div>
 
@@ -1024,6 +1066,7 @@ const FIELD_MIN_LEVEL = {
   nav_users:        4,
   nav_pricing:      2,   // 商品价目:店长 L2+ 可查/改价
   nav_designers:    2,   // 合作设计师档案:店长 L2+
+  nav_settle:       2,   // 设计师对账:店长 L2+
   store_filter:     2,
 };
 
@@ -1825,6 +1868,9 @@ async function init() {
   document.querySelectorAll('.admin-nav[data-perm="designers"]').forEach(el => {
     if (canDo(FIELD_MIN_LEVEL.nav_designers)) el.classList.remove('hidden');
   });
+  document.querySelectorAll('.admin-nav[data-perm="settle"]').forEach(el => {
+    if (canDo(FIELD_MIN_LEVEL.nav_settle)) el.classList.remove('hidden');
+  });
   setLang(currentLang);
 
   // Request notification permission for overdue alerts
@@ -1989,7 +2035,7 @@ async function loadCustomers() {
 function goto(view) {
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
-  ['dashboard','orders','create','customers','detail','registrations','users','pricing','designers'].forEach(v => {
+  ['dashboard','orders','create','customers','detail','registrations','users','pricing','designers','settle'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     const navId = v === 'detail' ? 'orders' : v;
     document.getElementById('nav-' + navId)?.classList.toggle('active', v === view || (v === 'detail' && view === 'detail'));
@@ -2002,6 +2048,7 @@ function goto(view) {
   if (view === 'users') loadUsersPage();
   if (view === 'pricing') loadPricingPage();
   if (view === 'designers') loadDesignersPage();
+  if (view === 'settle') loadSettlePage();
 }
 
 // ── Dashboard ──
@@ -5829,6 +5876,165 @@ async function deleteDesigner() {
   closeDesignerModal();
   await loadDesigners();
   renderDesignersTable();
+}
+
+// ── 设计师对账 (店长 L2+) ──
+function loadSettlePage() {
+  if (!canDo(FIELD_MIN_LEVEL.nav_settle)) {
+    document.getElementById('settle-table').innerHTML = '<div class="p-8 text-center text-gray-400">权限不足</div>';
+    return;
+  }
+  // 默认本月
+  const m = document.getElementById('settle-month');
+  if (m && !m.value) {
+    const now = new Date();
+    m.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  // 填设计师下拉(含停用的,历史单可能引用)
+  const sel = document.getElementById('settle-designer');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部设计师</option>' +
+      (_designersAll||[]).map(d => `<option value="${d.id}">${escHtml(d.name)}${d.studio?' · '+escHtml(d.studio):''}</option>`).join('');
+    if (cur) sel.value = cur;
+  }
+  renderSettleTable();
+}
+
+// 从 allOrders 缓存筛出"有返点"的订单(自动跟随角色范围)
+function _settleRows() {
+  const month = document.getElementById('settle-month')?.value || '';
+  const dz    = document.getElementById('settle-designer')?.value || '';
+  const st    = document.getElementById('settle-status')?.value || '';
+  let rows = (allOrders || []).filter(o => o.designer_id && Number(o.designer_commission_amount || 0) > 0);
+  if (month) {
+    const [y, mo] = month.split('-').map(Number);
+    const start = new Date(y, mo-1, 1), end = new Date(y, mo, 1);
+    rows = rows.filter(o => o.created_at && new Date(o.created_at) >= start && new Date(o.created_at) < end);
+  }
+  if (dz) rows = rows.filter(o => o.designer_id === dz);
+  if (st === 'settled')   rows = rows.filter(o => o.designer_settled_at);
+  if (st === 'unsettled') rows = rows.filter(o => !o.designer_settled_at);
+  rows.sort((a,b) => (a.created_at||'').localeCompare(b.created_at||''));
+  return rows;
+}
+
+function _designerName(id) {
+  const d = (_designersAll||[]).find(x => x.id === id);
+  return d ? d.name : '(已删除设计师)';
+}
+
+function renderSettleTable() {
+  if (!canDo(FIELD_MIN_LEVEL.nav_settle)) return;
+  const rows = _settleRows();
+  const totalComm    = rows.reduce((s,o) => s + Number(o.designer_commission_amount||0), 0);
+  const unsettledArr = rows.filter(o => !o.designer_settled_at);
+  const unsettledComm= unsettledArr.reduce((s,o) => s + Number(o.designer_commission_amount||0), 0);
+
+  document.getElementById('settle-summary').innerHTML =
+    `本期 <b>${rows.length}</b> 单 · 应返合计 <b style="color:#c8a96e">${fmtAmt(totalComm,'MYR')}</b>` +
+    ` · 其中未结算 <b style="color:#d97706">${fmtAmt(unsettledComm,'MYR')}</b>(${unsettledArr.length} 单)`;
+
+  if (!rows.length) {
+    document.getElementById('settle-table').innerHTML =
+      '<div class="p-8 text-center text-gray-400">本期没有需要返点的订单。换个月份或设计师试试。</div>';
+    return;
+  }
+  const body = rows.map(o => {
+    const settled = !!o.designer_settled_at;
+    const cust = o.customers?.name || o.customers?.phone || '—';
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+      <td class="px-3 py-2 text-xs font-mono text-gray-500">${escHtml(o.order_no||'')}</td>
+      <td class="px-3 py-2 text-xs">${fmtDate(o.created_at)}</td>
+      <td class="px-3 py-2 text-sm">${escHtml(_designerName(o.designer_id))}</td>
+      <td class="px-3 py-2 text-sm">${escHtml(cust)}</td>
+      <td class="px-3 py-2 text-xs text-right text-gray-500">${fmtAmt(Number(o.amount||0),'MYR')}</td>
+      <td class="px-3 py-2 text-xs text-right">${Number(o.designer_commission_pct||0)}%</td>
+      <td class="px-3 py-2 text-sm text-right font-semibold" style="color:#c8a96e">${fmtAmt(Number(o.designer_commission_amount||0),'MYR')}</td>
+      <td class="px-3 py-2 text-center text-xs">${settled ? '<span style="color:#10b981">✓ 已结算</span>' : '<span style="color:#d97706">○ 未结算</span>'}</td>
+      <td class="px-3 py-2 text-right">
+        <button onclick="settleToggle('${o.id}', ${settled})" class="text-xs ${settled?'text-gray-400':'text-hg'} hover:underline">
+          ${settled ? '撤销' : '标记已结算'}</button>
+        <button onclick="openDetail('${o.id}','settle')" class="text-xs text-gray-400 hover:underline ml-2">详情</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('settle-table').innerHTML = `
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase">
+          <th class="px-3 py-2">订单号</th>
+          <th class="px-3 py-2">日期</th>
+          <th class="px-3 py-2">设计师</th>
+          <th class="px-3 py-2">客户</th>
+          <th class="px-3 py-2 text-right">订单金额</th>
+          <th class="px-3 py-2 text-right">返点率</th>
+          <th class="px-3 py-2 text-right">应返金额</th>
+          <th class="px-3 py-2 text-center">状态</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+}
+
+async function settleToggle(orderId, currentlySettled) {
+  if (!canDo(2)) { alert('店长及以上可操作结算'); return; }
+  const val = currentlySettled ? null : new Date().toISOString();
+  if (!confirm(currentlySettled ? '撤销该单的"已结算"标记?' : '标记该单返点为"已结算"?')) return;
+  const { error } = await sb.from('orders').update({ designer_settled_at: val }).eq('id', orderId);
+  if (error) { alert('失败:' + error.message); return; }
+  // 同步本地缓存,免整页重载
+  const row = (allOrders||[]).find(o => o.id === orderId);
+  if (row) row.designer_settled_at = val;
+  renderSettleTable();
+}
+
+async function batchMarkSettled() {
+  if (!canDo(2)) { alert('店长及以上可操作结算'); return; }
+  const targets = _settleRows().filter(o => !o.designer_settled_at);
+  if (!targets.length) { alert('当前筛选下没有未结算的订单'); return; }
+  const total = targets.reduce((s,o) => s + Number(o.designer_commission_amount||0), 0);
+  if (!confirm(`把当前筛选的 ${targets.length} 单全部标记为"已结算"?\n应返合计 ${fmtAmt(total,'MYR')}\n\n(用于月底一次性对账盖章)`)) return;
+  const now = new Date().toISOString();
+  const ids = targets.map(o => o.id);
+  const { error } = await sb.from('orders').update({ designer_settled_at: now }).in('id', ids);
+  if (error) { alert('批量结算失败:' + error.message); return; }
+  targets.forEach(o => { const r = (allOrders||[]).find(x => x.id === o.id); if (r) r.designer_settled_at = now; });
+  renderSettleTable();
+  alert(`✓ 已标记 ${ids.length} 单为已结算。`);
+}
+
+function exportSettleXlsx() {
+  if (typeof XLSX === 'undefined') { alert('表格组件还没加载好,请刷新页面后重试'); return; }
+  const rows = _settleRows();
+  if (!rows.length) { alert('当前筛选没有数据可导出'); return; }
+  const month = document.getElementById('settle-month')?.value || '';
+  const dzName = document.getElementById('settle-designer')?.value
+    ? _designerName(document.getElementById('settle-designer').value) : '全部设计师';
+  const head = ['订单号','日期','设计师','客户','订单金额(MYR)','返点率%','应返金额(MYR)','结算状态'];
+  const aoa = [
+    [`HOUZY HOME 设计师返点对账单`],
+    [`月份:${month || '全部'}    设计师:${dzName}    生成:${new Date().toLocaleString('zh-CN')}`],
+    [],
+    head,
+  ];
+  let total = 0;
+  rows.forEach(o => {
+    const comm = Number(o.designer_commission_amount||0);
+    total += comm;
+    aoa.push([
+      o.order_no||'', fmtDate(o.created_at), _designerName(o.designer_id),
+      o.customers?.name || o.customers?.phone || '',
+      Number(o.amount||0).toFixed(2), Number(o.designer_commission_pct||0),
+      comm.toFixed(2), o.designer_settled_at ? '已结算' : '未结算',
+    ]);
+  });
+  aoa.push([]);
+  aoa.push(['', '', '', '', '', '应返合计', total.toFixed(2), '']);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '设计师对账');
+  XLSX.writeFile(wb, `HOUZY设计师对账_${month || 'all'}.xlsx`);
 }
 
 // ── Registrations (admin) ──
