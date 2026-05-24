@@ -48,6 +48,10 @@
     100% { transform: scale(1);    opacity: 1; }
   }
   .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
+  @keyframes houzyPulse {
+    0%,100% { transform: scale(1);   opacity: 1;   }
+    50%     { transform: scale(1.4); opacity: 0.5; }
+  }
   @media print { body * { visibility: hidden; } #pdf-preview, #pdf-preview * { visibility: visible; } #pdf-preview { position:fixed;top:0;left:0;width:100%;z-index:9999; } }
   /* Responsive order list layout — used in JS-generated HTML so must live here not in Tailwind classes */
   .ord-desktop { display:none; }
@@ -1044,6 +1048,7 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = [];
+let _ordersLoaded = false;  // 首次加载完成前，列表/仪表盘显示「加载中…」而非「无订单」
 let searchTimer = null;
 let _openDetailId = null;
 let staffProducts = [];
@@ -1114,8 +1119,21 @@ function canTransit(currentStatus, targetStatus) {
 
 async function buildOrdersQuery() {
   const lvl = myLevel();
+  // 列表只拉「显示用」字段（详情页/PDF 另外按 id 重新查 *，重字段不会少）
+  // 不拉的大字段：sign_image(base64签名)、warranty_info(JSON)、notes、installer_notes、
+  // installments、pay_splits、ship_time、eta_time、tracking_no、liability_party、loss_amount、
+  // install_date、install_fee、payment_method、signed_at/signed_by/completed_at、
+  // ship_extend_count、install_extend_count、fulfillment_mode、needs_install
+  // 不拉的关联表：profiles（店员名，仅详情用）、suppliers（供应商，仅详情用）
   let q = sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone)')
+    .select(`
+      id, order_no, status, prod_stage,
+      amount, currency, payment_status,
+      created_at, updated_at, deadline_at,
+      store_id, staff_id, parent_order_id, description,
+      designer_id, designer_commission_amount, designer_commission_pct, designer_settled_at,
+      stores(name), customers(name,phone)
+    `)
     .order('created_at', { ascending: false })
     .limit(2000);
   if (lvl >= 4) {
@@ -2051,6 +2069,7 @@ async function loadOrders() {
   allOrders = (data || []).filter(o =>
     !o.parent_order_id && !(o.description && o.description.startsWith('补件单'))
   );
+  _ordersLoaded = true;
 }
 
 async function loadCustomers() {
@@ -2132,6 +2151,12 @@ function renderDashboard() {
     </div>`).join('');
 
   const recent = arr.slice(0, 8);
+  const _emptyMsg = _ordersLoaded
+    ? `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`
+    : `<p class="text-gray-400 text-sm text-center py-6">
+         <span class="inline-block w-3 h-3 mr-2 align-middle rounded-full" style="background:#1a3a2a;animation:houzyPulse 1.2s infinite ease-in-out"></span>
+         加载中…
+       </p>`;
   document.getElementById('recent-orders').innerHTML = recent.length
     ? `<table class="w-full text-sm"><thead><tr class="text-left text-gray-400 text-xs border-b">
         <th class="pb-2">${t('th_order_no')}</th><th class="pb-2">${t('th_customer')}</th><th class="pb-2">${t('th_amount')}</th><th class="pb-2">${t('th_status')}</th><th class="pb-2">${t('th_time')}</th>
@@ -2146,7 +2171,7 @@ function renderDashboard() {
           <td class="py-2 text-gray-400 text-xs">${fmtDate(o.created_at)}</td>
         </tr>`;
       }).join('')}</tbody></table>`
-    : `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`;
+    : _emptyMsg;
 }
 
 // ── Orders ──
@@ -2249,7 +2274,14 @@ function renderOrdersTable(orders) {
       : '');
 
   if (!orders.length) {
-    document.getElementById('orders-table').innerHTML = `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`;
+    // 首次加载尚未完成 → 给个明确提示，避免误以为"系统坏了/真的没单"
+    const msg = _ordersLoaded
+      ? `<p class="text-gray-400 text-sm text-center py-10">${t('no_orders')}</p>`
+      : `<p class="text-gray-400 text-sm text-center py-10">
+           <span class="inline-block w-3 h-3 mr-2 align-middle rounded-full" style="background:#1a3a2a;animation:houzyPulse 1.2s infinite ease-in-out"></span>
+           加载中…
+         </p>`;
+    document.getElementById('orders-table').innerHTML = msg;
     return;
   }
 
@@ -4921,11 +4953,12 @@ async function closeAfterWarranty(orderId) {
     if (btn) { btn.disabled = false; btn.textContent = `✓ ${t('warranty_close_btn')}`; }
     return;
   }
-  const order = allOrders.find(o => o.id === orderId);
+  // warranty_info 不在列表查询里（重字段，按需补查）
+  const { data: _wRow } = await sb.from('orders').select('warranty_info').eq('id', orderId).single();
   let maxYears = 1;
-  if (order?.warranty_info) {
+  if (_wRow?.warranty_info) {
     try {
-      const wd = JSON.parse(order.warranty_info);
+      const wd = JSON.parse(_wRow.warranty_info);
       wd.forEach(s => s.components.forEach(c => { if (c.years > maxYears) maxYears = c.years; }));
     } catch(e) {}
   }
