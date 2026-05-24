@@ -3567,7 +3567,10 @@ async function downloadOrderPDF(orderId) {
   } else {
     const _grp = {};
     (items || []).forEach(it => { const k = it.section || '__ungrouped__'; (_grp[k] = _grp[k] || []).push(it); });
-    const _order = [...QUOTE_SECTIONS, '__ungrouped__'];
+    // 白名单之外的 section（如「铝合金门窗」）也要展示，按首次出现顺序补在白名单之后、未分组之前
+    const _known = new Set([...QUOTE_SECTIONS, '__ungrouped__']);
+    const _extras = Object.keys(_grp).filter(k => !_known.has(k));
+    const _order = [...QUOTE_SECTIONS, ..._extras, '__ungrouped__'];
     _bodyRows = _order.filter(k => _grp[k]).map(k => {
       const gi  = _grp[k];
       const lbl = (k === '__ungrouped__') ? '其他项目' : k;
