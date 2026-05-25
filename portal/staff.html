@@ -1128,7 +1128,7 @@ async function buildOrdersQuery() {
   let q = sb.from('orders')
     .select(`
       id, order_no, status, prod_stage,
-      amount, currency, payment_status,
+      amount, payment_status,
       created_at, updated_at, deadline_at,
       store_id, staff_id, parent_order_id, description,
       designer_id, designer_commission_amount, designer_commission_pct, designer_settled_at,
