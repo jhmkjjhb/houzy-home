@@ -1,0 +1,12 @@
+# 密钥/敏感配置 — 绝对不能进 Git
+.env
+.env.*
+*.key
+*.pem
+
+# macOS 系统文件
+.DS_Store
+
+# 本地备份（用户手动备份的 .bak 文件已存在，但不该进 Git）
+*.bak
+*.bak-*
