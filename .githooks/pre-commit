@@ -1,0 +1,24 @@
+#!/bin/bash
+# 自动把 sw.js 的 CACHE_VERSION 替换成当前 git 短 hash + 时间戳
+# 启用方法(只需跑一次):bash scripts/setup-pwa.sh
+set -e
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+SW="$ROOT_DIR/sw.js"
+
+[ -f "$SW" ] || exit 0  # 没有 sw.js 就跳过
+
+# 取上一次 commit 的 hash + 当前时间戳(秒)
+HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "init")
+TS=$(date -u +%Y%m%d%H%M%S)
+VERSION="${HASH}-${TS}"
+
+# 平台兼容的 sed in-place(macOS 用 BSD sed,Linux 用 GNU sed)
+if sed --version >/dev/null 2>&1; then
+  sed -i "s|const CACHE_VERSION = '[^']*';|const CACHE_VERSION = '${VERSION}';|" "$SW"
+else
+  sed -i '' "s|const CACHE_VERSION = '[^']*';|const CACHE_VERSION = '${VERSION}';|" "$SW"
+fi
+
+git add "$SW"
+echo "[PWA pre-commit] sw.js CACHE_VERSION -> ${VERSION}"
