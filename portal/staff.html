@@ -3951,7 +3951,8 @@ async function downloadOrderPDF(orderId) {
     const _order = [...QUOTE_SECTIONS, ..._extras, '__ungrouped__'];
     _bodyRows = _order.filter(k => _grp[k]).map(k => {
       const gi  = _grp[k];
-      const lbl = (k === '__ungrouped__') ? '其他项目' : k;
+      const rawLbl = (k === '__ungrouped__') ? '其他项目' : k;
+      const lbl = sectionLabel(rawLbl);
       const gs  = gi.reduce((s,it) => s + Number(it.total_price || (it.quantity * it.unit_price)), 0);
       return `<tr><td colspan="5" style="padding:7px 10px;background:#1a3a2a;color:#c8a96e;font-weight:700;font-size:12px;letter-spacing:0.5px">${lbl}</td></tr>
         ${gi.map(_pdfItemRow).join('')}
@@ -4207,6 +4208,31 @@ const QUOTE_SECTION_UNIT = {
   '橱柜·地柜':'延米','橱柜·吊柜':'延米','橱柜·台面':'延米','橱柜·五金升级':'套','橱柜·电器开孔':'个','橱柜·安装人工':'项',
   '衣柜·柜体':'延米','衣柜·柜门':'延米','衣柜·内部配件':'个','衣柜·五金升级':'套','衣柜·安装人工':'项',
 };
+
+// PDF 用：section 名按当前语言翻译（DB 存的还是中文，仅显示层翻译）
+// 用户 2026-06-02 反馈：PDF 给客户看，section 必须随语言切换
+const SECTION_LABEL = {
+  '橱柜·地柜': { 'zh-CN':'橱柜·地柜', 'zh-TW':'櫥櫃·地櫃', 'en':'Cabinet · Base', 'ms':'Kabinet · Bawah', 'th':'ตู้ครัว · ฐาน' },
+  '橱柜·吊柜': { 'zh-CN':'橱柜·吊柜', 'zh-TW':'櫥櫃·吊櫃', 'en':'Cabinet · Wall', 'ms':'Kabinet · Atas', 'th':'ตู้ครัว · ลอย' },
+  '橱柜·台面': { 'zh-CN':'橱柜·台面', 'zh-TW':'櫥櫃·檯面', 'en':'Cabinet · Countertop', 'ms':'Kabinet · Permukaan', 'th':'ตู้ครัว · ท็อป' },
+  '橱柜·五金升级': { 'zh-CN':'橱柜·五金升级', 'zh-TW':'櫥櫃·五金升級', 'en':'Cabinet · Hardware Upgrade', 'ms':'Kabinet · Naik Taraf Perkakas', 'th':'ตู้ครัว · ฮาร์ดแวร์อัปเกรด' },
+  '橱柜·电器开孔': { 'zh-CN':'橱柜·电器开孔', 'zh-TW':'櫥櫃·電器開孔', 'en':'Cabinet · Appliance Cut-outs', 'ms':'Kabinet · Lubang Alat Elektrik', 'th':'ตู้ครัว · ช่องเครื่องใช้ไฟฟ้า' },
+  '橱柜·安装人工': { 'zh-CN':'橱柜·安装人工', 'zh-TW':'櫥櫃·安裝人工', 'en':'Cabinet · Installation Labor', 'ms':'Kabinet · Buruh Pemasangan', 'th':'ตู้ครัว · ค่าแรงติดตั้ง' },
+  '衣柜·柜体': { 'zh-CN':'衣柜·柜体', 'zh-TW':'衣櫃·櫃體', 'en':'Wardrobe · Body', 'ms':'Almari · Badan', 'th':'ตู้เสื้อผ้า · โครง' },
+  '衣柜·柜门': { 'zh-CN':'衣柜·柜门', 'zh-TW':'衣櫃·櫃門', 'en':'Wardrobe · Doors', 'ms':'Almari · Pintu', 'th':'ตู้เสื้อผ้า · บาน' },
+  '衣柜·内部配件': { 'zh-CN':'衣柜·内部配件', 'zh-TW':'衣櫃·內部配件', 'en':'Wardrobe · Inner Accessories', 'ms':'Almari · Aksesori Dalam', 'th':'ตู้เสื้อผ้า · อุปกรณ์ภายใน' },
+  '衣柜·五金升级': { 'zh-CN':'衣柜·五金升级', 'zh-TW':'衣櫃·五金升級', 'en':'Wardrobe · Hardware Upgrade', 'ms':'Almari · Naik Taraf Perkakas', 'th':'ตู้เสื้อผ้า · ฮาร์ดแวร์อัปเกรด' },
+  '衣柜·安装人工': { 'zh-CN':'衣柜·安装人工', 'zh-TW':'衣櫃·安裝人工', 'en':'Wardrobe · Installation Labor', 'ms':'Almari · Buruh Pemasangan', 'th':'ตู้เสื้อผ้า · ค่าแรงติดตั้ง' },
+  '其他': { 'zh-CN':'其他', 'zh-TW':'其他', 'en':'Other', 'ms':'Lain-lain', 'th':'อื่นๆ' },
+  '其他项目': { 'zh-CN':'其他项目', 'zh-TW':'其他項目', 'en':'Other Items', 'ms':'Item Lain', 'th':'รายการอื่นๆ' },
+  '铝合金门窗': { 'zh-CN':'铝合金门窗', 'zh-TW':'鋁合金門窗', 'en':'Aluminium Doors & Windows', 'ms':'Pintu & Tingkap Aluminium', 'th':'ประตู&หน้าต่างอะลูมิเนียม' },
+};
+function sectionLabel(s) {
+  if (!s) return '';
+  const m = SECTION_LABEL[s];
+  if (!m) return s;  // 未在映射表中的(用户自定义 section)按原字符显示
+  return m[currentLang] || m['zh-CN'] || s;
+}
 
 const PRODUCT_TYPE_KEYWORDS = {
   WY: ['卫浴','浴室','马桶','花洒','浴缸','洗手盆','淋浴','水龙头','镜柜','浴室柜'],
