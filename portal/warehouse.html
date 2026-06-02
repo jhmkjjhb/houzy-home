@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>仓库管理系统 - HOUZY HOME</title>
+<title>Warehouse - HOUZY HOME</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -81,7 +81,19 @@
         <div class="text-xs font-semibold" style="color:#c8a96e" id="mob-page-title">库存总览</div>
       </div>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
+      <div class="relative">
+        <button onclick="toggleLangDrop()" class="flex items-center gap-1 text-xs text-gd border border-white/20 px-2 py-1 rounded">
+          🌐<span id="lang-label" class="ml-0.5">CN</span>
+        </button>
+        <div id="lang-drop" class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl py-1 overflow-hidden min-w-[140px] z-50">
+          <button onclick="setLang('en')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('zh-CN')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁體中文</button>
+          <button onclick="setLang('ms')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
       <span id="mob-user-name" class="text-xs text-gray-300 max-w-[90px] truncate"></span>
       <button onclick="doLogout()" class="text-gray-400 active:text-red-400 p-1">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -101,39 +113,46 @@
     <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
       <div class="nav-link active" id="nav-overview" onclick="goto('overview')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        库存总览
+        <span data-i18n="nav_overview">库存总览</span>
       </div>
       <div class="nav-link" id="nav-dispatch" onclick="goto('dispatch')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"/></svg>
-        待发货
+        <span data-i18n="nav_dispatch">待发货</span>
         <span id="nav-dispatch-badge" class="hidden ml-auto text-xs font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5"></span>
       </div>
       <div class="nav-link" id="nav-stockin" onclick="goto('stockin')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        入库操作
+        <span data-i18n="nav_stockin">入库操作</span>
       </div>
       <div class="nav-link" id="nav-stockout" onclick="goto('stockout')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
-        出库/调整
+        <span data-i18n="nav_stockout">出库/调整</span>
       </div>
       <div class="nav-link" id="nav-movements" onclick="goto('movements')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        流水记录
+        <span data-i18n="nav_movements">流水记录</span>
       </div>
       <div class="nav-link" id="nav-products" onclick="goto('products')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V7"/></svg>
-        产品档案
+        <span data-i18n="nav_products">产品档案</span>
       </div>
       <div class="nav-link" id="nav-warehouses" onclick="goto('warehouses')">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-        仓库设置
+        <span data-i18n="nav_warehouses">仓库设置</span>
       </div>
     </nav>
     <div class="p-3 border-t border-white/10">
       <div id="user-info" class="text-xs text-gray-400 mb-2 px-1"></div>
+      <!-- Desktop lang picker -->
+      <div class="relative mb-1">
+        <button onclick="toggleLangDrop()" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-gray-400 hover:bg-white/10 hover:text-white transition">
+          🌐 <span id="lang-label-d">简体中文</span>
+          <svg class="w-3 h-3 ml-auto opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+      </div>
       <button onclick="doLogout()" class="nav-link w-full text-red-400 hover:text-red-300">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        退出登录
+        <span data-i18n="nav_logout">退出登录</span>
       </button>
     </div>
   </aside>
@@ -574,11 +593,116 @@ const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
+// ============================================================================
+// 5 语言 i18n (en/zh-CN/zh-TW/ms/th) — 仓管端 P3 i18n 阶段 E
+// ============================================================================
+const WH_I18N = {
+  'zh-CN': {
+    sub_warehouse:'仓库管理系统', lbl_email:'邮箱', lbl_password:'密码', login_btn:'登录',
+    nav_overview:'库存总览', nav_dispatch:'待发货', nav_stockin:'入库操作', nav_stockout:'出库/调整',
+    nav_movements:'流水记录', nav_products:'产品档案', nav_warehouses:'仓库设置', nav_logout:'退出登录',
+    page_overview:'库存总览', refresh:'↺ 刷新',
+    ph_search:'搜索产品名称 / SKU / 厂家编码',
+    all_warehouses:'全部仓库', all_categories:'全部类别',
+    low_stock_warn:'⚠ 低库存预警',
+    loading:'加载中…',
+    cat: { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' },
+    no_permission:'权限不足，仅仓管/店长以上可访问',
+    login_failed:'登录失败：', login_invalid:'邮箱或密码错误',
+  },
+  'zh-TW': {
+    sub_warehouse:'倉庫管理系統', lbl_email:'郵箱', lbl_password:'密碼', login_btn:'登入',
+    nav_overview:'庫存總覽', nav_dispatch:'待發貨', nav_stockin:'入庫操作', nav_stockout:'出庫/調整',
+    nav_movements:'流水記錄', nav_products:'產品檔案', nav_warehouses:'倉庫設定', nav_logout:'登出',
+    page_overview:'庫存總覽', refresh:'↺ 重新整理',
+    ph_search:'搜尋產品名稱 / SKU / 廠家編碼',
+    all_warehouses:'全部倉庫', all_categories:'全部類別',
+    low_stock_warn:'⚠ 低庫存預警',
+    loading:'載入中…',
+    cat: { WY:'衛浴', CT:'瓷磚', DB:'地板/地磚', CG:'櫥櫃', MC:'門窗', DJ:'燈具', JJ:'傢俱', WJ:'五金', DQ:'電器', TL:'塗料/壁紙', QT:'其他' },
+    no_permission:'權限不足，僅倉管/店長以上可存取',
+    login_failed:'登入失敗：', login_invalid:'郵箱或密碼錯誤',
+  },
+  'en': {
+    sub_warehouse:'Warehouse System', lbl_email:'Email', lbl_password:'Password', login_btn:'Log In',
+    nav_overview:'Inventory', nav_dispatch:'Pending Ship', nav_stockin:'Stock In', nav_stockout:'Stock Out / Adjust',
+    nav_movements:'Movements', nav_products:'Products', nav_warehouses:'Warehouses', nav_logout:'Logout',
+    page_overview:'Inventory Overview', refresh:'↺ Refresh',
+    ph_search:'Search by name / SKU / factory code',
+    all_warehouses:'All Warehouses', all_categories:'All Categories',
+    low_stock_warn:'⚠ Low Stock Alert',
+    loading:'Loading…',
+    cat: { WY:'Bathroom', CT:'Tile', DB:'Flooring / Tile', CG:'Kitchen Cabinet', MC:'Doors & Windows', DJ:'Lighting', JJ:'Furniture', WJ:'Hardware', DQ:'Appliances', TL:'Paint / Wallpaper', QT:'Other' },
+    no_permission:'No permission. Only warehouse staff or store manager+ can access.',
+    login_failed:'Login failed: ', login_invalid:'Invalid email or password',
+  },
+  'ms': {
+    sub_warehouse:'Sistem Gudang', lbl_email:'Email', lbl_password:'Kata Laluan', login_btn:'Log Masuk',
+    nav_overview:'Inventori', nav_dispatch:'Menunggu Hantar', nav_stockin:'Masuk Stok', nav_stockout:'Keluar / Laras',
+    nav_movements:'Pergerakan', nav_products:'Produk', nav_warehouses:'Gudang', nav_logout:'Log Keluar',
+    page_overview:'Tinjauan Inventori', refresh:'↺ Muat Semula',
+    ph_search:'Cari nama / SKU / kod kilang',
+    all_warehouses:'Semua Gudang', all_categories:'Semua Kategori',
+    low_stock_warn:'⚠ Amaran Stok Rendah',
+    loading:'Memuat…',
+    cat: { WY:'Bilik Mandi', CT:'Jubin', DB:'Lantai / Jubin', CG:'Kabinet Dapur', MC:'Pintu & Tingkap', DJ:'Pencahayaan', JJ:'Perabot', WJ:'Perkakas', DQ:'Elektrik', TL:'Cat / Wallpaper', QT:'Lain-lain' },
+    no_permission:'Tiada kebenaran. Hanya staf gudang atau pengurus kedai ke atas.',
+    login_failed:'Log masuk gagal: ', login_invalid:'Email atau kata laluan salah',
+  },
+  'th': {
+    sub_warehouse:'ระบบคลังสินค้า', lbl_email:'อีเมล', lbl_password:'รหัสผ่าน', login_btn:'เข้าสู่ระบบ',
+    nav_overview:'สต็อก', nav_dispatch:'รอจัดส่ง', nav_stockin:'รับเข้าสต็อก', nav_stockout:'จ่ายออก / ปรับ',
+    nav_movements:'ความเคลื่อนไหว', nav_products:'สินค้า', nav_warehouses:'คลัง', nav_logout:'ออกจากระบบ',
+    page_overview:'ภาพรวมสต็อก', refresh:'↺ รีเฟรช',
+    ph_search:'ค้นหาด้วยชื่อ / SKU / รหัสโรงงาน',
+    all_warehouses:'คลังทั้งหมด', all_categories:'หมวดหมู่ทั้งหมด',
+    low_stock_warn:'⚠ แจ้งเตือนสต็อกต่ำ',
+    loading:'กำลังโหลด…',
+    cat: { WY:'ห้องน้ำ', CT:'กระเบื้อง', DB:'พื้น / กระเบื้อง', CG:'ตู้ครัว', MC:'ประตู & หน้าต่าง', DJ:'ไฟ', JJ:'เฟอร์นิเจอร์', WJ:'ฮาร์ดแวร์', DQ:'เครื่องใช้ไฟฟ้า', TL:'สี / วอลเปเปอร์', QT:'อื่นๆ' },
+    no_permission:'ไม่มีสิทธิ์ เฉพาะพนักงานคลังหรือผู้จัดการร้านขึ้นไป',
+    login_failed:'เข้าสู่ระบบล้มเหลว: ', login_invalid:'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+  },
+};
+const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
+const LANG_SHORT = { 'en':'EN', 'zh-CN':'CN', 'zh-TW':'TW', 'ms':'MS', 'th':'TH' };
+let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
+if (!WH_I18N[currentLang]) currentLang = 'zh-CN';
+function t(k) { return (WH_I18N[currentLang] || WH_I18N['zh-CN'])[k] || k; }
+function toggleLangDrop() { document.getElementById('lang-drop').classList.toggle('hidden'); }
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('houzy-lang', lang);
+  const sh = LANG_SHORT[lang] || lang;
+  const lb = LANG_LABELS[lang] || lang;
+  const lEl = document.getElementById('lang-label'); if (lEl) lEl.textContent = sh;
+  const lDe = document.getElementById('lang-label-d'); if (lDe) lDe.textContent = lb;
+  document.getElementById('lang-drop')?.classList.add('hidden');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n); if (v) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh); if (v) el.placeholder = v;
+  });
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const v = t(el.dataset.i18nOpt); if (v) el.textContent = v;
+  });
+  document.body.style.fontFamily = lang === 'th' ? "'Noto Sans Thai',sans-serif" : "";
+  document.documentElement.lang = lang;
+}
+window.addEventListener('DOMContentLoaded', () => setLang(currentLang));
+document.addEventListener('click', (e) => {
+  const drop = document.getElementById('lang-drop');
+  if (!drop || drop.classList.contains('hidden')) return;
+  if (e.target.closest('button')?.getAttribute('onclick')?.includes('toggleLangDrop')) return;
+  drop.classList.add('hidden');
+});
+
 const ALLOWED_ROLES = ['warehouse','store_manager','regional_manager','general_manager','superadmin','admin'];
 // 店长及以上（可清样发货）
 const WH_MGR_ROLES = ['store_manager','regional_manager','general_manager','superadmin','admin'];
 function isWhMgr() { return WH_MGR_ROLES.includes(profile?.role); }
-const CAT_LABEL = { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' };
+// 兼容老代码：CAT_LABEL 函数化（按当前语言）
+const CAT_LABEL = new Proxy({}, { get(_, k) { return (WH_I18N[currentLang]?.cat || WH_I18N['zh-CN'].cat)[k] || k; } });
 
 let profile = null;
 let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
