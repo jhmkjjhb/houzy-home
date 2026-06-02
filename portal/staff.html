@@ -1732,11 +1732,11 @@ async function toggleDesignerSettled(orderId, currentlySettled) {
   if (currentlySettled) {
     if (!confirm('撤销该单的"已结算"标记?')) return;
     const { error } = await sb.from('orders').update({ designer_settled_at: null }).eq('id', orderId);
-    if (error) { alert('失败:' + error.message); return; }
+    if (error) { alert(t('err_op_failed') + error.message); return; }
   } else {
     if (!confirm('标记该单设计师返点为"已结算"?(用于月度对账)')) return;
     const { error } = await sb.from('orders').update({ designer_settled_at: new Date().toISOString() }).eq('id', orderId);
-    if (error) { alert('失败:' + error.message); return; }
+    if (error) { alert(t('err_op_failed') + error.message); return; }
   }
   openDetail(orderId);
 }
@@ -4604,7 +4604,7 @@ async function staffOverrideMarkReady(orderId, supId) {
   if (!reason || !reason.trim()) return;
   const { data, error } = await sb.rpc('staff_override_mark_ready',
     { p_order_id: orderId, p_supplier_id: supId, p_reason: reason.trim() });
-  if (error) { alert('代行失败：' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   if (!data?.ok) { alert(data?.message || '代行失败'); return; }
   alert('✅ 已代该厂家标记 ' + data.count + ' 件生产完成（已记 ⚠ 管理代行 日志）');
   openDetail(orderId);
@@ -4627,7 +4627,7 @@ async function staffOverrideShip(orderId, supId) {
     p_method: method.trim(),
     p_reason: reason.trim(),
   });
-  if (error) { alert('代行失败：' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   if (!data?.ok) { alert(data?.message || '代行失败'); return; }
   alert('✅ 已代该厂家发货 ' + data.count + ' 件（已记 ⚠ 管理代行 日志）');
   openDetail(orderId);
@@ -5136,7 +5136,7 @@ async function saveEtaDays(orderId) {
   const { data: o } = await sb.from('orders').select('ship_time').eq('id', orderId).single();
   const eta_time = etaDaysToIso(o?.ship_time, days);
   const { error } = await sb.from('orders').update({ eta_time }).eq('id', orderId);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  if (error) { alert(t('err_save_failed') + error.message); return; }
   openDetail(orderId);
 }
 
@@ -5170,7 +5170,7 @@ async function saveLogisticsInfo(orderId) {
     ship_carrier: shipCarrier || null,
   };
   const { error } = await sb.from('orders').update(upd).eq('id', orderId);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  if (error) { alert(t('err_save_failed') + error.message); return; }
   await loadOrders();
   openDetail(orderId);
 }
@@ -6169,7 +6169,7 @@ async function editSupplierTypes(id, currentTypes) {
   modal.querySelector('#modal-save-types').onclick = async () => {
     const types = [...modal.querySelectorAll('.modal-pt:checked')].map(el => el.value);
     const { error } = await sb.from('suppliers').update({ product_types: types }).eq('id', id);
-    if (error) { alert('保存失败: ' + error.message); return; }
+    if (error) { alert(t('err_save_failed') + error.message); return; }
     modal.remove();
     await renderSuppliersPage();
   };
@@ -6189,7 +6189,7 @@ async function editSupplierShipFrom(id, current) {
   const v = prompt('发货地(填地址或城市;留空可清除):', current || '');
   if (v === null) return; // 取消
   const { error } = await sb.from('suppliers').update({ ship_from: v.trim() || null }).eq('id', id);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  if (error) { alert(t('err_save_failed') + error.message); return; }
   await renderSuppliersPage();
 }
 
@@ -6210,7 +6210,7 @@ async function editSupplierInfo(id, curName, curPhone) {
   if (phone === null) return;           // 取消
   const { error } = await sb.from('suppliers')
     .update({ name: name.trim(), phone: phone.trim() || null }).eq('id', id);
-  if (error) { alert('保存失败: ' + error.message); return; }
+  if (error) { alert(t('err_save_failed') + error.message); return; }
   await renderSuppliersPage();
 }
 
@@ -6767,7 +6767,7 @@ async function settleToggle(orderId, currentlySettled) {
   const val = currentlySettled ? null : new Date().toISOString();
   if (!confirm(currentlySettled ? '撤销该单的"已结算"标记?' : '标记该单返点为"已结算"?')) return;
   const { error } = await sb.from('orders').update({ designer_settled_at: val }).eq('id', orderId);
-  if (error) { alert('失败:' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   // 同步本地缓存,免整页重载
   const row = (allOrders||[]).find(o => o.id === orderId);
   if (row) row.designer_settled_at = val;
@@ -7440,7 +7440,7 @@ async function saveUser(uid) {
     .eq('id', uid);
 
   if (error) {
-    alert('保存失败: ' + error.message);
+    alert(t('err_save_failed') + error.message);
     btn.disabled = false;
     btn.textContent = '保存';
     return;
@@ -7583,7 +7583,7 @@ async function saveAddedItems() {
   btn.disabled = true; btn.textContent = '保存中…';
   const { error } = await sb.from('order_items').insert(rows);
   if (error) {
-    alert('保存失败: ' + error.message);
+    alert(t('err_save_failed') + error.message);
     btn.disabled = false; btn.textContent = '保存';
     return;
   }
