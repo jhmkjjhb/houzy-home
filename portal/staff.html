@@ -4194,7 +4194,7 @@ function confirmDelete(id) {
 
 async function doDelete(id) {
   if (!canDo(FIELD_MIN_LEVEL.delete_order)) { alert(t('err_no_permission')); return; }
-  if (!confirm('确认彻底删除该订单?此操作不可恢复')) return;
+  if (!confirm(t('confirm_delete_order'))) return;
   document.getElementById('delete-modal')?.remove();
 
   const { error } = await sb.from('orders').delete().eq('id', id);
@@ -4709,7 +4709,7 @@ async function drawingUploadFile(orderId, supId, input) {
   const { data, error } = await sb.rpc('drawing_upload',
     { p_order_id: orderId, p_supplier_id: supId, p_url: url });
   input.value='';
-  if (error) { alert('登记失败：'+error.message); return; }
+  if (error) { alert(t('err_op_failed')+error.message); return; }
   if (!data?.ok) { alert(data?.message||'登记失败'); return; }
   alert(`✅ 图纸已上传（v${data.version}）`+(data.version>1?'\n（已有三方确认作废，需重新确认）':''));
   openDetail(orderId);
@@ -4718,7 +4718,7 @@ async function drawingConfirm(orderId, supId) {
   if (!confirm('确认本版图纸已与客户当面/电话核对无误？\n店面将代表门店与客户共同认定本版设计与规格。')) return;
   const { data, error } = await sb.rpc('drawing_confirm',
     { p_order_id: orderId, p_supplier_id: supId });
-  if (error) { alert('确认失败：'+error.message); return; }
+  if (error) { alert(t('err_op_failed')+error.message); return; }
   if (!data?.ok) { alert(data?.message||'确认失败'); return; }
   alert(`✅ ${data.party}已确认图纸`);
   openDetail(orderId);
@@ -5102,7 +5102,7 @@ async function saveItemSuppliers(ev, orderId) {
 }
 
 async function acceptOrder(orderId) {
-  if (!confirm('确认接单，开始生产？')) return;
+  if (!confirm(t('confirm_accept_order'))) return;
   await sb.from('orders').update({ status: 'in_production', updated_at: new Date().toISOString(), deadline_at: calcDeadline('in_production') }).eq('id', orderId);
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'in_production',
@@ -5114,7 +5114,7 @@ async function acceptOrder(orderId) {
 }
 
 async function shipOrder(orderId) {
-  if (!confirm('确认发货？')) return;
+  if (!confirm(t('confirm_ship'))) return;
   await sb.from('orders').update({ status: 'shipped', updated_at: new Date().toISOString(), deadline_at: calcDeadline('shipped') }).eq('id', orderId);
   await sb.from('order_logs').insert({
     order_id: orderId, status: 'shipped',
@@ -5348,7 +5348,7 @@ async function submitSignOff(orderId) {
     deadline_at: warrantyEnd,
   }).eq('id', orderId);
   if (e1) {
-    alert('操作失败：' + e1.message);
+    alert(t('err_op_failed') + e1.message);
     if (btn) { btn.disabled = false; btn.textContent = '确认客户签收 → 完成订单'; }
     return;
   }
@@ -5583,7 +5583,7 @@ async function extendDeadline(orderId, kind) {
     : { col:'install_extend_count', max:1, days:5, label:'安装' };
   const { data: o, error: e1 } = await sb.from('orders')
     .select(`deadline_at,status,${cfg.col}`).eq('id', orderId).single();
-  if (e1) { alert('读取失败：' + e1.message); return; }
+  if (e1) { alert(t('err_load_failed') + e1.message); return; }
   const used = o[cfg.col] || 0;
   if (used >= cfg.max) { alert(`${cfg.label}延期次数已用完（${used}/${cfg.max}）`); return; }
   if (!confirm(`确认${cfg.label}延期 +${cfg.days} 天？用完后还剩 ${cfg.max - used - 1} 次`)) return;
@@ -5592,7 +5592,7 @@ async function extendDeadline(orderId, kind) {
   const { error } = await sb.from('orders')
     .update({ deadline_at: newDl, [cfg.col]: used + 1, updated_at: new Date().toISOString() })
     .eq('id', orderId);
-  if (error) { alert('延期失败：' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   await sb.from('order_logs').insert({
     order_id: orderId, status: o.status,
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
@@ -5856,7 +5856,7 @@ async function toggleFulfillmentMode(orderId, currentMode) {
   const label   = newMode === 'phased' ? '分批安装（现货先到先装）' : '等齐安装（所有货到齐后一次安装）';
   if (!confirm(`切换安装方式为「${label}」？`)) return;
   const { error } = await sb.from('orders').update({ fulfillment_mode: newMode }).eq('id', orderId);
-  if (error) { alert('切换失败：' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   await loadOrders();
   openDetail(orderId);
 }
@@ -7188,7 +7188,7 @@ async function approveReg(id, type, userId, name, email, storeId) {
     reviewed_by: profile.id,
     reviewed_at: new Date().toISOString()
   }).eq('id', id);
-  if (error) { alert('操作失败: ' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
 
   // Create profile so user can log in
   if (userId) {
@@ -7232,7 +7232,7 @@ async function promptRejectReg(id) {
     reviewed_by: profile.id,
     reviewed_at: new Date().toISOString()
   }).eq('id', id);
-  if (error) { alert('操作失败: ' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   loadRegistrations();
 }
 
@@ -7457,7 +7457,7 @@ async function saveUser(uid) {
 async function toggleUserActive(uid, current) {
   if (uid === profile.id) { alert('不能停用自己的账号'); return; }
   const { error } = await sb.from('profiles').update({ active: !current }).eq('id', uid);
-  if (error) { alert('操作失败: ' + error.message); return; }
+  if (error) { alert(t('err_op_failed') + error.message); return; }
   // 同步厂家在 suppliers 表的启用状态
   await sb.from('suppliers').update({ active: !current }).eq('user_id', uid);
   await loadUsersData();
