@@ -54,17 +54,17 @@
     <div class="text-center mb-6">
       <img src="/favicon.svg" alt="HOUZY HOME" class="w-14 h-14 rounded-lg mx-auto mb-3" style="box-shadow:0 0 0 1px rgba(200,169,110,.35)">
       <div class="text-2xl font-bold text-hg tracking-wide">HOUZY HOME</div>
-      <div class="text-sm text-gray-400 mt-1">仓库管理系统</div>
+      <div class="text-sm text-gray-400 mt-1" data-i18n="sub_warehouse">仓库管理系统</div>
     </div>
     <div class="mb-4">
-      <label class="label">邮箱</label>
+      <label class="label" data-i18n="lbl_email">邮箱</label>
       <input type="email" id="login-email" placeholder="warehouse@houzy.com" class="input">
     </div>
     <div class="mb-5">
-      <label class="label">密码</label>
+      <label class="label" data-i18n="lbl_password">密码</label>
       <input type="password" id="login-pw" placeholder="••••••••" class="input" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button onclick="doLogin()" id="login-btn" class="btn-gold w-full py-3 text-base">登录</button>
+    <button onclick="doLogin()" id="login-btn" class="btn-gold w-full py-3 text-base" data-i18n="login_btn">登录</button>
     <p id="login-err" class="text-red-500 text-sm mt-3 text-center hidden"></p>
   </div>
 </div>
@@ -163,8 +163,8 @@
     <!-- 库存总览 -->
     <div id="v-overview" class="p-4 sm:p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">库存总览</h1>
-        <button onclick="loadAll()" class="text-sm text-hg hover:underline">↺ 刷新</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="page_overview">库存总览</h1>
+        <button onclick="loadAll()" class="text-sm text-hg hover:underline" data-i18n="refresh">↺ 刷新</button>
       </div>
       <!-- 待发货待办提醒 -->
       <div id="dispatch-overview-banner" class="hidden mb-4"></div>
@@ -172,27 +172,27 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" id="inv-stats"></div>
       <!-- Search -->
       <div class="flex gap-2 mb-3 flex-wrap">
-        <input type="text" id="ov-search" placeholder="搜索产品名称 / SKU / 厂家编码"
+        <input type="text" id="ov-search" placeholder="搜索产品名称 / SKU / 厂家编码" data-i18n-ph="ph_search"
                oninput="renderOverview()" class="input max-w-xs text-sm">
         <select id="ov-wh" onchange="renderOverview()" class="input w-44 text-sm">
-          <option value="">全部仓库</option>
+          <option value="" data-i18n-opt="all_warehouses">全部仓库</option>
         </select>
         <select id="ov-cat" onchange="renderOverview()" class="input w-36 text-sm">
-          <option value="">全部类别</option>
-          <option value="WY">卫浴</option>
-          <option value="CT">瓷砖</option>
-          <option value="DB">地板/地砖</option>
-          <option value="CG">橱柜</option>
-          <option value="MC">门窗</option>
-          <option value="DJ">灯具</option>
-          <option value="JJ">家具</option>
-          <option value="WJ">五金</option>
-          <option value="DQ">电器</option>
-          <option value="TL">涂料/壁纸</option>
-          <option value="QT">其他</option>
+          <option value="" data-i18n-opt="all_categories">全部类别</option>
+          <option value="WY" data-i18n-opt="cat_WY">卫浴</option>
+          <option value="CT" data-i18n-opt="cat_CT">瓷砖</option>
+          <option value="DB" data-i18n-opt="cat_DB">地板/地砖</option>
+          <option value="CG" data-i18n-opt="cat_CG">橱柜</option>
+          <option value="MC" data-i18n-opt="cat_MC">门窗</option>
+          <option value="DJ" data-i18n-opt="cat_DJ">灯具</option>
+          <option value="JJ" data-i18n-opt="cat_JJ">家具</option>
+          <option value="WJ" data-i18n-opt="cat_WJ">五金</option>
+          <option value="DQ" data-i18n-opt="cat_DQ">电器</option>
+          <option value="TL" data-i18n-opt="cat_TL">涂料/壁纸</option>
+          <option value="QT" data-i18n-opt="cat_QT">其他</option>
         </select>
         <button id="low-stock-filter-btn" onclick="toggleLowStockFilter()"
-                class="px-3 py-2 text-xs rounded-lg border font-semibold transition-colors border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500">
+                class="px-3 py-2 text-xs rounded-lg border font-semibold transition-colors border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500" data-i18n="low_stock_warn">
           ⚠ 低库存预警
         </button>
       </div>
@@ -204,8 +204,8 @@
     <!-- 待发货 -->
     <div id="v-dispatch" class="hidden p-4 sm:p-6 max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">待发货</h1>
-        <button onclick="renderDispatch()" class="text-sm text-hg hover:underline">↺ 刷新</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="page_dispatch">待发货</h1>
+        <button onclick="renderDispatch()" class="text-sm text-hg hover:underline" data-i18n="refresh">↺ 刷新</button>
       </div>
       <p class="text-xs text-gray-500 mb-3">店员已「确认出库」、等仓库实际发货的现货商品。点「确认发货」会扣减库存（不可撤销）。</p>
       <div class="flex gap-2 mb-4 items-center flex-wrap">
@@ -219,11 +219,11 @@
 
     <!-- 入库操作 -->
     <div id="v-stockin" class="hidden p-4 sm:p-6 max-w-4xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-4">入库操作</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-4" data-i18n="page_stockin">入库操作</h1>
 
       <!-- 批量入库（Excel） -->
       <div class="card p-6 mb-4">
-        <h3 class="font-semibold text-gray-800 mb-1">批量入库（Excel）</h3>
+        <h3 class="font-semibold text-gray-800 mb-1" data-i18n="section_batch_in">批量入库（Excel）</h3>
         <p class="text-xs text-gray-500 mb-4">SKU 太多时用这里:下载模版填好 → 一键上传,系统自动建产品并入库。</p>
         <div class="flex flex-wrap gap-3">
           <button onclick="exportInventoryExcel()"
@@ -238,7 +238,7 @@
       </div>
 
       <div class="card p-6 mb-4">
-        <h3 class="font-semibold text-gray-800 mb-5">新建入库单</h3>
+        <h3 class="font-semibold text-gray-800 mb-5" data-i18n="section_new_in">新建入库单</h3>
 
         <!-- 类别选择 -->
         <div class="mb-5">
@@ -351,14 +351,14 @@
           </div>
         </div>
 
-        <button onclick="submitStockIn()" class="btn-gold px-8 py-2.5 text-sm">✓ 确认入库</button>
+        <button onclick="submitStockIn()" class="btn-gold px-8 py-2.5 text-sm" data-i18n="btn_confirm_in">✓ 确认入库</button>
         <p id="si-err" class="text-red-500 text-sm mt-2 hidden"></p>
       </div>
     </div>
 
     <!-- 出库/调整 -->
     <div id="v-stockout" class="hidden p-4 sm:p-6 max-w-3xl mx-auto">
-      <h1 class="text-xl font-bold text-gray-800 mb-4">出库 / 库存调整</h1>
+      <h1 class="text-xl font-bold text-gray-800 mb-4" data-i18n="page_stockout">出库 / 库存调整</h1>
       <div class="card p-6 mb-4">
         <div class="flex gap-2 mb-4">
           <button id="so-tab-out" onclick="setSoTab('out')"
@@ -385,7 +385,7 @@
             <input type="text" id="so-notes" placeholder="出库原因/调整说明" class="input text-sm">
           </div>
         </div>
-        <button onclick="submitStockOut()" class="btn-gold px-8 py-2.5 text-sm">✓ 确认</button>
+        <button onclick="submitStockOut()" class="btn-gold px-8 py-2.5 text-sm" data-i18n="btn_confirm_out">✓ 确认</button>
         <p id="so-err" class="text-red-500 text-sm mt-2 hidden"></p>
       </div>
     </div>
@@ -393,7 +393,7 @@
     <!-- 流水记录 -->
     <div id="v-movements" class="hidden p-4 sm:p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">流水记录</h1>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="page_movements">流水记录</h1>
         <div class="flex gap-2 flex-wrap">
           <input type="text" id="mv-search" placeholder="搜索产品名/SKU" oninput="renderMovements()" class="input w-36 text-sm">
           <select id="mv-type" onchange="renderMovements()" class="input w-28 text-sm">
@@ -415,12 +415,12 @@
     <!-- 产品档案 -->
     <div id="v-products" class="hidden p-4 sm:p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">产品档案</h1>
-        <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm">+ 新增产品</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="page_products">产品档案</h1>
+        <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm" data-i18n="btn_add_product">+ 新增产品</button>
       </div>
       <!-- Add form -->
       <div id="prod-add-form" class="hidden card p-6 mb-4 border-2 border-dashed" style="border-color:#c8a96e4d">
-        <h3 class="font-semibold text-gray-800 mb-4">新增产品</h3>
+        <h3 class="font-semibold text-gray-800 mb-4" data-i18n="section_add_product">新增产品</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <div>
             <label class="label">类别 *</label>
@@ -478,7 +478,7 @@
         </div>
         <div class="flex items-center gap-4">
           <div class="text-xs text-gray-400">SKU 预览(仅供参考，正式编号以保存时为准)：<span id="np-sku-preview" class="font-mono font-bold text-hg text-sm">—</span></div>
-          <button onclick="submitNewProduct()" class="btn-gold px-6 py-2 text-sm">保存</button>
+          <button onclick="submitNewProduct()" class="btn-gold px-6 py-2 text-sm" data-i18n="btn_save">保存</button>
           <button onclick="document.getElementById('prod-add-form').classList.add('hidden')"
                   class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
         </div>
@@ -486,11 +486,11 @@
       </div>
       <!-- 编码查询 -->
       <div class="card p-4 mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 mb-3">产品编码查询</h3>
+        <h3 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="section_code_lookup">产品编码查询</h3>
         <div class="flex gap-2 mb-3">
           <input type="text" id="code-search" placeholder="输入系统编码（HH-WY-0001）或厂家原编码"
                  class="input text-sm flex-1" onkeydown="if(event.key==='Enter')lookupCode()">
-          <button onclick="lookupCode()" class="btn-gold px-4 py-2 text-sm whitespace-nowrap">查询</button>
+          <button onclick="lookupCode()" class="btn-gold px-4 py-2 text-sm whitespace-nowrap" data-i18n="btn_lookup">查询</button>
         </div>
         <div id="code-result" class="text-xs text-gray-400">输入编码后按回车或点查询</div>
       </div>
@@ -505,12 +505,12 @@
     <!-- 仓库设置 -->
     <div id="v-warehouses" class="hidden p-4 sm:p-6 max-w-3xl mx-auto">
       <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold text-gray-800">仓库设置</h1>
-        <button onclick="openAddWarehouse()" class="btn-gold px-4 py-2 text-sm">+ 新建仓库</button>
+        <h1 class="text-xl font-bold text-gray-800" data-i18n="page_warehouses">仓库设置</h1>
+        <button onclick="openAddWarehouse()" class="btn-gold px-4 py-2 text-sm" data-i18n="btn_add_warehouse">+ 新建仓库</button>
       </div>
       <!-- Add form -->
       <div id="wh-add-form" class="hidden card p-5 mb-4 border-2 border-dashed" style="border-color:#c8a96e4d">
-        <h3 class="font-semibold text-gray-800 mb-3">新建仓库</h3>
+        <h3 class="font-semibold text-gray-800 mb-3" data-i18n="section_add_warehouse">新建仓库</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label class="label">仓库名称 *</label>
@@ -522,7 +522,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <button onclick="submitNewWarehouse()" class="btn-gold px-6 py-2 text-sm">保存</button>
+          <button onclick="submitNewWarehouse()" class="btn-gold px-6 py-2 text-sm" data-i18n="btn_save">保存</button>
           <button onclick="document.getElementById('wh-add-form').classList.add('hidden')"
                   class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg">取消</button>
         </div>
@@ -544,8 +544,8 @@
       <div id="qr-canvas" class="flex justify-center mb-3"></div>
       <div class="text-xs text-gray-400 mb-4">店员扫描二维码查看产品详情与库存</div>
       <div class="flex gap-2">
-        <button onclick="printQR()" class="btn-gold flex-1 py-2.5 text-sm">打印</button>
-        <button onclick="closeQR()" class="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-500">关闭</button>
+        <button onclick="printQR()" class="btn-gold flex-1 py-2.5 text-sm" data-i18n="btn_print">打印</button>
+        <button onclick="closeQR()" class="flex-1 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-500" data-i18n="btn_close">关闭</button>
       </div>
     </div>
   </div>
@@ -609,6 +609,40 @@ const WH_I18N = {
     cat: { WY:'卫浴', CT:'瓷砖', DB:'地板/地砖', CG:'橱柜', MC:'门窗', DJ:'灯具', JJ:'家具', WJ:'五金', DQ:'电器', TL:'涂料/壁纸', QT:'其他' },
     no_permission:'权限不足，仅仓管/店长以上可访问',
     login_failed:'登录失败：', login_invalid:'邮箱或密码错误',
+    page_dispatch:'待发货', page_stockin:'入库操作', page_stockout:'出库 / 库存调整',
+    page_movements:'流水记录', page_products:'产品档案', page_warehouses:'仓库设置',
+    section_batch_in:'批量入库（Excel）', section_new_in:'新建入库单',
+    btn_confirm_in:'✓ 确认入库', btn_confirm_out:'✓ 确认',
+    btn_add_product:'+ 新增产品', section_add_product:'新增产品',
+    btn_save:'保存', btn_delete:'删除', btn_print:'打印', btn_close:'关闭',
+    section_code_lookup:'产品编码查询', btn_lookup:'查询',
+    btn_add_warehouse:'+ 新建仓库', section_add_warehouse:'新建仓库',
+    ph_movements_search:'搜索产品名/SKU', ph_prod_search:'搜索 SKU / 产品名称',
+    ph_code_search:'输入系统编码（HH-WY-0001）或厂家原编码',
+    ph_si_name:'如：TOTO龙头 TLG31001B', ph_si_batch:'如：2024-05-A 或厂家批次号',
+    ph_si_notes:'供应商、装箱单号等备注信息',
+    ph_so_notes:'出库原因/调整说明',
+    ph_np_name:'如：600×1200哑白砖', ph_np_specs:'颜色、尺寸、材质等',
+    ph_nw_name:'如：马来西亚主仓', ph_nw_loc:'城市或详细地址',
+    ph_rej_note:'备注（选填，选「其他」时必填）',
+    ph_carrier:'物流公司（选填）', ph_tracking:'物流单号（建议填）',
+    err_xlsx_loading:'表格组件还没加载好，请刷新页面后重试',
+    err_select_wh:'请先在上方选择「从哪个仓库发货」',
+    confirm_clear_sample:'⚠ 清样发货：会把最后的样品一并发出、库存扣到底，不可撤销，且会记入日志。确定继续？',
+    confirm_ship:'确认发货？此操作会扣减该仓库库存，不可撤销。',
+    err_ship_fail:'发货失败：', ok_shipped:'已发货', err_not_shipped:'未发货：',
+    err_select_other_note:'选「其他」时请填写备注说明',
+    err_select_reason:'请选择拒绝原因',
+    confirm_reject:'确认拒绝发货并退回店员？\n原因：',
+    err_op_fail:'操作失败：', ok_rejected:'已退回',
+    rejected_hint:'\n店员会看到原因并改派仓库或改厂家直发',
+    err_not_rejected:'未退回：',
+    err_unknown_reason:'未知原因',
+    ok_stockin:'✅ 入库成功',
+    confirm_huge_qty:'调整后库存将设为 {n}，数值异常巨大，确认继续？',
+    confirm_new_inv:'该产品在此仓库原本没有库存记录,调整将新建一条库存记录,确认继续？',
+    ok_stockout:'出库', ok_adjust:'调整', ok_done:'成功',
+    err_upload:'上传失败：',
   },
   'zh-TW': {
     sub_warehouse:'倉庫管理系統', lbl_email:'郵箱', lbl_password:'密碼', login_btn:'登入',
@@ -622,6 +656,40 @@ const WH_I18N = {
     cat: { WY:'衛浴', CT:'瓷磚', DB:'地板/地磚', CG:'櫥櫃', MC:'門窗', DJ:'燈具', JJ:'傢俱', WJ:'五金', DQ:'電器', TL:'塗料/壁紙', QT:'其他' },
     no_permission:'權限不足，僅倉管/店長以上可存取',
     login_failed:'登入失敗：', login_invalid:'郵箱或密碼錯誤',
+    page_dispatch:'待發貨', page_stockin:'入庫操作', page_stockout:'出庫 / 庫存調整',
+    page_movements:'流水記錄', page_products:'產品檔案', page_warehouses:'倉庫設定',
+    section_batch_in:'批次入庫（Excel）', section_new_in:'新建入庫單',
+    btn_confirm_in:'✓ 確認入庫', btn_confirm_out:'✓ 確認',
+    btn_add_product:'+ 新增產品', section_add_product:'新增產品',
+    btn_save:'儲存', btn_delete:'刪除', btn_print:'列印', btn_close:'關閉',
+    section_code_lookup:'產品編碼查詢', btn_lookup:'查詢',
+    btn_add_warehouse:'+ 新建倉庫', section_add_warehouse:'新建倉庫',
+    ph_movements_search:'搜尋產品名/SKU', ph_prod_search:'搜尋 SKU / 產品名稱',
+    ph_code_search:'輸入系統編碼（HH-WY-0001）或廠家原編碼',
+    ph_si_name:'如：TOTO龍頭 TLG31001B', ph_si_batch:'如：2024-05-A 或廠家批次號',
+    ph_si_notes:'供應商、裝箱單號等備註資訊',
+    ph_so_notes:'出庫原因/調整說明',
+    ph_np_name:'如：600×1200啞白磚', ph_np_specs:'顏色、尺寸、材質等',
+    ph_nw_name:'如：馬來西亞主倉', ph_nw_loc:'城市或詳細地址',
+    ph_rej_note:'備註（選填，選「其他」時必填）',
+    ph_carrier:'物流公司（選填）', ph_tracking:'物流單號（建議填）',
+    err_xlsx_loading:'表格元件還沒載入好，請重新整理頁面後重試',
+    err_select_wh:'請先在上方選擇「從哪個倉庫發貨」',
+    confirm_clear_sample:'⚠ 清樣發貨：會把最後的樣品一併發出、庫存扣到底，不可撤銷，且會記入日誌。確定繼續？',
+    confirm_ship:'確認發貨？此操作會扣減該倉庫庫存，不可撤銷。',
+    err_ship_fail:'發貨失敗：', ok_shipped:'已發貨', err_not_shipped:'未發貨：',
+    err_select_other_note:'選「其他」時請填寫備註說明',
+    err_select_reason:'請選擇拒絕原因',
+    confirm_reject:'確認拒絕發貨並退回店員？\n原因：',
+    err_op_fail:'操作失敗：', ok_rejected:'已退回',
+    rejected_hint:'\n店員會看到原因並改派倉庫或改廠家直發',
+    err_not_rejected:'未退回：',
+    err_unknown_reason:'未知原因',
+    ok_stockin:'✅ 入庫成功',
+    confirm_huge_qty:'調整後庫存將設為 {n}，數值異常巨大，確認繼續？',
+    confirm_new_inv:'該產品在此倉庫原本沒有庫存記錄，調整將新建一條庫存記錄，確認繼續？',
+    ok_stockout:'出庫', ok_adjust:'調整', ok_done:'成功',
+    err_upload:'上傳失敗：',
   },
   'en': {
     sub_warehouse:'Warehouse System', lbl_email:'Email', lbl_password:'Password', login_btn:'Log In',
@@ -635,6 +703,40 @@ const WH_I18N = {
     cat: { WY:'Bathroom', CT:'Tile', DB:'Flooring / Tile', CG:'Kitchen Cabinet', MC:'Doors & Windows', DJ:'Lighting', JJ:'Furniture', WJ:'Hardware', DQ:'Appliances', TL:'Paint / Wallpaper', QT:'Other' },
     no_permission:'No permission. Only warehouse staff or store manager+ can access.',
     login_failed:'Login failed: ', login_invalid:'Invalid email or password',
+    page_dispatch:'Pending Ship', page_stockin:'Stock In', page_stockout:'Stock Out / Adjust',
+    page_movements:'Movements', page_products:'Products', page_warehouses:'Warehouses',
+    section_batch_in:'Bulk Stock In (Excel)', section_new_in:'New Stock-In Order',
+    btn_confirm_in:'✓ Confirm Stock-In', btn_confirm_out:'✓ Confirm',
+    btn_add_product:'+ Add Product', section_add_product:'Add Product',
+    btn_save:'Save', btn_delete:'Delete', btn_print:'Print', btn_close:'Close',
+    section_code_lookup:'Product Code Lookup', btn_lookup:'Lookup',
+    btn_add_warehouse:'+ New Warehouse', section_add_warehouse:'New Warehouse',
+    ph_movements_search:'Search name / SKU', ph_prod_search:'Search SKU / Name',
+    ph_code_search:'Enter system code (HH-WY-0001) or factory code',
+    ph_si_name:'e.g. TOTO Faucet TLG31001B', ph_si_batch:'e.g. 2024-05-A or factory batch',
+    ph_si_notes:'Supplier, packing list, etc.',
+    ph_so_notes:'Reason for stock-out / adjustment',
+    ph_np_name:'e.g. 600x1200 Matte White Tile', ph_np_specs:'Color, size, material, etc.',
+    ph_nw_name:'e.g. Malaysia Main Warehouse', ph_nw_loc:'City or full address',
+    ph_rej_note:'Notes (optional, required if "Other")',
+    ph_carrier:'Carrier (optional)', ph_tracking:'Tracking no. (recommended)',
+    err_xlsx_loading:'Spreadsheet component not loaded yet, please refresh and try again',
+    err_select_wh:'Please select source warehouse first',
+    confirm_clear_sample:'⚠ Clear-sample ship: last sample will be shipped, stock will hit zero, irreversible, logged. Continue?',
+    confirm_ship:'Confirm shipment? This will deduct stock from the warehouse, irreversible.',
+    err_ship_fail:'Ship failed: ', ok_shipped:'Shipped', err_not_shipped:'Not shipped: ',
+    err_select_other_note:'Please fill in note when selecting "Other"',
+    err_select_reason:'Please select rejection reason',
+    confirm_reject:'Confirm reject and return to staff?\nReason: ',
+    err_op_fail:'Operation failed: ', ok_rejected:'Returned',
+    rejected_hint:'\nStaff will see the reason and reassign warehouse or send via factory directly',
+    err_not_rejected:'Not rejected: ',
+    err_unknown_reason:'Unknown reason',
+    ok_stockin:'✅ Stock-in successful',
+    confirm_huge_qty:'Stock will be set to {n}. Value seems unusually large. Continue?',
+    confirm_new_inv:'This product has no inventory record in this warehouse. Adjusting will create a new record. Continue?',
+    ok_stockout:'Stock-out', ok_adjust:'Adjustment', ok_done:'successful',
+    err_upload:'Upload failed: ',
   },
   'ms': {
     sub_warehouse:'Sistem Gudang', lbl_email:'Email', lbl_password:'Kata Laluan', login_btn:'Log Masuk',
@@ -648,6 +750,40 @@ const WH_I18N = {
     cat: { WY:'Bilik Mandi', CT:'Jubin', DB:'Lantai / Jubin', CG:'Kabinet Dapur', MC:'Pintu & Tingkap', DJ:'Pencahayaan', JJ:'Perabot', WJ:'Perkakas', DQ:'Elektrik', TL:'Cat / Wallpaper', QT:'Lain-lain' },
     no_permission:'Tiada kebenaran. Hanya staf gudang atau pengurus kedai ke atas.',
     login_failed:'Log masuk gagal: ', login_invalid:'Email atau kata laluan salah',
+    page_dispatch:'Menunggu Hantar', page_stockin:'Masuk Stok', page_stockout:'Keluar / Laras',
+    page_movements:'Pergerakan', page_products:'Produk', page_warehouses:'Gudang',
+    section_batch_in:'Masuk Stok Pukal (Excel)', section_new_in:'Borang Masuk Stok Baru',
+    btn_confirm_in:'✓ Sahkan Masuk', btn_confirm_out:'✓ Sahkan',
+    btn_add_product:'+ Tambah Produk', section_add_product:'Tambah Produk',
+    btn_save:'Simpan', btn_delete:'Padam', btn_print:'Cetak', btn_close:'Tutup',
+    section_code_lookup:'Carian Kod Produk', btn_lookup:'Cari',
+    btn_add_warehouse:'+ Gudang Baru', section_add_warehouse:'Gudang Baru',
+    ph_movements_search:'Cari nama / SKU', ph_prod_search:'Cari SKU / Nama',
+    ph_code_search:'Masukkan kod sistem (HH-WY-0001) atau kod kilang',
+    ph_si_name:'cth: Paip TOTO TLG31001B', ph_si_batch:'cth: 2024-05-A atau no. batch kilang',
+    ph_si_notes:'Pembekal, senarai bungkusan, dll.',
+    ph_so_notes:'Sebab keluar stok / pelarasan',
+    ph_np_name:'cth: Jubin 600x1200 Putih Lutsinar', ph_np_specs:'Warna, saiz, bahan, dll.',
+    ph_nw_name:'cth: Gudang Utama Malaysia', ph_nw_loc:'Bandar atau alamat penuh',
+    ph_rej_note:'Nota (pilihan, wajib jika "Lain")',
+    ph_carrier:'Pembawa (pilihan)', ph_tracking:'No. penjejakan (disyorkan)',
+    err_xlsx_loading:'Komponen spreadsheet belum dimuat, sila refresh halaman',
+    err_select_wh:'Sila pilih gudang sumber dahulu',
+    confirm_clear_sample:'⚠ Hantar bersihan: sampel terakhir akan dihantar, stok akan jadi 0, tidak boleh ditarik balik, akan dilog. Teruskan?',
+    confirm_ship:'Sahkan penghantaran? Akan tolak stok dari gudang, tidak boleh ditarik balik.',
+    err_ship_fail:'Penghantaran gagal: ', ok_shipped:'Dihantar', err_not_shipped:'Tidak dihantar: ',
+    err_select_other_note:'Sila isi nota apabila memilih "Lain"',
+    err_select_reason:'Sila pilih sebab penolakan',
+    confirm_reject:'Sahkan tolak dan kembalikan kepada staf?\nSebab: ',
+    err_op_fail:'Operasi gagal: ', ok_rejected:'Dikembalikan',
+    rejected_hint:'\nStaf akan lihat sebab dan agihkan semula',
+    err_not_rejected:'Tidak dikembalikan: ',
+    err_unknown_reason:'Sebab tidak diketahui',
+    ok_stockin:'✅ Masuk stok berjaya',
+    confirm_huge_qty:'Stok akan ditetapkan kepada {n}. Nilai sangat besar. Teruskan?',
+    confirm_new_inv:'Produk ini tiada rekod stok di gudang ini. Pelarasan akan buat rekod baru. Teruskan?',
+    ok_stockout:'Keluar stok', ok_adjust:'Pelarasan', ok_done:'berjaya',
+    err_upload:'Muat naik gagal: ',
   },
   'th': {
     sub_warehouse:'ระบบคลังสินค้า', lbl_email:'อีเมล', lbl_password:'รหัสผ่าน', login_btn:'เข้าสู่ระบบ',
@@ -661,13 +797,54 @@ const WH_I18N = {
     cat: { WY:'ห้องน้ำ', CT:'กระเบื้อง', DB:'พื้น / กระเบื้อง', CG:'ตู้ครัว', MC:'ประตู & หน้าต่าง', DJ:'ไฟ', JJ:'เฟอร์นิเจอร์', WJ:'ฮาร์ดแวร์', DQ:'เครื่องใช้ไฟฟ้า', TL:'สี / วอลเปเปอร์', QT:'อื่นๆ' },
     no_permission:'ไม่มีสิทธิ์ เฉพาะพนักงานคลังหรือผู้จัดการร้านขึ้นไป',
     login_failed:'เข้าสู่ระบบล้มเหลว: ', login_invalid:'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+    page_dispatch:'รอจัดส่ง', page_stockin:'รับเข้าสต็อก', page_stockout:'จ่ายออก / ปรับ',
+    page_movements:'ความเคลื่อนไหว', page_products:'สินค้า', page_warehouses:'คลัง',
+    section_batch_in:'รับเข้ารวม (Excel)', section_new_in:'ใบรับเข้าใหม่',
+    btn_confirm_in:'✓ ยืนยันรับเข้า', btn_confirm_out:'✓ ยืนยัน',
+    btn_add_product:'+ เพิ่มสินค้า', section_add_product:'เพิ่มสินค้า',
+    btn_save:'บันทึก', btn_delete:'ลบ', btn_print:'พิมพ์', btn_close:'ปิด',
+    section_code_lookup:'ค้นหารหัสสินค้า', btn_lookup:'ค้นหา',
+    btn_add_warehouse:'+ คลังใหม่', section_add_warehouse:'คลังใหม่',
+    ph_movements_search:'ค้นหาชื่อ / SKU', ph_prod_search:'ค้นหา SKU / ชื่อ',
+    ph_code_search:'ป้อนรหัสระบบ (HH-WY-0001) หรือรหัสโรงงาน',
+    ph_si_name:'เช่น ก๊อก TOTO TLG31001B', ph_si_batch:'เช่น 2024-05-A หรือรหัสล็อตโรงงาน',
+    ph_si_notes:'ผู้ผลิต, ใบบรรจุภัณฑ์, ฯลฯ',
+    ph_so_notes:'เหตุผลการจ่ายออก / ปรับ',
+    ph_np_name:'เช่น กระเบื้องขาวด้าน 600x1200', ph_np_specs:'สี, ขนาด, วัสดุ, ฯลฯ',
+    ph_nw_name:'เช่น คลังหลักมาเลเซีย', ph_nw_loc:'เมืองหรือที่อยู่เต็ม',
+    ph_rej_note:'หมายเหตุ (ไม่บังคับ, จำเป็นถ้าเลือก "อื่นๆ")',
+    ph_carrier:'ผู้ขนส่ง (ไม่บังคับ)', ph_tracking:'หมายเลขติดตาม (แนะนำ)',
+    err_xlsx_loading:'ส่วนประกอบสเปรดชีตยังโหลดไม่เสร็จ กรุณารีเฟรชหน้า',
+    err_select_wh:'กรุณาเลือกคลังต้นทางก่อน',
+    confirm_clear_sample:'⚠ ส่งล้างสต็อก: สินค้าตัวอย่างสุดท้ายจะถูกส่ง สต็อกจะเหลือ 0 ไม่สามารถยกเลิก จะถูกบันทึก ดำเนินการต่อ?',
+    confirm_ship:'ยืนยันการจัดส่ง? จะหักสต็อกจากคลัง ไม่สามารถยกเลิกได้',
+    err_ship_fail:'จัดส่งล้มเหลว: ', ok_shipped:'จัดส่งแล้ว', err_not_shipped:'ไม่ได้จัดส่ง: ',
+    err_select_other_note:'กรุณากรอกหมายเหตุเมื่อเลือก "อื่นๆ"',
+    err_select_reason:'กรุณาเลือกเหตุผลปฏิเสธ',
+    confirm_reject:'ยืนยันปฏิเสธและส่งคืนพนักงาน?\nเหตุผล: ',
+    err_op_fail:'การดำเนินการล้มเหลว: ', ok_rejected:'ส่งคืนแล้ว',
+    rejected_hint:'\nพนักงานจะเห็นเหตุผลและจัดสรรใหม่',
+    err_not_rejected:'ไม่ได้ส่งคืน: ',
+    err_unknown_reason:'เหตุผลไม่ทราบ',
+    ok_stockin:'✅ รับเข้าสต็อกสำเร็จ',
+    confirm_huge_qty:'สต็อกจะถูกตั้งเป็น {n}. ค่าผิดปกติ ดำเนินการต่อ?',
+    confirm_new_inv:'สินค้านี้ไม่มีบันทึกสต็อกในคลังนี้ การปรับจะสร้างบันทึกใหม่ ดำเนินการต่อ?',
+    ok_stockout:'จ่ายออก', ok_adjust:'ปรับ', ok_done:'สำเร็จ',
+    err_upload:'อัปโหลดล้มเหลว: ',
   },
 };
 const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
 const LANG_SHORT = { 'en':'EN', 'zh-CN':'CN', 'zh-TW':'TW', 'ms':'MS', 'th':'TH' };
 let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
 if (!WH_I18N[currentLang]) currentLang = 'zh-CN';
-function t(k) { return (WH_I18N[currentLang] || WH_I18N['zh-CN'])[k] || k; }
+function t(k) {
+  const dict = WH_I18N[currentLang] || WH_I18N['zh-CN'];
+  if (k && k.startsWith('cat_')) {
+    const code = k.slice(4);
+    return (dict.cat || WH_I18N['zh-CN'].cat)[code] || code;
+  }
+  return dict[k] || k;
+}
 function toggleLangDrop() { document.getElementById('lang-drop').classList.toggle('hidden'); }
 function setLang(lang) {
   currentLang = lang;
@@ -751,7 +928,7 @@ function bulkCodeFromSheet(name) {
   return CAT_LABEL[tok] ? tok : null;
 }
 function bulkLibReady() {
-  if (typeof XLSX === 'undefined') { alert('表格组件还没加载好,请刷新页面后重试'); return false; }
+  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return false; }
   return true;
 }
 
@@ -1346,13 +1523,13 @@ async function renderDispatch() {
 async function confirmShip(itemId, orderId, allowSample = false) {
   if (_dispatching.has(itemId)) return;            // 防重复点击（决策④）
   const whId = document.getElementById('dispatch-wh')?.value;
-  if (!whId) { alert('请先在上方选择「从哪个仓库发货」'); return; }
+  if (!whId) { alert(t('err_select_wh')); return; }
   const carrier  = document.getElementById('carrier-' + orderId)?.value?.trim() || null;
   const tracking = document.getElementById('tracking-' + orderId)?.value?.trim() || null;
   const warn = tracking ? '' : '\n（未填物流单号——若是自取/上门可忽略）';
   if (allowSample) {
-    if (!confirm('⚠ 清样发货：会把最后的样品一并发出、库存扣到底，不可撤销，且会记入日志。确定继续？')) return;
-  } else if (!confirm('确认发货？此操作会扣减该仓库库存，不可撤销。' + warn)) return;
+    if (!confirm(t('confirm_clear_sample'))) return;
+  } else if (!confirm(t('confirm_ship') + warn)) return;
 
   _dispatching.add(itemId);
   const btn = document.getElementById(allowSample ? 'clr-btn-' + itemId : 'ship-btn-' + itemId);
@@ -1363,15 +1540,15 @@ async function confirmShip(itemId, orderId, allowSample = false) {
 
   _dispatching.delete(itemId);
   if (error) {
-    alert('发货失败：' + error.message);
+    alert(t('err_ship_fail') + error.message);
     if (btn) { btn.disabled = false; btn.textContent = '确认发货'; btn.classList.remove('opacity-50'); }
     return;
   }
   if (data && data.ok) {
-    alert('✅ ' + (data.message || '已发货') +
+    alert('✅ ' + (data.message || t('ok_shipped')) +
       (data.order_advanced ? '\n（该订单所有商品已发齐，订单进入「已发货」）' : ''));
   } else {
-    alert('未发货：' + (data?.message || '未知原因'));
+    alert(t('err_not_shipped') + (data?.message || t('err_unknown_reason')));
   }
   await loadAll();        // 刷新库存数字 + 角标
   await renderDispatch(); // 重新拉清单（已发的会消失）
@@ -1385,10 +1562,10 @@ async function rejectDispatch(itemId) {
   if (_dispatching.has(itemId)) return;
   const reasonSel = document.getElementById('rej-reason-' + itemId)?.value || '';
   const note      = document.getElementById('rej-note-' + itemId)?.value?.trim() || '';
-  if (reasonSel === '其他' && !note) { alert('选「其他」时请填写备注说明'); return; }
+  if (reasonSel === '其他' && !note) { alert(t('err_select_other_note')); return; }
   const reason = note ? (reasonSel + '：' + note) : reasonSel;
-  if (!reason) { alert('请选择拒绝原因'); return; }
-  if (!confirm('确认拒绝发货并退回店员？\n原因：' + reason)) return;
+  if (!reason) { alert(t('err_select_reason')); return; }
+  if (!confirm(t('confirm_reject') + reason)) return;
 
   _dispatching.add(itemId);
   const btn = document.getElementById('rej-btn-' + itemId);
@@ -1399,14 +1576,14 @@ async function rejectDispatch(itemId) {
 
   _dispatching.delete(itemId);
   if (error) {
-    alert('操作失败：' + error.message);
+    alert(t('err_op_fail') + error.message);
     if (btn) { btn.disabled = false; btn.textContent = '确认拒绝并退回'; btn.classList.remove('opacity-50'); }
     return;
   }
   if (data && data.ok) {
-    alert('✅ ' + (data.message || '已退回') + '\n店员会看到原因并改派仓库或改厂家直发');
+    alert('✅ ' + (data.message || t('ok_rejected')) + t('rejected_hint'));
   } else {
-    alert('未退回：' + (data?.message || '未知原因'));
+    alert(t('err_not_rejected') + (data?.message || t('err_unknown_reason')));
     if (btn) { btn.disabled = false; btn.textContent = '确认拒绝并退回'; btn.classList.remove('opacity-50'); }
     return;
   }
@@ -1740,7 +1917,7 @@ async function submitStockIn() {
   if (newProductSku) {
     showQR(newProductSku, newProductName);
   } else {
-    alert('✅ 入库成功');
+    alert(t('ok_stockin'));
   }
 }
 
@@ -1784,7 +1961,7 @@ async function submitStockOut() {
     if (rawQty === '' || !Number.isFinite(qty) || qty < 0) {
       err.textContent='请输入有效的调整后库存数量(>= 0)'; err.classList.remove('hidden'); return;
     }
-    if (qty > 1000000 && !confirm(`调整后库存将设为 ${qty}，数值异常巨大，确认继续？`)) return;
+    if (qty > 1000000 && !confirm(t('confirm_huge_qty').replace('{n}', qty))) return;
   }
 
   const existing = allInventory.find(r => r.product_id === prodId && r.warehouse_id === whId);
@@ -1815,7 +1992,7 @@ async function submitStockOut() {
     await sb.from('inventory_movements').insert({ product_id: prodId, warehouse_id: whId, type:'out', qty, notes, operator_id: profile.id });
   } else {
     // adjust: qty = new actual on_hand value
-    if (!existing && !confirm('该产品在此仓库原本没有库存记录,调整将新建一条库存记录,确认继续？')) return;
+    if (!existing && !confirm(t('confirm_new_inv'))) return;
     let applied = false, diff = 0;
     for (let attempt = 0; attempt < 3 && !applied; attempt++) {
       const { data: cur } = await sb.from('inventory')
@@ -1846,7 +2023,7 @@ async function submitStockOut() {
   ['so-qty','so-notes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('so-stock-hint').textContent = '';
   await loadAll();
-  alert(`✅ ${soTab==='out'?'出库':'调整'}成功`);
+  alert(`✅ ${soTab==='out'?t('ok_stockout'):t('ok_adjust')}${t('ok_done')}`);
 }
 
 // ── Movements ──
@@ -2015,7 +2192,7 @@ async function uploadProductImageFile(productId, file) {
   const { error } = await sb.storage.from(IMG_BUCKET).upload(path, file, { upsert: true });
   if (error) {
     console.warn('图片上传失败:', error.message);
-    alert('上传失败：' + error.message);
+    alert(t('err_upload') + error.message);
     return null;
   }
   return sb.storage.from(IMG_BUCKET).getPublicUrl(path).data.publicUrl;
