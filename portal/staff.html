@@ -4593,7 +4593,7 @@ async function staffMarkSupplierArrived(orderId, supId) {
     operator_id: profile.id, operator_role: profile.role, operator_name: profile.name,
     notes: noteLine,
   });
-  alert('✅ 已确认本厂家 '+n+' 件到货');
+  alert(t('ok_supplier_confirmed')+' '+n);
   await loadOrders();
   openDetail(orderId);
 }
@@ -4704,7 +4704,7 @@ async function drawingUploadFile(orderId, supId, input) {
   const ext  = (file.name.split('.').pop()||'dat').toLowerCase();
   const path = `drawings/${orderId}/${supId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
   const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert:false });
-  if (upErr) { alert('文件上传失败：'+upErr.message+'\n可改用「粘贴链接」方式'); input.value=''; return; }
+  if (upErr) { alert(t('err_upload_failed')+upErr.message); input.value=''; return; }
   const url = sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   const { data, error } = await sb.rpc('drawing_upload',
     { p_order_id: orderId, p_supplier_id: supId, p_url: url });
