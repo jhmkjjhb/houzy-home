@@ -242,42 +242,42 @@
 
         <!-- 类别选择 -->
         <div class="mb-5">
-          <label class="label mb-2">产品类别 *</label>
+          <label class="label mb-2" data-i18n="lbl_prod_cat">产品类别 *</label>
           <div class="flex flex-wrap gap-2">
-            <button data-cat="WY" onclick="selectStockInCat('WY')"
+            <button data-cat="WY" onclick="selectStockInCat('WY')" data-i18n="cat_btn_WY"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🚿 卫浴</button>
-            <button data-cat="CT" onclick="selectStockInCat('CT')"
+            <button data-cat="CT" onclick="selectStockInCat('CT')" data-i18n="cat_btn_CT"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">⬛ 瓷砖</button>
-            <button data-cat="DB" onclick="selectStockInCat('DB')"
+            <button data-cat="DB" onclick="selectStockInCat('DB')" data-i18n="cat_btn_DB"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🪵 地板</button>
-            <button data-cat="CG" onclick="selectStockInCat('CG')"
+            <button data-cat="CG" onclick="selectStockInCat('CG')" data-i18n="cat_btn_CG"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🪞 橱柜</button>
-            <button data-cat="MC" onclick="selectStockInCat('MC')"
+            <button data-cat="MC" onclick="selectStockInCat('MC')" data-i18n="cat_btn_MC"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🚪 门窗</button>
-            <button data-cat="DJ" onclick="selectStockInCat('DJ')"
+            <button data-cat="DJ" onclick="selectStockInCat('DJ')" data-i18n="cat_btn_DJ"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">💡 灯具</button>
-            <button data-cat="WJ" onclick="selectStockInCat('WJ')"
+            <button data-cat="WJ" onclick="selectStockInCat('WJ')" data-i18n="cat_btn_WJ"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">🔧 五金</button>
-            <button data-cat="QT" onclick="selectStockInCat('QT')"
+            <button data-cat="QT" onclick="selectStockInCat('QT')" data-i18n="cat_btn_QT"
               class="si-cat-btn px-4 py-2 text-sm rounded-lg border-2 border-gray-200 text-gray-600 font-medium transition-colors hover:border-gray-400">📦 其他</button>
           </div>
         </div>
 
         <!-- 卫浴子类别 -->
         <div id="si-sub-cat-row" class="hidden mb-5">
-          <label class="label mb-2">卫浴子类别 *</label>
+          <label class="label mb-2" data-i18n="lbl_sub_cat_WY">卫浴子类别 *</label>
           <div class="flex flex-wrap gap-2">
-            <button data-sub="faucet" onclick="selectStockInSub('faucet')"
+            <button data-sub="faucet" onclick="selectStockInSub('faucet')" data-i18n="sub_faucet"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🚰 龙头</button>
-            <button data-sub="shower" onclick="selectStockInSub('shower')"
+            <button data-sub="shower" onclick="selectStockInSub('shower')" data-i18n="sub_shower"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🚿 花洒</button>
-            <button data-sub="toilet-basic" onclick="selectStockInSub('toilet-basic')"
+            <button data-sub="toilet-basic" onclick="selectStockInSub('toilet-basic')" data-i18n="sub_toilet_basic"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🚽 马桶（普通）</button>
-            <button data-sub="toilet-semi" onclick="selectStockInSub('toilet-semi')"
+            <button data-sub="toilet-semi" onclick="selectStockInSub('toilet-semi')" data-i18n="sub_toilet_semi"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🚽 马桶（半智能）</button>
-            <button data-sub="toilet-smart" onclick="selectStockInSub('toilet-smart')"
+            <button data-sub="toilet-smart" onclick="selectStockInSub('toilet-smart')" data-i18n="sub_toilet_smart"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🚽 马桶（全智能）</button>
-            <button data-sub="accessory" onclick="selectStockInSub('accessory')"
+            <button data-sub="accessory" onclick="selectStockInSub('accessory')" data-i18n="sub_accessory"
               class="si-sub-btn px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 font-medium hover:border-gray-400">🔧 卫浴配件</button>
           </div>
         </div>
@@ -290,35 +290,35 @@
 
         <!-- 入库通用信息 -->
         <div class="border-t border-gray-100 pt-4">
-          <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">入库信息</div>
+          <div class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3" data-i18n="section_in_info">入库信息</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label class="label">仓库 *</label>
-              <select id="si-wh" class="input text-sm"><option value="">— 选择仓库 —</option></select>
+              <label class="label" data-i18n="lbl_warehouse">仓库 *</label>
+              <select id="si-wh" class="input text-sm"><option value="" data-i18n-opt="ph_select_wh">— 选择仓库 —</option></select>
             </div>
             <div>
-              <label class="label">产品 *</label>
+              <label class="label" data-i18n="lbl_product">产品 *</label>
               <div class="flex gap-2">
-                <select id="si-prod" class="input text-sm flex-1"><option value="">— 选择现有产品 —</option></select>
-                <button onclick="toggleNewProduct()" id="si-new-btn"
+                <select id="si-prod" class="input text-sm flex-1"><option value="" data-i18n-opt="ph_select_prod">— 选择现有产品 —</option></select>
+                <button onclick="toggleNewProduct()" id="si-new-btn" data-i18n="btn_new_prod"
                   class="flex-shrink-0 px-3 py-2 text-xs rounded-lg border-2 border-dashed font-semibold transition-colors whitespace-nowrap"
                   style="border-color:#c8a96e;color:#c8a96e">+ 新建</button>
               </div>
               <div id="si-new-prod-row" class="hidden mt-2 p-3 rounded-lg border border-dashed" style="border-color:#c8a96e55;background:#fafaf8">
                 <div class="grid grid-cols-2 gap-2 mb-2">
                   <div class="col-span-2">
-                    <label class="label">新产品名称 *</label>
-                    <input type="text" id="si-new-name" placeholder="如：TOTO龙头 TLG31001B" class="input text-sm" oninput="previewNewSku()">
+                    <label class="label" data-i18n="lbl_new_prod_name">新产品名称 *</label>
+                    <input type="text" id="si-new-name" placeholder="如：TOTO龙头 TLG31001B" data-i18n-ph="ph_si_name" class="input text-sm" oninput="previewNewSku()">
                   </div>
                   <div>
-                    <label class="label">单位</label>
+                    <label class="label" data-i18n="lbl_unit">单位</label>
                     <select id="si-new-unit" class="input text-sm">
-                      <option>件</option><option>套</option><option>片</option>
-                      <option>箱</option><option>平方米</option><option>个</option>
+                      <option data-i18n-opt="unit_pcs">件</option><option data-i18n-opt="unit_set">套</option><option data-i18n-opt="unit_sheet">片</option>
+                      <option data-i18n-opt="unit_box">箱</option><option data-i18n-opt="unit_sqm">平方米</option><option data-i18n-opt="unit_unit">个</option>
                     </select>
                   </div>
                   <div>
-                    <label class="label">低库存预警</label>
+                    <label class="label" data-i18n="lbl_min_stock">低库存预警</label>
                     <input type="number" id="si-new-min" placeholder="0" min="0" class="input text-sm">
                   </div>
                 </div>
@@ -329,24 +329,24 @@
               </div>
             </div>
             <div>
-              <label class="label">入库数量 *</label>
+              <label class="label" data-i18n="lbl_qty_in">入库数量 *</label>
               <input type="number" id="si-qty" placeholder="0" min="0.01" step="0.01" class="input text-sm" oninput="calcTileArea()">
             </div>
             <div>
-              <label class="label">单位成本（选填）</label>
+              <label class="label" data-i18n="lbl_unit_cost">单位成本（选填）</label>
               <input type="number" id="si-cost" placeholder="0.00" min="0" step="0.01" class="input text-sm">
             </div>
             <div>
-              <label class="label">建议零售价（选填）<span class="text-xs text-gray-400 font-normal ml-1">开单自动带价用</span></label>
+              <label class="label"><span data-i18n="lbl_suggest_price">建议零售价（选填）</span><span class="text-xs text-gray-400 font-normal ml-1" data-i18n="lbl_price_hint">开单自动带价用</span></label>
               <input type="number" id="si-price" placeholder="0.00" min="0" step="0.01" class="input text-sm">
             </div>
             <div id="si-batch-row" class="hidden sm:col-span-2">
-              <label class="label font-bold" style="color:#1a3a2a">瓷砖批次号 <span class="text-red-500">*</span><span class="text-xs text-gray-400 font-normal ml-1">（色差追踪专用）</span></label>
-              <input type="text" id="si-batch-no" placeholder="如：2024-05-A 或厂家批次号" class="input text-sm" style="border-color:#c8a96e">
+              <label class="label font-bold" style="color:#1a3a2a"><span data-i18n="lbl_batch_no">瓷砖批次号</span> <span class="text-red-500">*</span><span class="text-xs text-gray-400 font-normal ml-1" data-i18n="lbl_batch_hint">（色差追踪专用）</span></label>
+              <input type="text" id="si-batch-no" placeholder="如：2024-05-A 或厂家批次号" data-i18n-ph="ph_si_batch" class="input text-sm" style="border-color:#c8a96e">
             </div>
             <div class="sm:col-span-2">
-              <label class="label">备注（选填）</label>
-              <input type="text" id="si-notes" placeholder="供应商、装箱单号等备注信息" class="input text-sm">
+              <label class="label" data-i18n="lbl_notes_optional">备注（选填）</label>
+              <input type="text" id="si-notes" placeholder="供应商、装箱单号等备注信息" data-i18n-ph="ph_si_notes" class="input text-sm">
             </div>
           </div>
         </div>
@@ -361,9 +361,9 @@
       <h1 class="text-xl font-bold text-gray-800 mb-4" data-i18n="page_stockout">出库 / 库存调整</h1>
       <div class="card p-6 mb-4">
         <div class="flex gap-2 mb-4">
-          <button id="so-tab-out" onclick="setSoTab('out')"
+          <button id="so-tab-out" onclick="setSoTab('out')" data-i18n="tab_out"
                   class="px-4 py-2 text-sm font-semibold rounded-lg bg-hg text-white">出库</button>
-          <button id="so-tab-adj" onclick="setSoTab('adj')"
+          <button id="so-tab-adj" onclick="setSoTab('adj')" data-i18n="tab_adj"
                   class="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 text-gray-600">库存调整</button>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -644,6 +644,24 @@ const WH_I18N = {
     ok_stockout:'出库', ok_adjust:'调整', ok_done:'成功',
     err_upload:'上传失败：',
     mv_all_types:'全部类型', mv_in:'入库', mv_out:'出库', mv_adjust:'调整',
+    lbl_prod_cat:'产品类别', lbl_sub_cat_WY:'卫浴子类别',
+    cat_btn_WY:'🚿 卫浴', cat_btn_CT:'⬛ 瓷砖', cat_btn_DB:'🪵 地板',
+    cat_btn_CG:'🪞 橱柜', cat_btn_MC:'🚪 门窗', cat_btn_DJ:'💡 灯具',
+    cat_btn_WJ:'🔧 五金', cat_btn_QT:'📦 其他',
+    sub_faucet:'🚰 龙头', sub_shower:'🚿 花洒',
+    sub_toilet_basic:'🚽 马桶（普通）', sub_toilet_semi:'🚽 马桶（半智能）',
+    sub_toilet_smart:'🚽 马桶（全智能）', sub_accessory:'🔧 卫浴配件',
+    section_in_info:'入库信息',
+    lbl_warehouse:'仓库', lbl_product:'产品', ph_select_wh:'— 选择仓库 —',
+    ph_select_prod:'— 选择现有产品 —', btn_new_prod:'+ 新建',
+    lbl_new_prod_name:'新产品名称', lbl_unit:'单位', lbl_min_stock:'低库存预警',
+    unit_pcs:'件', unit_set:'套', unit_sheet:'片', unit_box:'箱',
+    unit_sqm:'平方米', unit_unit:'个',
+    lbl_qty_in:'入库数量', lbl_unit_cost:'单位成本（选填）',
+    lbl_suggest_price:'建议零售价（选填）', lbl_price_hint:'开单自动带价用',
+    lbl_batch_no:'瓷砖批次号', lbl_batch_hint:'（色差追踪专用）',
+    lbl_notes_optional:'备注（选填）',
+    tab_out:'出库', tab_adj:'库存调整',
   },
   'zh-TW': {
     sub_warehouse:'倉庫管理系統', lbl_email:'郵箱', lbl_password:'密碼', login_btn:'登入',
@@ -692,6 +710,24 @@ const WH_I18N = {
     ok_stockout:'出庫', ok_adjust:'調整', ok_done:'成功',
     err_upload:'上傳失敗：',
     mv_all_types:'全部類型', mv_in:'入庫', mv_out:'出庫', mv_adjust:'調整',
+    lbl_prod_cat:'產品類別', lbl_sub_cat_WY:'衛浴子類別',
+    cat_btn_WY:'🚿 衛浴', cat_btn_CT:'⬛ 瓷磚', cat_btn_DB:'🪵 地板',
+    cat_btn_CG:'🪞 櫥櫃', cat_btn_MC:'🚪 門窗', cat_btn_DJ:'💡 燈具',
+    cat_btn_WJ:'🔧 五金', cat_btn_QT:'📦 其他',
+    sub_faucet:'🚰 龍頭', sub_shower:'🚿 花灑',
+    sub_toilet_basic:'🚽 馬桶（普通）', sub_toilet_semi:'🚽 馬桶（半智能）',
+    sub_toilet_smart:'🚽 馬桶（全智能）', sub_accessory:'🔧 衛浴配件',
+    section_in_info:'入庫資訊',
+    lbl_warehouse:'倉庫', lbl_product:'產品', ph_select_wh:'— 選擇倉庫 —',
+    ph_select_prod:'— 選擇現有產品 —', btn_new_prod:'+ 新建',
+    lbl_new_prod_name:'新產品名稱', lbl_unit:'單位', lbl_min_stock:'低庫存預警',
+    unit_pcs:'件', unit_set:'套', unit_sheet:'片', unit_box:'箱',
+    unit_sqm:'平方公尺', unit_unit:'個',
+    lbl_qty_in:'入庫數量', lbl_unit_cost:'單位成本（選填）',
+    lbl_suggest_price:'建議零售價（選填）', lbl_price_hint:'開單自動帶價用',
+    lbl_batch_no:'瓷磚批次號', lbl_batch_hint:'（色差追蹤專用）',
+    lbl_notes_optional:'備註（選填）',
+    tab_out:'出庫', tab_adj:'庫存調整',
   },
   'en': {
     sub_warehouse:'Warehouse System', lbl_email:'Email', lbl_password:'Password', login_btn:'Log In',
@@ -740,6 +776,24 @@ const WH_I18N = {
     ok_stockout:'Stock-out', ok_adjust:'Adjustment', ok_done:'successful',
     err_upload:'Upload failed: ',
     mv_all_types:'All Types', mv_in:'Stock In', mv_out:'Stock Out', mv_adjust:'Adjustment',
+    lbl_prod_cat:'Product Category', lbl_sub_cat_WY:'Bathroom Sub-category',
+    cat_btn_WY:'🚿 Bathroom', cat_btn_CT:'⬛ Tile', cat_btn_DB:'🪵 Flooring',
+    cat_btn_CG:'🪞 Cabinet', cat_btn_MC:'🚪 Doors/Windows', cat_btn_DJ:'💡 Lighting',
+    cat_btn_WJ:'🔧 Hardware', cat_btn_QT:'📦 Other',
+    sub_faucet:'🚰 Faucet', sub_shower:'🚿 Shower',
+    sub_toilet_basic:'🚽 Toilet (Basic)', sub_toilet_semi:'🚽 Toilet (Semi-Smart)',
+    sub_toilet_smart:'🚽 Toilet (Smart)', sub_accessory:'🔧 Bathroom Accessory',
+    section_in_info:'Stock-In Info',
+    lbl_warehouse:'Warehouse', lbl_product:'Product', ph_select_wh:'— Select Warehouse —',
+    ph_select_prod:'— Select Existing Product —', btn_new_prod:'+ New',
+    lbl_new_prod_name:'New Product Name', lbl_unit:'Unit', lbl_min_stock:'Low Stock Alert',
+    unit_pcs:'pcs', unit_set:'set', unit_sheet:'sheet', unit_box:'box',
+    unit_sqm:'sqm', unit_unit:'unit',
+    lbl_qty_in:'Stock-In Qty', lbl_unit_cost:'Unit Cost (optional)',
+    lbl_suggest_price:'Suggested Retail (optional)', lbl_price_hint:'Auto-fill price when creating orders',
+    lbl_batch_no:'Tile Batch No.', lbl_batch_hint:'(For color matching)',
+    lbl_notes_optional:'Notes (optional)',
+    tab_out:'Stock Out', tab_adj:'Adjustment',
   },
   'ms': {
     sub_warehouse:'Sistem Gudang', lbl_email:'Email', lbl_password:'Kata Laluan', login_btn:'Log Masuk',
@@ -788,6 +842,24 @@ const WH_I18N = {
     ok_stockout:'Keluar stok', ok_adjust:'Pelarasan', ok_done:'berjaya',
     err_upload:'Muat naik gagal: ',
     mv_all_types:'Semua Jenis', mv_in:'Masuk', mv_out:'Keluar', mv_adjust:'Pelarasan',
+    lbl_prod_cat:'Kategori Produk', lbl_sub_cat_WY:'Sub-kategori Bilik Mandi',
+    cat_btn_WY:'🚿 Bilik Mandi', cat_btn_CT:'⬛ Jubin', cat_btn_DB:'🪵 Lantai',
+    cat_btn_CG:'🪞 Kabinet', cat_btn_MC:'🚪 Pintu/Tingkap', cat_btn_DJ:'💡 Pencahayaan',
+    cat_btn_WJ:'🔧 Perkakas', cat_btn_QT:'📦 Lain-lain',
+    sub_faucet:'🚰 Paip', sub_shower:'🚿 Pancuran',
+    sub_toilet_basic:'🚽 Tandas (Asas)', sub_toilet_semi:'🚽 Tandas (Separa Pintar)',
+    sub_toilet_smart:'🚽 Tandas (Pintar)', sub_accessory:'🔧 Aksesori Bilik Mandi',
+    section_in_info:'Maklumat Masuk Stok',
+    lbl_warehouse:'Gudang', lbl_product:'Produk', ph_select_wh:'— Pilih Gudang —',
+    ph_select_prod:'— Pilih Produk Sedia Ada —', btn_new_prod:'+ Baru',
+    lbl_new_prod_name:'Nama Produk Baru', lbl_unit:'Unit', lbl_min_stock:'Amaran Stok Rendah',
+    unit_pcs:'unit', unit_set:'set', unit_sheet:'helai', unit_box:'kotak',
+    unit_sqm:'m²', unit_unit:'biji',
+    lbl_qty_in:'Kuantiti Masuk', lbl_unit_cost:'Kos Unit (pilihan)',
+    lbl_suggest_price:'Harga Cadangan (pilihan)', lbl_price_hint:'Auto-isi harga semasa buat pesanan',
+    lbl_batch_no:'No. Batch Jubin', lbl_batch_hint:'(Untuk padanan warna)',
+    lbl_notes_optional:'Nota (pilihan)',
+    tab_out:'Keluar Stok', tab_adj:'Pelarasan',
   },
   'th': {
     sub_warehouse:'ระบบคลังสินค้า', lbl_email:'อีเมล', lbl_password:'รหัสผ่าน', login_btn:'เข้าสู่ระบบ',
@@ -836,6 +908,24 @@ const WH_I18N = {
     ok_stockout:'จ่ายออก', ok_adjust:'ปรับ', ok_done:'สำเร็จ',
     err_upload:'อัปโหลดล้มเหลว: ',
     mv_all_types:'ทั้งหมด', mv_in:'รับเข้า', mv_out:'จ่ายออก', mv_adjust:'ปรับ',
+    lbl_prod_cat:'หมวดหมู่สินค้า', lbl_sub_cat_WY:'หมวดย่อยห้องน้ำ',
+    cat_btn_WY:'🚿 ห้องน้ำ', cat_btn_CT:'⬛ กระเบื้อง', cat_btn_DB:'🪵 พื้น',
+    cat_btn_CG:'🪞 ตู้ครัว', cat_btn_MC:'🚪 ประตู/หน้าต่าง', cat_btn_DJ:'💡 ไฟ',
+    cat_btn_WJ:'🔧 ฮาร์ดแวร์', cat_btn_QT:'📦 อื่นๆ',
+    sub_faucet:'🚰 ก๊อก', sub_shower:'🚿 ฝักบัว',
+    sub_toilet_basic:'🚽 สุขภัณฑ์ (พื้นฐาน)', sub_toilet_semi:'🚽 สุขภัณฑ์ (กึ่งอัจฉริยะ)',
+    sub_toilet_smart:'🚽 สุขภัณฑ์ (อัจฉริยะ)', sub_accessory:'🔧 อุปกรณ์ห้องน้ำ',
+    section_in_info:'ข้อมูลรับเข้าสต็อก',
+    lbl_warehouse:'คลัง', lbl_product:'สินค้า', ph_select_wh:'— เลือกคลัง —',
+    ph_select_prod:'— เลือกสินค้าที่มีอยู่ —', btn_new_prod:'+ ใหม่',
+    lbl_new_prod_name:'ชื่อสินค้าใหม่', lbl_unit:'หน่วย', lbl_min_stock:'แจ้งเตือนสต็อกต่ำ',
+    unit_pcs:'ชิ้น', unit_set:'ชุด', unit_sheet:'แผ่น', unit_box:'กล่อง',
+    unit_sqm:'ตร.ม.', unit_unit:'อัน',
+    lbl_qty_in:'จำนวนรับเข้า', lbl_unit_cost:'ต้นทุนต่อหน่วย (ไม่บังคับ)',
+    lbl_suggest_price:'ราคาขายแนะนำ (ไม่บังคับ)', lbl_price_hint:'เติมราคาอัตโนมัติเวลาสร้างคำสั่ง',
+    lbl_batch_no:'เลขล็อตกระเบื้อง', lbl_batch_hint:'(สำหรับจับคู่สี)',
+    lbl_notes_optional:'หมายเหตุ (ไม่บังคับ)',
+    tab_out:'จ่ายออก', tab_adj:'ปรับ',
   },
 };
 const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
