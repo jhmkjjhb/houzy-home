@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HOUZY HOME — 系统入口</title>
+<title>HOUZY HOME — Portal</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -15,11 +15,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HOUZY HOME">
 <script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(e){console.warn('[PWA] SW reg failed:',e);});});}</script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#1a3a2a','gg':'#2d5e43','gd':'#c8a96e','gc':'#f5f2ed'}}}}</script>
 </head>
 <body class="bg-hg min-h-screen flex items-center justify-center p-4 cursor-pointer" style="font-family:'Noto Sans SC',sans-serif" onclick="window.location.href='https://houzyhome.com'">
+
+<!-- Floating language picker (top-right) -->
+<div class="fixed top-3 right-3 z-50" onclick="event.stopPropagation()">
+  <div class="relative">
+    <button onclick="toggleLangDrop()" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg px-3 py-2 text-xs text-white">
+      🌐 <span id="lang-label">简体中文</span>
+      <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div id="lang-drop" class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl py-1 overflow-hidden min-w-[140px]">
+      <button onclick="setLang('en')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+      <button onclick="setLang('zh-CN')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+      <button onclick="setLang('zh-TW')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁體中文</button>
+      <button onclick="setLang('ms')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+      <button onclick="setLang('th')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+    </div>
+  </div>
+</div>
 
 <div class="w-full max-w-sm cursor-default" onclick="event.stopPropagation()">
   <!-- Logo -->
@@ -42,8 +59,8 @@
       </svg>
     </div>
     <div class="flex-1">
-      <div class="text-white font-semibold">查询我的订单</div>
-      <div class="text-gray-400 text-sm">输入手机号 · 查看进度</div>
+      <div class="text-white font-semibold" data-i18n="customer_lookup_title">查询我的订单</div>
+      <div class="text-gray-400 text-sm" data-i18n="customer_lookup_sub">输入手机号 · 查看进度</div>
     </div>
     <svg class="w-4 h-4 text-gd group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -60,16 +77,16 @@
           </svg>
         </div>
         <div>
-          <div class="text-white font-semibold">员工 / 厂家 / 仓管 / 管理员</div>
-          <div class="text-gray-400 text-xs">Staff · Supplier · Warehouse · Admin</div>
+          <div class="text-white font-semibold" data-i18n="login_panel_title">员工 / 厂家 / 仓管 / 管理员</div>
+          <div class="text-gray-400 text-xs" data-i18n="login_panel_sub">Staff · Supplier · Warehouse · Admin</div>
         </div>
       </div>
       <form id="form" onsubmit="doLogin(event)" class="space-y-3">
-        <input type="email" id="email" placeholder="电邮地址 Email" required autocomplete="username"
+        <input type="email" id="email" placeholder="电邮地址 Email" data-i18n-ph="ph_email" required autocomplete="username"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        <input type="password" id="pw" placeholder="密码 Password" required autocomplete="current-password"
+        <input type="password" id="pw" placeholder="密码 Password" data-i18n-ph="ph_password" required autocomplete="current-password"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        <button type="submit" id="btn"
+        <button type="submit" id="btn" data-i18n="login_btn"
                 class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
           登录 Login
         </button>
@@ -77,21 +94,21 @@
       </form>
     </div>
     <div class="flex justify-between mt-4 text-sm">
-      <a onclick="showForgot()" class="text-gray-400 cursor-pointer hover:text-gd transition">忘记密码？</a>
-      <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition">没有账号？立即注册 →</a>
+      <a onclick="showForgot()" class="text-gray-400 cursor-pointer hover:text-gd transition" data-i18n="forgot_pw">忘记密码？</a>
+      <a onclick="showRegister()" class="text-gd cursor-pointer hover:brightness-125 transition" data-i18n="no_account">没有账号？立即注册 →</a>
     </div>
   </div>
 
   <!-- Forgot password panel -->
   <div id="forgot-panel" class="hidden">
-    <p class="mb-4"><a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a></p>
+    <p class="mb-4"><a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm" data-i18n="back_to_login">← 返回登录</a></p>
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-      <h2 class="text-white font-bold text-lg mb-2">重置密码</h2>
-      <p class="text-gray-400 text-xs mb-4">输入注册邮箱，我们将发送密码重置链接到您的邮箱。</p>
+      <h2 class="text-white font-bold text-lg mb-2" data-i18n="reset_pw_title">重置密码</h2>
+      <p class="text-gray-400 text-xs mb-4" data-i18n="reset_pw_hint">输入注册邮箱，我们将发送密码重置链接到您的邮箱。</p>
       <div class="space-y-3">
-        <input type="email" id="forgot-email" placeholder="电邮地址 Email"
+        <input type="email" id="forgot-email" placeholder="电邮地址 Email" data-i18n-ph="ph_email"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        <button onclick="submitForgot()" id="forgot-btn"
+        <button onclick="submitForgot()" id="forgot-btn" data-i18n="send_reset_link"
                 class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
           发送重置链接
         </button>
@@ -103,14 +120,14 @@
   <!-- Reset password panel -->
   <div id="reset-panel" class="hidden">
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-      <h2 class="text-white font-bold text-lg mb-2">设置新密码</h2>
-      <p class="text-gray-400 text-xs mb-4">请输入您的新密码。</p>
+      <h2 class="text-white font-bold text-lg mb-2" data-i18n="set_new_pw_title">设置新密码</h2>
+      <p class="text-gray-400 text-xs mb-4" data-i18n="set_new_pw_hint">请输入您的新密码。</p>
       <div class="space-y-3">
-        <input type="password" id="reset-pw" placeholder="新密码（至少6位）"
+        <input type="password" id="reset-pw" placeholder="新密码（至少6位）" data-i18n-ph="ph_new_pw"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        <input type="password" id="reset-pw2" placeholder="确认新密码"
+        <input type="password" id="reset-pw2" placeholder="确认新密码" data-i18n-ph="ph_confirm_pw"
                class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-        <button onclick="submitReset()" id="reset-btn"
+        <button onclick="submitReset()" id="reset-btn" data-i18n="confirm_set_btn"
                 class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
           确认设置
         </button>
@@ -122,108 +139,108 @@
   <!-- Registration panel -->
   <div id="reg-panel" class="hidden">
     <p class="mb-4">
-      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm" data-i18n="back_to_login">← 返回登录</a>
     </p>
     <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-      <h2 class="text-white font-bold text-lg mb-5">申请注册账号</h2>
+      <h2 class="text-white font-bold text-lg mb-5" data-i18n="reg_title">申请注册账号</h2>
       <div class="grid grid-cols-2 gap-2 mb-5">
         <button id="reg-btn-staff" onclick="selectRegType('staff')"
-                class="py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition">
+                class="py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition" data-i18n="role_staff">
           👤 员工 Staff
         </button>
         <button id="reg-btn-supplier" onclick="selectRegType('supplier')"
-                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition" data-i18n="role_supplier">
           🏭 厂家 Supplier
         </button>
         <button id="reg-btn-logistics" onclick="selectRegType('logistics')"
-                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition" data-i18n="role_logistics">
           🚚 物流 Logistics
         </button>
         <button id="reg-btn-warehouse" onclick="selectRegType('warehouse')"
-                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition">
+                class="py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition" data-i18n="role_warehouse">
           📦 仓管 Warehouse
         </button>
       </div>
       <div class="space-y-3">
         <!-- Staff fields -->
         <div id="reg-staff-fields" class="space-y-3">
-          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">员工编号</label>
-            <input type="text" id="reg-employee-no" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">部门</label>
-            <input type="text" id="reg-department" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">职位</label>
-            <input type="text" id="reg-position" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_name">姓名 *</label>
+            <input type="text" id="reg-name" placeholder="请输入姓名" data-i18n-ph="ph_enter_name" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_phone">手机号 *</label>
+            <input type="tel" id="reg-phone" placeholder="请输入手机号" data-i18n-ph="ph_enter_phone" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_email">邮箱 *</label>
+            <input type="email" id="reg-email" placeholder="请输入邮箱地址" data-i18n-ph="ph_enter_email" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_emp_no">员工编号</label>
+            <input type="text" id="reg-employee-no" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_dept">部门</label>
+            <input type="text" id="reg-department" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_position">职位</label>
+            <input type="text" id="reg-position" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_store">所属店面 *</label>
             <select id="reg-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-              <option value="" style="background:#1a3a2a">请选择所属店面</option>
+              <option value="" style="background:#1a3a2a" data-i18n-opt="opt_select_store">请选择所属店面</option>
             </select></div>
         </div>
         <!-- Supplier fields -->
         <div id="reg-supplier-fields" class="space-y-3 hidden">
-          <div><label class="block text-xs text-gray-400 mb-1">厂家名称 *</label>
-            <input type="text" id="reg-company" placeholder="请输入公司名称" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">联系人姓名 *</label>
-            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">统一社会信用代码</label>
-            <input type="text" id="reg-credit-code" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">公司地址</label>
-            <input type="text" id="reg-address" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_company">厂家名称 *</label>
+            <input type="text" id="reg-company" placeholder="请输入公司名称" data-i18n-ph="ph_enter_company" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_contact_name">联系人姓名 *</label>
+            <input type="text" id="reg-sup-name" placeholder="请输入联系人姓名" data-i18n-ph="ph_enter_contact" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_phone">手机号 *</label>
+            <input type="tel" id="reg-sup-phone" placeholder="请输入手机号" data-i18n-ph="ph_enter_phone" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_email">邮箱 *</label>
+            <input type="email" id="reg-sup-email" placeholder="请输入邮箱地址" data-i18n-ph="ph_enter_email" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_credit_code">统一社会信用代码</label>
+            <input type="text" id="reg-credit-code" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_company_addr">公司地址</label>
+            <input type="text" id="reg-address" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
           <div>
-            <label class="block text-xs text-gray-400 mb-2">专业供应产品类型（可多选）</label>
+            <label class="block text-xs text-gray-400 mb-2" data-i18n="lbl_product_types">专业供应产品类型（可多选）</label>
             <div class="grid grid-cols-3 gap-2">
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WY"><span class="text-sm text-gray-300">卫浴</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="CG"><span class="text-sm text-gray-300">橱柜</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DB"><span class="text-sm text-gray-300">地板/地砖</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DJ"><span class="text-sm text-gray-300">灯具</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="MC"><span class="text-sm text-gray-300">门窗</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="JJ"><span class="text-sm text-gray-300">家具</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WJ"><span class="text-sm text-gray-300">五金</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DQ"><span class="text-sm text-gray-300">电器</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="TL"><span class="text-sm text-gray-300">涂料/壁纸</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="QT"><span class="text-sm text-gray-300">其他</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WY"><span class="text-sm text-gray-300" data-i18n="pt_WY">卫浴</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="CG"><span class="text-sm text-gray-300" data-i18n="pt_CG">橱柜</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DB"><span class="text-sm text-gray-300" data-i18n="pt_DB">地板/地砖</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DJ"><span class="text-sm text-gray-300" data-i18n="pt_DJ">灯具</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="MC"><span class="text-sm text-gray-300" data-i18n="pt_MC">门窗</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="JJ"><span class="text-sm text-gray-300" data-i18n="pt_JJ">家具</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="WJ"><span class="text-sm text-gray-300" data-i18n="pt_WJ">五金</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="DQ"><span class="text-sm text-gray-300" data-i18n="pt_DQ">电器</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="TL"><span class="text-sm text-gray-300" data-i18n="pt_TL">涂料/壁纸</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="reg-pt-check accent-yellow-400" value="QT"><span class="text-sm text-gray-300" data-i18n="pt_QT">其他</span></label>
             </div>
           </div>
         </div>
         <!-- Logistics fields -->
         <div id="reg-logistics-fields" class="space-y-3 hidden">
-          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-log-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-log-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">公司/团队名称</label>
-            <input type="text" id="reg-log-company" placeholder="选填" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_name">姓名 *</label>
+            <input type="text" id="reg-log-name" placeholder="请输入姓名" data-i18n-ph="ph_enter_name" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_phone">手机号 *</label>
+            <input type="tel" id="reg-log-phone" placeholder="请输入手机号" data-i18n-ph="ph_enter_phone" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_email">邮箱 *</label>
+            <input type="email" id="reg-log-email" placeholder="请输入邮箱地址" data-i18n-ph="ph_enter_email" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_team_company">公司/团队名称</label>
+            <input type="text" id="reg-log-company" placeholder="选填" data-i18n-ph="ph_optional" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
         </div>
         <!-- Warehouse fields -->
         <div id="reg-warehouse-fields" class="space-y-3 hidden">
-          <div><label class="block text-xs text-gray-400 mb-1">姓名 *</label>
-            <input type="text" id="reg-wh-name" placeholder="请输入姓名" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">手机号 *</label>
-            <input type="tel" id="reg-wh-phone" placeholder="请输入手机号" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">邮箱 *</label>
-            <input type="email" id="reg-wh-email" placeholder="请输入邮箱地址" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-          <div><label class="block text-xs text-gray-400 mb-1">所属店面 *</label>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_name">姓名 *</label>
+            <input type="text" id="reg-wh-name" placeholder="请输入姓名" data-i18n-ph="ph_enter_name" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_phone">手机号 *</label>
+            <input type="tel" id="reg-wh-phone" placeholder="请输入手机号" data-i18n-ph="ph_enter_phone" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_email">邮箱 *</label>
+            <input type="email" id="reg-wh-email" placeholder="请输入邮箱地址" data-i18n-ph="ph_enter_email" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+          <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_store">所属店面 *</label>
             <select id="reg-wh-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
-              <option value="" style="background:#1a3a2a">请选择所属店面</option>
+              <option value="" style="background:#1a3a2a" data-i18n-opt="opt_select_store">请选择所属店面</option>
             </select></div>
         </div>
         <!-- Password -->
-        <div><label class="block text-xs text-gray-400 mb-1">密码 *</label>
-          <input type="password" id="reg-pw" placeholder="请设置登录密码" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-        <div><label class="block text-xs text-gray-400 mb-1">确认密码 *</label>
-          <input type="password" id="reg-pw2" placeholder="请再次输入密码" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
-        <button onclick="submitReg()" id="reg-btn-submit"
+        <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_password">密码 *</label>
+          <input type="password" id="reg-pw" placeholder="请设置登录密码" data-i18n-ph="ph_set_pw" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+        <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_confirm_pw">确认密码 *</label>
+          <input type="password" id="reg-pw2" placeholder="请再次输入密码" data-i18n-ph="ph_reenter_pw" class="w-full bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd"></div>
+        <button onclick="submitReg()" id="reg-btn-submit" data-i18n="submit_btn"
                 class="w-full py-3 bg-gd text-hg font-bold rounded-lg hover:brightness-110 transition text-sm">
           提交申请
         </button>
@@ -233,7 +250,7 @@
   </div>
 
   <p class="text-center text-gray-600 text-xs mt-8">© 2026 HOUZY HOME SDN. BHD.</p>
-  <p class="text-center text-gray-700 text-xs mt-2 opacity-50">点击空白处返回官网</p>
+  <p class="text-center text-gray-700 text-xs mt-2 opacity-50" data-i18n="click_to_home">点击空白处返回官网</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -241,6 +258,451 @@
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ============================================================================
+// 5 语言 i18n 系统 (en / zh-CN / zh-TW / ms / th) — 用户 2026-06-02 全语言补齐
+// ============================================================================
+const LOGIN_I18N = {
+  'zh-CN': {
+    customer_lookup_title: '查询我的订单',
+    customer_lookup_sub: '输入手机号 · 查看进度',
+    login_panel_title: '员工 / 厂家 / 仓管 / 管理员',
+    login_panel_sub: 'Staff · Supplier · Warehouse · Admin',
+    ph_email: '电邮地址 Email',
+    ph_password: '密码 Password',
+    login_btn: '登录 Login',
+    forgot_pw: '忘记密码？',
+    no_account: '没有账号？立即注册 →',
+    back_to_login: '← 返回登录',
+    reset_pw_title: '重置密码',
+    reset_pw_hint: '输入注册邮箱，我们将发送密码重置链接到您的邮箱。',
+    send_reset_link: '发送重置链接',
+    set_new_pw_title: '设置新密码',
+    set_new_pw_hint: '请输入您的新密码。',
+    ph_new_pw: '新密码（至少6位）',
+    ph_confirm_pw: '确认新密码',
+    confirm_set_btn: '确认设置',
+    reg_title: '申请注册账号',
+    role_staff: '👤 员工 Staff',
+    role_supplier: '🏭 厂家 Supplier',
+    role_logistics: '🚚 物流 Logistics',
+    role_warehouse: '📦 仓管 Warehouse',
+    lbl_name: '姓名 *',
+    lbl_phone: '手机号 *',
+    lbl_email: '邮箱 *',
+    lbl_emp_no: '员工编号',
+    lbl_dept: '部门',
+    lbl_position: '职位',
+    lbl_store: '所属店面 *',
+    lbl_company: '厂家名称 *',
+    lbl_contact_name: '联系人姓名 *',
+    lbl_credit_code: '统一社会信用代码',
+    lbl_company_addr: '公司地址',
+    lbl_product_types: '专业供应产品类型（可多选）',
+    lbl_team_company: '公司/团队名称',
+    lbl_password: '密码 *',
+    lbl_confirm_pw: '确认密码 *',
+    ph_enter_name: '请输入姓名',
+    ph_enter_phone: '请输入手机号',
+    ph_enter_email: '请输入邮箱地址',
+    ph_enter_company: '请输入公司名称',
+    ph_enter_contact: '请输入联系人姓名',
+    ph_set_pw: '请设置登录密码',
+    ph_reenter_pw: '请再次输入密码',
+    ph_optional: '选填',
+    opt_select_store: '请选择所属店面',
+    submit_btn: '提交申请',
+    click_to_home: '点击空白处返回官网',
+    pt_WY: '卫浴', pt_CG: '橱柜', pt_DB: '地板/地砖', pt_DJ: '灯具', pt_MC: '门窗',
+    pt_JJ: '家具', pt_WJ: '五金', pt_DQ: '电器', pt_TL: '涂料/壁纸', pt_QT: '其他',
+    logging_in: '登录中...',
+    err_invalid_creds: '邮箱或密码错误，请重新输入',
+    err_email_not_verified: '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）',
+    err_acc_disabled: '账号已被停用，请联系管理员',
+    err_login_failed: '登录失败：',
+    err_no_profile: '账号资料未找到，可能正在审核中或审批未完成，请联系管理员确认。',
+    err_enter_email: '请输入邮箱地址',
+    sending: '发送中...',
+    err_send_failed: '发送失败：',
+    reset_link_sent: '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。',
+    err_pw_length: '密码至少需要6位',
+    err_pw_mismatch: '两次密码不一致',
+    setting_pw: '设置中...',
+    err_set_failed: '设置失败：',
+    pw_updated: '✅ 密码已更新！正在跳转登录…',
+    err_fill_basic: '请填写姓名、手机号和邮箱',
+    err_select_store: '请选择所属店面',
+    err_fill_supplier: '请填写厂家名称、联系人姓名、手机号和邮箱',
+    submitting: '提交中...',
+    err_rate_limit: '提交过于频繁，请稍后再试',
+    err_email_format: '邮箱地址格式不正确',
+    err_pw_req: '密码不符合要求，请使用至少6位字符',
+    err_acc_create_fail: '账号创建失败：',
+    err_submit_fail: '提交失败（错误详情）：',
+    submitted_title: '申请已提交！',
+    submitted_step1: '请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）',
+    submitted_step2: '邮箱确认后，请等待管理员审核，审核通过后即可登录',
+  },
+  'zh-TW': {
+    customer_lookup_title: '查詢我的訂單',
+    customer_lookup_sub: '輸入手機號 · 查看進度',
+    login_panel_title: '店員 / 廠家 / 倉管 / 管理員',
+    login_panel_sub: 'Staff · Supplier · Warehouse · Admin',
+    ph_email: '電郵地址 Email',
+    ph_password: '密碼 Password',
+    login_btn: '登入 Login',
+    forgot_pw: '忘記密碼？',
+    no_account: '沒有帳號？立即註冊 →',
+    back_to_login: '← 返回登入',
+    reset_pw_title: '重設密碼',
+    reset_pw_hint: '輸入註冊郵箱，我們將發送密碼重設連結到您的郵箱。',
+    send_reset_link: '發送重設連結',
+    set_new_pw_title: '設定新密碼',
+    set_new_pw_hint: '請輸入您的新密碼。',
+    ph_new_pw: '新密碼（至少6位）',
+    ph_confirm_pw: '確認新密碼',
+    confirm_set_btn: '確認設定',
+    reg_title: '申請註冊帳號',
+    role_staff: '👤 員工 Staff',
+    role_supplier: '🏭 廠家 Supplier',
+    role_logistics: '🚚 物流 Logistics',
+    role_warehouse: '📦 倉管 Warehouse',
+    lbl_name: '姓名 *',
+    lbl_phone: '手機號 *',
+    lbl_email: '郵箱 *',
+    lbl_emp_no: '員工編號',
+    lbl_dept: '部門',
+    lbl_position: '職位',
+    lbl_store: '所屬店面 *',
+    lbl_company: '廠家名稱 *',
+    lbl_contact_name: '聯絡人姓名 *',
+    lbl_credit_code: '統一社會信用代碼',
+    lbl_company_addr: '公司地址',
+    lbl_product_types: '專業供應產品類型（可多選）',
+    lbl_team_company: '公司/團隊名稱',
+    lbl_password: '密碼 *',
+    lbl_confirm_pw: '確認密碼 *',
+    ph_enter_name: '請輸入姓名',
+    ph_enter_phone: '請輸入手機號',
+    ph_enter_email: '請輸入郵箱地址',
+    ph_enter_company: '請輸入公司名稱',
+    ph_enter_contact: '請輸入聯絡人姓名',
+    ph_set_pw: '請設定登入密碼',
+    ph_reenter_pw: '請再次輸入密碼',
+    ph_optional: '選填',
+    opt_select_store: '請選擇所屬店面',
+    submit_btn: '提交申請',
+    click_to_home: '點擊空白處返回官網',
+    pt_WY: '衛浴', pt_CG: '櫥櫃', pt_DB: '地板/地磚', pt_DJ: '燈具', pt_MC: '門窗',
+    pt_JJ: '傢俱', pt_WJ: '五金', pt_DQ: '電器', pt_TL: '塗料/壁紙', pt_QT: '其他',
+    logging_in: '登入中...',
+    err_invalid_creds: '郵箱或密碼錯誤，請重新輸入',
+    err_email_not_verified: '郵箱尚未驗證，請先點擊註冊時收到的確認郵件（請檢查垃圾郵件箱）',
+    err_acc_disabled: '帳號已被停用，請聯絡管理員',
+    err_login_failed: '登入失敗：',
+    err_no_profile: '帳號資料未找到，可能正在審核中或審批未完成，請聯絡管理員確認。',
+    err_enter_email: '請輸入郵箱地址',
+    sending: '發送中...',
+    err_send_failed: '發送失敗：',
+    reset_link_sent: '✅ 重設連結已發送，請檢查您的郵箱（包括垃圾郵件）。',
+    err_pw_length: '密碼至少需要6位',
+    err_pw_mismatch: '兩次密碼不一致',
+    setting_pw: '設定中...',
+    err_set_failed: '設定失敗：',
+    pw_updated: '✅ 密碼已更新！正在跳轉登入…',
+    err_fill_basic: '請填寫姓名、手機號和郵箱',
+    err_select_store: '請選擇所屬店面',
+    err_fill_supplier: '請填寫廠家名稱、聯絡人姓名、手機號和郵箱',
+    submitting: '提交中...',
+    err_rate_limit: '提交過於頻繁，請稍後再試',
+    err_email_format: '郵箱地址格式不正確',
+    err_pw_req: '密碼不符合要求，請使用至少6位字元',
+    err_acc_create_fail: '帳號建立失敗：',
+    err_submit_fail: '提交失敗（錯誤詳情）：',
+    submitted_title: '申請已提交！',
+    submitted_step1: '請前往您的郵箱，點擊確認連結以啟動帳號（注意查看垃圾郵件）',
+    submitted_step2: '郵箱確認後，請等待管理員審核，審核通過後即可登入',
+  },
+  'en': {
+    customer_lookup_title: 'Track My Order',
+    customer_lookup_sub: 'Enter phone number to view progress',
+    login_panel_title: 'Staff / Supplier / Warehouse / Admin',
+    login_panel_sub: 'Internal Portal Login',
+    ph_email: 'Email Address',
+    ph_password: 'Password',
+    login_btn: 'Log In',
+    forgot_pw: 'Forgot password?',
+    no_account: 'No account? Register now →',
+    back_to_login: '← Back to login',
+    reset_pw_title: 'Reset Password',
+    reset_pw_hint: 'Enter your registered email and we will send you a password reset link.',
+    send_reset_link: 'Send Reset Link',
+    set_new_pw_title: 'Set New Password',
+    set_new_pw_hint: 'Please enter your new password.',
+    ph_new_pw: 'New password (min 6 chars)',
+    ph_confirm_pw: 'Confirm new password',
+    confirm_set_btn: 'Confirm',
+    reg_title: 'Register New Account',
+    role_staff: '👤 Staff',
+    role_supplier: '🏭 Supplier',
+    role_logistics: '🚚 Logistics',
+    role_warehouse: '📦 Warehouse',
+    lbl_name: 'Name *',
+    lbl_phone: 'Phone *',
+    lbl_email: 'Email *',
+    lbl_emp_no: 'Employee No.',
+    lbl_dept: 'Department',
+    lbl_position: 'Position',
+    lbl_store: 'Store *',
+    lbl_company: 'Supplier Name *',
+    lbl_contact_name: 'Contact Name *',
+    lbl_credit_code: 'Business Registration No.',
+    lbl_company_addr: 'Company Address',
+    lbl_product_types: 'Product Categories (multi-select)',
+    lbl_team_company: 'Company / Team Name',
+    lbl_password: 'Password *',
+    lbl_confirm_pw: 'Confirm Password *',
+    ph_enter_name: 'Enter your name',
+    ph_enter_phone: 'Enter your phone',
+    ph_enter_email: 'Enter your email',
+    ph_enter_company: 'Enter company name',
+    ph_enter_contact: 'Enter contact name',
+    ph_set_pw: 'Set login password',
+    ph_reenter_pw: 'Re-enter password',
+    ph_optional: 'Optional',
+    opt_select_store: 'Please select a store',
+    submit_btn: 'Submit Application',
+    click_to_home: 'Click outside to return to website',
+    pt_WY: 'Bathroom', pt_CG: 'Kitchen Cabinet', pt_DB: 'Flooring / Tiles', pt_DJ: 'Lighting',
+    pt_MC: 'Doors & Windows', pt_JJ: 'Furniture', pt_WJ: 'Hardware', pt_DQ: 'Appliances',
+    pt_TL: 'Paint / Wallpaper', pt_QT: 'Other',
+    logging_in: 'Logging in...',
+    err_invalid_creds: 'Invalid email or password, please try again',
+    err_email_not_verified: 'Email not verified. Please click the confirmation link sent at registration (check spam folder).',
+    err_acc_disabled: 'Account disabled. Please contact admin.',
+    err_login_failed: 'Login failed: ',
+    err_no_profile: 'Profile not found. May still be under review or approval pending. Please contact admin.',
+    err_enter_email: 'Please enter your email',
+    sending: 'Sending...',
+    err_send_failed: 'Send failed: ',
+    reset_link_sent: '✅ Reset link sent. Please check your inbox (and spam folder).',
+    err_pw_length: 'Password must be at least 6 characters',
+    err_pw_mismatch: 'Passwords do not match',
+    setting_pw: 'Setting...',
+    err_set_failed: 'Failed: ',
+    pw_updated: '✅ Password updated! Redirecting to login…',
+    err_fill_basic: 'Please fill in name, phone and email',
+    err_select_store: 'Please select a store',
+    err_fill_supplier: 'Please fill in supplier name, contact, phone and email',
+    submitting: 'Submitting...',
+    err_rate_limit: 'Too many requests. Please try again later.',
+    err_email_format: 'Invalid email format',
+    err_pw_req: 'Password must be at least 6 characters',
+    err_acc_create_fail: 'Account creation failed: ',
+    err_submit_fail: 'Submission failed: ',
+    submitted_title: 'Application Submitted!',
+    submitted_step1: 'Please check your email and click the confirmation link to activate (check spam folder)',
+    submitted_step2: 'After email confirmation, please wait for admin approval before logging in',
+  },
+  'ms': {
+    customer_lookup_title: 'Jejak Pesanan Saya',
+    customer_lookup_sub: 'Masukkan nombor telefon untuk lihat kemajuan',
+    login_panel_title: 'Staf / Pembekal / Gudang / Admin',
+    login_panel_sub: 'Portal Dalaman',
+    ph_email: 'Alamat Email',
+    ph_password: 'Kata Laluan',
+    login_btn: 'Log Masuk',
+    forgot_pw: 'Lupa kata laluan?',
+    no_account: 'Tiada akaun? Daftar sekarang →',
+    back_to_login: '← Kembali ke log masuk',
+    reset_pw_title: 'Set Semula Kata Laluan',
+    reset_pw_hint: 'Masukkan email berdaftar, kami akan hantar pautan set semula.',
+    send_reset_link: 'Hantar Pautan',
+    set_new_pw_title: 'Set Kata Laluan Baru',
+    set_new_pw_hint: 'Sila masukkan kata laluan baru anda.',
+    ph_new_pw: 'Kata laluan baru (min 6 aksara)',
+    ph_confirm_pw: 'Sahkan kata laluan baru',
+    confirm_set_btn: 'Sahkan',
+    reg_title: 'Daftar Akaun Baru',
+    role_staff: '👤 Staf',
+    role_supplier: '🏭 Pembekal',
+    role_logistics: '🚚 Logistik',
+    role_warehouse: '📦 Gudang',
+    lbl_name: 'Nama *',
+    lbl_phone: 'Telefon *',
+    lbl_email: 'Email *',
+    lbl_emp_no: 'No. Pekerja',
+    lbl_dept: 'Jabatan',
+    lbl_position: 'Jawatan',
+    lbl_store: 'Cawangan *',
+    lbl_company: 'Nama Pembekal *',
+    lbl_contact_name: 'Nama Hubungan *',
+    lbl_credit_code: 'No. Pendaftaran Perniagaan',
+    lbl_company_addr: 'Alamat Syarikat',
+    lbl_product_types: 'Kategori Produk (pelbagai pilihan)',
+    lbl_team_company: 'Nama Syarikat / Pasukan',
+    lbl_password: 'Kata Laluan *',
+    lbl_confirm_pw: 'Sahkan Kata Laluan *',
+    ph_enter_name: 'Masukkan nama anda',
+    ph_enter_phone: 'Masukkan telefon anda',
+    ph_enter_email: 'Masukkan email anda',
+    ph_enter_company: 'Masukkan nama syarikat',
+    ph_enter_contact: 'Masukkan nama hubungan',
+    ph_set_pw: 'Tetapkan kata laluan',
+    ph_reenter_pw: 'Masukkan semula kata laluan',
+    ph_optional: 'Pilihan',
+    opt_select_store: 'Sila pilih cawangan',
+    submit_btn: 'Hantar Permohonan',
+    click_to_home: 'Klik di luar untuk kembali ke laman web',
+    pt_WY: 'Bilik Mandi', pt_CG: 'Kabinet Dapur', pt_DB: 'Lantai / Jubin', pt_DJ: 'Pencahayaan',
+    pt_MC: 'Pintu & Tingkap', pt_JJ: 'Perabot', pt_WJ: 'Perkakas', pt_DQ: 'Elektrik',
+    pt_TL: 'Cat / Wallpaper', pt_QT: 'Lain-lain',
+    logging_in: 'Sedang log masuk...',
+    err_invalid_creds: 'Email atau kata laluan salah, sila cuba lagi',
+    err_email_not_verified: 'Email belum disahkan. Sila klik pautan pengesahan yang dihantar semasa pendaftaran (semak folder spam).',
+    err_acc_disabled: 'Akaun dimatikan. Sila hubungi admin.',
+    err_login_failed: 'Log masuk gagal: ',
+    err_no_profile: 'Profil tidak dijumpai. Mungkin masih menunggu kelulusan. Sila hubungi admin.',
+    err_enter_email: 'Sila masukkan email anda',
+    sending: 'Menghantar...',
+    err_send_failed: 'Hantar gagal: ',
+    reset_link_sent: '✅ Pautan set semula telah dihantar. Sila semak email anda (dan folder spam).',
+    err_pw_length: 'Kata laluan mesti sekurang-kurangnya 6 aksara',
+    err_pw_mismatch: 'Kata laluan tidak sepadan',
+    setting_pw: 'Menetapkan...',
+    err_set_failed: 'Gagal: ',
+    pw_updated: '✅ Kata laluan dikemas kini! Mengarah ke log masuk…',
+    err_fill_basic: 'Sila isi nama, telefon dan email',
+    err_select_store: 'Sila pilih cawangan',
+    err_fill_supplier: 'Sila isi nama pembekal, hubungan, telefon dan email',
+    submitting: 'Menghantar...',
+    err_rate_limit: 'Terlalu banyak permintaan. Sila cuba lagi nanti.',
+    err_email_format: 'Format email tidak sah',
+    err_pw_req: 'Kata laluan mesti sekurang-kurangnya 6 aksara',
+    err_acc_create_fail: 'Penciptaan akaun gagal: ',
+    err_submit_fail: 'Penghantaran gagal: ',
+    submitted_title: 'Permohonan Dihantar!',
+    submitted_step1: 'Sila semak email dan klik pautan pengesahan untuk mengaktifkan akaun (semak folder spam)',
+    submitted_step2: 'Selepas pengesahan email, sila tunggu kelulusan admin sebelum log masuk',
+  },
+  'th': {
+    customer_lookup_title: 'ติดตามคำสั่งซื้อของฉัน',
+    customer_lookup_sub: 'ป้อนหมายเลขโทรศัพท์เพื่อดูความคืบหน้า',
+    login_panel_title: 'พนักงาน / ผู้ผลิต / คลังสินค้า / ผู้ดูแล',
+    login_panel_sub: 'พอร์ทัลภายใน',
+    ph_email: 'อีเมล',
+    ph_password: 'รหัสผ่าน',
+    login_btn: 'เข้าสู่ระบบ',
+    forgot_pw: 'ลืมรหัสผ่าน?',
+    no_account: 'ยังไม่มีบัญชี? ลงทะเบียน →',
+    back_to_login: '← กลับสู่หน้าเข้าระบบ',
+    reset_pw_title: 'รีเซ็ตรหัสผ่าน',
+    reset_pw_hint: 'ป้อนอีเมลที่ลงทะเบียน เราจะส่งลิงก์รีเซ็ตให้คุณ',
+    send_reset_link: 'ส่งลิงก์รีเซ็ต',
+    set_new_pw_title: 'ตั้งรหัสผ่านใหม่',
+    set_new_pw_hint: 'กรุณาป้อนรหัสผ่านใหม่ของคุณ',
+    ph_new_pw: 'รหัสผ่านใหม่ (ขั้นต่ำ 6 ตัวอักษร)',
+    ph_confirm_pw: 'ยืนยันรหัสผ่านใหม่',
+    confirm_set_btn: 'ยืนยัน',
+    reg_title: 'ลงทะเบียนบัญชีใหม่',
+    role_staff: '👤 พนักงาน',
+    role_supplier: '🏭 ผู้ผลิต',
+    role_logistics: '🚚 โลจิสติกส์',
+    role_warehouse: '📦 คลังสินค้า',
+    lbl_name: 'ชื่อ *',
+    lbl_phone: 'โทรศัพท์ *',
+    lbl_email: 'อีเมล *',
+    lbl_emp_no: 'รหัสพนักงาน',
+    lbl_dept: 'แผนก',
+    lbl_position: 'ตำแหน่ง',
+    lbl_store: 'สาขา *',
+    lbl_company: 'ชื่อผู้ผลิต *',
+    lbl_contact_name: 'ชื่อผู้ติดต่อ *',
+    lbl_credit_code: 'เลขทะเบียนนิติบุคคล',
+    lbl_company_addr: 'ที่อยู่บริษัท',
+    lbl_product_types: 'หมวดหมู่สินค้า (เลือกได้หลายรายการ)',
+    lbl_team_company: 'ชื่อบริษัท / ทีมงาน',
+    lbl_password: 'รหัสผ่าน *',
+    lbl_confirm_pw: 'ยืนยันรหัสผ่าน *',
+    ph_enter_name: 'ป้อนชื่อของคุณ',
+    ph_enter_phone: 'ป้อนเบอร์โทรของคุณ',
+    ph_enter_email: 'ป้อนอีเมลของคุณ',
+    ph_enter_company: 'ป้อนชื่อบริษัท',
+    ph_enter_contact: 'ป้อนชื่อผู้ติดต่อ',
+    ph_set_pw: 'ตั้งรหัสผ่านเข้าระบบ',
+    ph_reenter_pw: 'ป้อนรหัสผ่านอีกครั้ง',
+    ph_optional: 'ไม่บังคับ',
+    opt_select_store: 'กรุณาเลือกสาขา',
+    submit_btn: 'ส่งใบสมัคร',
+    click_to_home: 'คลิกพื้นที่ว่างเพื่อกลับสู่เว็บไซต์',
+    pt_WY: 'ห้องน้ำ', pt_CG: 'ตู้ครัว', pt_DB: 'พื้น / กระเบื้อง', pt_DJ: 'ไฟ',
+    pt_MC: 'ประตู & หน้าต่าง', pt_JJ: 'เฟอร์นิเจอร์', pt_WJ: 'ฮาร์ดแวร์', pt_DQ: 'เครื่องใช้ไฟฟ้า',
+    pt_TL: 'สี / วอลเปเปอร์', pt_QT: 'อื่นๆ',
+    logging_in: 'กำลังเข้าระบบ...',
+    err_invalid_creds: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+    err_email_not_verified: 'อีเมลยังไม่ได้ยืนยัน กรุณาคลิกลิงก์ยืนยันที่ส่งให้ตอนลงทะเบียน (ตรวจสอบในโฟลเดอร์สแปม)',
+    err_acc_disabled: 'บัญชีถูกระงับ กรุณาติดต่อผู้ดูแล',
+    err_login_failed: 'เข้าระบบล้มเหลว: ',
+    err_no_profile: 'ไม่พบโปรไฟล์ อาจกำลังรอการอนุมัติ กรุณาติดต่อผู้ดูแล',
+    err_enter_email: 'กรุณาป้อนอีเมล',
+    sending: 'กำลังส่ง...',
+    err_send_failed: 'ส่งล้มเหลว: ',
+    reset_link_sent: '✅ ส่งลิงก์รีเซ็ตแล้ว กรุณาตรวจสอบอีเมล (รวมถึงโฟลเดอร์สแปม)',
+    err_pw_length: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    err_pw_mismatch: 'รหัสผ่านไม่ตรงกัน',
+    setting_pw: 'กำลังตั้ง...',
+    err_set_failed: 'ล้มเหลว: ',
+    pw_updated: '✅ อัปเดตรหัสผ่านแล้ว! กำลังนำไปหน้าเข้าระบบ…',
+    err_fill_basic: 'กรุณากรอกชื่อ เบอร์โทร และอีเมล',
+    err_select_store: 'กรุณาเลือกสาขา',
+    err_fill_supplier: 'กรุณากรอกชื่อผู้ผลิต ชื่อผู้ติดต่อ เบอร์โทร และอีเมล',
+    submitting: 'กำลังส่ง...',
+    err_rate_limit: 'ส่งคำขอบ่อยเกินไป กรุณาลองใหม่ภายหลัง',
+    err_email_format: 'รูปแบบอีเมลไม่ถูกต้อง',
+    err_pw_req: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+    err_acc_create_fail: 'สร้างบัญชีล้มเหลว: ',
+    err_submit_fail: 'ส่งล้มเหลว: ',
+    submitted_title: 'ส่งใบสมัครแล้ว!',
+    submitted_step1: 'กรุณาตรวจสอบอีเมลและคลิกลิงก์ยืนยันเพื่อเปิดใช้งานบัญชี (ตรวจสอบในโฟลเดอร์สแปม)',
+    submitted_step2: 'หลังจากยืนยันอีเมล กรุณารอการอนุมัติจากผู้ดูแลก่อนเข้าระบบ',
+  },
+};
+const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
+let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
+if (!LOGIN_I18N[currentLang]) currentLang = 'zh-CN';
+function t(k) { return (LOGIN_I18N[currentLang] || LOGIN_I18N['zh-CN'])[k] || k; }
+
+function toggleLangDrop() {
+  document.getElementById('lang-drop').classList.toggle('hidden');
+}
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('houzy-lang', lang);
+  const lbl = LANG_LABELS[lang] || lang;
+  const lblEl = document.getElementById('lang-label'); if (lblEl) lblEl.textContent = lbl;
+  document.getElementById('lang-drop')?.classList.add('hidden');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n); if (v) el.textContent = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.dataset.i18nPh); if (v) el.placeholder = v;
+  });
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const v = t(el.dataset.i18nOpt); if (v) el.textContent = v;
+  });
+  document.body.style.fontFamily = lang === 'th' ? "'Noto Sans Thai',sans-serif" : "'Noto Sans SC',sans-serif";
+  // 让 HTML lang 属性也同步（无障碍/SEO）
+  document.documentElement.lang = lang;
+}
+// 启动时应用一次
+window.addEventListener('DOMContentLoaded', () => setLang(currentLang));
+// 点外面收菜单
+document.addEventListener('click', (e) => {
+  const drop = document.getElementById('lang-drop');
+  if (!drop || drop.classList.contains('hidden')) return;
+  if (e.target.closest('button')?.getAttribute('onclick')?.includes('toggleLangDrop')) return;
+  drop.classList.add('hidden');
+});
 
 sb.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY') showPanel('reset-panel');
@@ -256,19 +718,19 @@ sb.auth.onAuthStateChange((event, session) => {
 async function doLogin(e) {
   e.preventDefault();
   const btn = document.getElementById('btn'), err = document.getElementById('err');
-  btn.textContent = '登录中...'; btn.disabled = true; err.classList.add('hidden');
+  btn.textContent = t('logging_in'); btn.disabled = true; err.classList.add('hidden');
   const { error } = await sb.auth.signInWithPassword({
     email: document.getElementById('email').value,
     password: document.getElementById('pw').value
   });
   if (error) {
     const m = error.message || '';
-    if (m.includes('Invalid') || m.includes('invalid')) err.textContent = '邮箱或密码错误，请重新输入';
-    else if (m.includes('not confirmed')) err.textContent = '邮箱尚未验证，请先点击注册时收到的确认邮件（请检查垃圾邮件箱）';
-    else if (m.includes('disabled') || m.includes('banned')) err.textContent = '账号已被停用，请联系管理员';
-    else err.textContent = '登录失败：' + m;
+    if (m.includes('Invalid') || m.includes('invalid')) err.textContent = t('err_invalid_creds');
+    else if (m.includes('not confirmed')) err.textContent = t('err_email_not_verified');
+    else if (m.includes('disabled') || m.includes('banned')) err.textContent = t('err_acc_disabled');
+    else err.textContent = t('err_login_failed') + m;
     err.classList.remove('hidden');
-    btn.textContent = '登录 Login'; btn.disabled = false;
+    btn.textContent = t('login_btn'); btn.disabled = false;
     return;
   }
   redirect();
@@ -285,9 +747,10 @@ function showForgot() { showPanel('forgot-panel'); }
 async function showRegister() {
   showPanel('reg-panel');
   const { data } = await sb.from('stores').select('id, name').eq('active', true).order('name');
+  const noStoreOpt = `<option value="" style="background:#1a3a2a">${t('opt_select_store')}</option>`;
   const opts = data?.length
-    ? '<option value="" style="background:#1a3a2a">请选择所属店面</option>' + data.map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('')
-    : '<option value="" style="background:#1a3a2a">请选择所属店面</option>';
+    ? noStoreOpt + data.map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('')
+    : noStoreOpt;
   ['reg-store','reg-wh-store'].forEach(id => {
     const sel = document.getElementById(id);
     if (sel && sel.options.length <= 1) sel.innerHTML = opts;
@@ -303,9 +766,9 @@ async function redirect(data) {
   if (!data) {
     await sb.auth.signOut();
     const err = document.getElementById('err');
-    err.textContent = '账号资料未找到，可能正在审核中或审批未完成，请联系管理员确认。';
+    err.textContent = t('err_no_profile');
     err.classList.remove('hidden');
-    document.getElementById('btn').textContent = '登录 Login';
+    document.getElementById('btn').textContent = t('login_btn');
     document.getElementById('btn').disabled = false;
     return;
   }
@@ -321,11 +784,11 @@ async function redirect(data) {
 async function submitForgot() {
   const email = document.getElementById('forgot-email').value.trim();
   const btn = document.getElementById('forgot-btn'), msg = document.getElementById('forgot-msg');
-  if (!email) { msg.textContent = '请输入邮箱地址'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
-  btn.textContent = '发送中...'; btn.disabled = true;
+  if (!email) { msg.textContent = t('err_enter_email'); msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = t('sending'); btn.disabled = true;
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-  btn.textContent = '发送重置链接'; btn.disabled = false;
-  msg.textContent = error ? '发送失败：' + error.message : '✅ 重置链接已发送，请检查您的邮箱（包括垃圾邮件）。';
+  btn.textContent = t('send_reset_link'); btn.disabled = false;
+  msg.textContent = error ? t('err_send_failed') + error.message : t('reset_link_sent');
   msg.className = 'text-xs ' + (error ? 'text-red-400' : 'text-green-400');
   msg.classList.remove('hidden');
 }
@@ -333,23 +796,23 @@ async function submitForgot() {
 async function submitReset() {
   const pw = document.getElementById('reset-pw').value, pw2 = document.getElementById('reset-pw2').value;
   const btn = document.getElementById('reset-btn'), msg = document.getElementById('reset-msg');
-  if (!pw || pw.length < 6) { msg.textContent = '密码至少需要6位'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
-  if (pw !== pw2) { msg.textContent = '两次密码不一致'; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
-  btn.textContent = '设置中...'; btn.disabled = true;
+  if (!pw || pw.length < 6) { msg.textContent = t('err_pw_length'); msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  if (pw !== pw2) { msg.textContent = t('err_pw_mismatch'); msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); return; }
+  btn.textContent = t('setting_pw'); btn.disabled = true;
   const { error } = await sb.auth.updateUser({ password: pw });
-  btn.textContent = '确认设置'; btn.disabled = false;
-  if (error) { msg.textContent = '设置失败：' + error.message; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); }
-  else { msg.textContent = '✅ 密码已更新！正在跳转登录…'; msg.className = 'text-xs text-green-400'; msg.classList.remove('hidden'); setTimeout(() => { window.location.hash = ''; redirect(); }, 1500); }
+  btn.textContent = t('confirm_set_btn'); btn.disabled = false;
+  if (error) { msg.textContent = t('err_set_failed') + error.message; msg.className = 'text-xs text-red-400'; msg.classList.remove('hidden'); }
+  else { msg.textContent = t('pw_updated'); msg.className = 'text-xs text-green-400'; msg.classList.remove('hidden'); setTimeout(() => { window.location.hash = ''; redirect(); }, 1500); }
 }
 
 let regType = 'staff';
-function selectRegType(t) {
-  regType = t;
+function selectRegType(tt) {
+  regType = tt;
   const on  = 'py-3 rounded-lg border-2 border-gd bg-white/10 text-white text-xs font-medium transition';
   const off = 'py-3 rounded-lg border-2 border-white/20 bg-white/5 text-gray-400 text-xs font-medium transition';
   ['staff','supplier','logistics','warehouse'].forEach(type => {
-    const b = document.getElementById(`reg-btn-${type}`); if (b) b.className = type===t ? on : off;
-    const f = document.getElementById(`reg-${type}-fields`); if (f) f.classList.toggle('hidden', type!==t);
+    const b = document.getElementById(`reg-btn-${type}`); if (b) b.className = type===tt ? on : off;
+    const f = document.getElementById(`reg-${type}-fields`); if (f) f.classList.toggle('hidden', type!==tt);
   });
 }
 
@@ -364,8 +827,8 @@ async function submitReg() {
     phone = document.getElementById('reg-phone').value.trim();
     email = document.getElementById('reg-email').value.trim();
     const storeId = document.getElementById('reg-store')?.value;
-    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
-    if (!storeId) { errEl.textContent='请选择所属店面'; errEl.classList.remove('hidden'); return; }
+    if (!name||!phone||!email) { errEl.textContent=t('err_fill_basic'); errEl.classList.remove('hidden'); return; }
+    if (!storeId) { errEl.textContent=t('err_select_store'); errEl.classList.remove('hidden'); return; }
     payload = { ...payload, name, phone, email, store_id: storeId,
       employee_no: document.getElementById('reg-employee-no').value.trim()||null,
       department:  document.getElementById('reg-department').value.trim()||null,
@@ -375,7 +838,7 @@ async function submitReg() {
     name  = document.getElementById('reg-sup-name').value.trim();
     phone = document.getElementById('reg-sup-phone').value.trim();
     email = document.getElementById('reg-sup-email').value.trim();
-    if (!company||!name||!phone||!email) { errEl.textContent='请填写厂家名称、联系人姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
+    if (!company||!name||!phone||!email) { errEl.textContent=t('err_fill_supplier'); errEl.classList.remove('hidden'); return; }
     const checkedPts = [...document.querySelectorAll('.reg-pt-check:checked')].map(el => el.value);
     payload = { ...payload, company_name: company, name, phone, email,
       credit_code: document.getElementById('reg-credit-code').value.trim()||null,
@@ -385,23 +848,23 @@ async function submitReg() {
     name  = document.getElementById('reg-log-name').value.trim();
     phone = document.getElementById('reg-log-phone').value.trim();
     email = document.getElementById('reg-log-email').value.trim();
-    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
+    if (!name||!phone||!email) { errEl.textContent=t('err_fill_basic'); errEl.classList.remove('hidden'); return; }
     payload = { ...payload, name, phone, email, company_name: document.getElementById('reg-log-company').value.trim()||null };
   } else {
     name  = document.getElementById('reg-wh-name').value.trim();
     phone = document.getElementById('reg-wh-phone').value.trim();
     email = document.getElementById('reg-wh-email').value.trim();
     const storeId = document.getElementById('reg-wh-store')?.value;
-    if (!name||!phone||!email) { errEl.textContent='请填写姓名、手机号和邮箱'; errEl.classList.remove('hidden'); return; }
-    if (!storeId) { errEl.textContent='请选择所属店面'; errEl.classList.remove('hidden'); return; }
+    if (!name||!phone||!email) { errEl.textContent=t('err_fill_basic'); errEl.classList.remove('hidden'); return; }
+    if (!storeId) { errEl.textContent=t('err_select_store'); errEl.classList.remove('hidden'); return; }
     payload = { ...payload, name, phone, email, store_id: storeId };
   }
 
   const pw = document.getElementById('reg-pw').value, pw2 = document.getElementById('reg-pw2').value;
-  if (!pw||pw.length<6) { errEl.textContent='密码至少需要6位'; errEl.classList.remove('hidden'); return; }
-  if (pw!==pw2) { errEl.textContent='两次输入的密码不一致'; errEl.classList.remove('hidden'); return; }
+  if (!pw||pw.length<6) { errEl.textContent=t('err_pw_length'); errEl.classList.remove('hidden'); return; }
+  if (pw!==pw2) { errEl.textContent=t('err_pw_mismatch'); errEl.classList.remove('hidden'); return; }
 
-  btn.textContent = '提交中...'; btn.disabled = true;
+  btn.textContent = t('submitting'); btn.disabled = true;
 
   let userId = null;
   const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pw, options: { data: { name, role: regType } } });
@@ -410,13 +873,13 @@ async function submitReg() {
     if (msg.includes('already registered') || msg.includes('already')) {
       // already exists, continue
     } else if (msg.includes('rate limit') || msg.includes('429')) {
-      errEl.textContent = '提交过于频繁，请稍后再试'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
+      errEl.textContent = t('err_rate_limit'); errEl.classList.remove('hidden'); btn.textContent=t('submit_btn'); btn.disabled=false; return;
     } else if (msg.includes('invalid') && msg.includes('email')) {
-      errEl.textContent = '邮箱地址格式不正确'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
+      errEl.textContent = t('err_email_format'); errEl.classList.remove('hidden'); btn.textContent=t('submit_btn'); btn.disabled=false; return;
     } else if (msg.includes('Password') || msg.includes('password')) {
-      errEl.textContent = '密码不符合要求，请使用至少6位字符'; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
+      errEl.textContent = t('err_pw_req'); errEl.classList.remove('hidden'); btn.textContent=t('submit_btn'); btn.disabled=false; return;
     } else {
-      errEl.textContent = '账号创建失败：' + msg; errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
+      errEl.textContent = t('err_acc_create_fail') + msg; errEl.classList.remove('hidden'); btn.textContent=t('submit_btn'); btn.disabled=false; return;
     }
   } else {
     userId = authData?.user?.id || null;
@@ -428,23 +891,22 @@ async function submitReg() {
 
   if (insErr) {
     const imsg = insErr.message || '';
-    // Show raw error for debugging
-    errEl.textContent = '提交失败（错误详情）：' + imsg;
-    errEl.classList.remove('hidden'); btn.textContent='提交申请'; btn.disabled=false; return;
+    errEl.textContent = t('err_submit_fail') + imsg;
+    errEl.classList.remove('hidden'); btn.textContent=t('submit_btn'); btn.disabled=false; return;
   }
 
-  btn.textContent = '提交申请'; btn.disabled = false;
+  btn.textContent = t('submit_btn'); btn.disabled = false;
   document.getElementById('reg-panel').innerHTML = `
     <div class="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
       <div class="text-4xl mb-4">✅</div>
-      <h2 class="text-white font-bold text-lg mb-3">申请已提交！</h2>
+      <h2 class="text-white font-bold text-lg mb-3">${t('submitted_title')}</h2>
       <div class="text-left space-y-3 mb-6">
         <div class="flex items-start gap-3"><span class="text-gd font-bold flex-shrink-0">1.</span>
-          <p class="text-gray-300 text-sm">请前往您的邮箱，点击确认链接以激活账号（注意查看垃圾邮件）</p></div>
+          <p class="text-gray-300 text-sm">${t('submitted_step1')}</p></div>
         <div class="flex items-start gap-3"><span class="text-gd font-bold flex-shrink-0">2.</span>
-          <p class="text-gray-300 text-sm">邮箱确认后，请等待管理员审核，审核通过后即可登录</p></div>
+          <p class="text-gray-300 text-sm">${t('submitted_step2')}</p></div>
       </div>
-      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">← 返回登录</a>
+      <a onclick="showLogin()" class="text-gd cursor-pointer hover:brightness-125 transition text-sm">${t('back_to_login')}</a>
     </div>`;
 }
 </script>
