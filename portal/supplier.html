@@ -149,6 +149,9 @@ const SUP_I18N = {
     group_my_logistics:'马来西亚物流', group_sea_logistics:'海运船公司', group_cn_logistics:'国内快递', logistics_other:'其他（自填）',
     ph_company_custom:'填写物流公司名称',
     required:'*', ph_required:'必填',
+    confirm_ship_btn:'确认发货', ship_submitted:'✓ 发货信息已提交',
+    section_items:'商品明细', section_log_sup:'操作日志',
+    lbl_model_spec:'型号：', lbl_qty:'数量：',
   },
   'zh-TW': {
     logout:'登出', page_title:'我的訂單', detail_title:'訂單詳情', back:'← 返回', print_btn:'列印任務單',
@@ -189,6 +192,9 @@ const SUP_I18N = {
     group_my_logistics:'馬來西亞物流', group_sea_logistics:'海運船公司', group_cn_logistics:'國內快遞', logistics_other:'其他（自填）',
     ph_company_custom:'填寫物流公司名稱',
     required:'*', ph_required:'必填',
+    confirm_ship_btn:'確認發貨', ship_submitted:'✓ 發貨資訊已提交',
+    section_items:'商品明細', section_log_sup:'操作日誌',
+    lbl_model_spec:'型號：', lbl_qty:'數量：',
   },
   'en': {
     logout:'Logout', page_title:'My Orders', detail_title:'Order Detail', back:'← Back', print_btn:'Print Task Sheet',
@@ -229,6 +235,9 @@ const SUP_I18N = {
     group_my_logistics:'Malaysia Logistics', group_sea_logistics:'Sea Lines', group_cn_logistics:'China Express', logistics_other:'Other (custom)',
     ph_company_custom:'Enter logistics company name',
     required:'*', ph_required:'Required',
+    confirm_ship_btn:'Confirm Ship', ship_submitted:'✓ Shipping info submitted',
+    section_items:'Items', section_log_sup:'Activity Log',
+    lbl_model_spec:'Spec: ', lbl_qty:'Qty: ',
   },
   'ms': {
     logout:'Log Keluar', page_title:'Pesanan Saya', detail_title:'Butiran Pesanan', back:'← Kembali', print_btn:'Cetak Tugasan',
@@ -269,6 +278,9 @@ const SUP_I18N = {
     group_my_logistics:'Logistik Malaysia', group_sea_logistics:'Syarikat Laut', group_cn_logistics:'Ekspres China', logistics_other:'Lain (taip sendiri)',
     ph_company_custom:'Masukkan nama syarikat logistik',
     required:'*', ph_required:'Wajib',
+    confirm_ship_btn:'Sahkan Hantar', ship_submitted:'✓ Maklumat penghantaran dihantar',
+    section_items:'Item', section_log_sup:'Log Aktiviti',
+    lbl_model_spec:'Spesifikasi: ', lbl_qty:'Kuantiti: ',
   },
   'th': {
     logout:'ออกจากระบบ', page_title:'คำสั่งซื้อของฉัน', detail_title:'รายละเอียดคำสั่งซื้อ', back:'← กลับ', print_btn:'พิมพ์ใบงาน',
@@ -309,6 +321,9 @@ const SUP_I18N = {
     group_my_logistics:'โลจิสติกส์มาเลเซีย', group_sea_logistics:'สายเรือ', group_cn_logistics:'ส่งจีน', logistics_other:'อื่นๆ (กำหนดเอง)',
     ph_company_custom:'ป้อนชื่อบริษัทขนส่ง',
     required:'*', ph_required:'จำเป็น',
+    confirm_ship_btn:'ยืนยันการจัดส่ง', ship_submitted:'✓ ส่งข้อมูลแล้ว',
+    section_items:'รายการสินค้า', section_log_sup:'บันทึกกิจกรรม',
+    lbl_model_spec:'สเปก: ', lbl_qty:'จำนวน: ',
   },
 };
 const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -736,132 +751,132 @@ async function openDetail(id) {
     <div class="bg-orange-50 rounded-xl border-2 border-orange-300 p-5">
       <div class="flex items-center gap-2 mb-3">
         <span class="text-xl">⏳</span>
-        <h3 class="font-bold text-orange-700 text-base">此订单等待您接单确认</h3>
+        <h3 class="font-bold text-orange-700 text-base">${t('waiting_accept')}</h3>
       </div>
       <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-600 mb-1">接单备注（可选，如：预计完成天数）</label>
-        <input type="text" id="accept-notes" placeholder="如：预计7个工作日完成"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('accept_notes_lbl')}</label>
+        <input type="text" id="accept-notes" placeholder="${t('accept_notes_ph')}"
                class="w-full border border-orange-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400">
       </div>
       <button onclick="detailAccept('${o.id}')"
               class="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 text-base mb-3">
-        ✓ 确认接单
+        ${t('accept_confirm')}
       </button>
       <button onclick="detailReject('${o.id}')"
               class="w-full py-2.5 border border-red-200 text-red-500 font-medium rounded-xl hover:bg-red-50 text-sm">
-        ✗ 无法接单（填写原因）
+        ${t('reject_with_reason')}
       </button>
     </div>`;
 
   } else if (!mySub && st === 'accepted') {
     actionSection = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">开始生产</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">${t('section_start_prod')}</h3>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">备注（预计完成时间等）</label>
-        <input type="text" id="start-notes" placeholder="如：已安排生产，预计5天完成"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('start_notes_lbl')}</label>
+        <input type="text" id="start-notes" placeholder="${t('start_notes_ph')}"
                class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
       </div>
       <button onclick="detailStartProd('${o.id}')"
               class="w-full py-2.5 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-700 text-sm">
-        → 开始生产
+        ${t('btn_start_prod')}
       </button>
     </div>`;
 
   } else if (mySub === 'producing' || (!mySub && st === 'in_production')) {
     actionSection = `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-4">更新生产进度</h3>
+      <h3 class="font-semibold text-gray-800 mb-4">${t('update_prod_section')}</h3>
       <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-600 mb-2">当前阶段</label>
+        <label class="block text-xs font-medium text-gray-600 mb-2">${t('current_stage')}</label>
         <div class="grid grid-cols-2 gap-2">
           ${PROD_STAGES.map(s=>`
             <button onclick="selectStage(this)" data-label="${s.label}"
                     class="stage-btn py-2.5 px-3 text-xs border border-gray-200 rounded-lg text-gray-600 transition">
-              ${s.label}
+              ${t('stage_'+s.key) || s.label}
             </button>`).join('')}
         </div>
       </div>
       <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-600 mb-1">备注说明</label>
-        <input type="text" id="prod-notes" placeholder="如：材料已到位，预计3天完成"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('notes_lbl')}</label>
+        <input type="text" id="prod-notes" placeholder="${t('notes_ph_prod')}"
                class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
       </div>
       <div class="grid grid-cols-2 gap-3">
         <button onclick="updateProdProgress('${o.id}')"
                 class="py-2.5 border border-hg text-hg font-medium rounded-lg hover:bg-hg hover:text-white transition text-sm">
-          更新进度
+          ${t('btn_update')}
         </button>
         <button onclick="markProdComplete('${o.id}')"
                 class="py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg text-sm">
-          ✓ 生产完成
+          ${t('btn_prod_done')}
         </button>
       </div>
-      <p id="prod-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 进度已更新</p>
+      <p id="prod-msg" class="text-green-600 text-sm mt-2 text-center hidden">${t('updated_ok')}</p>
     </div>`;
 
   } else if (mySub === 'ready' || (!mySub && st === 'production_complete')) {
     actionSection = `
     <div class="bg-indigo-50 rounded-xl border border-indigo-200 p-5 mb-4">
-      <h3 class="font-semibold text-indigo-700 mb-4">填写发货信息</h3>
+      <h3 class="font-semibold text-indigo-700 mb-4">${t('section_ship_info')}</h3>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">运输方式 <span class="text-red-500">*</span></label>
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_ship_method')} <span class="text-red-500">${t('required')}</span></label>
         <select id="ship-method"
                 class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
-          <option value="">请选择运输方式</option>
-          <option value="land">🚛 陆运</option>
-          <option value="sea">🚢 海运</option>
-          <option value="air">✈️ 空运</option>
+          <option value="">${t('ph_select_method')}</option>
+          <option value="land">${t('method_land')}</option>
+          <option value="sea">${t('method_sea')}</option>
+          <option value="air">${t('method_air')}</option>
         </select>
       </div>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">物流公司 <span class="text-red-500">*</span></label>
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_ship_company')} <span class="text-red-500">${t('required')}</span></label>
         <select id="ship-company"
                 class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400"
                 onchange="document.getElementById('ship-company-custom').classList.toggle('hidden',this.value!=='其他')">
-          <option value="">请选择物流公司</option>
-          <optgroup label="马来西亚物流">
+          <option value="">${t('ph_select_logistics')}</option>
+          <optgroup label="${t('group_my_logistics')}">
             ${LOGISTICS_MY.map(l=>`<option value="${l}">${l}</option>`).join('')}
           </optgroup>
-          <optgroup label="海运船公司">
+          <optgroup label="${t('group_sea_logistics')}">
             ${LOGISTICS_SEA.map(l=>`<option value="${l}">${l}</option>`).join('')}
           </optgroup>
-          <optgroup label="国内快递">
+          <optgroup label="${t('group_cn_logistics')}">
             ${LOGISTICS_CN.map(l=>`<option value="${l}">${l}</option>`).join('')}
           </optgroup>
-          <option value="其他">其他（自填）</option>
+          <option value="其他">${t('logistics_other')}</option>
         </select>
-        <input type="text" id="ship-company-custom" placeholder="填写物流公司名称"
+        <input type="text" id="ship-company-custom" placeholder="${t('ph_company_custom')}"
                class="hidden w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 mt-2">
       </div>
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
-        <input type="text" id="ship-tracking" placeholder="请输入物流单号"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_tracking')} <span class="text-red-500">${t('required')}</span></label>
+        <input type="text" id="ship-tracking" placeholder="${t('ph_tracking')}"
                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 font-mono">
       </div>
       <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-600 mb-1">发货备注（可选）</label>
-        <input type="text" id="ship-notes" placeholder="如：分两批发货"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_ship_notes')}</label>
+        <input type="text" id="ship-notes" placeholder="${t('lbl_ship_notes')}"
                class="w-full border border-indigo-200 bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400">
       </div>
       <button onclick="submitShipping('${o.id}')"
               class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition text-sm">
-        确认发货
+        ${t('confirm_ship_btn') || '确认发货'}
       </button>
-      <p id="ship-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 发货信息已提交</p>
+      <p id="ship-msg" class="text-green-600 text-sm mt-2 text-center hidden">${t('ship_submitted') || '✓ 发货信息已提交'}</p>
     </div>`;
   }
 
   const itemsHtml = (items||[]).length ? `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">商品明细</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">${t('section_items')||'商品明细'}</h3>
       <div class="space-y-2">
         ${(items||[]).map(it=>`
           <div class="bg-gray-50 rounded-lg p-3 text-sm">
             <div class="font-medium text-gray-800">${esc(it.product_name)||'-'}</div>
-            ${it.model_spec?`<div class="text-gray-500 text-xs mt-0.5">型号：${esc(it.model_spec)}</div>`:''}
+            ${it.model_spec?`<div class="text-gray-500 text-xs mt-0.5">${t('lbl_model_spec')}${esc(it.model_spec)}</div>`:''}
             <div class="flex gap-4 mt-1 text-xs text-gray-500">
-              <span>数量：<span class="font-medium text-gray-700">${esc(it.quantity)} ${esc(it.unit)}</span></span>
+              <span>${t('lbl_qty')}<span class="font-medium text-gray-700">${esc(it.quantity)} ${esc(it.unit)}</span></span>
             </div>
             ${it.notes?`<div class="text-gray-500 text-xs mt-1 italic">${esc(it.notes)}</div>`:''}
           </div>`).join('')}
