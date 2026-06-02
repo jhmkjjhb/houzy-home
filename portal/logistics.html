@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HOUZY HOME — 物流门户</title>
+<title>HOUZY HOME — Logistics</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="HOUZY HOME">
 <script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(e){console.warn('[PWA] SW reg failed:',e);});});}</script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Thai:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{'hg':'#153927','gg':'#245640','gd':'#c8a96e','gc':'#fbf8f1'}}}}</script>
 <link rel="stylesheet" href="houzy-brand.css?v=5">
@@ -30,9 +30,22 @@
       <img src="/favicon.svg" alt="HOUZY" class="w-7 h-7 rounded-md flex-shrink-0">
       <span class="text-white text-sm hz-serif" style="font-weight:700;letter-spacing:.5px">HOUZY HOME</span>
     </a>
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
+      <!-- Language picker -->
+      <div class="relative">
+        <button onclick="toggleLangDrop()" class="flex items-center gap-1 text-gd hover:text-white text-xs border border-white/20 px-2 py-1 rounded">
+          🌐 <span id="lang-label">简体中文</span>
+        </button>
+        <div id="lang-drop" class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl py-1 overflow-hidden min-w-[140px] z-50">
+          <button onclick="setLang('en')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
+          <button onclick="setLang('zh-CN')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
+          <button onclick="setLang('zh-TW')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁體中文</button>
+          <button onclick="setLang('ms')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
+          <button onclick="setLang('th')" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
+        </div>
+      </div>
       <span id="log-name" class="text-gd text-sm"></span>
-      <button onclick="logout()" class="text-gray-400 hover:text-white text-xs border border-white/20 px-3 py-1 rounded">退出</button>
+      <button onclick="logout()" class="text-gray-400 hover:text-white text-xs border border-white/20 px-3 py-1 rounded" data-i18n="logout">退出</button>
     </div>
   </div>
 </nav>
@@ -40,16 +53,16 @@
 <!-- Orders list -->
 <div id="v-orders" class="max-w-3xl mx-auto px-4 py-6">
   <div class="flex items-center justify-between mb-5">
-    <h1 class="text-lg font-bold text-gray-800">物流管理</h1>
+    <h1 class="text-lg font-bold text-gray-800" data-i18n="page_title">物流管理</h1>
     <span id="order-count" class="text-sm text-gray-400"></span>
   </div>
 
   <!-- Status filter -->
   <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
-    <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)">全部</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)">待揽件</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_transit',this)">运输中</button>
-    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('arrived',this)">已到货</button>
+    <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('',this)" data-i18n="filter_all">全部</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('shipped',this)" data-i18n="filter_shipped">待揽件</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('in_transit',this)" data-i18n="filter_transit">运输中</button>
+    <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" onclick="setFilter('arrived',this)" data-i18n="filter_arrived">已到货</button>
   </div>
 
   <div id="orders-list"></div>
@@ -58,8 +71,8 @@
 <!-- Order detail -->
 <div id="v-detail" class="hidden max-w-3xl mx-auto px-4 py-6">
   <div class="flex items-center gap-3 mb-5">
-    <button onclick="show('v-orders')" class="text-gray-400 hover:text-gray-600">← 返回</button>
-    <h1 class="text-lg font-bold text-gray-800">订单详情</h1>
+    <button onclick="show('v-orders')" class="text-gray-400 hover:text-gray-600" data-i18n="back">← 返回</button>
+    <h1 class="text-lg font-bold text-gray-800" data-i18n="detail_title">订单详情</h1>
   </div>
   <div id="detail-content"></div>
 </div>
@@ -76,31 +89,213 @@ const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
 let profile = null, allOrders = [], currentFilter = '';
+let loadError = null;
+
+// ============================================================================
+// 5 语言 i18n
+// ============================================================================
+const LG_I18N = {
+  'zh-CN': {
+    logout: '退出', page_title: '物流管理', detail_title: '订单详情', back: '← 返回',
+    filter_all: '全部', filter_shipped: '待揽件', filter_transit: '运输中', filter_arrived: '已到货',
+    st_production_complete: '生产完成/待提货', st_shipped: '已发货/运输中', st_in_transit: '在途',
+    st_arrived: '已到货', st_installing: '安装中', st_completed: '已完成',
+    btn_picked_up: '已揽件发出', btn_signed: '已到货签收',
+    no_permission: '权限不足',
+    load_failed: '订单加载失败',
+    retry_hint: '请检查网络或权限后重试',
+    no_orders: '暂无需要处理的物流订单',
+    delivered_wait: '✅ 已交付，等待门店安装',
+    count_pfx: '共 ', count_sfx: ' 条',
+    from_prefix: '来自: ',
+    detail_btn: '详情',
+    ph_tracking_required: '请填写物流单号（必填）：',
+    err_tracking_required: '必须填写物流单号',
+    ph_update_notes: '更新到「{label}」，填写备注（可选）：',
+    err_update_failed: '更新失败: ',
+    tracking_prefix: '物流单号：',
+    loading: '加载中…',
+    lbl_tracking: '物流单号', lbl_notes: '备注', ph_notes_optional: '可选备注',
+    section_update: '更新物流状态',
+    updated_ok: '✓ 已更新',
+    lbl_customer: '客户', lbl_phone: '手机', lbl_address: '地址', lbl_amount: '金额',
+    lbl_from_supplier: '来源厂家', lbl_logistics_notes: '物流备注',
+    section_log: '物流日志',
+    no_logs: '暂无记录',
+    required_mark: '*',
+    ph_required: '必填',
+  },
+  'zh-TW': {
+    logout: '登出', page_title: '物流管理', detail_title: '訂單詳情', back: '← 返回',
+    filter_all: '全部', filter_shipped: '待攬件', filter_transit: '運輸中', filter_arrived: '已到貨',
+    st_production_complete: '生產完成/待提貨', st_shipped: '已發貨/運輸中', st_in_transit: '在途',
+    st_arrived: '已到貨', st_installing: '安裝中', st_completed: '已完成',
+    btn_picked_up: '已攬件發出', btn_signed: '已到貨簽收',
+    no_permission: '權限不足',
+    load_failed: '訂單載入失敗',
+    retry_hint: '請檢查網路或權限後重試',
+    no_orders: '暫無需要處理的物流訂單',
+    delivered_wait: '✅ 已交付，等待門店安裝',
+    count_pfx: '共 ', count_sfx: ' 筆',
+    from_prefix: '來自: ',
+    detail_btn: '詳情',
+    ph_tracking_required: '請填寫物流單號（必填）：',
+    err_tracking_required: '必須填寫物流單號',
+    ph_update_notes: '更新到「{label}」，填寫備註（可選）：',
+    err_update_failed: '更新失敗: ',
+    tracking_prefix: '物流單號：',
+    loading: '載入中…',
+    lbl_tracking: '物流單號', lbl_notes: '備註', ph_notes_optional: '可選備註',
+    section_update: '更新物流狀態',
+    updated_ok: '✓ 已更新',
+    lbl_customer: '客戶', lbl_phone: '手機', lbl_address: '地址', lbl_amount: '金額',
+    lbl_from_supplier: '來源廠家', lbl_logistics_notes: '物流備註',
+    section_log: '物流日誌',
+    no_logs: '暫無記錄',
+    required_mark: '*',
+    ph_required: '必填',
+  },
+  'en': {
+    logout: 'Logout', page_title: 'Logistics', detail_title: 'Order Detail', back: '← Back',
+    filter_all: 'All', filter_shipped: 'Awaiting Pickup', filter_transit: 'In Transit', filter_arrived: 'Arrived',
+    st_production_complete: 'Production Done / Pickup', st_shipped: 'Shipped / In Transit', st_in_transit: 'In Transit',
+    st_arrived: 'Arrived', st_installing: 'Installing', st_completed: 'Completed',
+    btn_picked_up: 'Picked Up', btn_signed: 'Delivered',
+    no_permission: 'No permission',
+    load_failed: 'Failed to load orders',
+    retry_hint: 'Please check network or permissions and retry',
+    no_orders: 'No logistics orders pending',
+    delivered_wait: '✅ Delivered, awaiting store installation',
+    count_pfx: '', count_sfx: ' orders',
+    from_prefix: 'From: ',
+    detail_btn: 'Detail',
+    ph_tracking_required: 'Please enter tracking number (required):',
+    err_tracking_required: 'Tracking number is required',
+    ph_update_notes: 'Update to "{label}", notes (optional):',
+    err_update_failed: 'Update failed: ',
+    tracking_prefix: 'Tracking: ',
+    loading: 'Loading…',
+    lbl_tracking: 'Tracking No.', lbl_notes: 'Notes', ph_notes_optional: 'Optional notes',
+    section_update: 'Update Logistics Status',
+    updated_ok: '✓ Updated',
+    lbl_customer: 'Customer', lbl_phone: 'Phone', lbl_address: 'Address', lbl_amount: 'Amount',
+    lbl_from_supplier: 'Supplier', lbl_logistics_notes: 'Logistics Notes',
+    section_log: 'Logistics Log',
+    no_logs: 'No records',
+    required_mark: '*',
+    ph_required: 'Required',
+  },
+  'ms': {
+    logout: 'Log Keluar', page_title: 'Logistik', detail_title: 'Butiran Pesanan', back: '← Kembali',
+    filter_all: 'Semua', filter_shipped: 'Menunggu Pickup', filter_transit: 'Dalam Transit', filter_arrived: 'Tiba',
+    st_production_complete: 'Pengeluaran Siap / Pickup', st_shipped: 'Dihantar / Transit', st_in_transit: 'Dalam Transit',
+    st_arrived: 'Tiba', st_installing: 'Pemasangan', st_completed: 'Selesai',
+    btn_picked_up: 'Diambil', btn_signed: 'Tiba & Ditandatangani',
+    no_permission: 'Tiada kebenaran',
+    load_failed: 'Gagal memuat pesanan',
+    retry_hint: 'Sila semak rangkaian atau kebenaran dan cuba lagi',
+    no_orders: 'Tiada pesanan logistik tertunggak',
+    delivered_wait: '✅ Telah dihantar, menunggu pemasangan',
+    count_pfx: '', count_sfx: ' pesanan',
+    from_prefix: 'Dari: ',
+    detail_btn: 'Butiran',
+    ph_tracking_required: 'Sila masukkan nombor penjejakan (wajib):',
+    err_tracking_required: 'Nombor penjejakan diperlukan',
+    ph_update_notes: 'Kemas kini kepada "{label}", nota (pilihan):',
+    err_update_failed: 'Kemas kini gagal: ',
+    tracking_prefix: 'Penjejakan: ',
+    loading: 'Memuat…',
+    lbl_tracking: 'No. Penjejakan', lbl_notes: 'Nota', ph_notes_optional: 'Nota pilihan',
+    section_update: 'Kemas Kini Status Logistik',
+    updated_ok: '✓ Dikemas kini',
+    lbl_customer: 'Pelanggan', lbl_phone: 'Telefon', lbl_address: 'Alamat', lbl_amount: 'Jumlah',
+    lbl_from_supplier: 'Pembekal', lbl_logistics_notes: 'Nota Logistik',
+    section_log: 'Log Logistik',
+    no_logs: 'Tiada rekod',
+    required_mark: '*',
+    ph_required: 'Wajib',
+  },
+  'th': {
+    logout: 'ออกจากระบบ', page_title: 'โลจิสติกส์', detail_title: 'รายละเอียดคำสั่งซื้อ', back: '← กลับ',
+    filter_all: 'ทั้งหมด', filter_shipped: 'รอรับ', filter_transit: 'อยู่ระหว่างขนส่ง', filter_arrived: 'มาถึงแล้ว',
+    st_production_complete: 'ผลิตเสร็จ / รอรับของ', st_shipped: 'จัดส่ง / กำลังขนส่ง', st_in_transit: 'อยู่ระหว่างขนส่ง',
+    st_arrived: 'มาถึงแล้ว', st_installing: 'กำลังติดตั้ง', st_completed: 'เสร็จสมบูรณ์',
+    btn_picked_up: 'รับของแล้ว', btn_signed: 'ส่งมอบและเซ็นรับ',
+    no_permission: 'ไม่มีสิทธิ์',
+    load_failed: 'โหลดคำสั่งซื้อล้มเหลว',
+    retry_hint: 'กรุณาตรวจสอบเครือข่ายหรือสิทธิ์แล้วลองอีกครั้ง',
+    no_orders: 'ไม่มีคำสั่งโลจิสติกส์รอดำเนินการ',
+    delivered_wait: '✅ ส่งมอบแล้ว รอการติดตั้งจากร้าน',
+    count_pfx: 'รวม ', count_sfx: ' รายการ',
+    from_prefix: 'จาก: ',
+    detail_btn: 'รายละเอียด',
+    ph_tracking_required: 'กรุณากรอกหมายเลขติดตาม (จำเป็น):',
+    err_tracking_required: 'ต้องระบุหมายเลขติดตาม',
+    ph_update_notes: 'อัปเดตเป็น "{label}" หมายเหตุ (ไม่บังคับ):',
+    err_update_failed: 'อัปเดตล้มเหลว: ',
+    tracking_prefix: 'หมายเลขติดตาม: ',
+    loading: 'กำลังโหลด…',
+    lbl_tracking: 'หมายเลขติดตาม', lbl_notes: 'หมายเหตุ', ph_notes_optional: 'หมายเหตุ (ไม่บังคับ)',
+    section_update: 'อัปเดตสถานะโลจิสติกส์',
+    updated_ok: '✓ อัปเดตแล้ว',
+    lbl_customer: 'ลูกค้า', lbl_phone: 'โทรศัพท์', lbl_address: 'ที่อยู่', lbl_amount: 'จำนวนเงิน',
+    lbl_from_supplier: 'ผู้ผลิต', lbl_logistics_notes: 'หมายเหตุโลจิสติกส์',
+    section_log: 'บันทึกโลจิสติกส์',
+    no_logs: 'ไม่มีบันทึก',
+    required_mark: '*',
+    ph_required: 'จำเป็น',
+  },
+};
+const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
+let currentLang = localStorage.getItem('houzy-lang') || 'zh-CN';
+if (!LG_I18N[currentLang]) currentLang = 'zh-CN';
+function t(k) { return (LG_I18N[currentLang] || LG_I18N['zh-CN'])[k] || k; }
+function toggleLangDrop() { document.getElementById('lang-drop').classList.toggle('hidden'); }
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('houzy-lang', lang);
+  const lbl = LANG_LABELS[lang] || lang;
+  const lblEl = document.getElementById('lang-label'); if (lblEl) lblEl.textContent = lbl;
+  document.getElementById('lang-drop')?.classList.add('hidden');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n); if (v) el.textContent = v;
+  });
+  document.body.style.fontFamily = lang === 'th' ? "Inter,'Noto Sans Thai',sans-serif" : "Inter,'Noto Sans SC',sans-serif";
+  document.documentElement.lang = lang;
+  // 重渲列表 + 详情（如果已加载）
+  renderOrders();
+  if (window.__lastDetailId) openDetail(window.__lastDetailId);
+}
+window.addEventListener('DOMContentLoaded', () => setLang(currentLang));
+document.addEventListener('click', (e) => {
+  const drop = document.getElementById('lang-drop');
+  if (!drop || drop.classList.contains('hidden')) return;
+  if (e.target.closest('button')?.getAttribute('onclick')?.includes('toggleLangDrop')) return;
+  drop.classList.add('hidden');
+});
 
 const STATUS = {
-  production_complete: { label:'生产完成/待提货', cls:'bg-indigo-100 text-indigo-700' },
-  shipped:             { label:'已发货/运输中',   cls:'bg-orange-100 text-orange-700' },
-  in_transit:          { label:'在途',           cls:'bg-orange-200 text-orange-800' },
-  arrived:             { label:'已到货',          cls:'bg-teal-100 text-teal-700' },
-  installing:          { label:'安装中',          cls:'bg-teal-200 text-teal-800' },
-  completed:           { label:'已完成',          cls:'bg-green-100 text-green-700' },
+  production_complete: { key: 'st_production_complete', cls:'bg-indigo-100 text-indigo-700' },
+  shipped:             { key: 'st_shipped',             cls:'bg-orange-100 text-orange-700' },
+  in_transit:          { key: 'st_in_transit',          cls:'bg-orange-200 text-orange-800' },
+  arrived:             { key: 'st_arrived',             cls:'bg-teal-100 text-teal-700' },
+  installing:          { key: 'st_installing',          cls:'bg-teal-200 text-teal-800' },
+  completed:           { key: 'st_completed',           cls:'bg-green-100 text-green-700' },
 };
+function stLabel(s) { return t(STATUS[s]?.key || s); }
 
-// Logistics handles: pickup confirmation → transit → delivery signed
-// production_complete → shipped (pickup confirmed, with tracking_no)
-// shipped → in_transit (dispatched)
-// in_transit → arrived (delivered to customer)
-// 发货由厂家确认；物流从 shipped 开始接手
 const MY_TRANSITIONS = {
-  shipped:    { next: 'in_transit', label: '已揽件发出', requireTracking: false },
-  in_transit: { next: 'arrived',   label: '已到货签收', requireTracking: false },
+  shipped:    { next: 'in_transit', labelKey: 'btn_picked_up', requireTracking: false },
+  in_transit: { next: 'arrived',   labelKey: 'btn_signed',     requireTracking: false },
 };
+function trLabel(tr) { return tr ? t(tr.labelKey) : ''; }
 
 function badge(s) {
-  const x = STATUS[s] || { label: s, cls: 'bg-gray-100 text-gray-500' };
-  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${x.cls}">${x.label}</span>`;
+  const x = STATUS[s];
+  const lbl = stLabel(s);
+  const cls = x?.cls || 'bg-gray-100 text-gray-500';
+  return `<span class="text-xs px-2 py-0.5 rounded-full font-medium ${cls}">${lbl}</span>`;
 }
-// Escape DB text before interpolating into innerHTML (prevent XSS)
 function esc(v) {
   if (v === null || v === undefined) return '';
   return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -110,15 +305,16 @@ function fmtAmt(v) {
   if (v === null || v === undefined || !isFinite(n)) return 'RM -';
   return 'RM ' + n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function _loc() { return { 'zh-CN':'zh-CN','zh-TW':'zh-TW','en':'en-MY','ms':'ms-MY','th':'th-TH' }[currentLang] || 'zh-CN'; }
 function fmtDate(d) {
   if (!d) return '-';
   const dt = new Date(d);
-  return isNaN(dt) ? '-' : dt.toLocaleDateString('zh-CN', { month:'short', day:'numeric' });
+  return isNaN(dt) ? '-' : dt.toLocaleDateString(_loc(), { month:'short', day:'numeric' });
 }
 function fmtDateTime(d) {
   if (!d) return '-';
   const dt = new Date(d);
-  return isNaN(dt) ? '-' : dt.toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  return isNaN(dt) ? '-' : dt.toLocaleString(_loc(), { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
 function show(id) {
@@ -131,21 +327,18 @@ async function init() {
 
   profile = await sb.rpc('get_my_profile').then(r => r.data);
   if (!profile || profile.role !== 'logistics') {
-    alert('权限不足'); window.location.href = 'login.html'; return;
+    alert(t('no_permission')); window.location.href = 'login.html'; return;
   }
 
   document.getElementById('log-name').textContent = `${profile.name}`;
   await loadOrders();
 }
 
-let loadError = null;
-
 async function loadOrders() {
   const { data, error } = await sb.from('orders')
     .select('*, stores(name), customers(name,phone,address), suppliers(name,phone)')
     .in('status', ['shipped','in_transit','arrived'])
     .order('updated_at', { ascending: false });
-  // Fail loud: surface query errors instead of showing the same "暂无" empty state
   loadError = error || null;
   if (error) console.error('[logistics loadOrders]', error.message);
   allOrders = data || [];
@@ -155,37 +348,35 @@ async function loadOrders() {
 function setFilter(val, btn) {
   currentFilter = val;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
   renderOrders();
 }
 
 function renderOrders() {
   const el = document.getElementById('orders-list');
+  if (!el) return;
 
-  // Fail loud: distinct visible error state (not the same "暂无" empty state)
   if (loadError) {
     document.getElementById('order-count').textContent = '';
     el.innerHTML = `<div class="text-center py-16">
       <div class="text-4xl mb-3">⚠️</div>
-      <p class="text-red-600 font-medium">订单加载失败</p>
-      <p class="text-gray-400 text-sm mt-1">${esc(loadError.message || '请检查网络或权限后重试')}</p>
+      <p class="text-red-600 font-medium">${t('load_failed')}</p>
+      <p class="text-gray-400 text-sm mt-1">${esc(loadError.message || t('retry_hint'))}</p>
     </div>`;
     return;
   }
 
-  // L2: when no filter is chosen, hide terminal "arrived" orders (already
-  // delivered, no logistics action left) so the default list stays actionable.
   const base = currentFilter
     ? allOrders.filter(o => o.status === currentFilter)
     : allOrders.filter(o => o.status !== 'arrived');
   const filtered = base;
 
-  document.getElementById('order-count').textContent = `共 ${filtered.length} 条`;
+  document.getElementById('order-count').textContent = `${t('count_pfx')}${filtered.length}${t('count_sfx')}`;
 
   if (!filtered.length) {
     el.innerHTML = `<div class="text-center py-16">
       <div class="text-4xl mb-3">🚚</div>
-      <p class="text-gray-400">暂无需要处理的物流订单</p>
+      <p class="text-gray-400">${t('no_orders')}</p>
     </div>`;
     return;
   }
@@ -194,12 +385,10 @@ function renderOrders() {
     const tr = MY_TRANSITIONS[o.status];
     const actionBtn = tr ? `<button onclick="quickUpdate('${o.id}','${o.status}','${tr.next}',${tr.requireTracking})"
             class="px-3 py-1.5 text-xs bg-hg text-white rounded-lg hover:bg-gg whitespace-nowrap">
-      ${tr.label}
+      ${trLabel(tr)}
     </button>` : '';
-    // L2: arrived is a terminal state for logistics — show a "done" badge
-    // (staff advances to installing; logistics owns no further transition).
     const doneBadge = o.status === 'arrived'
-      ? `<span class="inline-flex items-center gap-1 text-xs text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-lg">✅ 已交付，等待门店安装</span>`
+      ? `<span class="inline-flex items-center gap-1 text-xs text-teal-700 bg-teal-50 border border-teal-200 px-2 py-1 rounded-lg">${t('delivered_wait')}</span>`
       : '';
     return `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-3">
@@ -213,14 +402,14 @@ function renderOrders() {
       <div class="text-sm text-gray-700 mb-1">${esc(o.customers?.name)} · ${esc(o.customers?.phone)}</div>
       ${o.customers?.address ? `<div class="text-xs text-gray-400 mb-1">${esc(o.customers.address)}</div>` : ''}
       ${o.tracking_no ? `<div class="text-xs text-orange-600 font-mono mb-2">${esc(o.tracking_no)}</div>` : ''}
-      ${o.suppliers?.name ? `<div class="text-xs text-gray-400 mb-2">来自: ${esc(o.suppliers.name)}</div>` : ''}
+      ${o.suppliers?.name ? `<div class="text-xs text-gray-400 mb-2">${t('from_prefix')}${esc(o.suppliers.name)}</div>` : ''}
       ${doneBadge ? `<div class="mb-2">${doneBadge}</div>` : ''}
       <div class="flex items-center justify-between mt-3">
         <span class="font-bold text-hg text-sm">${fmtAmt(o.amount)}</span>
         <div class="flex gap-2">
           <button onclick="openDetail('${o.id}')"
                   class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
-            详情
+            ${t('detail_btn')}
           </button>
           ${actionBtn}
         </div>
@@ -232,19 +421,19 @@ function renderOrders() {
 async function quickUpdate(orderId, curStatus, newStatus, requireTracking) {
   let trackingNo = null;
   if (requireTracking) {
-    trackingNo = prompt('请填写物流单号（必填）：');
-    if (!trackingNo || !trackingNo.trim()) { alert('必须填写物流单号'); return; }
+    trackingNo = prompt(t('ph_tracking_required'));
+    if (!trackingNo || !trackingNo.trim()) { alert(t('err_tracking_required')); return; }
     trackingNo = trackingNo.trim();
   }
-  const notes = prompt(`更新到「${STATUS[newStatus]?.label || newStatus}」，填写备注（可选）：`);
+  const notes = prompt(t('ph_update_notes').replace('{label}', stLabel(newStatus)));
   if (notes === null) return;
 
   const update = { status: newStatus };
   if (trackingNo) update.tracking_no = trackingNo;
   const { error } = await sb.from('orders').update(update).eq('id', orderId);
-  if (error) { alert('更新失败: ' + error.message); return; }
+  if (error) { alert(t('err_update_failed') + error.message); return; }
 
-  const logNotes = [trackingNo ? `物流单号：${trackingNo}` : null, notes || null].filter(Boolean).join(' | ');
+  const logNotes = [trackingNo ? `${t('tracking_prefix')}${trackingNo}` : null, notes || null].filter(Boolean).join(' | ');
   await sb.from('order_logs').insert({
     order_id: orderId, status: newStatus,
     operator_id: profile.id,
@@ -256,9 +445,10 @@ async function quickUpdate(orderId, curStatus, newStatus, requireTracking) {
 }
 
 async function openDetail(id) {
+  window.__lastDetailId = id;
   show('v-detail');
   document.getElementById('detail-content').innerHTML =
-    '<div class="text-center py-10 text-gray-400">加载中…</div>';
+    `<div class="text-center py-10 text-gray-400">${t('loading')}</div>`;
 
   const { data: o } = await sb.from('orders')
     .select('*, stores(name), customers(name,phone,address), suppliers(name,phone)')
@@ -269,7 +459,8 @@ async function openDetail(id) {
 
   const logsHtml = (logs || []).map((l, i, arr) => {
     const isLast = i === arr.length - 1;
-    const statusInfo = STATUS[l.status] || { label: l.status, cls: 'bg-gray-100 text-gray-500' };
+    const statusInfo = STATUS[l.status];
+    const cls = statusInfo?.cls || 'bg-gray-100 text-gray-500';
     return `<div class="flex gap-3">
       <div class="flex flex-col items-center flex-shrink-0 w-4">
         <div class="w-2.5 h-2.5 rounded-full ${isLast ? 'bg-hg' : 'bg-gray-300'} mt-0.5"></div>
@@ -277,7 +468,7 @@ async function openDetail(id) {
       </div>
       <div class="pb-3 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-xs px-2 py-0.5 rounded-full font-medium ${statusInfo.cls}">${statusInfo.label}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium ${cls}">${stLabel(l.status)}</span>
           <span class="text-gray-400 text-xs">${fmtDateTime(l.created_at)}</span>
         </div>
         ${l.notes ? `<p class="text-gray-600 text-sm mt-0.5">${esc(l.notes)}</p>` : ''}
@@ -289,25 +480,25 @@ async function openDetail(id) {
   const tr = MY_TRANSITIONS[o?.status];
   const trackingInput = (tr && tr.requireTracking) ? `
     <div class="mb-3">
-      <label class="block text-xs font-medium text-gray-600 mb-1">物流单号 <span class="text-red-500">*</span></label>
-      <input type="text" id="det-tracking" placeholder="必填"
+      <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_tracking')} <span class="text-red-500">${t('required_mark')}</span></label>
+      <input type="text" id="det-tracking" placeholder="${t('ph_required')}"
              class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
     </div>` : '';
 
   const updateSection = tr ? `
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-4">
-      <h3 class="font-semibold text-gray-800 mb-3">更新物流状态</h3>
+      <h3 class="font-semibold text-gray-800 mb-3">${t('section_update')}</h3>
       ${trackingInput}
       <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">备注</label>
-        <input type="text" id="det-notes" placeholder="可选备注"
+        <label class="block text-xs font-medium text-gray-600 mb-1">${t('lbl_notes')}</label>
+        <input type="text" id="det-notes" placeholder="${t('ph_notes_optional')}"
                class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-hg">
       </div>
       <button onclick="updateFromDetail('${o.id}','${o.status}','${tr.next}',${tr.requireTracking})"
               class="w-full py-2.5 bg-hg text-white font-semibold rounded-lg hover:bg-gg transition text-sm">
-        ${tr.label}
+        ${trLabel(tr)}
       </button>
-      <p id="det-msg" class="text-green-600 text-sm mt-2 text-center hidden">✓ 已更新</p>
+      <p id="det-msg" class="text-green-600 text-sm mt-2 text-center hidden">${t('updated_ok')}</p>
     </div>` : '';
 
   document.getElementById('detail-content').innerHTML = `
@@ -320,13 +511,13 @@ async function openDetail(id) {
         ${badge(o.status)}
       </div>
       <div class="space-y-2 text-sm">
-        <div><span class="text-gray-400">客户</span> <span class="font-medium">${esc(o.customers?.name)}</span></div>
-        <div><span class="text-gray-400">手机</span> <span>${esc(o.customers?.phone)}</span></div>
-        ${o.customers?.address ? `<div><span class="text-gray-400">地址</span> <span>${esc(o.customers.address)}</span></div>` : ''}
-        <div><span class="text-gray-400">金额</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
-        ${o.suppliers?.name ? `<div><span class="text-gray-400">来源厂家</span> <span>${esc(o.suppliers.name)}</span></div>` : ''}
-        ${o.tracking_no ? `<div><span class="text-gray-400">物流单号</span> <span class="font-mono font-medium text-orange-600">${esc(o.tracking_no)}</span></div>` : ''}
-        ${o.logistics_notes ? `<div><span class="text-gray-400">物流备注</span> <span>${esc(o.logistics_notes)}</span></div>` : ''}
+        <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${esc(o.customers?.name)}</span></div>
+        <div><span class="text-gray-400">${t('lbl_phone')}</span> <span>${esc(o.customers?.phone)}</span></div>
+        ${o.customers?.address ? `<div><span class="text-gray-400">${t('lbl_address')}</span> <span>${esc(o.customers.address)}</span></div>` : ''}
+        <div><span class="text-gray-400">${t('lbl_amount')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount)}</span></div>
+        ${o.suppliers?.name ? `<div><span class="text-gray-400">${t('lbl_from_supplier')}</span> <span>${esc(o.suppliers.name)}</span></div>` : ''}
+        ${o.tracking_no ? `<div><span class="text-gray-400">${t('lbl_tracking')}</span> <span class="font-mono font-medium text-orange-600">${esc(o.tracking_no)}</span></div>` : ''}
+        ${o.logistics_notes ? `<div><span class="text-gray-400">${t('lbl_logistics_notes')}</span> <span>${esc(o.logistics_notes)}</span></div>` : ''}
       </div>
       ${o.description ? `<p class="mt-3 text-sm text-gray-600 border-t pt-3">${esc(o.description)}</p>` : ''}
     </div>
@@ -334,8 +525,8 @@ async function openDetail(id) {
     ${updateSection}
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <h3 class="font-semibold text-gray-800 mb-4">物流日志</h3>
-      ${logsHtml || '<p class="text-gray-400 text-sm">暂无记录</p>'}
+      <h3 class="font-semibold text-gray-800 mb-4">${t('section_log')}</h3>
+      ${logsHtml || `<p class="text-gray-400 text-sm">${t('no_logs')}</p>`}
     </div>`;
 }
 
@@ -344,14 +535,14 @@ async function updateFromDetail(id, curStatus, newStatus, requireTracking) {
   const trackingNo = trackingEl ? trackingEl.value.trim() : '';
   const notes = document.getElementById('det-notes')?.value.trim() || '';
 
-  if (requireTracking && !trackingNo) { alert('必须填写物流单号'); return; }
+  if (requireTracking && !trackingNo) { alert(t('err_tracking_required')); return; }
 
   const update = { status: newStatus };
   if (trackingNo) update.tracking_no = trackingNo;
   const { error } = await sb.from('orders').update(update).eq('id', id);
-  if (error) { alert('更新失败: ' + error.message); return; }
+  if (error) { alert(t('err_update_failed') + error.message); return; }
 
-  const logNotes = [trackingNo ? `物流单号：${trackingNo}` : null, notes || null].filter(Boolean).join(' | ');
+  const logNotes = [trackingNo ? `${t('tracking_prefix')}${trackingNo}` : null, notes || null].filter(Boolean).join(' | ');
   await sb.from('order_logs').insert({
     order_id: id, status: newStatus,
     operator_id: profile.id,
