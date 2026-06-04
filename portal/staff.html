@@ -910,6 +910,13 @@ const STAFF_I18N = {
     confirm_delete_order:'确认彻底删除该订单?此操作不可恢复',
     confirm_accept_order:'确认接单，开始生产？',
     confirm_ship:'确认发货？',
+    err_pick_install_date:'请选择安装日期', err_fill_installer_name:'请填写安装人姓名',
+    err_fill_installer_phone:'请填写安装人电话',
+    err_pick_target_status:'请选择目标状态', err_fill_force_reason:'请填写强制改状态的原因',
+    err_regional_mgr_only:'仅区域负责人及以上可强制改状态',
+    err_store_mgr_recompute:'店长及以上可重新计算质保',
+    err_sign_first:'请先填写图纸链接',
+    err_file_too_big:'文件过大（>20MB），请压缩或改用链接',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -965,6 +972,13 @@ const STAFF_I18N = {
     confirm_delete_order:'確認徹底刪除該訂單?此操作不可恢復',
     confirm_accept_order:'確認接單，開始生產？',
     confirm_ship:'確認發貨？',
+    err_pick_install_date:'請選擇安裝日期', err_fill_installer_name:'請填寫安裝人姓名',
+    err_fill_installer_phone:'請填寫安裝人電話',
+    err_pick_target_status:'請選擇目標狀態', err_fill_force_reason:'請填寫強制改狀態的原因',
+    err_regional_mgr_only:'僅區域負責人及以上可強制改狀態',
+    err_store_mgr_recompute:'店長及以上可重新計算質保',
+    err_sign_first:'請先填寫圖紙連結',
+    err_file_too_big:'檔案過大（>20MB），請壓縮或改用連結',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -1020,6 +1034,13 @@ const STAFF_I18N = {
     confirm_delete_order:'Permanently delete this order? This cannot be undone.',
     confirm_accept_order:'Accept order and start production?',
     confirm_ship:'Confirm shipment?',
+    err_pick_install_date:'Please pick install date', err_fill_installer_name:'Please fill in installer name',
+    err_fill_installer_phone:'Please fill in installer phone',
+    err_pick_target_status:'Please pick target status', err_fill_force_reason:'Please fill in reason for force-change',
+    err_regional_mgr_only:'Only regional manager or above can force-change status',
+    err_store_mgr_recompute:'Store manager or above can recompute warranty',
+    err_sign_first:'Please fill drawing link first',
+    err_file_too_big:'File too big (>20MB). Please compress or use a link.',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -1075,6 +1096,13 @@ const STAFF_I18N = {
     confirm_delete_order:'Padam pesanan ini secara kekal? Tidak boleh dikembalikan.',
     confirm_accept_order:'Terima pesanan dan mula pengeluaran?',
     confirm_ship:'Sahkan penghantaran?',
+    err_pick_install_date:'Sila pilih tarikh pemasangan', err_fill_installer_name:'Sila isi nama pemasang',
+    err_fill_installer_phone:'Sila isi telefon pemasang',
+    err_pick_target_status:'Sila pilih status sasaran', err_fill_force_reason:'Sila isi sebab paksa-ubah',
+    err_regional_mgr_only:'Hanya pengurus kawasan atau ke atas boleh paksa-ubah status',
+    err_store_mgr_recompute:'Pengurus kedai atau ke atas boleh kira semula waranti',
+    err_sign_first:'Sila isi pautan lukisan dahulu',
+    err_file_too_big:'Fail terlalu besar (>20MB). Sila mampatkan atau guna pautan.',
   },
   'th': {
     sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
@@ -1130,6 +1158,13 @@ const STAFF_I18N = {
     confirm_delete_order:'ลบคำสั่งซื้อนี้ถาวร? ไม่สามารถยกเลิกได้',
     confirm_accept_order:'รับคำสั่งและเริ่มผลิต?',
     confirm_ship:'ยืนยันการจัดส่ง?',
+    err_pick_install_date:'กรุณาเลือกวันที่ติดตั้ง', err_fill_installer_name:'กรุณากรอกชื่อผู้ติดตั้ง',
+    err_fill_installer_phone:'กรุณากรอกเบอร์โทรผู้ติดตั้ง',
+    err_pick_target_status:'กรุณาเลือกสถานะเป้าหมาย', err_fill_force_reason:'กรุณากรอกเหตุผลบังคับเปลี่ยน',
+    err_regional_mgr_only:'เฉพาะผู้จัดการภาคขึ้นไปจึงบังคับเปลี่ยนสถานะได้',
+    err_store_mgr_recompute:'ผู้จัดการร้านขึ้นไปสามารถคำนวณประกันใหม่',
+    err_sign_first:'กรุณากรอกลิงก์แบบก่อน',
+    err_file_too_big:'ไฟล์ใหญ่เกินไป (>20MB) กรุณาบีบอัดหรือใช้ลิงก์',
   },
 };
 
@@ -1442,7 +1477,7 @@ function computeWarrantyInfo(orderItems, startIso) {
 
 // 重算并存储某订单的质保信息(用于修老订单已存的"全套部件"错误数据)
 async function recomputeOrderWarranty(orderId) {
-  if (!canDo(2)) { alert('店长及以上可重新计算质保'); return; }
+  if (!canDo(2)) { alert(t('err_store_mgr_recompute')); return; }
   if (!confirm('重新按订单实际商品计算质保表? 将覆盖现有 warranty_info。')) return;
   const { data: o }   = await sb.from('orders').select('warranty_info,signed_at,completed_at,created_at').eq('id', orderId).single();
   const { data: its } = await sb.from('order_items').select('product_name').eq('order_id', orderId);
@@ -5273,9 +5308,9 @@ async function saveInstallDate(orderId) {
   const date  = document.getElementById('install-date-input')?.value;
   const name  = document.getElementById('installer-name-input')?.value.trim();
   const phone = document.getElementById('installer-phone-input')?.value.trim();
-  if (!date)  { alert('请选择安装日期'); return; }
-  if (!name)  { alert('请填写安装人姓名'); return; }
-  if (!phone) { alert('请填写安装人电话'); return; }
+  if (!date)  { alert(t('err_pick_install_date')); return; }
+  if (!name)  { alert(t('err_fill_installer_name')); return; }
+  if (!phone) { alert(t('err_fill_installer_phone')); return; }
 
   const btn = document.querySelector(`button[onclick="saveInstallDate('${orderId}')"]`);
   if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
@@ -5310,8 +5345,8 @@ async function forceStatus(orderId) {
   if (!canDo(3)) { alert('仅区域负责人及以上可强制改状态'); return; }
   const target = document.getElementById('force-status')?.value;
   const reason = document.getElementById('force-reason')?.value?.trim();
-  if (!target) { alert('请选择目标状态'); return; }
-  if (!reason) { alert('请填写强制改状态的原因'); return; }
+  if (!target) { alert(t('err_pick_target_status')); return; }
+  if (!reason) { alert(t('err_fill_force_reason')); return; }
   const st = document.getElementById('upd-status');
   const nt = document.getElementById('upd-notes');
   if (st) st.value = target;
