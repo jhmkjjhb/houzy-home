@@ -358,6 +358,9 @@
                     class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
               <span class="text-lg leading-none">+</span> 单个商品
             </button>
+            <button type="button" onclick="openScanModal()"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    style="background:#c8a96e;color:#1a3a2a">📷 扫码加货</button>
           </div>
         </div>
         <div class="text-xs text-gray-400 mb-3">点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」</div>
@@ -850,8 +853,22 @@
   </main>
 </div>
 
+<!-- 扫码加货弹窗 -->
+<div id="scan-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
+  <div class="bg-white rounded-2xl p-4 w-full max-w-sm">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold text-gray-800">📷 扫码加货</h3>
+      <button type="button" onclick="closeScanModal()" class="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="qr-reader" class="w-full rounded-lg overflow-hidden bg-gray-100" style="min-height:240px"></div>
+    <p id="scan-msg" class="text-xs text-gray-500 mt-3 text-center">把摄像头对准产品二维码…</p>
+    <button type="button" onclick="closeScanModal()" class="mt-3 w-full py-2 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300">取消</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 // ── i18n ──
 const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -2766,6 +2783,62 @@ function renderOrdersTable(orders) {
 let itemRowCount = 0;
 let _supplementParentId = null;
 let _supplementCustomerId = null;
+
+// ── 扫码加货 ──
+let _scanner = null, _scanHandled = false;
+// 二维码内容通常是 product-lookup.html?sku=XXX；也兼容直接是 SKU 文本
+function parseSkuFromScan(text) {
+  if (!text) return '';
+  const m = String(text).match(/[?&]sku=([^&]+)/i);
+  if (m) { try { return decodeURIComponent(m[1]).trim(); } catch (e) { return m[1].trim(); } }
+  return String(text).trim();
+}
+async function openScanModal() {
+  if (typeof Html5Qrcode === 'undefined') { alert('扫码组件还在加载，请过几秒再试'); return; }
+  const modal = document.getElementById('scan-modal');
+  if (!modal) return;
+  _scanHandled = false;
+  modal.classList.remove('hidden');
+  const msg = document.getElementById('scan-msg');
+  if (msg) msg.textContent = '把摄像头对准产品二维码…';
+  _scanner = new Html5Qrcode('qr-reader');
+  const cfg = { fps: 10, qrbox: { width: 220, height: 220 } };
+  try {
+    await _scanner.start({ facingMode: 'environment' }, cfg, onScanSuccess, () => {});
+  } catch (e) {
+    // 后置摄像头打不开（多见于电脑）→ 退而用任意可用摄像头
+    try {
+      await _scanner.start({ facingMode: 'user' }, cfg, onScanSuccess, () => {});
+    } catch (e2) {
+      if (msg) msg.textContent = '无法打开摄像头：' + (e2?.message || e2) + '\n请检查是否允许了摄像头权限。';
+    }
+  }
+}
+async function closeScanModal() {
+  if (_scanner) {
+    try { await _scanner.stop(); await _scanner.clear(); } catch (e) {}
+    _scanner = null;
+  }
+  document.getElementById('scan-modal')?.classList.add('hidden');
+}
+async function onScanSuccess(decodedText) {
+  if (_scanHandled) return;          // 扫一个就关：忽略后续重复触发
+  _scanHandled = true;
+  const sku = parseSkuFromScan(decodedText);
+  await closeScanModal();
+  addScannedProduct(sku);
+}
+function addScannedProduct(sku) {
+  if (!sku) { alert('没读到有效的产品编号，请重试'); return; }
+  const p = staffProducts.find(x => (x.sku || '').toLowerCase() === sku.toLowerCase());
+  if (!p) { alert(`未在产品库找到编号「${sku}」。\n请确认该产品已在仓管「产品档案」里录入。`); return; }
+  addItemRow({ sku_ref: p.sku, product_name: p.name, unit: p.unit, unit_price: p.price });
+  const id = itemRowCount;
+  try { autoDetectProductType(id); } catch (e) {}
+  try { onProductSelect(id); } catch (e) {}
+  try { calcItemRow(id); } catch (e) {}
+  document.querySelector(`.item-row[data-row-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
 function addItemRow(data = {}) {
   itemRowCount++;
@@ -4723,7 +4796,7 @@ function renderDrawingCard(o, items, supList, drawings) {
 
 async function drawingUpload(orderId, supId) {
   const url = document.getElementById('dwg-url-'+supId)?.value?.trim();
-  if (!url) { alert('请先填写图纸链接'); return; }
+  if (!url) { alert(t('err_sign_first')); return; }
   const { data, error } = await sb.rpc('drawing_upload',
     { p_order_id: orderId, p_supplier_id: supId, p_url: url });
   if (error) { alert(t('err_upload_failed')+error.message); return; }
@@ -4735,7 +4808,7 @@ async function drawingUpload(orderId, supId) {
 async function drawingUploadFile(orderId, supId, input) {
   const file = input.files && input.files[0];
   if (!file) return;
-  if (file.size > 20*1024*1024) { alert('文件过大（>20MB），请压缩或改用链接'); input.value=''; return; }
+  if (file.size > 20*1024*1024) { alert(t('err_file_too_big')); input.value=''; return; }
   const ext  = (file.name.split('.').pop()||'dat').toLowerCase();
   const path = `drawings/${orderId}/${supId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
   const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert:false });
@@ -5342,7 +5415,7 @@ async function enterInstalling(orderId) {
 // 管理员强制改状态(L3+)：复用 updateOrder 的权限/_forcedJump/留痕引擎与
 // 各防虚假硬关卡(已付款须收款驱动、已完成须客户签名仍绕不过)。
 async function forceStatus(orderId) {
-  if (!canDo(3)) { alert('仅区域负责人及以上可强制改状态'); return; }
+  if (!canDo(3)) { alert(t('err_regional_mgr_only')); return; }
   const target = document.getElementById('force-status')?.value;
   const reason = document.getElementById('force-reason')?.value?.trim();
   if (!target) { alert(t('err_pick_target_status')); return; }
