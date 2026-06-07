@@ -1040,7 +1040,7 @@ async function exportInventoryExcel() {
     const tag = `${c.supplier_code || ''}${c.suppliers?.name ? '(' + c.suppliers.name + ')' : ''}`;
     (codeMap[c.product_id] = codeMap[c.product_id] || []).push(tag);
   });
-  Object.keys(CAT_LABEL).forEach(code => {
+  Object.keys(WH_I18N['zh-CN'].cat).forEach(code => {
     const head = ['SKU','名称','单位','规格', ...whs.map(w => w.name), '总库存', '单位成本', '零售价', '厂家编号(供应商)'];
     const rows = [head];
     allProducts.filter(p => (p.category || 'QT') === code).forEach(p => {
