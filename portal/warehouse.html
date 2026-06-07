@@ -140,6 +140,10 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         <span data-i18n="nav_warehouses">仓库设置</span>
       </div>
+      <div class="nav-link" id="nav-deletelogs" onclick="goto('deletelogs')">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <span>删除记录</span>
+      </div>
     </nav>
     <div class="p-3 border-t border-white/10">
       <div id="user-info" class="text-xs text-gray-400 mb-2 px-1"></div>
@@ -412,11 +416,29 @@
       </div>
     </div>
 
+    <!-- 删除记录 -->
+    <div id="v-deletelogs" class="hidden p-4 sm:p-6 max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold text-gray-800">删除记录</h1>
+        <div class="flex gap-2 flex-wrap">
+          <input type="text" id="dl-search" placeholder="搜索产品名 / SKU" oninput="renderDeleteLogs()" class="input w-44 text-sm">
+          <button onclick="goto('products')" class="px-3 py-2 text-xs rounded-lg border border-gray-200 text-gray-500 hover:border-hg hover:text-hg transition-colors">← 返回产品档案</button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mb-3">仅记录通过本系统删除的产品档案。删除日志独立保存，产品删除后此处仍可查阅。</p>
+      <div id="dl-table" class="card overflow-hidden">
+        <p class="text-gray-400 text-sm p-8 text-center">加载中…</p>
+      </div>
+    </div>
+
     <!-- 产品档案 -->
     <div id="v-products" class="hidden p-4 sm:p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-4">
         <h1 class="text-xl font-bold text-gray-800" data-i18n="page_products">产品档案</h1>
-        <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm" data-i18n="btn_add_product">+ 新增产品</button>
+        <div class="flex gap-2">
+          <button onclick="goto('deletelogs')" class="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500 transition-colors">🗑 删除记录</button>
+          <button onclick="openAddProduct()" class="btn-gold px-4 py-2 text-sm" data-i18n="btn_add_product">+ 新增产品</button>
+        </div>
       </div>
       <!-- Add form -->
       <div id="prod-add-form" class="hidden card p-6 mb-4 border-2 border-dashed" style="border-color:#c8a96e4d">
@@ -977,7 +999,7 @@ function isWhMgr() { return WH_MGR_ROLES.includes(profile?.role); }
 const CAT_LABEL = new Proxy({}, { get(_, k) { return (WH_I18N[currentLang]?.cat || WH_I18N['zh-CN'].cat)[k] || k; } });
 
 let profile = null;
-let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [];
+let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [], allDeleteLogs = [];
 let soTab = 'out';
 let siCat = '', siSub = '', siNewProduct = false;
 
@@ -1442,18 +1464,21 @@ async function doLogout() {
 
 // ── Data ──
 async function loadAll() {
-  const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }] = await Promise.all([
+  const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }, { data: dls }] = await Promise.all([
     sb.from('warehouses').select('*').order('name'),
     sb.from('products').select('*, image_url').order('sku'),
     sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty), warehouses(name)'),
     sb.from('inventory_movements')
       .select('*, products(sku,name), warehouses(name), profiles(name)')
       .order('created_at', { ascending: false }).limit(200),
+    sb.from('product_delete_logs')
+      .select('*').order('created_at', { ascending: false }).limit(200),
   ]);
   allWarehouses = whs || [];
   allProducts   = prods || [];
   allInventory  = inv || [];
   allMovements  = mvs || [];
+  allDeleteLogs = dls || [];
   populateSelects();
   updateDispatchBadge();
 }
@@ -1686,10 +1711,10 @@ async function rejectDispatch(itemId) {
 }
 
 // ── Navigation ──
-const VIEW_TITLES = { overview:'库存总览', dispatch:'待发货', stockin:'入库操作', stockout:'出库/调整', movements:'流水记录', products:'产品档案', warehouses:'仓库设置' };
+const VIEW_TITLES = { overview:'库存总览', dispatch:'待发货', stockin:'入库操作', stockout:'出库/调整', movements:'流水记录', products:'产品档案', warehouses:'仓库设置', deletelogs:'删除记录' };
 
 function goto(view) {
-  ['overview','dispatch','stockin','stockout','movements','products','warehouses'].forEach(v => {
+  ['overview','dispatch','stockin','stockout','movements','products','warehouses','deletelogs'].forEach(v => {
     document.getElementById('v-' + v)?.classList.toggle('hidden', v !== view);
     document.getElementById('nav-' + v)?.classList.toggle('active', v === view);
     document.getElementById('mnav-' + v)?.classList.toggle('active', v === view);
@@ -1701,6 +1726,7 @@ function goto(view) {
   if (view === 'movements')  renderMovements();
   if (view === 'products')   renderProducts();
   if (view === 'warehouses') renderWarehouses();
+  if (view === 'deletelogs') renderDeleteLogs();
 }
 
 // ── Overview ──
@@ -2182,6 +2208,44 @@ function renderMovements() {
   </div>`;
 }
 
+// ── Delete Logs ──
+function renderDeleteLogs() {
+  const el = document.getElementById('dl-table');
+  if (!el) return;
+  const sq = (document.getElementById('dl-search')?.value || '').toLowerCase();
+  const rows = (allDeleteLogs || []).filter(d =>
+    !sq || `${d.sku || ''} ${d.name || ''}`.toLowerCase().includes(sq));
+
+  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无删除记录</p>'; return; }
+
+  el.innerHTML = `<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
+        <th class="px-4 py-3 text-left font-medium">删除时间</th>
+        <th class="px-4 py-3 text-left font-medium">SKU</th>
+        <th class="px-4 py-3 text-left font-medium">产品名称</th>
+        <th class="px-4 py-3 text-left font-medium">类目</th>
+        <th class="px-4 py-3 text-right font-medium">售价(RM)</th>
+        <th class="px-4 py-3 text-left font-medium">规格</th>
+        <th class="px-4 py-3 text-left font-medium">删除原因</th>
+        <th class="px-4 py-3 text-left font-medium">操作人</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((d, i) => `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
+          <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${fmtDateTime(d.created_at)}</td>
+          <td class="px-4 py-3 font-mono text-xs text-hg">${esc(d.sku||'—')}</td>
+          <td class="px-4 py-3 font-medium text-gray-800">${esc(d.name||'—')}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">${esc(CAT_LABEL[d.category]||d.category||'—')}</td>
+          <td class="px-4 py-3 text-right text-gray-500">${d.price!=null?fmtNum(d.price):'—'}</td>
+          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${esc(d.specs||'—')}</td>
+          <td class="px-4 py-3 text-xs text-gray-500">${esc(d.reason||'—')}</td>
+          <td class="px-4 py-3 text-gray-400 text-xs">${esc(d.operator_name||'—')}${d.operator_role?` <span class="text-gray-300">(${esc(d.operator_role)})</span>`:''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
 // ── Products ──
 function renderProducts() {
   const q  = (document.getElementById('prod-search')?.value || '').toLowerCase();
@@ -2236,7 +2300,12 @@ function renderProducts() {
           </td>
           <td class="px-4 py-3">
             ${p.image_url ? `<label class="text-xs text-gray-400 hover:text-hg cursor-pointer" title="换图">📷<input type="file" class="hidden" accept="image/*" onchange="uploadExistingProductImage('${p.id}',this)"></label> ` : ''}
-            <button onclick="deleteProduct('${p.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>
+            ${(() => {
+              const onHand = allInventory.filter(r => r.product_id === p.id).reduce((s, r) => s + (r.qty_on_hand || 0), 0);
+              return onHand > 0
+                ? `<span class="text-xs text-gray-300 cursor-not-allowed" title="有库存 ${onHand}，不可删除（请先清零库存）">删除</span>`
+                : `<button onclick="deleteProduct('${p.id}')" class="text-xs text-red-400 hover:text-red-600">删除</button>`;
+            })()}
           </td>
         </tr>`).join('')}
       </tbody>
@@ -2346,8 +2415,25 @@ async function submitNewProduct() {
 }
 
 async function deleteProduct(id) {
-  if (!confirm('确认删除此产品档案？相关库存记录也会一并删除。')) return;
-  await sb.from('products').delete().eq('id', id);
+  const p = allProducts.find(x => x.id === id);
+  // 关卡：有库存不能删
+  const onHand = allInventory.filter(r => r.product_id === id)
+                             .reduce((s, r) => s + (r.qty_on_hand || 0), 0);
+  if (onHand > 0) {
+    alert(`无法删除「${p?.name || ''}」：该产品仍有库存 ${onHand}。\n请先到「出库 / 调整」把库存清零，再来删除。`);
+    return;
+  }
+  const reason = prompt(`确认删除产品档案「${p?.name || ''}」？\n此操作不可撤销，相关空库存记录也会一并删除。\n\n可填写删除原因（选填，会记入删除日志）：`);
+  if (reason === null) return;   // 用户点了取消
+  const { error } = await sb.from('products').delete().eq('id', id);
+  if (error) { alert('删除失败：' + error.message); return; }
+  // 删除成功后留一条日志（快照取自删除前的内存数据 p）
+  await sb.from('product_delete_logs').insert({
+    product_id: id, sku: p?.sku, name: p?.name, category: p?.category,
+    specs: p?.specs, price: p?.price,
+    operator_id: profile?.id, operator_role: profile?.role, operator_name: profile?.name,
+    reason: reason || null
+  });
   await loadAll();
   renderProducts();
 }
