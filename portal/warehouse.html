@@ -1093,7 +1093,7 @@ async function downloadStockInTemplate() {
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), '填写说明');
   const sampleWh = whNames[0] || '';
-  Object.keys(CAT_LABEL).forEach(code => {
+  Object.keys(WH_I18N['zh-CN'].cat).forEach(code => {
     const example = code === 'CT'
       ? ['', '示例:米兰洞石大板瓷砖（可删）', '片', '米黄', '尺寸:750×1500 | 厚度:9mm', 10, sampleWh, 175, 250, '示例供应商（可删）', 'X1DM918218Y', 2, 'PG20260518', '示例行,正式填写前请删除']
       : ['', '示例:产品名（可删）', '件', '哑光黑', '品牌:示例 | 材质:示例', 5, sampleWh, 100, 180, '示例供应商（可删）', 'MFG-0001', 1, '', '示例行,正式填写前请删除'];
