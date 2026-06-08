@@ -343,40 +343,40 @@
       <!-- Step 2: Order Items -->
       <div class="card p-6 mb-4">
         <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 class="font-semibold text-gray-800">2. 商品明细</h2>
+          <h2 class="font-semibold text-gray-800" data-i18n="oi_title">2. 商品明细</h2>
           <div class="flex items-center gap-2 flex-wrap">
             <button type="button" onclick="addBundle('橱柜')"
-                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_add_cabinet"
                     style="background:#1a3a2a;color:#c8a96e">+ 橱柜（全套模块）</button>
             <button type="button" onclick="addBundle('衣柜')"
-                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_add_wardrobe"
                     style="background:#1a3a2a;color:#c8a96e">+ 衣柜（全套模块）</button>
             <button type="button" onclick="addWindowRow()"
-                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_add_window"
                     style="background:#1a3a2a;color:#c8a96e">+ 铝合金门窗</button>
             <button type="button" onclick="addItemRow()"
                     class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
-              <span class="text-lg leading-none">+</span> 单个商品
+              <span class="text-lg leading-none">+</span> <span data-i18n="oi_add_single">单个商品</span>
             </button>
             <button type="button" onclick="openScanModal()"
-                    class="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_scan"
                     style="background:#c8a96e;color:#1a3a2a">📷 扫码加货</button>
           </div>
         </div>
-        <div class="text-xs text-gray-400 mb-3">点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」</div>
+        <div class="text-xs text-gray-400 mb-3" data-i18n="oi_hint">点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」</div>
         <datalist id="staff-product-datalist"></datalist>
         <div id="items-list" class="mb-3"></div>
         <div id="windows-list"></div>
         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
-          <span class="text-sm text-gray-500">商品合计（原价）</span>
+          <span class="text-sm text-gray-500" data-i18n="oi_items_total">商品合计（原价）</span>
           <span id="items-total" class="font-bold text-hg text-base">MYR 0.00</span>
         </div>
 
         <!-- 合作设计师(选填) -->
         <div class="pt-3 mt-3 border-t border-gray-100">
-          <label class="label flex items-center gap-1">合作设计师<span class="text-xs text-gray-400 font-normal">（选填）</span></label>
+          <label class="label flex items-center gap-1"><span data-i18n="oi_designer">合作设计师</span><span class="text-xs text-gray-400 font-normal" data-i18n="oi_designer_optional">（选填）</span></label>
           <select id="o-designer" onchange="onDesignerSelect()" class="input text-sm">
-            <option value="">无 / 散客</option>
+            <option value="" data-i18n-opt="oi_designer_none">无 / 散客</option>
           </select>
           <div id="designer-breakdown" class="hidden mt-2 text-sm bg-gray-50 rounded-lg p-3 space-y-1"></div>
         </div>
@@ -408,8 +408,8 @@
             <div class="mt-2 flex items-center gap-3 p-2 rounded-lg" style="background:#f5f2ed;border:1px solid #e0c992">
               <input type="checkbox" id="o-tax-inclusive" class="accent-hg" onchange="updateTaxHint()">
               <label for="o-tax-inclusive" class="text-sm cursor-pointer select-none">
-                <span class="font-semibold" style="color:#1a3a2a">含 SST 6%</span>
-                <span class="text-xs text-gray-500 ml-1">（勾上 = 总额已含税；不勾 = 总额不含税）</span>
+                <span class="font-semibold" style="color:#1a3a2a" data-i18n="oi_tax_inclusive">含 SST 6%</span>
+                <span class="text-xs text-gray-500 ml-1" data-i18n="oi_tax_inclusive_hint">（勾上 = 总额已含税；不勾 = 总额不含税）</span>
               </label>
             </div>
             <p id="tax-hint" class="text-xs text-gray-500 mt-1 hidden">
@@ -430,25 +430,25 @@
         </div>
         <!-- Installment Plan -->
         <div class="mb-3">
-          <label class="label">付款计划</label>
+          <label class="label" data-i18n="oi_pay_plan">付款计划</label>
           <div class="flex gap-2 mb-2">
             <button type="button" id="inst-btn-1" onclick="setInstallments(1)"
-                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-hg bg-hg text-white">全款</button>
+                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-hg bg-hg text-white" data-i18n="oi_pay_full">全款</button>
             <button type="button" id="inst-btn-2" onclick="setInstallments(2)"
-                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600">2期</button>
+                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600" data-i18n="oi_pay_2">2期</button>
             <button type="button" id="inst-btn-3" onclick="setInstallments(3)"
-                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600">3期</button>
+                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600" data-i18n="oi_pay_3">3期</button>
           </div>
           <div id="inst-splits" class="space-y-2 bg-gray-50 rounded-lg p-3 text-sm"></div>
         </div>
         <!-- Fulfillment Mode (不需要安装时整块隐藏，避免"没安装还选安装方式"的别扭) -->
         <div class="mb-3" id="fulfillment-mode-block">
-          <label class="label">安装方式</label>
+          <label class="label" data-i18n="oi_install_mode">安装方式</label>
           <div class="flex gap-2 mb-1">
             <button type="button" id="fm-btn-all" onclick="setFulfillmentMode('all_together')"
-                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-hg bg-hg text-white">等齐安装</button>
+                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-hg bg-hg text-white" data-i18n="oi_install_all">等齐安装</button>
             <button type="button" id="fm-btn-phased" onclick="setFulfillmentMode('phased')"
-                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600">分批安装</button>
+                    class="flex-1 py-1.5 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600" data-i18n="oi_install_phased">分批安装</button>
           </div>
           <div id="fulfillment-mode-hint" class="text-xs text-amber-600"></div>
           <input type="hidden" id="o-fulfillment-mode" value="all_together">
@@ -457,13 +457,13 @@
         <div class="mb-3">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="o-needs-install" checked onchange="toggleInstallFee()" class="accent-hg">
-            <span class="label">需要安装服务</span>
+            <span class="label" data-i18n="oi_needs_install">需要安装服务</span>
           </label>
           <div id="install-fee-row" class="mt-2">
-            <label class="text-xs text-gray-500">安装费（含进订单总额,免费填 0）</label>
+            <label class="text-xs text-gray-500" data-i18n="oi_install_fee_lbl">安装费（含进订单总额,免费填 0）</label>
             <input type="number" id="o-install-fee" value="0" min="0" step="0.01" class="input text-sm">
           </div>
-          <p class="text-[11px] text-gray-400 mt-1">取消勾选 = 客户自取/自装,订单不进"安装中"阶段,到货后客户直接签收完成。</p>
+          <p class="text-[11px] text-gray-400 mt-1" data-i18n="oi_install_fee_hint">取消勾选 = 客户自取/自装,订单不进"安装中"阶段,到货后客户直接签收完成。</p>
         </div>
         <div>
           <label class="label" data-i18n="lbl_notes">备注</label>
@@ -954,6 +954,26 @@ const STAFF_I18N = {
     err_cannot_disable_self:'不能停用自己的账号',
     confirm_modify_own_role:'您正在修改自己的角色，确认继续？',
     err_fill_product_row:'请至少填写一行货品名称',
+    oi_title:'2. 商品明细',
+    oi_add_cabinet:'+ 橱柜（全套模块）', oi_add_wardrobe:'+ 衣柜（全套模块）', oi_add_window:'+ 铝合金门窗',
+    oi_add_single:'单个商品', oi_scan:'📷 扫码加货',
+    oi_hint:'点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」',
+    oi_items_total:'商品合计（原价）',
+    oi_designer:'合作设计师', oi_designer_optional:'（选填）', oi_designer_none:'无 / 散客',
+    oi_tax_inclusive:'含 SST 6%', oi_tax_inclusive_hint:'（勾上 = 总额已含税；不勾 = 总额不含税）',
+    oi_pay_plan:'付款计划', oi_pay_full:'全款', oi_pay_2:'2期', oi_pay_3:'3期',
+    oi_pay_method_dash:'方式 —', oi_pay_unpaid:'待收款', oi_pay_first_deposit:'创建时（订金）',
+    oi_pay_seq_pfx:'第', oi_pay_seq_sfx:'期',
+    oi_pay_on_arrival:'到货时收', oi_pay_on_complete:'完工时收', oi_pay_on_receipt:'收款时确认',
+    oi_install_mode:'安装方式', oi_install_all:'等齐安装', oi_install_phased:'分批安装',
+    oi_needs_install:'需要安装服务', oi_install_fee_lbl:'安装费（含进订单总额,免费填 0）',
+    oi_install_fee_hint:'取消勾选 = 客户自取/自装,订单不进"安装中"阶段,到货后客户直接签收完成。',
+    oi_ph_name:'产品编号（如 HH-WY-0001）或货品名称', oi_module_select:'— 模块（选填，橱柜/衣柜分模块报价用）—',
+    oi_type_warn:'⚠ 产品类型', oi_ft_custom:'定制', oi_ft_stock:'现货',
+    oi_ph_spec:'型号规格（选填）', oi_ph_qty:'数量', oi_ph_price:'单价', oi_ph_subtotal:'小计',
+    oi_err_no_items:'请至少添加一条商品明细',
+    pt_WY:'卫浴', pt_CG:'橱柜', pt_DZ:'定制柜', pt_DB:'地板/地砖', pt_DJ:'灯具', pt_MC:'门窗', pt_JJ:'家具', pt_WJ:'五金', pt_DQ:'电器', pt_TL:'涂料/壁纸', pt_QT:'其他',
+    u_延米:'延米', u_尺:'尺', u_平方尺:'平方尺', u_米:'米', u_平方米:'平方米', u_套:'套', u_件:'件', u_片:'片', u_个:'个', u_箱:'箱', u_批:'批', u_项:'项',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -1036,6 +1056,26 @@ const STAFF_I18N = {
     err_cannot_disable_self:'不能停用自己的帳號',
     confirm_modify_own_role:'您正在修改自己的角色，確認繼續？',
     err_fill_product_row:'請至少填寫一行貨品名稱',
+    oi_title:'2. 商品明細',
+    oi_add_cabinet:'+ 櫥櫃（全套模組）', oi_add_wardrobe:'+ 衣櫃（全套模組）', oi_add_window:'+ 鋁合金門窗',
+    oi_add_single:'單個商品', oi_scan:'📷 掃碼加貨',
+    oi_hint:'點「櫥櫃/衣櫃（全套模組）」一次帶出整套模組行，逐項填數量單價、用不到的按 × 刪掉；散賣單品用「單個商品」',
+    oi_items_total:'商品合計（原價）',
+    oi_designer:'合作設計師', oi_designer_optional:'（選填）', oi_designer_none:'無 / 散客',
+    oi_tax_inclusive:'含 SST 6%', oi_tax_inclusive_hint:'（勾選 = 總額已含稅；不勾 = 總額不含稅）',
+    oi_pay_plan:'付款計劃', oi_pay_full:'全款', oi_pay_2:'2期', oi_pay_3:'3期',
+    oi_pay_method_dash:'方式 —', oi_pay_unpaid:'待收款', oi_pay_first_deposit:'建立時（訂金）',
+    oi_pay_seq_pfx:'第', oi_pay_seq_sfx:'期',
+    oi_pay_on_arrival:'到貨時收', oi_pay_on_complete:'完工時收', oi_pay_on_receipt:'收款時確認',
+    oi_install_mode:'安裝方式', oi_install_all:'等齊安裝', oi_install_phased:'分批安裝',
+    oi_needs_install:'需要安裝服務', oi_install_fee_lbl:'安裝費（含進訂單總額，免費填 0）',
+    oi_install_fee_hint:'取消勾選 = 客戶自取/自裝，訂單不進「安裝中」階段，到貨後客戶直接簽收完成。',
+    oi_ph_name:'產品編號（如 HH-WY-0001）或貨品名稱', oi_module_select:'— 模組（選填，櫥櫃/衣櫃分模組報價用）—',
+    oi_type_warn:'⚠ 產品類型', oi_ft_custom:'訂製', oi_ft_stock:'現貨',
+    oi_ph_spec:'型號規格（選填）', oi_ph_qty:'數量', oi_ph_price:'單價', oi_ph_subtotal:'小計',
+    oi_err_no_items:'請至少新增一條商品明細',
+    pt_WY:'衛浴', pt_CG:'櫥櫃', pt_DZ:'訂製櫃', pt_DB:'地板/地磚', pt_DJ:'燈具', pt_MC:'門窗', pt_JJ:'家具', pt_WJ:'五金', pt_DQ:'電器', pt_TL:'塗料/壁紙', pt_QT:'其他',
+    u_延米:'延米', u_尺:'尺', u_平方尺:'平方尺', u_米:'米', u_平方米:'平方米', u_套:'套', u_件:'件', u_片:'片', u_个:'個', u_箱:'箱', u_批:'批', u_项:'項',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -1118,6 +1158,26 @@ const STAFF_I18N = {
     err_cannot_disable_self:'You cannot disable your own account',
     confirm_modify_own_role:'You are changing your own role. Continue?',
     err_fill_product_row:'Please fill in at least one product line',
+    oi_title:'2. Order Items',
+    oi_add_cabinet:'+ Kitchen Cabinet (Full Modules)', oi_add_wardrobe:'+ Wardrobe (Full Modules)', oi_add_window:'+ Aluminium Doors & Windows',
+    oi_add_single:'Single Item', oi_scan:'📷 Scan to Add',
+    oi_hint:'Click "Kitchen Cabinet / Wardrobe (Full Modules)" to load the full set of module lines at once; fill in quantity and unit price for each, and press × to delete the ones you don\'t need. Use "Single Item" for individual products.',
+    oi_items_total:'Items Total (List Price)',
+    oi_designer:'Partner Designer', oi_designer_optional:'(optional)', oi_designer_none:'None / Walk-in',
+    oi_tax_inclusive:'Incl. SST 6%', oi_tax_inclusive_hint:'(checked = total includes tax; unchecked = total excludes tax)',
+    oi_pay_plan:'Payment Plan', oi_pay_full:'Full', oi_pay_2:'2 Installments', oi_pay_3:'3 Installments',
+    oi_pay_method_dash:'Method —', oi_pay_unpaid:'Pending', oi_pay_first_deposit:'At creation (deposit)',
+    oi_pay_seq_pfx:'Installment ', oi_pay_seq_sfx:'',
+    oi_pay_on_arrival:'On arrival', oi_pay_on_complete:'On completion', oi_pay_on_receipt:'Confirm on receipt',
+    oi_install_mode:'Installation Mode', oi_install_all:'Install Together', oi_install_phased:'Phased Install',
+    oi_needs_install:'Installation Service Required', oi_install_fee_lbl:'Installation Fee (included in order total; enter 0 if free)',
+    oi_install_fee_hint:'Uncheck = customer self-pickup/self-install; the order skips the "Installing" stage and is completed once the customer signs off on arrival.',
+    oi_ph_name:'Product code (e.g. HH-WY-0001) or item name', oi_module_select:'— Module (optional, for cabinet/wardrobe module quotes) —',
+    oi_type_warn:'⚠ Product Type', oi_ft_custom:'Custom', oi_ft_stock:'In Stock',
+    oi_ph_spec:'Model / spec (optional)', oi_ph_qty:'Qty', oi_ph_price:'Unit Price', oi_ph_subtotal:'Subtotal',
+    oi_err_no_items:'Please add at least one order item',
+    pt_WY:'Bathroom', pt_CG:'Kitchen Cabinet', pt_DZ:'Custom Cabinet', pt_DB:'Flooring/Tiles', pt_DJ:'Lighting', pt_MC:'Doors & Windows', pt_JJ:'Furniture', pt_WJ:'Hardware', pt_DQ:'Appliances', pt_TL:'Paint/Wallpaper', pt_QT:'Other',
+    u_延米:'lin.m', u_尺:'ft', u_平方尺:'sq.ft', u_米:'m', u_平方米:'m²', u_套:'set', u_件:'pc', u_片:'sheet', u_个:'unit', u_箱:'box', u_批:'batch', u_项:'item',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -1200,6 +1260,26 @@ const STAFF_I18N = {
     err_cannot_disable_self:'Anda tidak boleh lumpuhkan akaun sendiri',
     confirm_modify_own_role:'Anda sedang menukar peranan sendiri. Teruskan?',
     err_fill_product_row:'Sila isi sekurang-kurangnya satu baris produk',
+    oi_title:'2. Butiran Item',
+    oi_add_cabinet:'+ Kabinet Dapur (Set Penuh)', oi_add_wardrobe:'+ Almari (Set Penuh)', oi_add_window:'+ Pintu & Tingkap Aluminium',
+    oi_add_single:'Item Tunggal', oi_scan:'📷 Imbas untuk Tambah',
+    oi_hint:'Klik "Kabinet Dapur / Almari (Set Penuh)" untuk memunculkan semua baris modul sekali gus; isi kuantiti dan harga seunit bagi setiap satu, dan tekan × untuk padam yang tidak diperlukan. Gunakan "Item Tunggal" untuk produk berasingan.',
+    oi_items_total:'Jumlah Item (Harga Senarai)',
+    oi_designer:'Pereka Rakan', oi_designer_optional:'(pilihan)', oi_designer_none:'Tiada / Pelanggan Walk-in',
+    oi_tax_inclusive:'Termasuk SST 6%', oi_tax_inclusive_hint:'(ditanda = jumlah termasuk cukai; tidak ditanda = jumlah tidak termasuk cukai)',
+    oi_pay_plan:'Pelan Pembayaran', oi_pay_full:'Penuh', oi_pay_2:'2 Ansuran', oi_pay_3:'3 Ansuran',
+    oi_pay_method_dash:'Kaedah —', oi_pay_unpaid:'Belum Terima', oi_pay_first_deposit:'Semasa cipta (deposit)',
+    oi_pay_seq_pfx:'Ansuran ', oi_pay_seq_sfx:'',
+    oi_pay_on_arrival:'Terima semasa tiba', oi_pay_on_complete:'Terima semasa siap', oi_pay_on_receipt:'Sahkan semasa terima',
+    oi_install_mode:'Mod Pemasangan', oi_install_all:'Pasang Serentak', oi_install_phased:'Pasang Berperingkat',
+    oi_needs_install:'Perlu Perkhidmatan Pemasangan', oi_install_fee_lbl:'Yuran Pemasangan (termasuk dalam jumlah pesanan; isi 0 jika percuma)',
+    oi_install_fee_hint:'Nyahtanda = pelanggan ambil/pasang sendiri; pesanan melangkau peringkat "Pemasangan" dan selesai sebaik pelanggan menandatangani semasa penerimaan.',
+    oi_ph_name:'Kod produk (cth. HH-WY-0001) atau nama item', oi_module_select:'— Modul (pilihan, untuk sebut harga modul kabinet/almari) —',
+    oi_type_warn:'⚠ Jenis Produk', oi_ft_custom:'Tempahan', oi_ft_stock:'Ada Stok',
+    oi_ph_spec:'Model / spesifikasi (pilihan)', oi_ph_qty:'Kuantiti', oi_ph_price:'Harga Seunit', oi_ph_subtotal:'Subjumlah',
+    oi_err_no_items:'Sila tambah sekurang-kurangnya satu butiran item',
+    pt_WY:'Bilik Mandi', pt_CG:'Kabinet Dapur', pt_DZ:'Kabinet Tempahan', pt_DB:'Lantai/Jubin', pt_DJ:'Lampu', pt_MC:'Pintu & Tingkap', pt_JJ:'Perabot', pt_WJ:'Perkakasan', pt_DQ:'Elektrik', pt_TL:'Cat/Kertas Dinding', pt_QT:'Lain-lain',
+    u_延米:'m linear', u_尺:'kaki', u_平方尺:'kaki²', u_米:'m', u_平方米:'m²', u_套:'set', u_件:'unit', u_片:'keping', u_个:'biji', u_箱:'kotak', u_批:'kelompok', u_项:'item',
   },
   'th': {
     sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
@@ -1282,6 +1362,26 @@ const STAFF_I18N = {
     err_cannot_disable_self:'ไม่สามารถปิดใช้งานบัญชีของตนเองได้',
     confirm_modify_own_role:'คุณกำลังเปลี่ยนบทบาทของตัวเอง ต้องการดำเนินการต่อ?',
     err_fill_product_row:'กรุณากรอกรายการสินค้าอย่างน้อยหนึ่งบรรทัด',
+    oi_title:'2. รายการสินค้า',
+    oi_add_cabinet:'+ ตู้ครัว (ชุดเต็มโมดูล)', oi_add_wardrobe:'+ ตู้เสื้อผ้า (ชุดเต็มโมดูล)', oi_add_window:'+ ประตู&หน้าต่างอะลูมิเนียม',
+    oi_add_single:'สินค้ารายชิ้น', oi_scan:'📷 สแกนเพื่อเพิ่ม',
+    oi_hint:'คลิก "ตู้ครัว/ตู้เสื้อผ้า (ชุดเต็มโมดูล)" เพื่อดึงรายการโมดูลทั้งชุดในครั้งเดียว กรอกจำนวนและราคาต่อหน่วยทีละรายการ แล้วกด × เพื่อลบรายการที่ไม่ใช้ ใช้ "สินค้ารายชิ้น" สำหรับสินค้าแยกชิ้น',
+    oi_items_total:'รวมสินค้า (ราคาตั้ง)',
+    oi_designer:'นักออกแบบพันธมิตร', oi_designer_optional:'(ไม่บังคับ)', oi_designer_none:'ไม่มี / ลูกค้าทั่วไป',
+    oi_tax_inclusive:'รวม SST 6%', oi_tax_inclusive_hint:'(ติ๊ก = ยอดรวมภาษีแล้ว; ไม่ติ๊ก = ยอดยังไม่รวมภาษี)',
+    oi_pay_plan:'แผนการชำระเงิน', oi_pay_full:'ชำระเต็ม', oi_pay_2:'2 งวด', oi_pay_3:'3 งวด',
+    oi_pay_method_dash:'วิธี —', oi_pay_unpaid:'รอรับชำระ', oi_pay_first_deposit:'ตอนสร้าง (มัดจำ)',
+    oi_pay_seq_pfx:'งวดที่ ', oi_pay_seq_sfx:'',
+    oi_pay_on_arrival:'รับเมื่อสินค้าถึง', oi_pay_on_complete:'รับเมื่อเสร็จงาน', oi_pay_on_receipt:'ยืนยันเมื่อรับเงิน',
+    oi_install_mode:'รูปแบบการติดตั้ง', oi_install_all:'ติดตั้งพร้อมกัน', oi_install_phased:'ติดตั้งเป็นงวด',
+    oi_needs_install:'ต้องการบริการติดตั้ง', oi_install_fee_lbl:'ค่าติดตั้ง (รวมในยอดคำสั่งซื้อ; ใส่ 0 หากฟรี)',
+    oi_install_fee_hint:'ยกเลิกการติ๊ก = ลูกค้ารับ/ติดตั้งเอง คำสั่งซื้อจะข้ามขั้นตอน "กำลังติดตั้ง" และเสร็จสมบูรณ์เมื่อลูกค้าเซ็นรับสินค้า',
+    oi_ph_name:'รหัสสินค้า (เช่น HH-WY-0001) หรือชื่อสินค้า', oi_module_select:'— โมดูล (ไม่บังคับ ใช้สำหรับเสนอราคาตู้ครัว/ตู้เสื้อผ้าแยกโมดูล) —',
+    oi_type_warn:'⚠ ประเภทสินค้า', oi_ft_custom:'สั่งทำ', oi_ft_stock:'มีสต็อก',
+    oi_ph_spec:'รุ่น / สเปก (ไม่บังคับ)', oi_ph_qty:'จำนวน', oi_ph_price:'ราคาต่อหน่วย', oi_ph_subtotal:'ยอดย่อย',
+    oi_err_no_items:'กรุณาเพิ่มรายการสินค้าอย่างน้อยหนึ่งรายการ',
+    pt_WY:'ห้องน้ำ', pt_CG:'ตู้ครัว', pt_DZ:'ตู้สั่งทำ', pt_DB:'พื้น/กระเบื้อง', pt_DJ:'โคมไฟ', pt_MC:'ประตู&หน้าต่าง', pt_JJ:'เฟอร์นิเจอร์', pt_WJ:'ฮาร์ดแวร์', pt_DQ:'เครื่องใช้ไฟฟ้า', pt_TL:'สี/วอลเปเปอร์', pt_QT:'อื่นๆ',
+    u_延米:'ม.ความยาว', u_尺:'ฟุต', u_平方尺:'ตร.ฟุต', u_米:'ม.', u_平方米:'ตร.ม.', u_套:'ชุด', u_件:'ชิ้น', u_片:'แผ่น', u_个:'อัน', u_箱:'กล่อง', u_批:'ล็อต', u_项:'รายการ',
   },
 };
 
@@ -2953,7 +3053,7 @@ function addItemRow(data = {}) {
     <div class="grid grid-cols-2 gap-2 pr-6">
       <div class="col-span-2">
         <input type="text" id="item-name-${id}" value="${data.sku_ref||data.product_name||''}"
-               placeholder="产品编号（如 HH-WY-0001）或货品名称" list="staff-product-datalist-${id}"
+               placeholder="${t('oi_ph_name')}" list="staff-product-datalist-${id}"
                oninput="autoDetectProductType(${id}); autoDetectItemFT(${id}); onProductSelect(${id})"
                class="input text-sm w-full font-mono">
         <datalist id="staff-product-datalist-${id}"></datalist>
@@ -2963,48 +3063,48 @@ function addItemRow(data = {}) {
       <div class="col-span-2">
         <select id="item-section-${id}" onchange="onSectionChange(${id})" class="input text-sm w-full"
                 style="${data.section?'border-color:#1a3a2a':''}">
-          <option value="">— 模块（选填，橱柜/衣柜分模块报价用）—</option>
-          ${QUOTE_SECTIONS.map(s => `<option value="${s}" ${data.section===s?'selected':''}>${s}</option>`).join('')}
+          <option value="">${t('oi_module_select')}</option>
+          ${QUOTE_SECTIONS.map(s => `<option value="${s}" ${data.section===s?'selected':''}>${sectionLabel(s)}</option>`).join('')}
         </select>
       </div>
       <div>
         <select id="item-type-${id}" class="input text-sm w-full"
                 onchange="document.getElementById('item-type-${id}').classList.toggle('border-blue-400',!!this.value); refreshItemDatalist(${id})">
-          <option value="">⚠ 产品类型</option>
-          ${PRODUCT_TYPES.map(pt => `<option value="${pt.code}" ${data.product_type===pt.code?'selected':''}>${pt.label}</option>`).join('')}
+          <option value="">${t('oi_type_warn')}</option>
+          ${PRODUCT_TYPES.map(pt => `<option value="${pt.code}" ${data.product_type===pt.code?'selected':''}>${t('pt_'+pt.code)}</option>`).join('')}
         </select>
       </div>
       <div class="flex gap-1">
         <button type="button" id="item-ft-custom-${id}" onclick="setItemFT(${id},'custom')"
                 class="flex-1 py-1 text-xs rounded border font-semibold transition-colors"
-                style="${(data.fulfillment_type||'custom')==='custom'?'background:#1a3a2a;color:white;border-color:#1a3a2a':'background:white;color:#666;border-color:#ddd'}">定制</button>
+                style="${(data.fulfillment_type||'custom')==='custom'?'background:#1a3a2a;color:white;border-color:#1a3a2a':'background:white;color:#666;border-color:#ddd'}">${t('oi_ft_custom')}</button>
         <button type="button" id="item-ft-stock-${id}" onclick="setItemFT(${id},'stock')"
                 class="flex-1 py-1 text-xs rounded border font-semibold transition-colors"
-                style="${(data.fulfillment_type||'custom')==='stock'?'background:#065f46;color:white;border-color:#065f46':'background:white;color:#666;border-color:#ddd'}">现货</button>
+                style="${(data.fulfillment_type||'custom')==='stock'?'background:#065f46;color:white;border-color:#065f46':'background:white;color:#666;border-color:#ddd'}">${t('oi_ft_stock')}</button>
         <input type="hidden" id="item-ft-${id}" value="${data.fulfillment_type||'custom'}">
       </div>
       <div>
         <input type="text" id="item-spec-${id}" value="${data.model_spec||''}"
-               placeholder="型号规格（选填）" class="input text-sm w-full">
+               placeholder="${t('oi_ph_spec')}" class="input text-sm w-full">
       </div>
       <div>
         <input type="number" id="item-qty-${id}" value="${data.quantity||1}"
-               placeholder="数量" min="0.01" step="0.01"
+               placeholder="${t('oi_ph_qty')}" min="0.01" step="0.01"
                oninput="calcItemRow(${id})" class="input text-sm w-full">
       </div>
       <div>
         <select id="item-unit-${id}" class="input text-sm w-full">
-          ${units.map(u => `<option ${(data.unit||'套')===u?'selected':''}>${u}</option>`).join('')}
+          ${units.map(u => `<option value="${u}" ${(data.unit||'套')===u?'selected':''}>${t('u_'+u)}</option>`).join('')}
         </select>
       </div>
       <div>
         <input type="number" id="item-price-${id}" value="${data.unit_price||''}"
-               placeholder="单价" min="0" step="0.01"
+               placeholder="${t('oi_ph_price')}" min="0" step="0.01"
                oninput="calcItemRow(${id})" class="input text-sm w-full">
       </div>
       <div>
         <input type="text" id="item-sub-${id}" value="${data.total_price ? data.total_price.toFixed(2) : ''}"
-               placeholder="小计" class="input text-sm w-full bg-gray-100 font-bold text-hg" readonly>
+               placeholder="${t('oi_ph_subtotal')}" class="input text-sm w-full bg-gray-100 font-bold text-hg" readonly>
       </div>
     </div>`;
   document.getElementById('items-list').appendChild(row);
@@ -3369,7 +3469,7 @@ function populateDesignerDropdown() {
   const sid = document.getElementById('o-store')?.value || profile?.store_id || '';
   // 只列「本店」+「通用(未绑门店)」的设计师;无法确定门店时全列
   const active = (_designersAll || []).filter(d => d.active && (!d.store_id || !sid || d.store_id === sid));
-  sel.innerHTML = '<option value="">无 / 散客</option>' + active.map(d => {
+  sel.innerHTML = `<option value="" data-i18n-opt="oi_designer_none">${t('oi_designer_none')}</option>` + active.map(d => {
     const tag = d.model_type === 'discount' ? `专享 -${d.discount_pct}%`
               : d.model_type === 'commission' ? `返点 ${d.commission_pct}%`
               : `-${d.discount_pct}% / 返 ${d.commission_pct}%`;
@@ -3514,16 +3614,16 @@ function setInstallments(n) {
   const defaults = { 1: [100], 2: [50, 50], 3: [50, 40, 10] };
   const container = document.getElementById('inst-splits');
   const methodOpts = `
-    <option value="">方式 —</option>
-    <option value="cash">💵 现金</option>
-    <option value="transfer">🏦 银行转账</option>
-    <option value="ewallet">📱 电子钱包</option>
-    <option value="card">💳 刷卡</option>`;
+    <option value="">${t('oi_pay_method_dash')}</option>
+    <option value="cash">${t('pay_cash')}</option>
+    <option value="transfer">${t('pay_transfer')}</option>
+    <option value="ewallet">${t('pay_ewallet')}</option>
+    <option value="card">${t('pay_card')}</option>`;
 
   container.innerHTML = defaults[n].map((pct, i) => {
     const seq = i + 1;
     const isFirst = seq === 1;
-    const label = n === 1 ? '全款' : `第${seq}期`;
+    const label = n === 1 ? t('oi_pay_full') : `${t('oi_pay_seq_pfx')}${seq}${t('oi_pay_seq_sfx')}`;
     const pctInput = n > 1
       ? `<input type="number" id="split-${seq}" value="${pct}" min="1" max="99"
                oninput="updateSplitAmounts()"
@@ -3537,13 +3637,13 @@ function setInstallments(n) {
           ${pctInput}
           <span id="split-amt-${seq}" class="text-hg font-semibold text-xs ml-1"></span>
           ${!isFirst ? `<span class="text-xs text-gray-400 ml-auto">${
-            n === 3 && seq === 2 ? '到货时收' : n === 3 && seq === 3 ? '完工时收' : '收款时确认'
-          }</span>` : '<span class="text-xs text-gray-400 ml-auto">创建时（订金）</span>'}
+            n === 3 && seq === 2 ? t('oi_pay_on_arrival') : n === 3 && seq === 3 ? t('oi_pay_on_complete') : t('oi_pay_on_receipt')
+          }</span>` : `<span class="text-xs text-gray-400 ml-auto">${t('oi_pay_first_deposit')}</span>`}
         </div>
         ${isFirst ? `<div class="flex gap-2 mt-1.5">
           <select id="o-payment" class="input text-sm py-1.5 flex-1">
-            <option value="unpaid">待收款</option>
-            <option value="paid">已收款</option>
+            <option value="unpaid">${t('oi_pay_unpaid')}</option>
+            <option value="paid">${t('opt_paid')}</option>
           </select>
           <select id="o-pay-method" class="input text-sm py-1.5 flex-1">
             ${methodOpts}
@@ -3590,7 +3690,7 @@ async function submitOrder() {
 
   // Validate items: must have at least one named row, and total must match order amount(不含安装费)
   const itemsForCheck = getItemRows();
-  if (itemsForCheck.length === 0) { showCreateErr('请至少添加一条商品明细'); return; }
+  if (itemsForCheck.length === 0) { showCreateErr(t('oi_err_no_items')); return; }
   if (itemsForCheck.some(r => !(r.quantity > 0))) {
     showCreateErr('有商品行数量为空或为 0，请填写有效数量'); return;
   }
