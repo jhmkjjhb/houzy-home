@@ -857,12 +857,12 @@
 <div id="scan-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.7)">
   <div class="bg-white rounded-2xl p-4 w-full max-w-sm">
     <div class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold text-gray-800">📷 扫码加货</h3>
+      <h3 class="font-semibold text-gray-800" data-i18n="scan_modal_title">📷 扫码加货</h3>
       <button type="button" onclick="closeScanModal()" class="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
     </div>
     <div id="qr-reader" class="w-full rounded-lg overflow-hidden bg-gray-100" style="min-height:240px"></div>
-    <p id="scan-msg" class="text-xs text-gray-500 mt-3 text-center">把摄像头对准产品二维码…</p>
-    <button type="button" onclick="closeScanModal()" class="mt-3 w-full py-2 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300">取消</button>
+    <p id="scan-msg" class="text-xs text-gray-500 mt-3 text-center" data-i18n="scan_aim_qr">把摄像头对准产品二维码…</p>
+    <button type="button" onclick="closeScanModal()" class="mt-3 w-full py-2 text-sm rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300" data-i18n="scan_cancel">取消</button>
   </div>
 </div>
 
@@ -934,6 +934,26 @@ const STAFF_I18N = {
     err_store_mgr_recompute:'店长及以上可重新计算质保',
     err_sign_first:'请先填写图纸链接',
     err_file_too_big:'文件过大（>20MB），请压缩或改用链接',
+    scan_modal_title:'📷 扫码加货', scan_aim_qr:'把摄像头对准产品二维码…', scan_cancel:'取消',
+    scan_lib_loading:'扫码组件还在加载，请过几秒再试',
+    scan_camera_fail:'无法打开摄像头：', scan_camera_perm:'请检查是否允许了摄像头权限。',
+    scan_no_sku:'没读到有效的产品编号，请重试',
+    scan_not_found_pfx:'未在产品库找到编号「', scan_not_found_sfx:'」。',
+    scan_not_found_hint:'请确认该产品已在仓管「产品档案」里录入。',
+    confirm_recompute_warranty:'重新按订单实际商品计算质保表? 将覆盖现有 warranty_info。',
+    ok_warranty_recomputed:'✅ 质保信息已按实际商品重新计算。',
+    confirm_revoke_settled:'撤销该单的"已结算"标记?',
+    confirm_mark_settled:'标记该单设计师返点为"已结算"?(用于月度对账)',
+    confirm_mark_settled_short:'标记该单返点为"已结算"?',
+    err_settle_failed:'结算失败：',
+    confirm_delete_attachment:'删除此附件？',
+    err_name_required:'名称不能为空',
+    err_input_valid_days:'请输入有效天数（1~30）',
+    err_max_prod_days:'生产天数最多 30 天',
+    err_no_export_data:'当前筛选没有数据可导出',
+    err_cannot_disable_self:'不能停用自己的账号',
+    confirm_modify_own_role:'您正在修改自己的角色，确认继续？',
+    err_fill_product_row:'请至少填写一行货品名称',
   },
   'zh-TW': {
     sidebar_title:'店員後台', nav_dashboard:'總覽', nav_orders:'訂單管理', nav_new:'新建訂單', nav_customers:'客戶管理', nav_logout:'退出',
@@ -996,6 +1016,26 @@ const STAFF_I18N = {
     err_store_mgr_recompute:'店長及以上可重新計算質保',
     err_sign_first:'請先填寫圖紙連結',
     err_file_too_big:'檔案過大（>20MB），請壓縮或改用連結',
+    scan_modal_title:'📷 掃碼加貨', scan_aim_qr:'把鏡頭對準產品二維碼…', scan_cancel:'取消',
+    scan_lib_loading:'掃碼元件還在載入，請過幾秒再試',
+    scan_camera_fail:'無法開啟鏡頭：', scan_camera_perm:'請檢查是否已允許鏡頭權限。',
+    scan_no_sku:'沒讀到有效的產品編號，請重試',
+    scan_not_found_pfx:'未在產品庫找到編號「', scan_not_found_sfx:'」。',
+    scan_not_found_hint:'請確認該產品已在倉管「產品檔案」裡建立。',
+    confirm_recompute_warranty:'重新依訂單實際商品計算質保表? 將覆蓋現有 warranty_info。',
+    ok_warranty_recomputed:'✅ 質保資訊已依實際商品重新計算。',
+    confirm_revoke_settled:'撤銷該單的"已結算"標記?',
+    confirm_mark_settled:'標記該單設計師返點為"已結算"?(用於月度對賬)',
+    confirm_mark_settled_short:'標記該單返點為"已結算"?',
+    err_settle_failed:'結算失敗：',
+    confirm_delete_attachment:'刪除此附件？',
+    err_name_required:'名稱不能為空',
+    err_input_valid_days:'請輸入有效天數（1~30）',
+    err_max_prod_days:'生產天數最多 30 天',
+    err_no_export_data:'目前篩選沒有資料可匯出',
+    err_cannot_disable_self:'不能停用自己的帳號',
+    confirm_modify_own_role:'您正在修改自己的角色，確認繼續？',
+    err_fill_product_row:'請至少填寫一行貨品名稱',
   },
   'en': {
     sidebar_title:'Staff Portal', nav_dashboard:'Dashboard', nav_orders:'Orders', nav_new:'New Order', nav_customers:'Customers', nav_logout:'Logout',
@@ -1058,6 +1098,26 @@ const STAFF_I18N = {
     err_store_mgr_recompute:'Store manager or above can recompute warranty',
     err_sign_first:'Please fill drawing link first',
     err_file_too_big:'File too big (>20MB). Please compress or use a link.',
+    scan_modal_title:'📷 Scan to Add', scan_aim_qr:'Point the camera at the product QR code…', scan_cancel:'Cancel',
+    scan_lib_loading:'Scanner is still loading, please try again in a moment',
+    scan_camera_fail:'Cannot open camera: ', scan_camera_perm:'Please check that camera permission is allowed.',
+    scan_no_sku:'No valid product code detected, please retry',
+    scan_not_found_pfx:'Product code "', scan_not_found_sfx:'" not found in the catalog.',
+    scan_not_found_hint:'Please make sure the product is registered under Warehouse "Product Records".',
+    confirm_recompute_warranty:'Recompute the warranty schedule from the order\'s actual items? This will overwrite the existing warranty_info.',
+    ok_warranty_recomputed:'✅ Warranty info recomputed from actual items.',
+    confirm_revoke_settled:'Revoke the "settled" mark on this order?',
+    confirm_mark_settled:'Mark this order\'s designer rebate as "settled"? (for monthly reconciliation)',
+    confirm_mark_settled_short:'Mark this order\'s rebate as "settled"?',
+    err_settle_failed:'Settlement failed: ',
+    confirm_delete_attachment:'Delete this attachment?',
+    err_name_required:'Name cannot be empty',
+    err_input_valid_days:'Please enter a valid number of days (1–30)',
+    err_max_prod_days:'Production days cannot exceed 30',
+    err_no_export_data:'No data to export under the current filter',
+    err_cannot_disable_self:'You cannot disable your own account',
+    confirm_modify_own_role:'You are changing your own role. Continue?',
+    err_fill_product_row:'Please fill in at least one product line',
   },
   'ms': {
     sidebar_title:'Portal Staf', nav_dashboard:'Papan Pemuka', nav_orders:'Pesanan', nav_new:'Pesanan Baru', nav_customers:'Pelanggan', nav_logout:'Log Keluar',
@@ -1120,6 +1180,26 @@ const STAFF_I18N = {
     err_store_mgr_recompute:'Pengurus kedai atau ke atas boleh kira semula waranti',
     err_sign_first:'Sila isi pautan lukisan dahulu',
     err_file_too_big:'Fail terlalu besar (>20MB). Sila mampatkan atau guna pautan.',
+    scan_modal_title:'📷 Imbas untuk Tambah', scan_aim_qr:'Halakan kamera ke kod QR produk…', scan_cancel:'Batal',
+    scan_lib_loading:'Pengimbas masih dimuatkan, sila cuba lagi sebentar',
+    scan_camera_fail:'Tidak dapat buka kamera: ', scan_camera_perm:'Sila pastikan kebenaran kamera dibenarkan.',
+    scan_no_sku:'Tiada kod produk sah dikesan, sila cuba semula',
+    scan_not_found_pfx:'Kod produk "', scan_not_found_sfx:'" tidak ditemui dalam katalog.',
+    scan_not_found_hint:'Sila pastikan produk telah didaftar di Gudang "Rekod Produk".',
+    confirm_recompute_warranty:'Kira semula jadual waranti berdasarkan item sebenar pesanan? Ini akan menulis ganti warranty_info sedia ada.',
+    ok_warranty_recomputed:'✅ Maklumat waranti dikira semula berdasarkan item sebenar.',
+    confirm_revoke_settled:'Batalkan tanda "selesai dibayar" pada pesanan ini?',
+    confirm_mark_settled:'Tanda rebat pereka pesanan ini sebagai "selesai dibayar"? (untuk penyesuaian bulanan)',
+    confirm_mark_settled_short:'Tanda rebat pesanan ini sebagai "selesai dibayar"?',
+    err_settle_failed:'Penyelesaian gagal: ',
+    confirm_delete_attachment:'Padam lampiran ini?',
+    err_name_required:'Nama tidak boleh kosong',
+    err_input_valid_days:'Sila masukkan bilangan hari yang sah (1–30)',
+    err_max_prod_days:'Hari pengeluaran tidak boleh melebihi 30',
+    err_no_export_data:'Tiada data untuk dieksport di bawah penapis semasa',
+    err_cannot_disable_self:'Anda tidak boleh lumpuhkan akaun sendiri',
+    confirm_modify_own_role:'Anda sedang menukar peranan sendiri. Teruskan?',
+    err_fill_product_row:'Sila isi sekurang-kurangnya satu baris produk',
   },
   'th': {
     sidebar_title:'พอร์ทัลพนักงาน', nav_dashboard:'แดชบอร์ด', nav_orders:'คำสั่งซื้อ', nav_new:'สร้างคำสั่งซื้อ', nav_customers:'ลูกค้า', nav_logout:'ออกจากระบบ',
@@ -1182,6 +1262,26 @@ const STAFF_I18N = {
     err_store_mgr_recompute:'ผู้จัดการร้านขึ้นไปสามารถคำนวณประกันใหม่',
     err_sign_first:'กรุณากรอกลิงก์แบบก่อน',
     err_file_too_big:'ไฟล์ใหญ่เกินไป (>20MB) กรุณาบีบอัดหรือใช้ลิงก์',
+    scan_modal_title:'📷 สแกนเพื่อเพิ่มสินค้า', scan_aim_qr:'หันกล้องไปที่คิวอาร์โค้ดของสินค้า…', scan_cancel:'ยกเลิก',
+    scan_lib_loading:'ตัวสแกนกำลังโหลด กรุณาลองอีกครั้งในอีกสักครู่',
+    scan_camera_fail:'ไม่สามารถเปิดกล้องได้: ', scan_camera_perm:'กรุณาตรวจสอบว่าได้อนุญาตสิทธิ์การใช้กล้องแล้ว',
+    scan_no_sku:'ไม่พบรหัสสินค้าที่ถูกต้อง กรุณาลองใหม่',
+    scan_not_found_pfx:'ไม่พบรหัส "', scan_not_found_sfx:'" ในคลังสินค้า',
+    scan_not_found_hint:'กรุณาตรวจสอบว่าสินค้านี้ถูกบันทึกใน "บันทึกสินค้า" ของคลังแล้ว',
+    confirm_recompute_warranty:'คำนวณตารางการรับประกันใหม่จากสินค้าจริงในคำสั่งซื้อ? จะเขียนทับ warranty_info เดิม',
+    ok_warranty_recomputed:'✅ คำนวณข้อมูลการรับประกันใหม่จากสินค้าจริงแล้ว',
+    confirm_revoke_settled:'ยกเลิกการทำเครื่องหมาย "ชำระบัญชีแล้ว" ของคำสั่งซื้อนี้?',
+    confirm_mark_settled:'ทำเครื่องหมายค่าตอบแทนนักออกแบบของคำสั่งนี้เป็น "ชำระบัญชีแล้ว"? (สำหรับกระทบยอดรายเดือน)',
+    confirm_mark_settled_short:'ทำเครื่องหมายค่าตอบแทนของคำสั่งนี้เป็น "ชำระบัญชีแล้ว"?',
+    err_settle_failed:'การชำระบัญชีล้มเหลว: ',
+    confirm_delete_attachment:'ลบไฟล์แนบนี้?',
+    err_name_required:'ชื่อต้องไม่ว่างเปล่า',
+    err_input_valid_days:'กรุณากรอกจำนวนวันที่ถูกต้อง (1–30)',
+    err_max_prod_days:'จำนวนวันผลิตต้องไม่เกิน 30 วัน',
+    err_no_export_data:'ไม่มีข้อมูลให้ส่งออกภายใต้ตัวกรองปัจจุบัน',
+    err_cannot_disable_self:'ไม่สามารถปิดใช้งานบัญชีของตนเองได้',
+    confirm_modify_own_role:'คุณกำลังเปลี่ยนบทบาทของตัวเอง ต้องการดำเนินการต่อ?',
+    err_fill_product_row:'กรุณากรอกรายการสินค้าอย่างน้อยหนึ่งบรรทัด',
   },
 };
 
@@ -1495,7 +1595,7 @@ function computeWarrantyInfo(orderItems, startIso) {
 // 重算并存储某订单的质保信息(用于修老订单已存的"全套部件"错误数据)
 async function recomputeOrderWarranty(orderId) {
   if (!canDo(2)) { alert(t('err_store_mgr_recompute')); return; }
-  if (!confirm('重新按订单实际商品计算质保表? 将覆盖现有 warranty_info。')) return;
+  if (!confirm(t('confirm_recompute_warranty'))) return;
   const { data: o }   = await sb.from('orders').select('warranty_info,signed_at,completed_at,created_at').eq('id', orderId).single();
   const { data: its } = await sb.from('order_items').select('product_name').eq('order_id', orderId);
   // 起始时间优先级:现有 warranty_info.startIso > signed_at > completed_at > created_at
@@ -1509,7 +1609,7 @@ async function recomputeOrderWarranty(orderId) {
   const wi = computeWarrantyInfo(its || [], startIso);
   const { error } = await sb.from('orders').update({ warranty_info: JSON.stringify(wi) }).eq('id', orderId);
   if (error) { alert(t('err_save_failed') + error.message); return; }
-  alert('✅ 质保信息已按实际商品重新计算。');
+  alert(t('ok_warranty_recomputed'));
   openDetail(orderId);
 }
 
@@ -1782,11 +1882,11 @@ function renderDesignerCard(o, items) {
 async function toggleDesignerSettled(orderId, currentlySettled) {
   if (!canDo(2)) { alert(t('err_store_mgr_only')); return; }
   if (currentlySettled) {
-    if (!confirm('撤销该单的"已结算"标记?')) return;
+    if (!confirm(t('confirm_revoke_settled'))) return;
     const { error } = await sb.from('orders').update({ designer_settled_at: null }).eq('id', orderId);
     if (error) { alert(t('err_op_failed') + error.message); return; }
   } else {
-    if (!confirm('标记该单设计师返点为"已结算"?(用于月度对账)')) return;
+    if (!confirm(t('confirm_mark_settled'))) return;
     const { error } = await sb.from('orders').update({ designer_settled_at: new Date().toISOString() }).eq('id', orderId);
     if (error) { alert(t('err_op_failed') + error.message); return; }
   }
@@ -2794,13 +2894,13 @@ function parseSkuFromScan(text) {
   return String(text).trim();
 }
 async function openScanModal() {
-  if (typeof Html5Qrcode === 'undefined') { alert('扫码组件还在加载，请过几秒再试'); return; }
+  if (typeof Html5Qrcode === 'undefined') { alert(t('scan_lib_loading')); return; }
   const modal = document.getElementById('scan-modal');
   if (!modal) return;
   _scanHandled = false;
   modal.classList.remove('hidden');
   const msg = document.getElementById('scan-msg');
-  if (msg) msg.textContent = '把摄像头对准产品二维码…';
+  if (msg) msg.textContent = t('scan_aim_qr');
   _scanner = new Html5Qrcode('qr-reader');
   const cfg = { fps: 10, qrbox: { width: 220, height: 220 } };
   try {
@@ -2810,7 +2910,7 @@ async function openScanModal() {
     try {
       await _scanner.start({ facingMode: 'user' }, cfg, onScanSuccess, () => {});
     } catch (e2) {
-      if (msg) msg.textContent = '无法打开摄像头：' + (e2?.message || e2) + '\n请检查是否允许了摄像头权限。';
+      if (msg) msg.textContent = t('scan_camera_fail') + (e2?.message || e2) + '\n' + t('scan_camera_perm');
     }
   }
 }
@@ -2829,9 +2929,9 @@ async function onScanSuccess(decodedText) {
   addScannedProduct(sku);
 }
 function addScannedProduct(sku) {
-  if (!sku) { alert('没读到有效的产品编号，请重试'); return; }
+  if (!sku) { alert(t('scan_no_sku')); return; }
   const p = staffProducts.find(x => (x.sku || '').toLowerCase() === sku.toLowerCase());
-  if (!p) { alert(`未在产品库找到编号「${sku}」。\n请确认该产品已在仓管「产品档案」里录入。`); return; }
+  if (!p) { alert(t('scan_not_found_pfx') + sku + t('scan_not_found_sfx') + '\n' + t('scan_not_found_hint')); return; }
   addItemRow({ sku_ref: p.sku, product_name: p.name, unit: p.unit, unit_price: p.price });
   const id = itemRowCount;
   try { autoDetectProductType(id); } catch (e) {}
@@ -5603,7 +5703,7 @@ async function uploadAttachments(input, orderId) {
 }
 
 async function deleteAttachment(attachId, storagePath, orderId) {
-  if (!confirm('删除此附件？')) return;
+  if (!confirm(t('confirm_delete_attachment'))) return;
   await Promise.all([
     sb.storage.from(BUCKET).remove([storagePath]),
     sb.from('order_attachments').delete().eq('id', attachId),
@@ -5713,8 +5813,8 @@ async function extendDeadline(orderId, kind) {
 
 async function saveProdDays(orderId) {
   let n = parseInt(document.getElementById('prod-days')?.value, 10);
-  if (!Number.isFinite(n) || n < 1) { alert('请输入有效天数（1~30）'); return; }
-  if (n > 30) { alert('生产天数最多 30 天'); return; }
+  if (!Number.isFinite(n) || n < 1) { alert(t('err_input_valid_days')); return; }
+  if (n > 30) { alert(t('err_max_prod_days')); return; }
   const dl = new Date(Date.now() + n * 86400000).toISOString();
   const { error } = await sb.from('orders')
     .update({ deadline_at: dl, updated_at: new Date().toISOString() }).eq('id', orderId);
@@ -6313,7 +6413,7 @@ function filterSuppliers(q) {
 async function editSupplierInfo(id, curName, curPhone) {
   const name = prompt('供应商名称:', curName || '');
   if (name === null) return;            // 取消
-  if (!name.trim()) { alert('名称不能为空'); return; }
+  if (!name.trim()) { alert(t('err_name_required')); return; }
   const phone = prompt('联系电话(可留空):', curPhone || '');
   if (phone === null) return;           // 取消
   const { error } = await sb.from('suppliers')
@@ -6873,7 +6973,7 @@ function renderSettleTable() {
 async function settleToggle(orderId, currentlySettled) {
   if (!canDo(2)) { alert(t('err_store_mgr_only')); return; }
   const val = currentlySettled ? null : new Date().toISOString();
-  if (!confirm(currentlySettled ? '撤销该单的"已结算"标记?' : '标记该单返点为"已结算"?')) return;
+  if (!confirm(currentlySettled ? t('confirm_revoke_settled') : t('confirm_mark_settled_short'))) return;
   const { error } = await sb.from('orders').update({ designer_settled_at: val }).eq('id', orderId);
   if (error) { alert(t('err_op_failed') + error.message); return; }
   // 同步本地缓存,免整页重载
@@ -6891,7 +6991,7 @@ async function batchMarkSettled() {
   const now = new Date().toISOString();
   const ids = targets.map(o => o.id);
   const { error } = await sb.from('orders').update({ designer_settled_at: now }).in('id', ids);
-  if (error) { alert('批量结算失败:' + error.message); return; }
+  if (error) { alert(t('err_settle_failed') + error.message); return; }
   targets.forEach(o => { const r = (allOrders||[]).find(x => x.id === o.id); if (r) r.designer_settled_at = now; });
   renderSettleTable();
   alert(`✓ 已标记 ${ids.length} 单为已结算。`);
@@ -6900,7 +7000,7 @@ async function batchMarkSettled() {
 function exportSettleXlsx() {
   if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
   const rows = _settleRows();
-  if (!rows.length) { alert('当前筛选没有数据可导出'); return; }
+  if (!rows.length) { alert(t('err_no_export_data')); return; }
   const month = document.getElementById('settle-month')?.value || '';
   const dzName = document.getElementById('settle-designer')?.value
     ? _designerName(document.getElementById('settle-designer').value) : '全部设计师';
@@ -7536,7 +7636,7 @@ async function saveUser(uid) {
   const u       = allUsers.find(u => u.id === uid);
 
   if (uid === profile.id && u && role !== u.role) {
-    if (!confirm('您正在修改自己的角色，确认继续？')) return;
+    if (!confirm(t('confirm_modify_own_role'))) return;
   }
 
   const btn = document.getElementById(`save-btn-${uid}`);
@@ -7563,7 +7663,7 @@ async function saveUser(uid) {
 }
 
 async function toggleUserActive(uid, current) {
-  if (uid === profile.id) { alert('不能停用自己的账号'); return; }
+  if (uid === profile.id) { alert(t('err_cannot_disable_self')); return; }
   const { error } = await sb.from('profiles').update({ active: !current }).eq('id', uid);
   if (error) { alert(t('err_op_failed') + error.message); return; }
   // 同步厂家在 suppliers 表的启用状态
@@ -7686,7 +7786,7 @@ async function saveAddedItems() {
     });
     idx++;
   });
-  if (!rows.length) { alert('请至少填写一行货品名称'); return; }
+  if (!rows.length) { alert(t('err_fill_product_row')); return; }
   const btn = document.getElementById('add-items-save-btn');
   btn.disabled = true; btn.textContent = '保存中…';
   const { error } = await sb.from('order_items').insert(rows);

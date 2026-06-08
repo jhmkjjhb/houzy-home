@@ -684,6 +684,20 @@ const WH_I18N = {
     lbl_batch_no:'瓷砖批次号', lbl_batch_hint:'（色差追踪专用）',
     lbl_notes_optional:'备注（选填）',
     tab_out:'出库', tab_adj:'库存调整',
+    th_product_name:'产品名称', th_category:'类别', th_warehouse:'仓库', th_on_hand:'在库',
+    th_reserved:'预占', th_available:'可用', th_unit:'单位', th_status:'状态',
+    th_time:'时间', th_type:'类型', th_product:'产品', th_qty:'数量', th_notes:'备注', th_operator:'操作人',
+    th_delete_time:'删除时间', th_cat:'类目', th_price_rm:'售价(RM)', th_specs:'规格', th_delete_reason:'删除原因',
+    th_image:'图片', th_min_alert:'预警数', th_factory_code:'厂家编码', th_qrcode:'二维码',
+    empty_inventory:'没有匹配的库存记录', empty_movements:'暂无流水记录', empty_deletelogs:'暂无删除记录',
+    empty_products:'暂无产品档案', empty_dispatch:'暂无待发货商品 ✓',
+    empty_warehouses:'暂无仓库，点击「新建仓库」开始',
+    tag_low_stock:'⚠ 低库存', tag_batch:'批次',
+    mv_reserve:'预占', mv_release:'释放',
+    err_del_has_stock:'无法删除「{name}」：该产品仍有库存 {qty}。\n请先到「出库 / 调整」把库存清零，再来删除。',
+    confirm_del_product:'确认删除产品档案「{name}」？\n此操作不可撤销，相关空库存记录也会一并删除。\n\n可填写删除原因（选填，会记入删除日志）：',
+    err_del_product_fail:'删除失败：', err_img_upload_fail:'图片上传失败，请稍后重试',
+    err_img_save_fail:'图片保存失败: ', confirm_del_warehouse:'确认删除此仓库？所有关联库存记录会一并删除。',
   },
   'zh-TW': {
     sub_warehouse:'倉庫管理系統', lbl_email:'郵箱', lbl_password:'密碼', login_btn:'登入',
@@ -750,6 +764,20 @@ const WH_I18N = {
     lbl_batch_no:'瓷磚批次號', lbl_batch_hint:'（色差追蹤專用）',
     lbl_notes_optional:'備註（選填）',
     tab_out:'出庫', tab_adj:'庫存調整',
+    th_product_name:'產品名稱', th_category:'類別', th_warehouse:'倉庫', th_on_hand:'在庫',
+    th_reserved:'預佔', th_available:'可用', th_unit:'單位', th_status:'狀態',
+    th_time:'時間', th_type:'類型', th_product:'產品', th_qty:'數量', th_notes:'備註', th_operator:'操作人',
+    th_delete_time:'刪除時間', th_cat:'類目', th_price_rm:'售價(RM)', th_specs:'規格', th_delete_reason:'刪除原因',
+    th_image:'圖片', th_min_alert:'預警數', th_factory_code:'廠家編碼', th_qrcode:'二維碼',
+    empty_inventory:'沒有符合的庫存記錄', empty_movements:'暫無流水記錄', empty_deletelogs:'暫無刪除記錄',
+    empty_products:'暫無產品檔案', empty_dispatch:'暫無待發貨商品 ✓',
+    empty_warehouses:'暫無倉庫，點擊「新建倉庫」開始',
+    tag_low_stock:'⚠ 低庫存', tag_batch:'批次',
+    mv_reserve:'預佔', mv_release:'釋放',
+    err_del_has_stock:'無法刪除「{name}」：該產品仍有庫存 {qty}。\n請先到「出庫 / 調整」把庫存清零，再來刪除。',
+    confirm_del_product:'確認刪除產品檔案「{name}」？\n此操作不可撤銷，相關空庫存記錄也會一併刪除。\n\n可填寫刪除原因（選填，會記入刪除日誌）：',
+    err_del_product_fail:'刪除失敗：', err_img_upload_fail:'圖片上傳失敗，請稍後重試',
+    err_img_save_fail:'圖片儲存失敗: ', confirm_del_warehouse:'確認刪除此倉庫？所有關聯庫存記錄會一併刪除。',
   },
   'en': {
     sub_warehouse:'Warehouse System', lbl_email:'Email', lbl_password:'Password', login_btn:'Log In',
@@ -816,6 +844,20 @@ const WH_I18N = {
     lbl_batch_no:'Tile Batch No.', lbl_batch_hint:'(For color matching)',
     lbl_notes_optional:'Notes (optional)',
     tab_out:'Stock Out', tab_adj:'Adjustment',
+    th_product_name:'Product Name', th_category:'Category', th_warehouse:'Warehouse', th_on_hand:'On Hand',
+    th_reserved:'Reserved', th_available:'Available', th_unit:'Unit', th_status:'Status',
+    th_time:'Time', th_type:'Type', th_product:'Product', th_qty:'Qty', th_notes:'Notes', th_operator:'Operator',
+    th_delete_time:'Deleted At', th_cat:'Category', th_price_rm:'Price (RM)', th_specs:'Specs', th_delete_reason:'Delete Reason',
+    th_image:'Image', th_min_alert:'Alert Qty', th_factory_code:'Factory Code', th_qrcode:'QR Code',
+    empty_inventory:'No matching inventory records', empty_movements:'No movement records yet', empty_deletelogs:'No delete records yet',
+    empty_products:'No product records yet', empty_dispatch:'No pending shipments ✓',
+    empty_warehouses:'No warehouses yet. Click "New Warehouse" to start.',
+    tag_low_stock:'⚠ Low Stock', tag_batch:'Batch',
+    mv_reserve:'Reserve', mv_release:'Release',
+    err_del_has_stock:'Cannot delete "{name}": this product still has stock {qty}.\nPlease clear the stock to zero in "Stock Out / Adjust" first, then delete.',
+    confirm_del_product:'Confirm deleting product record "{name}"?\nThis action cannot be undone, related empty stock records will also be deleted.\n\nYou may enter a delete reason (optional, will be logged):',
+    err_del_product_fail:'Delete failed: ', err_img_upload_fail:'Image upload failed, please try again later',
+    err_img_save_fail:'Image save failed: ', confirm_del_warehouse:'Delete this warehouse? All related stock records will be deleted too.',
   },
   'ms': {
     sub_warehouse:'Sistem Gudang', lbl_email:'Email', lbl_password:'Kata Laluan', login_btn:'Log Masuk',
@@ -882,6 +924,20 @@ const WH_I18N = {
     lbl_batch_no:'No. Batch Jubin', lbl_batch_hint:'(Untuk padanan warna)',
     lbl_notes_optional:'Nota (pilihan)',
     tab_out:'Keluar Stok', tab_adj:'Pelarasan',
+    th_product_name:'Nama Produk', th_category:'Kategori', th_warehouse:'Gudang', th_on_hand:'Dalam Stok',
+    th_reserved:'Ditempah', th_available:'Tersedia', th_unit:'Unit', th_status:'Status',
+    th_time:'Masa', th_type:'Jenis', th_product:'Produk', th_qty:'Kuantiti', th_notes:'Nota', th_operator:'Pengendali',
+    th_delete_time:'Dipadam Pada', th_cat:'Kategori', th_price_rm:'Harga (RM)', th_specs:'Spesifikasi', th_delete_reason:'Sebab Padam',
+    th_image:'Imej', th_min_alert:'Kuantiti Amaran', th_factory_code:'Kod Kilang', th_qrcode:'Kod QR',
+    empty_inventory:'Tiada rekod inventori yang sepadan', empty_movements:'Tiada rekod pergerakan lagi', empty_deletelogs:'Tiada rekod pemadaman lagi',
+    empty_products:'Tiada rekod produk lagi', empty_dispatch:'Tiada penghantaran tertunggak ✓',
+    empty_warehouses:'Tiada gudang lagi. Klik "Gudang Baru" untuk mula.',
+    tag_low_stock:'⚠ Stok Rendah', tag_batch:'Batch',
+    mv_reserve:'Tempah', mv_release:'Lepas',
+    err_del_has_stock:'Tidak boleh padam "{name}": produk ini masih ada stok {qty}.\nSila kosongkan stok kepada sifar di "Keluar / Laras" dahulu, kemudian padam.',
+    confirm_del_product:'Sahkan padam rekod produk "{name}"?\nTindakan ini tidak boleh dibatalkan, rekod stok kosong berkaitan juga akan dipadam.\n\nAnda boleh masukkan sebab pemadaman (pilihan, akan dilog):',
+    err_del_product_fail:'Pemadaman gagal: ', err_img_upload_fail:'Muat naik imej gagal, sila cuba lagi kemudian',
+    err_img_save_fail:'Simpan imej gagal: ', confirm_del_warehouse:'Padam gudang ini? Semua rekod stok berkaitan juga akan dipadam.',
   },
   'th': {
     sub_warehouse:'ระบบคลังสินค้า', lbl_email:'อีเมล', lbl_password:'รหัสผ่าน', login_btn:'เข้าสู่ระบบ',
@@ -948,6 +1004,20 @@ const WH_I18N = {
     lbl_batch_no:'เลขล็อตกระเบื้อง', lbl_batch_hint:'(สำหรับจับคู่สี)',
     lbl_notes_optional:'หมายเหตุ (ไม่บังคับ)',
     tab_out:'จ่ายออก', tab_adj:'ปรับ',
+    th_product_name:'ชื่อสินค้า', th_category:'หมวดหมู่', th_warehouse:'คลัง', th_on_hand:'ในสต็อก',
+    th_reserved:'จองแล้ว', th_available:'พร้อมใช้', th_unit:'หน่วย', th_status:'สถานะ',
+    th_time:'เวลา', th_type:'ประเภท', th_product:'สินค้า', th_qty:'จำนวน', th_notes:'หมายเหตุ', th_operator:'ผู้ดำเนินการ',
+    th_delete_time:'ลบเมื่อ', th_cat:'หมวดหมู่', th_price_rm:'ราคา (RM)', th_specs:'สเปก', th_delete_reason:'เหตุผลการลบ',
+    th_image:'รูปภาพ', th_min_alert:'จำนวนแจ้งเตือน', th_factory_code:'รหัสโรงงาน', th_qrcode:'คิวอาร์โค้ด',
+    empty_inventory:'ไม่มีบันทึกสต็อกที่ตรงกัน', empty_movements:'ยังไม่มีบันทึกความเคลื่อนไหว', empty_deletelogs:'ยังไม่มีบันทึกการลบ',
+    empty_products:'ยังไม่มีบันทึกสินค้า', empty_dispatch:'ไม่มีรายการรอจัดส่ง ✓',
+    empty_warehouses:'ยังไม่มีคลัง คลิก "คลังใหม่" เพื่อเริ่ม',
+    tag_low_stock:'⚠ สต็อกต่ำ', tag_batch:'ล็อต',
+    mv_reserve:'จอง', mv_release:'ปล่อย',
+    err_del_has_stock:'ไม่สามารถลบ "{name}": สินค้านี้ยังมีสต็อก {qty}\nกรุณาเคลียร์สต็อกเป็นศูนย์ใน "จ่ายออก / ปรับ" ก่อน แล้วจึงลบ',
+    confirm_del_product:'ยืนยันลบบันทึกสินค้า "{name}"?\nการกระทำนี้ไม่สามารถยกเลิกได้ บันทึกสต็อกว่างที่เกี่ยวข้องจะถูกลบด้วย\n\nคุณสามารถใส่เหตุผลการลบ (ไม่บังคับ จะถูกบันทึก):',
+    err_del_product_fail:'การลบล้มเหลว: ', err_img_upload_fail:'อัปโหลดรูปภาพล้มเหลว กรุณาลองใหม่ภายหลัง',
+    err_img_save_fail:'บันทึกรูปภาพล้มเหลว: ', confirm_del_warehouse:'ลบคลังนี้? บันทึกสต็อกที่เกี่ยวข้องทั้งหมดจะถูกลบด้วย',
   },
 };
 const LANG_LABELS = { 'en':'English', 'zh-CN':'简体中文', 'zh-TW':'繁體中文', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -1484,13 +1554,13 @@ async function loadAll() {
 }
 
 function populateSelects() {
-  const whOpts = '<option value="">— 选择仓库 —</option>' + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
-  const prodOpts = '<option value="">— 选择产品 —</option>' + allProducts.map(p => `<option value="${esc(p.id)}">[${esc(p.sku)}] ${esc(p.name)} (${esc(p.unit)})</option>`).join('');
+  const whOpts = `<option value="">${t('ph_select_wh')}</option>` + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+  const prodOpts = `<option value="">${t('ph_select_prod')}</option>` + allProducts.map(p => `<option value="${esc(p.id)}">[${esc(p.sku)}] ${esc(p.name)} (${esc(p.unit)})</option>`).join('');
 
   ['si-wh','so-wh','dispatch-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whOpts; });
   ['si-prod','so-prod'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = prodOpts; });
 
-  const whFilterOpts = '<option value="">全部仓库</option>' + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
+  const whFilterOpts = `<option value="">${t('all_warehouses')}</option>` + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   ['ov-wh','mv-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whFilterOpts; });
 
   // Inv stats
@@ -1565,7 +1635,7 @@ async function renderDispatch() {
   const rows = data || [];
   _dispatchBadgeApply(rows.length);
   if (!rows.length) {
-    box.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无待发货商品 ✓</p>';
+    box.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_dispatch')}</p>`;
     return;
   }
   // 按订单分组
@@ -1759,20 +1829,20 @@ function renderOverview() {
     return true;
   });
 
-  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">没有匹配的库存记录</p>'; return; }
+  if (!rows.length) { el.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_inventory')}</p>`; return; }
 
   el.innerHTML = `<div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b border-gray-200">
         <th class="px-4 py-3 text-left font-medium">SKU</th>
-        <th class="px-4 py-3 text-left font-medium">产品名称</th>
-        <th class="px-4 py-3 text-left font-medium">类别</th>
-        <th class="px-4 py-3 text-left font-medium">仓库</th>
-        <th class="px-4 py-3 text-right font-medium">在库</th>
-        <th class="px-4 py-3 text-right font-medium">预占</th>
-        <th class="px-4 py-3 text-right font-medium text-green-700">可用</th>
-        <th class="px-4 py-3 text-left font-medium">单位</th>
-        <th class="px-4 py-3 text-left font-medium">状态</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_product_name')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_category')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_warehouse')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_on_hand')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_reserved')}</th>
+        <th class="px-4 py-3 text-right font-medium text-green-700">${t('th_available')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_unit')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_status')}</th>
       </tr></thead>
       <tbody>
         ${rows.map((row, i) => {
@@ -1788,7 +1858,7 @@ function renderOverview() {
             <td class="px-4 py-3 text-right text-orange-500">${row.qty_reserved || 0}</td>
             <td class="px-4 py-3 text-right font-bold ${avail > 0 ? 'text-green-700' : 'text-red-500'}">${avail}</td>
             <td class="px-4 py-3 text-xs text-gray-400">${p.unit||'—'}</td>
-            <td class="px-4 py-3">${low ? '<span class="tag" style="background:#fee2e2;color:#991b1b">⚠ 低库存</span>' : ''}</td>
+            <td class="px-4 py-3">${low ? `<span class="tag" style="background:#fee2e2;color:#991b1b">${t('tag_low_stock')}</span>` : ''}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -2162,19 +2232,19 @@ function renderMovements() {
     return true;
   });
 
-  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无流水记录</p>'; return; }
+  if (!rows.length) { el.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_movements')}</p>`; return; }
 
-  const typeLabel = { in:'入库', out:'出库', adjust:'调整', reserve:'预占', release:'释放' };
+  const typeLabel = { in:t('mv_in'), out:t('mv_out'), adjust:t('mv_adjust'), reserve:t('mv_reserve'), release:t('mv_release') };
   el.innerHTML = `<div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
-        <th class="px-4 py-3 text-left font-medium">时间</th>
-        <th class="px-4 py-3 text-left font-medium">类型</th>
-        <th class="px-4 py-3 text-left font-medium">产品</th>
-        <th class="px-4 py-3 text-left font-medium">仓库</th>
-        <th class="px-4 py-3 text-right font-medium">数量</th>
-        <th class="px-4 py-3 text-left font-medium">备注</th>
-        <th class="px-4 py-3 text-left font-medium">操作人</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_time')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_type')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_product')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_warehouse')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_qty')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_notes')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_operator')}</th>
       </tr></thead>
       <tbody>
         ${rows.map((m, i) => {
@@ -2195,7 +2265,7 @@ function renderMovements() {
                 const bm = n.match(/批次:([^\s|]+)/);
                 const batch = bm ? bm[1] : null;
                 const display = n.replace(/批次:[^\s|]+\s*\|?\s*/,'').trim().replace(/^\|/,'').trim();
-                return `${batch ? `<span class="inline-block px-1.5 py-0.5 rounded text-xs font-bold mr-1" style="background:#fef9ee;color:#92400e;border:1px solid #fcd34d">批次 ${esc(batch)}</span>` : ''}
+                return `${batch ? `<span class="inline-block px-1.5 py-0.5 rounded text-xs font-bold mr-1" style="background:#fef9ee;color:#92400e;border:1px solid #fcd34d">${t('tag_batch')} ${esc(batch)}</span>` : ''}
                         <span class="text-gray-400">${esc(display||'—')}</span>`;
               })()
             }
@@ -2216,19 +2286,19 @@ function renderDeleteLogs() {
   const rows = (allDeleteLogs || []).filter(d =>
     !sq || `${d.sku || ''} ${d.name || ''}`.toLowerCase().includes(sq));
 
-  if (!rows.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无删除记录</p>'; return; }
+  if (!rows.length) { el.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_deletelogs')}</p>`; return; }
 
   el.innerHTML = `<div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
-        <th class="px-4 py-3 text-left font-medium">删除时间</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_delete_time')}</th>
         <th class="px-4 py-3 text-left font-medium">SKU</th>
-        <th class="px-4 py-3 text-left font-medium">产品名称</th>
-        <th class="px-4 py-3 text-left font-medium">类目</th>
-        <th class="px-4 py-3 text-right font-medium">售价(RM)</th>
-        <th class="px-4 py-3 text-left font-medium">规格</th>
-        <th class="px-4 py-3 text-left font-medium">删除原因</th>
-        <th class="px-4 py-3 text-left font-medium">操作人</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_product_name')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_cat')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_price_rm')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_specs')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_delete_reason')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_operator')}</th>
       </tr></thead>
       <tbody>
         ${rows.map((d, i) => `<tr class="border-b border-gray-50 ${i%2===0?'':'bg-gray-50/40'}">
@@ -2252,21 +2322,21 @@ function renderProducts() {
   const el = document.getElementById('prod-table');
   if (!el) return;
   const filtered = allProducts.filter(p => !q || `${p.sku} ${p.name}`.toLowerCase().includes(q));
-  if (!filtered.length) { el.innerHTML = '<p class="text-gray-400 text-sm p-8 text-center">暂无产品档案</p>'; return; }
+  if (!filtered.length) { el.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_products')}</p>`; return; }
 
   el.innerHTML = `<div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead><tr class="text-xs text-gray-400 bg-gray-50 border-b">
-        <th class="px-4 py-3 text-left font-medium">图片</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_image')}</th>
         <th class="px-4 py-3 text-left font-medium">SKU</th>
-        <th class="px-4 py-3 text-left font-medium">产品名称</th>
-        <th class="px-4 py-3 text-left font-medium">类别</th>
-        <th class="px-4 py-3 text-left font-medium">单位</th>
-        <th class="px-4 py-3 text-right font-medium">售价(RM)</th>
-        <th class="px-4 py-3 text-left font-medium">规格</th>
-        <th class="px-4 py-3 text-right font-medium">预警数</th>
-        <th class="px-4 py-3 text-left font-medium">厂家编码</th>
-        <th class="px-4 py-3 text-left font-medium">二维码</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_product_name')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_category')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_unit')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_price_rm')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_specs')}</th>
+        <th class="px-4 py-3 text-right font-medium">${t('th_min_alert')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_factory_code')}</th>
+        <th class="px-4 py-3 text-left font-medium">${t('th_qrcode')}</th>
         <th class="px-4 py-3"></th>
       </tr></thead>
       <tbody>
@@ -2366,9 +2436,9 @@ async function uploadExistingProductImage(productId, input) {
   const file = input?.files[0];
   if (!file) return;
   const url = await uploadProductImageFile(productId, file);
-  if (!url) { alert('图片上传失败，请稍后重试'); return; }
+  if (!url) { alert(t('err_img_upload_fail')); return; }
   const { error } = await sb.from('products').update({ image_url: url }).eq('id', productId);
-  if (error) { alert('图片保存失败: ' + error.message); return; }
+  if (error) { alert(t('err_img_save_fail') + error.message); return; }
   await loadAll();
   renderProducts();
 }
@@ -2420,13 +2490,13 @@ async function deleteProduct(id) {
   const onHand = allInventory.filter(r => r.product_id === id)
                              .reduce((s, r) => s + (r.qty_on_hand || 0), 0);
   if (onHand > 0) {
-    alert(`无法删除「${p?.name || ''}」：该产品仍有库存 ${onHand}。\n请先到「出库 / 调整」把库存清零，再来删除。`);
+    alert(t('err_del_has_stock').replace('{name}', p?.name || '').replace('{qty}', onHand));
     return;
   }
-  const reason = prompt(`确认删除产品档案「${p?.name || ''}」？\n此操作不可撤销，相关空库存记录也会一并删除。\n\n可填写删除原因（选填，会记入删除日志）：`);
+  const reason = prompt(t('confirm_del_product').replace('{name}', p?.name || ''));
   if (reason === null) return;   // 用户点了取消
   const { error } = await sb.from('products').delete().eq('id', id);
-  if (error) { alert('删除失败：' + error.message); return; }
+  if (error) { alert(t('err_del_product_fail') + error.message); return; }
   // 删除成功后留一条日志（快照取自删除前的内存数据 p）
   await sb.from('product_delete_logs').insert({
     product_id: id, sku: p?.sku, name: p?.name, category: p?.category,
@@ -2491,7 +2561,7 @@ function renderWarehouses() {
   const el = document.getElementById('wh-list');
   if (!el) return;
   if (!allWarehouses.length) {
-    el.innerHTML = '<div class="card p-8 text-center text-gray-400 text-sm">暂无仓库，点击「新建仓库」开始</div>';
+    el.innerHTML = `<div class="card p-8 text-center text-gray-400 text-sm">${t('empty_warehouses')}</div>`;
     return;
   }
   el.innerHTML = allWarehouses.map(w => {
@@ -2527,7 +2597,7 @@ async function submitNewWarehouse() {
 }
 
 async function deleteWarehouse(id) {
-  if (!confirm('确认删除此仓库？所有关联库存记录会一并删除。')) return;
+  if (!confirm(t('confirm_del_warehouse'))) return;
   await sb.from('warehouses').delete().eq('id', id);
   await loadAll();
   renderWarehouses();
