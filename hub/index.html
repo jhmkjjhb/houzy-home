@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>合屋协作台 · HOUZY Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--pine:#153927;--cypress:#244837;--gold:#C8A96E;--warm:#E0C992;--parch:#F4EFE5;--ink:#171717;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans SC',sans-serif;background:#eceae4;color:var(--ink);line-height:1.6;-webkit-text-size-adjust:100%;}
+  /* gate */
+  #gate{position:fixed;inset:0;background:var(--pine);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:50;}
+  #gate img{height:54px;width:54px;margin-bottom:14px;}
+  #gate .wm{font-family:'Playfair Display',serif;font-weight:700;font-size:22px;color:var(--gold);letter-spacing:2px;}
+  #gate .wm small{display:block;font-family:'Noto Serif SC',serif;font-size:10px;letter-spacing:6px;color:var(--parch);font-weight:500;margin-top:4px;text-align:center;}
+  #gate .t{font-family:'Noto Serif SC',serif;color:#fff;font-size:16px;margin:18px 0 4px;}
+  #gate .d{font-size:12px;color:var(--warm);margin-bottom:18px;}
+  #gate input{width:min(86vw,300px);padding:13px 16px;border-radius:8px;border:1px solid rgba(200,169,110,.4);background:rgba(255,255,255,.06);color:#fff;font-size:15px;text-align:center;outline:none;}
+  #gate input::placeholder{color:rgba(244,239,229,.5);}
+  #gate button{width:min(86vw,300px);margin-top:12px;padding:13px;border:none;border-radius:8px;background:var(--gold);color:var(--pine);font-size:15px;font-weight:700;cursor:pointer;}
+  #gate .err{color:#ff9b9b;font-size:13px;margin-top:12px;height:18px;}
+  /* board */
+  #board{display:none;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 40px;}
+  header{background:var(--pine);color:var(--parch);padding:16px 18px;position:sticky;top:0;z-index:5;}
+  header .top{display:flex;align-items:center;gap:10px;}
+  header img{height:28px;width:28px;}
+  header .wm{font-family:'Playfair Display',serif;font-weight:700;font-size:15px;letter-spacing:1px;color:var(--gold);}
+  header .lo{margin-left:auto;font-size:11px;color:var(--warm);text-decoration:underline;cursor:pointer;}
+  header h1{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;margin-top:9px;}
+  header .meta{font-size:11px;color:var(--warm);margin-top:3px;}
+  .banner{background:#fff3d6;border-left:4px solid #d4960c;margin:14px 14px 0;padding:12px 14px;border-radius:6px;}
+  .banner .t{font-weight:700;color:#92400e;font-size:13px;margin-bottom:5px;}
+  .banner ul{list-style:none;font-size:13px;color:#7a4a08;} .banner li{padding:2px 0;}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:#666;padding:12px 16px 4px;align-items:center;}
+  .legend span{display:inline-flex;align-items:center;gap:4px;}
+  .person{background:#fff;margin:14px 14px 0;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+  .person .ph{background:var(--pine);color:var(--parch);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;}
+  .person .ph .nm{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;}
+  .person .ph .ro{font-size:11px;color:var(--warm);}
+  .task{display:flex;gap:10px;align-items:flex-start;padding:11px 16px;border-bottom:1px solid #f0ede6;}
+  .task:last-child{border-bottom:none;}
+  .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+  .p1{background:#dc2626;}.p2{background:#e0a000;}.p3{background:#3a9d5d;}
+  .task .body{flex:1;min-width:0;} .task .ti{font-size:13.5px;color:#222;font-weight:500;} .task .sub{font-size:11.5px;color:#888;margin-top:2px;}
+  .st{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+  .st-todo{background:#eee;color:#777;} .st-doing{background:#fff3d6;color:#92400e;} .st-done{background:#d6e8db;color:#1a6b3a;} .st-late{background:#fde2e2;color:#c0392b;}
+  .foot{text-align:center;font-size:11px;color:#999;padding:24px 16px 0;} .foot b{color:var(--pine);}
+</style>
+</head>
+<body>
+
+<!-- 密码门 -->
+<div id="gate">
+  <img src="/favicon.svg" alt="">
+  <div class="wm">HOUZY HUB<small>合 屋 协 作 台</small></div>
+  <div class="t">员工登录</div>
+  <div class="d">请输入团队密码</div>
+  <input id="pw" type="password" placeholder="团队密码" autocomplete="off" onkeydown="if(event.key==='Enter')unlock()">
+  <button onclick="unlock()">进入协作台</button>
+  <div class="err" id="err"></div>
+</div>
+
+<!-- 看板 -->
+<div id="board"><div class="wrap">
+  <header>
+    <div class="top"><img src="/favicon.svg" alt=""><span class="wm">HOUZY HUB · 合屋协作台</span><span class="lo" onclick="lock()">退出</span></div>
+    <h1>团队每日工作安排 · 开业冲刺</h1>
+    <div class="meta">今天 <span id="today"></span> · 最后更新:2026-06-10 上午 · 维护:HOUZY 助手</div>
+  </header>
+
+  <div class="banner">
+    <div class="t">🔴 今日最紧急(全员看)</div>
+    <ul>
+      <li>① 定开业日期(7 月某周六 10:00)— <b>老板</b></li>
+      <li>② 申请 Google Business Profile(验证 1-2 周)— <b>张梦</b></li>
+      <li>③ 招聘到岗(店长/设计师,6 月中)— <b>老板</b></li>
+      <li>④ 催 senangPay 激活 + 补传资料 — <b>小霞</b></li>
+    </ul>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot p1"></i>高</span><span><i class="dot p2"></i>中</span><span><i class="dot p3"></i>低</span> ·
+    <span class="st st-todo">待办</span><span class="st st-doing">进行中</span><span class="st st-done">已完成</span><span class="st st-late">逾期</span>
+  </div>
+
+  <div class="person">
+    <div class="ph"><span class="nm">老板 / Lei Ting</span><span class="ro">统筹 · 决策</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">定开业日期(7 月某周六上午 10:00,避马来节日)</div><div class="sub">一切反推起点 · 影响订餐/嘉宾/广告</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">招聘到岗:店长 + 设计师</div><div class="sub">发 JobStreet · 6 月中必到岗</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">BD 关系:华裔商会 / 房产商(Forest City·EcoSpring)/ 异业联盟</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">整体统筹 · 每日盯各摊进度</div></div><span class="st st-doing">进行中</span></div>
+  </div>
+
+  <div class="person">
+    <div class="ph"><span class="nm">张梦</span><span class="ro">线上自媒体 · 商城</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">申请 Google Business Profile</div><div class="sub">验证 1-2 周 · 不办开业搜不到店</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">Shopify 商城运营</div><div class="sub">商品上架 · 占位图替换 · 收款</div></div><span class="st st-doing">进行中</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">微信业主/妈妈群对接 · 本地 KOL 探店 3-5 个</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">广告:报纸 1/4 版 + 邻里折扣传单</div><div class="sub">开业前 1 周投放</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p3"></i><div class="body"><div class="ti">开业 7 天特惠方案(策划+线上预热)</div></div><span class="st st-todo">待办</span></div>
+  </div>
+
+  <div class="person">
+    <div class="ph"><span class="nm">小霞</span><span class="ro">后端 · 线下所有</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">展厅施工全套 · 消防/卫生验收</div><div class="sub">验收·Wi-Fi·监控·空调·灯光·货架·卫生间茶水间·招牌·消防标识</div></div><span class="st st-doing">进行中</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">催 senangPay 激活 + 补传资料</div><div class="sub">董事IC·银行对账单·地址证明·门店照</div></div><span class="st st-doing">进行中</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">样品到位入库</div><div class="sub">橱柜/衣柜/瓷砖/门窗/马桶/淋浴房/卫浴 样板</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">收款渠道办理</div><div class="sub">Maybank·TNG Business·FPX·DuitNow·收据发票模板</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p3"></i><div class="body"><div class="ti">开业活动落地:剪彩 · 嘉宾邀请(≥20)· 现场物料</div></div><span class="st st-todo">待办</span></div>
+  </div>
+
+  <div class="person">
+    <div class="ph"><span class="nm">雷霆 / 系统</span><span class="ro">数字化 · 助手协助</span></div>
+    <div class="task"><i class="dot p1"></i><div class="body"><div class="ti">senangPay 在线收款技术对接</div><div class="sub">已部署待账户激活 → 激活后接前端+商城</div></div><span class="st st-doing">进行中</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">OMS 系统维护 · 多语言收尾</div></div><span class="st st-doing">进行中</span></div>
+    <div class="task"><i class="dot p2"></i><div class="body"><div class="ti">库存地点核对 · 员工账号建档</div></div><span class="st st-todo">待办</span></div>
+    <div class="task"><i class="dot p3"></i><div class="body"><div class="ti">开业前 5 端全流程演练</div></div><span class="st st-todo">待办</span></div>
+  </div>
+
+  <div class="foot">本看板由 <b>HOUZY 助手</b>维护更新 · 进度变化随时同步给助手即可刷新<br>HOUZY HOME SDN. BHD. · 内部使用,请勿外传</div>
+</div></div>
+
+<script>
+  var HASH="c1fbf1087afa75786d23e6a4e0fc1b1fb06f16aae31f70125f0bf1ef100509c0";
+  async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+  function show(){document.getElementById('gate').style.display='none';document.getElementById('board').style.display='block';var d=new Date();var w=['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];document.getElementById('today').textContent=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+w;}
+  async function unlock(){var v=document.getElementById('pw').value;var h=await sha256(v);if(h===HASH){sessionStorage.setItem('houzy_hub','1');show();}else{document.getElementById('err').textContent='密码不对,请重试';document.getElementById('pw').value='';}}
+  function lock(){sessionStorage.removeItem('houzy_hub');location.reload();}
+  if(sessionStorage.getItem('houzy_hub')==='1'){show();}
+</script>
+</body>
+</html>
