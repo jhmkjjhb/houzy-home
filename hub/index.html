@@ -47,6 +47,8 @@
   .task.done .ti{text-decoration:line-through;color:#aaa;}
   .st{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:1px;cursor:pointer;user-select:none;}
   .st-todo{background:#eee;color:#777;} .st-doing{background:#fff3d6;color:#92400e;} .st-done{background:#d6e8db;color:#1a6b3a;} .st-late{background:#fde2e2;color:#c0392b;}
+  .mv{font-size:10px;color:#b08a55;border:1px solid #e6d6bb;border-radius:14px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:1px;user-select:none;}
+  .mv:active{background:#f4efe5;}
   .foot{text-align:center;font-size:11px;color:#999;padding:24px 16px 0;} .foot b{color:var(--pine);}
   #loading{text-align:center;color:#999;padding:40px;font-size:13px;}
 </style>
@@ -73,7 +75,7 @@
     <span><i class="dot p1"></i>高</span><span><i class="dot p2"></i>中</span><span><i class="dot p3"></i>低</span> ·
     <span class="st st-todo">待办</span><span class="st st-doing">进行中</span><span class="st st-done">已完成</span>
   </div>
-  <div class="hint">👉 点右侧状态徽章可切换:待办 → 进行中 → 已完成(自动保存、全员同步)。&nbsp;点每人右上「+ 加任务」可自己加待办。</div>
+  <div class="hint">👉 点状态徽章切换 待办→进行中→完成;点「移交」可把任务转给别人;点每人右上「+ 加任务」自己加待办。全部自动保存、全员同步。</div>
   <div id="loading">加载中…</div>
   <div id="board-content"></div>
   <div class="foot">由 <b>HOUZY 助手</b>统筹派发 · 员工可自行更新进度 + 新增任务<br>HOUZY HOME SDN. BHD. · 内部使用,请勿外传</div>
@@ -110,6 +112,7 @@
         html+='<div class="task '+(t.status==='done'?'done':'')+'" id="task-'+t.id+'">'
           +'<i class="dot p'+(t.priority||2)+'"></i>'
           +'<div class="body"><div class="ti">'+esc(t.title)+'</div>'+(t.subtitle?'<div class="sub">'+esc(t.subtitle)+'</div>':'')+'</div>'
+          +'<span class="mv" onclick="reassign(\''+t.id+'\')">移交</span>'
           +'<span class="st st-'+t.status+'" data-st="'+t.status+'" onclick="cycle(\''+t.id+'\',this)">'+STLABEL[t.status]+'</span></div>';
       });
       html+='</div>';
@@ -124,6 +127,15 @@
     pr=({'1':1,'2':2,'3':3})[String(pr||'').trim()]||2;
     var r=await sb.from('hub_tasks').insert({person:name,person_role:role,title:title.trim(),subtitle:sub.trim(),priority:pr,status:'todo',sort:999,updated_at:new Date().toISOString()});
     if(r.error){alert('保存失败:'+r.error.message);return;}
+    await loadBoard();
+  }
+  async function reassign(id){
+    var c=prompt('把这条任务移交给谁?输入数字:\n  1 = Lei Ting(统筹)\n  2 = 张梦(线上·商城)\n  3 = 小霞(后端·线下)');
+    var map={'1':['Lei Ting','统筹·决策'],'2':['张梦','线上自媒体·商城'],'3':['小霞','后端·线下所有']};
+    var p=map[String(c||'').trim()];
+    if(!p)return;
+    var r=await sb.from('hub_tasks').update({person:p[0],person_role:p[1],updated_at:new Date().toISOString()}).eq('id',id);
+    if(r.error){alert('移交失败:'+r.error.message);return;}
     await loadBoard();
   }
   async function cycle(id,elx){
