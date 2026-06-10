@@ -37,6 +37,8 @@
   .person .ph{background:var(--pine);color:var(--parch);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;}
   .person .ph .nm{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;}
   .person .ph .ro{font-size:11px;color:var(--warm);}
+  .addbtn{background:var(--gold);color:var(--pine);border:none;border-radius:20px;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:inherit;flex-shrink:0;}
+  .addbtn:active{opacity:.7;}
   .task{display:flex;gap:10px;align-items:flex-start;padding:11px 16px;border-bottom:1px solid #f0ede6;}
   .task:last-child{border-bottom:none;}
   .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0;}
@@ -71,17 +73,17 @@
     <span><i class="dot p1"></i>高</span><span><i class="dot p2"></i>中</span><span><i class="dot p3"></i>低</span> ·
     <span class="st st-todo">待办</span><span class="st st-doing">进行中</span><span class="st st-done">已完成</span>
   </div>
-  <div class="hint">👉 点右侧状态徽章可循环切换:待办 → 进行中 → 已完成,改了自动保存,全员同步。</div>
+  <div class="hint">👉 点右侧状态徽章可切换:待办 → 进行中 → 已完成(自动保存、全员同步)。&nbsp;点每人右上「+ 加任务」可自己加待办。</div>
   <div id="loading">加载中…</div>
   <div id="board-content"></div>
-  <div class="foot">由 <b>HOUZY 助手</b>维护任务 · 员工可自行更新进度<br>HOUZY HOME SDN. BHD. · 内部使用,请勿外传</div>
+  <div class="foot">由 <b>HOUZY 助手</b>统筹派发 · 员工可自行更新进度 + 新增任务<br>HOUZY HOME SDN. BHD. · 内部使用,请勿外传</div>
 </div></div>
 
 <script>
   var HASH="c1fbf1087afa75786d23e6a4e0fc1b1fb06f16aae31f70125f0bf1ef100509c0";
   var SB_URL="https://csabbxiijzghooppayae.supabase.co";
   var SB_KEY="sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH";
-  var PERSONS=[['老板','统筹·决策'],['张梦','线上自媒体·商城'],['小霞','后端·线下所有'],['雷霆','数字化·助手协助']];
+  var PERSONS=[['Lei Ting','统筹·决策'],['张梦','线上自媒体·商城'],['小霞','后端·线下所有']];
   var STNEXT={todo:'doing',doing:'done',done:'todo',late:'doing'};
   var STLABEL={todo:'待办',doing:'进行中',done:'已完成',late:'逾期'};
   var sb;
@@ -103,7 +105,7 @@
       var name=p[0],role=p[1];
       var mine=tasks.filter(function(t){return t.person===name;});
       if(!mine.length)return;
-      html+='<div class="person"><div class="ph"><span class="nm">'+esc(name)+'</span><span class="ro">'+esc(role)+'</span></div>';
+      html+='<div class="person"><div class="ph"><div><span class="nm">'+esc(name)+'</span> &nbsp;<span class="ro">'+esc(role)+'</span></div><button class="addbtn" onclick="addTask(\''+esc(name)+'\',\''+esc(role)+'\')">+ 加任务</button></div>';
       mine.forEach(function(t){
         html+='<div class="task '+(t.status==='done'?'done':'')+'" id="task-'+t.id+'">'
           +'<i class="dot p'+(t.priority||2)+'"></i>'
@@ -113,6 +115,16 @@
       html+='</div>';
     });
     el.innerHTML=html||'<div class="foot">暂无任务(请先在数据库种子任务)。</div>';
+  }
+  async function addTask(name,role){
+    var title=prompt('给【'+name+'】新增一条任务,请输入任务标题:');
+    if(!title||!title.trim())return;
+    var sub=prompt('补充说明(可留空,直接确定即可):')||'';
+    var pr=prompt('优先级:1=高  2=中  3=低(默认 2)','2');
+    pr=({'1':1,'2':2,'3':3})[String(pr||'').trim()]||2;
+    var r=await sb.from('hub_tasks').insert({person:name,person_role:role,title:title.trim(),subtitle:sub.trim(),priority:pr,status:'todo',sort:999,updated_at:new Date().toISOString()});
+    if(r.error){alert('保存失败:'+r.error.message);return;}
+    await loadBoard();
   }
   async function cycle(id,elx){
     var cur=elx.dataset.st;var next=STNEXT[cur]||'todo';
