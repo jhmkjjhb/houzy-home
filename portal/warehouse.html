@@ -1164,7 +1164,8 @@ async function downloadStockInTemplate() {
     ['HOUZY HOME 批量入库模版 — 填写说明'],
     [],
     ['1. 每个类目一个表页(sheet),在对应类目页里填写,一行一个产品。'],
-    ['2. 带 * 为必填:产品名称、入库数量、仓库。'],
+    ['2. 必填:产品名称。入库数量 > 0 时,仓库必填。'],
+    ['   ★ 入库数量填 0(或留空)= 只建产品档案、不加库存(样品/预先建档用);此时仓库、批次号都可留空。'],
     ['3. SKU 留空 → 系统自动生成;填了且系统已存在 → 只补库存,不重复建产品。'],
     ['4. 「仓库」请填下方清单里的准确名称。'],
     ['5. 「颜色」单独一列填,例:哑光黑、米黄。「规格说明」填其余,例:品牌:科勒 | 尺寸:600×120mm。'],
@@ -1223,18 +1224,22 @@ async function handleBulkStockIn(input) {
       const rowNo = idx + 2; // header is row 1
       const name  = String(r['产品名称'] ?? '').trim();
       const sku   = String(r['SKU'] ?? '').trim();
-      const qty   = parseFloat(r['入库数量']);
+      const qtyRaw = parseFloat(r['入库数量']);
+      const qty   = (qtyRaw > 0) ? qtyRaw : 0;   // 0 或留空 = 只建产品档案,不加库存(样品/预建档)
       const whNm  = String(r['仓库'] ?? '').trim();
       // skip blank rows
-      if (!name && !sku && !whNm && !(qty > 0)) return;
+      if (!name && !sku && !whNm && !(qtyRaw > 0)) return;
       // skip the bundled example row
       if (/示例/.test(name) || /示例行/.test(String(r['备注'] ?? ''))) return;
       const where = `${CAT_LABEL[cat]}·第${rowNo}行`;
       if (!name && !sku) { fails.push({ where, reason: '缺产品名称' }); return; }
-      if (!(qty > 0))    { fails.push({ where, reason: '入库数量无效' }); return; }
-      const wh = allWarehouses.find(w => w.name === whNm);
-      if (!wh)           { fails.push({ where, reason: `仓库「${whNm}」不存在` }); return; }
-      if (cat === 'CT' && !String(r['批次号'] ?? '').trim()) { fails.push({ where, reason: '瓷砖必须填批次号' }); return; }
+      if (qtyRaw < 0)    { fails.push({ where, reason: '入库数量不能为负' }); return; }
+      let wh = null;
+      if (qty > 0) {   // 只有真正入库才校验仓库/批次号
+        wh = allWarehouses.find(w => w.name === whNm);
+        if (!wh)         { fails.push({ where, reason: `仓库「${whNm}」不存在` }); return; }
+        if (cat === 'CT' && !String(r['批次号'] ?? '').trim()) { fails.push({ where, reason: '瓷砖入库必须填批次号' }); return; }
+      }
       const supName = String(r['供应商名称'] ?? '').trim();
       const facCode = String(r['厂家编号'] ?? '').trim();
       if ((supName && !facCode) || (!supName && facCode)) {
@@ -1242,7 +1247,7 @@ async function handleBulkStockIn(input) {
       }
       queue.push({
         cat, name, sku, qty, where,
-        whId: wh.id,
+        whId: wh ? wh.id : null,
         unit:  String(r['单位'] ?? '').trim() || '件',
         specs: [ (String(r['颜色'] ?? '').trim() ? '颜色:' + String(r['颜色']).trim() : ''),
                  String(r['规格说明'] ?? '').trim() ].filter(Boolean).join(' | ') || null,
@@ -1266,7 +1271,7 @@ async function handleBulkStockIn(input) {
   const supMap = new Map();
   (supAll || []).forEach(s => { if (s.name) supMap.set(s.name.trim(), s.id); });
 
-  let ok = 0;
+  let ok = 0, docOnly = 0;
   const warns = []; // 已入库但溯源未绑(需人工跟进)
   for (let i = 0; i < queue.length; i++) {
     const it = queue[i];
@@ -1292,6 +1297,8 @@ async function handleBulkStockIn(input) {
         await sb.from('products').update({ price: it.price }).eq('id', prodId);
         if (exProd) exProd.price = it.price;
       }
+      // qty=0 → 仅建产品档案,跳过库存与流水
+      if (it.qty > 0) {
       // optimistic-concurrency inbound (same pattern as submitStockIn)
       let applied = false;
       for (let a = 0; a < 3 && !applied; a++) {
@@ -1318,7 +1325,8 @@ async function handleBulkStockIn(input) {
         product_id: prodId, warehouse_id: it.whId, type: 'in', qty: it.qty,
         notes: (notes.join(' | ') + ' | 批量导入').trim(), operator_id: profile.id,
       });
-      // 货已入库。再尝试绑供应商溯源 —— 仓库无权建供应商,查无则只报警不卡流程
+      } // end if(it.qty>0)
+      // 货已入库(或仅建档)。再尝试绑供应商溯源 —— 仓库无权建供应商,查无则只报警不卡流程
       if (it.supName) {
         const supplierId = supMap.get(it.supName.trim());
         if (!supplierId) {
@@ -1333,7 +1341,7 @@ async function handleBulkStockIn(input) {
           }
         }
       }
-      ok++;
+      if (it.qty > 0) ok++; else docOnly++;
     } catch (e) {
       fails.push({ where: it.where, reason: '异常:' + (e.message || e) });
     }
@@ -1355,7 +1363,7 @@ async function handleBulkStockIn(input) {
     : '';
   box.innerHTML = `<div class="p-3 rounded-lg ${fails.length ? 'bg-amber-50' : 'bg-green-50'}">
       <div class="font-semibold ${fails.length ? 'text-amber-700' : 'text-green-700'}">
-        ✅ 成功入库 ${ok} 条${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}${warns.length ? ` · 🚨 ${warns.length} 条溯源待补` : ''}
+        ✅ 成功入库 ${ok} 条${docOnly ? ` · 📋 仅建档 ${docOnly} 条(0 库存)` : ''}${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}${warns.length ? ` · 🚨 ${warns.length} 条溯源待补` : ''}
       </div>${failHtml}
     </div>${warnHtml}`;
 }
