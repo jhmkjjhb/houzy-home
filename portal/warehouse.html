@@ -1244,7 +1244,7 @@ async function handleBulkStockIn(input) {
         if (cat === 'CT' && !String(r['批次号'] ?? '').trim()) { fails.push({ where, reason: '瓷砖入库必须填批次号' }); return; }
       }
       const supName = String(r['供应商名称'] ?? '').trim();
-      const facCode = String(r['厂家编号'] ?? '').trim();
+      const facCode = String(r['厂家编号'] ?? r['厂家编号/型号'] ?? r['型号'] ?? r['厂家型号'] ?? '').trim();
       if ((supName && !facCode) || (!supName && facCode)) {
         fails.push({ where, reason: '供应商名称与厂家编号需成对填写(用于溯源)' }); return;
       }
