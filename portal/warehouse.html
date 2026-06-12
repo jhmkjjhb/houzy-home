@@ -176,24 +176,13 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4" id="inv-stats"></div>
       <!-- Search -->
       <div class="flex gap-2 mb-3 flex-wrap">
-        <input type="text" id="ov-search" placeholder="搜索产品名称 / SKU / 厂家编码" data-i18n-ph="ph_search"
+        <input type="text" id="ov-search" placeholder="搜索 名称 / SKU / 厂家编码 / 规格 / 颜色" data-i18n-ph="ph_search"
                oninput="renderOverview()" class="input max-w-xs text-sm">
         <select id="ov-wh" onchange="renderOverview()" class="input w-44 text-sm">
           <option value="" data-i18n-opt="all_warehouses">全部仓库</option>
         </select>
-        <select id="ov-cat" onchange="renderOverview()" class="input w-36 text-sm">
-          <option value="" data-i18n-opt="all_categories">全部类别</option>
-          <option value="WY" data-i18n-opt="cat_WY">卫浴</option>
-          <option value="CT" data-i18n-opt="cat_CT">瓷砖</option>
-          <option value="DB" data-i18n-opt="cat_DB">地板/地砖</option>
-          <option value="CG" data-i18n-opt="cat_CG">橱柜</option>
-          <option value="MC" data-i18n-opt="cat_MC">门窗</option>
-          <option value="DJ" data-i18n-opt="cat_DJ">灯具</option>
-          <option value="JJ" data-i18n-opt="cat_JJ">家具</option>
-          <option value="WJ" data-i18n-opt="cat_WJ">五金</option>
-          <option value="DQ" data-i18n-opt="cat_DQ">电器</option>
-          <option value="TL" data-i18n-opt="cat_TL">涂料/壁纸</option>
-          <option value="QT" data-i18n-opt="cat_QT">其他</option>
+        <select id="ov-cat" onchange="renderOverview()" class="input w-44 text-sm">
+          <option value="" data-i18n-opt="all_categories">全部产品线</option>
         </select>
         <button id="low-stock-filter-btn" onclick="toggleLowStockFilter()"
                 class="px-3 py-2 text-xs rounded-lg border font-semibold transition-colors border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-500" data-i18n="low_stock_warn">
@@ -517,8 +506,13 @@
         <div id="code-result" class="text-xs text-gray-400">输入编码后按回车或点查询</div>
       </div>
       <!-- Search -->
-      <input type="text" id="prod-search" placeholder="搜索 SKU / 产品名称" data-i18n-ph="ph_prod_search"
-             oninput="renderProducts()" class="input max-w-xs text-sm mb-3">
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <input type="text" id="prod-search" placeholder="搜索 SKU / 名称 / 厂家编码 / 规格 / 颜色" data-i18n-ph="ph_prod_search"
+               oninput="renderProducts()" class="input max-w-xs text-sm">
+        <select id="prod-cat" onchange="renderProducts()" class="input w-44 text-sm">
+          <option value="">全部产品线</option>
+        </select>
+      </div>
       <div id="prod-table" class="card overflow-hidden">
         <p class="text-gray-400 text-sm p-8 text-center" data-i18n="loading">加载中…</p>
       </div>
@@ -1573,7 +1567,7 @@ async function loadAll() {
   const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }, { data: dls }, { data: codes }] = await Promise.all([
     sb.from('warehouses').select('*').order('name'),
     sb.from('products').select('*, image_url').order('sku'),
-    sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty), warehouses(name)'),
+    sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty,specs), warehouses(name)'),
     sb.from('inventory_movements')
       .select('*, products(sku,name), warehouses(name), profiles(name)')
       .order('created_at', { ascending: false }).limit(200),
@@ -1604,6 +1598,11 @@ function populateSelects() {
 
   const whFilterOpts = `<option value="">${t('all_warehouses')}</option>` + allWarehouses.map(w => `<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   ['ov-wh','mv-wh'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = whFilterOpts; });
+
+  // 产品线(类目)下拉:按库里真实类目动态生成(不写死标准类目,否则自定义类目选不中)
+  const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+  const catOpts = `<option value="">全部产品线</option>` + cats.map(c => `<option value="${esc(c)}">${esc(CAT_LABEL[c] || c)}</option>`).join('');
+  ['ov-cat','prod-cat'].forEach(id => { const el = document.getElementById(id); if (el) { const cur = el.value; el.innerHTML = catOpts; el.value = cur; } });
 
   // Inv stats
   const totalProducts = allProducts.length;
@@ -1863,7 +1862,7 @@ function renderOverview() {
     const p = r.products || {};
     if (wf && r.warehouse_id !== wf) return false;
     if (cf && p.category !== cf) return false;
-    if (q && !`${p.sku||''} ${p.name||''} ${prodCodeMap[r.product_id]||''}`.toLowerCase().includes(q)) return false;
+    if (q && !`${p.sku||''} ${p.name||''} ${p.specs||''} ${p.category||''} ${prodCodeMap[r.product_id]||''}`.toLowerCase().includes(q)) return false;
     if (showOnlyLowStock) {
       const avail = (r.qty_on_hand || 0) - (r.qty_reserved || 0);
       if (!(p.min_stock_qty > 0 && avail <= p.min_stock_qty)) return false;
@@ -2361,9 +2360,14 @@ function renderDeleteLogs() {
 // ── Products ──
 function renderProducts() {
   const q  = (document.getElementById('prod-search')?.value || '').toLowerCase();
+  const cf = document.getElementById('prod-cat')?.value || '';
   const el = document.getElementById('prod-table');
   if (!el) return;
-  const filtered = allProducts.filter(p => !q || `${p.sku} ${p.name}`.toLowerCase().includes(q));
+  const filtered = allProducts.filter(p => {
+    if (cf && p.category !== cf) return false;
+    if (q && !`${p.sku||''} ${p.name||''} ${p.specs||''} ${p.category||''} ${prodCodeMap[p.id]||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
   if (!filtered.length) { el.innerHTML = `<p class="text-gray-400 text-sm p-8 text-center">${t('empty_products')}</p>`; return; }
 
   el.innerHTML = `<div class="overflow-x-auto">
