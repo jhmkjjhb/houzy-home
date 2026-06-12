@@ -1070,6 +1070,7 @@ const CAT_LABEL = new Proxy({}, { get(_, k) { return (WH_I18N[currentLang]?.cat 
 
 let profile = null;
 let allWarehouses = [], allProducts = [], allInventory = [], allMovements = [], allDeleteLogs = [];
+let prodCodeMap = {};   // product_id → "厂家编码 厂家编码…"(用于库存搜索)
 let soTab = 'out';
 let siCat = '', siSub = '', siNewProduct = false;
 
@@ -1544,7 +1545,7 @@ async function doLogout() {
 
 // ── Data ──
 async function loadAll() {
-  const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }, { data: dls }] = await Promise.all([
+  const [{ data: whs }, { data: prods }, { data: inv }, { data: mvs }, { data: dls }, { data: codes }] = await Promise.all([
     sb.from('warehouses').select('*').order('name'),
     sb.from('products').select('*, image_url').order('sku'),
     sb.from('inventory').select('*, products(sku,name,category,unit,min_stock_qty), warehouses(name)'),
@@ -1553,12 +1554,18 @@ async function loadAll() {
       .order('created_at', { ascending: false }).limit(200),
     sb.from('product_delete_logs')
       .select('*').order('created_at', { ascending: false }).limit(200),
+    sb.from('product_supplier_codes').select('product_id, supplier_code'),
   ]);
   allWarehouses = whs || [];
   allProducts   = prods || [];
   allInventory  = inv || [];
   allMovements  = mvs || [];
   allDeleteLogs = dls || [];
+  prodCodeMap = {};
+  (codes || []).forEach(c => {
+    if (!c.product_id || !c.supplier_code) return;
+    prodCodeMap[c.product_id] = (prodCodeMap[c.product_id] ? prodCodeMap[c.product_id] + ' ' : '') + c.supplier_code;
+  });
   populateSelects();
   updateDispatchBadge();
 }
@@ -1831,7 +1838,7 @@ function renderOverview() {
     const p = r.products || {};
     if (wf && r.warehouse_id !== wf) return false;
     if (cf && p.category !== cf) return false;
-    if (q && !`${p.sku||''} ${p.name||''}`.toLowerCase().includes(q)) return false;
+    if (q && !`${p.sku||''} ${p.name||''} ${prodCodeMap[r.product_id]||''}`.toLowerCase().includes(q)) return false;
     if (showOnlyLowStock) {
       const avail = (r.qty_on_hand || 0) - (r.qty_reserved || 0);
       if (!(p.min_stock_qty > 0 && avail <= p.min_stock_qty)) return false;
