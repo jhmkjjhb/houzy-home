@@ -1169,7 +1169,7 @@ async function downloadStockInTemplate() {
     ['1. 每个类目一个表页(sheet),在对应类目页里填写,一行一个产品。'],
     ['2. 必填:产品名称。入库数量 > 0 时,仓库必填。'],
     ['   ★ 入库数量填 0(或留空)= 只建产品档案、不加库存(样品/预先建档用);此时仓库、批次号都可留空。'],
-    ['3. SKU 留空 → 系统自动生成;填了且系统已存在 → 只补库存,不重复建产品。'],
+    ['3. SKU 留空 → 系统自动生成。防重复导入:同一「供应商+厂家编号」(或同类目+名称+规格)系统已有 → 自动识别为同一产品,只补库存/补绑,绝不重复建档。'],
     ['4. 「仓库」请填下方清单里的准确名称。'],
     ['5. 「颜色」单独一列填,例:哑光黑、米黄。「规格说明」填其余,例:品牌:科勒 | 尺寸:600×120mm。'],
     ['6. 瓷砖类目「批次号」必填。'],
@@ -1274,18 +1274,39 @@ async function handleBulkStockIn(input) {
   const supMap = new Map();
   (supAll || []).forEach(s => { if (s.name) supMap.set(s.name.trim(), s.id); });
 
-  let ok = 0, docOnly = 0;
+  // —— 防重复导入:已有产品去重索引 ——
+  // ① 供应商+厂家编号(主键:编号相同=同一产品) ② 类目+名称+规格(无编号时兜底)
+  const { data: codeRowsDup } = await sb.from('product_supplier_codes')
+    .select('product_id, supplier_code, suppliers(name)');
+  const codeKeyMap = new Map();
+  (codeRowsDup || []).forEach(c => {
+    if (c.supplier_code) codeKeyMap.set(`${(c.suppliers?.name || '').trim()}||${(c.supplier_code || '').trim()}`, c.product_id);
+  });
+  const nameKey = (cat, name, specs) => `${cat || ''}||${(name || '').trim()}||${(specs || '').trim()}`;
+  const nameKeyMap = new Map();
+  (allProducts || []).forEach(p => nameKeyMap.set(nameKey(p.category, p.name, p.specs), p));
+
+  let ok = 0, docOnly = 0, reused = 0;
   const warns = []; // 已入库但溯源未绑(需人工跟进)
   for (let i = 0; i < queue.length; i++) {
     const it = queue[i];
     box.innerHTML = `<div class="text-gray-500">处理中… ${i+1}/${queue.length}</div>`;
     try {
-      // resolve product: existing by SKU, else create
+      // resolve product:① SKU ② 供应商+厂家编号 ③ 类目+名称+规格 → 命中则复用(防重复导入),否则新建
       let prodId = null, exProd = null;
       if (it.sku) {
         exProd = allProducts.find(p => (p.sku || '') === it.sku) || null;
         if (exProd) prodId = exProd.id;
       }
+      if (!prodId && it.supName && it.facCode) {
+        const pid = codeKeyMap.get(`${it.supName}||${it.facCode}`);
+        if (pid) { prodId = pid; exProd = allProducts.find(p => p.id === pid) || null; }
+      }
+      if (!prodId) {
+        const exByName = nameKeyMap.get(nameKey(it.cat, it.name, it.specs));
+        if (exByName) { prodId = exByName.id; exProd = exByName; }
+      }
+      if (prodId) reused++;
       if (!prodId) {
         const res = await insertProductWithSku(it.cat, {
           name: it.name || it.sku, category: it.cat, unit: it.unit,
@@ -1294,7 +1315,9 @@ async function handleBulkStockIn(input) {
         });
         if (res.error) { fails.push({ where: it.where, reason: '建档失败:' + res.error.message }); continue; }
         prodId = res.id;
-        allProducts.push({ id: res.id, sku: res.sku, name: it.name, category: it.cat, price: it.price || null });
+        const newP = { id: res.id, sku: res.sku, name: it.name, category: it.cat, specs: it.specs, price: it.price || null };
+        allProducts.push(newP);
+        nameKeyMap.set(nameKey(it.cat, it.name, it.specs), newP);   // 本次导入内也防重
       } else if (it.price && !(Number(exProd?.price) > 0)) {
         // 仓库填的零售价只补"还没定价"的商品;已定价以店长价目后台为准,不覆盖
         await sb.from('products').update({ price: it.price }).eq('id', prodId);
@@ -1341,6 +1364,7 @@ async function handleBulkStockIn(input) {
             const { error: cErr } = await sb.from('product_supplier_codes')
               .insert({ product_id: prodId, supplier_id: supplierId, supplier_code: it.facCode });
             if (cErr) warns.push({ where: it.where, reason: '已入库,但厂家编号绑定失败,请手工补绑:' + cErr.message });
+            else codeKeyMap.set(`${it.supName.trim()}||${it.facCode}`, prodId);   // 绑成功即入去重索引
           }
         }
       }
@@ -1366,7 +1390,7 @@ async function handleBulkStockIn(input) {
     : '';
   box.innerHTML = `<div class="p-3 rounded-lg ${fails.length ? 'bg-amber-50' : 'bg-green-50'}">
       <div class="font-semibold ${fails.length ? 'text-amber-700' : 'text-green-700'}">
-        ✅ 成功入库 ${ok} 条${docOnly ? ` · 📋 仅建档 ${docOnly} 条(0 库存)` : ''}${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}${warns.length ? ` · 🚨 ${warns.length} 条溯源待补` : ''}
+        ✅ 成功入库 ${ok} 条${docOnly ? ` · 📋 仅建档 ${docOnly} 条(0 库存)` : ''}${reused ? ` · 🔁 已存在 ${reused} 条(未重复建档)` : ''}${fails.length ? ` · ⚠️ 失败 ${fails.length} 条(已跳过,不影响其他)` : ''}${warns.length ? ` · 🚨 ${warns.length} 条溯源待补` : ''}
       </div>${failHtml}
     </div>${warnHtml}`;
 }
