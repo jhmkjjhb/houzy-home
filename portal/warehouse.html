@@ -1089,8 +1089,10 @@ function fmtDateTime(v) {
 }
 // Compute next SKU for a category (best-effort, count-based — non-authoritative)
 async function nextSku(cat) {
-  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${cat}-%`);
-  return `HH-${cat}-${String((count||0)+1).padStart(4,'0')}`;
+  // 编号前缀只取字母+数字,自动去掉汉字/符号(SKU 永远不含中文)
+  const code = (String(cat || '').match(/[A-Za-z0-9]+/g) || []).join('').toUpperCase() || 'QT';
+  const { count } = await sb.from('products').select('id', { count:'exact', head:true }).like('sku', `HH-${code}-%`);
+  return `HH-${code}-${String((count||0)+1).padStart(4,'0')}`;
 }
 // Insert a product, retrying with a fresh SKU on uniqueness collision (up to 5 times)
 async function insertProductWithSku(cat, fields) {
