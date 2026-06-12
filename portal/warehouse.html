@@ -1129,7 +1129,9 @@ async function exportInventoryExcel() {
     const tag = `${c.supplier_code || ''}${c.suppliers?.name ? '(' + c.suppliers.name + ')' : ''}`;
     (codeMap[c.product_id] = codeMap[c.product_id] || []).push(tag);
   });
-  Object.keys(WH_I18N['zh-CN'].cat).forEach(code => {
+  // 按库里真实类目导(含自定义类目如 B01-瓷砖-新濠),否则只认写死的标准类目→每个表都空
+  const exportCats = [...new Set(allProducts.map(p => p.category || 'QT'))].sort();
+  (exportCats.length ? exportCats : Object.keys(WH_I18N['zh-CN'].cat)).forEach(code => {
     const head = ['SKU','名称','单位','规格', ...whs.map(w => w.name), '总库存', '单位成本', '零售价', '厂家编号(供应商)'];
     const rows = [head];
     allProducts.filter(p => (p.category || 'QT') === code).forEach(p => {
