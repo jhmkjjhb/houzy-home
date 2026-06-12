@@ -3048,12 +3048,27 @@ function addScannedProduct(sku) {
   if (!sku) { alert(t('scan_no_sku')); return; }
   const p = staffProducts.find(x => (x.sku || '').toLowerCase() === sku.toLowerCase());
   if (!p) { alert(t('scan_not_found_pfx') + sku + t('scan_not_found_sfx') + '\n' + t('scan_not_found_hint')); return; }
+  // 扫到橱柜/衣柜类产品 → 若整套模块还没带出,先自动带出整套模块(员工可删用不到的)
+  const kind = bundleKindFromProduct(p);
+  if (kind && !hasBundleRows(kind)) addBundle(kind);
   addItemRow({ sku_ref: p.sku, product_name: p.name, unit: p.unit, unit_price: p.price });
   const id = itemRowCount;
   try { autoDetectProductType(id); } catch (e) {}
   try { onProductSelect(id); } catch (e) {}
   try { calcItemRow(id); } catch (e) {}
   document.querySelector(`.item-row[data-row-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// 判断扫码产品是否橱柜/衣柜类(按类别+名称关键词),返回 '橱柜' / '衣柜' / ''
+function bundleKindFromProduct(p) {
+  const s = `${p?.category || ''} ${p?.name || ''}`;
+  if (/衣柜|衣帽间/.test(s)) return '衣柜';
+  if (/橱柜|厨柜|整体橱柜/.test(s)) return '橱柜';
+  return '';
+}
+// 当前订单是否已带出某套模块(橱柜/衣柜)的行
+function hasBundleRows(kind) {
+  return Array.from(document.querySelectorAll('[id^="item-section-"]'))
+    .some(sel => String(sel.value || '').startsWith(kind + '·'));
 }
 
 function addItemRow(data = {}) {
