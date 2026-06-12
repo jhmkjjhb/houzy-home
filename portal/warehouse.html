@@ -1302,7 +1302,8 @@ async function handleBulkStockIn(input) {
         const pid = codeKeyMap.get(`${it.supName}||${it.facCode}`);
         if (pid) { prodId = pid; exProd = allProducts.find(p => p.id === pid) || null; }
       }
-      if (!prodId) {
+      // 名称+规格兜底:仅用于「没填厂家编号」的行;有编号的以编号为准,避免不同型号被误合
+      if (!prodId && !it.facCode) {
         const exByName = nameKeyMap.get(nameKey(it.cat, it.name, it.specs));
         if (exByName) { prodId = exByName.id; exProd = exByName; }
       }
