@@ -2398,7 +2398,11 @@ function renderProducts() {
                 </label>`}
           </td>
           <td class="px-4 py-3 font-mono font-bold text-hg text-xs">${esc(p.sku)}</td>
-          <td class="px-4 py-3 font-medium text-gray-800">${esc(p.name)}</td>
+          <td class="px-4 py-3">
+            <input type="text" value="${esc(p.name||'')}" placeholder="—" title="点击修改名称"
+              class="w-36 text-sm font-medium text-gray-800 border border-transparent rounded px-1 py-0.5 hover:border-gray-300 focus:border-hg focus:outline-none"
+              onchange="updateProductSpecs('${p.id}','name',this.value)">
+          </td>
           <td class="px-4 py-3 text-xs text-gray-400">${esc(CAT_LABEL[p.category]||p.category||'—')}</td>
           <td class="px-4 py-3 text-gray-500">${esc(p.unit||'—')}</td>
           <td class="px-4 py-3 text-right">
@@ -2406,7 +2410,11 @@ function renderProducts() {
               class="w-20 text-right text-sm border border-transparent rounded px-1 hover:border-gray-300 focus:border-hg focus:outline-none"
               onchange="updateProductPrice('${p.id}',this.value)">
           </td>
-          <td class="px-4 py-3 text-xs text-gray-400 max-w-xs truncate">${esc(p.specs||'—')}</td>
+          <td class="px-4 py-3 text-xs">
+            <input type="text" value="${esc(p.specs||'')}" placeholder="—" title="点击修改规格(颜色/尺寸/厚度)"
+              class="w-48 text-xs text-gray-600 border border-transparent rounded px-1 py-0.5 hover:border-gray-300 focus:border-hg focus:outline-none"
+              onchange="updateProductSpecs('${p.id}','specs',this.value)">
+          </td>
           <td class="px-4 py-3 text-right text-gray-400">${p.min_stock_qty||0}</td>
           <td class="px-4 py-3">
             <button data-act="codes" data-id="${esc(p.id)}" data-name="${esc(p.name)}"
@@ -2444,6 +2452,17 @@ async function updateProductPrice(productId, val) {
   await sb.from('products').update({ price }).eq('id', productId);
   const p = allProducts.find(p => p.id === productId);
   if (p) p.price = price;
+}
+
+// 内联修改产品名称/规格(只允许这两个字段),改完即存,不必重导
+async function updateProductSpecs(productId, field, val) {
+  if (field !== 'name' && field !== 'specs') return;
+  const v = (val || '').trim();
+  if (field === 'name' && !v) { alert('名称不能为空'); renderProducts(); return; }
+  const { error } = await sb.from('products').update({ [field]: v || null }).eq('id', productId);
+  if (error) { alert('保存失败:' + error.message); renderProducts(); return; }
+  const p = allProducts.find(p => p.id === productId);
+  if (p) p[field] = v || null;
 }
 
 function openAddProduct() {
