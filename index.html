@@ -172,6 +172,13 @@
             </div>
         </div>
 
+        <!-- Sound Toggle -->
+        <button id="hero-sound" type="button" onclick="toggleHeroSound()" aria-label="开启或关闭视频声音" title="开启/关闭声音"
+                class="absolute bottom-8 right-6 z-30 w-11 h-11 rounded-full bg-black/35 hover:bg-black/55 text-white flex items-center justify-center backdrop-blur-sm transition-all">
+            <svg id="hero-snd-on" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>
+            <svg id="hero-snd-off" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 4l16 16"/></svg>
+        </button>
+
         <!-- Scroll Indicator -->
         <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1354,8 +1361,10 @@
     })();
     </script>
 <script>
-  (function(){function slow(){var v=document.getElementById('hero-video');if(!v)return;v.playbackRate=0.5;var p=v.play();if(p&&p.catch)p.catch(function(){});}
-  document.addEventListener('DOMContentLoaded',function(){slow();var hv=document.getElementById('hero-video');if(hv)hv.addEventListener('loadedmetadata',function(){hv.playbackRate=0.5;});});})();
+  (function(){function vid(){return document.getElementById('hero-video');}
+  function startSlow(){var v=vid();if(!v)return;if(v.muted)v.playbackRate=0.5;var p=v.play();if(p&&p.catch)p.catch(function(){});}
+  document.addEventListener('DOMContentLoaded',function(){startSlow();var hv=vid();if(hv)hv.addEventListener('loadedmetadata',function(){if(hv.muted)hv.playbackRate=0.5;});});
+  window.toggleHeroSound=function(){var v=vid();if(!v)return;v.muted=!v.muted;var on=document.getElementById('hero-snd-on'),off=document.getElementById('hero-snd-off');if(v.muted){v.playbackRate=0.5;if(on)on.classList.add('hidden');if(off)off.classList.remove('hidden');}else{v.playbackRate=1;v.volume=1;if(on)on.classList.remove('hidden');if(off)off.classList.add('hidden');}var p=v.play();if(p&&p.catch)p.catch(function(){});};})();
 </script>
 </body>
 </html>
