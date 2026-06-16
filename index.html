@@ -150,9 +150,10 @@
         <!-- Background Image -->
         <div class="absolute inset-0 z-0">
             <div class="absolute inset-0 bg-gradient-to-r from-houzy-green/90 via-houzy-green/70 to-transparent z-10"></div>
-            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80" 
-                 alt="HOUZY HOME Showroom" 
-                 class="w-full h-full object-cover">
+            <video id="hero-video" class="w-full h-full object-cover" autoplay muted loop playsinline preload="auto" poster="videos/hero-poster.jpg">
+                <source src="videos/hero-bedroom.mp4" type="video/mp4">
+                <img src="videos/hero-poster.jpg" alt="HOUZY HOME" class="w-full h-full object-cover">
+            </video>
         </div>
 
         <!-- Content -->
@@ -1352,6 +1353,10 @@
       setLanguage(saved);
     })();
     </script>
+<script>
+  (function(){function slow(){var v=document.getElementById('hero-video');if(!v)return;v.playbackRate=0.5;var p=v.play();if(p&&p.catch)p.catch(function(){});}
+  document.addEventListener('DOMContentLoaded',function(){slow();var hv=document.getElementById('hero-video');if(hv)hv.addEventListener('loadedmetadata',function(){hv.playbackRate=0.5;});});})();
+</script>
 </body>
 </html>
 </body>
