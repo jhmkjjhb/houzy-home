@@ -1,0 +1,312 @@
+[
+{
+"name": "V1FC126001Y-1",
+"folder": "V1FC126001Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126002Y-1",
+"folder": "V1FC126002Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126003Y-1",
+"folder": "V1FC126003Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126003Y-2",
+"folder": "V1FC126003Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126005Y-1",
+"folder": "V1FC126005Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126005Y-2",
+"folder": "V1FC126005Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126006Y-1",
+"folder": "V1FC126006Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126006Y-2",
+"folder": "V1FC126006Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126007Y-1",
+"folder": "V1FC126007Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126007Y-2",
+"folder": "V1FC126007Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126012Y-1",
+"folder": "V1FC126012Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126013Y-1",
+"folder": "V1FC126013Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126020Y-1",
+"folder": "V1FC126020Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-1",
+"folder": "V1FC126021Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-2",
+"folder": "V1FC126021Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-3",
+"folder": "V1FC126021Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-M1-1",
+"folder": "V1FC126021Y-M1",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-M1-2",
+"folder": "V1FC126021Y-M1",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-M1-3",
+"folder": "V1FC126021Y-M1",
+"series": "V1FC"
+},
+{
+"name": "V1FC126021Y-M2-1",
+"folder": "V1FC126021Y-M2",
+"series": "V1FC"
+},
+{
+"name": "V1FC126023Y-1",
+"folder": "V1FC126023Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC126023Y-2",
+"folder": "V1FC126023Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157001Y-1",
+"folder": "V1FC157001Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157001Y-2",
+"folder": "V1FC157001Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157002Y-1",
+"folder": "V1FC157002Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157002Y-2",
+"folder": "V1FC157002Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157003Y-1",
+"folder": "V1FC157003Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157003Y-2",
+"folder": "V1FC157003Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157005Y-1",
+"folder": "V1FC157005Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157005Y-2",
+"folder": "V1FC157005Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157006Y-1",
+"folder": "V1FC157006Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157006Y-2",
+"folder": "V1FC157006Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157007Y-1",
+"folder": "V1FC157007Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157007Y-2",
+"folder": "V1FC157007Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157012Y-1",
+"folder": "V1FC157012Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157012Y-2",
+"folder": "V1FC157012Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157013Y-1",
+"folder": "V1FC157013Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157013Y-2",
+"folder": "V1FC157013Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157020Y-1",
+"folder": "V1FC157020Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157020Y-2",
+"folder": "V1FC157020Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157020Y-3",
+"folder": "V1FC157020Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157021Y-1",
+"folder": "V1FC157021Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157023Y-1",
+"folder": "V1FC157023Y",
+"series": "V1FC"
+},
+{
+"name": "V1FC157023Y-2",
+"folder": "V1FC157023Y",
+"series": "V1FC"
+},
+{
+"name": "V1RS12601Y-1",
+"folder": "V1RS12601Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS12603Y-1",
+"folder": "V1RS12603Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS12603Y-2",
+"folder": "V1RS12603Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS12616Y-1",
+"folder": "V1RS12616Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS12616Y-2",
+"folder": "V1RS12616Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15701Y-1",
+"folder": "V1RS15701Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15701Y-2",
+"folder": "V1RS15701Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15701Y-3",
+"folder": "V1RS15701Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15702Y-1",
+"folder": "V1RS15702Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15702Y-2",
+"folder": "V1RS15702Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15713Y-1",
+"folder": "V1RS15713Y",
+"series": "V1RS"
+},
+{
+"name": "V1RS15713Y-2",
+"folder": "V1RS15713Y",
+"series": "V1RS"
+},
+{
+"name": "VIRS12602Y-1",
+"folder": "VIRS12602Y",
+"series": "VIRS"
+},
+{
+"name": "VIRS15703Y-1",
+"folder": "VIRS15703Y",
+"series": "VIRS"
+},
+{
+"name": "VIRS15703Y-2",
+"folder": "VIRS15703Y",
+"series": "VIRS"
+},
+{
+"name": "VIRS15703Y-3",
+"folder": "VIRS15703Y",
+"series": "VIRS"
+},
+{
+"name": "VIRS15703Y-4",
+"folder": "VIRS15703Y",
+"series": "VIRS"
+},
+{
+"name": "VIRS15716Y-1",
+"folder": "VIRS15716Y",
+"series": "VIRS"
+}
+]
