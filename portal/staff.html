@@ -354,6 +354,10 @@
             <button type="button" onclick="addWindowRow()"
                     class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_add_window"
                     style="background:#1a3a2a;color:#c8a96e">+ 铝合金门窗</button>
+            <button type="button" onclick="document.getElementById('reno-quote-upload').click()"
+                    class="text-xs font-semibold px-2.5 py-1 rounded-full" data-i18n="oi_import_reno"
+                    style="background:#c8a96e;color:#1a3a2a">📋 导入整装报价单</button>
+            <input type="file" id="reno-quote-upload" accept=".xlsx,.xls" class="hidden" onchange="importRenovationQuote(this)">
             <button type="button" onclick="addItemRow()"
                     class="text-sm font-medium flex items-center gap-1" style="color:#c8a96e">
               <span class="text-lg leading-none">+</span> <span data-i18n="oi_add_single">单个商品</span>
@@ -957,6 +961,7 @@ const STAFF_I18N = {
     err_fill_product_row:'请至少填写一行货品名称',
     oi_title:'2. 商品明细',
     oi_add_cabinet:'+ 橱柜（全套模块）', oi_add_wardrobe:'+ 衣柜（全套模块）', oi_add_window:'+ 铝合金门窗',
+    oi_import_reno:'📋 导入整装报价单', reno_imported:'已导入 {n} 项材料，合计 RM {rm}',
     oi_add_single:'单个商品', oi_scan:'📷 扫码加货',
     oi_hint:'点「橱柜/衣柜（全套模块）」一次带出整套模块行，逐项填数量单价、用不到的按 × 删掉；散卖单品用「单个商品」',
     oi_items_total:'商品合计（原价）',
@@ -1062,6 +1067,7 @@ const STAFF_I18N = {
     err_fill_product_row:'請至少填寫一行貨品名稱',
     oi_title:'2. 商品明細',
     oi_add_cabinet:'+ 櫥櫃（全套模組）', oi_add_wardrobe:'+ 衣櫃（全套模組）', oi_add_window:'+ 鋁合金門窗',
+    oi_import_reno:'📋 匯入整裝報價單', reno_imported:'已匯入 {n} 項材料，合計 RM {rm}',
     oi_add_single:'單個商品', oi_scan:'📷 掃碼加貨',
     oi_hint:'點「櫥櫃/衣櫃（全套模組）」一次帶出整套模組行，逐項填數量單價、用不到的按 × 刪掉；散賣單品用「單個商品」',
     oi_items_total:'商品合計（原價）',
@@ -1167,6 +1173,7 @@ const STAFF_I18N = {
     err_fill_product_row:'Please fill in at least one product line',
     oi_title:'2. Order Items',
     oi_add_cabinet:'+ Kitchen Cabinet (Full Modules)', oi_add_wardrobe:'+ Wardrobe (Full Modules)', oi_add_window:'+ Aluminium Doors & Windows',
+    oi_import_reno:'📋 Import Reno Quote', reno_imported:'Imported {n} material items, total RM {rm}',
     oi_add_single:'Single Item', oi_scan:'📷 Scan to Add',
     oi_hint:'Click "Kitchen Cabinet / Wardrobe (Full Modules)" to load the full set of module lines at once; fill in quantity and unit price for each, and press × to delete the ones you don\'t need. Use "Single Item" for individual products.',
     oi_items_total:'Items Total (List Price)',
@@ -1272,6 +1279,7 @@ const STAFF_I18N = {
     err_fill_product_row:'Sila isi sekurang-kurangnya satu baris produk',
     oi_title:'2. Butiran Item',
     oi_add_cabinet:'+ Kabinet Dapur (Set Penuh)', oi_add_wardrobe:'+ Almari (Set Penuh)', oi_add_window:'+ Pintu & Tingkap Aluminium',
+    oi_import_reno:'📋 Import Sebut Harga', reno_imported:'Diimport {n} item bahan, jumlah RM {rm}',
     oi_add_single:'Item Tunggal', oi_scan:'📷 Imbas untuk Tambah',
     oi_hint:'Klik "Kabinet Dapur / Almari (Set Penuh)" untuk memunculkan semua baris modul sekali gus; isi kuantiti dan harga seunit bagi setiap satu, dan tekan × untuk padam yang tidak diperlukan. Gunakan "Item Tunggal" untuk produk berasingan.',
     oi_items_total:'Jumlah Item (Harga Senarai)',
@@ -1377,6 +1385,7 @@ const STAFF_I18N = {
     err_fill_product_row:'กรุณากรอกรายการสินค้าอย่างน้อยหนึ่งบรรทัด',
     oi_title:'2. รายการสินค้า',
     oi_add_cabinet:'+ ตู้ครัว (ชุดเต็มโมดูล)', oi_add_wardrobe:'+ ตู้เสื้อผ้า (ชุดเต็มโมดูล)', oi_add_window:'+ ประตู&หน้าต่างอะลูมิเนียม',
+    oi_import_reno:'📋 นำเข้าใบเสนอราคา', reno_imported:'นำเข้า {n} รายการวัสดุ รวม RM {rm}',
     oi_add_single:'สินค้ารายชิ้น', oi_scan:'📷 สแกนเพื่อเพิ่ม',
     oi_hint:'คลิก "ตู้ครัว/ตู้เสื้อผ้า (ชุดเต็มโมดูล)" เพื่อดึงรายการโมดูลทั้งชุดในครั้งเดียว กรอกจำนวนและราคาต่อหน่วยทีละรายการ แล้วกด × เพื่อลบรายการที่ไม่ใช้ ใช้ "สินค้ารายชิ้น" สำหรับสินค้าแยกชิ้น',
     oi_items_total:'รวมสินค้า (ราคาตั้ง)',
@@ -3170,6 +3179,84 @@ function addBundle(kind) {
   calcItemsTotal();
 }
 
+// ── 整装报价单一键导入（只读「材料报价单」页；硬装不进 OMS）────────────────
+// 报价单列：1序号 2分类 3项目 4数量 5单位 6规格 7单价 8单价单位 9备注 10金额
+// 自动跳过 硬装页 + 分类标题/小计/合计/折扣行；定制/现货按品类自动打标；
+// 末尾补一条「整装优惠调整」对账行，使订单总额对齐报价单材料款（含 12%/88折/9折）。
+function renoItemFT(cat, name) {
+  const c = cat || '', n = name || '';
+  if (/卫浴|sanitary/i.test(c)) {
+    if (/马桶|花洒|toilet|shower set/i.test(n)) return 'stock';   // 成品洁具=现货
+    return 'custom';                                            // 浴室柜/淋浴隔断=定制
+  }
+  if (/瓷砖|tile|踏步|tread/i.test(c)) return 'stock';           // 瓷砖/楼梯砖=现货
+  return 'custom';                                              // 橱柜/全屋定制=定制
+}
+function renoItemSection(cat) {
+  const c = cat || '';
+  if (/卫浴|sanitary/i.test(c)) return '卫浴洁具';
+  if (/楼梯|tread/i.test(c)) return '楼梯踏步砖';
+  if (/瓷砖|tile/i.test(c)) return '瓷砖';
+  if (/全屋定制|custom cabinetry/i.test(c)) return '全屋定制';
+  if (/厨房|kitchen|洗衣|laundry/i.test(c)) return '厨房橱柜';
+  return '其他';
+}
+async function importRenovationQuote(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
+  let wb;
+  try { wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); }
+  catch (e) { alert((t('reno_read_fail') || '报价单读取失败') + '：' + e.message); return; }
+  const sheetName = wb.SheetNames.find(n => /材料/.test(n)) || wb.SheetNames[0];
+  const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+  const num = v => { const x = parseFloat(v); return isFinite(x) ? x : null; };
+  const parsed = []; let lineSum = 0, target = null;
+  aoa.forEach(r => {
+    const a0   = String(r[0] || '');
+    const cat  = String(r[1] || '').trim();
+    const name = String(r[2] || '').trim();
+    const amt  = num(r[9]);
+    if (/材料与施工|材料.*合计/.test(a0 + name) && amt != null) target = amt;  // 材料款总额=对账目标
+    if (!name || !cat) return;                          // 分类标题行(无分类列)→跳
+    if (/小计|合计|subtotal|total/i.test(name)) return; // 小计/合计→跳
+    if (/折扣|discount/i.test(name)) return;            // 折扣由对账行统一体现→跳
+    if (amt == null) return;
+    parsed.push({
+      product_name:     name,
+      model_spec:       String(r[5] || '').trim() || null,
+      quantity:         num(r[3]) || 1,
+      unit:             String(r[4] || '').trim() || '套',
+      unit_price:       num(r[6]) || 0,
+      total_price:      amt,
+      fulfillment_type: renoItemFT(cat, name),
+      section:          renoItemSection(cat),
+    });
+    lineSum += amt;
+  });
+  if (!parsed.length) { alert(t('reno_no_item') || '未在「材料报价单」中解析到可导入的产品行'); return; }
+  // 清空现有明细行，逐条带入
+  const list = document.getElementById('items-list');
+  if (list) { list.innerHTML = ''; itemRowCount = 0; }
+  parsed.forEach(d => addItemRow(d));
+  // 对账行：使订单总额对齐报价单材料款（吸收 A 12% / D 88折 / E 9折 等整体优惠）
+  let adjNote = '';
+  if (target != null) {
+    const adj = +(target - lineSum).toFixed(2);
+    if (Math.abs(adj) >= 0.01) {
+      addItemRow({ product_name: '整装优惠调整 Package Discount Adjustment',
+                   quantity: 1, unit: '项', unit_price: adj, total_price: adj,
+                   fulfillment_type: 'custom', section: '其他' });
+      adjNote = '；优惠调整 RM ' + adj.toFixed(2);
+    }
+  }
+  calcItemsTotal();
+  const finalTotal = target != null ? target : lineSum;
+  alert((t('reno_imported') || '已导入 {n} 项材料，合计 RM {rm}')
+          .replace('{n}', parsed.length).replace('{rm}', finalTotal.toFixed(2)) + adjNote);
+}
+
 // ── 铝合金门窗定制模块(行业报价单:位置/系列/玻璃/五金/宽高→面积→单价→合计;平开不足1㎡按1㎡;附加项按件)──
 let _winSeq = 0, _winAddonSeq = 0;
 // 阿尔维门窗系列库(取自 2026 价格目录;选系列自动带 壁厚/标配玻璃/五金。
@@ -4600,6 +4687,7 @@ const ptBadge = code => `<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue
 const QUOTE_SECTIONS = [
   '橱柜·地柜', '橱柜·吊柜', '橱柜·台面', '橱柜·五金升级', '橱柜·电器开孔', '橱柜·安装人工',
   '衣柜·柜体', '衣柜·柜门', '衣柜·内部配件', '衣柜·五金升级', '衣柜·安装人工',
+  '厨房橱柜', '瓷砖', '楼梯踏步砖', '全屋定制', '卫浴洁具',
   '其他',
 ];
 // 参考单价（S59 确认：地柜 RM 1,800/延米，员工可手改）；仅在单价空白时预填
