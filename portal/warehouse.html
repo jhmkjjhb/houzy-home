@@ -2598,6 +2598,8 @@ async function manageSupplierCodes(productId, productName) {
 }
 
 // ── QR Code ──
+const QR_CODE_SIZE = 260;
+
 function showQR(sku, name) {
   document.getElementById('qr-name').textContent = name;
   document.getElementById('qr-sku').textContent  = sku;
@@ -2605,7 +2607,14 @@ function showQR(sku, name) {
   canvas.innerHTML = '';
   const base = location.href.replace(/warehouse\.html.*$/, 'product-lookup.html');
   const url  = `${base}?sku=${encodeURIComponent(sku)}`;
-  new QRCode(canvas, { text: url, width: 200, height: 200, colorDark: '#1a3a2a', colorLight: '#ffffff' });
+  new QRCode(canvas, {
+    text: url,
+    width: QR_CODE_SIZE,
+    height: QR_CODE_SIZE,
+    colorDark: '#1a3a2a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
   document.getElementById('qr-modal').classList.remove('hidden');
 }
 
@@ -2622,7 +2631,7 @@ function printQR() {
   w.document.write(`<!DOCTYPE html><html><body style="text-align:center;font-family:-apple-system,sans-serif;padding:24px">
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">${name}</div>
     <div style="font-size:13px;color:#c8a96e;font-family:monospace;margin-bottom:14px">${sku}</div>
-    <img src="${canvas.toDataURL()}" style="width:200px;height:200px;display:block;margin:0 auto">
+    <img src="${canvas.toDataURL()}" style="width:${QR_CODE_SIZE}px;height:${QR_CODE_SIZE}px;display:block;margin:0 auto">
     <div style="font-size:11px;color:#aaa;margin-top:10px">HOUZY HOME</div>
   </body></html>`);
   w.document.close();
