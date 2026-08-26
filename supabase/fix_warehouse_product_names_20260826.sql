@@ -6,13 +6,13 @@ BEGIN;
 UPDATE public.products
 SET name = CASE sku
   WHEN 'HH-B04-0010' THEN '普通马桶'
-  WHEN 'HH-B07-0002' THEN '游涡地漏'
+  WHEN 'HH-B07-0002' THEN '漩涡地漏'
   ELSE name
 END
 WHERE sku IN ('HH-B04-0010', 'HH-B07-0002')
   AND name IS DISTINCT FROM CASE sku
     WHEN 'HH-B04-0010' THEN '普通马桶'
-    WHEN 'HH-B07-0002' THEN '游涡地漏'
+    WHEN 'HH-B07-0002' THEN '漩涡地漏'
     ELSE name
   END;
 
