@@ -311,6 +311,27 @@
             }
         }
     </style>
+
+<style id="opening-campaign-style">
+/* Opening campaign: poster green, champagne, warm paper and brass. */
+#grand-opening{padding:80px 0 0;background:#003d35;color:#fff8ed;scroll-margin-top:80px}
+.opening-ribbon{display:block;text-align:center;padding:12px 18px;background:#efd9b6;color:#003d35;font-size:14px;font-weight:700;letter-spacing:.08em}
+.opening-layout{max-width:1250px;margin:auto;padding:42px 40px;display:grid;grid-template-columns:1.1fr .8fr;gap:64px;align-items:center}
+.opening-kicker{color:#efd9b6;font-size:12px;letter-spacing:.23em;margin-bottom:18px}
+.opening-title{font-family:Georgia,'Noto Serif SC',serif;font-size:clamp(48px,6.4vw,86px);line-height:.93;letter-spacing:-.04em;font-weight:500;margin:0 0 15px}
+.opening-cn{font-size:clamp(23px,2.8vw,34px);letter-spacing:.12em;color:#efd9b6;margin-bottom:20px}
+.opening-date{display:inline-block;border-top:1px solid #b99560;border-bottom:1px solid #b99560;padding:12px 0;font-size:23px;letter-spacing:.03em;margin-bottom:18px}
+.opening-intro{font-size:15px;line-height:1.7;max-width:520px;color:#e3ebe5}
+.opening-offers{display:flex;gap:28px;margin:22px 0;border-bottom:1px solid #517266;padding-bottom:22px}
+.opening-offers strong{display:block;color:#efd9b6;font-size:32px;font-weight:600;line-height:1.25}.opening-offers span{font-size:14px}
+.opening-gifts{font-size:16px;line-height:1.6;margin:12px 0 24px}.opening-gifts small{display:block;color:#efd9b6;letter-spacing:.12em;margin-bottom:4px}
+.opening-actions{display:flex;gap:12px;flex-wrap:wrap}.opening-actions a{display:inline-block;padding:14px 22px;background:#efd9b6;color:#003d35;font-weight:700;text-decoration:none}.opening-actions a+ a{border:1px solid #efd9b6;background:transparent;color:#fff8ed}
+.opening-actions a:hover{background:#fff8ed;color:#003d35}.opening-actions a:focus-visible,.opening-poster:focus-visible,.opening-ribbon:focus-visible{outline:3px solid #fff;outline-offset:5px}
+.opening-address{font-size:12px;color:#d1ded6;line-height:1.7;margin-top:22px}
+.opening-poster{display:block;max-width:400px;justify-self:center;box-shadow:0 18px 50px #001e2470;transform:rotate(1.5deg)}.opening-poster img{display:block;width:100%;height:auto}.opening-poster span{display:block;text-align:center;background:#fff8ed;color:#003d35;font-size:12px;padding:8px}
+@media(max-width:760px){#grand-opening{padding-top:56px}#grand-opening .opening-title{font-size:58px !important;line-height:.96 !important}.opening-layout{padding:32px 22px;grid-template-columns:1fr;gap:32px}.opening-title{font-size:64px}.opening-date{font-size:20px}.opening-offers{gap:25px}.opening-offers strong{font-size:24px}.opening-poster{max-width:420px;width:100%;transform:none}.opening-ribbon{font-size:12px;letter-spacing:.02em}.opening-actions a{padding:13px 16px}.opening-intro{font-size:14px}}
+</style>
+
 </head>
 <body class="font-sans-cn text-gray-800 bg-houzy-cream">
 
@@ -329,7 +350,7 @@
                 
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
+                    <a href="#grand-opening" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
                     <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_services">Services</a>
                     <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_packages">Packages</a>
                     <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_about">About</a>
@@ -365,7 +386,7 @@
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
-                <a href="#home" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
+                <a href="#grand-opening" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
                 <a href="#services" class="block py-2 text-gray-700" data-i18n="nav_services">Services</a>
                 <a href="#packages" class="block py-2 text-gray-700" data-i18n="nav_packages">Packages</a>
                 <a href="#about" class="block py-2 text-gray-700" data-i18n="nav_about">About</a>
@@ -382,6 +403,34 @@
             </div>
         </div>
     </nav>
+
+
+    <section id="grand-opening" aria-labelledby="opening-title">
+      <a class="opening-ribbon" href="#opening-offers">GRAND OPENING · 12 SEPT – 31 OCT &nbsp; | &nbsp; 试营业限时礼遇 · 全单9折</a>
+      <div class="opening-layout">
+        <div>
+          <p class="opening-kicker">HOUZY HOME · MOUNT AUSTIN</p>
+          <h2 class="opening-title" id="opening-title">GRAND<br>OPENING</h2>
+          <p class="opening-cn">试营业 · 惊喜开启</p>
+          <p class="opening-date">12 SEPT — 31 OCT <span style="font-size:14px">/ 9月12日—10月31日</span></p>
+          <p class="opening-intro" data-i18n="opening_intro">Choose HOUZY HOME for your full home customization during the offer period and enjoy these opening privileges.</p>
+          <div class="opening-offers" id="opening-offers">
+            <div><strong>10% OFF</strong><span data-i18n="opening_discount">Storewide · 全单9折优惠</span></div>
+            <div><strong data-i18n="opening_free">FREE DESIGN</strong><span data-i18n="opening_design">Design service · 免费设计服务</span></div>
+          </div>
+          <p class="opening-gifts"><small>SPECIAL GIFT / 特别赠送</small><span data-i18n="opening_gift">A sofa set + a dining table & chairs set</span><br><span>客厅沙发一套 ＋ 餐桌餐椅一套</span></p>
+          <div class="opening-actions">
+            <a href="https://wa.me/60105898786?text=Hello%20HOUZY%20HOME%2C%20I%27d%20like%20to%20enquire%20about%20the%20grand%20opening%20offer." target="_blank" rel="noopener" data-i18n="opening_cta">Enquire on WhatsApp</a>
+            <a href="images/opening/houzy-grand-opening-2026.jpg" target="_blank" rel="noopener" data-i18n="opening_poster">View full poster</a>
+          </div>
+          <p class="opening-address">141, Jalan Mutiara Emas 10/19, Taman Mount Austin,<br>81100 Johor Bahru, Johor Darul Ta'zim<br><a href="tel:+60105898786">010-589 8786</a> &nbsp; / &nbsp; <a href="tel:+60168208891">016-820 8891</a></p>
+        </div>
+        <a class="opening-poster" href="images/opening/houzy-grand-opening-2026.jpg" target="_blank" rel="noopener" aria-label="查看完整开业活动海报 / View full opening poster">
+          <img src="images/opening/houzy-grand-opening-2026.jpg" width="1024" height="1536" fetchpriority="high" alt="HOUZY HOME 试营业：9月12日至10月31日，全屋定制装修全单9折、免费设计，赠送沙发一套及餐桌餐椅一套。">
+          <span>VIEW FULL POSTER / 点击查看完整海报 ↗</span>
+        </a>
+      </div>
+    </section>
 
     <!-- Hero Section -->
     <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -891,7 +940,7 @@
                 <div>
                     <h4 class="font-semibold mb-4" data-i18n="footer_links_h">Quick Links</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#home" class="hover:text-houzy-gold transition-colors" data-i18n="nav_home">Home</a></li>
+                        <li><a href="#grand-opening" class="hover:text-houzy-gold transition-colors" data-i18n="nav_home">Home</a></li>
                         <li><a href="#packages" class="hover:text-houzy-gold transition-colors" data-i18n="nav_packages">Packages</a></li>
                         <li><a href="#shop" class="hover:text-houzy-gold transition-colors" data-i18n="nav_shop">Shop</a></li>
                         <li><a href="#about" class="hover:text-houzy-gold transition-colors" data-i18n="nav_about">About</a></li>
@@ -1548,6 +1597,10 @@
         gal_consult_title:'ห้องปรึกษา · ทัวร์โชว์รูม', gal_consult_sub:'ทัวร์โชว์รูม — สัมผัส เปรียบเทียบ สร้างสรรค์'
       }
     };
+
+
+    const openingTranslations = {"en": {"opening_intro": "Choose HOUZY HOME for your full home customization during the offer period and enjoy these opening privileges.", "opening_discount": "Storewide · 全单9折优惠", "opening_free": "FREE DESIGN", "opening_design": "Design service · 免费设计服务", "opening_gift": "A sofa set + a dining table & chairs set", "opening_cta": "Enquire on WhatsApp", "opening_poster": "View full poster"}, "zh-CN": {"opening_intro": "活动期间选择 HOUZY HOME 全屋定制装修，即可尊享以下开业礼遇。", "opening_discount": "全单9折优惠", "opening_free": "免费设计", "opening_design": "专属设计服务", "opening_gift": "赠送客厅沙发一套及餐桌餐椅一套", "opening_cta": "WhatsApp 咨询开业优惠", "opening_poster": "查看完整活动海报"}, "zh-TW": {"opening_intro": "活動期間選擇 HOUZY HOME 全屋訂製裝修，即可尊享以下開業禮遇。", "opening_discount": "全單9折優惠", "opening_free": "免費設計", "opening_design": "專屬設計服務", "opening_gift": "贈送客廳沙發一套及餐桌餐椅一套", "opening_cta": "WhatsApp 諮詢開業優惠", "opening_poster": "查看完整活動海報"}, "ms": {"opening_intro": "Pilih HOUZY HOME untuk penyesuaian seluruh rumah anda sepanjang tempoh promosi dan nikmati tawaran pembukaan ini.", "opening_discount": "Diskaun seluruh pesanan", "opening_free": "REKAAN PERCUMA", "opening_design": "Perkhidmatan reka bentuk", "opening_gift": "Satu set sofa + satu set meja makan dan kerusi", "opening_cta": "Tanya melalui WhatsApp", "opening_poster": "Lihat poster penuh"}, "th": {"opening_intro": "เลือก HOUZY HOME สำหรับการตกแต่งบ้านทั้งหลังในช่วงโปรโมชั่น พร้อมรับสิทธิพิเศษฉลองเปิดร้าน", "opening_discount": "ส่วนลดทั้งคำสั่งซื้อ", "opening_free": "ออกแบบฟรี", "opening_design": "บริการออกแบบ", "opening_gift": "ชุดโซฟา 1 ชุด + ชุดโต๊ะอาหารและเก้าอี้ 1 ชุด", "opening_cta": "สอบถามผ่าน WhatsApp", "opening_poster": "ดูโปสเตอร์ฉบับเต็ม"}};
+    Object.keys(openingTranslations).forEach(lang => Object.assign(i18n[lang], openingTranslations[lang]));
 
     const LANG_LABELS = { en:'EN', 'zh-CN':'简', 'zh-TW':'繁', ms:'BM', th:'ไทย' };
 
