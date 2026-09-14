@@ -1049,6 +1049,18 @@
                     </a>
                 </div>
             </div>
+            <section id="staff-manual" aria-labelledby="staff-manual-title" class="mt-8 border-t border-gray-800 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h4 id="staff-manual-title" class="font-semibold text-houzy-gold" data-i18n="manual_title">员工系统使用手册 / Staff System Manual</h4>
+                    <p class="mt-2 text-sm text-gray-400" data-i18n="manual_desc">后台操作、订单流程与门店日常工作说明</p>
+                    <p class="mt-1 text-xs text-gray-500" data-i18n="manual_meta">中文版 PDF · 32 页 · V1.0 · 2026-09-14</p>
+                </div>
+                <a href="/docs/houzy-home-staff-manual-v1.pdf" download="HOUZY_HOME_门店员工系统使用手册.pdf"
+                   class="inline-flex items-center justify-center gap-2 self-start sm:self-center px-5 py-3 rounded-sm bg-houzy-gold text-houzy-green font-semibold text-sm hover:bg-houzy-gold-light transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+                    <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg>
+                    <span data-i18n="manual_download">下载手册 PDF</span>
+                </a>
+            </section>
         </div>
     </footer>
 
@@ -1645,6 +1657,9 @@
       }
     };
 
+
+    const manualTranslations = {"en": {"manual_title": "Staff System Manual", "manual_desc": "Back-office operations, order workflows and daily store procedures", "manual_meta": "Chinese PDF · 32 pages · V1.0 · 2026-09-14", "manual_download": "Download manual PDF"}, "zh-CN": {"manual_title": "员工系统使用手册", "manual_desc": "后台操作、订单流程与门店日常工作说明", "manual_meta": "中文版 PDF · 32 页 · V1.0 · 2026-09-14", "manual_download": "下载手册 PDF"}, "zh-TW": {"manual_title": "員工系統使用手冊", "manual_desc": "後台操作、訂單流程與門店日常工作說明", "manual_meta": "簡體中文版 PDF · 32 頁 · V1.0 · 2026-09-14", "manual_download": "下載手冊 PDF"}, "ms": {"manual_title": "Manual Sistem Kakitangan", "manual_desc": "Operasi sistem, aliran pesanan dan prosedur harian kedai", "manual_meta": "PDF bahasa Cina · 32 halaman · V1.0 · 2026-09-14", "manual_download": "Muat turun manual PDF"}, "th": {"manual_title": "คู่มือระบบสำหรับพนักงาน", "manual_desc": "การใช้งานระบบ ขั้นตอนคำสั่งซื้อ และการทำงานประจำวันของร้าน", "manual_meta": "PDF ภาษาจีน · 32 หน้า · V1.0 · 2026-09-14", "manual_download": "ดาวน์โหลดคู่มือ PDF"}};
+    Object.keys(manualTranslations).forEach(lang => Object.assign(i18n[lang], manualTranslations[lang]));
 
     const openingTranslations = {"en": {"opening_intro": "Choose HOUZY HOME for your full home customization during the offer period and enjoy these opening privileges.", "opening_discount": "Storewide · 全单9折优惠", "opening_free": "FREE DESIGN", "opening_design": "Design service · 免费设计服务", "opening_gift": "A sofa set + a dining table & chairs set", "opening_cta": "Enquire on WhatsApp", "opening_poster": "View full poster"}, "zh-CN": {"opening_intro": "活动期间选择 HOUZY HOME 全屋定制装修，即可尊享以下开业礼遇。", "opening_discount": "全单9折优惠", "opening_free": "免费设计", "opening_design": "专属设计服务", "opening_gift": "赠送客厅沙发一套及餐桌餐椅一套", "opening_cta": "WhatsApp 咨询开业优惠", "opening_poster": "查看完整活动海报"}, "zh-TW": {"opening_intro": "活動期間選擇 HOUZY HOME 全屋訂製裝修，即可尊享以下開業禮遇。", "opening_discount": "全單9折優惠", "opening_free": "免費設計", "opening_design": "專屬設計服務", "opening_gift": "贈送客廳沙發一套及餐桌餐椅一套", "opening_cta": "WhatsApp 諮詢開業優惠", "opening_poster": "查看完整活動海報"}, "ms": {"opening_intro": "Pilih HOUZY HOME untuk penyesuaian seluruh rumah anda sepanjang tempoh promosi dan nikmati tawaran pembukaan ini.", "opening_discount": "Diskaun seluruh pesanan", "opening_free": "REKAAN PERCUMA", "opening_design": "Perkhidmatan reka bentuk", "opening_gift": "Satu set sofa + satu set meja makan dan kerusi", "opening_cta": "Tanya melalui WhatsApp", "opening_poster": "Lihat poster penuh"}, "th": {"opening_intro": "เลือก HOUZY HOME สำหรับการตกแต่งบ้านทั้งหลังในช่วงโปรโมชั่น พร้อมรับสิทธิพิเศษฉลองเปิดร้าน", "opening_discount": "ส่วนลดทั้งคำสั่งซื้อ", "opening_free": "ออกแบบฟรี", "opening_design": "บริการออกแบบ", "opening_gift": "ชุดโซฟา 1 ชุด + ชุดโต๊ะอาหารและเก้าอี้ 1 ชุด", "opening_cta": "สอบถามผ่าน WhatsApp", "opening_poster": "ดูโปสเตอร์ฉบับเต็ม"}};
     Object.keys(openingTranslations).forEach(lang => Object.assign(i18n[lang], openingTranslations[lang]));
