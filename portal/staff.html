@@ -3746,11 +3746,13 @@ function setInstallments(n) {
   const defaults = { 1: [100], 2: [50, 50], 3: [50, 40, 10] };
   const container = document.getElementById('inst-splits');
   const methodOpts = `
-    <option value="">${t('oi_pay_method_dash')}</option>
-    <option value="cash">${t('pay_cash')}</option>
-    <option value="transfer">${t('pay_transfer')}</option>
-    <option value="ewallet">${t('pay_ewallet')}</option>
-    <option value="card">${t('pay_card')}</option>`;
+    <option value="hitpay">💳 HitPay（线上付款）</option>
+    <optgroup label="线下支付 / Offline payment">
+      <option value="cash">${t('pay_cash')}</option>
+      <option value="transfer">${t('pay_transfer')}</option>
+      <option value="card">${t('pay_card')}</option>
+      <option value="ewallet">${t('pay_ewallet')}</option>
+    </optgroup>`;
 
   container.innerHTML = defaults[n].map((pct, i) => {
     const seq = i + 1;
@@ -3777,9 +3779,7 @@ function setInstallments(n) {
             <option value="unpaid">${t('oi_pay_unpaid')}</option>
             <option value="paid">${t('opt_paid')}</option>
           </select>
-          <select id="o-pay-method" class="input text-sm py-1.5 flex-1">
-            ${methodOpts}
-          </select>
+          <select id="o-pay-method" class="input text-sm py-1.5 flex-1">${methodOpts}</select>
         </div>` : ''}
       </div>`;
   }).join('');
@@ -6178,10 +6178,13 @@ function renderPaymentPanel(o, payments) {
       </div>
       ${canRec ? `<div class="flex gap-2 ml-7">
         <select id="pay-method-${seq}" class="input text-sm py-1.5 flex-1">
-          <option value="cash">💵 现金</option>
-          <option value="transfer">🏦 银行转账</option>
-          <option value="ewallet">📱 电子钱包</option>
-          <option value="card">💳 刷卡</option>
+          <option value="hitpay">💳 HitPay（线上付款）</option>
+          <optgroup label="线下支付 / Offline payment">
+            <option value="cash">${t('pay_cash')}</option>
+            <option value="transfer">${t('pay_transfer')}</option>
+            <option value="card">${t('pay_card')}</option>
+            <option value="ewallet">${t('pay_ewallet')}</option>
+          </optgroup>
         </select>
         <button onclick="recordPayment('${o.id}',${seq},${pct},${instAmt.toFixed(2)},'${currency}')"
                 class="btn-primary text-sm px-4 py-1.5 flex-shrink-0 whitespace-nowrap">
@@ -6197,18 +6200,20 @@ function renderPaymentPanel(o, payments) {
     ? `<span class="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 text-amber-600">${paidCnt}/${n} 期已收</span>`
     : `<span class="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 text-green-700">全款已收</span>`;
 
-  // DuitNow 收款二维码（有待收余额时可展开，客户扫码付款）
-  const qrBlock = (remainAmt > 0) ? `
+  // HitPay hosted checkout link for a staff-created order. The API key stays in
+  // the Supabase Edge Function; the browser only receives the customer URL.
+  const hitpayBlock = (remainAmt > 0 && currency === 'MYR') ? `
     <div class="mt-3 pt-3 border-t border-gray-100">
-      <button type="button" onclick="document.getElementById('pay-qr-${o.id}').classList.toggle('hidden')"
-              class="text-sm font-semibold" style="color:#1a3a2a">📱 ${t('pay_show_qr')}</button>
-      <div id="pay-qr-${o.id}" class="hidden mt-3 text-center">
-        <div class="text-xs text-gray-500 mb-1">${t('pay_qr_scan_tip')}</div>
-        <div class="text-lg font-bold mb-2" style="color:#1a3a2a">${t('pay_qr_amount')}：${fmtAmt(remainAmt, currency)}</div>
-        <img src="pay-duitnow-qr.png" alt="DuitNow QR" style="width:190px;height:190px;display:inline-block;border:1px solid #eee;border-radius:10px;padding:6px;background:#fff;">
-        <div class="text-xs text-gray-400 mt-2">DuitNow · Malaysia National QR · Touch 'n Go (XIE TING)</div>
-        <div class="text-xs text-gray-400 mt-1">${t('pay_qr_manual_note')}</div>
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <div class="text-sm font-semibold" style="color:#1a3a2a">HitPay 付款链接</div>
+          <div class="text-xs text-gray-400">客户打开链接即可使用银行卡、FPX、DuitNow 等方式付款</div>
+        </div>
+        <button type="button" onclick="generateHitPayLink('${o.id}')" class="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">
+          ${o.hitpay_payment_url ? '重新打开付款链接' : '生成付款链接'}
+        </button>
       </div>
+      ${o.hitpay_payment_url ? `<div class="mt-2 flex gap-2 items-center"><input readonly value="${String(o.hitpay_payment_url).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')}" class="input text-xs flex-1" onclick="this.select()"><button type="button" onclick="navigator.clipboard?.writeText('${String(o.hitpay_payment_url).replace(/'/g,"\\'")}');alert('付款链接已复制')" class="text-xs px-2 py-1 rounded border border-gray-200">复制</button></div>` : ''}
     </div>` : '';
 
   return `<div class="card p-5 mb-4">
@@ -6218,13 +6223,26 @@ function renderPaymentPanel(o, payments) {
     </div>
     ${collectionBanner}
     ${rows}
-    ${qrBlock}
+    ${hitpayBlock}
   </div>`;
 }
 
+async function generateHitPayLink(orderId) {
+  const button = (typeof event !== 'undefined' && event) ? event.currentTarget : null;
+  if (button) { button.disabled = true; button.textContent = '生成中…'; }
+  const { data, error } = await sb.functions.invoke('hitpay-payment', { body: { order_id: orderId } });
+  if (button) { button.disabled = false; button.textContent = data?.payment_url ? '重新打开付款链接' : '生成付款链接'; }
+  if (error || data?.error) { alert(data?.error || error.message || '生成 HitPay 付款链接失败'); return; }
+  if (data?.payment_url) {
+    await navigator.clipboard?.writeText(data.payment_url).catch(() => {});
+    window.open(data.payment_url, '_blank', 'noopener');
+    await openDetail(orderId);
+  }
+}
+
 async function recordPayment(orderId, seq, pct, amount, currency) {
-  const method = document.getElementById(`pay-method-${seq}`)?.value || 'cash';
-  const pmLabel = { cash:'现金', transfer:'银行转账', ewallet:'电子钱包', card:'刷卡' };
+  const method = document.getElementById(`pay-method-${seq}`)?.value || 'hitpay';
+  const pmLabel = { hitpay:'HitPay', cash:'现金', transfer:'银行转账', ewallet:'电子钱包', card:'刷卡' };
   if (!confirm(`确认收款：第${seq}期 ${pct}% · ${CURRENCY_SYMBOL[currency]||currency} ${amount}？`)) return;
 
   const nowIso = new Date().toISOString();
