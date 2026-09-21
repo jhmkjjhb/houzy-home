@@ -51,7 +51,11 @@ Deno.serve(async (req) => {
       // Webhooks can be delayed or retried. Reconcile an existing link when a
       // staff member opens it so an already-paid order is not shown as due.
       if (['completed', 'paid', 'succeeded', 'success'].includes(String(order.hitpay_status || '').toLowerCase())) {
-        await admin.from('orders').update({ payment_status: 'paid', hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), status: 'paid' }).eq('id', order.id);
+        // Do not rewrite the row on every page refresh: that would emit a
+        // realtime UPDATE repeatedly and make the mobile page flash/jump.
+        if (order.payment_status !== 'paid' || order.status !== 'paid') {
+          await admin.from('orders').update({ payment_status: 'paid', hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), status: 'paid' }).eq('id', order.id);
+        }
         return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });
       }
       if (order.hitpay_payment_id) {
