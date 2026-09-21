@@ -1490,6 +1490,7 @@ let profile = null, allOrders = [], allCustomers = [], stores = [], referrers = 
 let _ordersLoaded = false;  // 首次加载完成前，列表/仪表盘显示「加载中…」而非「无订单」
 let searchTimer = null;
 let _openDetailId = null;
+let _hitpayMonitor = null;
 let staffProducts = [];
 
 // ──────────────────────────────────────────────────────────────────
@@ -6267,6 +6268,23 @@ async function refreshHitPayOrder(orderId) {
   }
 }
 
+function monitorHitPayPayment(orderId) {
+  if (_hitpayMonitor) clearInterval(_hitpayMonitor);
+  let attempts = 0;
+  _hitpayMonitor = setInterval(async () => {
+    attempts += 1;
+    const { data } = await sb.functions.invoke('hitpay-payment', { body: { order_id: orderId } });
+    if (data?.reconciled || data?.status === 'completed') {
+      clearInterval(_hitpayMonitor);
+      _hitpayMonitor = null;
+      window.location.assign(`${window.location.origin}${window.location.pathname}?hitpay=success&order=${encodeURIComponent(orderId)}`);
+    } else if (attempts >= 30) {
+      clearInterval(_hitpayMonitor);
+      _hitpayMonitor = null;
+    }
+  }, 2000);
+}
+
 function showHitPayCheckout(url, paymentRequestId, orderId) {
   document.getElementById('hitpay-checkout-modal')?.remove();
   const modal = document.createElement('div');
@@ -6285,6 +6303,7 @@ function showHitPayCheckout(url, paymentRequestId, orderId) {
     </div>`;
   modal.addEventListener('click', (event) => { if (event.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+  monitorHitPayPayment(orderId);
   if (window.HitPay && paymentRequestId) {
     window.HitPay.init('https://securecheckout.hit-pay.com/payment-request/@prod/', { closeOnError: true }, {
       onClose: () => document.getElementById('hitpay-checkout-modal')?.remove(),
