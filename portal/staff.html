@@ -2360,6 +2360,12 @@ async function init() {
     if (canDo(FIELD_MIN_LEVEL.nav_reports)) el.classList.remove('hidden');
   });
   setLang(currentLang);
+  const hitpayReturn = new URLSearchParams(window.location.search);
+  const hitpayOrder = hitpayReturn.get('order');
+  if (hitpayReturn.get('hitpay') === 'success' && hitpayOrder) {
+    await refreshHitPayOrder(hitpayOrder);
+    history.replaceState({}, '', window.location.pathname);
+  }
 
   // Request notification permission for overdue alerts
   if (Notification.permission === 'default') Notification.requestPermission();
@@ -6246,12 +6252,22 @@ async function generateHitPayLink(orderId) {
       return;
     }
     await navigator.clipboard?.writeText(data.payment_url).catch(() => {});
-    showHitPayCheckout(data.payment_url, data.payment_id);
+    showHitPayCheckout(data.payment_url, data.payment_id, orderId);
     await openDetail(orderId);
   }
 }
 
-function showHitPayCheckout(url, paymentRequestId) {
+async function refreshHitPayOrder(orderId) {
+  for (let i = 0; i < 5; i += 1) {
+    await loadOrders();
+    await openDetail(orderId);
+    const current = allOrders.find((item) => item.id === orderId);
+    if (current?.payment_status === 'paid' || current?.status === 'paid' || current?.hitpay_status === 'completed') return;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+}
+
+function showHitPayCheckout(url, paymentRequestId, orderId) {
   document.getElementById('hitpay-checkout-modal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'hitpay-checkout-modal';
@@ -6272,7 +6288,7 @@ function showHitPayCheckout(url, paymentRequestId) {
   if (window.HitPay && paymentRequestId) {
     window.HitPay.init('https://securecheckout.hit-pay.com/payment-request/@prod/', { closeOnError: true }, {
       onClose: () => document.getElementById('hitpay-checkout-modal')?.remove(),
-      onSuccess: () => document.getElementById('hitpay-checkout-modal')?.remove(),
+      onSuccess: () => { document.getElementById('hitpay-checkout-modal')?.remove(); refreshHitPayOrder(orderId); },
       onError: () => {}
     });
     window.HitPay.toggle({ paymentRequest: paymentRequestId });
