@@ -2280,12 +2280,7 @@ function checkOverdueAlerts() {
       }
     }
   });
-  // Re-render whichever view is currently visible
-  if (!document.getElementById('v-orders').classList.contains('hidden')) {
-    renderOrdersTable(filterGetCurrent());
-  } else if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
-    renderDashboard();
-  }
+  // 不要在定时提醒检查中重绘整页。重绘会把手机滚动位置拉回顶部。
   // Refresh all step time labels in detail view if open
   if (!document.getElementById('v-detail').classList.contains('hidden') && _tlStatus) {
     const curStep = STATUS[_tlStatus]?.step ?? -1;
