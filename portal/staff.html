@@ -6288,7 +6288,11 @@ function showHitPayCheckout(url, paymentRequestId, orderId) {
   if (window.HitPay && paymentRequestId) {
     window.HitPay.init('https://securecheckout.hit-pay.com/payment-request/@prod/', { closeOnError: true }, {
       onClose: () => document.getElementById('hitpay-checkout-modal')?.remove(),
-      onSuccess: () => { document.getElementById('hitpay-checkout-modal')?.remove(); refreshHitPayOrder(orderId); },
+      onSuccess: () => {
+        document.getElementById('hitpay-checkout-modal')?.remove();
+        const returnUrl = `${window.location.origin}${window.location.pathname}?hitpay=success&order=${encodeURIComponent(orderId)}`;
+        window.location.assign(returnUrl);
+      },
       onError: () => {}
     });
     window.HitPay.toggle({ paymentRequest: paymentRequestId });
