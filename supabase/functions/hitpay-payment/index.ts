@@ -25,7 +25,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const orderId = String(body.order_id || '');
     if (!orderId) return reply({ error: '缺少订单 ID' }, 400);
-    const { data: order, error: orderError } = await supabase.from('orders').select('id,order_no,amount,currency,description,hitpay_payment_url,hitpay_status,customers(name,phone)').eq('id', orderId).single();
+    // Read the order first, then read the customer separately. A nested
+    // customers(...) relationship can be blocked by a separate RLS policy
+    // even when the staff member can read the order itself.
+    const { data: order, error: orderError } = await supabase.from('orders').select('id,order_no,customer_id,amount,currency,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
     if (orderError || !order) return reply({ error: '找不到订单或无权访问' }, 404);
     if (order.hitpay_payment_url && order.hitpay_status !== 'failed') return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, reused: true });
 
@@ -36,7 +39,9 @@ Deno.serve(async (req) => {
     const key = Deno.env.get('HITPAY_API_KEY');
     if (!key) return reply({ error: 'HitPay API 尚未配置，请先设置后台密钥' }, 503);
 
-    const customer = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+    const { data: customer } = order.customer_id
+      ? await supabase.from('customers').select('name,phone').eq('id', order.customer_id).maybeSingle()
+      : { data: null };
     const baseUrl = Deno.env.get('HOUZY_PUBLIC_URL') || 'https://houzyhome.com';
     const hitpay = await fetch('https://api.hit-pay.com/v1/payment-requests', {
       method: 'POST',
