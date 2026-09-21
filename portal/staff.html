@@ -6067,7 +6067,8 @@ async function saveProdDays(orderId) {
 }
 
 function renderPaymentPanel(o, payments) {
-  const payStatus = o.payment_status || 'unpaid';
+  const hitpayPaid = ['completed', 'paid', 'succeeded', 'success'].includes(String(o.hitpay_status || '').toLowerCase());
+  const payStatus = (o.payment_status === 'paid' || hitpayPaid || o.status === 'paid') ? 'paid' : (o.payment_status || 'unpaid');
   const currency  = String(o.currency || 'MYR').toUpperCase();
   const pmLabel   = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
   const paidCnt   = payments?.length || 0;
