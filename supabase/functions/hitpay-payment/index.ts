@@ -50,6 +50,10 @@ Deno.serve(async (req) => {
     if (order.hitpay_payment_url && order.hitpay_status !== 'failed') {
       // Webhooks can be delayed or retried. Reconcile an existing link when a
       // staff member opens it so an already-paid order is not shown as due.
+      if (['completed', 'paid', 'succeeded', 'success'].includes(String(order.hitpay_status || '').toLowerCase())) {
+        await admin.from('orders').update({ payment_status: 'paid', payment_method: 'hitpay', hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), status: order.status === 'pending_payment' ? 'paid' : order.status }).eq('id', order.id);
+        return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });
+      }
       if (order.hitpay_payment_id) {
         try {
           const statusResponse = await fetch(`https://api.hit-pay.com/v1/payment-requests/${encodeURIComponent(order.hitpay_payment_id)}`, { headers: { 'X-BUSINESS-API-KEY': key } });
