@@ -6232,7 +6232,18 @@ async function generateHitPayLink(orderId) {
   if (button) { button.disabled = true; button.textContent = '生成中…'; }
   const { data, error } = await sb.functions.invoke('hitpay-payment', { body: { order_id: orderId } });
   if (button) { button.disabled = false; button.textContent = data?.payment_url ? '重新打开付款链接' : '生成付款链接'; }
-  if (error || data?.error) { alert(data?.error || error.message || '生成 HitPay 付款链接失败'); return; }
+  if (error || data?.error) {
+    let detail = data?.error || error?.message || '生成 HitPay 付款链接失败';
+    try {
+      if (error?.context) {
+        const raw = await error.context.text();
+        const parsed = JSON.parse(raw);
+        if (parsed?.error) detail = parsed.error;
+      }
+    } catch (_) {}
+    alert(detail);
+    return;
+  }
   if (data?.payment_url) {
     await navigator.clipboard?.writeText(data.payment_url).catch(() => {});
     window.open(data.payment_url, '_blank', 'noopener');

@@ -56,7 +56,10 @@ Deno.serve(async (req) => {
       }),
     });
     const result = await hitpay.json();
-    if (!hitpay.ok || !result.url) return reply({ error: result.message || 'HitPay 创建付款链接失败' }, 502);
+    if (!hitpay.ok || !result.url) {
+      const details = result.errors ? ` ${JSON.stringify(result.errors)}` : '';
+      return reply({ error: `${result.message || 'HitPay 创建付款链接失败'}${details}` }, 502);
+    }
     const update = { hitpay_payment_id: result.id || result.payment_request_id || null, hitpay_reference: order.order_no, hitpay_payment_url: result.url, hitpay_status: result.status || 'pending', hitpay_amount: amount, hitpay_currency: currency, hitpay_created_at: new Date().toISOString() };
     const { error: saveError } = await supabase.from('orders').update(update).eq('id', order.id);
     if (saveError) return reply({ error: `付款链接已生成，但订单保存失败：${saveError.message}`, payment_url: result.url }, 500);
