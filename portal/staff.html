@@ -2529,6 +2529,9 @@ async function loadCustomers() {
 
 // ── Navigation ──
 function goto(view) {
+  // 离开订单详情页后，不要让实时订单更新再次把页面带回上一笔订单。
+  // 详情页本身仍由 openDetail() 保留当前订单 ID，以便实时刷新。
+  if (view !== 'detail') _openDetailId = null;
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
   ['dashboard','orders','create','customers','detail','registrations','users','pricing','designers','settle','reports'].forEach(v => {
