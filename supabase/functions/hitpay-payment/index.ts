@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       // Webhooks can be delayed or retried. Reconcile an existing link when a
       // staff member opens it so an already-paid order is not shown as due.
       if (['completed', 'paid', 'succeeded', 'success'].includes(String(order.hitpay_status || '').toLowerCase())) {
-        await admin.from('orders').update({ payment_status: 'paid', payment_method: 'hitpay', hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), status: 'paid' }).eq('id', order.id);
+        await admin.from('orders').update({ payment_status: 'paid', hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), status: 'paid' }).eq('id', order.id);
         return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });
       }
       if (order.hitpay_payment_id) {
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
           const statusResult = await statusResponse.json();
           const remoteStatus = String(statusResult.status || '').toLowerCase();
           if (statusResponse.ok && ['completed', 'paid', 'succeeded', 'success'].includes(remoteStatus)) {
-            await admin.from('orders').update({ hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), payment_status: 'paid', payment_method: 'hitpay', status: 'paid' }).eq('id', order.id);
+            await admin.from('orders').update({ hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), payment_status: 'paid', status: 'paid' }).eq('id', order.id);
             return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });
           }
         } catch (_) { /* webhook remains the primary confirmation path */ }
