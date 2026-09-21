@@ -58,7 +58,9 @@ Deno.serve(async (req) => {
         try {
           const statusResponse = await fetch(`https://api.hit-pay.com/v1/payment-requests/${encodeURIComponent(order.hitpay_payment_id)}`, { headers: { 'X-BUSINESS-API-KEY': key } });
           const statusResult = await statusResponse.json();
-          const remoteStatus = String(statusResult.status || '').toLowerCase();
+          const remoteStatus = String(
+            statusResult.status || statusResult.payment_request?.status || statusResult.data?.status || ''
+          ).toLowerCase();
           if (statusResponse.ok && ['completed', 'paid', 'succeeded', 'success'].includes(remoteStatus)) {
             await admin.from('orders').update({ hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), payment_status: 'paid', status: 'paid' }).eq('id', order.id);
             return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });

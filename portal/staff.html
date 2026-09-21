@@ -1569,7 +1569,7 @@ async function buildOrdersQuery() {
   let q = sb.from('orders')
     .select(`
       id, order_no, status, prod_stage,
-      amount, payment_status,
+      amount, payment_status, hitpay_status, hitpay_paid_at, hitpay_payment_id, hitpay_payment_url,
       created_at, updated_at, deadline_at,
       store_id, staff_id, parent_order_id, description,
       designer_id, designer_commission_amount, designer_commission_pct, designer_settled_at,
@@ -4095,10 +4095,25 @@ async function openDetail(id, backView) {
   if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
   goto('detail');
 
-  const { data: o } = await sb.from('orders')
+  let { data: o } = await sb.from('orders')
     .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
     .eq('id', id).single();
   if (!o) return;
+
+  // Reconcile only orders that already have a HitPay request. This covers
+  // delayed webhooks and payments completed in another tab/device, without
+  // creating a new payment request merely by opening an unpaid order.
+  if (o.hitpay_payment_id || o.hitpay_payment_url) {
+    try {
+      const { data: sync } = await sb.functions.invoke('hitpay-payment', { body: { order_id: id } });
+      if (sync?.reconciled || sync?.status === 'completed') {
+        const fresh = await sb.from('orders')
+          .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
+          .eq('id', id).single();
+        if (fresh.data) o = fresh.data;
+      }
+    } catch (_) { /* render the last state if reconciliation is unavailable */ }
+  }
 
   const { data: logs } = await sb.from('order_logs')
     .select('*').eq('order_id', id).order('created_at', { ascending: true });
