@@ -60,25 +60,32 @@ Deno.serve(async (req) => {
       ? await admin.from('customers').select('name,phone').eq('id', order.customer_id).maybeSingle()
       : { data: null };
     const baseUrl = Deno.env.get('HOUZY_PUBLIC_URL') || 'https://houzyhome.com';
-    const hitpay = await fetch('https://api.hit-pay.com/v1/payment-requests', {
-      method: 'POST',
-      headers: { 'X-BUSINESS-API-KEY': key, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify({
-        amount: amount.toFixed(2), currency,
-        // Use the Malaysian methods requested by HOUZY. DuitNow is the
-        // unified QR rail that customers can scan from Touch 'n Go, banks,
-        // and other supported wallets. HitPay only displays methods that are
-        // enabled on the merchant account.
-        payment_methods: ['card', 'duitnow', 'fpx', 'grabpay', 'shopee_pay', 'wechat_pay', 'razer_maybankqr'],
-        email: Deno.env.get('HITPAY_RECEIPT_EMAIL') || 'hello@houzyhome.com',
-        reference_number: order.order_no,
-        purpose: order.description || `HOUZY HOME 订单 ${order.order_no}`,
-        name: customer?.name || undefined,
-        phone: customer?.phone || undefined,
-        redirect_url: `${baseUrl}/portal/staff.html?hitpay=success&order=${encodeURIComponent(order.id)}`,
-      }),
-    });
-    const result = await hitpay.json();
+    const methodSets = [
+      ['card', 'duitnow', 'fpx', 'grabpay', 'shopee_pay', 'wechat_pay', 'razer_maybankqr'],
+      ['card', 'duitnow', 'fpx', 'grabpay'],
+      ['card', 'duitnow', 'fpx'],
+      ['card', 'duitnow'],
+      ['card'],
+    ];
+    let hitpay: Response | null = null;
+    let result: Record<string, any> = {};
+    for (const payment_methods of methodSets) {
+      hitpay = await fetch('https://api.hit-pay.com/v1/payment-requests', {
+        method: 'POST',
+        headers: { 'X-BUSINESS-API-KEY': key, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({
+          amount: amount.toFixed(2), currency, payment_methods,
+          email: Deno.env.get('HITPAY_RECEIPT_EMAIL') || 'hello@houzyhome.com',
+          reference_number: order.order_no,
+          purpose: order.description || `HOUZY HOME 订单 ${order.order_no}`,
+          name: customer?.name || undefined,
+          phone: customer?.phone || undefined,
+          redirect_url: `${baseUrl}/portal/staff.html?hitpay=success&order=${encodeURIComponent(order.id)}`,
+        }),
+      });
+      result = await hitpay.json();
+      if (hitpay.ok && result.url) break;
+    }
     if (!hitpay.ok || !result.url) {
       const details = result.errors ? ` ${JSON.stringify(result.errors)}` : '';
       return reply({ error: `${result.message || 'HitPay 创建付款链接失败'}${details}` }, 502);
