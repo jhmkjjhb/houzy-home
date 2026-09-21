@@ -1492,6 +1492,7 @@ let _ordersLoaded = false;  // 首次加载完成前，列表/仪表盘显示「
 let searchTimer = null;
 let _openDetailId = null;
 let _hitpayMonitor = null;
+let _dashboardKpisLoading = false;
 let staffProducts = [];
 
 // ──────────────────────────────────────────────────────────────────
@@ -2613,6 +2614,10 @@ async function loadDashboardKpis() {
   const panel = document.getElementById('dash-kpis-panel');
   const box   = document.getElementById('dash-kpis');
   if (!panel || !box) return;
+  // renderDashboard 可能因语言切换或数据检查重复调用；只允许一个请求，
+  // 避免手机端在“加载中”和结果之间来回闪动。
+  if (_dashboardKpisLoading) return;
+  _dashboardKpisLoading = true;
   // 加载提示
   panel.classList.remove('hidden');
   box.innerHTML = '<div class="col-span-full text-center text-gray-400 text-sm py-6">加载月度仪表板…</div>';
