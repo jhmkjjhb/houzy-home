@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     const completed = ['completed', 'paid', 'succeeded', 'success'].includes(status) || event.event_type === 'payment_request.completed';
     const update: Record<string, unknown> = { hitpay_status: status || 'received' };
     if (paymentId) update.hitpay_payment_id = paymentId;
-    if (completed) { update.hitpay_status = 'completed'; update.hitpay_paid_at = new Date().toISOString(); update.payment_status = 'paid'; update.payment_method = 'hitpay'; if (order.status === 'pending_payment') update.status = 'paid'; }
+    if (completed) { update.hitpay_status = 'completed'; update.hitpay_paid_at = new Date().toISOString(); update.payment_status = 'paid'; update.payment_method = 'hitpay'; update.status = 'paid'; }
     await admin.from('orders').update(update).eq('id', order.id);
     return json({ ok: true });
   } catch (error) { return json({ error: error instanceof Error ? error.message : 'Invalid payload' }, 400); }
