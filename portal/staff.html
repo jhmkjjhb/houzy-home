@@ -6178,7 +6178,7 @@ function renderPaymentPanel(o, payments) {
         <span class="text-xs font-medium" style="color:#dc2626">待收款</span>
       </div>
       ${canRec ? `<div class="flex gap-2 ml-7">
-        <select id="pay-method-${seq}" class="input text-sm py-1.5 flex-1">
+        <select id="pay-method-${seq}" onchange="updatePaymentAction(${seq})" class="input text-sm py-1.5 flex-1">
           <option value="hitpay">💳 HitPay（线上付款）</option>
           <optgroup label="线下支付 / Offline payment">
             <option value="cash">${t('pay_cash')}</option>
@@ -6187,9 +6187,9 @@ function renderPaymentPanel(o, payments) {
             <option value="ewallet">${t('pay_ewallet')}</option>
           </optgroup>
         </select>
-        <button onclick="recordPayment('${o.id}',${seq},${pct},${instAmt.toFixed(2)},'${currency}')"
+        <button id="pay-action-${seq}" onclick="handlePaymentAction('${o.id}',${seq},${pct},${instAmt.toFixed(2)},'${currency}')"
                 class="btn-primary text-sm px-4 py-1.5 flex-shrink-0 whitespace-nowrap">
-          确认收款
+          立即支付
         </button>
       </div>` : ''}
     </div>`;
@@ -6203,19 +6203,7 @@ function renderPaymentPanel(o, payments) {
 
   // HitPay hosted checkout link for a staff-created order. The API key stays in
   // the Supabase Edge Function; the browser only receives the customer URL.
-  const hitpayBlock = (remainAmt > 0) ? `
-    <div class="mt-3 pt-3 border-t border-gray-100">
-      <div class="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <div class="text-sm font-semibold" style="color:#1a3a2a">HitPay 付款链接</div>
-          <div class="text-xs text-gray-400">客户打开链接即可使用银行卡、FPX、DuitNow 等方式付款</div>
-        </div>
-        <button type="button" onclick="generateHitPayLink('${o.id}')" class="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">
-          ${o.hitpay_payment_url ? '打开系统内付款' : '生成付款并支付'}
-        </button>
-      </div>
-      ${o.hitpay_payment_url ? `<div class="mt-2 flex gap-2 items-center"><input readonly value="${String(o.hitpay_payment_url).replace(/&/g,'&amp;').replace(/\"/g,'&quot;')}" class="input text-xs flex-1" onclick="this.select()"><button type="button" onclick="navigator.clipboard?.writeText('${String(o.hitpay_payment_url).replace(/'/g,"\\'")}');alert('付款链接已复制')" class="text-xs px-2 py-1 rounded border border-gray-200">复制</button></div>` : ''}
-    </div>` : '';
+  const hitpayBlock = '';
 
   return `<div class="card p-5 mb-4">
     <div class="flex items-center justify-between mb-3">
@@ -6280,6 +6268,18 @@ function showHitPayCheckout(url, paymentRequestId) {
   } else {
     document.getElementById('hitpay-dropin').innerHTML = '<div style="padding:48px 20px;text-align:center;color:#64748b">付款组件加载失败，请点击下方链接打开安全付款页面。</div>';
   }
+}
+
+function updatePaymentAction(seq) {
+  const method = document.getElementById(`pay-method-${seq}`)?.value || 'hitpay';
+  const button = document.getElementById(`pay-action-${seq}`);
+  if (button) button.textContent = method === 'hitpay' ? '立即支付' : '确认收款';
+}
+
+async function handlePaymentAction(orderId, seq, pct, amount, currency) {
+  const method = document.getElementById(`pay-method-${seq}`)?.value || 'hitpay';
+  if (method === 'hitpay') return generateHitPayLink(orderId);
+  return recordPayment(orderId, seq, pct, amount, currency);
 }
 
 async function recordPayment(orderId, seq, pct, amount, currency) {
