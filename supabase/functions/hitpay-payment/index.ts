@@ -40,12 +40,29 @@ Deno.serve(async (req) => {
     // Read the order first, then read the customer separately. A nested
     // customers(...) relationship can be blocked by a separate RLS policy
     // even when the staff member can read the order itself.
-    const { data: order, error: orderError } = await admin.from('orders').select('id,order_no,customer_id,store_id,amount,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
+    const { data: order, error: orderError } = await admin.from('orders').select('id,order_no,customer_id,store_id,amount,description,status,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
     if (orderError || !order) {
       const reason = orderError?.message ? `（${orderError.message}）` : '';
       return reply({ error: `找不到订单或无权访问${reason}` }, 404);
     }
-    if (order.hitpay_payment_url && order.hitpay_status !== 'failed') return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, reused: true });
+    const key = Deno.env.get('HITPAY_API_KEY');
+    if (!key) return reply({ error: 'HitPay API 尚未配置，请先设置后台密钥' }, 503);
+    if (order.hitpay_payment_url && order.hitpay_status !== 'failed') {
+      // Webhooks can be delayed or retried. Reconcile an existing link when a
+      // staff member opens it so an already-paid order is not shown as due.
+      if (order.hitpay_payment_id) {
+        try {
+          const statusResponse = await fetch(`https://api.hit-pay.com/v1/payment-requests/${encodeURIComponent(order.hitpay_payment_id)}`, { headers: { 'X-BUSINESS-API-KEY': key } });
+          const statusResult = await statusResponse.json();
+          const remoteStatus = String(statusResult.status || '').toLowerCase();
+          if (statusResponse.ok && ['completed', 'paid', 'succeeded', 'success'].includes(remoteStatus)) {
+            await admin.from('orders').update({ hitpay_status: 'completed', hitpay_paid_at: new Date().toISOString(), payment_status: 'paid', payment_method: 'hitpay', status: order.status === 'pending_payment' ? 'paid' : order.status }).eq('id', order.id);
+            return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, status: 'completed', reconciled: true });
+          }
+        } catch (_) { /* webhook remains the primary confirmation path */ }
+      }
+      return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, reused: true });
+    }
 
     const amount = Number(order.amount);
     // HOUZY OMS orders are currently priced in Malaysian Ringgit; the
@@ -53,9 +70,6 @@ Deno.serve(async (req) => {
     const currency = 'MYR';
     if (!Number.isFinite(amount) || amount <= 0) return reply({ error: '订单金额无效' }, 400);
     if (currency !== 'MYR') return reply({ error: 'HitPay 后台付款链接目前只支持 MYR 订单' }, 400);
-    const key = Deno.env.get('HITPAY_API_KEY');
-    if (!key) return reply({ error: 'HitPay API 尚未配置，请先设置后台密钥' }, 503);
-
     const { data: customer } = order.customer_id
       ? await admin.from('customers').select('name,phone').eq('id', order.customer_id).maybeSingle()
       : { data: null };
