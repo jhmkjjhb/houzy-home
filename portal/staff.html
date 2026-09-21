@@ -6106,7 +6106,7 @@ function renderPaymentPanel(o, payments) {
         <h3 class="font-semibold text-gray-800">付款进度</h3>
         <span class="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 text-green-700">全款已收</span>
       </div>
-      <p class="text-xs text-gray-400 mt-1">全款 ${fmtAmt(o.amount, currency)}</p>
+      <p class="text-xs text-gray-400 mt-1">全款 ${fmtAmt(o.amount, currency)} · 付款方式：HitPay · 付款时间：${o.hitpay_paid_at ? fmtDate(o.hitpay_paid_at) : '已确认'}</p>
     </div>`;
   }
 
