@@ -22,13 +22,25 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return reply({ error: '没有后台登录权限' }, 401);
 
+    // Use the server key only after validating the caller's Supabase session.
+    // This avoids RLS/session-header inconsistencies inside Edge Functions
+    // while still limiting access to approved staff accounts.
+    const serviceKey = Deno.env.get('HOUZY_SUPABASE_SERVICE_KEY');
+    const admin = serviceKey
+      ? createClient(Deno.env.get('SUPABASE_URL')!, serviceKey)
+      : supabase;
+    const { data: profile } = await admin.from('profiles').select('id,role,store_id').eq('id', user.id).maybeSingle();
+    if (!profile || !['staff','store_manager','regional_manager','general_manager','admin','superadmin'].includes(profile.role)) {
+      return reply({ error: '当前账号没有员工后台权限' }, 403);
+    }
+
     const body = await req.json();
     const orderId = String(body.order_id || '');
     if (!orderId) return reply({ error: '缺少订单 ID' }, 400);
     // Read the order first, then read the customer separately. A nested
     // customers(...) relationship can be blocked by a separate RLS policy
     // even when the staff member can read the order itself.
-    const { data: order, error: orderError } = await supabase.from('orders').select('id,order_no,customer_id,amount,currency,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
+    const { data: order, error: orderError } = await admin.from('orders').select('id,order_no,customer_id,store_id,amount,currency,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
     if (orderError || !order) return reply({ error: '找不到订单或无权访问' }, 404);
     if (order.hitpay_payment_url && order.hitpay_status !== 'failed') return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, reused: true });
 
@@ -40,7 +52,7 @@ Deno.serve(async (req) => {
     if (!key) return reply({ error: 'HitPay API 尚未配置，请先设置后台密钥' }, 503);
 
     const { data: customer } = order.customer_id
-      ? await supabase.from('customers').select('name,phone').eq('id', order.customer_id).maybeSingle()
+      ? await admin.from('customers').select('name,phone').eq('id', order.customer_id).maybeSingle()
       : { data: null };
     const baseUrl = Deno.env.get('HOUZY_PUBLIC_URL') || 'https://houzyhome.com';
     const hitpay = await fetch('https://api.hit-pay.com/v1/payment-requests', {
@@ -66,7 +78,7 @@ Deno.serve(async (req) => {
       return reply({ error: `${result.message || 'HitPay 创建付款链接失败'}${details}` }, 502);
     }
     const update = { hitpay_payment_id: result.id || result.payment_request_id || null, hitpay_reference: order.order_no, hitpay_payment_url: result.url, hitpay_status: result.status || 'pending', hitpay_amount: amount, hitpay_currency: currency, hitpay_created_at: new Date().toISOString() };
-    const { error: saveError } = await supabase.from('orders').update(update).eq('id', order.id);
+    const { error: saveError } = await admin.from('orders').update(update).eq('id', order.id);
     if (saveError) return reply({ error: `付款链接已生成，但订单保存失败：${saveError.message}`, payment_url: result.url }, 500);
     return reply({ payment_url: result.url, payment_id: update.hitpay_payment_id, status: update.hitpay_status });
   } catch (error) {
