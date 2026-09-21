@@ -21,7 +21,11 @@ Deno.serve(async (req) => {
     const paymentId = payload.payment_request_id || payload.id || payload.payment_id;
     const status = String(payload.status || event.event_type || event.type || '').toLowerCase();
     if (!reference && !paymentId) return json({ ok: true, ignored: true });
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    // Supabase reserves the SUPABASE_* secret prefix, so the service key is
+    // stored under our own name in Edge Function secrets.
+    const serviceKey = Deno.env.get('HOUZY_SUPABASE_SERVICE_KEY');
+    if (!serviceKey) return json({ error: 'Webhook service key is not configured' }, 503);
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
     let query = admin.from('orders').select('id,payment_status,status,amount,hitpay_payment_id').limit(1);
     query = reference ? query.eq('order_no', reference) : query.eq('hitpay_payment_id', paymentId);
     const { data: rows, error } = await query;
@@ -35,4 +39,3 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (error) { return json({ error: error instanceof Error ? error.message : 'Invalid payload' }, 400); }
 });
-
