@@ -2395,34 +2395,8 @@ async function init() {
   // Slow: reload fresh data from DB every 60 s
   setInterval(async () => { await loadOrders(); checkOverdueAlerts(); }, 60000);
 
-  // Realtime: sync order updates from suppliers immediately
-  sb.channel('order-realtime')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
-      const updated = payload.new;
-      const idx = allOrders.findIndex(o => o.id === updated.id);
-      const previous = idx !== -1 ? allOrders[idx] : null;
-      if (idx !== -1) {
-        allOrders[idx] = { ...allOrders[idx], ...updated };
-      } else {
-        await loadOrders();
-      }
-      // 根据当前激活视图刷新对应页面
-      if (!document.getElementById('v-dashboard').classList.contains('hidden')) {
-        renderDashboard();
-      } else if (!document.getElementById('v-orders').classList.contains('hidden')) {
-        filterOrders();
-      }
-      checkOverdueAlerts();
-      // 不要在实时 UPDATE 中重新打开详情页。手机端会因付款、日志或
-      // 供应商字段更新而反复跳动；付款回调和用户重新打开订单会读取最新状态。
-      const paymentChanged = previous && (
-        previous.payment_status !== updated.payment_status
-        || previous.hitpay_status !== updated.hitpay_status
-        || previous.hitpay_paid_at !== updated.hitpay_paid_at
-      );
-      if (paymentChanged) await refreshPaymentFold(updated.id);
-    })
-    .subscribe();
+  // 订单实时订阅会在手机端重排详情 DOM，导致用户下拉后滚动位置被拉回。
+  // 付款完成仍由 HitPay 回调/轮询同步；普通订单在进入页面和每 60 秒刷新。
 }
 
 async function loadStores() {
