@@ -65,10 +65,11 @@ Deno.serve(async (req) => {
       headers: { 'X-BUSINESS-API-KEY': key, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body: JSON.stringify({
         amount: amount.toFixed(2), currency,
-        // HitPay requires at least one enabled payment method and an email
-        // field for hosted payment requests. The checkout page still shows
-        // the methods enabled for this Malaysian HitPay account.
-        payment_methods: ['card'],
+        // Use the Malaysian methods requested by HOUZY. DuitNow is the
+        // unified QR rail that customers can scan from Touch 'n Go, banks,
+        // and other supported wallets. HitPay only displays methods that are
+        // enabled on the merchant account.
+        payment_methods: ['card', 'duitnow', 'fpx', 'grabpay', 'shopee_pay', 'wechat_pay', 'razer_maybankqr'],
         email: Deno.env.get('HITPAY_RECEIPT_EMAIL') || 'hello@houzyhome.com',
         reference_number: order.order_no,
         purpose: order.description || `HOUZY HOME 订单 ${order.order_no}`,
