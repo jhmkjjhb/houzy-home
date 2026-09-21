@@ -6236,6 +6236,11 @@ async function generateHitPayLink(orderId) {
   }
   if (data?.payment_url) {
     if (data.reconciled || data.status === 'completed') {
+      const { error: syncError } = await sb.from('orders').update({ status: 'paid', payment_status: 'paid', payment_method: 'hitpay' }).eq('id', orderId);
+      if (syncError) {
+        alert(`HitPay 已付款，但订单状态写入失败：${syncError.message}`);
+        return;
+      }
       alert('这笔 HitPay 付款已完成，订单状态已同步为已收款。');
       await openDetail(orderId);
       return;
