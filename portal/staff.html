@@ -6068,7 +6068,7 @@ async function saveProdDays(orderId) {
 
 function renderPaymentPanel(o, payments) {
   const payStatus = o.payment_status || 'unpaid';
-  const currency  = o.currency || 'MYR';
+  const currency  = String(o.currency || 'MYR').toUpperCase();
   const pmLabel   = { cash:'💵 现金', transfer:'🏦 银行转账', ewallet:'📱 电子钱包', card:'💳 刷卡' };
   const paidCnt   = payments?.length || 0;
   const canRec    = canDo(FIELD_MIN_LEVEL.edit_payment);
@@ -6203,7 +6203,7 @@ function renderPaymentPanel(o, payments) {
 
   // HitPay hosted checkout link for a staff-created order. The API key stays in
   // the Supabase Edge Function; the browser only receives the customer URL.
-  const hitpayBlock = (remainAmt > 0 && currency === 'MYR') ? `
+  const hitpayBlock = (remainAmt > 0) ? `
     <div class="mt-3 pt-3 border-t border-gray-100">
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div>
