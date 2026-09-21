@@ -53,7 +53,8 @@
     30%  { transform: scale(1.12); opacity: 0.7; }
     100% { transform: scale(1);    opacity: 1; }
   }
-  .cd-tick { animation: cdTick 0.35s ease-out; display:inline-block; }
+  /* 倒计时只更新文字，不做闪烁动画，避免手机端整块内容看起来跳动。 */
+  .cd-tick { animation: none !important; display:inline-block; }
   @keyframes houzyPulse {
     0%,100% { transform: scale(1);   opacity: 1;   }
     50%     { transform: scale(1.4); opacity: 0.5; }
