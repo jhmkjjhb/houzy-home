@@ -42,7 +42,13 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { 'X-BUSINESS-API-KEY': key, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body: JSON.stringify({
-        amount: amount.toFixed(2), currency, reference_number: order.order_no,
+        amount: amount.toFixed(2), currency,
+        // HitPay requires at least one enabled payment method and an email
+        // field for hosted payment requests. The checkout page still shows
+        // the methods enabled for this Malaysian HitPay account.
+        payment_methods: ['card'],
+        email: Deno.env.get('HITPAY_RECEIPT_EMAIL') || 'hello@houzyhome.com',
+        reference_number: order.order_no,
         purpose: order.description || `HOUZY HOME 订单 ${order.order_no}`,
         name: customer?.name || undefined,
         phone: customer?.phone || undefined,
@@ -59,4 +65,3 @@ Deno.serve(async (req) => {
     return reply({ error: error instanceof Error ? error.message : '服务器错误' }, 500);
   }
 });
-
