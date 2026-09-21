@@ -2411,9 +2411,8 @@ async function init() {
         filterOrders();
       }
       checkOverdueAlerts();
-      if (_openDetailId === updated.id) {
-        await openDetail(updated.id);
-      }
+      // 不要在实时 UPDATE 中重新打开详情页。手机端会因付款、日志或
+      // 供应商字段更新而反复跳动；付款回调和用户重新打开订单会读取最新状态。
     })
     .subscribe();
 }
