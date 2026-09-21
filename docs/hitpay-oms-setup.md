@@ -19,5 +19,4 @@ supabase functions deploy hitpay-webhook --no-verify-jwt
 
 `https://csabbxiijzghooppayae.supabase.co/functions/v1/hitpay-webhook`
 
-订阅付款完成事件（`payment_request.completed`）。API Key 和 Salt 只放在 Supabase Secrets，不要放进前端或 Git 仓库。
-
+订阅 `charge.created` 和 `charge.updated` 事件。API Key 和 Salt 只放在 Supabase Secrets，不要放进前端或 Git 仓库。
