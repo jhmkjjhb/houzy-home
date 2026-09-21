@@ -40,12 +40,17 @@ Deno.serve(async (req) => {
     // Read the order first, then read the customer separately. A nested
     // customers(...) relationship can be blocked by a separate RLS policy
     // even when the staff member can read the order itself.
-    const { data: order, error: orderError } = await admin.from('orders').select('id,order_no,customer_id,store_id,amount,currency,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
-    if (orderError || !order) return reply({ error: '找不到订单或无权访问' }, 404);
+    const { data: order, error: orderError } = await admin.from('orders').select('id,order_no,customer_id,store_id,amount,description,hitpay_payment_id,hitpay_payment_url,hitpay_status').eq('id', orderId).single();
+    if (orderError || !order) {
+      const reason = orderError?.message ? `（${orderError.message}）` : '';
+      return reply({ error: `找不到订单或无权访问${reason}` }, 404);
+    }
     if (order.hitpay_payment_url && order.hitpay_status !== 'failed') return reply({ payment_url: order.hitpay_payment_url, payment_id: order.hitpay_payment_id, reused: true });
 
     const amount = Number(order.amount);
-    const currency = String(order.currency || 'MYR').toUpperCase();
+    // HOUZY OMS orders are currently priced in Malaysian Ringgit; the
+    // legacy orders table has no currency column, so use MYR explicitly.
+    const currency = 'MYR';
     if (!Number.isFinite(amount) || amount <= 0) return reply({ error: '订单金额无效' }, 400);
     if (currency !== 'MYR') return reply({ error: 'HitPay 后台付款链接目前只支持 MYR 订单' }, 400);
     const key = Deno.env.get('HITPAY_API_KEY');
