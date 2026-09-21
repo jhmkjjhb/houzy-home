@@ -2399,6 +2399,7 @@ async function init() {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, async (payload) => {
       const updated = payload.new;
       const idx = allOrders.findIndex(o => o.id === updated.id);
+      const previous = idx !== -1 ? allOrders[idx] : null;
       if (idx !== -1) {
         allOrders[idx] = { ...allOrders[idx], ...updated };
       } else {
@@ -2413,6 +2414,12 @@ async function init() {
       checkOverdueAlerts();
       // 不要在实时 UPDATE 中重新打开详情页。手机端会因付款、日志或
       // 供应商字段更新而反复跳动；付款回调和用户重新打开订单会读取最新状态。
+      const paymentChanged = previous && (
+        previous.payment_status !== updated.payment_status
+        || previous.hitpay_status !== updated.hitpay_status
+        || previous.hitpay_paid_at !== updated.hitpay_paid_at
+      );
+      if (paymentChanged) await refreshPaymentFold(updated.id);
     })
     .subscribe();
 }
@@ -6242,6 +6249,18 @@ function renderPaymentPanel(o, payments) {
     ${rows}
     ${hitpayBlock}
   </div>`;
+}
+
+// 只刷新详情页的付款卡片，避免实时订单更新导致整页跳动。
+async function refreshPaymentFold(orderId) {
+  if (_openDetailId !== orderId || document.getElementById('v-detail')?.classList.contains('hidden')) return;
+  const body = document.querySelector('[data-fold-key="pay"] .fold-body');
+  if (!body) return;
+  const [{ data: order }, { data: payments }] = await Promise.all([
+    sb.from('orders').select('*').eq('id', orderId).single(),
+    sb.from('order_payments').select('*').eq('order_id', orderId).order('seq'),
+  ]);
+  if (order) body.innerHTML = renderPaymentPanel(order, payments || []);
 }
 
 async function generateHitPayLink(orderId) {
