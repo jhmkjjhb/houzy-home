@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>全屋报价器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F6F3; --surface: #FFFFFF; --line: #DEDAD1;
+    --ink: #1C1B19; --ink-dim: #6B6860;
+    --navy: #17324F; --navy-soft: #E7EDF3; --on-navy: #FFFFFF;
+    --accent: #C4501C; --ok: #2F6B4F; --off: #B8B3A7;
+    --red: #B42318; --red-soft: #FDECEA; --yellow: #8A5A00; --yellow-soft: #FFF4D6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16151A; --surface: #1E1D23; --line: #34333A;
+      --ink: #EDEBE6; --ink-dim: #9A968D;
+      --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A;
+      --accent: #E37A46; --ok: #5FA382; --off: #4A4840;
+      --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16151A; --surface: #1E1D23; --line: #34333A;
+    --ink: #EDEBE6; --ink-dim: #9A968D;
+    --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A;
+    --accent: #E37A46; --ok: #5FA382; --off: #4A4840;
+    --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased; font-size: 14px;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 16px 16px 130px; }
+  header.top { padding: 4px 2px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  header.top h1 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+  header.top p { margin: 0; color: var(--ink-dim); font-size: 12.5px; line-height: 1.6; }
+  .btn-ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+
+  /* 步骤条 */
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; }
+  .step-btn { position: relative; border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 9px; padding: 8px 2px 7px; font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; line-height: 1.3; }
+  .step-btn b { display: block; font-size: 14px; font-family: "IBM Plex Mono", monospace; }
+  .step-btn.active { background: var(--navy); color: var(--on-navy); border-color: var(--navy); }
+  .step-btn .bdg { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; font-size: 10.5px; line-height: 18px; padding: 0 5px; color: #fff; background: var(--red); font-family: "IBM Plex Mono", monospace; }
+  .step-btn .bdg.okb { background: var(--ok); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .hint { font-size: 12px; color: var(--ink-dim); line-height: 1.6; margin: 0 0 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .fld label { display: block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 4px; }
+  .fld input, .fld select, .txt {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; font: inherit; font-size: 14px;
+    background: var(--surface); color: var(--ink);
+  }
+  .fld input.num { font-family: "IBM Plex Mono", monospace; font-weight: 600; text-align: right; }
+  .fld .u { font-size: 10.5px; color: var(--ink-dim); margin-left: 2px; }
+  .fld.bad input { border-color: var(--red); background: var(--red-soft); }
+  .full { grid-column: 1 / -1; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .seg button { border: none; background: var(--surface); color: var(--ink-dim); font: inherit; font-size: 12.5px; padding: 7px 11px; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: none; }
+  .seg button.active { background: var(--navy); color: var(--on-navy); font-weight: 600; }
+
+  .room { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; overflow: hidden; }
+  .room-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--navy-soft); }
+  .room-head input { flex: 1; border: none; background: transparent; font: inherit; font-weight: 700; font-size: 14.5px; color: var(--ink); min-width: 0; }
+  .room-head .area { font-size: 12px; color: var(--navy); font-weight: 600; white-space: nowrap; }
+  .room-head .x { border: none; background: none; color: var(--ink-dim); font-size: 16px; cursor: pointer; padding: 0 2px; }
+  .room-body { padding: 12px; }
+  .room-body .segrow { margin-top: 10px; }
+  .room-body .segrow > span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 4px; }
+  .add-rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .add-rooms button { border: 1px dashed var(--navy); background: none; color: var(--navy); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .kpi { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-dim); padding: 4px 0; }
+  .kpi b { color: var(--ink); }
+
+  /* 必答问题 */
+  .q { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; margin-bottom: 8px; background: var(--surface); }
+  .q.todo { border-color: var(--red); box-shadow: inset 3px 0 0 var(--red); }
+  .q-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .q-text { font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+  .q-why { font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; line-height: 1.5; }
+  .yn { display: flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .yn button { border: none; background: var(--surface); color: var(--ink-dim); font: inherit; font-size: 13px; padding: 7px 13px; cursor: pointer; }
+  .yn button + button { border-left: 1px solid var(--line); }
+  .yn button.y.active { background: var(--ok); color: #fff; font-weight: 600; }
+  .yn button.n.active { background: var(--ink-dim); color: var(--surface); font-weight: 600; }
+  .q-inputs { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .warnbox { margin-top: 8px; background: var(--red-soft); color: var(--red); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.55; }
+  .group-title { font-size: 12px; color: var(--ink-dim); font-weight: 600; margin: 14px 2px 8px; }
+
+  /* 清单 */
+  .stage { margin-bottom: 14px; }
+  .stage-head { display: flex; align-items: center; gap: 10px; padding: 6px 2px 8px; }
+  .stage-no { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: var(--on-navy); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: "IBM Plex Mono", monospace; flex-shrink: 0; }
+  .stage-name { font-size: 14.5px; font-weight: 700; }
+  .stage-sub { font-size: 11px; color: var(--ink-dim); }
+  .stage-amt { margin-left: auto; font-weight: 700; color: var(--accent); }
+  .line { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+  .line.off { opacity: .55; }
+  .line.off .line-title { text-decoration: line-through; }
+  .line.flag { border-color: var(--red); }
+  .line-main { display: flex; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; }
+  .line-l { flex: 1; min-width: 0; }
+  .line-title { font-size: 13.5px; font-weight: 600; }
+  .badge { display: inline-block; font-size: 10.5px; color: var(--navy); background: var(--navy-soft); border-radius: 5px; padding: 1px 6px; margin-right: 6px; font-weight: 600; vertical-align: 1px; }
+  .tag { display: inline-block; font-size: 10px; border-radius: 4px; padding: 0 5px; margin-left: 5px; font-weight: 600; vertical-align: 1px; }
+  .tag.req { color: var(--accent); border: 1px solid var(--accent); }
+  .tag.cust { color: var(--yellow); background: var(--yellow-soft); }
+  .tag.man { color: var(--red); background: var(--red-soft); }
+  .line-sub { font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; line-height: 1.45; }
+  .line-amt { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .line-detail { border-top: 1px dashed var(--line); padding: 10px 12px 12px; display: grid; gap: 10px; }
+  .dl { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--ink-dim); flex-wrap: wrap; }
+  .dl b { color: var(--ink); }
+  .switch { position: relative; width: 42px; height: 25px; flex-shrink: 0; border-radius: 999px; border: none; padding: 0; cursor: pointer; background: var(--off); }
+  .switch.on { background: var(--ok); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; transition: transform .15s ease; }
+  .switch.on .knob { transform: translateX(17px); }
+  .note { font-size: 11.5px; line-height: 1.55; border-radius: 8px; padding: 8px 10px; background: var(--navy-soft); color: var(--ink-dim); }
+  .note.warn { background: var(--red-soft); color: var(--red); }
+
+  /* 检查 */
+  .chk { border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; display: flex; gap: 8px; align-items: flex-start; }
+  .chk.red { background: var(--red-soft); color: var(--red); }
+  .chk.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .chk.okc { background: var(--navy-soft); color: var(--ok); font-weight: 600; }
+  .chk .go { margin-left: auto; flex-shrink: 0; border: none; background: none; color: inherit; font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+  /* 报价单文档 */
+  .doc { background: #fff; color: #1C1B19; border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
+  .doc .draft { position: absolute; top: 14px; right: -34px; transform: rotate(35deg); background: #B42318; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 40px; }
+  .doc h3 { margin: 0; font-size: 17px; }
+  .doc .co { font-size: 11px; color: #6B6860; margin-bottom: 12px; }
+  .doc .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 12px; margin-bottom: 12px; color: #444; }
+  .doc table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .doc th { text-align: left; font-weight: 600; color: #6B6860; border-bottom: 1px solid #DEDAD1; padding: 5px 4px; font-size: 11px; }
+  .doc td { border-bottom: 1px solid #EEEBE4; padding: 5px 4px; vertical-align: top; }
+  .doc td.r, .doc th.r { text-align: right; white-space: nowrap; }
+  .doc tr.st td { background: #E7EDF3; font-weight: 700; color: #17324F; }
+  .doc .sum { margin-top: 12px; }
+  .doc .sum div { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .doc .sum .tot { border-top: 2px solid #17324F; margin-top: 4px; padding-top: 8px; font-size: 16px; font-weight: 700; }
+  .doc .terms { font-size: 11px; color: #6B6860; line-height: 1.65; margin-top: 12px; }
+  .doc .sub-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+  .primary { width: 100%; border: none; border-radius: 10px; padding: 12px; font: inherit; font-size: 14.5px; font-weight: 700; background: var(--navy); color: var(--on-navy); cursor: pointer; margin-top: 10px; }
+  .primary:disabled { background: var(--off); cursor: not-allowed; }
+
+  /* 价目表 */
+  .ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ptable th { text-align: left; color: var(--ink-dim); font-weight: 600; font-size: 11px; padding: 6px 3px; border-bottom: 1px solid var(--line); }
+  .ptable td { padding: 5px 3px; border-bottom: 1px dashed var(--line); vertical-align: middle; }
+  .ptable input { width: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 5px; text-align: right; font-family: "IBM Plex Mono", monospace; font-size: 12px; background: var(--surface); color: var(--ink); }
+  .ptable tr.chg td { background: var(--yellow-soft); }
+  .ptable .rs { border: none; background: none; color: var(--navy); cursor: pointer; font-size: 11px; text-decoration: underline; }
+  .scroll-x { overflow-x: auto; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 10; }
+  .bar-in { max-width: 620px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .bar .t { flex: 1; }
+  .bar .t small { display: block; font-size: 11.5px; color: var(--ink-dim); }
+  .bar .t b { font-size: 21px; color: var(--accent); }
+  .bar .st { border: none; border-radius: 9px; padding: 9px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .bar .st.bad { background: var(--red-soft); color: var(--red); }
+  .bar .st.good { background: var(--navy-soft); color: var(--ok); }
+
+  @media (max-width: 380px) { .grid3 { grid-template-columns: 1fr 1fr; } .step-btn { font-size: 10.5px; } }
+  @media print {
+    body { background: #fff; }
+    body * { visibility: hidden; }
+    #quote-doc, #quote-doc * { visibility: visible; }
+    #quote-doc { position: absolute; left: 0; top: 0; width: 100%; border: none; padding: 0; }
+    .bar, .steps { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>全屋报价器</h1>
+      <p>按顺序走完 ① → ④：填房间尺寸 → 回答必答问题 → 系统自动生成清单和数量 → 通过检查才能出报价单。员工只填尺寸和数量，单价统一来自价目表。</p>
+    </div>
+    <button class="btn-ghost" data-new>新建报价</button>
+  </header>
+  <nav class="steps" id="steps"></nav>
+  <main id="main"></main>
+</div>
+<div class="bar">
+  <div class="bar-in">
+    <div class="t"><small>当前总报价（含设计费、管理费，已减优惠）</small><b class="mono" id="bar-total">RM 0</b></div>
+    <button class="st" id="bar-status" data-step="4"></button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // =====================================================================
+  //  一、价目表（全公司统一单价 · 示例价，请按公司实际价格修改这里）
+  //  mat=材料单价 lab=人工单价 waste=材料损耗% · 单位都是 RM
+  //  forced=必做项（关掉必须写原因）  needs=做了这项就一定要有的配套项（同一房间）
+  // =====================================================================
+  const STAGES = [
+    { id: 'prep',   no: 1, name: '拆改与现场保护', sub: '第9-14步 · 放线验收后才能拆' },
+    { id: 'mep',    no: 2, name: '水电隐蔽',       sub: '第15-23步 · 隐蔽验收后才能进泥水' },
+    { id: 'wp',     no: 3, name: '防水',           sub: '第24-27步 · 闭水试验通过后才能贴砖' },
+    { id: 'tile',   no: 4, name: '泥水瓷砖 / 地面', sub: '第28-31步' },
+    { id: 'ceil',   no: 5, name: '天花墙面',       sub: '第32-38步' },
+    { id: 'custom', no: 6, name: '定制柜与门窗',   sub: '第39-45步 · 复尺后下单' },
+    { id: 'equip',  no: 7, name: '设备安装与收尾', sub: '第46-54步' },
+    { id: 'soft',   no: 8, name: '软装',           sub: '第55-60步 · 交付前', soft: true }
+  ];
+
+  const PRICE = {
+    protect:     { stage: 'prep', name: '成品及公共区域保护（地面/电梯/走廊）', unit: '项', mat: 300, lab: 200, forced: true },
+    permit:      { stage: 'prep', name: '物业装修申请代办（押金另计，完工退还）', unit: '项', mat: 0, lab: 150 },
+    demo_piece:  { stage: 'prep', name: '拆除旧柜/旧洁具/旧门窗', unit: '件', mat: 0, lab: 35 },
+    demo_floor:  { stage: 'prep', name: '铲除旧地砖', unit: '平方尺', mat: 0, lab: 1.5 },
+    demo_wall:   { stage: 'prep', name: '砸墙/拆隔断墙', unit: '平方尺', mat: 0, lab: 1.8 },
+    build_wall:  { stage: 'prep', name: '新砌隔断墙（砖墙）', unit: '平方尺', mat: 3.5, lab: 2.5, waste: 5, needs: ['skim', 'paint_wall'] },
+    door_open:   { stage: 'prep', name: '门洞改造（封旧门洞/开新门洞）', unit: '个', mat: 40, lab: 60 },
+    struct:      { stage: 'prep', name: '承重墙开洞加固', unit: '处', mat: 500, lab: 800, needs: ['engineer'], warn: '涉及结构安全，必须有结构工程师签字才能动工' },
+    engineer:    { stage: 'prep', name: '结构工程师审图签字', unit: '项', mat: 0, lab: 1500, forced: true },
+    bath_drop:   { stage: 'prep', name: '卫生间降板/二次排水处理', unit: '平方尺', mat: 8, lab: 12, forced: true },
+    waste_out:   { stage: 'prep', name: '建筑垃圾清运', unit: '车次', mat: 0, lab: 150, forced: true },
+
+    wire:        { stage: 'mep', name: '电路开槽穿管布线', unit: '个点位', mat: 35, lab: 25, needs: ['panel'] },
+    water_pt:    { stage: 'mep', name: '给排水管改造', unit: '个点位', mat: 45, lab: 35 },
+    aircon_pipe: { stage: 'mep', name: '空调铜管+排水管预埋', unit: '台', mat: 180, lab: 120 },
+    gas:         { stage: 'mep', name: '燃气管道改造', unit: '项', mat: 300, lab: 400 },
+    net:         { stage: 'mep', name: '网络/电视线预埋', unit: '个点位', mat: 20, lab: 20 },
+
+    wp:          { stage: 'wp', name: '防水涂刷（地面+墙面上翻）', unit: '平方尺', mat: 3.5, lab: 2.2, waste: 5, forced: true },
+    slope:       { stage: 'wp', name: '地面找坡（往地漏方向）', unit: '平方尺', mat: 1.5, lab: 2, forced: true },
+
+    floor_tile:  { stage: 'tile', name: '地砖铺贴', unit: '平方尺', mat: 4.8, lab: 2.3, waste: 8, needs: ['grout'] },
+    wall_tile:   { stage: 'tile', name: '墙砖铺贴', unit: '平方尺', mat: 4.8, lab: 2.5, waste: 8, needs: ['grout'] },
+    laminate:    { stage: 'tile', name: '木地板/SPC地板铺装', unit: '平方尺', mat: 6.5, lab: 1.5, waste: 5 },
+    skirting:    { stage: 'tile', name: '踢脚线', unit: '延尺', mat: 2.5, lab: 1.5, waste: 5 },
+    grout:       { stage: 'tile', name: '瓷砖美缝', unit: '平方尺', mat: 0.8, lab: 0.7 },
+    threshold:   { stage: 'tile', name: '门槛石/挡水条', unit: '条', mat: 60, lab: 30 },
+    drain:       { stage: 'tile', name: '防臭地漏', unit: '个', mat: 35, lab: 15 },
+
+    plaster_ceiling: { stage: 'ceil', name: '石膏板吊顶', unit: '平方尺', mat: 5, lab: 3.5, waste: 5 },
+    ceiling_step:    { stage: 'ceil', name: '天花叠级/灯槽', unit: '延尺', mat: 8, lab: 6 },
+    skim:            { stage: 'ceil', name: '墙面批灰找平', unit: '平方尺', mat: 0.6, lab: 0.8, waste: 5, forced: true },
+    paint_wall:      { stage: 'ceil', name: '墙面乳胶漆（一底两面）', unit: '平方尺', mat: 0.8, lab: 0.6, waste: 5, forced: true },
+    paint_ceiling:   { stage: 'ceil', name: '天花乳胶漆', unit: '平方尺', mat: 0.8, lab: 0.7, waste: 5, forced: true },
+
+    cab_low:     { stage: 'custom', name: '橱柜 · 地柜', unit: '延尺', mat: 116, lab: 30, needs: ['counter'] },
+    cab_up:      { stage: 'custom', name: '橱柜 · 吊柜', unit: '延尺', mat: 91, lab: 24 },
+    counter:     { stage: 'custom', name: '石英石台面', unit: '延尺', mat: 82, lab: 12 },
+    wardrobe:    { stage: 'custom', name: '衣柜定制', unit: '延尺', mat: 55, lab: 15 },
+    door:        { stage: 'custom', name: '室内门（含门套、锁、合页）', unit: '樘', mat: 450, lab: 80 },
+    balc_seal:   { stage: 'custom', name: '阳台封窗', unit: '延尺', mat: 60, lab: 20 },
+
+    panel:       { stage: 'equip', name: '开关插座面板安装', unit: '个', mat: 12, lab: 5, forced: true },
+    light:       { stage: 'equip', name: '基础灯具供应+安装', unit: '个', mat: 45, lab: 20 },
+    toilet:      { stage: 'equip', name: '马桶', unit: '套', mat: 280, lab: 40 },
+    vanity:      { stage: 'equip', name: '浴室柜（含台盆）', unit: '套', mat: 380, lab: 50 },
+    shower:      { stage: 'equip', name: '花洒/龙头', unit: '套', mat: 220, lab: 30 },
+    screen:      { stage: 'equip', name: '淋浴玻璃隔断', unit: '套', mat: 650, lab: 100 },
+    heater:      { stage: 'equip', name: '热水器安装', unit: '台', mat: 350, lab: 60 },
+    sink:        { stage: 'equip', name: '厨房水槽+龙头', unit: '套', mat: 250, lab: 40 },
+    hood:        { stage: 'equip', name: '烟机灶具安装（电器客户自购）', unit: '套', mat: 0, lab: 120 },
+    rack:        { stage: 'equip', name: '晾衣架', unit: '套', mat: 180, lab: 60 },
+    clean:       { stage: 'equip', name: '开荒清洁', unit: '平方尺', mat: 0, lab: 0.5, forced: true },
+
+    curtain:     { stage: 'soft', name: '窗帘（含轨道/罗马杆安装）', unit: '延尺', mat: 45, lab: 15 },
+    decor:       { stage: 'soft', name: '基础软装配饰包（靠垫/花艺/摆件）', unit: '项', mat: 800, lab: 0 }
+  };
+
+  const DEFAULT_SETTINGS = {
+    designRate: 8,        // 设计费 RM/平方尺
+    mgmtRate: 6,          // 管理费 %（按 施工+材料+软装）
+    discountLimit: 5,     // 优惠超过这个 % 必须填审批人
+    pay: [
+      { name: '签约定金', pct: 30 },
+      { name: '水电隐蔽验收通过', pct: 30 },
+      { name: '泥水瓷砖验收通过', pct: 30 },
+      { name: '竣工验收交付', pct: 10 }
+    ]
+  };
+
+  // =====================================================================
+  //  二、房间类型：每种房间要填哪些尺寸，默认值是多少
+  // =====================================================================
+  const F = {
+    L: { label: '长', unit: '尺' }, W: { label: '宽', unit: '尺' }, H: { label: '层高', unit: '尺' },
+    doors: { label: '室内门', unit: '樘' }, win: { label: '窗户总宽', unit: '尺' },
+    pts: { label: '插座/开关点位', unit: '个' }, lights: { label: '灯位', unit: '个' }, ac: { label: '空调', unit: '台' },
+    wardrobe: { label: '衣柜长度', unit: '尺' },
+    cabLow: { label: '地柜长度', unit: '尺' }, cabUp: { label: '吊柜长度', unit: '尺' },
+    wpts: { label: '水点位', unit: '个' }, drains: { label: '地漏', unit: '个' },
+    toilet: { label: '马桶', unit: '套' }, vanity: { label: '浴室柜', unit: '套' }, shower: { label: '花洒', unit: '套' },
+    screen: { label: '淋浴隔断', unit: '套' }, heater: { label: '热水器', unit: '台' }, rack: { label: '晾衣架', unit: '套' },
+    floor: { label: '地面做法', opts: [['tile', '瓷砖'], ['laminate', '木地板/SPC']] },
+    ceiling: { label: '天花做法', opts: [['none', '不做吊顶'], ['flat', '平顶吊顶'], ['feature', '造型+灯槽']] },
+    wallTile: { label: '厨房墙砖', opts: [['partial', '只铺操作区'], ['full', '满铺到顶']] }
+  };
+  const TYPES = {
+    living:  { label: '客厅/餐厅', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'floor', 'ceiling'],
+               def: { L: 20, W: 12, H: 9, doors: 0, win: 8, pts: 8, lights: 4, ac: 1, floor: 'tile', ceiling: 'feature' } },
+    bedroom: { label: '卧室', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'wardrobe', 'floor', 'ceiling'],
+               def: { L: 12, W: 11, H: 9, doors: 1, win: 6, pts: 5, lights: 2, ac: 1, wardrobe: 8, floor: 'laminate', ceiling: 'flat' } },
+    kitchen: { label: '厨房', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'cabLow', 'cabUp', 'wpts', 'wallTile', 'ceiling'],
+               def: { L: 10, W: 8, H: 9, doors: 0, win: 3, pts: 8, lights: 2, cabLow: 11, cabUp: 8, wpts: 2, wallTile: 'partial', ceiling: 'flat' } },
+    bath:    { label: '卫生间', fields: ['L', 'W', 'H', 'doors', 'pts', 'lights', 'wpts', 'drains', 'toilet', 'vanity', 'shower', 'screen', 'heater', 'ceiling'],
+               def: { L: 8, W: 5, H: 9, doors: 1, pts: 3, lights: 1, wpts: 5, drains: 2, toilet: 1, vanity: 1, shower: 1, screen: 1, heater: 1, ceiling: 'flat', moved: null },
+               roomQ: [{ k: 'moved', q: '要改马桶/排水位置吗？', why: '改位置就必须降板+重做排水+加强防水，最容易漏收的一项' }] },
+    balcony: { label: '阳台', fields: ['L', 'W', 'pts', 'lights', 'drains', 'rack'],
+               def: { L: 10, W: 4, pts: 1, lights: 1, drains: 1, rack: 1, seal: null },
+               roomQ: [{ k: 'seal', q: '要封阳台窗吗？', why: '按阳台长度计价；公寓通常要先问物业是否允许' }] },
+    other:   { label: '走廊/书房/储物间', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'floor', 'ceiling'],
+               def: { L: 10, W: 4, H: 9, doors: 0, win: 0, pts: 2, lights: 1, ac: 0, floor: 'tile', ceiling: 'none' } }
+  };
+
+  // =====================================================================
+  //  三、全屋必答问题（每题都要答"是/否"，答完才能出报价单）
+  // =====================================================================
+  const QUESTIONS = [
+    { id: 'condo', q: '是公寓/有管理处吗？', why: '要向物业申请装修许可、交押金，并做公共区域保护' },
+    { id: 'old', q: '是二手房/要拆旧装修吗？', why: '旧柜、旧洁具要拆，旧地砖要铲，垃圾清运车次会增加',
+      inputs: [{ k: 'pieces', label: '要拆的旧柜/洁具/门窗', unit: '件', def: () => 8 },
+               { k: 'floor', label: '要铲除的旧地砖', unit: '平方尺', def: () => Math.round(totalFloor()) }] },
+    { id: 'demoWall', q: '要拆墙/砸隔断吗？', why: '面积 = 墙长 × 墙高',
+      inputs: [{ k: 'area', label: '拆墙面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'newWall', q: '要新砌墙吗？', why: '系统会自动加上新墙两面的批灰+油漆',
+      inputs: [{ k: 'area', label: '新墙面积（单面）', unit: '平方尺', def: () => 0 }] },
+    { id: 'doorOpen', q: '要改门洞（封旧门洞/开新门洞）吗？',
+      inputs: [{ k: 'count', label: '门洞数量', unit: '个', def: () => 1 }] },
+    { id: 'loadWall', q: '要动承重墙/结构梁柱吗？', why: '必须有结构工程师签字，不能按普通砸墙报价', warn: true,
+      inputs: [{ k: 'count', label: '开洞处数', unit: '处', def: () => 1 }] },
+    { id: 'gas', q: '厨房要改燃气管道吗？' },
+    { id: 'net', q: '要预埋网络/电视线吗？',
+      inputs: [{ k: 'count', label: '网络/电视点位', unit: '个', def: () => 4 }] },
+    { id: 'doors', q: '要更换室内门吗？', why: '按每个房间填的"室内门"数量计算' },
+    { id: 'curtain', q: '要做窗帘吗？', why: '按每个房间填的"窗户总宽"计算' },
+    { id: 'decor', q: '要基础软装配饰包吗？' }
+  ];
+
+  // =====================================================================
+  //  工具函数
+  // =====================================================================
+  const STORE_KEY = 'houzy-quote-draft-v1';
+  const num = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
+  const r1 = n => Math.round(n * 10) / 10;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rm = n => (n < 0 ? '-RM ' : 'RM ') + Math.abs(Math.round(n)).toLocaleString('en-MY');
+  const nf = n => r1(n).toLocaleString('en-MY');
+  const uid = () => Math.random().toString(36).slice(2, 8);
+  const clone = o => JSON.parse(JSON.stringify(o));
+
+  function newProject() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const p = {
+      info: { customer: '', phone: '', address: '', staff: '',
+              quoteNo: 'Q' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()),
+              date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) },
+      spaArea: '', rooms: [], answers: {}, lines: {}, custom: [], prices: {},
+      settings: clone(DEFAULT_SETTINGS), discount: '', discountBy: ''
+    };
+    // 默认 3房2卫 公寓，员工改尺寸即可
+    [['living'], ['bedroom', '主卧'], ['bedroom', '卧室2'], ['bedroom', '卧室3'], ['kitchen'], ['bath', '主卫'], ['bath', '公卫'], ['balcony']]
+      .forEach(([t, n]) => p.rooms.push(makeRoom(t, n)));
+    return p;
+  }
+  function makeRoom(type, name) {
+    return Object.assign({ id: 'r' + uid(), type, name: name || TYPES[type].label }, clone(TYPES[type].def));
+  }
+
+  let P;
+  try { P = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { P = null; }
+  if (!P || !Array.isArray(P.rooms)) P = newProject();
+  P.settings = Object.assign(clone(DEFAULT_SETTINGS), P.settings || {});
+  let step = 1;
+  const expanded = new Set();
+
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* 浏览器不让存就算了，不影响使用 */ } }
+  function price(code) {
+    const d = PRICE[code], o = P.prices[code] || {};
+    const pick = (k, dv) => (o[k] !== undefined && o[k] !== '') ? num(o[k]) : dv;
+    return { mat: pick('mat', d.mat), lab: pick('lab', d.lab), waste: pick('waste', d.waste || 0) };
+  }
+  function priceChanged(code) {
+    const d = PRICE[code], p = price(code);
+    return p.mat !== d.mat || p.lab !== d.lab || p.waste !== (d.waste || 0);
+  }
+  function geo(r) {
+    const L = num(r.L), W = num(r.W), H = num(r.H) || 9, doors = num(r.doors);
+    const floor = L * W, perim = 2 * (L + W);
+    const wall = Math.max(0, perim * H - doors * 21);  // 每樘门洞扣 3尺×7尺
+    return { L, W, H, doors, floor, perim, wall };
+  }
+  function totalFloor() { return P.rooms.reduce((s, r) => s + geo(r).floor, 0); }
+  const ans = id => P.answers[id] || {};
+  const yes = id => ans(id).v === true;
+  const an = (id, k) => num(ans(id)[k]);
+
+  // =====================================================================
+  //  四、自动生成清单：根据房间尺寸 + 必答问题，算出每一项和数量
+  // =====================================================================
+  function gen() {
+    const out = [];
+    const ALL = { id: 'all', name: '全屋' };
+    const add = (room, code, qty, formula, key) => {
+      if (!(qty > 0)) return;
+      out.push({ key: room.id + ':' + (key || code), code, roomId: room.id, roomName: room.name, qty: r1(qty), formula });
+    };
+
+    add(ALL, 'protect', 1, '每单必做');
+    if (yes('condo')) add(ALL, 'permit', 1, '公寓/有管理处');
+    if (yes('old')) {
+      add(ALL, 'demo_piece', an('old', 'pieces'), '必答问题填写');
+      add(ALL, 'demo_floor', an('old', 'floor'), '必答问题填写');
+    }
+    if (yes('demoWall')) add(ALL, 'demo_wall', an('demoWall', 'area'), '必答问题填写');
+    if (yes('newWall')) {
+      const a = an('newWall', 'area');
+      add(ALL, 'build_wall', a, '必答问题填写');
+      add(ALL, 'skim', a * 2, `新墙 ${nf(a)} × 两面`, 'newwall_skim');
+      add(ALL, 'paint_wall', a * 2, `新墙 ${nf(a)} × 两面`, 'newwall_paint');
+    }
+    if (yes('doorOpen')) add(ALL, 'door_open', an('doorOpen', 'count'), '必答问题填写');
+    if (yes('loadWall')) {
+      add(ALL, 'struct', an('loadWall', 'count'), '必答问题填写');
+      add(ALL, 'engineer', 1, '动承重墙必须有');
+    }
+    if (yes('gas')) add(ALL, 'gas', 1, '必答问题填写');
+    if (yes('net')) add(ALL, 'net', an('net', 'count'), '必答问题填写');
+
+    P.rooms.forEach(r => {
+      const g = geo(r), t = r.type;
+      const fl = nf(g.floor), pe = nf(g.perim);
+      const floorF = `${nf(g.L)}×${nf(g.W)} = ${fl}`;
+      const wallF = `周长${pe}×层高${nf(g.H)}` + (g.doors ? ` − 门洞${g.doors}×21` : '') + ` = ${nf(g.wall)}`;
+
+      // 水电
+      add(r, 'wire', num(r.pts), '房间填写的点位');
+      add(r, 'panel', num(r.pts), '= 插座/开关点位数（布线多少个，面板就多少个）');
+      add(r, 'light', num(r.lights), '房间填写的灯位');
+      add(r, 'water_pt', num(r.wpts), '房间填写的水点位');
+      add(r, 'aircon_pipe', num(r.ac), '房间填写的空调台数');
+
+      // 天花
+      if (t !== 'balcony') {
+        if (r.ceiling === 'flat' || r.ceiling === 'feature') add(r, 'plaster_ceiling', g.floor, `天花面积 = 地面 ${floorF}`);
+        if (r.ceiling === 'feature') add(r, 'ceiling_step', g.perim, `沿房间周长 2×(${nf(g.L)}+${nf(g.W)}) = ${pe}`);
+        add(r, 'paint_ceiling', g.floor, `天花面积 = 地面 ${floorF}`);
+      }
+
+      if (t === 'living' || t === 'bedroom' || t === 'other') {
+        if (r.floor === 'laminate') add(r, 'laminate', g.floor, floorF);
+        else { add(r, 'floor_tile', g.floor, floorF); add(r, 'grout', g.floor, `= 地砖面积 ${fl}`); }
+        const sk = Math.max(0, g.perim - g.doors * 3);
+        add(r, 'skirting', sk, `周长${pe}` + (g.doors ? ` − 门宽${g.doors}×3` : '') + ` = ${nf(sk)}`);
+        add(r, 'skim', g.wall, wallF);
+        add(r, 'paint_wall', g.wall, wallF);
+        if (t === 'bedroom') add(r, 'wardrobe', num(r.wardrobe), '房间填写的衣柜长度');
+      }
+
+      if (t === 'kitchen') {
+        const cabLow = num(r.cabLow);
+        const tileWall = r.wallTile === 'full' ? g.wall : Math.min(g.wall, cabLow * 2.5);
+        const tileWallF = r.wallTile === 'full' ? '满铺：' + wallF : `操作区：地柜长${nf(cabLow)}×挡水高2.5 = ${nf(tileWall)}`;
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'wall_tile', tileWall, tileWallF);
+        add(r, 'grout', g.floor + tileWall, `地砖${fl} + 墙砖${nf(tileWall)}`);
+        add(r, 'wp', g.floor, `厨房地面 ${floorF}`);
+        const paintWall = Math.max(0, g.wall - tileWall);
+        add(r, 'skim', paintWall, `墙面${nf(g.wall)} − 墙砖${nf(tileWall)} = ${nf(paintWall)}`);
+        add(r, 'paint_wall', paintWall, `墙面${nf(g.wall)} − 墙砖${nf(tileWall)} = ${nf(paintWall)}`);
+        add(r, 'cab_low', cabLow, '房间填写的地柜长度');
+        add(r, 'cab_up', num(r.cabUp), '房间填写的吊柜长度');
+        add(r, 'counter', cabLow, '= 地柜长度（有地柜就一定有台面）');
+        add(r, 'sink', 1, '厨房必配');
+        add(r, 'hood', 1, '厨房必配');
+      }
+
+      if (t === 'bath') {
+        const wpA = g.floor + g.perim * 1 + 36;
+        add(r, 'wp', wpA, `地面${fl} + 周长${pe}×上翻1尺 + 淋浴区墙6×6 = ${nf(wpA)}`);
+        add(r, 'slope', g.floor, floorF);
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'wall_tile', g.wall, '满铺：' + wallF);
+        add(r, 'grout', g.floor + g.wall, `地砖${fl} + 墙砖${nf(g.wall)}`);
+        add(r, 'drain', num(r.drains), '房间填写的地漏数');
+        add(r, 'threshold', g.doors, '= 门数（每个门口一条挡水）');
+        ['toilet', 'vanity', 'shower', 'screen', 'heater'].forEach(c => add(r, c, num(r[c]), '房间填写'));
+        if (r.moved === true) add(r, 'bath_drop', g.floor, `改位置：地面 ${floorF}`);
+      }
+
+      if (t === 'balcony') {
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'grout', g.floor, `= 地砖面积 ${fl}`);
+        add(r, 'wp', g.floor, `阳台地面 ${floorF}`);
+        add(r, 'drain', num(r.drains), '房间填写的地漏数');
+        add(r, 'rack', num(r.rack), '房间填写');
+        if (r.seal === true) add(r, 'balc_seal', g.L, `阳台长度 ${nf(g.L)}`);
+      }
+
+      if (yes('doors') && t !== 'balcony') add(r, 'door', g.doors, '房间填写的室内门数');
+      if (yes('curtain')) add(r, 'curtain', num(r.win), '房间填写的窗户总宽');
+    });
+
+    // 垃圾清运：基础1车 + 拆墙每100平方尺1车 + 铲砖每400平方尺1车 + 旧件每10件1车
+    const dw = yes('demoWall') ? an('demoWall', 'area') : 0;
+    const df = yes('old') ? an('old', 'floor') : 0;
+    const dp = yes('old') ? an('old', 'pieces') : 0;
+    const trips = 1 + Math.ceil(dw / 100) + Math.ceil(df / 400) + Math.ceil(dp / 10);
+    add(ALL, 'waste_out', trips, `基础1 + 拆墙${nf(dw)}÷100 + 铲砖${nf(df)}÷400 + 旧件${nf(dp)}÷10（都进位）`);
+    add(ALL, 'clean', totalFloor(), '= 全部房间地面面积合计');
+    if (yes('decor')) add(ALL, 'decor', 1, '必答问题填写');
+    return out;
+  }
+
+  // =====================================================================
+  //  五、算钱：每一行先四舍五入到整数 RM，再加总 → 分项加起来一定等于总数
+  // =====================================================================
+  function compute() {
+    const rows = gen().map(l => {
+      const d = PRICE[l.code], st = P.lines[l.key] || {}, p = price(l.code);
+      const manual = st.qty !== undefined && st.qty !== null && st.qty !== '';
+      const qty = manual ? num(st.qty) : l.qty;
+      const supply = st.supply === 'customer' ? 'customer' : 'company';
+      const mat = supply === 'customer' ? 0 : Math.round(qty * (1 + p.waste / 100) * p.mat);
+      const lab = Math.round(qty * p.lab);
+      return Object.assign({}, l, { name: d.name, unit: d.unit, stage: d.stage, forced: !!d.forced, soft: d.stage === 'soft',
+        st, manual, autoQty: l.qty, qty, on: !st.off, supply, p, mat, lab, total: mat + lab });
+    });
+    P.custom.forEach(c => {
+      const qty = num(c.qty), mat = Math.round(qty * num(c.mat)), lab = Math.round(qty * num(c.lab));
+      rows.push({ key: 'c:' + c.id, custom: c, code: null, roomName: c.room || '全屋', name: c.name || '（未命名自定义项）',
+        unit: c.unit || '项', stage: c.stage || 'equip', soft: c.stage === 'soft', qty, on: true, supply: 'company', mat, lab, total: mat + lab,
+        formula: '自定义项目', st: {} });
+    });
+
+    let hard = 0, material = 0, soft = 0;
+    const byStage = {};
+    rows.forEach(r => {
+      byStage[r.stage] = byStage[r.stage] || 0;
+      if (!r.on) return;
+      byStage[r.stage] += r.total;
+      if (r.soft) soft += r.total; else { hard += r.lab; material += r.mat; }
+    });
+    const floorSum = totalFloor();
+    const designArea = num(P.spaArea) || floorSum;
+    const design = Math.round(designArea * num(P.settings.designRate));
+    const base = hard + material + soft;
+    const mgmt = Math.round(base * num(P.settings.mgmtRate) / 100);
+    const before = base + design + mgmt;
+    const discount = Math.min(Math.round(num(P.discount)), before);
+    const total = before - discount;
+    // 付款节点：前几期四舍五入，最后一期 = 总价 − 前面各期，保证加起来刚好等于总价
+    const pay = P.settings.pay.map(x => ({ name: x.name, pct: num(x.pct), amt: 0 }));
+    let paid = 0;
+    pay.forEach((x, i) => { x.amt = i === pay.length - 1 ? total - paid : Math.round(total * x.pct / 100); paid += x.amt; });
+    return { rows, byStage, hard, material, soft, base, design, designArea, floorSum, mgmt, before, discount, total, pay };
+  }
+
+  // =====================================================================
+  //  六、漏项 / 错误检查（红色 = 必须处理才能出单；黄色 = 提醒确认）
+  // =====================================================================
+  function checks(C) {
+    const red = [], yellow = [];
+    if (!P.info.customer.trim()) red.push({ m: '没填客户姓名', go: 1 });
+    if (!P.info.phone.trim()) yellow.push({ m: '没填客户电话', go: 1 });
+    if (!P.rooms.length) red.push({ m: '还没有添加任何房间', go: 1 });
+    P.rooms.forEach(r => {
+      if (!num(r.L) || !num(r.W)) red.push({ m: `「${r.name}」没填长/宽，面积算不出来`, go: 1 });
+      (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) red.push({ m: `「${r.name}」${q.q} 还没回答`, go: 2 }); });
+      if (r.type === 'kitchen' && !num(r.cabLow)) yellow.push({ m: `「${r.name}」没有地柜，确认客户不做橱柜？`, go: 1 });
+      if (r.type === 'bath' && !num(r.toilet)) yellow.push({ m: `「${r.name}」没有马桶，确认吗？`, go: 1 });
+      if (r.type === 'bath' && !num(r.drains)) red.push({ m: `「${r.name}」地漏是 0，卫生间至少要 1 个`, go: 1 });
+    });
+    const types = P.rooms.map(r => r.type);
+    if (P.rooms.length && !types.includes('bath')) yellow.push({ m: '没有卫生间，确认是局部装修？', go: 1 });
+    if (P.rooms.length && !types.includes('kitchen')) yellow.push({ m: '没有厨房，确认是局部装修？', go: 1 });
+
+    QUESTIONS.forEach(q => {
+      const a = ans(q.id);
+      if (a.v !== true && a.v !== false) red.push({ m: `必答问题没回答：${q.q}`, go: 2 });
+      else if (a.v && q.inputs) q.inputs.forEach(i => { if (!num(a[i.k])) red.push({ m: `「${q.q}」答了"是"，但${i.label}是 0`, go: 2 }); });
+    });
+    if (yes('loadWall')) yellow.push({ m: '动承重墙：签约前必须拿到结构工程师签字，否则不能开工', go: 2 });
+
+    const spa = num(P.spaArea);
+    if (!spa) yellow.push({ m: `没填套内面积，设计费暂按房间面积合计 ${nf(C.floorSum)} 平方尺算`, go: 1 });
+    else if (C.floorSum < spa * 0.85) yellow.push({ m: `房间面积合计 ${nf(C.floorSum)} 比套内面积 ${nf(spa)} 少了 ${Math.round((1 - C.floorSum / spa) * 100)}%，是不是漏了走廊/储物间/过道？`, go: 1 });
+    else if (C.floorSum > spa * 1.1) yellow.push({ m: `房间面积合计 ${nf(C.floorSum)} 比套内面积 ${nf(spa)} 还大，检查尺寸是否量错或房间重复`, go: 1 });
+
+    C.rows.forEach(r => {
+      const label = `「${r.roomName} · ${r.name}」`;
+      if (r.custom) {
+        if (!r.custom.name || !num(r.custom.qty) || !(num(r.custom.mat) + num(r.custom.lab))) red.push({ m: `自定义项目${label}名称/数量/单价没填完整`, go: 3 });
+        if (!String(r.custom.reason || '').trim()) red.push({ m: `自定义项目${label}没写原因`, go: 3 });
+        else yellow.push({ m: `自定义项目${label}不在价目表里，需主管确认价格`, go: 3 });
+        return;
+      }
+      if (!r.on && r.forced && !String(r.st.offReason || '').trim()) red.push({ m: `${label}是必做项，关掉要写原因`, go: 3, key: r.key });
+      if (r.manual && !String(r.st.qtyReason || '').trim()) red.push({ m: `${label}手动改了数量，要写原因`, go: 3, key: r.key });
+      if (r.on && r.manual && r.autoQty > 0 && Math.abs(r.qty - r.autoQty) / r.autoQty > 0.3)
+        yellow.push({ m: `${label}手动数量 ${nf(r.qty)} 和自动算的 ${nf(r.autoQty)} 相差超过30%`, go: 3, key: r.key });
+      if (r.on && r.supply === 'customer') yellow.push({ m: `${label}客户自备材料，要跟客户约好送货时间，否则会拖工期`, go: 3, key: r.key });
+      if (r.on && PRICE[r.code].needs) PRICE[r.code].needs.forEach(nc => {
+        const mates = C.rows.filter(x => x.roomId === r.roomId && x.code === nc);
+        if (mates.length && mates.every(x => !x.on)) yellow.push({ m: `${label}做了，但配套的「${PRICE[nc].name}」被关掉了，是不是漏了？`, go: 3 });
+      });
+    });
+    Object.keys(PRICE).forEach(c => { if (priceChanged(c)) yellow.push({ m: `本单改了「${PRICE[c].name}」的单价（不是公司统一价）`, go: 5 }); });
+
+    const pctSum = P.settings.pay.reduce((s, x) => s + num(x.pct), 0);
+    if (Math.abs(pctSum - 100) > 0.01) red.push({ m: `付款节点比例加起来是 ${nf(pctSum)}%，必须等于 100%`, go: 5 });
+    if (C.discount > 0 && C.before > 0) {
+      const pct = C.discount / C.before * 100;
+      if (pct > num(P.settings.discountLimit) && !String(P.discountBy || '').trim())
+        red.push({ m: `优惠 ${nf(pct)}% 超过 ${nf(P.settings.discountLimit)}%，要填审批人`, go: 4 });
+    }
+    return { red, yellow };
+  }
+
+  // =====================================================================
+  //  七、页面渲染
+  // =====================================================================
+  const STEP_NAMES = ['', '房间尺寸', '必答问题', '核对清单', '报价单', '价目表'];
+
+  function unansweredCount() {
+    let n = QUESTIONS.filter(q => ans(q.id).v !== true && ans(q.id).v !== false).length;
+    P.rooms.forEach(r => (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) n++; }));
+    return n;
+  }
+
+  function renderSteps(K) {
+    const redBy = s => K.red.filter(x => x.go === s).length;
+    document.getElementById('steps').innerHTML = [1, 2, 3, 4, 5].map(s => {
+      let b = '';
+      if (s === 2) { const n = unansweredCount(); b = n ? `<span class="bdg">${n}</span>` : '<span class="bdg okb">✓</span>'; }
+      else if (s !== 4 && redBy(s)) b = `<span class="bdg">${redBy(s)}</span>`;
+      else if (s === 4 && K.red.length) b = `<span class="bdg">${K.red.length}</span>`;
+      return `<button class="step-btn ${s === step ? 'active' : ''}" data-step="${s}"><b>${s === 5 ? '⚙' : s}</b>${STEP_NAMES[s]}${b}</button>`;
+    }).join('');
+  }
+
+  function fld(label, unit, attrs, val, bad, isNum) {
+    return `<div class="fld ${bad ? 'bad' : ''}"><label>${label}${unit ? `<span class="u">（${unit}）</span>` : ''}</label>
+      <input ${isNum ? 'class="num" inputmode="decimal"' : ''} type="text" ${attrs} value="${esc(val)}"></div>`;
+  }
+
+  function renderStep1() {
+    const i = P.info;
+    let h = `<div class="card"><h2>客户信息</h2>
+      <div class="grid2">
+        ${fld('客户姓名', '', 'data-info="customer"', i.customer, !i.customer.trim())}
+        ${fld('电话', '', 'data-info="phone" inputmode="tel"', i.phone)}
+        <div class="full">${fld('地址', '', 'data-info="address"', i.address)}</div>
+        ${fld('报价顾问', '', 'data-info="staff"', i.staff)}
+        ${fld('套内面积', '平方尺', 'data-spa', P.spaArea, false, true)}
+      </div>
+      <div class="kpi" style="margin-top:10px"><span>下面各房间地面面积合计</span><b class="mono" data-out="floorsum"></b></div>
+      <p class="hint" style="margin:4px 0 0">套内面积按买卖合约(SPA)填，用来算设计费，也用来核对是不是漏了房间。</p>
+    </div>
+    <div class="card"><h2>房间</h2><p class="hint">每个房间只填尺寸和数量（尺 = 英尺）。面积、墙面积、踢脚线长度等全部由系统自动算。有几间就加几间，走廊/过道也要加。</p>`;
+    P.rooms.forEach(r => {
+      const T = TYPES[r.type];
+      const nums = T.fields.filter(f => !F[f].opts), segs = T.fields.filter(f => F[f].opts);
+      h += `<div class="room">
+        <div class="room-head"><span class="badge">${T.label}</span><input data-room="${r.id}" data-f="name" value="${esc(r.name)}">
+          <span class="area mono" data-out="area-${r.id}"></span><button class="x" data-del-room="${r.id}" title="删除房间">✕</button></div>
+        <div class="room-body"><div class="grid3">
+          ${nums.map(f => fld(F[f].label, F[f].unit, `data-room="${r.id}" data-f="${f}"`, r[f], (f === 'L' || f === 'W') && !num(r[f]), true)).join('')}
+        </div>
+        ${segs.map(f => `<div class="segrow"><span>${F[f].label}</span><div class="seg">${F[f].opts.map(([v, l]) =>
+          `<button class="${r[f] === v ? 'active' : ''}" data-room-seg="${r.id}" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
+        </div></div>`;
+    });
+    h += `<div class="add-rooms">${Object.keys(TYPES).map(t => `<button data-add-room="${t}">+ ${TYPES[t].label}</button>`).join('')}</div></div>`;
+    return h;
+  }
+
+  function ynHtml(v, attrs) {
+    return `<div class="yn"><button class="y ${v === true ? 'active' : ''}" ${attrs} data-v="1">是</button><button class="n ${v === false ? 'active' : ''}" ${attrs} data-v="0">否</button></div>`;
+  }
+
+  function renderStep2() {
+    let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">这些问题<b>每一题都要问客户</b>并选"是/否"。红框 = 还没回答。答"是"系统会自动把对应项目和配套项目加进清单，不用自己记。</p></div>`;
+    h += `<div class="group-title">全屋问题</div>`;
+    QUESTIONS.forEach(q => {
+      const a = ans(q.id), done = a.v === true || a.v === false;
+      h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text">${q.q}</div>${q.why ? `<div class="q-why">${q.why}</div>` : ''}</div>
+        ${ynHtml(a.v, `data-ans="${q.id}"`)}</div>`;
+      if (a.v === true && q.inputs) h += `<div class="q-inputs">${q.inputs.map(i => fld(i.label, i.unit, `data-ans-n="${q.id}" data-k="${i.k}"`, a[i.k], !num(a[i.k]), true)).join('')}</div>`;
+      if (a.v === true && q.warn) h += `<div class="warnbox">⚠ ${q.why}。系统已自动加上「结构工程师审图签字」。</div>`;
+      h += `</div>`;
+    });
+    const rq = [];
+    P.rooms.forEach(r => (TYPES[r.type].roomQ || []).forEach(q => rq.push({ r, q })));
+    if (rq.length) {
+      h += `<div class="group-title">房间问题</div>`;
+      rq.forEach(({ r, q }) => {
+        const v = r[q.k], done = v === true || v === false;
+        h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text"><span class="badge">${esc(r.name)}</span>${q.q}</div><div class="q-why">${q.why}</div></div>
+          ${ynHtml(v, `data-rq="${r.id}" data-k="${q.k}"`)}</div></div>`;
+      });
+    }
+    return h;
+  }
+
+  function lineHtml(r) {
+    const open = expanded.has(r.key);
+    const needReason = (!r.on && r.forced && !String(r.st.offReason || '').trim()) || (r.manual && !String(r.st.qtyReason || '').trim());
+    const tags = (r.forced ? '<span class="tag req">必做</span>' : '') + (r.supply === 'customer' ? '<span class="tag cust">客户自备</span>' : '') + (r.manual ? '<span class="tag man">手动数量</span>' : '');
+    let h = `<div class="line ${r.on ? '' : 'off'} ${needReason ? 'flag' : ''}">
+      <div class="line-main" data-exp="${esc(r.key)}"><div class="line-l">
+        <div class="line-title"><span class="badge">${esc(r.roomName)}</span>${esc(r.name)}${tags}</div>
+        <div class="line-sub"><b class="mono" data-out="q-${esc(r.key)}">${nf(r.qty)}</b> ${esc(r.unit)} · ${esc(r.formula)}</div>
+      </div><div class="line-amt mono" data-out="t-${esc(r.key)}">${r.on ? rm(r.total) : '不做'}</div></div>`;
+    if (open && r.custom) {
+      const c = r.custom;
+      h += `<div class="line-detail"><div class="grid2">
+        ${fld('项目名称', '', `data-custom="${c.id}" data-f="name"`, c.name, !c.name)}
+        ${fld('位置', '', `data-custom="${c.id}" data-f="room"`, c.room)}
+        ${fld('单位', '', `data-custom="${c.id}" data-f="unit"`, c.unit)}
+        ${fld('数量', '', `data-custom="${c.id}" data-f="qty"`, c.qty, !num(c.qty), true)}
+        ${fld('材料单价', 'RM', `data-custom="${c.id}" data-f="mat"`, c.mat, false, true)}
+        ${fld('人工单价', 'RM', `data-custom="${c.id}" data-f="lab"`, c.lab, false, true)}
+        <div class="full">${fld('为什么要加这项（必填）', '', `data-custom="${c.id}" data-f="reason"`, c.reason, !String(c.reason || '').trim())}</div>
+        <div class="full fld"><label>属于哪个工序</label><select data-custom="${c.id}" data-f="stage">${STAGES.map(s => `<option value="${s.id}" ${s.id === c.stage ? 'selected' : ''}>${s.no}. ${s.name}</option>`).join('')}</select></div>
+      </div><button class="btn-ghost" data-del-custom="${c.id}">删除这个自定义项目</button></div>`;
+    } else if (open) {
+      const d = PRICE[r.code];
+      h += `<div class="line-detail">
+        ${d.warn ? `<div class="note warn">⚠ ${d.warn}</div>` : ''}
+        <div class="dl"><span>做这一项</span><button class="switch ${r.on ? 'on' : ''}" data-line-on="${esc(r.key)}"><span class="knob"></span></button></div>
+        ${!r.on && r.forced ? fld('这是必做项，为什么不做？（必填，如：客户已自行完成）', '', `data-line="${esc(r.key)}" data-f="offReason"`, r.st.offReason, !String(r.st.offReason || '').trim()) : ''}
+        <div class="dl"><span>材料由谁买</span><div class="seg">
+          <button class="${r.supply === 'company' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="company">公司采购</button>
+          <button class="${r.supply === 'customer' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="customer">客户自备</button></div></div>
+        <div class="grid2">
+          ${fld(`手动改数量（自动算的是 ${nf(r.autoQty)}）`, r.unit, `data-line="${esc(r.key)}" data-f="qty" placeholder="不改就留空"`, r.manual ? r.st.qty : '', false, true)}
+          ${r.manual ? fld('为什么改（必填）', '', `data-line="${esc(r.key)}" data-f="qtyReason"`, r.st.qtyReason, !String(r.st.qtyReason || '').trim()) : ''}
+        </div>
+        <div class="note">单价来自价目表：材料 RM ${r.p.mat}/${esc(r.unit)}${r.p.waste ? `（含损耗 ${r.p.waste}%）` : ''} · 人工 RM ${r.p.lab}/${esc(r.unit)}${priceChanged(r.code) ? ' · <b style="color:var(--red)">本单改过价</b>' : ''}<br>
+          材料费 <b class="mono" data-out="m-${esc(r.key)}">${rm(r.mat)}</b> + 人工费 <b class="mono" data-out="l-${esc(r.key)}">${rm(r.lab)}</b></div>
+      </div>`;
+    }
+    return h + '</div>';
+  }
+
+  function renderStep3(C) {
+    let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">清单是按房间尺寸和必答问题<b>自动生成</b>的，按施工顺序排。点任一行可以：关掉不做、改客户自备、手动改数量（都要写原因）。<b>不能在这里改单价</b>，单价统一在 ⚙价目表。</p></div>`;
+    STAGES.forEach(s => {
+      const rows = C.rows.filter(r => r.stage === s.id);
+      h += `<div class="stage"><div class="stage-head"><div class="stage-no">${s.no}</div><div><div class="stage-name">${s.name}</div><div class="stage-sub">${s.sub}</div></div>
+        <span class="stage-amt mono" data-out="stage-${s.id}">${rm(C.byStage[s.id] || 0)}</span></div>
+        ${rows.length ? rows.map(lineHtml).join('') : '<div class="note">这个工序本单没有项目</div>'}</div>`;
+    });
+    h += `<button class="primary" data-add-custom style="background:var(--surface);color:var(--navy);border:1px dashed var(--navy)">+ 添加价目表里没有的项目（需主管确认）</button>`;
+    return h;
+  }
+
+  function checksHtml(K) {
+    if (!K.red.length && !K.yellow.length) return '<div class="chk okc">✓ 检查全部通过，可以出报价单</div>';
+    return K.red.map(x => `<div class="chk red">✕ <span>${esc(x.m)}</span><button class="go" data-go="${x.go}" ${x.key ? `data-go-key="${esc(x.key)}"` : ''}>去处理</button></div>`).join('')
+      + K.yellow.map(x => `<div class="chk yellow">! <span>${esc(x.m)}</span><button class="go" data-go="${x.go}" ${x.key ? `data-go-key="${esc(x.key)}"` : ''}>查看</button></div>`).join('');
+  }
+
+  function docHtml(C, K) {
+    const i = P.info;
+    let rowsH = '';
+    STAGES.forEach(s => {
+      const rows = C.rows.filter(r => r.stage === s.id && r.on && (r.total > 0 || r.supply === 'customer'));
+      if (!rows.length) return;
+      rowsH += `<tr class="st"><td colspan="3">${s.no}. ${s.name}</td><td class="r">${rm(C.byStage[s.id])}</td></tr>`;
+      rows.forEach(r => { rowsH += `<tr><td>${esc(r.roomName)}</td><td>${esc(r.name)}${r.supply === 'customer' ? '（材料客户自备，只收人工）' : ''}</td><td class="r">${nf(r.qty)} ${esc(r.unit)}</td><td class="r">${rm(r.total)}</td></tr>`; });
+    });
+    return `${K.red.length ? '<div class="draft">草稿 · 未通过检查</div>' : ''}
+      <h3>装修报价单</h3><div class="co">HOUZY HOME SDN. BHD. · 合屋整装科技有限公司</div>
+      <div class="meta"><span>报价单号：${esc(i.quoteNo)}</span><span>日期：${esc(i.date)}</span>
+        <span>客户：${esc(i.customer) || '—'}</span><span>电话：${esc(i.phone) || '—'}</span>
+        <span style="grid-column:1/-1">地址：${esc(i.address) || '—'}</span><span>顾问：${esc(i.staff) || '—'}</span></div>
+      <table><thead><tr><th>位置</th><th>项目</th><th class="r">数量</th><th class="r">金额</th></tr></thead><tbody>${rowsH || '<tr><td colspan="4">暂无项目</td></tr>'}</tbody></table>
+      <div class="sum">
+        <div><span>施工人工</span><span class="mono">${rm(C.hard)}</span></div>
+        <div><span>主材</span><span class="mono">${rm(C.material)}</span></div>
+        <div><span>软装</span><span class="mono">${rm(C.soft)}</span></div>
+        <div><span>设计费（${nf(C.designArea)} 平方尺 × RM ${nf(P.settings.designRate)}）</span><span class="mono">${rm(C.design)}</span></div>
+        <div><span>管理费（施工+主材+软装 × ${nf(P.settings.mgmtRate)}%）</span><span class="mono">${rm(C.mgmt)}</span></div>
+        ${C.discount ? `<div><span>优惠</span><span class="mono">${rm(-C.discount)}</span></div>` : ''}
+        <div class="tot"><span>总报价</span><span class="mono">${rm(C.total)}</span></div>
+      </div>
+      <div class="sub-h">付款节点</div>
+      <table><tbody>${C.pay.map((x, n) => `<tr><td>第${n + 1}期 · ${esc(x.name)}</td><td class="r">${nf(x.pct)}%</td><td class="r">${rm(x.amt)}</td></tr>`).join('')}</tbody></table>
+      <div class="terms">说明：1. 本报价有效期 30 天。2. 数量按现场量房尺寸计算，施工前复尺，如有差异按实际结算。3. 现场新增/变更项目另立变更单，双方签字后施工。
+        4. 客户自备材料须按约定时间送达现场，延误影响工期由客户承担。5. 物业装修押金不含在报价内，完工后由物业退还。</div>`;
+  }
+
+  function renderStep4(C, K) {
+    return `<div class="card"><h2>出单前检查</h2><p class="hint">红色必须处理完才能出单；黄色是提醒，确认没问题可以不改。</p><div id="checks">${checksHtml(K)}</div></div>
+      <div class="card"><h2>优惠</h2><div class="grid2">
+        ${fld('优惠金额', 'RM', 'data-top="discount"', P.discount, false, true)}
+        ${fld(`审批人（超过 ${nf(P.settings.discountLimit)}% 必填）`, '', 'data-top="discountBy"', P.discountBy)}
+      </div></div>
+      <div class="doc" id="quote-doc">${docHtml(C, K)}</div>
+      <button class="primary" data-print ${K.red.length ? 'disabled' : ''}>${K.red.length ? `还有 ${K.red.length} 个问题没处理，不能出单` : '打印 / 保存为 PDF 发给客户'}</button>`;
+  }
+
+  function renderStep5() {
+    const s = P.settings;
+    let h = `<div class="card"><h2>收费设置</h2><div class="grid3">
+        ${fld('设计费', 'RM/平方尺', 'data-set="designRate"', s.designRate, false, true)}
+        ${fld('管理费', '%', 'data-set="mgmtRate"', s.mgmtRate, false, true)}
+        ${fld('优惠需审批线', '%', 'data-set="discountLimit"', s.discountLimit, false, true)}
+      </div></div>
+      <div class="card"><h2>付款节点</h2><p class="hint">每期挂在一个验收节点上，比例加起来必须 = 100%。</p>
+        ${s.pay.map((x, n) => `<div class="grid2" style="margin-bottom:8px">${fld(`第${n + 1}期`, '', `data-pay="${n}" data-f="name"`, x.name)}${fld('比例', '%', `data-pay="${n}" data-f="pct"`, x.pct, false, true)}</div>`).join('')}
+      </div>
+      <div class="card"><h2>价目表</h2><p class="hint">这里改价<b>只影响本单</b>，并会在检查里提示"改过价"。要长期改公司统一价，请改 quote.html 顶部的价目表（以后可搬到数据库，老板改一次全员生效）。</p>
+      <div class="scroll-x"><table class="ptable"><thead><tr><th>项目</th><th>单位</th><th>材料</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>`;
+    STAGES.forEach(st => {
+      h += `<tr><td colspan="6" style="font-weight:700;color:var(--navy);padding-top:10px">${st.no}. ${st.name}</td></tr>`;
+      Object.keys(PRICE).filter(c => PRICE[c].stage === st.id).forEach(c => {
+        const p = price(c), chg = priceChanged(c);
+        h += `<tr class="${chg ? 'chg' : ''}"><td>${PRICE[c].name}</td><td>${PRICE[c].unit}</td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="mat" value="${p.mat}"></td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="lab" value="${p.lab}"></td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="waste" value="${p.waste}"></td>
+          <td>${chg ? `<button class="rs" data-price-reset="${c}">恢复</button>` : ''}</td></tr>`;
+      });
+    });
+    return h + '</tbody></table></div></div>';
+  }
+
+  // 整页重画（点按钮、切步骤时用）
+  function render() {
+    const C = compute(), K = checks(C);
+    renderSteps(K);
+    const main = document.getElementById('main');
+    // 记住光标在哪个输入框，重画后放回去（否则员工点下一个框会"跳掉"）
+    const a = document.activeElement;
+    let focusSel = null, caret = null;
+    if (a && main.contains(a) && a.matches('input, select')) {
+      focusSel = a.tagName.toLowerCase() + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join('');
+      try { caret = a.selectionStart; } catch (e) { caret = null; }
+    }
+    main.innerHTML = step === 1 ? renderStep1() : step === 2 ? renderStep2() : step === 3 ? renderStep3(C) : step === 4 ? renderStep4(C, K) : renderStep5();
+    if (focusSel) {
+      const el = main.querySelector(focusSel);
+      if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { /* select 没有光标 */ } }
+    }
+    refresh(C, K);
+  }
+  // 只刷新数字（打字时用，不打断输入）
+  function refresh(C, K) {
+    C = C || compute(); K = K || checks(C);
+    const set = (k, v) => document.querySelectorAll(`[data-out="${CSS.escape(k)}"]`).forEach(el => { el.textContent = v; });
+    set('floorsum', nf(C.floorSum) + ' 平方尺');
+    P.rooms.forEach(r => set('area-' + r.id, nf(geo(r).floor) + ' 平方尺'));
+    C.rows.forEach(r => {
+      set('t-' + r.key, r.on ? rm(r.total) : '不做'); set('q-' + r.key, nf(r.qty));
+      set('m-' + r.key, rm(r.mat)); set('l-' + r.key, rm(r.lab));
+    });
+    STAGES.forEach(s => set('stage-' + s.id, rm(C.byStage[s.id] || 0)));
+    const ck = document.getElementById('checks'); if (ck) ck.innerHTML = checksHtml(K);
+    const doc = document.getElementById('quote-doc'); if (doc) doc.innerHTML = docHtml(C, K);
+    const pb = document.querySelector('[data-print]');
+    if (pb) { pb.disabled = !!K.red.length; pb.textContent = K.red.length ? `还有 ${K.red.length} 个问题没处理，不能出单` : '打印 / 保存为 PDF 发给客户'; }
+    document.getElementById('bar-total').textContent = rm(C.total);
+    const bs = document.getElementById('bar-status');
+    bs.className = 'st ' + (K.red.length ? 'bad' : 'good');
+    bs.textContent = K.red.length ? `✕ ${K.red.length} 个必须处理` : (K.yellow.length ? `✓ 可出单 · ${K.yellow.length} 个提醒` : '✓ 可出单');
+    renderSteps(K);
+    save();
+  }
+
+  function lineState(key) { return (P.lines[key] = P.lines[key] || {}); }
+
+  // =====================================================================
+  //  八、事件
+  // =====================================================================
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button, [data-exp]');
+    if (!t) return;
+    const ds = t.dataset;
+    if (ds.step) { step = +ds.step; render(); window.scrollTo(0, 0); return; }
+    if (ds.go) {
+      step = +ds.go;
+      if (ds.goKey) expanded.add(ds.goKey);
+      render(); window.scrollTo(0, 0); return;
+    }
+    if (t.hasAttribute('data-new')) {
+      if (confirm('确定新建报价？当前填写的内容会清空（建议先打印/保存 PDF）。')) { P = newProject(); expanded.clear(); step = 1; render(); }
+      return;
+    }
+    if (ds.addRoom) { P.rooms.push(makeRoom(ds.addRoom, TYPES[ds.addRoom].label + (P.rooms.filter(r => r.type === ds.addRoom).length + 1))); render(); return; }
+    if (ds.delRoom) {
+      const r = P.rooms.find(x => x.id === ds.delRoom);
+      if (r && confirm(`删除「${r.name}」？这个房间的所有项目都会从清单去掉。`)) { P.rooms = P.rooms.filter(x => x.id !== ds.delRoom); render(); }
+      return;
+    }
+    if (ds.roomSeg) { const r = P.rooms.find(x => x.id === ds.roomSeg); if (r) r[ds.f] = ds.v; render(); return; }
+    if (ds.ans) {
+      const q = QUESTIONS.find(x => x.id === ds.ans), a = P.answers[ds.ans] = P.answers[ds.ans] || {};
+      a.v = ds.v === '1';
+      if (a.v && q.inputs) q.inputs.forEach(i => { if (a[i.k] === undefined || a[i.k] === '') { const d = i.def(); a[i.k] = d ? d : ''; } });
+      render(); return;
+    }
+    if (ds.rq) { const r = P.rooms.find(x => x.id === ds.rq); if (r) r[ds.k] = ds.v === '1'; render(); return; }
+    if (ds.exp !== undefined && t.matches('[data-exp]')) { expanded.has(ds.exp) ? expanded.delete(ds.exp) : expanded.add(ds.exp); render(); return; }
+    if (ds.lineOn) { const s = lineState(ds.lineOn); s.off = !s.off; render(); return; }
+    if (ds.lineSupply) { lineState(ds.lineSupply).supply = ds.v; render(); return; }
+    if (t.hasAttribute('data-add-custom')) {
+      const id = uid(); P.custom.push({ id, name: '', room: '全屋', unit: '项', qty: 1, mat: '', lab: '', reason: '', stage: 'equip' });
+      expanded.add('c:' + id); render(); return;
+    }
+    if (ds.delCustom) { P.custom = P.custom.filter(c => c.id !== ds.delCustom); render(); return; }
+    if (ds.priceReset) { delete P.prices[ds.priceReset]; render(); return; }
+    if (t.hasAttribute('data-print')) { if (!t.disabled) window.print(); return; }
+  });
+
+  document.addEventListener('input', e => {
+    const t = e.target, ds = t.dataset, v = t.value;
+    if (ds.info) P.info[ds.info] = v;
+    else if (t.hasAttribute('data-spa')) P.spaArea = v;
+    else if (ds.room) { const r = P.rooms.find(x => x.id === ds.room); if (r) r[ds.f] = v; }
+    else if (ds.ansN) { (P.answers[ds.ansN] = P.answers[ds.ansN] || {})[ds.k] = v; }
+    else if (ds.line) {
+      const s = lineState(ds.line);
+      if (ds.f === 'qty' && v.trim() === '') delete s.qty; else s[ds.f] = v;
+    }
+    else if (ds.custom) { const c = P.custom.find(x => x.id === ds.custom); if (c) c[ds.f] = v; }
+    else if (ds.price) { (P.prices[ds.price] = P.prices[ds.price] || {})[ds.f] = v; }
+    else if (ds.set) P.settings[ds.set] = v;
+    else if (ds.pay) P.settings.pay[+ds.pay][ds.f] = v;
+    else if (ds.top) P[ds.top] = v;
+    else return;
+    refresh();
+  });
+  // 离开输入框时整体重画一次（更新红框、"必填原因"输入框的出现/消失等）
+  // 等焦点落到下一个框之后再重画，重画后再把焦点放回那个框
+  document.addEventListener('change', e => { if (e.target.matches('input, select')) setTimeout(render, 0); });
+
+  render();
+})();
+</script>
+</body>
+</html>
