@@ -82,7 +82,9 @@
   .room-body { padding: 12px; }
   .room-body .segrow { margin-top: 10px; }
   .room-body .segrow > span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 4px; }
-  .add-rooms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .add-rooms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .level-head { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 2px 8px; padding-bottom: 6px; border-bottom: 2px solid var(--navy); color: var(--navy); font-size: 15px; }
+  .level-head span { font-size: 12px; }
   .add-rooms button { border: 1px dashed var(--navy); background: none; color: var(--navy); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .kpi { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-dim); padding: 4px 0; }
   .kpi b { color: var(--ink); }
@@ -238,6 +240,8 @@
     engineer:    { stage: 'prep', name: '结构工程师审图签字', unit: '项', mat: 0, lab: 1500, forced: true },
     bath_drop:   { stage: 'prep', name: '卫生间降板/二次排水处理', unit: '平方尺', mat: 8, lab: 12, forced: true },
     waste_out:   { stage: 'prep', name: '建筑垃圾清运', unit: '车次', mat: 0, lab: 150, forced: true },
+    carry_up:    { stage: 'prep', name: '材料搬运上楼（2楼及以上）', unit: '平方尺', mat: 0, lab: 0.3, forced: true },
+    scaffold:    { stage: 'prep', name: '挑空/高天花脚手架（高空作业）', unit: '处', mat: 0, lab: 800 },
 
     wire:        { stage: 'mep', name: '电路开槽穿管布线', unit: '个点位', mat: 35, lab: 25, needs: ['panel'] },
     water_pt:    { stage: 'mep', name: '给排水管改造', unit: '个点位', mat: 45, lab: 35 },
@@ -254,6 +258,7 @@
     skirting:    { stage: 'tile', name: '踢脚线', unit: '延尺', mat: 2.5, lab: 1.5, waste: 5 },
     grout:       { stage: 'tile', name: '瓷砖美缝', unit: '平方尺', mat: 0.8, lab: 0.7 },
     threshold:   { stage: 'tile', name: '门槛石/挡水条', unit: '条', mat: 60, lab: 30 },
+    stair_tread: { stage: 'tile', name: '楼梯踏步砖（含防滑条）', unit: '级', mat: 45, lab: 35 },
     drain:       { stage: 'tile', name: '防臭地漏', unit: '个', mat: 35, lab: 15 },
 
     plaster_ceiling: { stage: 'ceil', name: '石膏板吊顶', unit: '平方尺', mat: 5, lab: 3.5, waste: 5 },
@@ -268,6 +273,7 @@
     wardrobe:    { stage: 'custom', name: '衣柜定制', unit: '延尺', mat: 55, lab: 15 },
     door:        { stage: 'custom', name: '室内门（含门套、锁、合页）', unit: '樘', mat: 450, lab: 80 },
     balc_seal:   { stage: 'custom', name: '阳台封窗', unit: '延尺', mat: 60, lab: 20 },
+    stair_rail:  { stage: 'custom', name: '楼梯扶手/栏杆', unit: '延尺', mat: 90, lab: 30 },
 
     panel:       { stage: 'equip', name: '开关插座面板安装', unit: '个', mat: 12, lab: 5, forced: true },
     light:       { stage: 'equip', name: '基础灯具供应+安装', unit: '个', mat: 45, lab: 20 },
@@ -279,6 +285,7 @@
     sink:        { stage: 'equip', name: '厨房水槽+龙头', unit: '套', mat: 250, lab: 40 },
     hood:        { stage: 'equip', name: '烟机灶具安装（电器客户自购）', unit: '套', mat: 0, lab: 120 },
     rack:        { stage: 'equip', name: '晾衣架', unit: '套', mat: 180, lab: 60 },
+    stair_light: { stage: 'equip', name: '楼梯灯+上下双控开关', unit: '套', mat: 80, lab: 40 },
     clean:       { stage: 'equip', name: '开荒清洁', unit: '平方尺', mat: 0, lab: 0.5, forced: true },
 
     curtain:     { stage: 'soft', name: '窗帘（含轨道/罗马杆安装）', unit: '延尺', mat: 45, lab: 15 },
@@ -351,7 +358,12 @@
       inputs: [{ k: 'count', label: '网络/电视点位', unit: '个', def: () => 4 }] },
     { id: 'doors', q: '要更换室内门吗？', why: '按每个房间填的"室内门"数量计算' },
     { id: 'curtain', q: '要做窗帘吗？', why: '按每个房间填的"窗户总宽"计算' },
-    { id: 'decor', q: '要基础软装配饰包吗？' }
+    { id: 'decor', q: '要基础软装配饰包吗？' },
+    { id: 'stairs', q: '楼梯要做吗？（踏步砖 + 扶手栏杆 + 楼梯灯）', why: '多层房屋才会问。每上一层默认 16 级踏步、14 尺扶手', when: () => levels() > 1,
+      inputs: [{ k: 'steps', label: '踏步总级数', unit: '级', def: () => 16 * (levels() - 1) },
+               { k: 'rail', label: '扶手总长度', unit: '尺', def: () => 14 * (levels() - 1) }] },
+    { id: 'void', q: '有挑空（两层高）的客厅/楼梯间吗？', why: '墙面、天花要搭脚手架才能施工，要另收高空作业费', when: () => levels() > 1,
+      inputs: [{ k: 'count', label: '挑空处数', unit: '处', def: () => 1 }] }
   ];
 
   // =====================================================================
@@ -374,7 +386,7 @@
       info: { customer: '', phone: '', address: '', staff: '',
               quoteNo: 'Q' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()),
               date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) },
-      spaArea: '', rooms: [], answers: {}, lines: {}, custom: [], prices: {},
+      spaArea: '', levels: 1, rooms: [], answers: {}, lines: {}, custom: [], prices: {},
       settings: clone(DEFAULT_SETTINGS), discount: '', discountBy: ''
     };
     // 默认 3房2卫 公寓，员工改尺寸即可
@@ -382,14 +394,16 @@
       .forEach(([t, n]) => p.rooms.push(makeRoom(t, n)));
     return p;
   }
-  function makeRoom(type, name) {
-    return Object.assign({ id: 'r' + uid(), type, name: name || TYPES[type].label }, clone(TYPES[type].def));
+  function makeRoom(type, name, level) {
+    return Object.assign({ id: 'r' + uid(), type, name: name || TYPES[type].label, level: level || 1 }, clone(TYPES[type].def));
   }
 
   let P;
   try { P = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { P = null; }
   if (!P || !Array.isArray(P.rooms)) P = newProject();
   P.settings = Object.assign(clone(DEFAULT_SETTINGS), P.settings || {});
+  P.levels = P.levels || 1;
+  P.rooms.forEach(r => { r.level = r.level || 1; });
   let step = 1;
   const expanded = new Set();
 
@@ -410,6 +424,10 @@
     return { L, W, H, doors, floor, perim, wall };
   }
   function totalFloor() { return P.rooms.reduce((s, r) => s + geo(r).floor, 0); }
+  const levels = () => Math.max(1, parseInt(P.levels, 10) || 1);
+  // 多层房屋时房间名前面带楼层，如「2楼·主卧」
+  const roomLabel = r => levels() > 1 ? `${r.level || 1}楼·${r.name}` : r.name;
+  const activeQs = () => QUESTIONS.filter(q => !q.when || q.when());
   const ans = id => P.answers[id] || {};
   const yes = id => ans(id).v === true;
   const an = (id, k) => num(ans(id)[k]);
@@ -422,7 +440,7 @@
     const ALL = { id: 'all', name: '全屋' };
     const add = (room, code, qty, formula, key) => {
       if (!(qty > 0)) return;
-      out.push({ key: room.id + ':' + (key || code), code, roomId: room.id, roomName: room.name, qty: r1(qty), formula });
+      out.push({ key: room.id + ':' + (key || code), code, roomId: room.id, roomName: room.id === 'all' ? room.name : roomLabel(room), qty: r1(qty), formula });
     };
 
     add(ALL, 'protect', 1, '每单必做');
@@ -445,6 +463,18 @@
     }
     if (yes('gas')) add(ALL, 'gas', 1, '必答问题填写');
     if (yes('net')) add(ALL, 'net', an('net', 'count'), '必答问题填写');
+    if (levels() > 1) {
+      // 楼上房间：面积 × (所在楼层 − 1)，越高搬得越辛苦
+      const up = P.rooms.filter(r => (r.level || 1) > 1);
+      const upQty = up.reduce((s, r) => s + geo(r).floor * ((r.level || 1) - 1), 0);
+      add(ALL, 'carry_up', upQty, up.map(r => `${roomLabel(r)} ${nf(geo(r).floor)}×${(r.level || 1) - 1}`).join(' + ') || '楼上还没有房间');
+      if (yes('stairs')) {
+        add(ALL, 'stair_tread', an('stairs', 'steps'), '必答问题填写');
+        add(ALL, 'stair_rail', an('stairs', 'rail'), '必答问题填写');
+        add(ALL, 'stair_light', levels() - 1, `每上一层 1 套（${levels()}层房屋）`);
+      }
+      if (yes('void')) add(ALL, 'scaffold', an('void', 'count'), '必答问题填写');
+    }
 
     P.rooms.forEach(r => {
       const g = geo(r), t = r.type;
@@ -584,17 +614,20 @@
     if (!P.info.phone.trim()) yellow.push({ m: '没填客户电话', go: 1 });
     if (!P.rooms.length) red.push({ m: '还没有添加任何房间', go: 1 });
     P.rooms.forEach(r => {
-      if (!num(r.L) || !num(r.W)) red.push({ m: `「${r.name}」没填长/宽，面积算不出来`, go: 1 });
-      (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) red.push({ m: `「${r.name}」${q.q} 还没回答`, go: 2 }); });
-      if (r.type === 'kitchen' && !num(r.cabLow)) yellow.push({ m: `「${r.name}」没有地柜，确认客户不做橱柜？`, go: 1 });
-      if (r.type === 'bath' && !num(r.toilet)) yellow.push({ m: `「${r.name}」没有马桶，确认吗？`, go: 1 });
-      if (r.type === 'bath' && !num(r.drains)) red.push({ m: `「${r.name}」地漏是 0，卫生间至少要 1 个`, go: 1 });
+      if (!num(r.L) || !num(r.W)) red.push({ m: `「${roomLabel(r)}」没填长/宽，面积算不出来`, go: 1 });
+      if ((r.level || 1) > levels()) red.push({ m: `「${r.name}」设在 ${r.level} 楼，但房屋只有 ${levels()} 层`, go: 1 });
+      (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) red.push({ m: `「${roomLabel(r)}」${q.q} 还没回答`, go: 2 }); });
+      if (r.type === 'kitchen' && !num(r.cabLow)) yellow.push({ m: `「${roomLabel(r)}」没有地柜，确认客户不做橱柜？`, go: 1 });
+      if (r.type === 'bath' && !num(r.toilet)) yellow.push({ m: `「${roomLabel(r)}」没有马桶，确认吗？`, go: 1 });
+      if (r.type === 'bath' && !num(r.drains)) red.push({ m: `「${roomLabel(r)}」地漏是 0，卫生间至少要 1 个`, go: 1 });
     });
     const types = P.rooms.map(r => r.type);
     if (P.rooms.length && !types.includes('bath')) yellow.push({ m: '没有卫生间，确认是局部装修？', go: 1 });
     if (P.rooms.length && !types.includes('kitchen')) yellow.push({ m: '没有厨房，确认是局部装修？', go: 1 });
+    for (let lv = 1; lv <= levels(); lv++) if (!P.rooms.some(r => (r.level || 1) === lv)) red.push({ m: `房屋有 ${levels()} 层，但 ${lv} 楼还没有房间`, go: 1 });
+    if (levels() > 1 && !P.rooms.some(r => (r.level || 1) > 1 && r.type === 'bath')) yellow.push({ m: '楼上没有卫生间，确认吗？', go: 1 });
 
-    QUESTIONS.forEach(q => {
+    activeQs().forEach(q => {
       const a = ans(q.id);
       if (a.v !== true && a.v !== false) red.push({ m: `必答问题没回答：${q.q}`, go: 2 });
       else if (a.v && q.inputs) q.inputs.forEach(i => { if (!num(a[i.k])) red.push({ m: `「${q.q}」答了"是"，但${i.label}是 0`, go: 2 }); });
@@ -642,7 +675,7 @@
   const STEP_NAMES = ['', '房间尺寸', '必答问题', '核对清单', '报价单', '价目表'];
 
   function unansweredCount() {
-    let n = QUESTIONS.filter(q => ans(q.id).v !== true && ans(q.id).v !== false).length;
+    let n = activeQs().filter(q => ans(q.id).v !== true && ans(q.id).v !== false).length;
     P.rooms.forEach(r => (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) n++; }));
     return n;
   }
@@ -671,16 +704,21 @@
         ${fld('电话', '', 'data-info="phone" inputmode="tel"', i.phone)}
         <div class="full">${fld('地址', '', 'data-info="address"', i.address)}</div>
         ${fld('报价顾问', '', 'data-info="staff"', i.staff)}
-        ${fld('套内面积', '平方尺', 'data-spa', P.spaArea, false, true)}
+        ${fld('套内面积（各层合计）', '平方尺', 'data-spa', P.spaArea, false, true)}
+        <div class="full segrow"><span style="display:block;font-size:11.5px;color:var(--ink-dim);margin-bottom:4px">房屋有几层</span><div class="seg">
+          ${[[1, '1层（公寓/平房）'], [2, '2层'], [3, '3层'], [4, '4层']].map(([v, l]) => `<button class="${levels() === v ? 'active' : ''}" data-levels="${v}">${l}</button>`).join('')}</div></div>
       </div>
       <div class="kpi" style="margin-top:10px"><span>下面各房间地面面积合计</span><b class="mono" data-out="floorsum"></b></div>
       <p class="hint" style="margin:4px 0 0">套内面积按买卖合约(SPA)填，用来算设计费，也用来核对是不是漏了房间。</p>
     </div>
     <div class="card"><h2>房间</h2><p class="hint">每个房间只填尺寸和数量（尺 = 英尺）。面积、墙面积、踢脚线长度等全部由系统自动算。有几间就加几间，走廊/过道也要加。</p>`;
-    P.rooms.forEach(r => {
+    const roomCard = r => {
       const T = TYPES[r.type];
       const nums = T.fields.filter(f => !F[f].opts), segs = T.fields.filter(f => F[f].opts);
-      h += `<div class="room">
+      const lvSeg = levels() > 1 || (r.level || 1) > 1
+        ? `<div class="segrow"><span>在几楼</span><div class="seg">${Array.from({ length: Math.max(levels(), r.level || 1) }, (_, k) => k + 1).map(v =>
+            `<button class="${(r.level || 1) === v ? 'active' : ''}" data-room-level="${r.id}" data-v="${v}">${v}楼</button>`).join('')}</div></div>` : '';
+      return `<div class="room">
         <div class="room-head"><span class="badge">${T.label}</span><input data-room="${r.id}" data-f="name" value="${esc(r.name)}">
           <span class="area mono" data-out="area-${r.id}"></span><button class="x" data-del-room="${r.id}" title="删除房间">✕</button></div>
         <div class="room-body"><div class="grid3">
@@ -688,9 +726,18 @@
         </div>
         ${segs.map(f => `<div class="segrow"><span>${F[f].label}</span><div class="seg">${F[f].opts.map(([v, l]) =>
           `<button class="${r[f] === v ? 'active' : ''}" data-room-seg="${r.id}" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
+        ${lvSeg}
         </div></div>`;
-    });
-    h += `<div class="add-rooms">${Object.keys(TYPES).map(t => `<button data-add-room="${t}">+ ${TYPES[t].label}</button>`).join('')}</div></div>`;
+    };
+    const addBar = lv => `<div class="add-rooms">${Object.keys(TYPES).map(t => `<button data-add-room="${t}" data-lv="${lv}">+ ${TYPES[t].label}</button>`).join('')}</div>`;
+    const maxLv = Math.max(levels(), ...P.rooms.map(r => r.level || 1));
+    if (maxLv === 1) h += P.rooms.map(roomCard).join('') + addBar(1);
+    else for (let lv = 1; lv <= maxLv; lv++) {
+      const rs = P.rooms.filter(r => (r.level || 1) === lv);
+      h += `<div class="level-head"><b>${lv} 楼</b><span class="mono" data-out="lvarea-${lv}"></span></div>`
+        + (rs.length ? rs.map(roomCard).join('') : '<div class="note" style="margin-bottom:8px">这一层还没有房间</div>') + addBar(lv);
+    }
+    h += `</div>`;
     return h;
   }
 
@@ -701,12 +748,12 @@
   function renderStep2() {
     let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">这些问题<b>每一题都要问客户</b>并选"是/否"。红框 = 还没回答。答"是"系统会自动把对应项目和配套项目加进清单，不用自己记。</p></div>`;
     h += `<div class="group-title">全屋问题</div>`;
-    QUESTIONS.forEach(q => {
+    activeQs().forEach(q => {
       const a = ans(q.id), done = a.v === true || a.v === false;
       h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text">${q.q}</div>${q.why ? `<div class="q-why">${q.why}</div>` : ''}</div>
         ${ynHtml(a.v, `data-ans="${q.id}"`)}</div>`;
       if (a.v === true && q.inputs) h += `<div class="q-inputs">${q.inputs.map(i => fld(i.label, i.unit, `data-ans-n="${q.id}" data-k="${i.k}"`, a[i.k], !num(a[i.k]), true)).join('')}</div>`;
-      if (a.v === true && q.warn) h += `<div class="warnbox">⚠ ${q.why}。系统已自动加上「结构工程师审图签字」。</div>`;
+      if (a.v === true && q.id === 'loadWall') h += `<div class="warnbox">⚠ ${q.why}。系统已自动加上「结构工程师审图签字」。</div>`;
       h += `</div>`;
     });
     const rq = [];
@@ -715,7 +762,7 @@
       h += `<div class="group-title">房间问题</div>`;
       rq.forEach(({ r, q }) => {
         const v = r[q.k], done = v === true || v === false;
-        h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text"><span class="badge">${esc(r.name)}</span>${q.q}</div><div class="q-why">${q.why}</div></div>
+        h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text"><span class="badge">${esc(roomLabel(r))}</span>${q.q}</div><div class="q-why">${q.why}</div></div>
           ${ynHtml(v, `data-rq="${r.id}" data-k="${q.k}"`)}</div></div>`;
       });
     }
@@ -872,6 +919,7 @@
     const set = (k, v) => document.querySelectorAll(`[data-out="${CSS.escape(k)}"]`).forEach(el => { el.textContent = v; });
     set('floorsum', nf(C.floorSum) + ' 平方尺');
     P.rooms.forEach(r => set('area-' + r.id, nf(geo(r).floor) + ' 平方尺'));
+    for (let lv = 1; lv <= 4; lv++) set('lvarea-' + lv, '本层面积 ' + nf(P.rooms.filter(r => (r.level || 1) === lv).reduce((a, r) => a + geo(r).floor, 0)) + ' 平方尺');
     C.rows.forEach(r => {
       set('t-' + r.key, r.on ? rm(r.total) : '不做'); set('q-' + r.key, nf(r.qty));
       set('m-' + r.key, rm(r.mat)); set('l-' + r.key, rm(r.lab));
@@ -918,7 +966,9 @@
       if (askTwice(t, 'new', '再点一次：清空并新建')) { P = newProject(); expanded.clear(); step = 1; render(); }
       return;
     }
-    if (ds.addRoom) { P.rooms.push(makeRoom(ds.addRoom, TYPES[ds.addRoom].label + (P.rooms.filter(r => r.type === ds.addRoom).length + 1))); render(); return; }
+    if (ds.addRoom) { P.rooms.push(makeRoom(ds.addRoom, TYPES[ds.addRoom].label + (P.rooms.filter(r => r.type === ds.addRoom).length + 1), +ds.lv || 1)); render(); return; }
+    if (ds.levels) { P.levels = +ds.levels; render(); return; }
+    if (ds.roomLevel) { const r = P.rooms.find(x => x.id === ds.roomLevel); if (r) r.level = +ds.v; render(); return; }
     if (ds.delRoom) {
       const r = P.rooms.find(x => x.id === ds.delRoom);
       if (r && askTwice(t, 'del-' + r.id, '再点删除')) { P.rooms = P.rooms.filter(x => x.id !== ds.delRoom); render(); }
