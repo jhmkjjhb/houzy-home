@@ -124,6 +124,10 @@
   .tag.req { color: var(--accent); border: 1px solid var(--accent); }
   .tag.cust { color: var(--yellow); background: var(--yellow-soft); }
   .tag.man { color: var(--red); background: var(--red-soft); }
+  .tag.pick { color: var(--ok); background: var(--navy-soft); font-weight: 600; }
+  .pickbox { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; }
+  .pick-t { font-size: 11.5px; color: var(--navy); font-weight: 600; margin-bottom: 6px; }
+  .doc .qt .pk { color: #1C1B19; }
   .line-sub { font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; line-height: 1.45; }
   .line-amt { font-weight: 700; font-size: 14px; white-space: nowrap; }
   .line-detail { border-top: 1px dashed var(--line); padding: 10px 12px 12px; display: grid; gap: 10px; }
@@ -539,6 +543,87 @@
                def: { L: 10, W: 4, H: 9, doors: 0, win: 0, pts: 2, lights: 1, ac: 0, fan: 0, bookcase: 0, floor: 'tile', tileSize: 'std', ceiling: 'none', cornice: 'no', wallFinish: 'paint' } }
   };
 
+  // Local spatial categories reuse existing construction rules, while outdoors/stairs stay separate.
+  const roomBase = r => TYPES[r.type].base || r.type;
+  const floorName = n => ['底层 Ground Floor', '一楼 First Floor', '二楼 Second Floor', '三楼 Third Floor'][n - 1] || `第${n}层`;
+  const aliasRoom = (id, label, base, overrides = {}) => {
+    TYPES[id] = { ...TYPES[base], label, base, def: { ...TYPES[base].def, ...overrides } };
+  };
+  TYPES.living.label = '客厅 Living'; TYPES.bedroom.label = '卧室 Bedroom';
+  TYPES.kitchen.label = '厨房 Kitchen'; TYPES.bath.label = '浴厕 Bathroom';
+  TYPES.laundry.label = '洗衣区 Laundry'; TYPES.balcony.label = '阳台 Balcony';
+  TYPES.other.label = '其他室内空间';
+  aliasRoom('dining', '餐厅 Dining', 'living', { shoeCab: 0, tvCab: 0, sideboard: 0 });
+  aliasRoom('family', '家庭厅 Family Hall', 'living', { shoeCab: 0 });
+  aliasRoom('master', '主人房 Master Bedroom', 'bedroom');
+  aliasRoom('dryKitchen', '干厨房 Dry Kitchen', 'kitchen', { wallTile: 'partial' });
+  aliasRoom('wetKitchen', '湿厨房 Wet Kitchen', 'kitchen', { wallTile: 'full' });
+  aliasRoom('foyer', '玄关 Foyer', 'other');
+  aliasRoom('study', '书房 Study', 'other');
+  aliasRoom('store', '储物间 Store', 'other');
+  aliasRoom('corridor', '走廊 Corridor', 'other');
+  ['porch', 'backyard', 'yard', 'stairs'].forEach((id, i) => {
+    TYPES[id] = { label: ['车廊 Car Porch', '后院 Backyard', '侧院/花园 Garden', '楼梯 Staircase'][i],
+      base: id === 'stairs' ? 'stairs' : 'outdoor', fields: ['L', 'W'], def: { L: '', W: '' } };
+  });
+  const ROOM_GROUPS = [
+    ['起居与卧室', ['living','dining','family','master','bedroom','foyer']],
+    ['厨卫与家务', ['dryKitchen','wetKitchen','kitchen','bath','laundry','store']],
+    ['交通与户外', ['study','corridor','stairs','balcony','porch','backyard','yard','other']]
+  ];
+  let plan = { file: null, url: '', busy: false, message: '', rooms: [], warnings: [], confirmed: false };
+  function planHtml() {
+    return `<div class="card"><h2>从平面图添加空间</h2>
+      <p class="hint">上传图片或 PDF → 分析房间标签 → 核对尺寸和楼层 → 添加到本单。原有房间保留。</p>
+      <label class="btn-ghost" style="display:inline-block">选择平面图<input data-plan-file type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:block;margin-top:8px;max-width:100%" ${plan.busy ? 'disabled' : ''}></label>
+      ${plan.file ? `<p>${esc(plan.file.name)}</p>${plan.file.type.startsWith('image/') ? `<img src="${esc(plan.url)}" alt="待分析平面图" style="max-width:100%;max-height:320px;object-fit:contain">` : `<a href="${esc(plan.url)}" target="_blank" rel="noopener">查看已选 PDF</a>`}
+      <button class="primary" data-plan-analyze ${plan.busy ? 'disabled' : ''}>${plan.busy ? '正在识别图中文字…' : '自动分析平面图'}</button>` : ''}
+      <p class="hint" style="margin-top:10px">本地文字识别：支持英文/中文标签及同一行带单位的长×宽；未标尺寸、墙线和门窗位置需人工核对。PDF 最多 12 页，文件不超过 20 MB。</p>
+      ${plan.message ? `<div class="note" role="status">${esc(plan.message)}</div>` : ''}
+      ${plan.rooms.length ? `<p class="hint">识别出 ${plan.rooms.length} 个候选空间。尺寸统一为英尺；留空表示未识别。取消勾选重复或不需要报价的空间。</p>
+      ${plan.rooms.map((r,i) => `<div class="q"><label><input type="checkbox" data-plan-pick="${i}" ${r.selected ? 'checked' : ''}> 添加这个空间 · 源图第 ${r.page} 页</label>
+        <p class="hint">原文：${esc(r.evidence)}</p><div class="grid2">
+        ${fld('房间名称', '', `data-plan-row="${i}" data-f="name"`, r.name)}
+        <div class="fld"><label>空间类型<select data-plan-row="${i}" data-f="type">${Object.keys(TYPES).map(k => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${esc(TYPES[k].label)}</option>`).join('')}</select></label></div>
+        <div class="fld"><label>楼层<select data-plan-row="${i}" data-f="level"><option value="">请选择楼层</option>${[1,2,3,4].map(n => `<option value="${n}" ${+r.level===n?'selected':''}>${floorName(n)}</option>`).join('')}</select></label></div>
+        ${['L','W','H'].map(k => fld({L:'长',W:'宽',H:'层高'}[k], '英尺', `data-plan-row="${i}" data-f="${k}"`, r[k] ?? '', false, true)).join('')}
+        </div></div>`).join('')}
+      <label style="display:block;margin:12px 0"><input type="checkbox" data-plan-confirm ${plan.confirmed?'checked':''}> 我已核对所选房间、长宽、层高及楼层（户外与楼梯不要求层高）</label>
+      <button class="primary" data-plan-apply>确认并添加所选空间</button>` : ''}
+      ${plan.warnings.length ? `<p class="hint">${plan.warnings.map(esc).join('<br>')}</p>` : ''}
+    </div>`;
+  }
+  async function analyzePlan() {
+    if (!plan.file || plan.busy) return;
+    plan.busy = true; plan.message = ''; plan.rooms = []; plan.confirmed = false; render();
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 115000);
+    try {
+      const res = await fetch('http://127.0.0.1:8766/analyze', {method:'POST', headers:{'Content-Type':'application/octet-stream','X-Plan-Type':plan.file.name.split('.').pop().toLowerCase()},body:plan.file,signal:controller.signal});
+      const data = await res.json(); if (!res.ok) throw new Error(data.error || '识别失败');
+      plan.rooms = (data.rooms || []).filter(r => TYPES[r.type]).map(r => ({...r,selected:true}));
+      plan.warnings = data.warnings || [];
+      plan.message = plan.rooms.length ? '识别完成。请逐项核对，确认后才会加入报价。' : '没有找到可识别的房间标签。请使用更清晰的图纸，或通过下方空间按钮手动添加。';
+    } catch(e) {
+      plan.message = e.name === 'AbortError' ? '识别超时，请缩小图片或拆分 PDF 后重试。' : e instanceof TypeError ? '未连接到本机识别服务。请启动“scripts/quote-plan-server.py”，再重试；也可先手动添加房间。' : e.message;
+    } finally { clearTimeout(timer); plan.busy = false; render(); }
+  }
+  function applyPlan() {
+    const selected = plan.rooms.filter(r => r.selected);
+    if (!plan.confirmed || !selected.length) { plan.message = '请勾选要添加的空间，并确认已核对。'; render(); return; }
+    if (selected.some(r => !r.name.trim() || ![r.L,r.W].every(v => Number.isFinite(Number(v)) && Number(v)>0) || ![1,2,3,4].includes(+r.level) || (TYPES[r.type].fields.includes('H') && !(Number.isFinite(Number(r.H)) && Number(r.H)>0)))) {
+      plan.message = '所选空间仍缺少名称、长宽、楼层或室内层高，请补齐后再添加。'; render(); return;
+    }
+    selected.forEach(item => {
+      const r = makeRoom(item.type, item.name, +item.level);
+      // A drawing is not a specification: never invent point counts, cabinets or fixtures.
+      TYPES[r.type].fields.forEach(k => { if (!F[k].opts) r[k] = ''; });
+      Object.assign(r, { L: num(item.L), W: num(item.W), H: num(item.H), planImported: true, planReviewed: false,
+        planSource: { file: plan.file.name, page: item.page, evidence: item.evidence } });
+      P.rooms.push(r); P.levels = Math.max(levels(), r.level);
+    });
+    plan.rooms = []; plan.confirmed = false; plan.message = `已添加 ${selected.length} 个空间。请在房间卡片补充点位、设备和施工做法，再确认施工范围。`; render();
+  }
+
   // =====================================================================
   //  三、全屋必答问题（每题都要答"是/否"，答完才能出报价单）
   // =====================================================================
@@ -612,13 +697,13 @@
   // =====================================================================
   const TEMPLATES = [
     { id: 'condo', name: '公寓整装', sub: '3房2卫 · 单层 · 有管理处', levels: 1, answers: { condo: { v: true } },
-      rooms: [['living'], ['bedroom', '主卧', 1, { L: 13, W: 12 }], ['bedroom', '卧室2'], ['bedroom', '卧室3', 1, { L: 11, W: 10 }],
+      rooms: [['living'], ['master', '主人房', 1, { L: 13, W: 12 }], ['bedroom', '卧室2'], ['bedroom', '卧室3', 1, { L: 11, W: 10 }],
               ['kitchen'], ['bath', '主卫'], ['bath', '公卫'], ['balcony']] },
     { id: 'landed', name: '排屋整装', sub: '2层 4房3卫 · 干湿厨 · 有地房屋', levels: 2, answers: { condo: { v: false } },
-      rooms: [['living', '客厅/餐厅', 1, { L: 24, W: 14, H: 10 }], ['kitchen', '干厨', 1, { L: 10, W: 8, cabLow: 10, cabUp: 8 }],
-              ['kitchen', '湿厨', 1, { L: 10, W: 7, wallTile: 'full', cabLow: 12, cabUp: 6 }], ['bath', '楼下卫生间', 1, { screen: 0 }],
+      rooms: [['living', '客厅 Living', 1, { L: 14, W: 14, H: 10 }], ['dining', '餐厅 Dining', 1, { L: 10, W: 14, H: 10 }], ['dryKitchen', '干厨', 1, { L: 10, W: 8, cabLow: 10, cabUp: 8 }],
+              ['wetKitchen', '湿厨', 1, { L: 10, W: 7, wallTile: 'full', cabLow: 12, cabUp: 6 }], ['bath', '楼下卫生间', 1, { screen: 0 }],
               ['bedroom', '楼下客房', 1, { L: 11, W: 10 }],
-              ['other', '二楼家庭厅', 2, { L: 12, W: 10, floor: 'laminate' }], ['bedroom', '主卧', 2, { L: 15, W: 13, wardrobe: 10 }],
+              ['family', '一楼家庭厅', 2, { L: 12, W: 10, floor: 'laminate' }], ['master', '主人房', 2, { L: 15, W: 13, wardrobe: 10 }],
               ['bath', '主卫', 2, { L: 9, W: 6 }], ['bedroom', '卧室2', 2], ['bedroom', '卧室3', 2, { L: 11, W: 10 }], ['bath', '公卫', 2],
               ['balcony', '晾衣阳台', 2], ['laundry', '洗衣区', 1]] },
     { id: 'kb', name: '厨卫翻新', sub: '只翻新厨房 + 2 个卫生间 · 旧房', levels: 1, answers: { old: { v: true, pieces: 6, floor: 160, ceil: 0, skin: 0 } },
@@ -634,7 +719,7 @@
       info: { customer: '', phone: '', address: '', staff: '',
               quoteNo: 'Q' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()),
               date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) },
-      spaArea: '', levels: tpl.levels, rooms: [], answers: clone(tpl.answers), lines: {}, custom: [], prices: {},
+      houseType: tpl.id === 'condo' ? 'condo' : tpl.id === 'landed' ? 'terrace' : '', spaArea: '', levels: tpl.levels, rooms: [], answers: clone(tpl.answers), lines: {}, custom: [], prices: {},
       settings: clone(DEFAULT_SETTINGS), discount: '', discountBy: '', template: tpl.name, docGroup: 'room'
     };
     tpl.rooms.forEach(([t, n, lv, over]) => p.rooms.push(Object.assign(makeRoom(t, n, lv), over || {})));
@@ -702,10 +787,10 @@
     const wall = Math.max(0, perim * H - doors * 21);  // 每樘门洞扣 3尺×7尺
     return { L, W, H, doors, floor, perim, wall };
   }
-  function totalFloor() { return P.rooms.reduce((s, r) => s + geo(r).floor, 0); }
+  function totalFloor() { return P.rooms.filter(r => !['outdoor','stairs'].includes(roomBase(r))).reduce((s, r) => s + geo(r).floor, 0); }
   const levels = () => Math.max(1, parseInt(P.levels, 10) || 1);
   // 多层房屋时房间名前面带楼层，如「2楼·主卧」
-  const roomLabel = r => levels() > 1 ? `${r.level || 1}楼·${r.name}` : r.name;
+  const roomLabel = r => levels() > 1 ? `${floorName(r.level || 1)}·${r.name}` : r.name;
   const activeQs = () => QUESTIONS.filter(q => !q.when || q.when());
   const ans = id => P.answers[id] || {};
   const yes = id => ans(id).v === true;
@@ -770,7 +855,7 @@
     if (wN > 0) add(ALL, 'pipe_test', 1, `全屋有 ${wN} 个水点位，封槽前必须打压`);
     if (levels() > 1) {
       // 楼上房间：面积 × (所在楼层 − 1)，越高搬得越辛苦
-      const up = P.rooms.filter(r => (r.level || 1) > 1);
+      const up = P.rooms.filter(r => (r.level || 1) > 1 && !['outdoor','stairs'].includes(roomBase(r)));
       const upQty = up.reduce((s, r) => s + geo(r).floor * ((r.level || 1) - 1), 0);
       add(ALL, 'carry_up', upQty, up.map(r => `${roomLabel(r)} ${nf(geo(r).floor)}×${(r.level || 1) - 1}`).join(' + ') || '楼上还没有房间');
       if (yes('stairs')) {
@@ -782,7 +867,8 @@
     }
 
     P.rooms.forEach(r => {
-      const g = geo(r), t = r.type;
+      const g = geo(r), t = roomBase(r);
+      if (t === 'outdoor' || t === 'stairs') return; // Scope priced in the whole-house questions; no indoor finishes.
       const fl = nf(g.floor), pe = nf(g.perim);
       const floorF = `${nf(g.L)}×${nf(g.W)} = ${fl}`;
       const wallF = `周长${pe}×层高${nf(g.H)}` + (g.doors ? ` − 门洞${g.doors}×21` : '') + ` = ${nf(g.wall)}`;
@@ -911,12 +997,16 @@
       const qty = manual ? num(st.qty) : l.qty;
       const supply = st.supply === 'customer' ? 'customer' : 'company';
       // 单价 = 主材(含损耗) + 辅材 + 人工；合价 = 数量 × 单价（四舍五入到整数）
-      const uMat = supply === 'customer' ? 0 : Math.round(p.mat * (1 + p.waste / 100) * 100) / 100;
+      // 主材选型（选填）：这一行填了主材单价，就只在这一行用它，损耗照加
+      const mOwn = st.mprice !== undefined && st.mprice !== null && String(st.mprice).trim() !== '';
+      const matBase = mOwn ? num(st.mprice) : p.mat;
+      const uMat = supply === 'customer' ? 0 : Math.round(matBase * (1 + p.waste / 100) * 100) / 100;
+      const pick = [st.brand, st.model].map(x => String(x || '').trim()).filter(Boolean).join(' ');
       const unit = uMat + p.aux + p.lab;
       const total = Math.round(qty * unit);
       const mat = Math.round(qty * uMat), aux = Math.round(qty * p.aux), lab = total - mat - aux;
       return Object.assign({}, l, { name: d.name, unit: d.unit, stage: d.stage, forced: !!d.forced, soft: d.stage === 'soft', desc: d.desc || '',
-        st, manual, autoQty: l.qty, qty, on: !st.off, supply, p, uMat, uAux: p.aux, uLab: p.lab, uPrice: unit, mat, aux, lab, total });
+        st, manual, autoQty: l.qty, qty, on: !st.off, supply, p, uMat, mOwn, pick, hasMain: p.mat > 0 || p.bomMat, uAux: p.aux, uLab: p.lab, uPrice: unit, mat, aux, lab, total });
     });
     P.custom.forEach(c => {
       const qty = num(c.qty), uPrice = num(c.mat) + num(c.lab), total = Math.round(qty * uPrice), mat = Math.round(qty * num(c.mat));
@@ -955,21 +1045,24 @@
   // =====================================================================
   function checks(C) {
     const red = [], yellow = [];
+    P.rooms.filter(r => r.planImported && !r.planReviewed).forEach(r => red.push({m: `「${roomLabel(r)}」来自图纸，请核对设备点位及施工范围后确认`, go: 1}));
+    P.rooms.filter(r => ['outdoor','stairs'].includes(roomBase(r))).forEach(r => yellow.push({m: `「${roomLabel(r)}」仅记录空间尺寸；施工量请在必答问题的户外/楼梯项目中填写，不自动套用室内做法`, go: 2}));
     if (!P.info.customer.trim()) red.push({ m: '没填客户姓名', go: 1 });
     if (!P.info.phone.trim()) yellow.push({ m: '没填客户电话', go: 1 });
     if (!P.rooms.length) red.push({ m: '还没有添加任何房间', go: 1 });
     P.rooms.forEach(r => {
+      if (r.planImported && TYPES[r.type].fields.includes('H') && !(Number.isFinite(Number(r.H)) && Number(r.H) > 0)) red.push({m: `「${roomLabel(r)}」请填写实际层高，不使用默认层高`, go: 1});
       if (!num(r.L) || !num(r.W)) red.push({ m: `「${roomLabel(r)}」没填长/宽，面积算不出来`, go: 1 });
-      if ((r.level || 1) > levels()) red.push({ m: `「${r.name}」设在 ${r.level} 楼，但房屋只有 ${levels()} 层`, go: 1 });
+      if ((r.level || 1) > levels()) red.push({ m: `「${r.name}」设在${floorName(r.level)}，但房屋只有 ${levels()} 层`, go: 1 });
       (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) red.push({ m: `「${roomLabel(r)}」${q.q} 还没回答`, go: 2 }); });
-      if (r.type === 'kitchen' && !num(r.cabLow)) yellow.push({ m: `「${roomLabel(r)}」没有地柜，确认客户不做橱柜？`, go: 1 });
+      if (roomBase(r) === 'kitchen' && !num(r.cabLow)) yellow.push({ m: `「${roomLabel(r)}」没有地柜，确认客户不做橱柜？`, go: 1 });
       if (r.type === 'bath' && !num(r.toilet)) yellow.push({ m: `「${roomLabel(r)}」没有马桶，确认吗？`, go: 1 });
       if (r.type === 'bath' && !num(r.drains)) red.push({ m: `「${roomLabel(r)}」地漏是 0，卫生间至少要 1 个`, go: 1 });
     });
-    const types = P.rooms.map(r => r.type);
+    const types = P.rooms.map(roomBase);
     if (P.rooms.length && !types.includes('bath')) yellow.push({ m: '没有卫生间，确认是局部装修？', go: 1 });
     if (P.rooms.length && !types.includes('kitchen')) yellow.push({ m: '没有厨房，确认是局部装修？', go: 1 });
-    for (let lv = 1; lv <= levels(); lv++) if (!P.rooms.some(r => (r.level || 1) === lv)) red.push({ m: `房屋有 ${levels()} 层，但 ${lv} 楼还没有房间`, go: 1 });
+    for (let lv = 1; lv <= levels(); lv++) if (!P.rooms.some(r => (r.level || 1) === lv)) red.push({ m: `房屋有 ${levels()} 层，但${floorName(lv)}还没有房间`, go: 1 });
     if (levels() > 1 && !P.rooms.some(r => (r.level || 1) > 1 && r.type === 'bath')) yellow.push({ m: '楼上没有卫生间，确认吗？', go: 1 });
 
     activeQs().forEach(q => {
@@ -1043,8 +1136,9 @@
 
   function renderStep1() {
     const i = P.info;
-    let h = `<div class="card"><h2>客户信息</h2>
+    let h = planHtml() + `<div class="card"><h2>客户信息</h2>
       <div class="grid2">
+        <div class="fld full"><label>房屋类型<select data-house-type>${[['','请选择'],['terrace','排屋 Terrace'],['semi','半独立式 Semi-D'],['bungalow','独立式 Bungalow'],['condo','公寓 Condominium'],['apartment','组屋/公寓 Apartment'],['townhouse','联排 Townhouse']].map(([v,t])=>`<option value="${v}" ${P.houseType===v?'selected':''}>${t}</option>`).join('')}</select></label></div>
         ${fld('客户姓名', '', 'data-info="customer"', i.customer, !i.customer.trim())}
         ${fld('电话', '', 'data-info="phone" inputmode="tel"', i.phone)}
         <div class="full">${fld('地址', '', 'data-info="address"', i.address)}</div>
@@ -1053,16 +1147,16 @@
         <div class="full segrow"><span style="display:block;font-size:11.5px;color:var(--ink-dim);margin-bottom:4px">房屋有几层</span><div class="seg">
           ${[[1, '1层（公寓/平房）'], [2, '2层'], [3, '3层'], [4, '4层']].map(([v, l]) => `<button class="${levels() === v ? 'active' : ''}" data-levels="${v}">${l}</button>`).join('')}</div></div>
       </div>
-      <div class="kpi" style="margin-top:10px"><span>下面各房间地面面积合计</span><b class="mono" data-out="floorsum"></b></div>
+      <div class="kpi" style="margin-top:10px"><span>室内及阳台面积合计（不含户外/楼梯）</span><b class="mono" data-out="floorsum"></b></div>
       <p class="hint" style="margin:4px 0 0">套内面积按买卖合约(SPA)填，用来算设计费，也用来核对是不是漏了房间。</p>
     </div>
-    <div class="card"><h2>房间</h2><p class="hint">每个房间只填尺寸和数量（尺 = 英尺）。面积、墙面积、踢脚线长度等全部由系统自动算。有几间就加几间，走廊/过道也要加。</p>`;
+    <div class="card"><h2>马来西亚住宅空间</h2><p class="hint">底层 = Ground Floor；一楼 = First Floor。每个房间只填尺寸和数量（尺 = 英尺）。面积、墙面积、踢脚线长度等全部由系统自动算。有几间就加几间，走廊/过道也要加。</p>`;
     const roomCard = r => {
       const T = TYPES[r.type];
       const nums = T.fields.filter(f => !F[f].opts), segs = T.fields.filter(f => F[f].opts);
       const lvSeg = levels() > 1 || (r.level || 1) > 1
         ? `<div class="segrow"><span>在几楼</span><div class="seg">${Array.from({ length: Math.max(levels(), r.level || 1) }, (_, k) => k + 1).map(v =>
-            `<button class="${(r.level || 1) === v ? 'active' : ''}" data-room-level="${r.id}" data-v="${v}">${v}楼</button>`).join('')}</div></div>` : '';
+            `<button class="${(r.level || 1) === v ? 'active' : ''}" data-room-level="${r.id}" data-v="${v}">${floorName(v)}</button>`).join('')}</div></div>` : '';
       return `<div class="room">
         <div class="room-head"><span class="badge">${T.label}</span><input data-room="${r.id}" data-f="name" value="${esc(r.name)}">
           <span class="area mono" data-out="area-${r.id}"></span><button class="x" data-del-room="${r.id}" title="删除房间">✕</button></div>
@@ -1072,14 +1166,16 @@
         ${segs.map(f => `<div class="segrow"><span>${F[f].label}</span><div class="seg">${F[f].opts.map(([v, l]) =>
           `<button class="${r[f] === v ? 'active' : ''}" data-room-seg="${r.id}" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
         ${lvSeg}
+        ${r.planImported ? `<div class="note">来自：${esc(r.planSource.file)} · 第 ${r.planSource.page} 页。图纸未识别的点位和设备数量留空；施工做法仍需核对。<label style="display:block;margin-top:8px"><input type="checkbox" data-room-reviewed="${r.id}" ${r.planReviewed?'checked':''}> 已核对本房间施工范围、设备及点位</label></div>` : ''}
+        ${['outdoor','stairs'].includes(roomBase(r)) ? '<p class="hint">此空间不自动计算室内装修，也不计入室内面积。请在必答问题中填写实际户外/楼梯施工量。</p>' : ''}
         </div></div>`;
     };
-    const addBar = lv => `<div class="add-rooms">${Object.keys(TYPES).map(t => `<button data-add-room="${t}" data-lv="${lv}">+ ${TYPES[t].label}</button>`).join('')}</div>`;
+    const addBar = lv => ROOM_GROUPS.map(([title,ids]) => `<div class="group-title">${title}</div><div class="add-rooms">${ids.map(t=>`<button data-add-room="${t}" data-lv="${lv}">+ ${TYPES[t].label}</button>`).join('')}</div>`).join('');
     const maxLv = Math.max(levels(), ...P.rooms.map(r => r.level || 1));
     if (maxLv === 1) h += P.rooms.map(roomCard).join('') + addBar(1);
     else for (let lv = 1; lv <= maxLv; lv++) {
       const rs = P.rooms.filter(r => (r.level || 1) === lv);
-      h += `<div class="level-head"><b>${lv} 楼</b><span class="mono" data-out="lvarea-${lv}"></span></div>`
+      h += `<div class="level-head"><b>${floorName(lv)}</b><span class="mono" data-out="lvarea-${lv}"></span></div>`
         + (rs.length ? rs.map(roomCard).join('') : '<div class="note" style="margin-bottom:8px">这一层还没有房间</div>') + addBar(lv);
     }
     h += `</div>`;
@@ -1117,7 +1213,7 @@
   function lineHtml(r) {
     const open = expanded.has(r.key);
     const needReason = (!r.on && r.forced && !String(r.st.offReason || '').trim()) || (r.manual && !String(r.st.qtyReason || '').trim());
-    const tags = (r.forced ? '<span class="tag req">必做</span>' : '') + (r.supply === 'customer' ? '<span class="tag cust">客户自备</span>' : '') + (r.manual ? '<span class="tag man">手动数量</span>' : '');
+    const tags = (r.forced ? '<span class="tag req">必做</span>' : '') + (r.supply === 'customer' ? '<span class="tag cust">客户自备</span>' : '') + (r.manual ? '<span class="tag man">手动数量</span>' : '') + (r.pick || r.mOwn ? `<span class="tag pick">${esc(r.pick || '主材自定价')}</span>` : '');
     let h = `<div class="line ${r.on ? '' : 'off'} ${needReason ? 'flag' : ''}">
       <div class="line-main" data-exp="${esc(r.key)}"><div class="line-l">
         <div class="line-title"><span class="badge">${esc(r.roomName)}</span>${esc(r.name)}${tags}</div>
@@ -1144,6 +1240,11 @@
         <div class="dl"><span>材料由谁买</span><div class="seg">
           <button class="${r.supply === 'company' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="company">公司采购</button>
           <button class="${r.supply === 'customer' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="customer">客户自备</button></div></div>
+        ${r.hasMain && r.supply !== 'customer' ? `<div class="pickbox"><div class="pick-t">主材选型（选填，不填就用价目表默认）</div><div class="grid3">
+          ${fld('品牌', '', `data-line="${esc(r.key)}" data-f="brand" placeholder="如 Niro"`, r.st.brand || '')}
+          ${fld('型号/规格', '', `data-line="${esc(r.key)}" data-f="model" placeholder="如 600×600 抛光砖"`, r.st.model || '')}
+          ${fld(`主材单价（默认 ${nf2(r.p.mat)}）`, `RM/${r.unit}`, `data-line="${esc(r.key)}" data-f="mprice" placeholder="不改留空"`, r.st.mprice || '', false, true)}
+        </div></div>` : ''}
         <div class="grid2">
           ${fld(`手动改数量（自动算的是 ${nf(r.autoQty)}）`, r.unit, `data-line="${esc(r.key)}" data-f="qty" placeholder="不改就留空"`, r.manual ? r.st.qty : '', false, true)}
           ${r.manual ? fld('为什么改（必填）', '', `data-line="${esc(r.key)}" data-f="qtyReason"`, r.st.qtyReason, !String(r.st.qtyReason || '').trim()) : ''}
@@ -1212,7 +1313,7 @@
           <td>${esc(r.unit)}</td><td class="r">${nf(r.qty)}</td>
           <td class="r">${r.supply === 'customer' ? '甲供' : nf2(r.uMat)}</td><td class="r">${nf2(r.uAux)}</td><td class="r">${nf2(r.uLab)}</td>
           <td class="r">${nf2(r.uPrice)}</td><td class="r"><b>${rm(r.total)}</b></td>
-          <td class="ds">${esc(r.desc)}${r.supply === 'customer' ? '（主材客户自备，只收辅材+人工）' : ''}</td></tr>`;
+          <td class="ds">${r.pick ? `<b class="pk">主材：${esc(r.pick)}</b>；` : ''}${esc(r.desc)}${r.supply === 'customer' ? '（主材客户自备，只收辅材+人工）' : ''}</td></tr>`;
       });
     });
     return `${K.red.length ? '<div class="draft">草稿 · 未通过检查</div>' : ''}
@@ -1262,7 +1363,7 @@
     docGroups(C).forEach((g, gi) => {
       lines.push([q(gi + 1), q(g.name), '', '', '', '', '', '', '', q(g.rows.reduce((a, r) => a + r.total, 0))].join(','));
       g.rows.forEach((r, ri) => lines.push([gi + 1 + '.' + (ri + 1), r.name, r.roomName, r.unit, r1(r.qty), r.supply === 'customer' ? '甲供' : r.uMat.toFixed(2),
-        r.uAux.toFixed(2), r.uLab.toFixed(2), r.uPrice.toFixed(2), r.total, r.desc].map(q).join(',')));
+        r.uAux.toFixed(2), r.uLab.toFixed(2), r.uPrice.toFixed(2), r.total, (r.pick ? '主材：' + r.pick + '；' : '') + r.desc].map(q).join(',')));
     });
     lines.push('');
     [['主材', C.material], ['辅材', C.auxSum], ['施工人工', C.hard], ['软装', C.soft], ['设计费', C.design], ['管理费', C.mgmt], ['优惠', -C.discount], ['SST', C.sst], ['工程总造价', C.total]]
@@ -1400,10 +1501,26 @@
     return false;
   }
 
+  document.addEventListener('change', e => {
+    const t=e.target, ds=t.dataset;
+    if (t.hasAttribute('data-plan-file')) {
+      const f=t.files[0]; if (!f) return;
+      if (plan.url) URL.revokeObjectURL(plan.url);
+      plan={file:null,url:'',busy:false,message:'',rooms:[],warnings:[],confirmed:false};
+      if (!/\.(pdf|png|jpe?g|webp)$/i.test(f.name) || f.size>20*1024*1024) plan.message='请选择 20 MB 以内的 PDF、PNG、JPG 或 WebP。';
+      else {plan.file=f;plan.url=URL.createObjectURL(f);} render();
+    } else if (ds.planRow !== undefined) { plan.rooms[+ds.planRow][ds.f]=t.value; plan.confirmed=false; render(); }
+    else if (ds.planPick !== undefined) {plan.rooms[+ds.planPick].selected=t.checked;plan.confirmed=false;render();}
+    else if(t.hasAttribute('data-plan-confirm')) {plan.confirmed=t.checked;}
+    else if(ds.roomReviewed) {P.rooms.find(r=>r.id===ds.roomReviewed).planReviewed=t.checked;render();}
+    else if(t.hasAttribute('data-house-type')) {P.houseType=t.value;render();}
+  });
   document.addEventListener('click', e => {
     const t = e.target.closest('button, [data-exp]');
     if (!t) return;
     const ds = t.dataset;
+    if (t.hasAttribute('data-plan-analyze')) { analyzePlan(); return; }
+    if (t.hasAttribute('data-plan-apply')) { applyPlan(); return; }
     if (ds.step) { step = +ds.step; choosing = false; render(); window.scrollTo(0, 0); return; }
     if (ds.go) {
       step = +ds.go;
@@ -1412,19 +1529,19 @@
     }
     if (t.hasAttribute('data-new')) { choosing = true; render(); window.scrollTo(0, 0); return; }
     if (t.hasAttribute('data-cancel-new')) { choosing = false; render(); return; }
-    if (ds.tpl) { P = newProject(ds.tpl); expanded.clear(); choosing = false; step = 1; render(); window.scrollTo(0, 0); return; }
+    if (ds.tpl) { if(plan.busy) return; plan.rooms=[]; plan.message=''; P = newProject(ds.tpl); expanded.clear(); choosing = false; step = 1; render(); window.scrollTo(0, 0); return; }
     if (ds.group) { P.docGroup = ds.group; render(); return; }
     if (ds.view) { P.docView = ds.view; render(); return; }
     if (t.hasAttribute('data-export')) { if (!t.disabled) exportCsv(compute()); return; }
     if (ds.addRoom) { P.rooms.push(makeRoom(ds.addRoom, TYPES[ds.addRoom].label + (P.rooms.filter(r => r.type === ds.addRoom).length + 1), +ds.lv || 1)); render(); return; }
     if (ds.levels) { P.levels = +ds.levels; render(); return; }
-    if (ds.roomLevel) { const r = P.rooms.find(x => x.id === ds.roomLevel); if (r) r.level = +ds.v; render(); return; }
+    if (ds.roomLevel) { const r = P.rooms.find(x => x.id === ds.roomLevel); if (r) { r.level = +ds.v; if (r.planImported) r.planReviewed = false; } render(); return; }
     if (ds.delRoom) {
       const r = P.rooms.find(x => x.id === ds.delRoom);
       if (r && askTwice(t, 'del-' + r.id, '再点删除')) { P.rooms = P.rooms.filter(x => x.id !== ds.delRoom); render(); }
       return;
     }
-    if (ds.roomSeg) { const r = P.rooms.find(x => x.id === ds.roomSeg); if (r) r[ds.f] = ds.v; render(); return; }
+    if (ds.roomSeg) { const r = P.rooms.find(x => x.id === ds.roomSeg); if (r) { r[ds.f] = ds.v; if (r.planImported) r.planReviewed = false; } render(); return; }
     if (ds.ans) {
       const q = QUESTIONS.find(x => x.id === ds.ans), a = P.answers[ds.ans] = P.answers[ds.ans] || {};
       a.v = ds.v === '1';
@@ -1448,7 +1565,7 @@
     const t = e.target, ds = t.dataset, v = t.value;
     if (ds.info) P.info[ds.info] = v;
     else if (t.hasAttribute('data-spa')) P.spaArea = v;
-    else if (ds.room) { const r = P.rooms.find(x => x.id === ds.room); if (r) r[ds.f] = v; }
+    else if (ds.room) { const r = P.rooms.find(x => x.id === ds.room); if (r) { r[ds.f] = v; if (r.planImported) r.planReviewed = false; } }
     else if (ds.ansN) { (P.answers[ds.ansN] = P.answers[ds.ansN] || {})[ds.k] = v; }
     else if (ds.line) {
       const s = lineState(ds.line);
