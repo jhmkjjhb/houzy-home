@@ -293,7 +293,7 @@
         <h2 class="font-semibold text-gray-800 mb-4" data-i18n="create_step1">1. 客户信息</h2>
         <div class="mb-3">
           <label class="label" data-i18n="lbl_country">国家区号 *</label>
-          <select id="c-country" class="input">
+          <select id="c-country" class="input" onchange="validatePhone(); debounceSearch()">
             <option value="">— 请选择国家区号 —</option>
             <option value="60">🇲🇾 马来西亚 +60</option>
             <option value="65">🇸🇬 新加坡 +65</option>
@@ -3658,6 +3658,9 @@ function resetCreateForm() {
   // SST 含税切换默认关
   setTaxMode('none');   // 税务模式重置为"不收税"（同时刷新按钮高亮 + 隐藏提示）
   document.getElementById('customer-found').classList.add('hidden');
+  delete document.getElementById('customer-found').dataset.id;
+  delete document.getElementById('customer-found').dataset.phone;
+  validatePhone();
   document.getElementById('o-currency').value = 'MYR';
   document.getElementById('create-err').classList.add('hidden');
   // 设计师下拉重置 + 填充
@@ -3674,19 +3677,32 @@ function resetCreateForm() {
   if (list) { list.innerHTML = ''; itemRowCount = 0; addItemRow(); calcItemsTotal(); }
 }
 
+// Clean pasted formatting without silently removing letters or other invalid content.
+function cleanCustomerPhone(value) {
+  return value.normalize('NFKC')
+    .replace(/[\s\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF().\-\u2010-\u2015]/g, '');
+}
+
+function customerPhoneDigits(raw, cc) {
+  const digits = raw.replace(/^\+/, '').replace(/^0+/, '');
+  return digits.startsWith(cc) ? digits.slice(cc.length) : digits;
+}
+
 function validatePhone() {
   const inp = document.getElementById('c-phone');
   const err = document.getElementById('phone-err');
-  const raw = inp.value.trim().replace(/[\s\-\(\)\.]/g, '');
+  const raw = cleanCustomerPhone(inp.value);
   if (!raw) { inp.style.borderColor = ''; err.classList.add('hidden'); return true; }
   if (!/^\+?\d+$/.test(raw)) {
     err.textContent = '手机号码只能包含数字'; err.classList.remove('hidden');
     inp.style.borderColor = '#ef4444'; return false;
   }
   const cc = document.getElementById('c-country').value || '60';
-  let digits = raw.replace(/^\+?0*/, '');
-  if (digits.startsWith(cc)) digits = digits.slice(cc.length);
-  else if (raw.startsWith('0')) digits = raw.slice(1).replace(/^0+/, '');
+  if (raw.startsWith('+') && !raw.slice(1).startsWith(cc)) {
+    err.textContent = '手机号中的国际区号与所选国家不一致'; err.classList.remove('hidden');
+    inp.style.borderColor = '#ef4444'; return false;
+  }
+  const digits = customerPhoneDigits(raw, cc);
   if (digits.length < 7) {
     err.textContent = '手机号码位数不足（至少7位）'; err.classList.remove('hidden');
     inp.style.borderColor = '#ef4444'; return false;
@@ -3700,22 +3716,36 @@ function validatePhone() {
 
 function debounceSearch() {
   clearTimeout(searchTimer);
+  const el = document.getElementById('customer-found');
+  el.classList.add('hidden');
+  delete el.dataset.id;
+  delete el.dataset.phone;
+  customerLookupVersion++;
   searchTimer = setTimeout(lookupCustomer, 400);
 }
 
+let customerLookupVersion = 0;
 async function lookupCustomer() {
-  const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
-  if (raw.length < 6) { document.getElementById('customer-found').classList.add('hidden'); return; }
-  const cc = document.getElementById('c-country').value || '60';
-  const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
-  const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
+  const version = ++customerLookupVersion;
   const el = document.getElementById('customer-found');
+  el.classList.add('hidden');
+  delete el.dataset.id;
+  delete el.dataset.phone;
+  const raw = cleanCustomerPhone(document.getElementById('c-phone').value);
+  if (!raw || !validatePhone()) return;
+  const cc = document.getElementById('c-country').value || '60';
+  const phone = cc + customerPhoneDigits(raw, cc);
+  const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
+  if (version !== customerLookupVersion ||
+      raw !== cleanCustomerPhone(document.getElementById('c-phone').value) ||
+      cc !== (document.getElementById('c-country').value || '60')) return;
   if (data?.length) {
     el.textContent = `✓ 找到客户：${data[0].name}（${data[0].phone}）`;
     el.classList.remove('hidden');
     document.getElementById('c-name').value = data[0].name;
     document.getElementById('c-address').value = data[0].address || '';
     el.dataset.id = data[0].id;
+    el.dataset.phone = phone;
   } else {
     el.classList.add('hidden');
     delete el.dataset.id;
@@ -3871,14 +3901,15 @@ async function submitOrder() {
     // Supplement order: customer already known, skip customer form
     let custId = _supplementCustomerId;
     if (!custId) {
-      const raw = document.getElementById('c-phone').value.trim().replace(/[\s\-]/g,'');
+      const raw = cleanCustomerPhone(document.getElementById('c-phone').value);
       const name = document.getElementById('c-name').value.trim();
       const cc = document.getElementById('c-country').value;
       if (!cc) { showCreateErr('请选择国家区号'); return; }
       if (!raw || !name) { showCreateErr('请填写客户手机号和姓名'); return; }
       if (!validatePhone()) { showCreateErr('手机号码格式不正确，请重新检查'); return; }
-      const phone = (() => { const n = raw.replace(/^0+/,''); return n.startsWith(cc) ? n : cc + n; })();
-      custId = document.getElementById('customer-found').dataset?.id;
+      const phone = cc + customerPhoneDigits(raw, cc);
+      const foundCustomer = document.getElementById('customer-found').dataset;
+      custId = foundCustomer.phone === phone ? foundCustomer.id : null;
       if (!custId) {
         const { data: newCust, error: ce } = await sb.from('customers').insert({
           name, phone,
