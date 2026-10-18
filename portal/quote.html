@@ -1,0 +1,2361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>全屋报价器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F6F3; --surface: #FFFFFF; --line: #DEDAD1;
+    --ink: #1C1B19; --ink-dim: #6B6860;
+    --navy: #17324F; --navy-soft: #E7EDF3; --on-navy: #FFFFFF;
+    --accent: #C4501C; --ok: #2F6B4F; --off: #B8B3A7;
+    --red: #B42318; --red-soft: #FDECEA; --yellow: #8A5A00; --yellow-soft: #FFF4D6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16151A; --surface: #1E1D23; --line: #34333A;
+      --ink: #EDEBE6; --ink-dim: #9A968D;
+      --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A;
+      --accent: #E37A46; --ok: #5FA382; --off: #4A4840;
+      --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16151A; --surface: #1E1D23; --line: #34333A;
+    --ink: #EDEBE6; --ink-dim: #9A968D;
+    --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A;
+    --accent: #E37A46; --ok: #5FA382; --off: #4A4840;
+    --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased; font-size: 14px;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 16px 16px 130px; }
+  .wrap.wide { max-width: 1180px; }
+  header.top { padding: 4px 2px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  header.top h1 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+  header.top p { margin: 0; color: var(--ink-dim); font-size: 12.5px; line-height: 1.6; }
+  .btn-ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+
+  /* 步骤条 */
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 8px 0; }
+  .step-btn { position: relative; border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 9px; padding: 8px 2px 7px; font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; line-height: 1.3; }
+  .step-btn b { display: block; font-size: 14px; font-family: "IBM Plex Mono", monospace; }
+  .step-btn.active { background: var(--navy); color: var(--on-navy); border-color: var(--navy); }
+  .step-btn .bdg { position: absolute; top: -6px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; font-size: 10.5px; line-height: 18px; padding: 0 5px; color: #fff; background: var(--red); font-family: "IBM Plex Mono", monospace; }
+  .step-btn .bdg.okb { background: var(--ok); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .hint { font-size: 12px; color: var(--ink-dim); line-height: 1.6; margin: 0 0 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .fld label { display: block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 4px; }
+  .fld input, .fld select, .txt {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; font: inherit; font-size: 14px;
+    background: var(--surface); color: var(--ink);
+  }
+  .fld input.num { font-family: "IBM Plex Mono", monospace; font-weight: 600; text-align: right; }
+  .fld .u { font-size: 10.5px; color: var(--ink-dim); margin-left: 2px; }
+  .fld.bad input { border-color: var(--red); background: var(--red-soft); }
+  .full { grid-column: 1 / -1; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .seg button { border: none; background: var(--surface); color: var(--ink-dim); font: inherit; font-size: 12.5px; padding: 7px 11px; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: none; }
+  .seg button.active { background: var(--navy); color: var(--on-navy); font-weight: 600; }
+
+  .room { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; overflow: hidden; }
+  .room-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--navy-soft); }
+  .room-head input { flex: 1; border: none; background: transparent; font: inherit; font-weight: 700; font-size: 14.5px; color: var(--ink); min-width: 0; }
+  .room-head .area { font-size: 12px; color: var(--navy); font-weight: 600; white-space: nowrap; }
+  .room-head .x { border: none; background: none; color: var(--ink-dim); font-size: 16px; cursor: pointer; padding: 0 2px; }
+  .room-body { padding: 12px; }
+  .room-body .segrow { margin-top: 10px; }
+  .room-body .segrow > span { display: block; font-size: 11.5px; color: var(--ink-dim); margin-bottom: 4px; }
+  .add-rooms { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .level-head { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 2px 8px; padding-bottom: 6px; border-bottom: 2px solid var(--navy); color: var(--navy); font-size: 15px; }
+  .level-head span { font-size: 12px; }
+  .add-rooms button { border: 1px dashed var(--navy); background: none; color: var(--navy); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .kpi { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-dim); padding: 4px 0; }
+  .kpi b { color: var(--ink); }
+
+  /* 必答问题 */
+  .q { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; margin-bottom: 8px; background: var(--surface); }
+  .q.todo { border-color: var(--red); box-shadow: inset 3px 0 0 var(--red); }
+  .q-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .q-text { font-size: 13.5px; font-weight: 600; line-height: 1.45; }
+  .q-why { font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; line-height: 1.5; }
+  .yn { display: flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .yn button { border: none; background: var(--surface); color: var(--ink-dim); font: inherit; font-size: 13px; padding: 7px 13px; cursor: pointer; }
+  .yn button + button { border-left: 1px solid var(--line); }
+  .yn button.y.active { background: var(--ok); color: #fff; font-weight: 600; }
+  .yn button.n.active { background: var(--ink-dim); color: var(--surface); font-weight: 600; }
+  .q-inputs { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .warnbox { margin-top: 8px; background: var(--red-soft); color: var(--red); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.55; }
+  .group-title { font-size: 12px; color: var(--ink-dim); font-weight: 600; margin: 14px 2px 8px; }
+
+  /* 清单 */
+  .stage { margin-bottom: 14px; }
+  .stage-head { display: flex; align-items: center; gap: 10px; padding: 6px 2px 8px; }
+  .stage-no { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: var(--on-navy); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: "IBM Plex Mono", monospace; flex-shrink: 0; }
+  .stage-name { font-size: 14.5px; font-weight: 700; }
+  .stage-sub { font-size: 11px; color: var(--ink-dim); }
+  .stage-amt { margin-left: auto; font-weight: 700; color: var(--accent); }
+  .line { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+  .line.off { opacity: .55; }
+  .line.off .line-title { text-decoration: line-through; }
+  .line.flag { border-color: var(--red); }
+  .line-main { display: flex; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; }
+  .line-l { flex: 1; min-width: 0; }
+  .line-title { font-size: 13.5px; font-weight: 600; }
+  .badge { display: inline-block; font-size: 10.5px; color: var(--navy); background: var(--navy-soft); border-radius: 5px; padding: 1px 6px; margin-right: 6px; font-weight: 600; vertical-align: 1px; }
+  .tag { display: inline-block; font-size: 10px; border-radius: 4px; padding: 0 5px; margin-left: 5px; font-weight: 600; vertical-align: 1px; }
+  .tag.req { color: var(--accent); border: 1px solid var(--accent); }
+  .tag.cust { color: var(--yellow); background: var(--yellow-soft); }
+  .tag.man { color: var(--red); background: var(--red-soft); }
+  .tag.pick { color: var(--ok); background: var(--navy-soft); font-weight: 600; }
+  .work-item:has(.tile-editor) {grid-column:1 / -1;}
+  .tile-editor { margin-top:12px;padding:12px;background:var(--navy-soft);border-radius:8px; }
+  .fld > label:has(input[type="checkbox"]) {display:flex;align-items:center;gap:8px;}
+  .fld input[type="checkbox"] {width:18px;height:18px;flex:0 0 18px;margin:0;}
+  .room-panel { margin-top: 10px; }
+  .room-panel > summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 8px 0; }
+  .room-panel > summary:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
+  .room-panel .panel-action { float: right; font-size: 12px; font-weight: 400; color: var(--ink-dim); }
+  .room-panel .panel-action::after { content: '点击展开'; }
+  .room-panel[open] .panel-action::after { content: '点击收起'; }
+  .room-panel .panel-body { padding-top: 10px; }
+  .pickbox { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; }
+  .pick-t { font-size: 11.5px; color: var(--navy); font-weight: 600; margin-bottom: 6px; }
+  .doc .qt .pk { color: #1C1B19; }
+  .line-sub { font-size: 11.5px; color: var(--ink-dim); margin-top: 3px; line-height: 1.45; }
+  .line-amt { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .line-detail { border-top: 1px dashed var(--line); padding: 10px 12px 12px; display: grid; gap: 10px; }
+  .dl { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--ink-dim); flex-wrap: wrap; }
+  .dl b { color: var(--ink); }
+  .switch { position: relative; width: 42px; height: 25px; flex-shrink: 0; border-radius: 999px; border: none; padding: 0; cursor: pointer; background: var(--off); }
+  .switch.on { background: var(--ok); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; transition: transform .15s ease; }
+  .switch.on .knob { transform: translateX(17px); }
+  .note { font-size: 11.5px; line-height: 1.55; border-radius: 8px; padding: 8px 10px; background: var(--navy-soft); color: var(--ink-dim); }
+  .note.warn { background: var(--red-soft); color: var(--red); }
+
+  /* 检查 */
+  .chk { border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; display: flex; gap: 8px; align-items: flex-start; }
+  .chk.red { background: var(--red-soft); color: var(--red); }
+  .chk.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .chk.okc { background: var(--navy-soft); color: var(--ok); font-weight: 600; }
+  .chk .go { margin-left: auto; flex-shrink: 0; border: none; background: none; color: inherit; font: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+  /* 报价单文档 */
+  .doc { background: #fff; color: #1C1B19; border: 1px solid var(--line); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
+  .doc .draft { position: absolute; top: 14px; right: -34px; transform: rotate(35deg); background: #B42318; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 40px; }
+  .doc h3 { margin: 0; font-size: 17px; }
+  .doc .co { font-size: 11px; color: #6B6860; margin-bottom: 12px; }
+  .doc .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 12px; margin-bottom: 12px; color: #444; }
+  .doc table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .doc th { text-align: left; font-weight: 600; color: #6B6860; border-bottom: 1px solid #DEDAD1; padding: 5px 4px; font-size: 11px; }
+  .doc td { border-bottom: 1px solid #EEEBE4; padding: 5px 4px; vertical-align: top; }
+  .doc td.r, .doc th.r { text-align: right; white-space: nowrap; }
+  .doc tr.st td { background: #E7EDF3; font-weight: 700; color: #17324F; }
+  .doc .sum { margin-top: 12px; }
+  .doc .sum div { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .doc .sum .tot { border-top: 2px solid #17324F; margin-top: 4px; padding-top: 8px; font-size: 16px; font-weight: 700; }
+  .doc table.qt { min-width: 860px; }
+  .doc .qt td:nth-child(3), .doc .qt td:nth-child(2) { white-space: nowrap; }
+  .doc .qt td:nth-child(2) { white-space: normal; min-width: 130px; }
+  .doc .qt td.ds { font-size: 10.5px; color: #6B6860; line-height: 1.45; min-width: 180px; }
+  .doc .qt .rn { display: inline-block; font-size: 10px; color: #17324F; background: #E7EDF3; border-radius: 4px; padding: 0 4px; margin-right: 4px; }
+  .doc .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; font-size: 12px; }
+  .doc .sign span { display: inline-block; min-width: 90px; border-bottom: 1px solid #999; margin: 0 6px; }
+  .pdesc { font-size: 10.5px; color: var(--ink-dim); margin-top: 2px; line-height: 1.4; max-width: 260px; }
+  .tpls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tpl { text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 12px; font: inherit; cursor: pointer; display: grid; gap: 3px; }
+  .tpl b { font-size: 14.5px; color: var(--navy); }
+  .tpl span { font-size: 11.5px; color: var(--ink-dim); }
+  .doc .terms { font-size: 11px; color: #6B6860; line-height: 1.65; margin-top: 12px; }
+  .doc .sub-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+  .primary { width: 100%; border: none; border-radius: 10px; padding: 12px; font: inherit; font-size: 14.5px; font-weight: 700; background: var(--navy); color: var(--on-navy); cursor: pointer; margin-top: 10px; }
+  .primary:disabled { background: var(--off); cursor: not-allowed; }
+
+  /* 价目表 */
+  .ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ptable th { text-align: left; color: var(--ink-dim); font-weight: 600; font-size: 11px; padding: 6px 3px; border-bottom: 1px solid var(--line); }
+  .ptable td { padding: 5px 3px; border-bottom: 1px dashed var(--line); vertical-align: middle; }
+  .ptable input:disabled { background: var(--navy-soft); color: var(--ink-dim); }
+  .ptable input { width: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 5px; text-align: right; font-family: "IBM Plex Mono", monospace; font-size: 12px; background: var(--surface); color: var(--ink); }
+  .ptable tr.chg td { background: var(--yellow-soft); }
+  .ptable .rs { border: none; background: none; color: var(--navy); cursor: pointer; font-size: 11px; text-decoration: underline; }
+  .scroll-x { overflow-x: auto; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 10; }
+  .bar-in { max-width: 620px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .bar .t { flex: 1; }
+  .bar .t small { display: block; font-size: 11.5px; color: var(--ink-dim); }
+  .bar .t b { font-size: 21px; color: var(--accent); }
+  .bar .st { border: none; border-radius: 9px; padding: 9px 12px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .bar .st.bad { background: var(--red-soft); color: var(--red); }
+  .bar .st.good { background: var(--navy-soft); color: var(--ok); }
+
+  @media (max-width: 380px) { .grid3 { grid-template-columns: 1fr 1fr; } .step-btn { font-size: 10.5px; } }
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    .doc table.qt { min-width: 0; }
+    .scroll-x { overflow: visible; }
+    body { background: #fff; }
+    body * { visibility: hidden; }
+    #quote-doc, #quote-doc * { visibility: visible; }
+    #quote-doc { position: absolute; left: 0; top: 0; width: 100%; border: none; padding: 0; }
+    .bar, .steps { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>全屋报价器</h1>
+      <p>按顺序走完 ① → ④：填房间尺寸 → 回答必答问题 → 系统自动生成清单和数量 → 通过检查才能出报价单。员工只填尺寸和数量，单价统一来自价目表。</p>
+    </div>
+    <button class="btn-ghost" data-new>新建报价</button>
+  </header>
+  <nav class="steps" id="steps"></nav>
+  <main id="main"></main>
+</div>
+<div class="bar">
+  <div class="bar-in">
+    <div class="t"><small>当前总报价（含设计费、管理费，已减优惠）</small><b class="mono" id="bar-total">RM 0</b></div>
+    <button class="st" id="bar-status" data-step="4"></button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // =====================================================================
+  //  一、价目表（全公司统一单价 · 示例价，请按公司实际价格修改这里）
+  //  每一项拆成 主材 + 辅材 + 人工，并附工艺说明 · 单位都是 RM
+  // =====================================================================
+  const STAGES = [
+    { id: 'prep',   no: 1, name: '拆改与现场保护', sub: '第9-14步 · 放线验收后才能拆' },
+    { id: 'mep',    no: 2, name: '水电隐蔽',       sub: '第15-23步 · 隐蔽验收后才能进泥水' },
+    { id: 'wp',     no: 3, name: '防水',           sub: '第24-27步 · 闭水试验通过后才能贴砖' },
+    { id: 'tile',   no: 4, name: '泥水瓷砖 / 地面', sub: '第28-31步' },
+    { id: 'ceil',   no: 5, name: '天花墙面',       sub: '第32-38步' },
+    { id: 'custom', no: 6, name: '定制柜与门窗',   sub: '第39-45步 · 复尺后下单' },
+    { id: 'equip',  no: 7, name: '设备安装与收尾', sub: '第46-54步' },
+    { id: 'outdoor', no: 8, name: '户外与外围工程', sub: '有地房屋 · 扩建/雨棚/围墙/大门' },
+    { id: 'soft',   no: 9, name: '软装',           sub: '第55-60步 · 交付前', soft: true }
+  ];
+
+  // 字段：mat=主材单价（有损耗） aux=辅材单价 lab=人工单价 waste=主材损耗%
+  //      desc=工艺做法及材料说明（会印在客户报价单上）
+  //      forced=必做项（关掉必须写原因）  needs=做了这项就一定要有的配套项（同一房间）
+  // 全部是【示范价】，请换成公司实际价格
+  const PRICE = {
+    setout:      { stage: 'prep', name: '开工放线定位', unit: '项', mat: 0, aux: 0, lab: 150, forced: true,
+                   desc: '按设计图现场弹出墙体、门洞、柜体、水电点位位置线，与客户现场确认后开工' },
+    protect:     { stage: 'prep', name: '成品及公共区域保护（地面/电梯/走廊）', unit: '项', mat: 250, aux: 50, lab: 200, forced: true,
+                   desc: '室内地面铺保护膜+夹板，门框、窗框、电梯、走廊贴保护，完工后撤除' },
+    permit:      { stage: 'prep', name: '物业装修申请代办', unit: '项', mat: 0, aux: 0, lab: 150,
+                   desc: '代办管理处装修申请及工人出入证；装修押金由客户直接交物业，不含在本报价内，完工后物业退还' },
+    demo_piece:  { stage: 'prep', name: '拆除旧柜/旧洁具/旧门窗', unit: '件', mat: 0, aux: 0, lab: 35,
+                   desc: '人工拆除，可回收件交还客户，其余随建筑垃圾清运' },
+    demo_floor:  { stage: 'prep', name: '铲除旧地砖（含旧找平层）', unit: '平方尺', mat: 0, aux: 0, lab: 1.5,
+                   desc: '电镐铲除至结构层，清理基层，渣土装袋' },
+    demo_ceiling:{ stage: 'prep', name: '拆除旧天花', unit: '平方尺', mat: 0, aux: 0, lab: 1.2,
+                   desc: '拆除旧吊顶板及龙骨，检查原有电线，渣土装袋' },
+    demo_skin:   { stage: 'prep', name: '铲除旧墙面批灰/油漆', unit: '平方尺', mat: 0, aux: 0, lab: 0.6,
+                   desc: '铲除起皮、空鼓、发霉的旧批灰层至基层，便于重新批灰' },
+    demo_wall:   { stage: 'prep', name: '砸墙/拆隔断墙', unit: '平方尺', mat: 0, aux: 0, lab: 1.8,
+                   desc: '按放线位置切割后拆除，断口修整，不得损伤相邻墙体及楼板' },
+    build_wall:  { stage: 'prep', name: '新砌隔断墙（双面批荡）', unit: '平方尺', mat: 3.0, aux: 0.5, lab: 2.5, waste: 5, needs: ['skim', 'paint_wall'],
+                   desc: '砖墙砌筑，每隔约 2 尺加拉结筋并与原墙植筋连接，双面水泥砂浆批荡' },
+    door_open:   { stage: 'prep', name: '门洞改造（封旧门洞/开新门洞）', unit: '个', mat: 30, aux: 10, lab: 60,
+                   desc: '开洞处加过梁；封洞处砌砖并与原墙拉结，双面批荡' },
+    struct:      { stage: 'prep', name: '承重墙开洞加固', unit: '处', mat: 400, aux: 100, lab: 800, needs: ['engineer'],
+                   warn: '涉及结构安全，必须有结构工程师签字才能动工',
+                   desc: '按结构工程师图纸施工，加钢梁或钢筋混凝土加固，工程师现场验收' },
+    engineer:    { stage: 'prep', name: '结构工程师审图签字', unit: '项', mat: 0, aux: 0, lab: 1500, forced: true,
+                   desc: '持证结构工程师出具加固方案、签字盖章，并到现场验收' },
+    bath_drop:   { stage: 'prep', name: '卫生间降板/二次排水处理', unit: '平方尺', mat: 5, aux: 3, lab: 12, forced: true,
+                   desc: '移位后重新找坡排水，二次排水层+防水加强，确保排水通畅不积水' },
+    carry_up:    { stage: 'prep', name: '材料搬运上楼（2楼及以上）', unit: '平方尺', mat: 0, aux: 0, lab: 0.3, forced: true,
+                   desc: '无电梯人工搬运材料上楼及垃圾下楼' },
+    scaffold:    { stage: 'prep', name: '挑空/高天花脚手架（高空作业）', unit: '处', mat: 0, aux: 200, lab: 600,
+                   desc: '搭设/拆除脚手架，高空作业做好安全防护' },
+    waste_out:   { stage: 'prep', name: '建筑垃圾清运', unit: '车次', mat: 0, aux: 0, lab: 150, forced: true,
+                   desc: '垃圾装袋，运至合法垃圾场，含车费及人工' },
+
+    wire:        { stage: 'mep', name: '电路开槽穿管布线', unit: '个点位', mat: 20, aux: 15, lab: 25, needs: ['panel'],
+                   desc: '墙面切槽，阻燃 PVC 线管，插座 2.5mm²、照明 1.5mm² 电线（示范规格），接线盒预埋，完工出具线路走向图' },
+    circuit:     { stage: 'mep', name: '专用回路（空调/热水器等大功率电器）', unit: '回路', mat: 60, aux: 20, lab: 60,
+                   desc: '从配电箱单独拉线，4mm² 电线+独立断路器，避免跳闸' },
+    db_box:      { stage: 'mep', name: '配电箱更换（主开关+漏电保护 RCCB）', unit: '个', mat: 450, aux: 50, lab: 250,
+                   desc: '更换新配电箱，含主开关、漏电保护器、各回路断路器，逐个标注回路名称' },
+    net:         { stage: 'mep', name: '网络/电视线预埋', unit: '个点位', mat: 12, aux: 8, lab: 20,
+                   desc: 'Cat6 网线/电视线穿管暗装，集中到弱电箱或路由器位置' },
+    water_pt:    { stage: 'mep', name: '给排水管改造', unit: '个点位', mat: 30, aux: 15, lab: 35,
+                   desc: '冷热水 PPR 管、排水 PVC 管（示范规格），墙内开槽暗装，热水管包保温' },
+    pipe_test:   { stage: 'mep', name: '水管打压测试', unit: '项', mat: 0, aux: 0, lab: 80, forced: true,
+                   desc: '给水管按 1.5 倍工作压力保压 30 分钟不掉压，拍照留档后才能封槽' },
+    aircon_pipe: { stage: 'mep', name: '空调铜管+排水管预埋', unit: '台', mat: 140, aux: 40, lab: 120,
+                   desc: '铜管包保温棉，冷凝水管按坡度接至排水点，预留室外机位置' },
+    gas:         { stage: 'mep', name: '燃气管道改造', unit: '项', mat: 250, aux: 50, lab: 400,
+                   desc: '由持证燃气技工施工，完工做气密性测试' },
+
+    wp:          { stage: 'wp', name: '防水涂刷（地面满涂+墙面上翻）', unit: '平方尺', mat: 2.5, aux: 1.0, lab: 2.2, waste: 5, forced: true, needs: ['flood_test'],
+                   desc: '基层清理→刷界面剂→防水涂料两遍（地面满涂，墙面上翻 1 尺，淋浴区上翻 6 尺）→阴角、管根加贴网格布' },
+    flood_test:  { stage: 'wp', name: '闭水试验（48 小时）', unit: '次', mat: 0, aux: 0, lab: 50, forced: true,
+                   desc: '防水干透后蓄水约 2 寸高，48 小时后检查楼下无渗漏，客户签字确认后才能贴砖' },
+    slope:       { stage: 'wp', name: '地面找坡（往地漏方向）', unit: '平方尺', mat: 0, aux: 1.5, lab: 2, forced: true,
+                   desc: '水泥砂浆找坡，坡度约 1%，坡向地漏，淋浴区不积水' },
+
+    screed:      { stage: 'tile', name: '地面水泥砂浆找平', unit: '平方尺', mat: 0, aux: 1.2, lab: 1.3,
+                   desc: '1:3 水泥砂浆找平，平整度误差 ≤3mm/2m' },
+    floor_tile:  { stage: 'tile', name: '地砖铺贴', unit: '平方尺', mat: 3.8, aux: 1.0, lab: 2.3, waste: 8, needs: ['grout'],
+                   desc: '瓷砖按客户选定款式（示范价按 600×600 抛釉砖）；水泥砂浆+瓷砖胶铺贴，十字卡留缝 2mm，空鼓率 ≤5%' },
+    wall_tile:   { stage: 'tile', name: '墙砖铺贴', unit: '平方尺', mat: 3.8, aux: 1.0, lab: 2.5, waste: 8, needs: ['grout'],
+                   desc: '墙面拉毛/界面剂处理，瓷砖胶薄贴，阳角 45° 倒角或加收边条' },
+    laminate:    { stage: 'tile', name: '木地板/SPC 地板铺装', unit: '平方尺', mat: 5.5, aux: 0.5, lab: 1.5, waste: 5,
+                   desc: '铺防潮膜，悬浮式安装，四周留 8-10mm 伸缩缝，踢脚线压边' },
+    skirting:    { stage: 'tile', name: '踢脚线', unit: '延尺', mat: 2.0, aux: 0.5, lab: 1.5, waste: 5,
+                   desc: '与地面同色系踢脚线，结构胶+钢钉固定，接口 45° 拼接' },
+    grout:       { stage: 'tile', name: '瓷砖美缝', unit: '平方尺', mat: 0.5, aux: 0.3, lab: 0.7,
+                   desc: '清缝后打环氧美缝剂，颜色客户选定' },
+    threshold:   { stage: 'tile', name: '门槛石/挡水条', unit: '条', mat: 50, aux: 10, lab: 30,
+                   desc: '人造石门槛石，卫生间门口做挡水坎，防止水外流' },
+    window_sill: { stage: 'tile', name: '窗台石', unit: '延尺', mat: 18, aux: 3, lab: 8,
+                   desc: '人造石窗台板，外沿倒圆角，底部打胶防水' },
+    pipe_box:    { stage: 'tile', name: '下水管包封（含隔音棉）', unit: '处', mat: 40, aux: 30, lab: 80,
+                   desc: '立管外包隔音棉，龙骨+水泥板包封后贴砖，预留检修口' },
+    drain:       { stage: 'tile', name: '防臭地漏', unit: '个', mat: 30, aux: 5, lab: 15,
+                   desc: '不锈钢防臭地漏（示范价），装在找坡最低点' },
+    stair_tread: { stage: 'tile', name: '楼梯踏步砖（含防滑条）', unit: '级', mat: 35, aux: 10, lab: 35,
+                   desc: '踏步砖+踢面砖，前沿加防滑条，逐级水平校正' },
+    porch_tile:  { stage: 'tile', name: '门廊/车库户外防滑砖', unit: '平方尺', mat: 4.0, aux: 1.2, lab: 2.5, waste: 8,
+                   desc: '户外防滑砖，按约 1% 坡度找坡到排水沟' },
+
+    plaster_ceiling: { stage: 'ceil', name: '石膏板吊顶', unit: '平方尺', mat: 3.0, aux: 1.0, lab: 3.5, waste: 5,
+                   desc: '轻钢龙骨+9mm 石膏板（厨卫用防潮板），接缝贴网格带，预留检修口' },
+    ceiling_step:    { stage: 'ceil', name: '天花叠级/灯槽', unit: '延尺', mat: 5, aux: 3, lab: 6,
+                   desc: '按设计图做叠级造型及暗藏灯槽，灯槽内预留灯带电源' },
+    skim:            { stage: 'ceil', name: '墙面批灰找平', unit: '平方尺', mat: 0, aux: 0.6, lab: 0.8, waste: 5, forced: true,
+                   desc: '满批腻子两遍，打磨平整，阴阳角顺直' },
+    paint_wall:      { stage: 'ceil', name: '墙面乳胶漆（一底两面）', unit: '平方尺', mat: 0.6, aux: 0.2, lab: 0.6, waste: 5, forced: true,
+                   desc: '抗碱底漆一遍+乳胶面漆两遍，品牌色号客户选定（示范价按中档漆）' },
+    paint_ceiling:   { stage: 'ceil', name: '天花乳胶漆', unit: '平方尺', mat: 0.6, aux: 0.2, lab: 0.7, waste: 5, forced: true,
+                   desc: '底漆一遍+天花专用白漆两遍' },
+    ext_paint:       { stage: 'ceil', name: '外墙防水漆', unit: '平方尺', mat: 0.9, aux: 0.3, lab: 0.8, waste: 5,
+                   desc: '外墙高压清洗、修补裂缝，外墙底漆+弹性防水面漆两遍；高处搭架另计' },
+
+    cab_low:     { stage: 'custom', name: '橱柜 · 地柜', unit: '延尺', mat: 100, aux: 16, lab: 30, needs: ['counter'],
+                   desc: '防潮板柜体（示范规格），阻尼铰链、抽屉滑轨，踢脚板防水' },
+    cab_up:      { stage: 'custom', name: '橱柜 · 吊柜', unit: '延尺', mat: 80, aux: 11, lab: 24,
+                   desc: '柜体与墙体膨胀螺栓固定，柜门阻尼铰链' },
+    counter:     { stage: 'custom', name: '石英石台面', unit: '延尺', mat: 75, aux: 7, lab: 12,
+                   desc: '石英石台面（示范价），前沿倒角，水槽台下安装，接缝打胶' },
+    wardrobe:    { stage: 'custom', name: '衣柜定制', unit: '延尺', mat: 50, aux: 5, lab: 15,
+                   desc: '到顶衣柜，含挂衣杆、层板、抽屉，板材及门板款式客户选定' },
+    shoe_cab:    { stage: 'custom', name: '鞋柜', unit: '延尺', mat: 60, aux: 8, lab: 15,
+                   desc: '到顶或半高鞋柜，斜层板/平层板，预留换鞋凳位置' },
+    tv_cab:      { stage: 'custom', name: '电视柜/电视背景墙', unit: '延尺', mat: 55, aux: 8, lab: 15,
+                   desc: '按设计图制作，预留电视、机顶盒线路孔位' },
+    door:        { stage: 'custom', name: '室内门（含门套、锁、合页）', unit: '樘', mat: 400, aux: 50, lab: 80,
+                   desc: '实木复合门+门套，静音门锁，三片合页，门吸' },
+    balc_seal:   { stage: 'custom', name: '阳台封窗', unit: '延尺', mat: 50, aux: 10, lab: 20,
+                   desc: '铝合金窗框+钢化玻璃，打胶防水（需先获物业同意）' },
+    stair_rail:  { stage: 'custom', name: '楼梯扶手/栏杆', unit: '延尺', mat: 75, aux: 15, lab: 30,
+                   desc: '扶手高度约 3 尺，栏杆间距 ≤4 寸，与踏步牢固连接' },
+    grille:      { stage: 'custom', name: '防盗铁花（窗/门）', unit: '平方尺', mat: 10, aux: 2, lab: 4,
+                   desc: '镀锌方管铁花，防锈底漆+面漆，膨胀螺栓固定' },
+
+    panel:       { stage: 'equip', name: '开关插座面板安装', unit: '个', mat: 10, aux: 2, lab: 5, forced: true,
+                   desc: '面板品牌客户选定（示范价按中档），安装后逐个通电测试' },
+    light:       { stage: 'equip', name: '基础灯具供应+安装', unit: '个', mat: 40, aux: 5, lab: 20,
+                   desc: 'LED 筒灯/吸顶灯（示范价），色温客户选定；装饰吊灯另计' },
+    led_strip:   { stage: 'equip', name: '天花灯带（含变压器）', unit: '延尺', mat: 6, aux: 1, lab: 3,
+                   desc: '灯槽内 LED 灯带，每约 15 尺配一个变压器，色温客户选定' },
+    exhaust:     { stage: 'equip', name: '排气扇', unit: '个', mat: 90, aux: 10, lab: 40,
+                   desc: '吊顶式或墙式排气扇，风管接到外墙或管井' },
+    bath_acc:    { stage: 'equip', name: '卫浴五金挂件套（毛巾架/纸巾架/挂钩）', unit: '套', mat: 150, aux: 0, lab: 40,
+                   desc: '不锈钢五金件，打孔后硅胶密封防渗水' },
+    mirror:      { stage: 'equip', name: '浴室镜/镜柜', unit: '个', mat: 180, aux: 0, lab: 30,
+                   desc: '防雾浴室镜或镜柜，尺寸配合浴室柜宽度' },
+    toilet:      { stage: 'equip', name: '马桶', unit: '套', mat: 260, aux: 20, lab: 40,
+                   desc: '马桶（示范价），法兰密封圈安装，底部打胶，试水无渗漏' },
+    vanity:      { stage: 'equip', name: '浴室柜（含台盆、龙头）', unit: '套', mat: 350, aux: 30, lab: 50,
+                   desc: '防水柜体+台盆+龙头，下水加防臭存水弯' },
+    shower:      { stage: 'equip', name: '花洒/淋浴龙头', unit: '套', mat: 200, aux: 20, lab: 30,
+                   desc: '冷热水混水花洒，安装高度按客户身高确认' },
+    screen:      { stage: 'equip', name: '淋浴玻璃隔断', unit: '套', mat: 600, aux: 50, lab: 100,
+                   desc: '8mm 钢化玻璃，不锈钢五金，底部挡水条，打胶防水' },
+    heater:      { stage: 'equip', name: '热水器安装', unit: '台', mat: 320, aux: 30, lab: 60,
+                   desc: '即热/储水式热水器（示范价），接专用回路及漏电保护' },
+    sink:        { stage: 'equip', name: '厨房水槽+龙头', unit: '套', mat: 230, aux: 20, lab: 40,
+                   desc: '不锈钢水槽台下安装，冷热水龙头，下水防臭' },
+    hood:        { stage: 'equip', name: '烟机灶具安装（电器客户自购）', unit: '套', mat: 0, aux: 20, lab: 100,
+                   desc: '安装烟机、灶具，烟管接至外墙，燃气接口测漏' },
+    rack:        { stage: 'equip', name: '晾衣架', unit: '套', mat: 170, aux: 10, lab: 60,
+                   desc: '手摇/电动晾衣架，膨胀螺栓固定于天花' },
+    stair_light: { stage: 'equip', name: '楼梯灯+上下双控开关', unit: '套', mat: 70, aux: 10, lab: 40,
+                   desc: '楼上、楼下各一个开关，都能控制楼梯灯' },
+    clean:       { stage: 'equip', name: '开荒清洁', unit: '平方尺', mat: 0, aux: 0.1, lab: 0.4, forced: true,
+                   desc: '完工后全屋开荒保洁：玻璃、瓷砖、柜内、地面清洁，达到可入住状态' },
+
+    // ---- 补充细项 ----
+    fan_point:   { stage: 'mep', name: '吊扇线路+加固吊点', unit: '个', mat: 15, aux: 15, lab: 40,
+                   desc: '预留吊扇专用线路及调速开关位，天花内加固吊钩，可承重吊扇' },
+    cctv:        { stage: 'mep', name: 'CCTV 监控摄像头（含布线+主机分摊）', unit: '个', mat: 180, aux: 40, lab: 80,
+                   desc: '室外防水摄像头，网线/电源线穿管，接入录像主机，手机可远程查看（示范规格）' },
+    doorbell:    { stage: 'mep', name: '可视门铃/对讲', unit: '套', mat: 350, aux: 30, lab: 80,
+                   desc: '门口机+室内机，布线穿管，调试通话及开锁' },
+    big_tile_extra: { stage: 'tile', name: '大板砖/岩板铺贴加价', unit: '平方尺', mat: 0, aux: 0.5, lab: 2.0,
+                   desc: '900×1800 及以上大板：需吸盘搬运、背涂、找平系统，铺贴人工另加' },
+    laundry_cab: { stage: 'custom', name: '洗衣柜（洗衣机上方/旁边）', unit: '延尺', mat: 55, aux: 8, lab: 15,
+                   desc: '防潮板柜体，预留洗衣机、烘干机位置及水电' },
+    sideboard:   { stage: 'custom', name: '餐边柜', unit: '延尺', mat: 60, aux: 8, lab: 15,
+                   desc: '上下柜或到顶柜，中段可做开放台面放电器' },
+    headboard:   { stage: 'custom', name: '床头背景墙', unit: '延尺', mat: 45, aux: 8, lab: 15,
+                   desc: '按设计图做软包/木饰面/灯槽造型，预留床头插座开关' },
+    bookcase:    { stage: 'custom', name: '书柜/储物柜', unit: '延尺', mat: 55, aux: 8, lab: 15,
+                   desc: '到顶柜体，层板可调，门板款式客户选定' },
+    cab_basket:  { stage: 'custom', name: '橱柜拉篮五金', unit: '套', mat: 180, aux: 0, lab: 20,
+                   desc: '不锈钢调味拉篮/碗碟拉篮，阻尼滑轨' },
+    main_door:   { stage: 'custom', name: '大门更换（含门框、锁）', unit: '樘', mat: 1200, aux: 100, lab: 200,
+                   desc: '防盗/实木大门，含门框、门锁、门吸，门框与墙体打胶' },
+    window_new:  { stage: 'custom', name: '铝合金窗更换', unit: '平方尺', mat: 25, aux: 3, lab: 6,
+                   desc: '拆旧窗后安装铝合金窗框+玻璃（规格客户选定），外框打胶防水' },
+    fly_screen:  { stage: 'custom', name: '纱窗', unit: '平方尺', mat: 6, aux: 1, lab: 2,
+                   desc: '隐形/推拉纱窗，配合窗户尺寸定做' },
+    cornice:     { stage: 'ceil', name: '石膏线', unit: '延尺', mat: 3, aux: 1, lab: 3,
+                   desc: '沿天花与墙面交角安装石膏线，接缝批平后刷漆' },
+    curtain_box: { stage: 'ceil', name: '窗帘盒（暗藏轨道位）', unit: '延尺', mat: 4, aux: 1, lab: 5,
+                   desc: '吊顶内预留窗帘盒，宽约 6 寸，可装双轨' },
+    wallpaper:   { stage: 'ceil', name: '墙纸（代替乳胶漆）', unit: '平方尺', mat: 2.5, aux: 0.3, lab: 1.2, waste: 10,
+                   desc: '墙面批灰后刷基膜，专用胶粘贴，对花拼缝（款式客户选定）' },
+    art_paint:   { stage: 'ceil', name: '艺术漆（代替乳胶漆）', unit: '平方尺', mat: 3.5, aux: 0.3, lab: 2.5, waste: 5,
+                   desc: '底漆+艺术漆多遍施工，纹理样板客户确认后施工' },
+    ceiling_fan: { stage: 'equip', name: '吊扇安装（吊扇客户自购或另计）', unit: '台', mat: 0, aux: 10, lab: 60,
+                   desc: '安装吊扇及调速开关，检查平衡无晃动' },
+    extension:   { stage: 'outdoor', name: '厨房/后院扩建（地基+砌墙+屋顶）', unit: '平方尺', mat: 45, aux: 10, lab: 35,
+                   desc: '按批准图纸施工：地基、砖墙、屋顶（金属板或瓦）、新旧屋面接缝防水；水电瓷砖另按各项计' },
+    ext_permit:  { stage: 'outdoor', name: '扩建图纸及市政局（Majlis）申请', unit: '项', mat: 0, aux: 0, lab: 1800, forced: true,
+                   desc: '绘制扩建图纸并向地方市政局申请批准；未批准前不得动工' },
+    awning:      { stage: 'outdoor', name: '雨棚（Awning）', unit: '平方尺', mat: 18, aux: 3, lab: 6,
+                   desc: '钢结构框架+防锈漆，顶面阳光板/金属板（规格客户选定），排水槽引水' },
+    fence:       { stage: 'outdoor', name: '围墙/栏杆', unit: '延尺', mat: 60, aux: 10, lab: 30,
+                   desc: '砖墙或铁栏杆围墙（款式客户选定），基础与原地面连接' },
+    autogate:    { stage: 'outdoor', name: '自动大门（Autogate）', unit: '套', mat: 2200, aux: 200, lab: 600,
+                   desc: '平开/推拉自动门电机+遥控器，含门体改装及布线，后备电池' },
+    drain_ch:    { stage: 'outdoor', name: '户外排水沟', unit: '延尺', mat: 15, aux: 5, lab: 15,
+                   desc: '混凝土排水沟+盖板，按坡度接至公共排水' },
+    roof_fix:    { stage: 'outdoor', name: '屋顶补漏', unit: '处', mat: 150, aux: 50, lab: 250,
+                   desc: '上屋顶检查漏点，更换破损瓦片/补防水，完工后淋水测试' },
+    water_pump:  { stage: 'outdoor', name: '水泵/水箱', unit: '套', mat: 800, aux: 100, lab: 250,
+                   desc: '增压水泵或屋顶水箱安装，接主水管，含浮球阀' },
+
+    curtain:     { stage: 'soft', name: '窗帘（含轨道/罗马杆安装）', unit: '延尺', mat: 40, aux: 5, lab: 15,
+                   desc: '布帘+纱帘双层，面料客户选定，按窗宽 2 倍打褶' },
+    decor:       { stage: 'soft', name: '基础软装配饰包（靠垫/花艺/摆件）', unit: '项', mat: 800, aux: 0, lab: 0,
+                   desc: '按设计风格搭配基础软装配饰' }
+  };
+
+  // =====================================================================
+  //  材料清单：每样材料一个单价。项目里写了 bom（用料配方）的，
+  //  主材/辅材单价由配方自动算，还能汇总出整单「材料采购单」
+  //  bom 写法：{ m: 材料编码, q: 每 1 单位项目用多少, main: 是否主材, w: 损耗%（辅材默认 5） }
+  //  【全部是示范用量和示范价，请工程/采购同事按公司实际填写】
+  // =====================================================================
+  const MATERIALS = {
+    tile600:  { name: '地砖 600×600（客户选定款）', unit: '平方尺', price: 3.8 },
+    walltile: { name: '墙砖 300×600（客户选定款）', unit: '平方尺', price: 3.8 },
+    cement:   { name: '水泥 50kg', unit: '包', price: 18 },
+    sand:     { name: '河沙', unit: '立方米', price: 90, dec: 1 },
+    tile_adh: { name: '瓷砖胶 25kg', unit: '包', price: 28 },
+    wp_coat:  { name: '防水涂料 20kg', unit: '桶', price: 180 },
+    wp_mesh:  { name: '防水网格布', unit: '卷', price: 25 },
+    putty:    { name: '腻子粉 20kg', unit: '包', price: 22 },
+    primer:   { name: '抗碱底漆 18L', unit: '桶', price: 150 },
+    emulsion: { name: '乳胶面漆 18L', unit: '桶', price: 220 }
+  };
+  const BOM = {
+    floor_tile: [{ m: 'tile600', q: 1, main: true }, { m: 'cement', q: 0.03 }, { m: 'sand', q: 0.003 }, { m: 'tile_adh', q: 0.01 }],
+    wall_tile:  [{ m: 'walltile', q: 1, main: true }, { m: 'tile_adh', q: 0.03 }, { m: 'cement', q: 0.005 }],
+    wp:         [{ m: 'wp_coat', q: 0.014, main: true }, { m: 'wp_mesh', q: 0.004 }],
+    skim:       [{ m: 'putty', q: 0.027 }],
+    paint_wall: [{ m: 'emulsion', q: 0.0026, main: true }, { m: 'primer', q: 0.0011 }]
+  };
+
+  const DEFAULT_SETTINGS = {
+    designRate: 8,        // 设计费 RM/平方尺
+    mgmtRate: 6,          // 管理费 %（按 施工+材料+软装）
+    discountLimit: 5,     // 优惠超过这个 % 必须填审批人
+    days: 60,             // 工期（天）【待老板确认】
+    wWp: 5, wMep: 2, wGen: 1,  // 保修年限：防水 / 水电 / 其他【待老板确认】
+    sst: 0,               // SST 税率 %（0 = 不收）【待老板确认】
+    pay: [
+      { name: '签约定金', pct: 30 },
+      { name: '水电隐蔽验收通过', pct: 30 },
+      { name: '泥水瓷砖验收通过', pct: 30 },
+      { name: '竣工验收交付', pct: 10 }
+    ]
+  };
+
+  // =====================================================================
+  //  二、房间类型：每种房间要填哪些尺寸，默认值是多少
+  // =====================================================================
+  const F = {
+    L: { label: '长', unit: '尺' }, W: { label: '宽', unit: '尺' }, H: { label: '层高', unit: '尺' },
+    doors: { label: '室内门', unit: '樘' }, win: { label: '窗户总宽', unit: '尺' },
+    pts: { label: '插座/开关点位', unit: '个' }, lights: { label: '灯位', unit: '个' }, ac: { label: '空调', unit: '台' },
+    wardrobe: { label: '衣柜长度', unit: '尺' }, fan: { label: '吊扇', unit: '台' }, sideboard: { label: '餐边柜长度', unit: '尺' },
+    headboard: { label: '床头背景墙宽', unit: '尺' }, bookcase: { label: '书柜/储物柜长度', unit: '尺' }, laundryCab: { label: '洗衣柜长度', unit: '尺' },
+    basket: { label: '橱柜拉篮', unit: '套' }, shoeCab: { label: '鞋柜长度', unit: '尺' }, tvCab: { label: '电视柜长度', unit: '尺' },
+    cabLow: { label: '地柜长度', unit: '尺' }, cabUp: { label: '吊柜长度', unit: '尺' },
+    wpts: { label: '水点位', unit: '个' }, drains: { label: '地漏', unit: '个' },
+    toilet: { label: '马桶', unit: '套' }, vanity: { label: '浴室柜', unit: '套' }, shower: { label: '花洒', unit: '套' },
+    screen: { label: '淋浴隔断', unit: '套' }, heater: { label: '热水器', unit: '台' }, rack: { label: '晾衣架', unit: '套' },
+    floor: { label: '地面做法', opts: [['tile', '瓷砖'], ['laminate', '木地板/SPC']] },
+    ceiling: { label: '天花做法', opts: [['none', '不做吊顶'], ['flat', '平顶吊顶'], ['feature', '造型+灯槽']] },
+    wallTile: { label: '厨房墙砖', opts: [['partial', '只铺操作区'], ['full', '满铺到顶']] },
+    tileSize: { label: '地砖规格', opts: [['std', '常规砖'], ['big', '大板砖/岩板']] },
+    wallFinish: { label: '墙面做法', opts: [['paint', '乳胶漆'], ['wallpaper', '墙纸'], ['art', '艺术漆']] },
+    cornice: { label: '石膏线', opts: [['no', '不做'], ['yes', '做石膏线']] }
+  };
+  // Room material selections are specifications, not unverified price presets.
+  const MATERIAL_SPEC = {
+    tileDim: { label: '地砖尺寸', opts: ['300×300 mm', '300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm', '800×800 mm', '900×900 mm', '900×1800 mm', '1200×1200 mm', '1200×2400 mm'] },
+    wallTileDim: { label: '墙砖尺寸', opts: ['300×300 mm', '300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm', '900×1800 mm', '1200×2400 mm'] },
+    spcMaterial: { label: '地板材质', opts: ['SPC 石塑锁扣地板', 'LVT 乙烯基地板', '强化复合木地板', '多层实木复合地板', '实木地板'] },
+    spcThickness: { label: '地板厚度', opts: ['3 mm', '4 mm', '5 mm', '6 mm', '7 mm', '8 mm', '10 mm', '12 mm', '15 mm', '18 mm'] },
+    ceilingBoard: { label: '天花板材种类', opts: ['普通石膏板', '防潮石膏板', '纤维水泥板', '硅酸钙板', '铝扣板', 'PVC 扣板'] },
+    ceilingThickness: { label: '天花板材厚度', opts: ['0.6 mm', '0.8 mm', '1.0 mm', '4.5 mm', '6 mm', '9 mm', '9.5 mm', '12 mm', '12.5 mm', '15 mm'] },
+    ceilingMoisture: { label: '天花防潮要求', opts: ['普通室内干区', '防潮板材及配套防潮处理', '湿区耐水板材及配套防水处理'] },
+    wallBrand: { label: '墙面材料品牌', opts: ['Nippon Paint', 'Dulux', 'Jotun', 'TOA', 'Kansai Paint', 'SKK', '其他品牌（清单中填写）'] },
+    wallSeries: { label: '墙面产品系列', opts: ['EasyWash', 'Vinilex', 'Odour-less', 'Weatherbond', 'Bodelac', 'Pentalite', 'EasyClean', 'Ambiance', 'Weathershield', 'Majestic', 'Jotaplast', 'Jotashield', '其他系列（清单中填写）'] },
+    wallWork: { label: '墙面施工种类', opts: ['新墙：批灰打磨＋底漆＋面漆', '旧墙翻新：局部修补＋底漆＋面漆', '旧墙翻新：铲除旧漆＋批灰＋底漆＋面漆', '现有基层直接重涂面漆', '墙纸：基层处理＋铺贴', '艺术漆：基层处理＋肌理／艺术涂装'] }
+  };
+  Object.assign(MATERIAL_SPEC,{
+    tileFinish:{label:'瓷砖表面',opts:['哑光','亮光','防滑面','柔光']},
+    groutType:{label:'填缝材料',opts:['水泥基填缝剂','环氧彩砂／美缝剂','其他（清单补充）']},
+    wpType:{label:'防水材料种类',opts:['水泥基双组分','聚氨酯涂膜','丙烯酸涂膜','防水卷材','其他（清单补充）']},
+    wireSpec:{label:'布线规格',opts:['照明回路（截面与回路清单确认）','插座回路（截面与回路清单确认）','专用回路（负载与截面另核）','混合点位（清单分别注明）']},
+    pipeSpec:{label:'给水管材质',opts:['PPR 管','PEX 管','铜管','不锈钢管','保留现有管道、局部改接']}
+  });
+  const WALL_SERIES = {
+    'Nippon Paint': ['EasyWash', 'Vinilex', 'Odour-less', 'Weatherbond', 'Bodelac'],
+    'Dulux': ['Pentalite', 'EasyClean', 'Ambiance', 'Weathershield'],
+    'Jotun': ['Majestic', 'Jotaplast', 'Jotashield']
+  };
+  function materialFields(r) {
+    const fields=[];
+    if((workOn(r,'floor_tile')&&!r.tileConfig?.floor_tile)||(workOn(r,'porch_tile')&&!r.tileConfig?.porch_tile))fields.push('tileDim');
+    if(workOn(r,'wall_tile')&&!r.tileConfig?.wall_tile)fields.push('wallTileDim');
+    if(workOn(r,'laminate'))fields.push('spcMaterial','spcThickness');
+    if(workOn(r,'plaster_ceiling'))fields.push('ceilingBoard','ceilingThickness','ceilingMoisture');
+    if(['paint_wall','wallpaper','art_paint','ext_paint'].some(c=>workOn(r,c)))fields.push('wallBrand','wallSeries','wallWork');
+    if(TILE_CODES.some(c=>workOn(r,c)&&!r.tileConfig?.[c]))fields.push('tileFinish');
+    if(workOn(r,'grout'))fields.push('groutType');
+    if(workOn(r,'wp'))fields.push('wpType');
+    if(workOn(r,'wire'))fields.push('wireSpec');
+    if(workOn(r,'water_pt'))fields.push('pipeSpec');
+    return fields;
+  }
+  function specOptions(r, key) {
+    if (key === 'wallSeries') return [...(WALL_SERIES[r.wallBrand] || []), '其他系列（清单中填写）'];
+    return MATERIAL_SPEC[key].opts;
+  }
+  const ROOM_WORK = {
+    living:['floor_tile','laminate','grout','big_tile_extra','screed','skirting','skim','paint_wall','wallpaper','art_paint','plaster_ceiling','ceiling_step','led_strip','paint_ceiling','cornice','wire','panel','light','fan_point','ceiling_fan','aircon_pipe','curtain','curtain_box','window_sill','fly_screen','grille'],
+    kitchen:['floor_tile','wall_tile','grout','big_tile_extra','screed','wp','flood_test','skim','paint_wall','plaster_ceiling','ceiling_step','led_strip','paint_ceiling','wire','panel','light','aircon_pipe','water_pt','pipe_box','sink','hood','drain','window_sill','fly_screen','grille'],
+    bath:['floor_tile','wall_tile','grout','big_tile_extra','screed','wp','flood_test','slope','drain','threshold','pipe_box','plaster_ceiling','paint_ceiling','wire','panel','light','water_pt','toilet','shower','screen','heater','exhaust','bath_acc','mirror','bath_drop','fly_screen','grille'],
+    laundry:['floor_tile','wall_tile','grout','screed','wp','flood_test','slope','drain','plaster_ceiling','paint_ceiling','skim','paint_wall','wire','panel','light','water_pt','pipe_box','rack','window_sill','fly_screen','grille'],
+    balcony:['floor_tile','wall_tile','grout','screed','wp','flood_test','slope','drain','skim','paint_wall','wire','panel','light','water_pt','rack','balc_seal','fly_screen','grille'],
+    outdoor:['porch_tile','screed','wp','flood_test','drain_ch','awning','ext_paint','wire','panel','light','water_pt','fly_screen','grille'],
+    stairs:[]
+  };
+  Object.entries(ROOM_WORK).forEach(([base,codes])=>{if(base==='outdoor')codes.unshift('demo_floor','demo_piece');else if(base!=='stairs')codes.unshift('demo_floor','demo_ceiling','demo_skin','demo_piece');});
+  const GLOBAL_SERVICES=['setout','protect','waste_out','clean','carry_up'];
+  function workCodes(r) {const t=roomBase(r);return ROOM_WORK[t==='bedroom'||t==='other'?'living':t] || [];}
+  function workOn(r,code) {return workCodes(r).includes(code) && r.work?.[code]===true;}
+  const TILE_CODES=['floor_tile','wall_tile','porch_tile'];
+  function tileArea(r,code,fallback) {
+    const c=r.tileConfig?.[code];if(!c)return fallback;
+    if(c.areaMode==='manual')return num(c.area)*(c.areaUnit==='m2'?10.76391041671:1);
+    return fallback;
+  }
+  function tileRateKey(c,code) {return [code,c.dim,c.finish,c.method,c.mode,c.brand,c.model,c.thickness].join('|');}
+  function tileMetrics(r,code,area) {
+    const raw=r.tileConfig?.[code]||{},match=matchCatalog(r.id,code),rates=match.row?catalogRates(match.row,catalogAttributes(r.id,code)):null;
+    const c={...raw,materialRate:rates?.mat,auxRate:rates?.aux,labRate:rates?.lab,waste:rates?.waste??0,rateUnit:'ft2'},mm=String(c.dim||'').match(/^(\d+)×(\d+)/);
+    const pieceArea=mm?Number(mm[1])*Number(mm[2])/92903.04:0;
+    const base=c.mode==='labour'?0:num(c.materialRate)/(c.rateUnit==='piece'?(pieceArea||1):1);
+    const material=round2(base*(1+num(c.waste)/100)),aux=num(c.auxRate),labour=num(c.labRate);
+    const valid=v=>String(v??'').trim()!==''&&Number.isFinite(Number(v))&&Number(v)>=0;
+    const ready=valid(c.labRate)&&valid(c.auxRate)&&(c.mode==='labour'||valid(c.materialRate))&&!!c.dim&&!!c.mode&&String(c.labRate??'').trim()!==''&&String(c.auxRate??'').trim()!==''&&(c.mode==='labour'||String(c.materialRate??'').trim()!=='');
+    return {waste:c.waste,catalogMatch:match.row,catalogReason:match.ambiguous?'匹配到多条同优先级价格':'未找到对应规格价格',pieceArea,pieces:pieceArea?Math.ceil(area*(1+num(c.waste)/100)/pieceArea-1e-9):0,material,aux,labour,unit:round2(material+aux+labour),ready};
+  }
+  function tileSpec(c) {return [c.dim,c.thickness?`厚度${c.thickness}`:'',c.finish,c.method,c.brand,c.model,c.mode==='labour'?'客户供砖，仅计辅材及人工':'包工包料',`材料损耗${c.waste||0}%`].filter(Boolean).join('；');}
+  function tileEditor(r,code) {
+    const c=r.tileConfig?.[code]||{},attr=k=>`data-tile-room="${r.id}" data-tile-code="${code}" data-f="${k}"`;
+    const select=(k,label,opts)=>`<div class="fld"><label>${label}<select ${attr(k)}><option value="">请选择</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${c[k]===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label></div>`;
+    const input=(k,label,unit,number=true)=>fld(label,unit,attr(k),c[k]??'',false,number);
+    const dim=MATERIAL_SPEC[code==='wall_tile'?'wallTileDim':'tileDim'].opts;
+    return `<div class="tile-editor"><div class="grid2">${select('dim','瓷砖规格（长×宽，毫米）',dim.map(v=>[v,v]))}${select('thickness','瓷砖厚度',[8,9,10,12,15,20].map(v=>[v+' mm',v+' mm']))}${select('finish','表面',MATERIAL_SPEC.tileFinish.opts.map(v=>[v,v]))}${select('method','铺贴方式',['正铺','斜铺','工字铺','人字铺','其他做法（型号备注填写）'].map(v=>[v,v]))}${input('brand','品牌','',false)}${input('model','型号／色号及特殊做法','',false)}${select('areaMode','铺贴面积来源',[['auto','按空间尺寸自动计算'],['manual','填写本次实际铺贴面积']])}${c.areaMode==='manual'?select('areaUnit','面积单位',[['ft2','平方尺'],['m2','平方米']])+input('area','本次铺贴净面积',c.areaUnit==='m2'?'平方米':'平方尺'):''}${select('mode','承包范围',[['all','包工包料'],['labour','客户供砖，包辅材及人工']])}</div><div class="note" data-tile-total="${r.id}:${code}"></div><p class="hint">填写标准：规格用毫米，面积填实际净铺贴面积。系统按所选规格自动查询公司价目表，损耗只计材料，辅材和人工按净面积计算。前端无需填写单价。</p></div>`;
+  }
+  function tilePriceRow(l,st) {
+    const room=P.rooms.find(r=>r.id===l.roomId),c=room.tileConfig[l.code],m=tileMetrics(room,l.code,l.qty),supply=c.mode==='labour'?'customer':'company';
+    const p={...price(l.code),mat:m.material,aux:m.aux,lab:m.labour,waste:0,bomMat:false,bomAux:false};
+    const total=m.ready?round2(l.qty*m.unit):0,mat=m.ready?round2(l.qty*m.material):0,aux=m.ready?round2(l.qty*m.aux):0;
+    return {...l,name:PRICE[l.code].name,unit:PRICE[l.code].unit,stage:PRICE[l.code].stage,forced:false,soft:false,desc:'按选定规格及铺法施工；材料损耗已计入材料单价，辅材和人工按净铺贴面积计量。美缝、拆除和找平按另选项目计价。',st,manual:false,autoQty:l.qty,on:!st.off,supply,p,uMat:m.material,mOwn:true,pick:tileSpec({...c,waste:m.waste}),hasMain:c.mode!=='labour',uAux:m.aux,uLab:m.labour,uPrice:m.ready?m.unit:0,mat,aux,lab:round2(total-mat-aux),total,catalogMatch:m.catalogMatch,catalogPending:!m.ready,catalogReason:m.catalogReason,tileInfo:{...c,...m},formula:`净面积 ${nf2(l.qty)} 平方尺 × 综合单价 RM ${nf2(m.unit)}（材料＋辅材＋人工）`};
+  }
+  function workHtml(r) {
+    const codes=workCodes(r);if(!codes.length)return '';
+    const group=(id,title,list)=>{
+      if(!list.length)return '';
+      const key=r.id+':work-'+id,count=list.filter(c=>workOn(r,c)).length;
+      return `<details class="pickbox room-panel" data-room-panel="${key}" ${openRoomPanels.has(key)?'open':''}><summary>${title} · 已选 ${count} 项<span class="panel-action"></span></summary><div class="panel-body"><div class="grid2">${list.map(code=>`<div class="fld work-item"><label><input type="checkbox" data-work-room="${r.id}" data-work-code="${code}" ${workOn(r,code)?'checked':''}> ${esc(PRICE[code].name)}</label>${workOn(r,code)&&TILE_CODES.includes(code)?tileEditor(r,code):workOn(r,code)?fld('本次施工量（留空按尺寸／设备数计算）',PRICE[code].unit,`data-work-qty="${r.id}" data-work-code="${code}" placeholder="可按本次施工范围填写"`,r.workQty?.[code]??'',false,true):''}${workOn(r,code)&&!TILE_CODES.includes(code)?`<div class="note" data-item-price="${r.id}:${code}"></div>`:''}</div>`).join('')}</div></div></details>`;
+    };
+    return `<details class="pickbox room-panel" data-room-panel="${r.id}:work" ${openRoomPanels.has(r.id+':work')?'open':''}><summary>本空间装修项目 · 已选 ${codes.filter(c=>workOn(r,c)).length} 项<span class="panel-action"></span></summary><div class="panel-body"><p class="hint">先确认拆除范围，再点开新建／安装工程。两组按需独立勾选；没有拆除也可以直接选新建。只填写规格和工程量，价格由公司价目表自动匹配。</p>${group('demolition','1. 拆除工程',codes.filter(c=>c.startsWith('demo_')))}${group('installation','2. 新建／安装工程',codes.filter(c=>!c.startsWith('demo_')))}</div></details>`;
+  }
+  function serviceHtml() {
+    return `<div class="card"><h2>全屋共用服务</h2><p class="hint">需要才勾选；空间中的施工项目在各房间分别选择。</p><div class="grid2">${GLOBAL_SERVICES.map(code=>`<label><input type="checkbox" data-global-service="${code}" ${P.globalServices?.[code]?'checked':''}> ${esc(PRICE[code].name)}</label>`).join('')}</div></div>`;
+  }
+  const openRoomPanels = new Set();
+  function materialSelects(r) {
+    const fields = materialFields(r);
+    if (!fields.length) return '';
+    return `<details class="pickbox room-panel" data-room-panel="${esc(r.id)}:materials" ${openRoomPanels.has(r.id+':materials')?'open':''}><summary>材料规格<span class="panel-action"></span></summary><div class="panel-body"><div class="grid3">${fields.map(key => {
+      const f = MATERIAL_SPEC[key], values = specOptions(r, key);
+      if (r[key] && !values.includes(r[key])) values.unshift(r[key]);
+      return `<div class="fld"><label>${esc(f.label)}<select data-room="${esc(r.id)}" data-f="${key}"><option value="">${key === 'tileDim' && r.tileSize === 'big' ? '大板砖／岩板（原记录，尺寸待选）' : '待选定'}</option>${values.map(v => `<option value="${esc(v)}" ${r[key] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label></div>`;
+    }).join('')}</div><p class="hint">规格将带入报价清单。选定材料后，系统自动匹配公司材料及施工价格；请核对品牌、型号和承包范围。</p></div></details>`;
+  }
+  function materialPick(roomId, code) {
+    const r = P.rooms.find(x => x.id === roomId);
+    if (!r) return '';
+    let fields = [];
+    if (code === 'floor_tile' || code === 'porch_tile') fields = ['tileDim'];
+    if (code === 'wall_tile') fields = ['wallTileDim'];
+    if (code === 'laminate') fields = ['spcMaterial', 'spcThickness'];
+    if (code === 'plaster_ceiling') fields = ['ceilingBoard', 'ceilingThickness', 'ceilingMoisture'];
+    if (['paint_wall', 'wallpaper', 'art_paint', 'ext_paint'].includes(code)) fields = ['wallBrand', 'wallSeries', 'wallWork'];
+    if(['floor_tile','wall_tile','porch_tile'].includes(code))fields.push('tileFinish');
+    if(code==='grout')fields=['groutType'];if(code==='wp')fields=['wpType'];if(code==='wire')fields=['wireSpec'];if(code==='water_pt')fields=['pipeSpec'];
+    return fields.filter(f => r[f]).map(f => `${MATERIAL_SPEC[f].label}：${r[f]}`).join('；');
+  }
+  const TYPES = {
+    living:  { label: '客厅/餐厅', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'fan', 'shoeCab', 'tvCab', 'sideboard', 'floor', 'tileSize', 'ceiling', 'cornice', 'wallFinish'],
+               def: { L: 20, W: 12, H: 9, doors: 0, win: 8, pts: 8, lights: 4, ac: 1, fan: 1, shoeCab: 4, tvCab: 8, sideboard: 0, floor: 'tile', tileSize: 'std', ceiling: 'feature', cornice: 'no', wallFinish: 'paint' } },
+    bedroom: { label: '卧室', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'fan', 'wardrobe', 'headboard', 'floor', 'tileSize', 'ceiling', 'cornice', 'wallFinish'],
+               def: { L: 12, W: 11, H: 9, doors: 1, win: 6, pts: 5, lights: 2, ac: 1, fan: 1, wardrobe: 8, headboard: 0, floor: 'laminate', tileSize: 'std', ceiling: 'flat', cornice: 'no', wallFinish: 'paint' } },
+    kitchen: { label: '厨房', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'cabLow', 'cabUp', 'basket', 'wpts', 'wallTile', 'ceiling'],
+               def: { L: 10, W: 8, H: 9, doors: 0, win: 3, pts: 8, lights: 2, cabLow: 11, cabUp: 8, basket: 2, wpts: 2, wallTile: 'partial', ceiling: 'flat' } },
+    laundry: { label: '洗衣区/后阳台', fields: ['L', 'W', 'pts', 'lights', 'wpts', 'drains', 'laundryCab', 'rack'],
+               def: { L: 8, W: 5, pts: 2, lights: 1, wpts: 2, drains: 1, laundryCab: 4, rack: 0 } },
+    bath:    { label: '卫生间', fields: ['L', 'W', 'H', 'doors', 'pts', 'lights', 'wpts', 'drains', 'toilet', 'vanity', 'shower', 'screen', 'heater', 'ceiling'],
+               def: { L: 8, W: 5, H: 9, doors: 1, pts: 3, lights: 1, wpts: 5, drains: 2, toilet: 1, vanity: 1, shower: 1, screen: 1, heater: 1, ceiling: 'flat', moved: null },
+               roomQ: [{ k: 'moved', q: '要改马桶/排水位置吗？', why: '改位置就必须降板+重做排水+加强防水，最容易漏收的一项' }] },
+    balcony: { label: '阳台', fields: ['L', 'W', 'pts', 'lights', 'drains', 'rack'],
+               def: { L: 10, W: 4, pts: 1, lights: 1, drains: 1, rack: 1, seal: null },
+               roomQ: [{ k: 'seal', q: '要封阳台窗吗？', why: '按阳台长度计价；公寓通常要先问物业是否允许' }] },
+    other:   { label: '走廊/书房/储物间', fields: ['L', 'W', 'H', 'doors', 'win', 'pts', 'lights', 'ac', 'fan', 'bookcase', 'floor', 'tileSize', 'ceiling', 'cornice', 'wallFinish'],
+               def: { L: 10, W: 4, H: 9, doors: 0, win: 0, pts: 2, lights: 1, ac: 0, fan: 0, bookcase: 0, floor: 'tile', tileSize: 'std', ceiling: 'none', cornice: 'no', wallFinish: 'paint' } }
+  };
+
+  PRICE.desk = {stage:'custom',name:'定制书桌／工作台',unit:'延尺',mat:0,aux:0,lab:0,desc:'按客户确认的材质、尺寸、承重及走线要求制作；单价待核定'};
+  ['wood','stone','other'].forEach(k=>{PRICE['stair_'+k]={stage:'tile',name:{wood:'楼梯木饰面',stone:'楼梯石材饰面',other:'楼梯其他材料饰面'}[k],unit:'级',mat:0,aux:0,lab:0,desc:'按确认材料、厚度、收边和踏步做法施工；单价待核定'};});
+  PRICE.stair_landing={stage:'tile',name:'楼梯平台饰面',unit:'平方尺',mat:0,aux:0,lab:0,desc:'与选定楼梯材料配套，平台面积单独计量，单价待核定'};
+  const STAIR_SPEC = {
+    material:['楼梯面层材料',['瓷砖','木饰面','天然石材／人造石','其他材料']],
+    tileMethod:['梯阶砖铺法',['平铺（踏面平贴）','下挂（踏面前沿下挂）']],
+    riser:['踢面／立面处理',['保留原立面','同材质包立面','异材质包立面','油漆修整立面']],
+    edge:['踏步前沿收口',['原砖磨边','45度海棠角／碰角','成品踏步砖','金属收边条','木踏步鼻口']],
+    slip:['防滑做法',['防滑面材料','开防滑槽','嵌入防滑条','防滑涂层']],
+    substrate:['基层处理',['保留基层、局部修补','拆除旧面层＋找平','旧面层上覆贴（核对完成面高度）']],
+    woodType:['木饰面类型',['实木踏步板','多层实木复合踏步板','SPC／LVT配套楼梯系统']],
+    stoneType:['石材类型',['花岗岩','大理石','石英石','岩板']],
+    railMaterial:['扶手／栏杆材质',['实木扶手','不锈钢','铝合金','铁艺','玻璃栏板＋金属扶手']]
+  };
+  function stairKeys(a) {
+    const keys=['material','riser','edge','slip','substrate'];
+    if(a.material==='瓷砖')keys.push('tileMethod');
+    if(a.material==='木饰面')keys.push('woodType');
+    if(a.material==='天然石材／人造石')keys.push('stoneType');
+    if(num(a.rail)>0)keys.push('railMaterial');
+    return keys;
+  }
+  function stairPick() {const a=ans('stairs');return [...stairKeys(a).filter(k=>a[k]).map(k=>`${STAIR_SPEC[k][0]}：${a[k]}`),a.spec?`规格／厚度：${a.spec}`:'',a.material==='瓷砖' && a.tileMethod==='下挂（踏面前沿下挂）' && a.hang?`下挂高度：${a.hang} mm`:'',a.other?`其他材料：${a.other}`:'',`梯宽${a.width||'待填'}尺，踏面深${a.treadDepth||'待填'}尺，级高${a.riserHeight||'待填'}尺`].filter(Boolean).join('；');}
+  function stairHtml(a) {
+    return `<div class="grid2" style="margin-top:12px">${stairKeys(a).map(k=>`<div class="fld"><label>${STAIR_SPEC[k][0]}<select data-ans-n="stairs" data-k="${k}"><option value="">请选择</option>${STAIR_SPEC[k][1].map(v=>`<option value="${esc(v)}" ${a[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label></div>`).join('')}${fld('面层规格／板厚（含单位）','', 'data-ans-n="stairs" data-k="spec" placeholder="如600×1200mm，厚10mm"',a.spec||'')}${a.material==='瓷砖'&&a.tileMethod==='下挂（踏面前沿下挂）'?fld('前沿下挂高度','mm','data-ans-n="stairs" data-k="hang"',a.hang||'',false,true):''}${a.material==='其他材料'?fld('其他材料名称与做法','','data-ans-n="stairs" data-k="other"',a.other||''):''}</div><p class="hint">仅翻新面层，不默认改变结构、踏步数量或级高。所选材料、下挂与收边工艺须在清单核定单价；平台、扶手、灯具按本次施工量分别计价。</p>`;
+  }
+  const FITOUT = {
+    cab_low: ['厨房地柜','cabLow'], cab_up: ['厨房吊柜','cabUp'], counter: ['厨房台面','cabLow'], cab_basket: ['橱柜拉篮','basket'],
+    wardrobe: ['衣柜','wardrobe'], desk: ['书桌／工作台','deskLength'], shoe_cab: ['鞋柜／玄关柜','shoeCab'], tv_cab: ['电视柜','tvCab'],
+    sideboard: ['餐边柜','sideboard'], bookcase: ['书柜／储物柜','bookcase'], laundry_cab: ['洗衣柜','laundryCab'], headboard: ['床头背景定制','headboard'], vanity: ['浴室柜','vanity'],
+    door: ['门（新装／更换）','doors'], window_new: ['窗（新装／更换）','windowArea']
+  };
+  const FIT_SPEC = {
+    material: ['柜体材质',['多层实木板','防潮颗粒板','密度板','实木','铝合金','不锈钢']],
+    panel: ['门板饰面',['双饰面／三聚氰胺','PET','烤漆','木皮','实木','铝合金','玻璃']],
+    thickness: ['板材厚度',['16 mm','18 mm','20 mm','25 mm']],
+    hardware: ['五金配置',['普通五金','阻尼铰链＋缓冲滑轨','Blum','Hettich','Häfele','DTC']],
+    opening: ['开合方式',['平开门','推拉门','开放格','抽屉组合','上翻门']],
+    layout: ['内部配置',['层板储物','挂衣区＋层板','长衣区＋短衣区＋抽屉','抽屉＋收纳分隔','电器位＋散热＋走线']],
+    light: ['柜内灯',['不做','感应灯带（单独核价）','手动灯带（单独核价）']],
+    topMaterial: ['台面材质',['石英石','岩板','花岗岩','不锈钢','实木']],
+    topThickness: ['台面厚度',['12 mm','15 mm','20 mm','30 mm']],
+    edge: ['台面工艺',['直边','圆边','下挂边','后挡水＋侧挡水','无挡水']],
+    doorMaterial: ['门材质',['实木复合门','实木门','铝合金门','玻璃门','PVC 门','WPC 木塑门']],
+    doorStyle: ['门型',['平开门','推拉门','折叠门','隐藏门']],
+    lock: ['锁具',['普通机械锁','静音锁','智能锁（单独核价）','不含锁']],
+    frame: ['窗框材质',['铝合金','断桥铝','UPVC']],
+    glass: ['玻璃配置',['普通玻璃','钢化玻璃','夹层玻璃','中空玻璃']],
+    glassThickness: ['玻璃厚度',['6 mm','8 mm','10 mm','10.38 mm','12 mm','按中空组合规格另行确认']],
+    windowStyle: ['窗型',['推拉窗','平开窗','上悬窗','固定窗','百叶窗']],
+    accessory: ['拉篮配置',['碗碟拉篮','调味拉篮','转角拉篮','高柜拉篮','升降拉篮']]
+  };
+  const ROOM_FITOUT = {
+    kitchen:['cab_low','cab_up','counter','cab_basket'], dryKitchen:['cab_low','cab_up','counter','cab_basket','sideboard'], wetKitchen:['cab_low','cab_up','counter','cab_basket'],
+    living:['tv_cab','shoe_cab'], dining:['sideboard'], family:['tv_cab','bookcase'],
+    bedroom:['wardrobe','desk','headboard'], master:['wardrobe','desk','headboard'],
+    study:['bookcase','desk'], foyer:['shoe_cab'], store:['bookcase'], corridor:['bookcase'],
+    bath:['vanity'], laundry:['laundry_cab'], balcony:['laundry_cab'],
+    porch:['shoe_cab'], backyard:[], yard:[], stairs:['bookcase'], other:['bookcase','desk']
+  };
+  function fitoutCodes(r) { return [...(ROOM_FITOUT[r.type] || []),'door','window_new']; }
+  function invalidFitout(r) { return Object.keys(r.fitout || {}).filter(code=>FITOUT[code] && r.fitout[code]?.on && !fitoutCodes(r).includes(code)); }
+  function fitSelected(r, code) { return fitoutCodes(r).includes(code) && r.fitout?.[code]?.on === true; }
+  function fitKeys(code) {
+    if(code==='door') return ['doorMaterial','doorStyle','lock'];
+    if(code==='window_new') return ['frame','glass','glassThickness','windowStyle'];
+    if(code==='counter') return ['topMaterial','topThickness','edge'];
+    if(code==='cab_basket') return ['accessory','hardware'];
+    return ['material','panel','thickness','hardware','opening','layout','light'];
+  }
+  function fitPick(r, code) {
+    const st=r?.fitout?.[code]; if(!st?.on) return '';
+    const dimensions=[['length','长'],['height','高'],['depth','深']].filter(([k])=>num(st[k])>0).map(([k,l])=>`${l}${st[k]}尺`).join('×');
+    return [dimensions,...fitKeys(code).filter(k=>st[k]).map(k=>`${FIT_SPEC[k][0]}：${st[k]}`)].filter(Boolean).join('；');
+  }
+  function fitQty(r,code) {
+    const st=r.fitout?.[code]||{};
+    if(code==='window_new') return num(st.length)*num(st.height)*num(st.qty);
+    if(['door','vanity','cab_basket'].includes(code)) return num(st.qty);
+    return num(st.length);
+  }
+  function fitoutHtml(r) {
+    const codes=fitoutCodes(r);
+    return `<details class="pickbox room-panel" data-room-panel="${esc(r.id)}:fitout" ${openRoomPanels.has(r.id+':fitout')?'open':''}><summary>全屋定制及门窗<span class="panel-action"></span></summary><div class="panel-body"><p class="hint">客户需要才勾选；未勾选不计入报价。门窗数量用于记录现状，下面勾选才报价新装／更换。</p>${codes.map(code=>{
+      const st=r.fitout?.[code]||{},on=fitSelected(r,code),unit=PRICE[code].unit;
+      const input=(key,label)=>fld(label,'尺',`data-fit-room="${r.id}" data-fit-code="${code}" data-f="${key}"`,st[key]??'',false,true);
+      return `<div style="border-top:1px solid var(--line);padding:10px 0"><label><input type="checkbox" data-fit-toggle="${r.id}" data-fit-code="${code}" ${on?'checked':''}> 需要做${FITOUT[code][0]}</label>${on?`<div class="grid3" style="margin-top:10px">${['door','vanity','cab_basket'].includes(code)?fld('数量',unit,`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}${input('length',code==='window_new'?'单樘窗宽':'长度／门宽')}${input('height','高度')}${['door','window_new','cab_basket'].includes(code)?'':input('depth','深度')}${code==='window_new'?fld('同规格窗数量','樘',`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}${fitKeys(code).map(k=>`<div class="fld"><label>${FIT_SPEC[k][0]}<select data-fit-room="${r.id}" data-fit-code="${code}" data-f="${k}"><option value="">待客户选定</option>${FIT_SPEC[k][1].map(v=>`<option value="${esc(v)}" ${st[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label></div>`).join('')}</div><div class="note" data-item-price="${r.id}:${code}"></div><p class="hint">材质及配置自动匹配价目表；未匹配的规格需由公司补充价格。</p>`:''}</div>`;
+    }).join('')}${invalidFitout(r).map(code=>`<div class="note warn">原报价的「${FITOUT[code][0]}」不适用于当前空间，已暂停计价。<label><input type="checkbox" data-fit-toggle="${r.id}" data-fit-code="${code}" checked> 取消此项，或更正空间类型</label></div>`).join('')}</div></details>`;
+  }
+
+  // Local spatial categories reuse existing construction rules, while outdoors/stairs stay separate.
+  const roomBase = r => TYPES[r.type].base || r.type;
+  const sourceFloorName = n => ['底层 Ground Floor（第 1 层）','楼上 First Floor（第 2 层）','Second Floor（第 3 层）','Third Floor（第 4 层）'][n-1] || `第 ${n} 层`;
+  const floorName = n => P.planFloorNames?.[n] ? sourceFloorName(n) : (houseDef(P.houseType)?.apartment ? ['户内下层 / Main Level','户内上层 / Upper Level','户内第 3 层','户内第 4 层'] : ['底层 Ground Floor（第 1 层）','楼上 First Floor（第 2 层）','Second Floor（第 3 层）','Third Floor（第 4 层）'])[n-1] || `第${n}层`;
+  const aliasRoom = (id, label, base, overrides = {}) => {
+    TYPES[id] = { ...TYPES[base], label, base, def: { ...TYPES[base].def, ...overrides } };
+  };
+  TYPES.living.label = '客厅 Living'; TYPES.bedroom.label = '卧室 Bedroom';
+  TYPES.kitchen.label = '厨房 Kitchen'; TYPES.bath.label = '浴厕 Bathroom';
+  TYPES.laundry.label = '洗衣区 Laundry'; TYPES.balcony.label = '阳台 Balcony';
+  TYPES.other.label = '其他室内空间';
+  aliasRoom('dining', '餐厅 Dining', 'living', { shoeCab: 0, tvCab: 0, sideboard: 0 });
+  aliasRoom('family', '家庭厅 Family Hall', 'living', { shoeCab: 0 });
+  aliasRoom('master', '主人房 Master Bedroom', 'bedroom');
+  aliasRoom('dryKitchen', '干厨房 Dry Kitchen', 'kitchen', { wallTile: 'partial' });
+  aliasRoom('wetKitchen', '湿厨房 Wet Kitchen', 'kitchen', { wallTile: 'full' });
+  aliasRoom('foyer', '玄关 Foyer', 'other');
+  aliasRoom('study', '书房 Study', 'other');
+  aliasRoom('store', '储物间 Store', 'other');
+  aliasRoom('corridor', '走廊 Corridor', 'other');
+  ['porch', 'backyard', 'yard', 'stairs'].forEach((id, i) => {
+    TYPES[id] = { label: ['车廊 Car Porch', '后院 Backyard', '侧院/花园 Garden', '楼梯 Staircase'][i],
+      base: id === 'stairs' ? 'stairs' : 'outdoor', fields: ['L', 'W'], def: { L: '', W: '' } };
+  });
+  const ROOM_GROUPS = [
+    ['起居与卧室', ['living','dining','family','master','bedroom','foyer']],
+    ['厨卫与家务', ['dryKitchen','wetKitchen','kitchen','bath','laundry','store']],
+    ['交通与户外', ['study','corridor','stairs','balcony','porch','backyard','yard','other']]
+  ];
+  let extraRoomsOpen = false, extraRoomLevel = 1;
+  const usesPlanRooms = () => P.planImported || P.rooms.some(r => r.planImported);
+  let plan = { file: null, url: '', busy: false, message: '', rooms: [], warnings: [], confirmed: false };
+  const missingDimensions = r => (r.sketch?.points?.length&&!r.sketch.bypass ? (!r.sketch.applied||!!sketchMetrics(r.sketch).error|| (TYPES[r.type].fields.includes('H')&&!(num(r.H)>0))) : TYPES[r.type].fields.some(k => ['L','W','H'].includes(k) && !(Number.isFinite(Number(r[k])) && Number(r[k])>0)));
+  const needsSurvey = r => missingDimensions(r) || (r.planImported && !r.surveyConfirmed);
+  const drawingDimension = v => Number.isFinite(Number(v)) && Number(v)>0 ? Number(v) : '';
+  function roomInventoryHtml(rooms, candidate = false) {
+    const selected=rooms.filter(r=>!candidate || r.selected);
+    const beds=selected.filter(r=>['bedroom','master'].includes(r.type)).length;
+    const baths=selected.filter(r=>r.type==='bath').length;
+    const groups=[...new Set(selected.map(r=>+r.level||0))].sort((a,b)=>a-b);
+    return `<div class="note" style="margin:12px 0" data-room-inventory><b>${candidate?'已选候选空间':'空间概况'}：${selected.length} 个空间 · ${beds} 间卧室 · ${baths} 间浴厕</b>
+      ${groups.map(lv=>{const rs=selected.filter(r=>(+r.level||0)===lv), counts={};rs.forEach(r=>counts[r.type]=(counts[r.type]||0)+1);return `<div style="margin-top:6px">${lv?(candidate && rs.some(r=>r.levelEvidence)?sourceFloorName(lv):floorName(lv)):'楼层待确认'}：${Object.entries(counts).map(([t,n])=>`${esc(TYPES[t].label)} × ${n}`).join('、')}</div>`;}).join('')}
+      <div style="margin-top:6px">${candidate?'数量按当前勾选项统计，请核对漏识别或重复的空间。':'房间可修改或补充；图纸尺寸先作参考，现场复尺后确认尺寸及施工数量。'}</div></div>`;
+  }
+  function planHtml() {
+    return `<div class="card"><h2>从平面图添加空间</h2>
+      <p class="hint">上传图片或 PDF → 整理房间数量和用途 → 核对楼层与空间清单 → 优先带入图纸尺寸 → 现场复尺确认。</p>
+      <label class="btn-ghost" style="display:inline-block">选择平面图<input data-plan-file type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:block;margin-top:8px;max-width:100%" ${plan.busy ? 'disabled' : ''}></label>
+      ${plan.file ? `<p>${esc(plan.file.name)}</p>${plan.file.type.startsWith('image/') ? `<img src="${esc(plan.url)}" alt="待分析平面图" style="max-width:100%;max-height:320px;object-fit:contain">` : `<a href="${esc(plan.url)}" target="_blank" rel="noopener">查看已选 PDF</a>`}
+      <button class="primary" data-plan-analyze ${plan.busy ? 'disabled' : ''}>${plan.busy ? '正在识别图中文字…' : '自动分析平面图'}</button>` : ''}
+      <p class="hint" style="margin-top:10px">识别房间名称、用途、楼层及明确标注的尺寸。尺寸识别不到可留空；已识别尺寸先作参考，现场复尺后确认。PDF 最多 12 页，文件不超过 20 MB。</p>
+      ${plan.message && !plan.rooms.length ? planFeedbackHtml() : ''}
+      ${plan.rooms.length ? `<p class="hint">识别出 ${plan.rooms.length} 个候选空间。核对名称、类型和楼层；已识别尺寸统一为英尺，无法确认的可清空。重复或不需要的空间可取消勾选。</p>${roomInventoryHtml(plan.rooms,true)}
+      ${plan.rooms.map((r,i) => `<div class="q"><label><input type="checkbox" data-plan-pick="${i}" ${r.selected ? 'checked' : ''}> 添加这个空间 · 源图第 ${r.page} 页</label>
+        <p class="hint">原文：${esc(r.evidence)}<br>源图楼层标题：${esc(r.levelEvidence || '未识别，需手动确认')}</p><div class="grid2">
+        ${fld('房间名称', '', `data-plan-row="${i}" data-f="name"`, r.name)}
+        <div class="fld"><label>空间类型<select data-plan-row="${i}" data-f="type">${Object.keys(TYPES).map(k => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${esc(TYPES[k].label)}</option>`).join('')}</select></label></div>
+        <div class="fld"><label>楼层<select data-plan-row="${i}" data-f="level"><option value="">请选择楼层</option>${[1,2,3,4].map(n => `<option value="${n}" ${+r.level===n?'selected':''}>${r.levelEvidence ? sourceFloorName(n) : floorName(n)}</option>`).join('')}</select></label></div>
+        ${['L','W','H'].map(k => fld({L:'图纸长（选填）',W:'图纸宽（选填）',H:'图纸层高（选填）'}[k], '英尺', `data-plan-row="${i}" data-f="${k}"`, r[k] ?? '', false, true)).join('')}
+        <div class="full hint">识别出的尺寸先带入作参考，不代表已实测；缺失尺寸不影响导入。</div>
+        </div></div>`).join('')}
+      ${P.rooms.length ? `<div class="note" style="margin-top:12px"><b>如何处理当前 ${P.rooms.length} 个房间？</b>
+        <div class="seg" style="margin-top:8px"><button data-plan-mode="replace" aria-pressed="${plan.mode==='replace'}" class="${plan.mode==='replace'?'active':''}">替换当前房间</button><button data-plan-mode="append" aria-pressed="${plan.mode==='append'}" class="${plan.mode==='append'?'active':''}">追加空间</button></div>
+        <p style="margin-bottom:0">${plan.mode==='replace'?'将移除当前所有房间（包括模板、手动添加及之前导入的房间）和这些房间的清单调整，仅保留本次勾选空间。客户资料、全屋问题、价目表及自定义项目保留。':plan.mode==='append'?'保留当前房间，在后面追加；请取消勾选已经存在的空间，避免重复计价。':'整套图纸取代模板时选“替换”；补充其他楼层或局部图纸时选“追加”。'}</p>
+        ${plan.mode==='replace'?`<label style="display:block;margin-top:10px"><input type="checkbox" data-plan-replace-confirm ${plan.replaceConfirmed?'checked':''}> 我确认用本次所选空间替换当前全部 ${P.rooms.length} 个房间</label>`:''}</div>`:''}
+      <label style="display:block;margin:12px 0"><input type="checkbox" data-plan-confirm ${plan.confirmed?'checked':''}> 我已核对所选空间的数量、用途和楼层，图纸尺寸先参考，之后现场复尺</label>
+      ${planFeedbackHtml()}
+      <button class="primary" data-plan-apply>${plan.mode==='replace' && P.rooms.length?'确认替换并导入':'确认导入所选空间'}</button>` : ''}
+      ${plan.warnings.length ? `<p class="hint">${plan.warnings.map(esc).join('<br>')}</p>` : ''}
+    </div>`;
+  }
+  async function analyzePlan() {
+    if (!plan.file || plan.busy) return;
+    plan.busy = true; plan.error = false; plan.message = ''; plan.rooms = []; plan.confirmed = false; plan.mode = ''; plan.replaceConfirmed = false; render();
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 115000);
+    try {
+      const res = await fetch('http://127.0.0.1:8766/analyze', {method:'POST', headers:{'Content-Type':'application/octet-stream','X-Plan-Type':plan.file.name.split('.').pop().toLowerCase()},body:plan.file,signal:controller.signal});
+      const data = await res.json(); if (!res.ok) throw new Error(data.error || '识别失败');
+      plan.rooms = (data.rooms || []).filter(r => TYPES[r.type]).map(r => ({...r,selected:true}));
+      plan.warnings = data.warnings || [];
+      plan.message = plan.rooms.length ? '识别完成。请逐项核对，确认后才会加入报价。' : '没有找到可识别的房间标签。请使用更清晰的图纸，或通过下方空间按钮手动添加。';
+    } catch(e) {
+      plan.message = e.name === 'AbortError' ? '识别超时，请缩小图片或拆分 PDF 后重试。' : e instanceof TypeError ? '未连接到本机识别服务。请启动“scripts/quote-plan-server.py”，再重试；也可先手动添加房间。' : e.message;
+    } finally { clearTimeout(timer); plan.busy = false; render(); }
+  }
+  function planFeedbackHtml() {
+    return `<div id="plan-feedback" class="note ${plan.error?'warn':''}" role="${plan.error?'alert':'status'}" tabindex="-1" style="margin:12px 0">${esc(plan.message || '核对所选空间后，点击下方按钮导入。')}</div>`;
+  }
+  function planFeedback(message, error = true) {
+    plan.message=message; plan.error=error; render();
+    const feedback=document.getElementById('plan-feedback');
+    if(feedback) {feedback.focus({preventScroll:true});feedback.scrollIntoView({block:'center',behavior:'smooth'});}
+  }
+  function applyPlan() {
+    const selected = plan.rooms.filter(r => r.selected);
+    if(!selected.length) return planFeedback('尚未选择空间。请至少勾选一个“添加这个空间”。');
+    const invalid=selected.filter(r=>!TYPES[r.type] || !String(r.name||'').trim() || ![1,2,3,4].includes(+r.level));
+    if(invalid.length) return planFeedback(`还有 ${invalid.length} 个空间的名称、类型或楼层未确认：${invalid.map(r=>r.name || '未命名空间').join('、')}。请补齐这些项目，长宽和层高可以留空。`);
+    if(P.rooms.length && !['append','replace'].includes(plan.mode)) return planFeedback('请选择“替换当前房间”或“追加空间”，然后再导入。');
+    const replacing=P.rooms.length>0 && plan.mode==='replace';
+    if(replacing && !plan.replaceConfirmed) return planFeedback('请勾选“我确认用本次所选空间替换当前全部房间”，或改选“追加空间”。');
+    if(!plan.confirmed) return planFeedback('请先勾选按钮上方的“我已核对所选空间的数量、用途和楼层”，再确认导入。');
+    // Build and validate before replacing the current project so a failure keeps it intact.
+    const imported=selected.map(item=>{
+      const r=makeRoom(item.type,item.name,+item.level);
+      TYPES[r.type].fields.forEach(k=>{if(!F[k]?.opts)r[k]='';});
+      return Object.assign(r,{L:drawingDimension(item.L),W:drawingDimension(item.W),H:drawingDimension(item.H),planImported:true,planReviewed:false,surveyConfirmed:false,
+        planSource:{file:plan.file?.name || '已识别平面图',page:item.page,evidence:item.evidence,levelEvidence:item.levelEvidence || '',drawingDimensions:{L:item.L ?? null,W:item.W ?? null,H:item.H ?? null}}});
+    });
+    if(replacing) {
+      const ids=new Set(P.rooms.map(r=>r.id));
+      P.rooms=[];P.planFloorNames={};
+      Object.keys(P.lines).forEach(key=>{if(ids.has(key.split(':')[0]))delete P.lines[key];});
+      P.levels=Math.max(...imported.map(r=>r.level));expanded.clear();
+    }
+    P.planFloorNames=P.planFloorNames || {};
+    imported.forEach(r=>{if(r.planSource.levelEvidence)P.planFloorNames[r.level]=r.planSource.levelEvidence;P.rooms.push(r);P.levels=Math.max(levels(),r.level);});
+    P.planImported=true;extraRoomsOpen=false;extraRoomLevel=1;
+    plan.rooms=[];plan.confirmed=false;plan.replaceConfirmed=false;plan.mode='';
+    planFeedback(`导入成功：已${replacing?'替换并导入':'添加'} ${imported.length} 个空间，当前共 ${P.rooms.length} 个空间。请向下查看房间卡片，补齐尺寸并现场复尺。${replacing?'全屋问题及自定义项目已保留，请重新核对数量。':''}`,false);
+  }
+
+  // =====================================================================
+  //  三、全屋必答问题（每题都要答"是/否"，答完才能出报价单）
+  // =====================================================================
+  const QUESTIONS = [
+    { id: 'condo', q: '是公寓/有管理处吗？', why: '要向物业申请装修许可、交押金，并做公共区域保护' },
+    { id: 'old', q: '是二手房/要拆旧装修吗？', why: '旧柜、旧洁具要拆，旧地砖要铲，垃圾清运车次会增加',
+      inputs: [{ k: 'pieces', label: '要拆的旧柜/洁具/门窗', unit: '件', def: () => 8 },
+               { k: 'floor', label: '要铲除的旧地砖', unit: '平方尺', def: () => Math.round(totalFloor()) },
+               { k: 'ceil', label: '要拆的旧天花（没有填 0）', unit: '平方尺', def: () => 0, optional: true },
+               { k: 'skin', label: '要铲的旧墙皮（没有填 0）', unit: '平方尺', def: () => 0, optional: true }] },
+    { id: 'dbBox', q: '要更换配电箱（DB 箱）吗？', why: '旧房、或新增了空调/热水器等大功率电器时建议更换',
+      inputs: [{ k: 'count', label: '配电箱数量', unit: '个', def: () => 1 }] },
+    { id: 'grille', q: '要装防盗铁花吗？', why: '窗户、大门、后门铁花，按面积计（宽 × 高）',
+      inputs: [{ k: 'area', label: '铁花总面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'demoWall', q: '要拆墙/砸隔断吗？', why: '面积 = 墙长 × 墙高',
+      inputs: [{ k: 'area', label: '拆墙面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'newWall', q: '要新砌墙吗？', why: '系统会自动加上新墙两面的批灰+油漆',
+      inputs: [{ k: 'area', label: '新墙面积（单面）', unit: '平方尺', def: () => 0 }] },
+    { id: 'doorOpen', q: '要改门洞（封旧门洞/开新门洞）吗？',
+      inputs: [{ k: 'count', label: '门洞数量', unit: '个', def: () => 1 }] },
+    { id: 'loadWall', q: '要动承重墙/结构梁柱吗？', why: '必须有结构工程师签字，不能按普通砸墙报价', warn: true,
+      inputs: [{ k: 'count', label: '开洞处数', unit: '处', def: () => 1 }] },
+    { id: 'gas', q: '厨房要改燃气管道吗？' },
+    { id: 'net', q: '要预埋网络/电视线吗？',
+      inputs: [{ k: 'count', label: '网络/电视点位', unit: '个', def: () => 4 }] },
+    { id: 'doors', q: '沿用全屋门更换方案吗？（逐空间已选的门不会重复计算）', why: '按每个房间填的"室内门"数量计算' },
+    { id: 'curtain', q: '要做窗帘吗？', why: '按每个房间填的"窗户总宽"计算' },
+    { id: 'decor', q: '要基础软装配饰包吗？' },
+    { id: 'windows', q: '另有全屋窗户工程吗？（逐空间选窗时请选否）', why: '按窗户面积（宽 × 高）计；要纱窗的一起填',
+      inputs: [{ k: 'area', label: '换窗面积', unit: '平方尺', def: () => 0 }, { k: 'net', label: '纱窗面积（不要填 0）', unit: '平方尺', def: () => 0, optional: true }] },
+    { id: 'mainDoor', q: '要换大门吗？', inputs: [{ k: 'count', label: '大门数量', unit: '樘', def: () => 1 }] },
+    { id: 'cctv', q: '要装监控（CCTV）吗？', inputs: [{ k: 'count', label: '摄像头数量', unit: '个', def: () => 4 }] },
+    { id: 'doorbell', q: '要装可视门铃/对讲吗？' },
+    { id: 'porch', q: '要做门廊/车库地坪吗？', why: '有地房屋（排屋/独立屋）才会问', when: () => ans('condo').v === false,
+      inputs: [{ k: 'area', label: '门廊/车库面积', unit: '平方尺', def: () => 0 }, { k: 'drain', label: '排水沟长度（不做填 0）', unit: '尺', def: () => 0, optional: true }] },
+    { id: 'extension', q: '要做厨房/后院扩建吗？', why: '必须先向市政局（Majlis）申请图纸批准，系统会自动加上申请费', when: () => ans('condo').v === false,
+      inputs: [{ k: 'area', label: '扩建面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'awning', q: '要做雨棚（Awning）吗？', when: () => ans('condo').v === false,
+      inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'fence', q: '要做/改围墙吗？', when: () => ans('condo').v === false,
+      inputs: [{ k: 'len', label: '围墙长度', unit: '尺', def: () => 0 }] },
+    { id: 'autogate', q: '要装自动大门（Autogate）吗？', when: () => ans('condo').v === false },
+    { id: 'roof', q: '屋顶有漏水要修吗？', when: () => ans('condo').v === false,
+      inputs: [{ k: 'count', label: '漏点处数', unit: '处', def: () => 1 }] },
+    { id: 'pump', q: '要装水泵/水箱吗？', why: '水压低或楼上出水小时需要', when: () => ans('condo').v === false },
+    { id: 'extPaint', q: '要刷外墙吗？', why: '有地房屋才会问。外墙面积 = 外墙周长 × 高度', when: () => ans('condo').v === false,
+      inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 0 }] },
+    { id: 'stairs', q: '现有楼梯需要更改／翻新吗？', why: '多层住宅有楼梯不等于需要施工。不需要则保留现状、不计楼梯装修费用；需要才选择材料及做法。', when: () => levels() > 1,
+      inputs: [{ k:'steps',label:'本次施工踏步级数',unit:'级',def:()=>0 },
+        { k:'width',label:'梯段净宽',unit:'尺',def:()=>0 },
+        { k:'treadDepth',label:'单级踏面深度',unit:'尺',def:()=>0 },
+        { k:'riserHeight',label:'单级立面高度',unit:'尺',def:()=>0 },
+        { k:'landing',label:'平台施工面积（不做填0）',unit:'平方尺',def:()=>0,optional:true },
+        { k:'rail',label:'更换扶手长度（保留填0）',unit:'尺',def:()=>0,optional:true },
+        { k:'lights',label:'新增楼梯灯及双控套数（不做填0）',unit:'套',def:()=>0,optional:true }] },
+    { id: 'void', q: '有挑空（两层高）的客厅/楼梯间吗？', why: '墙面、天花要搭脚手架才能施工，要另收高空作业费', when: () => levels() > 1,
+      inputs: [{ k: 'count', label: '挑空处数', unit: '处', def: () => 1 }] }
+  ];
+
+  // =====================================================================
+  //  工具函数
+  // =====================================================================
+  const STORE_KEY = 'houzy-quote-draft-v1';
+  const TEST_MODE = false;  // 测试预览版里打印被禁用，改成提示
+  const num = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
+  const r1 = n => Math.round(n * 10) / 10;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rm = n => (n < 0 ? '-RM ' : 'RM ') + Math.abs(round2(n)).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const nf = n => r1(n).toLocaleString('en-MY');
+  const nf2 = n => (Math.round(n * 100) / 100).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const uid = () => Math.random().toString(36).slice(2, 8);
+  const clone = o => JSON.parse(JSON.stringify(o));
+
+  // =====================================================================
+  //  模板：新建报价时先选一个，常用房间一次带出来（员工再按实际改尺寸）
+  // =====================================================================
+  const TEMPLATES = [
+    { id: 'condo', name: '公寓整装', sub: '3房2卫 · 单层 · 有管理处', levels: 1, answers: { condo: { v: true } },
+      rooms: [['living'], ['master', '主人房', 1, { L: 13, W: 12 }], ['bedroom', '卧室2'], ['bedroom', '卧室3', 1, { L: 11, W: 10 }],
+              ['kitchen'], ['bath', '主卫'], ['bath', '公卫'], ['balcony']] },
+    { id: 'landed', name: '排屋整装', sub: '2层 4房3卫 · 干湿厨 · 有地房屋', levels: 2, answers: { condo: { v: false } },
+      rooms: [['living', '客厅 Living', 1, { L: 14, W: 14, H: 10 }], ['dining', '餐厅 Dining', 1, { L: 10, W: 14, H: 10 }], ['dryKitchen', '干厨', 1, { L: 10, W: 8, cabLow: 10, cabUp: 8 }],
+              ['wetKitchen', '湿厨', 1, { L: 10, W: 7, wallTile: 'full', cabLow: 12, cabUp: 6 }], ['bath', '楼下卫生间', 1, { screen: 0 }],
+              ['bedroom', '楼下客房', 1, { L: 11, W: 10 }],
+              ['family', '一楼家庭厅', 2, { L: 12, W: 10, floor: 'laminate' }], ['master', '主人房', 2, { L: 15, W: 13, wardrobe: 10 }],
+              ['bath', '主卫', 2, { L: 9, W: 6 }], ['bedroom', '卧室2', 2], ['bedroom', '卧室3', 2, { L: 11, W: 10 }], ['bath', '公卫', 2],
+              ['balcony', '晾衣阳台', 2], ['laundry', '洗衣区', 1]] },
+    { id: 'kb', name: '厨卫翻新', sub: '只翻新厨房 + 2 个卫生间 · 旧房', levels: 1, answers: { old: { v: true, pieces: 6, floor: 160, ceil: 0, skin: 0 } },
+      rooms: [['kitchen'], ['bath', '主卫'], ['bath', '公卫']] },
+    { id: 'blank', name: '空白报价', sub: '不带房间，自己一间间加', levels: 1, answers: {}, rooms: [] }
+  ];
+
+  const HOUSE_TYPES = [
+    { id:'condo', name:'共管公寓', en:'Condominium', sub:'单层单位或复式单位', apartment:true },
+    { id:'apartment', name:'普通公寓', en:'Apartment / Flat', sub:'按房数选择单位布局', apartment:true },
+    { id:'serviced', name:'服务式公寓', en:'Serviced Apartment', sub:'Studio、小户型或家庭单位', apartment:true },
+    { id:'terrace', name:'排屋', en:'Terrace / Link House', sub:'单层、双层或三层 · 带车廊' },
+    { id:'semi', name:'半独立式住宅', en:'Semi-D', sub:'干湿厨房、车廊与侧院' },
+    { id:'bungalow', name:'独立式住宅', en:'Bungalow', sub:'平房或多层，带庭院空间' },
+    { id:'townhouse', name:'联排分层住宅', en:'Townhouse', sub:'按本户实际范围添加空间' }
+  ];
+  const houseDef = id => HOUSE_TYPES.find(x => x.id === id);
+  let chosenHouse = '', chosenLayout = '';
+  function houseLayouts(id) {
+    if (houseDef(id)?.apartment) return [
+      {id:'studio',name:'Studio 开放式',sub:'起居睡眠区 · 开放厨房 · 1 浴厕',beds:0,baths:1,levels:1},
+      {id:'1b',name:'1 房 1 卫',sub:'客餐厅 · 卧室 · 厨房 · 浴厕',beds:1,baths:1,levels:1},
+      {id:'2b',name:'2 房 2 卫',sub:'客餐厅 · 主人房 · 次卧 · 洗衣区',beds:2,baths:2,levels:1},
+      {id:'3b',name:'3 房 2 卫',sub:'客餐厅 · 3 卧室 · 厨房 · 洗衣区',beds:3,baths:2,levels:1},
+      {id:'4b',name:'4 房 3 卫',sub:'客餐厅 · 4 卧室 · 厨房 · 洗衣区',beds:4,baths:3,levels:1},
+      {id:'duplex',name:'复式公寓 Duplex',sub:'户内 2 层 · 3 房 3 卫 · 上层起居区',beds:3,baths:3,levels:2},
+      {id:'custom',name:'自行布局 / 导入平面图',sub:'不预设空间，按实际单位添加',beds:0,baths:0,levels:1}
+    ];
+    return [
+      {id:'single',name:'单层住宅',sub:'3 房 2 卫 · 客餐厅 · 干湿厨房',beds:3,baths:2,levels:1},
+      {id:'double',name:'双层住宅',sub:'4 房 3 卫 · 楼下客房 · 上层家庭厅',beds:4,baths:3,levels:2},
+      {id:'triple',name:'三层住宅',sub:'5 房 4 卫 · 分层卧室与家庭厅',beds:5,baths:4,levels:3},
+      {id:'custom',name:'自行布局 / 导入平面图',sub:id==='terrace'?'预留车廊，其余空间按实际添加':'不预设空间，按实际范围添加',beds:0,baths:0,levels:1}
+    ];
+  }
+  function projectFromLayout(houseId, layoutId) {
+    const house=houseDef(houseId), layout=houseLayouts(houseId).find(x=>x.id===layoutId);
+    if (!house || !layout) return null;
+    const p=newProject('blank'); p.houseType=houseId; p.layoutId=layoutId; p.levels=layout.levels;
+    p.template=house.name+' · '+layout.name;
+    // Management arrangements must still be answered for landed / strata estates.
+    p.answers=house.apartment ? {condo:{v:true}} : {};
+    if(layoutId==='custom') {
+      if(houseId==='terrace') p.rooms.push(Object.assign(makeRoom('porch','车廊 Car Porch',1),{L:'',W:''}));
+      return p;
+    }
+    const add=(type,name,level=1) => {
+      const r=makeRoom(type,name,level);
+      ['L','W','H'].forEach(k=>{if(TYPES[type].fields.includes(k)) r[k]='';});
+      p.rooms.push(r);
+    };
+    add('living',layout.beds===0?'开放起居/睡眠区 Studio':'客厅 Living');
+    if(layout.beds>0) add('dining','餐厅 Dining');
+    if(house.apartment) add('kitchen',layout.beds===0?'开放式厨房 Kitchen':'厨房 Kitchen');
+    else {add('dryKitchen','干厨房 Dry Kitchen');add('wetKitchen','湿厨房 Wet Kitchen');}
+    add('laundry','洗衣区 Yard / Laundry');
+    for(let i=0;i<layout.beds;i++) {
+      const level=layout.levels===1?1:house.apartment?(i===layout.beds-1?1:2):(i===layout.beds-1?1:Math.min(layout.levels,2+Math.floor(i/2)));
+      add(i===0?'master':'bedroom',i===0?'主人房 Master Bedroom':`卧室 ${i+1} Bedroom`,level);
+    }
+    for(let i=0;i<layout.baths;i++) {
+      const level=layout.levels===1?1:i===0?1:Math.min(layout.levels,1+i);
+      add('bath',i===0?'公共浴厕 Common Bathroom':`浴厕 ${i+1} Bathroom`,level);
+    }
+    if(house.apartment) { if(layout.beds>0) add('balcony','阳台 Balcony'); }
+    else if(houseId!=='townhouse') {
+      add('porch','车廊 Car Porch');add('backyard','后院 Backyard');
+      if(['semi','bungalow'].includes(houseId)) add('yard','侧院/花园 Garden');
+    }
+    if(layout.levels>1) {add('family',house.apartment?'上层起居区 Family Area':'家庭厅 Family Hall',2);add('stairs','户内楼梯 Staircase');}
+    return p;
+  }
+  function houseCard() {
+    const house=houseDef(P.houseType);
+    return `<div class="card"><h2>住宅类型与布局</h2><p class="hint">先选住宅，再按本户的实际格局量尺。</p>
+      <div class="fld"><label>马来西亚住宅类型<select data-house-type><option value="">请选择住宅类型</option>${HOUSE_TYPES.map(h=>`<option value="${h.id}" ${P.houseType===h.id?'selected':''}>${h.name} · ${h.en}</option>`).join('')}</select></label></div>
+      <p class="hint" style="margin-top:10px">${house?.apartment?'公寓的楼栋楼层与户内层数分开填写。单层单位不会因为位于高楼而变成多层住宅。':'户内按底层、一楼、二楼分组；房间可按现场实际增加或删除。'} 修改住宅类型保留当前房间和金额设置。</p>
+      <button class="btn-ghost" data-layout-open>选择房型，建立新报价</button>
+      ${P.template?`<p class="hint" style="margin-top:8px">当前布局：${esc(P.template)}</p>`:''}</div>`;
+  }
+
+  function newProject(tplId) {
+    const tpl = TEMPLATES.find(x => x.id === tplId) || TEMPLATES[0];
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const p = {
+      info: { customer: '', phone: '', address: '', staff: '',
+              quoteNo: 'Q' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()),
+              date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) },
+      houseType: tpl.id === 'condo' ? 'condo' : tpl.id === 'landed' ? 'terrace' : '', spaArea: '', levels: tpl.levels, rooms: [], catalogSnapshot:clone(companyCatalog), globalServices:{}, answers: clone(tpl.answers), lines: {}, custom: [], prices: {},
+      settings: clone(DEFAULT_SETTINGS), discount: '', discountBy: '', template: tpl.name, docGroup: 'room'
+    };
+    tpl.rooms.forEach(([t, n, lv, over]) => p.rooms.push(Object.assign(makeRoom(t, n, lv), over || {})));
+    return p;
+  }
+  // Shared company specification prices. A quote retains its applied catalog snapshot.
+  const CATALOG_STORE='houzy_company_catalog_v1';
+  let companyCatalog=[];
+  try {const saved=JSON.parse(localStorage.getItem(CATALOG_STORE)||'[]');if(Array.isArray(saved))companyCatalog=saved;}catch(e){}
+  let catalogDraft={code:'floor_tile',spec:'',brand:'',model:'',method:'',scope:'all',unit:'平方尺',materialUnit:'平方尺',mat:'',aux:'',lab:'',waste:0};
+  let catalogPreview=null,catalogMessage='',catalogEditingKey=null;
+  const catalogHeaders=['项目编码','项目名称','规格','品牌','型号','工艺','承包范围','计价单位','材料计价单位','材料单价','辅材单价','人工单价','损耗%'];
+  const normSpec=v=>String(v??'').normalize('NFKC').toLowerCase().replace(/[＊*x×]/g,'×').replace(/毫米|mm/g,'').replace(/\s+/g,'').trim();
+  function catalogAttributes(roomId,code,st={}) {
+    const r=P.rooms.find(r=>r.id===roomId),c=r?.tileConfig?.[code],f=r?.fitout?.[code];
+    let values=[],brand=st.brand||'',model=st.model||'',method='',scope=st.supply==='customer'?'labour':'all';
+    if(c){values=[c.dim,c.thickness,c.finish];brand=c.brand||brand;model=c.model||model;method=c.method||'';scope=c.mode||'';}
+    else if(r){
+      const keys=code==='laminate'?['spcMaterial','spcThickness']:code==='plaster_ceiling'?['ceilingBoard','ceilingThickness','ceilingMoisture']:['paint_wall','wallpaper','art_paint','ext_paint'].includes(code)?['wallSeries']:code==='wp'?['wpType']:code==='grout'?['groutType']:code==='wire'?['wireSpec']:code==='water_pt'?['pipeSpec']:TILE_CODES.includes(code)?[code==='wall_tile'?'wallTileDim':'tileDim','tileFinish']:[];
+      values=keys.map(k=>r[k]);if(['paint_wall','wallpaper','art_paint','ext_paint'].includes(code)){brand=r.wallBrand||brand;method=r.wallWork||'';}
+      if(f){values=fitKeys(code).map(k=>f[k]);method=f.opening||f.windowStyle||f.doorStyle||'';}
+    }
+    if(code.startsWith('stair_')){const a=ans('stairs');values=stairKeys(a).map(k=>a[k]);values.push(a.spec);method=a.tileMethod||'';}
+    return {values:values.filter(Boolean),brand,model,method,scope};
+  }
+  function catalogKey(row){return [row.code,...['spec','brand','model','method','scope'].map(k=>normSpec(row[k]))].join('|');}
+  function activeCatalog(){return P.catalogSnapshot||companyCatalog;}
+  function matchCatalog(roomId,code,st={}) {
+    const a=catalogAttributes(roomId,code,st),values=a.values.map(normSpec),matches=[];
+    for(const row of activeCatalog()){
+      if(row.code!==code)continue;
+      const tokens=String(row.spec||'*').split(/[;；|]/).map(v=>v.trim()).filter(v=>v&&v!=='*');
+      if(tokens.some(t=>!values.includes(normSpec(t))))continue;
+      if(['brand','model','method','scope'].some(k=>row[k]&&normSpec(row[k])!==normSpec(a[k])))continue;
+      matches.push({row,score:tokens.length+['brand','model','method','scope'].filter(k=>row[k]).length});
+    }
+    matches.sort((x,y)=>y.score-x.score);
+    if(matches.length>1&&matches[0].score===matches[1].score)return {ambiguous:true};
+    return matches[0]?{row:matches[0].row}:{};
+  }
+  function catalogRates(row,attrs){
+    let divisor=row.unit==='平方米'?10.76391041671:row.unit==='米'?3.280839895:1;
+    let matDivisor=row.materialUnit==='平方米'?10.76391041671:row.materialUnit==='米'?3.280839895:1;
+    if(row.materialUnit==='片'){
+      const dim=attrs.values.map(v=>normSpec(v)).find(v=>/^\d+×\d+$/.test(v));
+      if(!dim)return null;const [w,h]=dim.split('×').map(Number);matDivisor=w*h/92903.04;
+    }
+    return {mat:round2(row.mat/matDivisor),aux:round2(row.aux/divisor),lab:round2(row.lab/divisor),waste:row.waste,bomMat:false,bomAux:false};
+  }
+  function companyRow(l,st) {
+    const match=matchCatalog(l.roomId,l.code,st),a=catalogAttributes(l.roomId,l.code,st);
+    const rates=match.row?catalogRates(match.row,a):null;
+    if(!rates)return {...l,name:PRICE[l.code].name,unit:PRICE[l.code].unit,stage:PRICE[l.code].stage,desc:PRICE[l.code].desc||'',pick:[...a.values,a.brand,a.model,a.method].filter(Boolean).join('；'),st,on:!st.off,forced:!!PRICE[l.code].forced,soft:false,manual:false,autoQty:l.qty,supply:a.scope==='labour'?'customer':'company',p:price(l.code),uMat:0,uAux:0,uLab:0,uPrice:0,mat:0,aux:0,lab:0,total:0,hasMain:false,catalogPending:true,catalogReason:match.ambiguous?'匹配到多条同优先级价格':'未找到对应规格价格'};
+    const qty=st.qty!==undefined&&String(st.qty).trim()!==''?num(st.qty):l.qty,supply=a.scope==='labour'?'customer':'company';
+    const uMat=supply==='customer'?0:round2(rates.mat*(1+rates.waste/100)),unit=round2(uMat+rates.aux+rates.lab),total=round2(qty*unit),mat=round2(qty*uMat),aux=round2(qty*rates.aux);
+    return {...l,name:PRICE[l.code].name,unit:PRICE[l.code].unit,stage:PRICE[l.code].stage,desc:PRICE[l.code].desc||'',pick:[...a.values,a.brand,a.model,a.method].filter(Boolean).join('；'),st,on:!st.off,forced:!!PRICE[l.code].forced,soft:PRICE[l.code].stage==='soft',manual:qty!==l.qty,autoQty:l.qty,qty,supply,p:rates,uMat,uAux:rates.aux,uLab:rates.lab,uPrice:unit,mat,aux,lab:round2(total-mat-aux),total,hasMain:rates.mat>0,catalogMatch:match.row};
+  }
+  function normalizeCatalogRows(table){
+    if(!table.length)throw Error('价目文件为空');
+    const index=Object.fromEntries(table[0].map((h,i)=>[String(h).replace(/^\uFEFF/,'').trim(),i]));
+    for(const h of ['项目编码','规格','计价单位','材料单价','辅材单价','人工单价'])if(index[h]===undefined)throw Error('缺少列：'+h+'。请先下载标准模板。');
+    const result=[],seen=new Set();
+    for(let i=1;i<table.length;i++){
+      const raw=table[i],get=h=>String(raw[index[h]]??'').trim();
+      if(['材料单价','辅材单价','人工单价'].every(h=>get(h)===''))continue;
+      const code=get('项目编码');if(!PRICE[code])throw Error(`第${i+1}行项目编码无效：${code}`);
+      const number=h=>{const text=get(h).replace(/,/g,'');if(text===''||!Number.isFinite(Number(text))||Number(text)<0)throw Error(`第${i+1}行${h}需填写非负数，免费项填0`);return Number(text);};
+      const unit=get('计价单位'),base=PRICE[code].unit;
+      if(unit!==base&&!(base==='平方尺'&&unit==='平方米')&&!(base==='延尺'&&unit==='米'))throw Error(`第${i+1}行计价单位应为${base}${base==='平方尺'?'或平方米':''}`);
+      const materialUnit=get('材料计价单位')||unit;
+      if(![unit,base,...(base==='平方尺'?['平方米']:[]),...(base==='延尺'?['米']:[]),...(TILE_CODES.includes(code)?['片']:[])].includes(materialUnit))throw Error(`第${i+1}行材料计价单位不匹配`);
+      let scope=get('承包范围');scope=({'包工包料':'all','客户供料':'labour','客户供砖':'labour','仅铺贴':'labour','仅人工':'labour','通用':''})[scope]??scope;
+      if(!['','all','labour'].includes(scope))throw Error(`第${i+1}行承包范围请填包工包料或客户供料`);
+      const row={code,spec:get('规格')||'*',brand:get('品牌'),model:get('型号'),method:get('工艺'),scope,unit,materialUnit,mat:number('材料单价'),aux:number('辅材单价'),lab:number('人工单价'),waste:get('损耗%')?number('损耗%'):0};
+      if(row.waste>100)throw Error(`第${i+1}行损耗%不能超过100`);
+      const key=catalogKey(row);if(seen.has(key))throw Error(`第${i+1}行规格条件重复，请合并价格`);seen.add(key);result.push(row);
+    }
+    if(!result.length)throw Error('没有填写完整价格的行；材料、辅材、人工三项请填数字，免费项填0');
+    return result;
+  }
+  function parsePriceCsv(text){
+    const rows=[];let row=[],cell='',quote=false;
+    for(let i=0;i<text.length;i++){const ch=text[i];if(ch==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++;}else quote=!quote;}else if(!quote&&(ch===','||ch==='\n'||ch==='\r')){row.push(cell);cell='';if(ch!==','){if(ch==='\r'&&text[i+1]==='\n')i++;if(row.some(v=>v.trim()))rows.push(row);row=[];}}else cell+=ch;}
+    if(quote)throw Error('CSV引号未闭合');row.push(cell);if(row.some(v=>v.trim()))rows.push(row);return rows;
+  }
+  async function xlsxPriceRows(buffer){
+    const bytes=new Uint8Array(buffer),view=new DataView(buffer),files={};let end=-1;
+    for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(view.getUint32(i,true)===0x06054b50){end=i;break;}
+    if(end<0)throw Error('无法读取Excel文件，请使用.xlsx或CSV模板');
+    const count=view.getUint16(end+10,true);let at=view.getUint32(end+16,true),totalSize=0;
+    if(count>2000)throw Error('Excel文件内容过多');
+    for(let n=0;n<count;n++){
+      if(view.getUint32(at,true)!==0x02014b50)throw Error('Excel目录损坏');
+      const method=view.getUint16(at+10,true),size=view.getUint32(at+20,true),rawSize=view.getUint32(at+24,true),nameLen=view.getUint16(at+28,true),extraLen=view.getUint16(at+30,true),commentLen=view.getUint16(at+32,true),offset=view.getUint32(at+42,true);
+      const name=new TextDecoder().decode(bytes.slice(at+46,at+46+nameLen));at+=46+nameLen+extraLen+commentLen;
+      if(!/^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|worksheets\/sheet\d+\.xml)$/.test(name))continue;
+      totalSize+=rawSize;if(totalSize>30*1024*1024)throw Error('Excel解压内容过大，请缩小价目文件');
+      const start=offset+30+view.getUint16(offset+26,true)+view.getUint16(offset+28,true),compressed=bytes.slice(start,start+size);
+      if(method===0)files[name]=new TextDecoder().decode(compressed);
+      else if(method===8){const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));files[name]=await new Response(stream).text();}
+      else throw Error('Excel压缩格式暂不支持，请另存CSV');
+    }
+    const parse=x=>{const doc=new DOMParser().parseFromString(x||'','application/xml');if(doc.querySelector('parsererror'))throw Error('Excel XML格式错误');return doc;};
+    const shared=files['xl/sharedStrings.xml']?Array.from(parse(files['xl/sharedStrings.xml']).getElementsByTagName('si'),n=>n.textContent):[];
+    const book=parse(files['xl/workbook.xml']),sheets=Array.from(book.getElementsByTagName('sheet')),sheet=sheets.find(x=>x.getAttribute('name')==='价目表')||sheets[0];
+    const rels=Array.from(parse(files['xl/_rels/workbook.xml.rels']).getElementsByTagName('Relationship')),rel=rels.find(x=>x.getAttribute('Id')===sheet?.getAttribute('r:id'));
+    let path=rel?.getAttribute('Target')||'worksheets/sheet1.xml';path=path.startsWith('/')?path.slice(1):'xl/'+path;if(!files[path])throw Error('找不到价目表工作表');
+    return Array.from(parse(files[path]).getElementsByTagName('row'),r=>{const cells=[];for(const c of r.getElementsByTagName('c')){const ref=c.getAttribute('r')||'A1';let index=0;for(const x of ref.match(/^[A-Z]+/)[0])index=index*26+x.charCodeAt(0)-64;const v=c.getElementsByTagName('v')[0]?.textContent||'';cells[index-1]=c.getAttribute('t')==='s'?shared[Number(v)]||'':c.getAttribute('t')==='inlineStr'?c.textContent:v;}return cells;});
+  }
+  function catalogCsv(rows){const q=x=>'"'+String(x??'').replace(/"/g,'""')+'"';return [catalogHeaders,...rows.map(r=>[r.code,PRICE[r.code]?.name||'',r.spec,r.brand,r.model,r.method,r.scope==='all'?'包工包料':r.scope==='labour'?'客户供料':'',r.unit,r.materialUnit,r.mat,r.aux,r.lab,r.waste])].map(r=>r.map(q).join(','));}
+  function templateRows(current=false){
+    const blank=(code,a={})=>({code,spec:a.values?.join('；')||'*',brand:a.brand||'',model:a.model||'',method:a.method||'',scope:a.scope||'',unit:PRICE[code].unit,materialUnit:PRICE[code].unit,mat:'',aux:'',lab:'',waste:0});
+    if(current){const seen=new Set();return gen().map(l=>blank(l.code,catalogAttributes(l.roomId,l.code,P.lines[l.key]||{}))).filter(r=>{const k=catalogKey(r);if(seen.has(k))return false;seen.add(k);return true;});}
+    const rows=Object.keys(PRICE).map(c=>blank(c));for(const code of TILE_CODES)for(const dim of MATERIAL_SPEC[code==='wall_tile'?'wallTileDim':'tileDim'].opts)rows.push({...blank(code),spec:dim,scope:'all'});return rows;
+  }
+  function applyCatalog(rows){companyCatalog=rows;P.catalogSnapshot=clone(rows);try{localStorage.setItem(CATALOG_STORE,JSON.stringify(rows));}catch(e){}catalogPreview=null;catalogEditingKey=null;catalogMessage=`已应用 ${rows.length} 条规格价格，前端及本报价已重新计算。`;}
+  function catalogEditorHtml(){
+    const c=catalogDraft,field=(k,label)=>fld(label,'',`data-catalog-field="${k}"`,c[k]??'',false,['mat','aux','lab','waste'].includes(k));
+    return `<div class="card"><h2>公司统一规格价目表</h2><p class="hint">员工只选规格、工艺、承包范围及工程量；公司在这里按项目和尺寸维护主材、辅材、人工及损耗，前端自动计算。包工包料计主材（含损耗）＋辅材＋人工；客户供砖计辅材＋人工。支持Excel .xlsx、CSV和JSON；模板编码及列名请保留。规格可填300×600 mm等，多个条件用分号分隔；*表示公司明确设定的通用价，具体规格优先匹配。当前应用 ${activeCatalog().length} 条。</p><label>上传公司价目文件<input type="file" data-catalog-file accept=".xlsx,.csv,.json"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn-ghost" data-catalog-template="all">下载全部项目模板</button><button class="btn-ghost" data-catalog-template="current">下载本单已选规格模板</button><button class="btn-ghost" data-catalog-export>导出已录价格</button></div>${catalogMessage?`<div class="note" role="status">${esc(catalogMessage)}</div>`:''}${catalogPreview?`<div class="note">已校验 ${catalogPreview.length} 条，应用后按新表重新匹配当前报价。<button class="primary" data-catalog-apply>应用上传价目表</button><button class="btn-ghost" data-catalog-cancel>取消</button></div>`:''}<details><summary style="cursor:pointer;padding:12px 0">新增／修改一条规格价格</summary><div class="grid3"><div class="fld"><label>装修项目<select data-catalog-field="code">${Object.keys(PRICE).map(code=>`<option value="${code}" ${c.code===code?'selected':''}>${esc(PRICE[code].name)} (${code})</option>`).join('')}</select></label></div>${field('spec','规格条件（*为通用）')}${field('brand','品牌（留空不限）')}${field('model','型号（留空不限）')}${field('method','工艺（留空不限）')}<div class="fld"><label>承包范围<select data-catalog-field="scope">${[['','通用'],['all','包工包料'],['labour','客户供料']].map(([v,l])=>`<option value="${v}" ${c.scope===v?'selected':''}>${l}</option>`).join('')}</select></label></div>${field('unit','综合计价单位')}${field('materialUnit','材料计价单位')}${field('mat','材料单价 RM')}${field('aux','辅材单价 RM')}${field('lab','人工单价 RM')}${field('waste','材料损耗%')}</div><button class="primary" data-catalog-save>保存规格价格并重新计算</button></details><div class="scroll-x"><table class="ptable"><thead><tr><th>项目</th><th>规格／品牌／工艺</th><th>范围与单位</th><th>材料</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>${activeCatalog().map((r,i)=>`<tr><td>${esc(PRICE[r.code]?.name||r.code)}</td><td>${esc([r.spec,r.brand,r.model,r.method].filter(Boolean).join('；'))}</td><td>${r.scope==='labour'?'客户供料':r.scope==='all'?'包工包料':'通用'} / ${esc(r.unit)}<br>材料/${esc(r.materialUnit)}</td><td>${nf2(r.mat)}</td><td>${nf2(r.aux)}</td><td>${nf2(r.lab)}</td><td>${r.waste}</td><td><button class="btn-ghost" data-catalog-edit="${i}">编辑</button></td></tr>`).join('')||'<tr><td colspan="8">尚未录入公司规格价格。请上传文件或新增规格价。</td></tr>'}</tbody></table></div><p class="hint">价目表保存在本机浏览器；其他电脑需导入同一文件。已有报价保留自己的价目快照，上传应用后才更新本报价。</p></div>`;
+  }
+
+  function makeRoom(type, name, level) {
+    return Object.assign({ id: 'r' + uid(), type, name: name || TYPES[type].label, level: level || 1 }, clone(TYPES[type].def), {fitout:{},fitoutVersion:1,work:{},workQty:{},workVersion:1});
+  }
+
+  let P;
+  try { P = JSON.parse(localStorage.getItem(STORE_KEY)); } catch (e) { P = null; }
+  const firstVisit = !P || !Array.isArray(P.rooms);
+  if (firstVisit) P = newProject('blank');
+  if(!Array.isArray(P.catalogSnapshot)) P.catalogSnapshot=clone(companyCatalog);
+  P.settings = Object.assign(clone(DEFAULT_SETTINGS), P.settings || {});
+  P.levels = P.levels || 1;
+  P.rooms.forEach(r => { r.level = r.level || 1; });
+  if(P.legacyWholeOpenings === undefined) P.legacyWholeOpenings = P.rooms.some(r=>!r.fitoutVersion) && (P.answers.doors?.v===true || P.answers.windows?.v===true);
+  P.rooms.forEach(r => {
+    if(r.fitoutVersion) return;
+    r.fitout=r.fitout||{};
+    Object.entries(FITOUT).forEach(([code,[label,field]])=>{
+      if(['door','window_new'].includes(code)||!num(r[field])) return;
+      r.fitout[code]={on:true,...(['vanity','cab_basket'].includes(code)?{qty:r[field]}:{length:r[field]})};
+    });
+    r.fitoutVersion=1;
+  });
+  if(!P.globalServices) P.globalServices=Object.fromEntries(GLOBAL_SERVICES.map(c=>[c,true]));
+  P.rooms.forEach(r=>{if(!r.workVersion){r.work=Object.fromEntries(workCodes(r).map(c=>[c,true]));r.workQty=r.workQty||{};r.workVersion=1;r.workLegacy=true;}});
+  let step = 1, choosing = firstVisit || (!P.houseType && !P.rooms.length);
+  chosenHouse = P.houseType || '';
+  chosenLayout = P.layoutId || '';
+  const expanded = new Set();
+
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(P)); } catch (e) { /* 浏览器不让存就算了，不影响使用 */ } }
+  const round2 = n => Math.round(n * 100) / 100;
+  // 有配方的项目：主材/辅材单价 = 配方里各材料 用量×单价 加起来（辅材含自身损耗）
+  function bomPart(code, main) {
+    const b = (BOM[code] || []).filter(x => !!x.main === main);
+    if (!b.length) return null;
+    return round2(b.reduce((a, x) => a + x.q * (main ? 1 : 1 + (x.w == null ? 5 : x.w) / 100) * MATERIALS[x.m].price, 0));
+  }
+  function basePrice(code) {
+    const d = PRICE[code], bm = bomPart(code, true), ba = bomPart(code, false);
+    return { mat: bm == null ? d.mat : bm, aux: ba == null ? (d.aux || 0) : ba, lab: d.lab, waste: d.waste || 0, bomMat: bm != null, bomAux: ba != null };
+  }
+  function price(code) {
+    const b = basePrice(code), o = P.prices[code] || {};
+    const pick = (k, dv) => (o[k] !== undefined && o[k] !== '') ? num(o[k]) : dv;
+    return { mat: pick('mat', b.mat), aux: pick('aux', b.aux), lab: pick('lab', b.lab), waste: pick('waste', b.waste), bomMat: b.bomMat, bomAux: b.bomAux };
+  }
+  function priceChanged(code) {
+    const b = basePrice(code), p = price(code);
+    return p.mat !== b.mat || p.aux !== b.aux || p.lab !== b.lab || p.waste !== b.waste;
+  }
+
+  // 材料采购单：把每一行的配方 × 数量 × (1+损耗) 加总，最后按包/桶向上取整
+  function purchase(C) {
+    const m = {}, pending=[], tileMaterials=[];
+    let unsplit = 0;
+    C.rows.forEach(r => {
+      if (!r.on) return;
+      if(r.tileInfo){if(r.tileInfo.ready&&r.supply!=='customer')tileMaterials.push({code:r.key,name:'瓷砖 '+r.pick,unit:'片',qty:r.tileInfo.pieces,raw:r.qty*(1+num(r.tileInfo.waste)/100)/r.tileInfo.pieceArea,uses:[r.roomName+'·'+r.name]});unsplit++;pending.push({...r,name:r.name+'（辅材包装及配件待拆分）'});return;}
+      if(r.catalogMatch){unsplit++;pending.push(r);return;}
+      if (!r.code || !BOM[r.code]) { unsplit++;pending.push(r);return; }
+      BOM[r.code].forEach(b => {
+        if (b.main && r.supply === 'customer') return;   // 客户自备的主材不用买
+        const w = b.main ? r.p.waste : (b.w == null ? 5 : b.w);
+        const x = m[b.m] = m[b.m] || { qty: 0, uses: new Set() };
+        x.qty += r.qty * b.q * (1 + w / 100);
+        x.uses.add(r.roomName + '·' + r.name);
+      });
+    });
+    const list = Object.keys(MATERIALS).filter(k => m[k]).map(k => {
+      const M = MATERIALS[k], f = M.dec ? 10 : 1;
+      return { code: k, name: M.name, unit: M.unit, qty: Math.ceil(m[k].qty * f - 1e-9) / f, raw: m[k].qty, uses: [...m[k].uses] };
+    });
+    return { list:[...list,...tileMaterials], unsplit, pending };
+  }
+  function sketchData(r) {return r.sketch||(r.sketch={mode:'ortho',unit:'m',points:[],lengths:[],coords:[],closed:false,applied:false});}
+  function polygonMetrics(points) {
+    if(points.length<3)return {error:'至少需要三个顶点'};
+    const cross=(a,b,c)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
+    const on=(a,b,c)=>Math.abs(cross(a,b,c))<1e-8&&c.x>=Math.min(a.x,b.x)-1e-8&&c.x<=Math.max(a.x,b.x)+1e-8&&c.y>=Math.min(a.y,b.y)-1e-8&&c.y<=Math.max(a.y,b.y)+1e-8;
+    let area=0,perim=0;
+    for(let i=0;i<points.length;i++){
+      const a=points[i],b=points[(i+1)%points.length];
+      if(![a.x,a.y,b.x,b.y].every(Number.isFinite))return {error:'坐标必须是有效数字'};
+      if(Math.hypot(b.x-a.x,b.y-a.y)<1e-8)return {error:'存在重复顶点或零长度边'};
+      area+=a.x*b.y-b.x*a.y;perim+=Math.hypot(b.x-a.x,b.y-a.y);
+      for(let j=i+1;j<points.length;j++){
+        if(j===i+1||(i===0&&j===points.length-1))continue;
+        const c=points[j],d=points[(j+1)%points.length],u=cross(a,b,c),v=cross(a,b,d),w=cross(c,d,a),z=cross(c,d,b);
+        if((u*v<0&&w*z<0)||on(a,b,c)||on(a,b,d)||on(c,d,a)||on(c,d,b))return {error:'轮廓交叉、重叠或接触，请按房间边界顺序重画'};
+      }
+    }
+    if(Math.abs(area)<1e-8)return {error:'轮廓面积为零'};
+    return {area:Math.abs(area)/2,perim};
+  }
+  function sketchMetrics(s, suggest=true) {
+    if(!s?.closed)return {error:'请先画完轮廓并闭合'};
+    const n=s.points.length;if(n<3)return {error:'至少需要三个顶点'};
+    let points=[];
+    if(s.mode==='coords') {
+      if(s.coords.length!==n||s.coords.some(p=>!p||String(p.x??'').trim()===''||String(p.y??'').trim()===''))return {error:'请填写每个顶点实测 X、Y 坐标（含起点0、0）'};
+      points=s.coords.map(p=>({x:Number(p.x),y:Number(p.y)}));
+    }else{
+      let x=0,y=0;points=[{x,y}];
+      for(let i=0;i<n;i++){
+        const len=Number(s.lengths[i]);if(!(len>0&&Number.isFinite(len)))return {error:`请填写第 ${i+1} 条边的实测长度`};
+        const a=s.points[i],b=s.points[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y;
+        // A hand sketch supplies direction, not accurate pixel coordinates.
+        const horizontal=Math.abs(dx)>=Math.abs(dy);
+        if(Math.abs(dx)<1e-5&&Math.abs(dy)<1e-5)return {error:'存在重复顶点'};
+        x+=(horizontal?Math.sign(dx):0)*len;y+=(horizontal?0:Math.sign(dy))*len;if(i<n-1)points.push({x,y});
+      }
+      if(Math.hypot(x,y)>1e-6){
+        const unit=s.unit==='m'?'米':'英尺',factor=s.unit==='m'?1:0.3048;
+        const gap=`横向${x>0?'向右':x<0?'向左':''}差 ${Math.abs(x).toFixed(3)} ${unit}；纵向${y>0?'向下':y<0?'向上':''}差 ${Math.abs(y).toFixed(3)} ${unit}`;
+        const result={error:`尺寸尚未闭合：${gap}。请核对对应方向边长或漏画的转角。`,points,traceEnd:{x,y},gap:{x,y},adjustments:[]};
+        if(suggest&&Math.hypot(x,y)*factor<=0.02000001){
+          const lengths=s.lengths.map(Number),changes=[];
+          for(const [axis,residual] of [['x',x],['y',y]]){
+            if(Math.abs(residual)<1e-6)continue;
+            let best=null;
+            for(let i=0;i<n;i++){
+              const a=s.points[i],b=s.points[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y,h=Math.abs(dx)>=Math.abs(dy);
+              if((axis==='x')!==h)continue;
+              const sign=Math.sign(h?dx:dy),value=lengths[i]-residual/sign;
+              if(value>0&&(!best||lengths[i]>lengths[best.index]))best={index:i,from:lengths[i],to:Math.round(value*1e6)/1e6};
+            }
+            if(best){lengths[best.index]=best.to;changes.push(best);}
+          }
+          const candidate={...s,lengths};
+          if(changes.length&&!sketchMetrics(candidate,false).error)result.adjustments=changes;
+        }
+        return result;
+      }
+    }
+    const result=polygonMetrics(points);if(result.error)return result;
+    const scale=s.unit==='m'?1/0.3048:1;
+    return {floor:result.area*scale*scale,perim:result.perim*scale,points};
+  }
+  function sketchViewPoints(s,m) {
+    if(!m.points?.length)return {points:s.points,measured:false};
+    const all=[...m.points,...(m.traceEnd?[m.traceEnd]:[])],xs=all.map(p=>p.x),ys=all.map(p=>p.y),minX=Math.min(...xs),minY=Math.min(...ys);
+    const scale=Math.min(500/(Math.max(...xs)-minX||1),250/(Math.max(...ys)-minY||1));
+    const project=p=>({x:50+(p.x-minX)*scale,y:45+(p.y-minY)*scale});
+    return {points:m.points.map(project),end:m.traceEnd?project(m.traceEnd):null,measured:true};
+  }
+  const SKETCH_POINTS={light:{label:'灯位',symbol:'灯',field:'lights',color:'#9a6b16'},water:{label:'水点',symbol:'水',field:'wpts',color:'#246a91'},socket:{label:'插座／开关点',symbol:'电',field:'pts',color:'#815047'}};
+  function sketchPointCounts(s){return Object.fromEntries(Object.entries(SKETCH_POINTS).map(([key,v])=>[v.field,(s.markers||[]).filter(m=>m.type===key).length]));}
+  function syncSketchPoints(r){if(r.sketch?.pointsLinked)Object.assign(r,sketchPointCounts(r.sketch));}
+  function sketchHtml(r) {
+    const s=r.sketch||{mode:'ortho',unit:'m',points:[],lengths:[],coords:[]},m=sketchMetrics(s),view=sketchViewPoints(s,m),p=view.points;
+    const attrs=`data-sk-room="${r.id}"`;
+    const unplaced=(s.markers||[]).filter(mark=>!Number.isFinite(mark.x)||!Number.isFinite(mark.y));
+    const filledSummary=Object.entries(SKETCH_POINTS).map(([k,v])=>`${v.label} ${num(r[v.field])}`).join(' · ');
+    const pointTools=`<div class="grid2"><label>图上操作<select ${attrs} data-sk-field="tool"><option value="outline">画轮廓</option>${Object.entries(SKETCH_POINTS).map(([k,v])=>`<option value="${k}" ${s.tool===k?'selected':''}>标${v.label}</option>`).join('')}<option value="erase" ${s.tool==='erase'?'selected':''}>删除点位</option></select></label><div class="note">${Object.entries(SKETCH_POINTS).map(([k,v])=>`${v.label} ${(s.markers||[]).filter(m=>m.type===k).length}`).join(' · ')}</div></div><p class="hint">先确认面积，再选标灯／水／电并点击图上位置。图上位置为沟通示意，不代替施工定位尺寸。点位数量确认后自动带入下方，不会自动勾选收费项目。</p>`;
+    const edges=p.map((a,i)=>{const b=p[(i+1)%p.length];if(i===p.length-1&&!s.closed)return '';const label=s.mode==='ortho'?s.lengths[i]:m.points?Math.hypot(m.points[(i+1)%p.length].x-m.points[i].x,m.points[(i+1)%p.length].y-m.points[i].y).toFixed(2):'';return `<text x="${(a.x+b.x)/2}" y="${(a.y+b.y)/2-9}" text-anchor="middle" font-size="13" fill="#153927" stroke="white" stroke-width="3" paint-order="stroke">${i+1}: ${esc(label||'待量')}${label?' '+(s.unit==='m'?'m':'ft'):''}</text>`;}).join('');
+    return `<details class="pickbox room-panel" data-room-panel="${r.id}:sketch" ${openRoomPanels.has(r.id+':sketch')?'open':''}><summary>画图标尺寸／上传手绘图${s.applied?' · 已应用':''}<span class="panel-action"></span></summary><div class="panel-body"><p class="hint">上传手绘照片作底图，再逐点点击／轻触转角画线。图片和画线仅作轮廓参考，不按像素推算尺寸。单一外边界，不含内部孔洞。标注尺寸后确认应用。</p><label>上传手绘底图（JPG／PNG／WebP）<input type="file" data-sk-upload="${r.id}" accept="image/jpeg,image/png,image/webp"></label><div class="grid2"><label>量尺方式<select ${attrs} data-sk-field="mode"><option value="ortho" ${s.mode==='ortho'?'selected':''}>直角轮廓：逐边填写长度</option><option value="coords" ${s.mode==='coords'?'selected':''}>斜边／多边形：实测顶点坐标</option></select></label><label>尺寸单位<select ${attrs} data-sk-field="unit"><option value="m" ${s.unit==='m'?'selected':''}>米 m</option><option value="ft" ${s.unit==='ft'?'selected':''}>英尺 ft</option></select></label></div>${pointTools}<button class="btn-ghost" data-sk-action="import-points" ${attrs} ${!s.applied?'disabled':''}>把已填写的灯／水／电数量带到图上</button>${unplaced.length?`<div class="note">待定位：${Object.entries(SKETCH_POINTS).map(([k,v])=>`${v.label} ${unplaced.filter(m=>m.type===k).length}`).join(' · ')}。选择上方“图上操作”中的类型，再点击实际位置逐个放置。</div>`:''}<svg data-sk-canvas="${r.id}" viewBox="0 0 600 360" role="img" aria-label="房间轮廓画板，点击添加顶点" style="display:block;width:100%;background:#faf9f5;border:1px solid #ccc;touch-action:manipulation;cursor:crosshair;margin:12px 0"><text x="12" y="18" font-size="12" fill="#153927">已填：${esc(filledSummary)}</text><text x="12" y="35" font-size="11" fill="#815047">${unplaced.length?`待定位 ${unplaced.length} 个：选择点位类型后点击图中实际位置`:''}</text>${s.image&&!view.measured?`<image href="${esc(s.image)}" width="600" height="360" opacity="0.55" preserveAspectRatio="xMidYMid meet"/>`:''}<polyline points="${p.map(q=>q.x+','+q.y).join(' ')}${s.closed&&p.length?' '+(view.end||p[0]).x+','+(view.end||p[0]).y:''}" fill="${s.closed?'#15392718':'none'}" stroke="#153927" stroke-width="2"/>${view.end?`<line x1="${view.end.x}" y1="${view.end.y}" x2="${p[0].x}" y2="${p[0].y}" stroke="#b44327" stroke-width="3" stroke-dasharray="5 4"/>`:''}${!p.length?'<text x="300" y="175" text-anchor="middle" fill="#777" font-size="17">点击／轻触这里，开始画房间轮廓</text>':''}${(s.markers||[]).filter(mark=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)).map((mark,i)=>{const v=SKETCH_POINTS[mark.type];return v?`<g><circle cx="${mark.x}" cy="${mark.y}" r="11" fill="${v.color}"/><text x="${mark.x}" y="${mark.y+4}" font-size="12" fill="white" text-anchor="middle">${v.symbol}</text><text x="${mark.x+13}" y="${mark.y-9}" font-size="11" fill="${v.color}">${(s.markers||[]).filter(m=>m.type===mark.type).indexOf(mark)+1}</text></g>`:'';}).join('')}${edges}${p.map((q,i)=>`<circle cx="${q.x}" cy="${q.y}" r="4" fill="#c8a96e"/><text x="${q.x+6}" y="${q.y+14}" font-size="12">P${i+1}</text>`).join('')}</svg><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-ghost" data-sk-action="close" ${attrs}>完成画图／闭合</button><button class="btn-ghost" data-sk-action="save" ${attrs}>保存草图</button><button class="btn-ghost" data-sk-action="undo" ${attrs}>撤销一点</button><button class="btn-ghost" data-sk-action="clear" ${attrs}>清空轮廓</button><button class="btn-ghost" data-sk-action="image" ${attrs}>移除底图</button></div><p class="hint">${s.mode==='ortho'?'手画不必精确，系统按大致方向吸附水平／垂直。填齐边长后按实测尺寸重绘；红色虚线表示闭合差。误差在20毫米以内可确认建议修正，较大误差请补量；不会静默改尺寸。':'坐标模式：选一个固定原点，用同一组互相垂直的基准线测量每个转角的 X、Y；可填负数。不要填写照片像素。只有各边长度不足以确定任意多边形面积。'}</p><button class="btn-ghost" data-sk-action="points" ${attrs} ${!s.applied?'disabled':''}>确认图上点位数量并带入</button>${s.pointsLinked?`<button class="btn-ghost" data-sk-action="unlink-points" ${attrs}>取消点位联动，恢复原数量</button>`:''}${s.pointsReview?'<div class="note">轮廓已修改，请核对点位位置后重新确认数量。</div>':''}<p class="hint">${view.measured?'轮廓已按实测尺寸重绘，底图暂隐藏以免比例误导。':'轮廓暂为手绘示意，尚未按实际比例重绘。'}</p><div class="grid2">${s.mode==='ortho'?p.map((q,i)=>i===p.length-1&&!s.closed?'':`<label>边 ${i+1} · P${i+1} → P${(i+1)%p.length+1}<input type="number" min="0" step="any" ${attrs} data-sk-length="${i}" value="${esc(s.lengths[i]??'')}" placeholder="实测长度"></label>`).join(''):p.map((q,i)=>`<div>P${i+1}<label>X<input type="number" step="any" ${attrs} data-sk-point="${i}" data-sk-axis="x" value="${esc(s.coords[i]?.x??'')}"></label><label>Y<input type="number" step="any" ${attrs} data-sk-point="${i}" data-sk-axis="y" value="${esc(s.coords[i]?.y??'')}"></label></div>`).join('')}</div><div class="note" data-sk-result="${r.id}">${m.error?esc(m.error):`面积 ${nf2(m.floor)} 平方尺（${nf2(m.floor/10.76391041671)} ㎡）；周长 ${nf2(m.perim)} 英尺`}${s.applied?' · 已确认用于报价':s.bypass?' · 已停用，当前按长宽计算':' · 尚未应用到报价'}</div>${m.adjustments?.length?`<div class="note">小误差建议（需现场核对）：${m.adjustments.map(a=>`边${a.index+1}：${a.from} → ${a.to} ${s.unit==='m'?'米':'英尺'}`).join('；')}。<button class="btn-ghost" data-sk-action="adjust" ${attrs}>核对后采用建议尺寸</button></div>`:''}${s.adjustmentHistory?.length?`<p class="hint">已确认修正记录：${s.adjustmentHistory.map(a=>`边${a.index+1} ${a.from}→${a.to} ${a.unit==='m'?'米':'英尺'}`).join('；')}</p>`:''}${s.message?`<div class="note" role="status">${esc(s.message)}</div>`:''}<button class="primary" data-sk-action="apply" ${attrs} ${m.error?'disabled':''}>确认轮廓及实测尺寸，应用面积／周长</button>${s.applied?`<button class="btn-ghost" data-sk-action="detach" ${attrs}>取消应用，恢复长宽计算</button>`:''}<p class="hint">应用后优先使用手绘面积及周长，自动带入按面积／周长计量的项目。层高、门窗扣除及特殊施工量仍需单独核对；天花与地面范围不同时填写对应项目实际量。修改轮廓、单位或尺寸后须重新确认。</p></div></details>`;
+  }
+  function invalidateSketch(r) {if(r.sketch.markers?.length)r.sketch.pointsReview=true;delete r.sketch.message;r.sketch.bypass=false;r.sketch.applied=false;if(r.planImported){r.surveyConfirmed=false;r.planReviewed=false;}}
+  document.addEventListener('click',e=>{
+    const opener=e.target.closest('[data-sk-open]');
+    if(opener){const key=opener.dataset.skOpen+':sketch';openRoomPanels.add(key);render();const panel=Array.from(document.querySelectorAll('[data-room-panel]')).find(el=>el.dataset.roomPanel===key);if(panel){panel.open=true;panel.scrollIntoView({block:'start',behavior:'smooth'});}return;}
+    const canvas=e.target.closest('[data-sk-canvas]');
+    if(canvas){const r=P.rooms.find(r=>r.id===canvas.dataset.skCanvas);if(!r)return;const s=sketchData(r);const b=canvas.getBoundingClientRect();let x=(e.clientX-b.left)*600/b.width,y=(e.clientY-b.top)*360/b.height;
+      if(s.tool&&s.tool!=='outline'){if(!s.applied){alert('请先确认轮廓及尺寸，再标注点位');return;}s.markers=s.markers||[];if(s.tool==='erase'){let index=-1,distance=22;s.markers.forEach((m,i)=>{if(!Number.isFinite(m.x)||!Number.isFinite(m.y))return;const d=Math.hypot(m.x-x,m.y-y);if(d<distance){index=i;distance=d;}});if(index>=0)s.markers.splice(index,1);}else if(SKETCH_POINTS[s.tool]){const pending=s.markers.find(m=>m.type===s.tool&&(!Number.isFinite(m.x)||!Number.isFinite(m.y)));if(pending){pending.x=x;pending.y=y;}else s.markers.push({x,y,type:s.tool});}s.pointsReview=true;render();return;}
+      if(s.closed||s.points.length>=40)return;const prev=s.points.at(-1);if(s.mode==='ortho'&&prev){if(Math.abs(x-prev.x)>Math.abs(y-prev.y)){y=prev.y;if(Math.abs(x-s.points[0].x)<15)x=s.points[0].x;}else{x=prev.x;if(Math.abs(y-s.points[0].y)<15)y=s.points[0].y;}}if(prev&&Math.hypot(x-prev.x,y-prev.y)<5)return;s.points.push({x,y});s.coords.push({x:'',y:''});invalidateSketch(r);render();return;}
+    const b=e.target.closest('[data-sk-action]');if(!b)return;const r=P.rooms.find(r=>r.id===b.dataset.skRoom);if(!r)return;const s=sketchData(r);
+    switch(b.dataset.skAction){
+      case 'close':{
+        if(s.points.length<3){alert('至少先画三个转角');return;}
+        if(s.mode==='ortho'){
+          const a=s.points[0],z=s.points.at(-1),dx=a.x-z.x,dy=a.y-z.y;
+          // Small drawing drift is snapped only in the sketch; measured lengths are never changed here.
+          const distance=Math.hypot(dx,dy);
+          if(Math.min(Math.abs(dx),Math.abs(dy))<=Math.max(15,distance*.12)){
+            if(Math.abs(dx)>Math.abs(dy))z.y=a.y;else z.x=a.x;
+          }else{
+            if(s.points.length>=40){alert('顶点已达上限，请撤销后调整末段');return;}
+            s.points.push({x:a.x,y:z.y});s.coords.push({x:'',y:''});
+          }
+        }
+        s.closed=true;invalidateSketch(r);break;
+      }
+      case 'import-points':{
+        if(!s.applied)return;
+        const entries=Object.entries(SKETCH_POINTS),counts=entries.map(([k,v])=>Number(r[v.field]||0));
+        if(counts.some(n=>!Number.isInteger(n)||n<0)||counts.reduce((a,b)=>a+b,0)>200){alert('图上点位需为非负整数，每空间合计最多200个');return;}
+        const exceeds=entries.some(([k,v],i)=>(s.markers||[]).filter(m=>m.type===k).length>counts[i]);
+        if(exceeds&&!confirm('将按已填写的数量更新点位，超出数量的图上标记会被移除，确认继续？'))return;
+        const old=s.markers||[];s.markers=[];entries.forEach(([type,v],i)=>{const existing=old.filter(m=>m.type===type);for(let j=0;j<counts[i];j++)s.markers.push(existing[j]||{type,x:null,y:null});});
+        s.pointsReview=true;s.message='已填数量已带入，待定位点位不会擅自放在图中。';break;
+      }
+      case 'points':{if(!s.applied)return;if(!s.pointsLinked)s.previousPointCounts={lights:r.lights,wpts:r.wpts,pts:r.pts};s.pointsLinked=true;s.pointsReview=false;syncSketchPoints(r);if(r.planImported)r.planReviewed=false;break;}
+      case 'unlink-points':{if(s.previousPointCounts)Object.assign(r,s.previousPointCounts);s.pointsLinked=false;s.pointsReview=false;break;}
+      case 'save':{
+        try{localStorage.setItem(STORE_KEY,JSON.stringify(P));s.message='草图已保存在本机；未确认的尺寸不会用于正式报价。';}
+        catch(err){alert('保存失败：本机存储空间不足，请先导出报价备份');return;}break;
+      }
+      case 'adjust':{
+        const m=sketchMetrics(s);if(!m.adjustments?.length)return;
+        const text=m.adjustments.map(a=>`边${a.index+1}：${a.from} → ${a.to} ${s.unit==='m'?'米':'英尺'}`).join('；');
+        if(!confirm('请先现场核对，确认修改实测尺寸？'+text))return;
+        s.adjustmentHistory=s.adjustmentHistory||[];
+        m.adjustments.forEach(a=>{s.lengths[a.index]=a.to;s.adjustmentHistory.push({...a,unit:s.unit,date:new Date().toISOString()});});
+        invalidateSketch(r);break;
+      }
+      case 'undo':s.closed=false;s.points.pop();s.coords.pop();s.lengths=s.lengths.slice(0,Math.max(0,s.points.length-1));invalidateSketch(r);break;
+      case 'clear':s.points=[];s.coords=[];s.lengths=[];s.closed=false;invalidateSketch(r);break;
+      case 'image':delete s.image;delete s.file;break;
+      case 'apply':{const m=sketchMetrics(s);if(m.error){alert(m.error);return;}s.applied=true;s.bypass=false;break;}
+      case 'detach':s.applied=false;s.bypass=true;break;
+    }render();
+  });
+  document.addEventListener('change',async e=>{
+    const t=e.target;if(!t.dataset.skUpload)return;const r=P.rooms.find(r=>r.id===t.dataset.skUpload),file=t.files?.[0];if(!r||!file)return;
+    try{
+      if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>12*1024*1024)throw Error('请选择12MB以内的JPG、PNG或WebP图片');
+      const image=await createImageBitmap(file),scale=Math.min(1,1200/Math.max(image.width,image.height)),c=document.createElement('canvas');c.width=Math.round(image.width*scale);c.height=Math.round(image.height*scale);c.getContext('2d').drawImage(image,0,0,c.width,c.height);image.close();
+      const s=sketchData(r),prior={image:s.image,file:s.file};s.image=c.toDataURL('image/jpeg',0.7);s.file=file.name;
+      try{localStorage.setItem(STORE_KEY,JSON.stringify(P));}catch(err){s.image=prior.image;s.file=prior.file;throw Error('本机存储空间不足，请缩小图片或先导出报价备份');}
+      render();
+    }catch(err){alert('底图上传失败：'+err.message);}
+  });
+
+  function geo(r) {
+    const L = num(r.L), W = num(r.W), H = num(r.H) || 9, doors = num(r.doors);
+    const measured=r.sketch?.applied?sketchMetrics(r.sketch):null;
+    const floor = measured&&!measured.error?measured.floor:r.sketch?.points?.length&&!r.sketch.bypass?0:L*W, perim=measured&&!measured.error?measured.perim:r.sketch?.points?.length&&!r.sketch.bypass?0:2*(L+W);
+    const wall = Math.max(0, perim * H - doors * 21);  // 每樘门洞扣 3尺×7尺
+    return { L, W, H, doors, floor, perim, wall };
+  }
+  function totalFloor() { return P.rooms.filter(r => !['outdoor','stairs'].includes(roomBase(r))).reduce((s, r) => s + geo(r).floor, 0); }
+  const levels = () => Math.max(1, parseInt(P.levels, 10) || 1);
+  // 多层房屋时房间名前面带楼层，如「2楼·主卧」
+  const roomLabel = r => levels() > 1 ? `${floorName(r.level || 1)}·${r.name}` : r.name;
+  const activeQs = () => QUESTIONS.filter(q => (!['doors','windows'].includes(q.id) || P.legacyWholeOpenings) && (!q.when || q.when()));
+  const ans = id => P.answers[id] || {};
+  const yes = id => ans(id).v === true;
+  const an = (id, k) => num(ans(id)[k]);
+
+  // =====================================================================
+  //  四、自动生成清单：根据房间尺寸 + 必答问题，算出每一项和数量
+  // =====================================================================
+  function gen() {
+    const out = [];
+    const ALL = { id: 'all', name: '全屋' };
+    const add = (room, code, qty, formula, key) => {
+      if (FITOUT[code] && room.id !== 'all' && !String(key || '').startsWith('selected-fitout-') && code !== 'door') return;
+      if(room.id==='all' && GLOBAL_SERVICES.includes(code) && !P.globalServices?.[code])return;
+      if(room.id!=='all' && !FITOUT[code] && !workOn(room,code))return;
+      if(room.id!=='all' && room.workQty?.[code]!==undefined && String(room.workQty[code]).trim()!=='')qty=num(room.workQty[code]);
+      if(TILE_CODES.includes(code)&&room.id!=='all')qty=tileArea(room,code,qty);
+      if (!(qty > 0)) return;
+      out.push({ key: room.id + ':' + (key ? key.replace(/^selected-fitout-/, '') : code), code, roomId: room.id, roomName: room.id === 'all' ? room.name : roomLabel(room), qty: room.tileConfig?.[code]?round2(qty):r1(qty), formula });
+    };
+
+    add(ALL, 'setout', 1, '每单必做');
+    add(ALL, 'protect', 1, '每单必做');
+    if (yes('condo')) add(ALL, 'permit', 1, '公寓/有管理处');
+    if (yes('old')) {
+      add(ALL, 'demo_piece', an('old', 'pieces'), '必答问题填写');
+      add(ALL, 'demo_floor', an('old', 'floor'), '必答问题填写');
+      add(ALL, 'demo_ceiling', an('old', 'ceil'), '必答问题填写');
+      add(ALL, 'demo_skin', an('old', 'skin'), '必答问题填写');
+      add(ALL, 'screed', an('old', 'floor'), '= 铲除旧地砖面积（铲完必须重新找平）');
+    }
+    if (yes('demoWall')) add(ALL, 'demo_wall', an('demoWall', 'area'), '必答问题填写');
+    if (yes('newWall')) {
+      const a = an('newWall', 'area');
+      add(ALL, 'build_wall', a, '必答问题填写');
+      add(ALL, 'skim', a * 2, `新墙 ${nf(a)} × 两面`, 'newwall_skim');
+      add(ALL, 'paint_wall', a * 2, `新墙 ${nf(a)} × 两面`, 'newwall_paint');
+    }
+    if (yes('doorOpen')) add(ALL, 'door_open', an('doorOpen', 'count'), '必答问题填写');
+    if (yes('loadWall')) {
+      add(ALL, 'struct', an('loadWall', 'count'), '必答问题填写');
+      add(ALL, 'engineer', 1, '动承重墙必须有');
+    }
+    if (yes('gas')) add(ALL, 'gas', 1, '必答问题填写');
+    if (yes('net')) add(ALL, 'net', an('net', 'count'), '必答问题填写');
+    if (yes('dbBox')) add(ALL, 'db_box', an('dbBox', 'count'), '必答问题填写');
+    if (yes('grille')) add(ALL, 'grille', an('grille', 'area'), '必答问题填写');
+    if (P.legacyWholeOpenings && yes('windows')) { add(ALL, 'window_new', an('windows', 'area'), '必答问题填写'); add(ALL, 'fly_screen', an('windows', 'net'), '必答问题填写'); }
+    if (yes('mainDoor')) add(ALL, 'main_door', an('mainDoor', 'count'), '必答问题填写');
+    if (yes('cctv')) add(ALL, 'cctv', an('cctv', 'count'), '必答问题填写');
+    if (yes('doorbell')) add(ALL, 'doorbell', 1, '必答问题填写');
+    if (ans('condo').v === false) {
+      if (yes('extension')) { add(ALL, 'extension', an('extension', 'area'), '必答问题填写'); add(ALL, 'ext_permit', 1, '扩建必须先申请批准'); }
+      if (yes('awning')) add(ALL, 'awning', an('awning', 'area'), '必答问题填写');
+      if (yes('fence')) add(ALL, 'fence', an('fence', 'len'), '必答问题填写');
+      if (yes('autogate')) add(ALL, 'autogate', 1, '必答问题填写');
+      if (yes('roof')) add(ALL, 'roof_fix', an('roof', 'count'), '必答问题填写');
+      if (yes('pump')) add(ALL, 'water_pump', 1, '必答问题填写');
+      if (yes('porch')) add(ALL, 'drain_ch', an('porch', 'drain'), '必答问题填写');
+      if (yes('porch')) add(ALL, 'porch_tile', an('porch', 'area'), '必答问题填写');
+      if (yes('extPaint')) add(ALL, 'ext_paint', an('extPaint', 'area'), '必答问题填写');
+    }
+    // 每台空调、每台热水器都要从配电箱单独拉一条线
+    const acN = P.rooms.reduce((s, r) => s + (workOn(r,'aircon_pipe')?num(r.workQty?.aircon_pipe ?? r.ac):0), 0), htN = P.rooms.reduce((s, r) => s + (workOn(r,'heater') ? num(r.workQty?.heater ?? r.heater) : 0), 0);
+    add(ALL, 'circuit', acN + htN, `空调 ${acN} 台 + 热水器 ${htN} 台，每台一条专用回路`);
+    const wN = P.rooms.reduce((s, r) => s + (workOn(r,'water_pt')?num(r.workQty?.water_pt ?? r.wpts):0), 0);
+    if (wN > 0) add(ALL, 'pipe_test', 1, `全屋有 ${wN} 个水点位，封槽前必须打压`);
+    if (levels() > 1) {
+      // 楼上房间：面积 × (所在楼层 − 1)，越高搬得越辛苦
+      const up = P.rooms.filter(r => (r.level || 1) > 1 && !['outdoor','stairs'].includes(roomBase(r)));
+      const upQty = up.reduce((s, r) => s + geo(r).floor * ((r.level || 1) - 1), 0);
+      add(ALL, 'carry_up', upQty, up.map(r => `${roomLabel(r)} ${nf(geo(r).floor)}×${(r.level || 1) - 1}`).join(' + ') || '楼上还没有房间');
+      if (yes('stairs')) {
+        const stairCode=({'瓷砖':'stair_tread','木饰面':'stair_wood','天然石材／人造石':'stair_stone','其他材料':'stair_other'})[ans('stairs').material];
+        if(stairCode)add(ALL,stairCode,an('stairs','steps'),'本次实际施工踏步级数');
+        add(ALL,'stair_landing',an('stairs','landing'),'平台实际施工面积，独立于踏步级数');
+        add(ALL, 'stair_rail', an('stairs', 'rail'), '必答问题填写');
+        add(ALL,'stair_light',an('stairs','lights'),'客户选择的本次新增灯及双控套数');
+      }
+      if (yes('void')) add(ALL, 'scaffold', an('void', 'count'), '必答问题填写');
+    }
+
+    P.rooms.forEach(r => {
+      const g = geo(r), t = roomBase(r);
+      Object.keys(FITOUT).filter(code=>fitSelected(r,code)).forEach(code=>add(r,code,fitQty(r,code),'客户勾选；'+(code==='window_new'?'单樘窗宽×高×数量（平方尺）':'按确认尺寸／数量计量'),'selected-fitout-'+code));
+      if (t === 'outdoor' || t === 'stairs') return; // Scope priced in the whole-house questions; no indoor finishes.
+      const fl = nf(g.floor), pe = nf(g.perim);
+      const floorF = r.sketch?.applied?`手绘实测闭合轮廓面积 = ${fl}`:`${nf(g.L)}×${nf(g.W)} = ${fl}`;
+      const wallF = `周长${pe}×层高${nf(g.H)}` + (g.doors ? ` − 门洞${g.doors}×21` : '') + ` = ${nf(g.wall)}`;
+
+      // 水电
+      add(r, 'wire', num(r.pts), '房间填写的点位');
+      add(r, 'panel', num(r.pts), '= 插座/开关点位数（布线多少个，面板就多少个）');
+      add(r, 'light', num(r.lights), '房间填写的灯位');
+      add(r, 'water_pt', num(r.wpts), '房间填写的水点位');
+      add(r, 'aircon_pipe', num(r.ac), '房间填写的空调台数');
+
+      // 天花
+      if (t !== 'balcony') {
+        if (r.ceiling === 'flat' || r.ceiling === 'feature') add(r, 'plaster_ceiling', g.floor, `天花面积 = 地面 ${floorF}`);
+        if (r.ceiling === 'feature') {
+          add(r, 'ceiling_step', g.perim, `沿房间实测周长 = ${pe}`);
+          add(r, 'led_strip', g.perim, `= 灯槽长度 ${pe}`);
+        }
+        add(r, 'paint_ceiling', g.floor, `天花面积 = 地面 ${floorF}`);
+      }
+
+      if (t === 'living' || t === 'bedroom' || t === 'other') {
+        if (r.floor === 'laminate') add(r, 'laminate', g.floor, floorF);
+        else {
+          add(r, 'floor_tile', g.floor, floorF); add(r, 'grout', g.floor, `= 地砖面积 ${fl}`);
+          if (r.tileDim ? ['900×1800 mm', '1200×2400 mm'].includes(r.tileDim) : r.tileSize === 'big') add(r, 'big_tile_extra', g.floor, `大板砖：地砖面积 ${fl}`);
+        }
+        add(r, 'fan_point', num(r.fan), '= 吊扇数量'); add(r, 'ceiling_fan', num(r.fan), '房间填写的吊扇数量');
+        if (r.cornice === 'yes') add(r, 'cornice', g.perim, `沿房间周长 ${pe}`);
+        add(r, 'sideboard', num(r.sideboard), '房间填写'); add(r, 'headboard', num(r.headboard), '房间填写'); add(r, 'bookcase', num(r.bookcase), '房间填写');
+        const sk = Math.max(0, g.perim - g.doors * 3);
+        add(r, 'skirting', sk, `周长${pe}` + (g.doors ? ` − 门宽${g.doors}×3` : '') + ` = ${nf(sk)}`);
+        add(r, 'skim', g.wall, wallF);
+        if (r.wallFinish === 'wallpaper') add(r, 'wallpaper', g.wall, wallF);
+        else if (r.wallFinish === 'art') add(r, 'art_paint', g.wall, wallF);
+        else add(r, 'paint_wall', g.wall, wallF);
+        if (t === 'bedroom') add(r, 'wardrobe', num(r.wardrobe), '房间填写的衣柜长度');
+        if (t === 'living') { add(r, 'shoe_cab', num(r.shoeCab), '房间填写的鞋柜长度'); add(r, 'tv_cab', num(r.tvCab), '房间填写的电视柜长度'); }
+      }
+
+      if (t === 'kitchen') {
+        const cabLow = num(r.backsplashLength ?? r.cabLow);
+        const tileWall = workOn(r,'wall_tile') ? (r.wallTile === 'full' ? g.wall : Math.min(g.wall, cabLow * 2.5)) : 0;
+        const tileWallF = r.wallTile === 'full' ? '满铺：' + wallF : `操作区：地柜长${nf(cabLow)}×挡水高2.5 = ${nf(tileWall)}`;
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'wall_tile', tileWall, tileWallF);
+        add(r, 'grout', g.floor + tileWall, `地砖${fl} + 墙砖${nf(tileWall)}`);
+        add(r, 'wp', g.floor, `厨房地面 ${floorF}`);
+        add(r, 'flood_test', 1, '做了防水就要闭水');
+        add(r, 'pipe_box', 1, '厨房通常有 1 根下水立管，没有就关掉');
+        const paintWall = Math.max(0, g.wall - tileWall);
+        add(r, 'skim', paintWall, `墙面${nf(g.wall)} − 墙砖${nf(tileWall)} = ${nf(paintWall)}`);
+        add(r, 'paint_wall', paintWall, `墙面${nf(g.wall)} − 墙砖${nf(tileWall)} = ${nf(paintWall)}`);
+        add(r, 'cab_low', cabLow, '房间填写的地柜长度');
+        add(r, 'cab_up', num(r.cabUp), '房间填写的吊柜长度');
+        add(r, 'counter', cabLow, '= 地柜长度（有地柜就一定有台面）');
+        add(r, 'sink', 1, '厨房必配');
+        add(r, 'cab_basket', num(r.basket), '房间填写的拉篮数量');
+        add(r, 'hood', 1, '厨房必配');
+      }
+
+      if (t === 'bath') {
+        const wpA = g.floor + g.perim * 1 + 36;
+        add(r, 'wp', wpA, `地面${fl} + 周长${pe}×上翻1尺 + 淋浴区墙6×6 = ${nf(wpA)}`);
+        add(r, 'flood_test', 1, '做了防水就要闭水');
+        add(r, 'slope', g.floor, floorF);
+        add(r, 'pipe_box', 1, '卫生间通常有 1 根下水立管，没有就关掉');
+        add(r, 'exhaust', 1, '卫生间必配');
+        add(r, 'bath_acc', 1, '每个卫生间 1 套');
+        add(r, 'mirror', fitSelected(r,'vanity') ? fitQty(r,'vanity') : 0, '= 客户选做浴室柜数量');
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'wall_tile', g.wall, '满铺：' + wallF);
+        add(r, 'grout', g.floor + g.wall, `地砖${fl} + 墙砖${nf(g.wall)}`);
+        add(r, 'drain', num(r.drains), '房间填写的地漏数');
+        add(r, 'threshold', g.doors, '= 门数（每个门口一条挡水）');
+        ['toilet', 'vanity', 'shower', 'screen', 'heater'].forEach(c => add(r, c, num(r[c]), '房间填写'));
+        if (r.moved === true) add(r, 'bath_drop', g.floor, `改位置：地面 ${floorF}`);
+      }
+
+      if (t === 'laundry') {
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'grout', g.floor, `= 地砖面积 ${fl}`);
+        add(r, 'wp', g.floor, `洗衣区地面 ${floorF}`);
+        add(r, 'flood_test', 1, '做了防水就要闭水');
+        add(r, 'drain', num(r.drains), '房间填写的地漏数');
+        add(r, 'laundry_cab', num(r.laundryCab), '房间填写的洗衣柜长度');
+        add(r, 'rack', num(r.rack), '房间填写');
+      }
+
+      if (t === 'balcony') {
+        add(r, 'floor_tile', g.floor, floorF);
+        add(r, 'grout', g.floor, `= 地砖面积 ${fl}`);
+        add(r, 'wp', g.floor, `阳台地面 ${floorF}`);
+        add(r, 'flood_test', 1, '做了防水就要闭水');
+        add(r, 'drain', num(r.drains), '房间填写的地漏数');
+        add(r, 'rack', num(r.rack), '房间填写');
+        if (r.seal === true) add(r, 'balc_seal', g.L, `阳台长度 ${nf(g.L)}`);
+      }
+
+      if (P.legacyWholeOpenings && yes('doors') && !fitSelected(r,'door') && t !== 'balcony') add(r, 'door', g.doors, '房间填写的室内门数');
+      if (yes('curtain')) {
+        add(r, 'curtain', num(r.win), '房间填写的窗户总宽');
+        if (r.ceiling === 'flat' || r.ceiling === 'feature') add(r, 'curtain_box', num(r.win), '有吊顶又做窗帘 → 窗帘盒 = 窗宽');
+      }
+      if (t !== 'bath' && t !== 'balcony') add(r, 'window_sill', num(r.win), '= 窗户总宽');
+    });
+
+    P.rooms.forEach(r=>{
+      const g=geo(r);
+      if(r.workLegacy)return;
+      workCodes(r).filter(code=>workOn(r,code)).forEach(code=>{
+        if(out.some(x=>x.roomId===r.id&&x.code===code))return;
+        const explicit=r.workQty?.[code];
+        let qty=explicit!==undefined && String(explicit).trim()!==''?num(explicit):0;
+        if(!qty) {
+          if(['demo_floor','demo_ceiling','floor_tile','laminate','porch_tile','screed','slope','wp','plaster_ceiling','paint_ceiling','awning'].includes(code))qty=g.floor;
+          else if(['demo_skin','wall_tile','skim','paint_wall','wallpaper','art_paint'].includes(code))qty=g.wall;
+          else if(['skirting','ceiling_step','led_strip','cornice'].includes(code))qty=g.perim;
+          else if(['window_sill','curtain','curtain_box','balc_seal'].includes(code))qty=num(r.win);
+          else if(['wire','panel'].includes(code))qty=num(r.pts);
+          else if(code==='light')qty=num(r.lights);
+          else if(['fan_point','ceiling_fan'].includes(code))qty=num(r.fan);
+          else if(code==='aircon_pipe')qty=num(r.ac);
+          else if(code==='water_pt')qty=num(r.wpts);
+          else if(code==='drain')qty=num(r.drains);
+          else if(['toilet','shower','screen','heater','rack'].includes(code))qty=num(r[code]);
+          else if(code==='flood_test')qty=1;
+        }
+        add(r,code,qty,'客户勾选；按本次填写的施工量或空间尺寸计算');
+      });
+    });
+
+    // 垃圾清运：基础1车 + 拆墙每100平方尺1车 + 铲砖每400平方尺1车 + 旧件每10件1车
+    const dw = yes('demoWall') ? an('demoWall', 'area') : 0;
+    const df = yes('old') ? an('old', 'floor') : 0;
+    const dp = yes('old') ? an('old', 'pieces') : 0;
+    const trips = 1 + Math.ceil(dw / 100) + Math.ceil(df / 400) + Math.ceil(dp / 10);
+    add(ALL, 'waste_out', trips, `基础1 + 拆墙${nf(dw)}÷100 + 铲砖${nf(df)}÷400 + 旧件${nf(dp)}÷10（都进位）`);
+    add(ALL, 'clean', totalFloor(), '= 全部房间地面面积合计');
+    if (yes('decor')) add(ALL, 'decor', 1, '必答问题填写');
+    out.filter(x=>x.code==='grout' && x.roomId!=='all').forEach(x=>{const room=P.rooms.find(r=>r.id===x.roomId);if(String(room.workQty?.grout??'').trim()==='')x.qty=r1(out.filter(t=>t.roomId===x.roomId&&['floor_tile','wall_tile','porch_tile'].includes(t.code)).reduce((sum,t)=>sum+t.qty,0));});
+    return out.filter(x=>x.qty>0);
+  }
+
+  // =====================================================================
+  //  五、算钱：每一行先四舍五入到整数 RM，再加总 → 分项加起来一定等于总数
+  // =====================================================================
+  function compute() {
+    const rows = gen().map(l => {
+      const d = PRICE[l.code], st = P.lines[l.key] || {}, p = price(l.code);
+      if(TILE_CODES.includes(l.code)&&P.rooms.find(r=>r.id===l.roomId)?.tileConfig?.[l.code])return tilePriceRow(l,st);
+      if(activeCatalog().length)return companyRow(l,st);
+      const manual = st.qty !== undefined && st.qty !== null && st.qty !== '';
+      const qty = manual ? num(st.qty) : l.qty;
+      const supply = st.supply === 'customer' ? 'customer' : 'company';
+      // 单价 = 主材(含损耗) + 辅材 + 人工；合价 = 数量 × 单价（四舍五入到整数）
+      // 主材选型（选填）：这一行填了主材单价，就只在这一行用它，损耗照加
+      const mOwn = st.mprice !== undefined && st.mprice !== null && String(st.mprice).trim() !== '';
+      const matBase = mOwn ? num(st.mprice) : p.mat;
+      const uMat = supply === 'customer' ? 0 : Math.round(matBase * (1 + p.waste / 100) * 100) / 100;
+      const pick = [l.code.startsWith('stair_') ? stairPick() : '', materialPick(l.roomId, l.code), fitPick(P.rooms.find(r=>r.id===l.roomId),l.code), st.brand, st.model].map(x => String(x || '').trim()).filter(Boolean).join(' ');
+      const unit = uMat + p.aux + p.lab;
+      const total = Math.round(qty * unit);
+      const mat = Math.round(qty * uMat), aux = Math.round(qty * p.aux), lab = total - mat - aux;
+      return Object.assign({}, l, { name: l.code==='counter' && fitSelected(P.rooms.find(r=>r.id===l.roomId)||{},'counter') ? '厨房定制台面' : d.name, unit: d.unit, stage: d.stage, forced: !!d.forced, soft: d.stage === 'soft', desc: FITOUT[l.code] && fitSelected(P.rooms.find(r=>r.id===l.roomId)||{},l.code) ? '按本项确认的材质、尺寸和配置制作安装；价格以核定清单为准。' : d.desc || '',
+        st, manual, autoQty: l.qty, qty, on: !st.off, supply, p, uMat, mOwn, pick, hasMain: p.mat > 0 || p.bomMat, uAux: p.aux, uLab: p.lab, uPrice: unit, mat, aux, lab, total });
+    });
+    P.custom.forEach(c => {
+      const qty = num(c.qty), uPrice = num(c.mat) + num(c.lab), total = Math.round(qty * uPrice), mat = Math.round(qty * num(c.mat));
+      rows.push({ key: 'c:' + c.id, custom: c, code: null, roomId: 'custom', roomName: c.room || '全屋', name: c.name || '（未命名自定义项）',
+        unit: c.unit || '项', stage: c.stage || 'equip', soft: c.stage === 'soft', qty, on: true, supply: 'company', desc: c.reason || '',
+        uMat: num(c.mat), uAux: 0, uLab: num(c.lab), uPrice, mat, aux: 0, lab: total - mat, total, formula: '自定义项目', st: {} });
+    });
+
+    let hard = 0, material = 0, auxSum = 0, soft = 0;
+    const byStage = {};
+    rows.forEach(r => {
+      byStage[r.stage] = byStage[r.stage] || 0;
+      if (!r.on) return;
+      byStage[r.stage] += r.total;
+      if (r.soft) soft += r.total; else { hard += r.lab; material += r.mat; auxSum += r.aux; }
+    });
+    const floorSum = totalFloor();
+    const designArea = num(P.spaArea) || floorSum;
+    const design = Math.round(designArea * num(P.settings.designRate));
+    const base = round2(hard + material + auxSum + soft);
+    const mgmt = Math.round(base * num(P.settings.mgmtRate) / 100);
+    const before = round2(base + design + mgmt);
+    const discount = Math.min(Math.round(num(P.discount)), before);
+    const afterDiscount = before - discount;
+    const sst = Math.round(afterDiscount * num(P.settings.sst) / 100);
+    const total = round2(afterDiscount + sst);
+    // 付款节点：前几期四舍五入，最后一期 = 总价 − 前面各期，保证加起来刚好等于总价
+    const pay = P.settings.pay.map(x => ({ name: x.name, pct: num(x.pct), amt: 0 }));
+    let paid = 0;
+    pay.forEach((x, i) => { x.amt = i === pay.length - 1 ? round2(total - paid) : round2(total * x.pct / 100); paid = round2(paid+x.amt); });
+    return { sst, rows, byStage, hard, material, auxSum, soft, base, design, designArea, floorSum, mgmt, before, discount, total, pay };
+  }
+
+  // =====================================================================
+  //  六、漏项 / 错误检查（红色 = 必须处理才能出单；黄色 = 提醒确认）
+  // =====================================================================
+  function checks(C) {
+    const red = [], yellow = [];
+    C.rows.filter(r=>r.on&&r.catalogPending).forEach(r=>red.push({m:`「${r.roomName} · ${r.name}」${r.catalogReason}，请在价目表补齐`,go:5}));
+    if(!houseDef(P.houseType)) red.push({m:'请先选择住宅类型',go:1});
+    P.rooms.filter(r => r.planImported && !r.surveyConfirmed).forEach(r => red.push({m: `「${roomLabel(r)}」图纸尺寸待现场复尺确认`,go:1}));
+    P.rooms.filter(r => r.planImported && !r.planReviewed).forEach(r => red.push({m: `「${roomLabel(r)}」来自图纸，请核对设备点位及施工范围后确认`, go: 1}));
+    P.rooms.filter(r => ['outdoor','stairs'].includes(roomBase(r))).forEach(r => yellow.push({m: `「${roomLabel(r)}」仅记录空间尺寸；施工量请在必答问题的户外/楼梯项目中填写，不自动套用室内做法`, go: 2}));
+    if (!P.info.customer.trim()) red.push({ m: '没填客户姓名', go: 1 });
+    if (!P.info.phone.trim()) yellow.push({ m: '没填客户电话', go: 1 });
+    if (!P.rooms.length) red.push({ m: '还没有添加任何房间', go: 1 });
+    P.rooms.forEach(r => {
+      if(r.sketch?.pointsLinked&&r.sketch.pointsReview)red.push({m:`「${roomLabel(r)}」图上点位已变更，请重新确认点位数量`,go:1});
+      if ((r.planImported || P.layoutId) && TYPES[r.type].fields.includes('H') && !(Number.isFinite(Number(r.H)) && Number(r.H) > 0)) red.push({m: `「${roomLabel(r)}」请填写实际层高，不使用默认层高`, go: 1});
+      if (r.sketch?.points?.length&&!r.sketch.bypass&&(!r.sketch.applied||sketchMetrics(r.sketch).error)) red.push({m:`「${roomLabel(r)}」手绘尺寸尚未确认：${sketchMetrics(r.sketch).error||'请点击应用面积／周长'}`,go:1});
+      if ((!r.sketch?.points?.length||r.sketch.bypass)&&(!num(r.L) || !num(r.W))) red.push({ m: `「${roomLabel(r)}」没填长/宽，面积算不出来`, go: 1 });
+      if ((r.level || 1) > levels()) red.push({ m: `「${r.name}」设在${floorName(r.level)}，但房屋只有 ${levels()} 层`, go: 1 });
+      (TYPES[r.type].roomQ || []).forEach(q => { if (r.workVersion && ['moved','seal'].includes(q.k)) return; if (r[q.k] !== true && r[q.k] !== false) red.push({ m: `「${roomLabel(r)}」${q.q} 还没回答`, go: 2 }); });
+      if (roomBase(r) === 'kitchen' && !fitSelected(r,'cab_low')) yellow.push({ m: `「${roomLabel(r)}」没有地柜，确认客户不做橱柜？`, go: 1 });
+      if (r.type === 'bath' && !num(r.toilet)) yellow.push({ m: `「${roomLabel(r)}」没有马桶，确认吗？`, go: 1 });
+      if (r.type === 'bath' && workOn(r,'drain') && !num(r.drains) && !num(r.workQty?.drain)) red.push({ m: `「${roomLabel(r)}」地漏是 0，卫生间至少要 1 个`, go: 1 });
+    });
+    P.rooms.forEach(r=>invalidFitout(r).forEach(code=>red.push({m:`「${roomLabel(r)}」原有${FITOUT[code][0]}与空间不匹配，请取消此项或更正空间类型`,go:1})));
+    P.rooms.forEach(r=>Object.keys(FITOUT).filter(code=>fitSelected(r,code)).forEach(code=>{
+      const st=r.fitout[code],name=`「${roomLabel(r)}」${FITOUT[code][0]}`;
+      if(!(fitQty(r,code)>0)) red.push({m:`${name}已勾选，请填写有效尺寸／数量`,go:1});
+      if(!fitKeys(code).every(k=>st[k])) red.push({m:`${name}请补齐材质、规格及专业配置`,go:1});
+      if(code!=='cab_basket' && (!(num(st.height)>0) || !(num(st.length)>0))) red.push({m:`${name}请确认宽度及高度`,go:1});
+      if(code==='window_new' && P.legacyWholeOpenings && yes('windows')) red.push({m:`${name}已逐空间选择，请关闭全屋更换窗户项，避免重复报价`,go:2});
+      if(!['door','window_new','cab_basket'].includes(code) && !(num(st.depth)>0)) red.push({m:`${name}请填写深度`,go:1});
+      const line=C.rows.find(x=>x.roomId===r.id && x.code===code);
+      if(line && !line.catalogMatch && !(line.uPrice>0)) red.push({m:`${name}尚未核定单价，请在价目表填写价格`,go:5});
+    }));
+    if(P.houseType==='terrace' && !P.rooms.some(r=>r.type==='porch')) yellow.push({m:'排屋尚未记录车廊，请在底层补充车廊并确认实际尺寸及施工范围',go:1});
+    if(levels()>1 && yes('stairs')) {
+      const a=ans('stairs');
+      if(stairKeys(a).some(k=>!a[k]))red.push({m:'楼梯请补齐材料、铺法、立面处理、收边、防滑及基层选项',go:2});
+      if(!String(a.spec||'').trim())red.push({m:'楼梯请填写面层规格及厚度',go:2});
+      if(a.material==='瓷砖' && a.tileMethod==='下挂（踏面前沿下挂）' && !num(a.hang))red.push({m:'楼梯下挂做法请填写下挂高度',go:2});
+      if(a.material==='其他材料' && !String(a.other||'').trim())red.push({m:'请填写楼梯其他材料的名称和做法',go:2});
+      C.rows.filter(r=>r.code?.startsWith('stair_') && r.on && !r.catalogMatch && !(r.uPrice>0)).forEach(r=>red.push({m:`${r.name}单价待核定，请在价目表填写`,go:5}));
+    }
+    P.rooms.forEach(r=>{
+      const selected=workCodes(r).filter(code=>workOn(r,code));
+      TILE_CODES.filter(code=>workOn(r,code)&&r.tileConfig?.[code]).forEach(code=>{const c=r.tileConfig[code];if(!tileMetrics(r,code,1).ready||!c.finish||!c.method||!c.thickness)red.push({m:`「${roomLabel(r)}」${PRICE[code].name}请补齐规格、厚度、表面、铺法、承包范围；价格未匹配时请联系公司补价`,go:1});if(workOn(r,'big_tile_extra'))red.push({m:`「${roomLabel(r)}」瓷砖人工价已含规格工艺，请取消单列大板加价以避免重复`,go:1});});
+      const missingSpecs=materialFields(r).filter(k=>!String(r[k]||'').trim());
+      if(missingSpecs.length)red.push({m:`「${roomLabel(r)}」已选工程的材料规格待补：${missingSpecs.map(k=>MATERIAL_SPEC[k].label).join('、')}`,go:1});
+      selected.forEach(code=>{if(!C.rows.some(x=>x.roomId===r.id&&x.code===code&&x.qty>0))red.push({m:`「${roomLabel(r)}」已勾选${PRICE[code].name}，请填写有效施工量`,go:1});});
+      [['wp','flood_test'],['wire','panel'],['floor_tile','grout'],['wall_tile','grout']].forEach(([main,mate])=>{if(workOn(r,main)&&!workOn(r,mate))yellow.push({m:`「${roomLabel(r)}」已选${PRICE[main].name}，请确认是否需要${PRICE[mate].name}`,go:1});});
+      if(workOn(r,'floor_tile')&&workOn(r,'laminate')&&(!num(r.workQty?.floor_tile)||!num(r.workQty?.laminate)))red.push({m:`「${roomLabel(r)}」瓷砖与木地板同时勾选，请分开填写各自施工量或只保留一种`,go:1});
+    });
+    [['porch','porch_tile'],['porch','drain_ch'],['awning','awning'],['extPaint','ext_paint'],['grille','grille']].forEach(([question,code])=>{if(yes(question)&&P.rooms.some(r=>workOn(r,code)))red.push({m:`${PRICE[code].name}在全屋问题与空间中重复选择，请只保留一处并核对工程量`,go:2});});
+    const types = P.rooms.map(roomBase);
+    if (P.rooms.length && !types.includes('bath')) yellow.push({ m: '没有卫生间，确认是局部装修？', go: 1 });
+    if (P.rooms.length && !types.includes('kitchen')) yellow.push({ m: '没有厨房，确认是局部装修？', go: 1 });
+    for (let lv = 1; lv <= levels(); lv++) if (!P.rooms.some(r => (r.level || 1) === lv)) red.push({ m: `房屋有 ${levels()} 层，但${floorName(lv)}还没有房间`, go: 1 });
+    if (levels() > 1 && !P.rooms.some(r => (r.level || 1) > 1 && r.type === 'bath')) yellow.push({ m: '楼上没有卫生间，确认吗？', go: 1 });
+
+    activeQs().forEach(q => {
+      const a = ans(q.id);
+      if (a.v !== true && a.v !== false) red.push({ m: `必答问题没回答：${q.q}`, go: 2 });
+      else if (a.v && q.inputs) q.inputs.forEach(i => { if (!i.optional && !num(a[i.k])) red.push({ m: `「${q.q}」答了"是"，但${i.label}是 0`, go: 2 }); });
+    });
+    if (yes('loadWall')) yellow.push({ m: '动承重墙：签约前必须拿到结构工程师签字，否则不能开工', go: 2 });
+
+    const spa = num(P.spaArea);
+    if (!spa) yellow.push({ m: `没填套内面积，设计费暂按房间面积合计 ${nf(C.floorSum)} 平方尺算`, go: 1 });
+    else if (C.floorSum < spa * 0.85) yellow.push({ m: `房间面积合计 ${nf(C.floorSum)} 比套内面积 ${nf(spa)} 少了 ${Math.round((1 - C.floorSum / spa) * 100)}%，是不是漏了走廊/储物间/过道？`, go: 1 });
+    else if (C.floorSum > spa * 1.1) yellow.push({ m: `房间面积合计 ${nf(C.floorSum)} 比套内面积 ${nf(spa)} 还大，检查尺寸是否量错或房间重复`, go: 1 });
+
+    C.rows.forEach(r => {
+      const label = `「${r.roomName} · ${r.name}」`;
+      if (r.custom) {
+        if (!r.custom.name || !num(r.custom.qty) || !(num(r.custom.mat) + num(r.custom.lab))) red.push({ m: `自定义项目${label}名称/数量/单价没填完整`, go: 3 });
+        if (!String(r.custom.reason || '').trim()) red.push({ m: `自定义项目${label}没写原因`, go: 3 });
+        else yellow.push({ m: `自定义项目${label}不在价目表里，需主管确认价格`, go: 3 });
+        return;
+      }
+      if (!r.on && r.forced && !String(r.st.offReason || '').trim()) red.push({ m: `${label}是必做项，关掉要写原因`, go: 3, key: r.key });
+      if (r.manual && !String(r.st.qtyReason || '').trim()) red.push({ m: `${label}手动改了数量，要写原因`, go: 3, key: r.key });
+      if (r.on && r.manual && r.autoQty > 0 && Math.abs(r.qty - r.autoQty) / r.autoQty > 0.3)
+        yellow.push({ m: `${label}手动数量 ${nf(r.qty)} 和自动算的 ${nf(r.autoQty)} 相差超过30%`, go: 3, key: r.key });
+      if (r.on && r.supply === 'customer') yellow.push({ m: `${label}客户自备材料，要跟客户约好送货时间，否则会拖工期`, go: 3, key: r.key });
+      if (r.on && PRICE[r.code].needs) PRICE[r.code].needs.forEach(nc => {
+        const mates = C.rows.filter(x => x.roomId === r.roomId && x.code === nc);
+        if (mates.length && mates.every(x => !x.on)) yellow.push({ m: `${label}做了，但配套的「${PRICE[nc].name}」被关掉了，是不是漏了？`, go: 3 });
+      });
+    });
+    Object.keys(PRICE).forEach(c => { if (priceChanged(c)) yellow.push({ m: `本单改了「${PRICE[c].name}」的单价（不是公司统一价）`, go: 5 }); });
+
+    const pctSum = P.settings.pay.reduce((s, x) => s + num(x.pct), 0);
+    if (Math.abs(pctSum - 100) > 0.01) red.push({ m: `付款节点比例加起来是 ${nf(pctSum)}%，必须等于 100%`, go: 5 });
+    if (C.discount > 0 && C.before > 0) {
+      const pct = C.discount / C.before * 100;
+      if (pct > num(P.settings.discountLimit) && !String(P.discountBy || '').trim())
+        red.push({ m: `优惠 ${nf(pct)}% 超过 ${nf(P.settings.discountLimit)}%，要填审批人`, go: 4 });
+    }
+    return { red, yellow };
+  }
+
+  // =====================================================================
+  //  七、页面渲染
+  // =====================================================================
+  const STEP_NAMES = ['', '房间尺寸', '必答问题', '核对清单', '报价单', '价目表'];
+
+  function unansweredCount() {
+    let n = activeQs().filter(q => ans(q.id).v !== true && ans(q.id).v !== false).length;
+    P.rooms.forEach(r => (TYPES[r.type].roomQ || []).forEach(q => { if (r[q.k] !== true && r[q.k] !== false) n++; }));
+    return n;
+  }
+
+  function renderSteps(K) {
+    const redBy = s => K.red.filter(x => x.go === s).length;
+    document.getElementById('steps').innerHTML = [1, 2, 3, 4, 5].map(s => {
+      let b = '';
+      if (s === 2) { const n = unansweredCount(); b = n ? `<span class="bdg">${n}</span>` : '<span class="bdg okb">✓</span>'; }
+      else if (s !== 4 && redBy(s)) b = `<span class="bdg">${redBy(s)}</span>`;
+      else if (s === 4 && K.red.length) b = `<span class="bdg">${K.red.length}</span>`;
+      return `<button class="step-btn ${s === step ? 'active' : ''}" data-step="${s}"><b>${s === 5 ? '⚙' : s}</b>${STEP_NAMES[s]}${b}</button>`;
+    }).join('');
+  }
+
+  function fld(label, unit, attrs, val, bad, isNum) {
+    return `<div class="fld ${bad ? 'bad' : ''}"><label>${label}${unit ? `<span class="u">（${unit}）</span>` : ''}</label>
+      <input ${isNum ? 'class="num" inputmode="decimal"' : ''} type="text" ${attrs} value="${esc(val)}"></div>`;
+  }
+
+  function renderStep1() {
+    const i = P.info;
+    let h = houseCard() + planHtml() + `<div class="card"><h2>客户信息</h2>
+      <div class="grid2">
+        ${houseDef(P.houseType)?.apartment ? fld('单位所在楼层（楼栋）', '', 'data-info="buildingFloor" placeholder="如 18 楼 / Level 18"', i.buildingFloor || '') + fld('楼栋 / 单位号', '', 'data-info="unitNo" placeholder="如 Tower A / 18-08"', i.unitNo || '') : ''}
+        ${fld('客户姓名', '', 'data-info="customer"', i.customer, !i.customer.trim())}
+        ${fld('电话', '', 'data-info="phone" inputmode="tel"', i.phone)}
+        <div class="full">${fld('地址', '', 'data-info="address"', i.address)}</div>
+        ${fld('报价顾问', '', 'data-info="staff"', i.staff)}
+        ${fld('套内面积（各层合计）', '平方尺', 'data-spa', P.spaArea, false, true)}
+        <div class="full segrow"><span style="display:block;font-size:11.5px;color:var(--ink-dim);margin-bottom:4px">本户内部有几层</span><div class="seg">
+          ${[[1, '单层单位 / 单层住宅'], [2, '2层'], [3, '3层'], [4, '4层']].map(([v, l]) => `<button class="${levels() === v ? 'active' : ''}" data-levels="${v}">${l}</button>`).join('')}</div></div>
+      </div>
+      <div class="kpi" style="margin-top:10px"><span>室内及阳台面积合计（不含户外/楼梯）</span><b class="mono" data-out="floorsum"></b></div>
+      <p class="hint" style="margin:4px 0 0">套内面积按买卖合约(SPA)填，用来算设计费，也用来核对是不是漏了房间。</p>
+    </div>
+    <div class="card"><h2>马来西亚住宅空间</h2><p class="hint">${houseDef(P.houseType)?.apartment ? '单层公寓所有房间属于同一户内层；复式按户内下层、上层分组。' : '底层 Ground Floor 是第 1 层，楼上 First Floor 是第 2 层。'}规则房间填长宽高；不规则房间点击房间标题旁的「✎ 手绘标尺寸」，可上传手绘图或直接画线，再标注实测尺寸。面积、墙面积、踢脚线长度等由系统计算。有几间就加几间，走廊/过道也要加。</p>`;
+    if(usesPlanRooms()) h += roomInventoryHtml(P.rooms);
+    const roomCard = r => {
+      const T = TYPES[r.type];
+      const fitFields = new Set(Object.values(FITOUT).map(x=>x[1]));
+      const nums = T.fields.filter(f => !F[f].opts && !fitFields.has(f) && !['doors','win'].includes(f) && !((r.sketch?.points?.length&&!r.sketch.bypass)&&['L','W'].includes(f)) && !(r.sketch?.pointsLinked&&['lights','wpts','pts'].includes(f))), segs = T.fields.filter(f => F[f].opts && f !== 'tileSize');
+      const lvSeg = levels() > 1 || (r.level || 1) > 1
+        ? `<div class="segrow"><span>在几楼</span><div class="seg">${Array.from({ length: Math.max(levels(), r.level || 1) }, (_, k) => k + 1).map(v =>
+            `<button class="${(r.level || 1) === v ? 'active' : ''}" data-room-level="${r.id}" data-v="${v}">${floorName(v)}</button>`).join('')}</div></div>` : '';
+      return `<div class="room">
+        <div class="room-head"><span class="badge">${T.label}</span><input data-room="${r.id}" data-f="name" value="${esc(r.name)}">
+          <span class="area mono" data-out="area-${r.id}"></span><button class="btn-ghost" data-sk-open="${r.id}">✎ 手绘标尺寸</button><button class="x" data-del-room="${r.id}" title="删除房间">✕</button></div>
+        <div class="room-body">${sketchHtml(r)}${r.sketch?.points?.length&&!r.sketch.bypass?`<div class="note">${r.sketch.applied?`面积已从手绘自动带入：${nf2(geo(r).floor)} 平方尺；周长 ${nf2(geo(r).perim)} 英尺，无需重复填长宽。`:'正在使用手绘量尺；完成后确认应用面积，无需再填矩形长宽。'}</div>`:''}${r.sketch?.pointsLinked?`<div class="note">图上点位已带入：灯位 ${num(r.lights)}；水点 ${num(r.wpts)}；插座／开关 ${num(r.pts)}。修改请在图上操作并重新确认。</div>`:''}<div class="grid3">
+          ${nums.map(f => fld(F[f].label, F[f].unit, `data-room="${r.id}" data-f="${f}"`, r[f], (f === 'L' || f === 'W') && !r.sketch?.applied && !num(r[f]), true)).join('')}
+        </div>
+        ${segs.map(f => `<div class="segrow"><span>${F[f].label}</span><div class="seg">${F[f].opts.map(([v, l]) =>
+          `<button class="${r[f] === v ? 'active' : ''}" data-room-seg="${r.id}" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
+        <div class="grid3">${fld('现有门洞／门数量','樘',`data-room="${r.id}" data-f="doors"`,r.doors??'',false,true)}${fld('现有窗数量','樘',`data-room="${r.id}" data-f="windowCount"`,r.windowCount??'',false,true)}${fld('现有窗户总宽','尺',`data-room="${r.id}" data-f="win"`,r.win??'',false,true)}</div>
+        ${roomBase(r)==='kitchen' ? fld('厨房操作区墙砖铺贴长度','尺',`data-room="${r.id}" data-f="backsplashLength"`,r.backsplashLength ?? r.cabLow ?? '',false,true) : ''}
+        ${workHtml(r)}
+        ${fitoutHtml(r)}
+        ${materialSelects(r)}
+        ${lvSeg}
+        ${r.planImported ? `<div class="note">来自：${esc(r.planSource.file)} · 第 ${r.planSource.page} 页。${r.planSource.levelEvidence?`源图楼层标题：${esc(r.planSource.levelEvidence)}。`:""}${r.surveyConfirmed?'尺寸已现场复尺确认。':'当前尺寸为图纸参考或待补录，须现场复尺确认。'}点位和设备数量需按实际补充。
+          <label style="display:block;margin-top:8px"><input type="checkbox" data-room-surveyed="${r.id}" ${r.surveyConfirmed?'checked':''} ${missingDimensions(r)?'disabled':''}> 已现场复尺并确认本房间尺寸${missingDimensions(r)?'（请先补齐长宽及所需层高）':''}</label><label style="display:block;margin-top:8px"><input type="checkbox" data-room-reviewed="${r.id}" ${r.planReviewed?'checked':''}> 已核对本房间施工范围、设备及点位</label></div>` : ''}
+        ${['outdoor','stairs'].includes(roomBase(r)) ? '<p class="hint">此空间不计入室内面积。户外工程在本空间勾选并填写实际施工量；楼梯做法在第②步填写。</p>' : ''}
+        </div></div>`;
+    };
+    const addBar = lv => ROOM_GROUPS.map(([title,ids]) => `<div class="group-title">${title}</div><div class="add-rooms">${ids.map(t=>`<button data-add-room="${t}" data-lv="${lv}">+ ${TYPES[t].label}</button>`).join('')}</div>`).join('');
+    const maxLv = Math.max(levels(), ...P.rooms.map(r => r.level || 1));
+    if (maxLv === 1) h += P.rooms.map(roomCard).join('') + (usesPlanRooms() ? '' : addBar(1));
+    else for (let lv = 1; lv <= maxLv; lv++) {
+      const rs = P.rooms.filter(r => (r.level || 1) === lv);
+      h += `<div class="level-head"><b>${floorName(lv)}</b><span class="mono" data-out="lvarea-${lv}"></span></div>`
+        + (rs.length ? rs.map(roomCard).join('') : '<div class="note" style="margin-bottom:8px">这一层还没有房间</div>') + (usesPlanRooms() ? '' : addBar(lv));
+    }
+    if(usesPlanRooms()) {
+      h += `<div style="margin-top:16px"><button class="btn-ghost" data-extra-rooms aria-expanded="${extraRoomsOpen}" aria-controls="extra-room-options">${extraRoomsOpen?'收起空间分类':'＋补充遗漏空间'}</button>
+        ${extraRoomsOpen?`<div id="extra-room-options">${maxLv>1?`<div class="fld" style="margin-top:10px"><label>添加到哪一层<select data-extra-room-level>${Array.from({length:maxLv},(_,i)=>i+1).map(lv=>`<option value="${lv}" ${lv===extraRoomLevel?'selected':''}>${floorName(lv)}</option>`).join('')}</select></label></div>`:''}${addBar(Math.min(extraRoomLevel,maxLv))}</div>`:''}</div>`;
+    }
+    h += `</div>`;
+    return h;
+  }
+
+  function ynHtml(v, attrs) {
+    return `<div class="yn"><button class="y ${v === true ? 'active' : ''}" ${attrs} data-v="1">是</button><button class="n ${v === false ? 'active' : ''}" ${attrs} data-v="0">否</button></div>`;
+  }
+
+  function renderStep2() {
+    let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">这些问题<b>每一题都要问客户</b>并选"是/否"。红框 = 还没回答。答"是"系统会自动把对应项目和配套项目加进清单，不用自己记。</p></div>`;
+    h += serviceHtml();
+    h += `<div class="group-title">全屋问题</div>`;
+    activeQs().forEach(q => {
+      const a = ans(q.id), done = a.v === true || a.v === false;
+      h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text">${q.q}</div>${q.why ? `<div class="q-why">${q.why}</div>` : ''}</div>
+        ${ynHtml(a.v, `data-ans="${q.id}"`)}</div>`;
+      if (a.v === true && q.inputs) h += `<div class="q-inputs">${q.inputs.map(i => fld(i.label, i.unit, `data-ans-n="${q.id}" data-k="${i.k}"`, a[i.k], !i.optional && !num(a[i.k]), true)).join('')}</div>`;
+      if(a.v===true && q.id==='stairs') h+=stairHtml(a);
+      if (a.v === true && q.id === 'loadWall') h += `<div class="warnbox">⚠ ${q.why}。系统已自动加上「结构工程师审图签字」。</div>`;
+      h += `</div>`;
+    });
+    const rq = [];
+    P.rooms.forEach(r => (TYPES[r.type].roomQ || []).forEach(q => rq.push({ r, q })));
+    if (rq.length) {
+      h += `<div class="group-title">房间问题</div>`;
+      rq.forEach(({ r, q }) => {
+        const v = r[q.k], done = v === true || v === false;
+        h += `<div class="q ${done ? '' : 'todo'}"><div class="q-top"><div><div class="q-text"><span class="badge">${esc(roomLabel(r))}</span>${q.q}</div><div class="q-why">${q.why}</div></div>
+          ${ynHtml(v, `data-rq="${r.id}" data-k="${q.k}"`)}</div></div>`;
+      });
+    }
+    return h;
+  }
+
+  function lineHtml(r) {
+    const open = expanded.has(r.key);
+    const needReason = (!r.on && r.forced && !String(r.st.offReason || '').trim()) || (r.manual && !String(r.st.qtyReason || '').trim());
+    const tags = (r.forced ? '<span class="tag req">必做</span>' : '') + (r.supply === 'customer' ? '<span class="tag cust">客户自备</span>' : '') + (r.manual ? '<span class="tag man">手动数量</span>' : '') + (r.pick || r.mOwn ? `<span class="tag pick">${esc(r.pick || '主材自定价')}</span>` : '');
+    let h = `<div class="line ${r.on ? '' : 'off'} ${needReason ? 'flag' : ''}">
+      <div class="line-main" data-exp="${esc(r.key)}"><div class="line-l">
+        <div class="line-title"><span class="badge">${esc(r.roomName)}</span>${esc(r.name)}${tags}</div>
+        <div class="line-sub"><b class="mono" data-out="q-${esc(r.key)}">${nf(r.qty)}</b> ${esc(r.unit)} · ${esc(r.formula)}</div>
+      </div><div class="line-amt mono" data-out="t-${esc(r.key)}">${r.on ? rm(r.total) : '不做'}</div></div>`;
+    if (open && r.custom) {
+      const c = r.custom;
+      h += `<div class="line-detail"><div class="grid2">
+        ${fld('项目名称', '', `data-custom="${c.id}" data-f="name"`, c.name, !c.name)}
+        ${fld('位置', '', `data-custom="${c.id}" data-f="room"`, c.room)}
+        ${fld('单位', '', `data-custom="${c.id}" data-f="unit"`, c.unit)}
+        ${fld('数量', '', `data-custom="${c.id}" data-f="qty"`, c.qty, !num(c.qty), true)}
+        ${fld('材料单价', 'RM', `data-custom="${c.id}" data-f="mat"`, c.mat, false, true)}
+        ${fld('人工单价', 'RM', `data-custom="${c.id}" data-f="lab"`, c.lab, false, true)}
+        <div class="full">${fld('为什么要加这项（必填）', '', `data-custom="${c.id}" data-f="reason"`, c.reason, !String(c.reason || '').trim())}</div>
+        <div class="full fld"><label>属于哪个工序</label><select data-custom="${c.id}" data-f="stage">${STAGES.map(s => `<option value="${s.id}" ${s.id === c.stage ? 'selected' : ''}>${s.no}. ${s.name}</option>`).join('')}</select></div>
+      </div><button class="btn-ghost" data-del-custom="${c.id}">删除这个自定义项目</button></div>`;
+    } else if (open) {
+      const d = PRICE[r.code];
+      h += `<div class="line-detail">
+        ${d.warn ? `<div class="note warn">⚠ ${d.warn}</div>` : ''}
+        <div class="dl"><span>做这一项</span><button class="switch ${r.on ? 'on' : ''}" data-line-on="${esc(r.key)}"><span class="knob"></span></button></div>
+        ${!r.on && r.forced ? fld('这是必做项，为什么不做？（必填，如：客户已自行完成）', '', `data-line="${esc(r.key)}" data-f="offReason"`, r.st.offReason, !String(r.st.offReason || '').trim()) : ''}
+        <div class="dl"><span>材料由谁买</span><div class="seg">
+          <button class="${r.supply === 'company' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="company">公司采购</button>
+          <button class="${r.supply === 'customer' ? 'active' : ''}" data-line-supply="${esc(r.key)}" data-v="customer">客户自备</button></div></div>
+        ${r.hasMain && r.supply !== 'customer' ? `<div class="pickbox"><div class="pick-t">主材选型（选填，不填就用价目表默认）</div><div class="grid3">
+          ${fld('品牌', '', `data-line="${esc(r.key)}" data-f="brand" placeholder="如 Niro"`, r.st.brand || '')}
+          ${fld('型号/规格', '', `data-line="${esc(r.key)}" data-f="model" placeholder="如 600×600 抛光砖"`, r.st.model || '')}
+          ${fld(`主材单价（默认 ${nf2(r.p.mat)}）`, `RM/${r.unit}`, `data-line="${esc(r.key)}" data-f="mprice" ${r.tileInfo||r.catalogMatch||r.catalogPending?'disabled':''} placeholder="${r.tileInfo||r.catalogMatch||r.catalogPending?'请在统一价目表修改':'不改留空'}"`, r.st.mprice || '', false, true)}
+        </div></div>` : ''}
+        <div class="grid2">
+          ${fld(`手动改数量（自动算的是 ${nf(r.autoQty)}）`, r.unit, `data-line="${esc(r.key)}" data-f="qty" ${r.tileInfo?'disabled':''} placeholder="${r.tileInfo?'请在空间瓷砖表单修改':'不改就留空'}"`, r.manual ? r.st.qty : '', false, true)}
+          ${r.manual ? fld('为什么改（必填）', '', `data-line="${esc(r.key)}" data-f="qtyReason"`, r.st.qtyReason, !String(r.st.qtyReason || '').trim()) : ''}
+        </div>
+        <div class="note">单价来自价目表（每${esc(r.unit)}）：主材 RM ${nf2(r.uMat)}${r.p.waste && r.supply !== 'customer' ? `（含损耗 ${r.p.waste}%）` : ''} + 辅材 RM ${nf2(r.uAux)} + 人工 RM ${nf2(r.uLab)} = <b>RM ${nf2(r.uPrice)}</b>${priceChanged(r.code) ? ' · <b style="color:var(--red)">本单改过价</b>' : ''}<br>
+          主材 <b class="mono" data-out="m-${esc(r.key)}">${rm(r.mat)}</b> + 辅材 <b class="mono" data-out="a-${esc(r.key)}">${rm(r.aux)}</b> + 人工 <b class="mono" data-out="l-${esc(r.key)}">${rm(r.lab)}</b></div>
+        ${r.desc ? `<div class="note"><b>工艺做法：</b>${esc(r.desc)}</div>` : ''}
+        ${r.tileInfo||r.catalogMatch ? `<div class="note">${r.tileInfo?'已按本项瓷砖规格计算参考片数；':'已关联公司规格价；'}实际辅材包装及配件详见采购待补清单。</div>` : BOM[r.code] ? `<div class="note"><b>用料配方（每 1 ${esc(r.unit)}）：</b>${BOM[r.code].map(b => `${MATERIALS[b.m].name} ${b.q} ${MATERIALS[b.m].unit}`).join('、')}<br>
+          <b>本项共需：</b>${BOM[r.code].filter(b => !(b.main && r.supply === 'customer')).map(b => `${MATERIALS[b.m].name} ${nf2(r.qty * b.q * (1 + (b.main ? r.p.waste : (b.w == null ? 5 : b.w)) / 100))} ${MATERIALS[b.m].unit}`).join('、')}（含损耗）</div>` : ''}
+      </div>`;
+    }
+    return h + '</div>';
+  }
+
+  function renderStep3(C) {
+    let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">清单是按房间尺寸和必答问题<b>自动生成</b>的，按施工顺序排。点任一行可以：关掉不做、改客户自备、手动改数量（都要写原因）。<b>不能在这里改单价</b>，单价统一在 ⚙价目表。</p></div>`;
+    STAGES.forEach(s => {
+      const rows = C.rows.filter(r => r.stage === s.id);
+      h += `<div class="stage"><div class="stage-head"><div class="stage-no">${s.no}</div><div><div class="stage-name">${s.name}</div><div class="stage-sub">${s.sub}</div></div>
+        <span class="stage-amt mono" data-out="stage-${s.id}">${rm(C.byStage[s.id] || 0)}</span></div>
+        ${rows.length ? rows.map(lineHtml).join('') : '<div class="note">这个工序本单没有项目</div>'}</div>`;
+    });
+    h += `<button class="primary" data-add-custom style="background:var(--surface);color:var(--navy);border:1px dashed var(--navy)">+ 添加价目表里没有的项目（需主管确认）</button>`;
+    return h;
+  }
+
+  function checksHtml(K) {
+    if (!K.red.length && !K.yellow.length) return '<div class="chk okc">✓ 检查全部通过，可以出报价单</div>';
+    return K.red.map(x => `<div class="chk red">✕ <span>${esc(x.m)}</span><button class="go" data-go="${x.go}" ${x.key ? `data-go-key="${esc(x.key)}"` : ''}>去处理</button></div>`).join('')
+      + K.yellow.map(x => `<div class="chk yellow">! <span>${esc(x.m)}</span><button class="go" data-go="${x.go}" ${x.key ? `data-go-key="${esc(x.key)}"` : ''}>查看</button></div>`).join('');
+  }
+
+  // 报价单按「房间」或「工序」分组；全屋/公共项目排最前
+  function docGroups(C) {
+    const rows = C.rows.filter(r => r.on && (r.total > 0 || r.supply === 'customer'));
+    const stIdx = id => STAGES.findIndex(s => s.id === id);
+    if (P.docGroup === 'stage') {
+      return STAGES.map(s => ({ name: s.name, rows: rows.filter(r => r.stage === s.id) })).filter(g => g.rows.length);
+    }
+    const order = ['全屋'].concat([...P.rooms].sort((a, b) => (a.level || 1) - (b.level || 1)).map(roomLabel));
+    rows.forEach(r => { if (!order.includes(r.roomName)) order.push(r.roomName); });
+    return order.map(n => ({ name: n === '全屋' ? '全屋 / 公共项目' : n,
+      rows: rows.filter(r => r.roomName === n).sort((a, b) => stIdx(a.stage) - stIdx(b.stage)) })).filter(g => g.rows.length);
+  }
+
+  function purchaseHtml(C) {
+    const i = P.info, pu = purchase(C);
+    return `<h3>材料采购单</h3><div class="co">HOUZY HOME · 报价单号 ${esc(i.quoteNo)} · 客户 ${esc(i.customer) || '—'} · 地址 ${esc(i.address) || '—'}</div>
+      <div class="scroll-x"><table class="qt" style="min-width:600px"><thead><tr><th>#</th><th>材料</th><th>单位</th><th class="r">计算用量</th><th class="r">采购数量</th><th>用在哪些项目</th></tr></thead><tbody>
+      ${pu.list.map((x, n) => `<tr><td>${n + 1}</td><td>${esc(x.name)}</td><td>${esc(x.unit)}</td><td class="r">${nf2(x.raw)}</td><td class="r"><b>${nf(x.qty)}</b></td>
+        <td class="ds">${esc(x.uses.join('、'))}</td></tr>`).join('') || '<tr><td colspan="6">本单没有已拆分配方的项目</td></tr>'}
+      </tbody></table></div>
+      ${pu.pending.length?`<h3>待拆分材料／采购核对项目</h3><div class="scroll-x"><table class="qt"><thead><tr><th>空间</th><th>已选施工项目</th><th>施工量</th><th>选定规格及采购责任</th></tr></thead><tbody>${pu.pending.map(r=>`<tr><td>${esc(r.roomName)}</td><td>${esc(r.name)}</td><td>${nf(r.qty)} ${esc(r.unit)}</td><td>${esc(r.pick||r.desc||'材料型号待确认')}；${r.supply==='customer'?'主材客户自备，辅材另核':'公司采购材料明细待拆分'}</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="terms">说明：1. 采购数量 = 计算用量（已含损耗）向上取整到整包/整桶。2. 客户自备（甲供）的主材不列入。
+        3. 本单还有 <b>${pu.unsplit}</b> 个项目未拆分用料配方，其材料不在本表内，需另行下单。4. 用量为示范数据，请以现场复尺为准。</div>`;
+  }
+
+  function docHtml(C, K) {
+    if (P.docView === 'purchase') return purchaseHtml(C);
+    const i = P.info;
+    let rowsH = '';
+    docGroups(C).forEach((g, gi) => {
+      const sub = g.rows.reduce((a, r) => a + r.total, 0);
+      rowsH += `<tr class="st"><td>${gi + 1}</td><td colspan="8">${esc(g.name)}</td><td class="r">${rm(sub)}</td></tr>`;
+      g.rows.forEach((r, ri) => {
+        rowsH += `<tr><td>${gi + 1}.${ri + 1}</td><td>${P.docGroup === 'stage' ? `<span class="rn">${esc(r.roomName)}</span>` : ''}${esc(r.name)}</td>
+          <td>${esc(r.unit)}</td><td class="r">${nf(r.qty)}</td>
+          <td class="r">${r.supply === 'customer' ? '甲供' : nf2(r.uMat)}</td><td class="r">${nf2(r.uAux)}</td><td class="r">${nf2(r.uLab)}</td>
+          <td class="r">${nf2(r.uPrice)}</td><td class="r"><b>${rm(r.total)}</b></td>
+          <td class="ds">${r.pick ? `<b class="pk">主材：${esc(r.pick)}</b>；` : ''}${esc(r.desc)}${r.supply === 'customer' ? '（主材客户自备，只收辅材+人工）' : ''}</td></tr>`;
+      });
+    });
+    return `${K.red.length ? '<div class="draft">草稿 · 未通过检查</div>' : ''}
+      <h3>装修工程预算报价单</h3><div class="co">HOUZY HOME SDN. BHD. · 合屋整装科技有限公司${P.template ? ' · 模板：' + esc(P.template) : ''}</div>
+      <div class="meta"><span>报价单号：${esc(i.quoteNo)}</span><span>日期：${esc(i.date)}</span>
+        <span>客户：${esc(i.customer) || '—'}</span><span>电话：${esc(i.phone) || '—'}</span>
+        <span style="grid-column:1/-1">地址：${esc(i.address) || '—'}</span>${houseDef(P.houseType)?.apartment ? `<span>楼栋楼层：${esc(i.buildingFloor) || '—'}</span><span>楼栋 / 单位：${esc(i.unitNo) || '—'}</span>` : ''}<span>顾问：${esc(i.staff) || '—'}</span>
+        <span>面积：${nf(C.designArea)} 平方尺${levels() > 1 ? ` · ${levels()} 层` : ''}</span></div>
+      <div class="scroll-x"><table class="qt"><thead><tr><th>序号</th><th>项目名称</th><th>单位</th><th class="r">数量</th>
+        <th class="r">主材</th><th class="r">辅材</th><th class="r">人工</th><th class="r">单价</th><th class="r">合价</th><th>工艺做法及材料说明</th></tr></thead>
+        <tbody>${rowsH || '<tr><td colspan="10">暂无项目</td></tr>'}</tbody></table></div>
+      <div class="sum">
+        <div><span>主材</span><span class="mono">${rm(C.material)}</span></div>
+        <div><span>辅材</span><span class="mono">${rm(C.auxSum)}</span></div>
+        <div><span>施工人工</span><span class="mono">${rm(C.hard)}</span></div>
+        <div><span>软装</span><span class="mono">${rm(C.soft)}</span></div>
+        <div><span>设计费（${nf(C.designArea)} 平方尺 × RM ${nf(P.settings.designRate)}）</span><span class="mono">${rm(C.design)}</span></div>
+        <div><span>管理费（以上工程直接费 × ${nf(P.settings.mgmtRate)}%，不含设计费）</span><span class="mono">${rm(C.mgmt)}</span></div>
+        ${C.discount ? `<div><span>优惠</span><span class="mono">${rm(-C.discount)}</span></div>` : ''}
+        ${C.sst ? `<div><span>SST 税（${nf(P.settings.sst)}%）</span><span class="mono">${rm(C.sst)}</span></div>` : ''}
+        <div class="tot"><span>工程总造价</span><span class="mono">${rm(C.total)}</span></div>
+      </div>
+      <div class="sub-h">付款节点</div>
+      <table><tbody>${C.pay.map((x, n) => `<tr><td>第${n + 1}期 · ${esc(x.name)}</td><td class="r">${nf(x.pct)}%</td><td class="r">${rm(x.amt)}</td></tr>`).join('')}</tbody></table>
+      <div class="terms">说明：1. 本报价有效期 30 天；单价中「主材」已含损耗。2. 数量按现场量房尺寸计算，施工前复尺，如有差异按实际结算。3. 现场新增/变更项目另立变更单，双方签字后施工。
+        4. 客户自备材料（甲供）须按约定时间送达现场，延误影响工期由客户承担。5. 物业装修押金不含在报价内，完工后由物业退还。
+        6. 标注「客户选定」的材料，品牌、款式、色号在签约前以书面确认为准。
+        7. 工期：开工后约 ${nf(P.settings.days)} 天完工（不含客户变更、客户自备材料延误及物业/政府审批时间）。
+        8. 保修：防水工程 ${nf(P.settings.wWp)} 年，水电工程 ${nf(P.settings.wMep)} 年，其他工程 ${nf(P.settings.wGen)} 年，自竣工验收之日起计；人为损坏及客户自备材料质量问题不在保修范围。</div>
+      <div class="sign"><div>客户签名：<span></span>日期：<span></span></div><div>HOUZY HOME 代表：<span></span>日期：<span></span></div></div>`;
+  }
+
+  // 导出 Excel（CSV 格式，Excel 能直接打开；带 BOM 防中文乱码）
+  function exportCsv(C) {
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const i = P.info, lines = [];
+    if (P.docView === 'purchase') {
+      lines.push([q('材料采购单'), q(i.quoteNo), q(i.customer)].join(','));
+      lines.push(['#', '材料', '单位', '计算用量', '采购数量', '用在哪些项目'].map(q).join(','));
+      purchase(C).list.forEach((x, n) => lines.push([n + 1, x.name, x.unit, x.raw.toFixed(2), x.qty, x.uses.join('、')].map(q).join(',')));
+      lines.push('');lines.push(['待拆分材料／采购核对项目','空间','施工量','单位','规格／工艺','采购责任'].map(q).join(','));
+      purchase(C).pending.forEach(r=>lines.push([r.name,r.roomName,r.qty,r.unit,r.pick||r.desc,r.supply==='customer'?'主材客户自备，辅材另核':'公司采购明细待拆分'].map(q).join(',')));
+      return download(lines, `材料采购单_${i.customer || '未命名'}_${i.quoteNo}.csv`);
+    }
+    lines.push([q('装修工程预算报价单'), q(i.quoteNo), q(i.date)].join(','));
+    lines.push([q('客户'), q(i.customer), q('电话'), q(i.phone), q('地址'), q(i.address)].join(','));
+    lines.push([q('住宅类型'), q(houseDef(P.houseType)?.name || ''), q('楼栋楼层'), q(i.buildingFloor || ''), q('楼栋/单位'), q(i.unitNo || '')].join(','));
+    lines.push('');
+    lines.push(['序号', '项目名称', '位置', '单位', '数量', '主材单价', '辅材单价', '人工单价', '单价', '合价', '工艺做法及材料说明'].map(q).join(','));
+    docGroups(C).forEach((g, gi) => {
+      lines.push([q(gi + 1), q(g.name), '', '', '', '', '', '', '', q(g.rows.reduce((a, r) => a + r.total, 0))].join(','));
+      g.rows.forEach((r, ri) => lines.push([gi + 1 + '.' + (ri + 1), r.name, r.roomName, r.unit, r1(r.qty), r.supply === 'customer' ? '甲供' : r.uMat.toFixed(2),
+        r.uAux.toFixed(2), r.uLab.toFixed(2), r.uPrice.toFixed(2), r.total, (r.pick ? '主材：' + r.pick + '；' : '') + r.desc].map(q).join(',')));
+    });
+    lines.push('');
+    [['主材', C.material], ['辅材', C.auxSum], ['施工人工', C.hard], ['软装', C.soft], ['设计费', C.design], ['管理费', C.mgmt], ['优惠', -C.discount], ['SST', C.sst], ['工程总造价', C.total]]
+      .forEach(([k, v]) => lines.push([q(k), q(v)].join(',')));
+    download(lines, `报价单_${i.customer || '未命名'}_${i.quoteNo}.csv`);
+  }
+  function download(lines, filename) {
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  function renderStep4(C, K) {
+    return `<div class="card"><h2>出单前检查</h2><p class="hint">红色必须处理完才能出单；黄色是提醒，确认没问题可以不改。</p><div id="checks">${checksHtml(K)}</div></div>
+      <div class="card"><h2>优惠</h2><div class="grid2">
+        ${fld('优惠金额', 'RM', 'data-top="discount"', P.discount, false, true)}
+        ${fld(`审批人（超过 ${nf(P.settings.discountLimit)}% 必填）`, '', 'data-top="discountBy"', P.discountBy)}
+      </div></div>
+      <div class="dl" style="margin-bottom:8px"><span>要看哪张表</span><div class="seg">
+        <button class="${P.docView !== 'purchase' ? 'active' : ''}" data-view="quote">客户报价单</button>
+        <button class="${P.docView === 'purchase' ? 'active' : ''}" data-view="purchase">材料采购单</button></div></div>
+      <div class="dl" style="margin-bottom:8px;${P.docView === 'purchase' ? 'display:none' : ''}"><span>报价单排列方式</span><div class="seg">
+        <button class="${P.docGroup !== 'stage' ? 'active' : ''}" data-group="room">按房间</button>
+        <button class="${P.docGroup === 'stage' ? 'active' : ''}" data-group="stage">按工序</button></div></div>
+      <div class="doc" id="quote-doc">${docHtml(C, K)}</div>
+      <button class="primary" data-print ${K.red.length ? 'disabled' : ''}>${K.red.length ? `还有 ${K.red.length} 个问题没处理，不能出单` : '打印 / 保存为 PDF 发给客户'}</button>
+      <button class="primary" data-export style="background:var(--surface);color:var(--navy);border:1px solid var(--navy)" ${K.red.length || TEST_MODE ? 'disabled' : ''}>导出 Excel 表格</button>`;
+  }
+
+  function renderStep5() {
+    const s = P.settings;
+    let h = catalogEditorHtml() + `<div class="card"><h2>收费设置</h2><div class="grid3">
+        ${fld('设计费', 'RM/平方尺', 'data-set="designRate"', s.designRate, false, true)}
+        ${fld('管理费', '%', 'data-set="mgmtRate"', s.mgmtRate, false, true)}
+        ${fld('优惠需审批线', '%', 'data-set="discountLimit"', s.discountLimit, false, true)}
+        ${fld('SST 税率（0=不收）', '%', 'data-set="sst"', s.sst, false, true)}
+      </div></div>
+      <div class="card"><h2>报价单条款</h2><p class="hint">会印在客户报价单的说明里。<b>默认值请老板确认后修改。</b></p><div class="grid2">
+        ${fld('工期', '天', 'data-set="days"', s.days, !num(s.days), true)}
+        ${fld('防水保修', '年', 'data-set="wWp"', s.wWp, false, true)}
+        ${fld('水电保修', '年', 'data-set="wMep"', s.wMep, false, true)}
+        ${fld('其他保修', '年', 'data-set="wGen"', s.wGen, false, true)}
+      </div></div>
+      <div class="card"><h2>付款节点</h2><p class="hint">每期挂在一个验收节点上，比例加起来必须 = 100%。</p>
+        ${s.pay.map((x, n) => `<div class="grid2" style="margin-bottom:8px">${fld(`第${n + 1}期`, '', `data-pay="${n}" data-f="name"`, x.name)}${fld('比例', '%', `data-pay="${n}" data-f="pct"`, x.pct, false, true)}</div>`).join('')}
+      </div>
+      <div class="card"><h2>基础项目参考价（未上传公司规格表时使用）</h2><p class="hint">这里改价会更新本单基础项目；主材、辅材和人工均可修改。上传公司规格价目表后，统一按上方规格表匹配，缺价项目需补齐，不使用参考价兜底。</p>
+      <div class="scroll-x"><table class="ptable"><thead><tr><th>项目 / 工艺做法</th><th>单位</th><th>主材</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>`;
+    STAGES.forEach(st => {
+      h += `<tr><td colspan="7" style="font-weight:700;color:var(--navy);padding-top:10px">${st.no}. ${st.name}</td></tr>`;
+      Object.keys(PRICE).filter(c => PRICE[c].stage === st.id).forEach(c => {
+        const p = price(c), chg = priceChanged(c);
+        h += `<tr class="${chg ? 'chg' : ''}"><td>${PRICE[c].name}<div class="pdesc">${PRICE[c].desc || ''}</div></td><td>${PRICE[c].unit}</td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="mat" value="${p.mat}" ></td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="aux" value="${p.aux}" ></td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="lab" value="${p.lab}"></td>
+          <td><input inputmode="decimal" data-price="${c}" data-f="waste" value="${p.waste}"></td>
+          <td>${chg ? `<button class="rs" data-price-reset="${c}">恢复</button>` : ''}</td></tr>`;
+      });
+    });
+    h += '</tbody></table></div><p class="hint" style="margin-top:8px">基础主材、辅材、人工均可编辑；公司正式规格价格请在上方维护。</p></div>';
+    h += `<div class="card"><h2>材料单价（示范）</h2><p class="hint">写了用料配方的项目，主材/辅材单价由这里的材料单价自动算。目前只有 ${Object.keys(BOM).length} 个项目有配方，其余项目的配方请工程/采购同事补充。</p>
+      <div class="scroll-x"><table class="ptable"><thead><tr><th>材料</th><th>单位</th><th>单价 RM</th><th>用在</th></tr></thead><tbody>
+      ${Object.keys(MATERIALS).map(k => `<tr><td>${MATERIALS[k].name}</td><td>${MATERIALS[k].unit}</td><td class="mono">${nf2(MATERIALS[k].price)}</td>
+        <td>${Object.keys(BOM).filter(c => BOM[c].some(b => b.m === k)).map(c => PRICE[c].name).join('、')}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+    return h;
+  }
+
+  function renderChooser() {
+    const house=houseDef(chosenHouse), layout=houseLayouts(chosenHouse).find(x=>x.id===chosenLayout);
+    return `<div class="card"><h2>先选择您的住宅类型</h2><p class="hint">按马来西亚住宅类型选择，再建立适合本户的空间清单。</p>
+      <div class="tpls">${HOUSE_TYPES.map(h=>`<button class="tpl" data-choose-house="${h.id}" aria-pressed="${chosenHouse===h.id}" style="${chosenHouse===h.id?'border:2px solid var(--navy);background:var(--navy-soft)':''}"><b>${h.name}</b><span>${h.en}</span><span>${h.sub}</span></button>`).join('')}</div></div>
+      ${house?`<div class="card"><h2>${house.name}：选择本户布局</h2><p class="hint">以下为可编辑的起始布局，并非楼盘标准。尺寸留空，请实测填写；可增删阳台、餐厅、浴厕等空间。</p>
+      <div class="tpls">${houseLayouts(chosenHouse).map(l=>`<button class="tpl" data-choose-layout="${l.id}" aria-pressed="${chosenLayout===l.id}" style="${chosenLayout===l.id?'border:2px solid var(--navy);background:var(--navy-soft)':''}"><b>${l.name}</b><span>${l.sub}</span></button>`).join('')}</div>
+      ${layout?`<div class="note" style="margin-top:12px">已选：${house.name} · ${layout.name}。${P.rooms.length || P.info.customer?'创建新报价将替换当前报价；请先导出需要保留的内容。':'创建后可填写客户信息，或导入平面图。'}</div><button class="primary" data-create-layout>使用此布局创建报价</button>`:''}</div>`:''}
+      <button class="btn-ghost" data-cancel-new>返回当前报价</button>`;
+  }
+
+  // 整页重画（点按钮、切步骤时用）
+  function render() {
+    document.querySelectorAll('details[data-room-panel]').forEach(el => {if(el.open) openRoomPanels.add(el.dataset.roomPanel); else openRoomPanels.delete(el.dataset.roomPanel);});
+    const C = compute(), K = checks(C);
+    renderSteps(K);
+    document.getElementById('steps').style.display = choosing ? 'none' : '';
+    document.querySelector('.bar').style.display = choosing ? 'none' : '';
+    const main = document.getElementById('main');
+    document.querySelector('.wrap').classList.toggle('wide', step === 4 && !choosing);
+    // 记住光标在哪个输入框，重画后放回去（否则员工点下一个框会"跳掉"）
+    const a = document.activeElement;
+    let focusSel = null, caret = null;
+    if (a && main.contains(a) && a.matches('input, select')) {
+      focusSel = a.tagName.toLowerCase() + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join('');
+      try { caret = a.selectionStart; } catch (e) { caret = null; }
+    }
+    main.innerHTML = choosing ? renderChooser() : step === 1 ? renderStep1() : step === 2 ? renderStep2() : step === 3 ? renderStep3(C) : step === 4 ? renderStep4(C, K) : renderStep5();
+    if (focusSel) {
+      const el = main.querySelector(focusSel);
+      if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { /* select 没有光标 */ } }
+    }
+    refresh(C, K);
+  }
+  // 只刷新数字（打字时用，不打断输入）
+  function refresh(C, K) {
+    C = C || compute(); K = K || checks(C);
+    document.querySelectorAll('[data-tile-total]').forEach(el=>{const row=C.rows.find(x=>x.key===el.dataset.tileTotal);if(!row?.tileInfo){el.textContent='请填写铺贴面积，并选择材料规格、铺法及承包范围；单价由公司价目表自动带出。';return;}const m=row.tileInfo;el.textContent=m.ready?`净面积 ${nf2(row.qty)} 平方尺；材料 ${nf2(row.uMat)} ＋ 辅材 ${nf2(row.uAux)} ＋ 人工 ${nf2(row.uLab)} ＝ RM ${nf2(row.uPrice)}/平方尺；本项合计 ${rm(row.total)}${m.mode!=='labour'?`；含损耗参考采购 ${m.pieces} 片`:''}`:(row.catalogReason||'规格或价格尚未匹配')+'，请联系公司维护价目表；员工无需填写单价，此项待报价。';});
+    document.querySelectorAll('[data-item-price]').forEach(el=>{const row=C.rows.find(x=>x.key===el.dataset.itemPrice);el.textContent=!row?'请填写有效工程量。':row.catalogPending?row.catalogReason+'，请联系公司补充价格，此项待报价。':`${nf2(row.qty)} ${row.unit} × RM ${nf2(row.uPrice)} ＝ ${rm(row.total)}（${row.catalogMatch?'公司规格价':'基础参考价'}）`;});
+    const set = (k, v) => document.querySelectorAll(`[data-out="${CSS.escape(k)}"]`).forEach(el => { el.textContent = v; });
+    set('floorsum', nf(C.floorSum) + ' 平方尺');
+    P.rooms.forEach(r => set('area-' + r.id, needsSurvey(r) ? ((num(r.L)&&num(r.W))||r.sketch?.points?.length ? nf(geo(r).floor)+' 平方尺 · 待复尺' : '待复尺') : nf(geo(r).floor) + ' 平方尺'));
+    for (let lv = 1; lv <= 4; lv++) set('lvarea-' + lv, '本层面积 ' + nf(P.rooms.filter(r => (r.level || 1) === lv).reduce((a, r) => a + geo(r).floor, 0)) + ' 平方尺');
+    C.rows.forEach(r => {
+      set('t-' + r.key, r.on ? rm(r.total) : '不做'); set('q-' + r.key, nf(r.qty));
+      set('m-' + r.key, rm(r.mat)); set('a-' + r.key, rm(r.aux)); set('l-' + r.key, rm(r.lab));
+    });
+    STAGES.forEach(s => set('stage-' + s.id, rm(C.byStage[s.id] || 0)));
+    const ck = document.getElementById('checks'); if (ck) ck.innerHTML = checksHtml(K);
+    const doc = document.getElementById('quote-doc'); if (doc) doc.innerHTML = docHtml(C, K);
+    const pb = document.querySelector('[data-print]');
+    if (pb) { pb.disabled = !!K.red.length || TEST_MODE; pb.textContent = K.red.length ? `还有 ${K.red.length} 个问题没处理，不能出单` : (TEST_MODE ? '✓ 可以出单（测试版不能打印，正式上线后可打印/存 PDF）' : '打印 / 保存为 PDF 发给客户'); }
+    document.getElementById('bar-total').textContent = P.rooms.some(needsSurvey) ? '待复尺后计算' : rm(C.total);
+    const bs = document.getElementById('bar-status');
+    bs.className = 'st ' + (K.red.length ? 'bad' : 'good');
+    bs.textContent = K.red.length ? `✕ ${K.red.length} 个必须处理` : (K.yellow.length ? `✓ 可出单 · ${K.yellow.length} 个提醒` : '✓ 可出单');
+    renderSteps(K);
+    save();
+  }
+
+  function lineState(key) { return (P.lines[key] = P.lines[key] || {}); }
+
+  // =====================================================================
+  //  八、事件
+  // =====================================================================
+  // 危险操作点两次才生效（不用弹窗，手机上更好按，也不会误删）
+  let pending = null;
+  function askTwice(btn, key, label) {
+    if (pending && pending.key === key && Date.now() - pending.at < 4000) { pending = null; return true; }
+    pending = { key, at: Date.now() };
+    const old = btn.textContent; btn.textContent = label; btn.style.color = 'var(--red)';
+    setTimeout(() => { if (btn.isConnected) { btn.textContent = old; btn.style.color = ''; } }, 4000);
+    return false;
+  }
+
+  document.addEventListener('change', async e => {
+    const t=e.target, ds=t.dataset;
+    if(t.hasAttribute('data-catalog-file')) {
+      const file=t.files?.[0];if(!file)return;catalogPreview=null;
+      try{
+        if(file.size>5*1024*1024)throw Error('价目文件请控制在5MB以内');
+        let table;
+        if(/\.xlsx$/i.test(file.name))table=await xlsxPriceRows(await file.arrayBuffer());
+        else if(/\.json$/i.test(file.name)){const rows=JSON.parse(await file.text());if(!Array.isArray(rows))throw Error('JSON必须为标准字段数组');table=[catalogHeaders,...rows.map(r=>catalogHeaders.map(h=>r[h]??''))];}
+        else if(/\.csv$/i.test(file.name))table=parsePriceCsv(await file.text());
+        else throw Error('请上传.xlsx、CSV或JSON文件');
+        if(table.length>10001)throw Error('每次最多导入10000条价格');
+        catalogPreview=normalizeCatalogRows(table);catalogMessage=`文件已校验：${catalogPreview.length}条有效价格，点击应用后更新当前报价。`;
+      }catch(error){catalogMessage='导入失败：'+error.message;}
+      render();return;
+    }
+    if(ds.globalService){P.globalServices=P.globalServices||{};P.globalServices[ds.globalService]=t.checked;render();return;}
+    if(ds.workRoom){const r=P.rooms.find(r=>r.id===ds.workRoom);if(r){r.work=r.work||{};r.work[ds.workCode]=t.checked;if(t.checked&&TILE_CODES.includes(ds.workCode)){r.tileConfig=r.tileConfig||{};r.tileConfig[ds.workCode]=r.tileConfig[ds.workCode]||{areaMode:'auto',areaUnit:'ft2',rateUnit:'ft2',waste:0};}if(r.planImported)r.planReviewed=false;}render();return;}
+    if(ds.fitToggle) {const r=P.rooms.find(r=>r.id===ds.fitToggle);if(r){r.fitout=r.fitout||{};const st=r.fitout[ds.fitCode]=r.fitout[ds.fitCode]||{};st.on=t.checked;if(t.checked && P.lines[r.id+':'+ds.fitCode]) P.lines[r.id+':'+ds.fitCode].off=false;if(r.planImported)r.planReviewed=false;}render();return;}
+    if (t.hasAttribute('data-plan-file')) {
+      const f=t.files[0]; if (!f) return;
+      if (plan.url) URL.revokeObjectURL(plan.url);
+      plan={file:null,url:'',busy:false,message:'',rooms:[],warnings:[],confirmed:false};
+      if (!/\.(pdf|png|jpe?g|webp)$/i.test(f.name) || f.size>20*1024*1024) plan.message='请选择 20 MB 以内的 PDF、PNG、JPG 或 WebP。';
+      else {plan.file=f;plan.url=URL.createObjectURL(f);} render();
+    } else if (ds.planRow !== undefined) { plan.rooms[+ds.planRow][ds.f]=t.value; plan.confirmed=false; render(); }
+    else if (ds.planPick !== undefined) {plan.rooms[+ds.planPick].selected=t.checked;plan.confirmed=false;render();}
+    else if(t.hasAttribute('data-plan-replace-confirm')) {plan.replaceConfirmed=t.checked;}
+    else if(t.hasAttribute('data-extra-room-level')) {extraRoomLevel=+t.value;render();}
+    else if(t.hasAttribute('data-plan-confirm')) {plan.confirmed=t.checked;}
+    else if(ds.roomSurveyed) {const r=P.rooms.find(r=>r.id===ds.roomSurveyed); if(r) r.surveyConfirmed=t.checked && !missingDimensions(r);render();}
+    else if(ds.roomReviewed) {P.rooms.find(r=>r.id===ds.roomReviewed).planReviewed=t.checked;render();}
+    else if(t.hasAttribute('data-house-type')) {P.houseType=t.value;render();}
+  });
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button, [data-exp]');
+    if (!t) return;
+    const ds = t.dataset;
+    if(t.hasAttribute('data-catalog-template')){download(catalogCsv(templateRows(ds.catalogTemplate==='current')),ds.catalogTemplate==='current'?'本单规格价格模板.csv':'公司全部项目价格模板.csv');return;}
+    if(t.hasAttribute('data-catalog-export')){download(catalogCsv(activeCatalog()),'公司已录规格价格.csv');return;}
+    if(t.hasAttribute('data-catalog-apply')){if(catalogPreview)applyCatalog(catalogPreview);render();return;}
+    if(t.hasAttribute('data-catalog-cancel')){catalogPreview=null;catalogMessage='已取消上传，原价格保持不变。';render();return;}
+    if(ds.catalogEdit!==undefined){catalogDraft=clone(activeCatalog()[+ds.catalogEdit]);catalogEditingKey=catalogKey(catalogDraft);render();const detail=document.querySelector('[data-catalog-field="code"]')?.closest('details');if(detail){detail.open=true;detail.scrollIntoView({block:'center'});}return;}
+    if(t.hasAttribute('data-catalog-save')){
+      try{const rows=normalizeCatalogRows([catalogHeaders,[catalogDraft.code,PRICE[catalogDraft.code]?.name,catalogDraft.spec,catalogDraft.brand,catalogDraft.model,catalogDraft.method,catalogDraft.scope,catalogDraft.unit,catalogDraft.materialUnit,catalogDraft.mat,catalogDraft.aux,catalogDraft.lab,catalogDraft.waste]]);const row=rows[0],key=catalogKey(row);applyCatalog([...activeCatalog().filter(r=>catalogKey(r)!==key&&catalogKey(r)!==catalogEditingKey),row]);}
+      catch(error){catalogMessage='保存失败：'+error.message;}render();return;
+    }
+    if(ds.gotoPrice){catalogEditingKey=null;const a=catalogAttributes(ds.priceRoom,ds.gotoPrice,P.lines[ds.priceRoom+':'+ds.gotoPrice]||{});catalogDraft={code:ds.gotoPrice,spec:a.values.join('；')||'*',brand:a.brand,model:a.model,method:a.method,scope:a.scope,unit:PRICE[ds.gotoPrice].unit,materialUnit:PRICE[ds.gotoPrice].unit,mat:'',aux:'',lab:'',waste:0};step=5;render();const detail=document.querySelector('[data-catalog-field="code"]')?.closest('details');if(detail){detail.open=true;detail.scrollIntoView({block:'center'});}return;}
+    if (ds.planMode) {plan.mode=ds.planMode;plan.replaceConfirmed=false;plan.confirmed=false;render();return;}
+    if (t.hasAttribute('data-extra-rooms')) {extraRoomsOpen=!extraRoomsOpen;render();return;}
+    if (t.hasAttribute('data-plan-analyze')) { analyzePlan(); return; }
+    if (t.hasAttribute('data-plan-apply')) { try {applyPlan();} catch(error) {console.error('平面图导入失败',error);planFeedback('导入未完成：'+(error.message || '请重试')+'。请保留当前页面并反馈此提示。');} return; }
+    if (ds.step) { step = +ds.step; choosing = false; render(); window.scrollTo(0, 0); return; }
+    if (ds.go) {
+      step = +ds.go;
+      if (ds.goKey) expanded.add(ds.goKey);
+      render(); window.scrollTo(0, 0); return;
+    }
+    if (ds.chooseHouse) { chosenHouse=ds.chooseHouse; chosenLayout=''; render(); return; }
+    if (ds.chooseLayout) { chosenLayout=ds.chooseLayout; render(); return; }
+    if (t.hasAttribute('data-create-layout')) {
+      if(plan.busy) return;
+      const next=projectFromLayout(chosenHouse,chosenLayout); if(!next) return;
+      P=next; extraRoomsOpen=false; extraRoomLevel=1; plan.rooms=[]; plan.message=''; expanded.clear(); choosing=false; step=1; render(); window.scrollTo(0,0); return;
+    }
+    if (t.hasAttribute('data-layout-open')) {chosenHouse=P.houseType||'';chosenLayout='';choosing=true;render();window.scrollTo(0,0);return;}
+    if (t.hasAttribute('data-new')) { chosenHouse=''; chosenLayout=''; choosing = true; render(); window.scrollTo(0, 0); return; }
+    if (t.hasAttribute('data-cancel-new')) { choosing = false; render(); return; }
+    if (ds.tpl) { if(plan.busy) return; plan.rooms=[]; plan.message=''; P = newProject(ds.tpl); expanded.clear(); choosing = false; step = 1; render(); window.scrollTo(0, 0); return; }
+    if (ds.group) { P.docGroup = ds.group; render(); return; }
+    if (ds.view) { P.docView = ds.view; render(); return; }
+    if (t.hasAttribute('data-export')) { if (!t.disabled) exportCsv(compute()); return; }
+    if (ds.addRoom) { P.rooms.push(makeRoom(ds.addRoom, TYPES[ds.addRoom].label + (P.rooms.filter(r => r.type === ds.addRoom).length + 1), +ds.lv || 1)); if(usesPlanRooms()) extraRoomsOpen=false; render(); return; }
+    if (ds.levels) { P.levels = +ds.levels; render(); return; }
+    if (ds.roomLevel) { const r = P.rooms.find(x => x.id === ds.roomLevel); if (r) { r.level = +ds.v; if (r.planImported) r.planReviewed = false; } render(); return; }
+    if (ds.delRoom) {
+      const r = P.rooms.find(x => x.id === ds.delRoom);
+      if (r && askTwice(t, 'del-' + r.id, '再点删除')) { P.rooms = P.rooms.filter(x => x.id !== ds.delRoom); render(); }
+      return;
+    }
+    if (ds.roomSeg) { const r = P.rooms.find(x => x.id === ds.roomSeg); if (r) { r[ds.f] = ds.v; if (ds.f === 'wallFinish') r.wallWork = ''; if (r.planImported) r.planReviewed = false; } render(); return; }
+    if (ds.ans) {
+      const q = QUESTIONS.find(x => x.id === ds.ans), a = P.answers[ds.ans] = P.answers[ds.ans] || {};
+      a.v = ds.v === '1';
+      if (a.v && q.inputs) q.inputs.forEach(i => { if (a[i.k] === undefined || a[i.k] === '') { const d = i.def(); a[i.k] = d || (i.optional ? 0 : ''); } });
+      render(); return;
+    }
+    if (ds.rq) { const r = P.rooms.find(x => x.id === ds.rq); if (r) r[ds.k] = ds.v === '1'; render(); return; }
+    if (ds.exp !== undefined && t.matches('[data-exp]')) { expanded.has(ds.exp) ? expanded.delete(ds.exp) : expanded.add(ds.exp); render(); return; }
+    if (ds.lineOn) { const s = lineState(ds.lineOn); s.off = !s.off; render(); return; }
+    if (ds.lineSupply) {const [roomId,code]=ds.lineSupply.split(':');const r=P.rooms.find(r=>r.id===roomId);if(r?.tileConfig?.[code])r.tileConfig[code].mode=ds.v==='customer'?'labour':'all';lineState(ds.lineSupply).supply = ds.v; render(); return; }
+    if (t.hasAttribute('data-add-custom')) {
+      const id = uid(); P.custom.push({ id, name: '', room: '全屋', unit: '项', qty: 1, mat: '', lab: '', reason: '', stage: 'equip' });
+      expanded.add('c:' + id); render(); return;
+    }
+    if (ds.delCustom) { P.custom = P.custom.filter(c => c.id !== ds.delCustom); render(); return; }
+    if (ds.priceReset) { delete P.prices[ds.priceReset]; render(); return; }
+    if (t.hasAttribute('data-print')) { if (!t.disabled) window.print(); return; }
+  });
+
+  document.addEventListener('input', e => {
+    const t = e.target, ds = t.dataset, v = t.value;
+    if(ds.skRoom){const r=P.rooms.find(r=>r.id===ds.skRoom);if(!r)return;const s=sketchData(r);if(ds.skField){s[ds.skField]=v;if(ds.skField==='tool'){render();return;}}else if(ds.skLength!==undefined)s.lengths[+ds.skLength]=v;else if(ds.skPoint!==undefined){s.coords[+ds.skPoint]=s.coords[+ds.skPoint]||{};s.coords[+ds.skPoint][ds.skAxis]=v;}else return;invalidateSketch(r);}
+    else if(ds.catalogField){catalogDraft[ds.catalogField]=v;if(ds.catalogField==='code'){catalogDraft.unit=PRICE[v].unit;catalogDraft.materialUnit=PRICE[v].unit;}}
+    else if(ds.tileRoom){const r=P.rooms.find(r=>r.id===ds.tileRoom);if(r){r.tileConfig=r.tileConfig||{};const c=r.tileConfig[ds.tileCode]=r.tileConfig[ds.tileCode]||{areaMode:'auto',areaUnit:'ft2',rateUnit:'ft2',waste:0};c[ds.f]=v;if(r.planImported)r.planReviewed=false;}}
+    else if(ds.workQty){const r=P.rooms.find(r=>r.id===ds.workQty);if(r){r.workQty=r.workQty||{};r.workQty[ds.workCode]=v;if(r.planImported)r.planReviewed=false;}}
+    else if(ds.fitRoom) {const r=P.rooms.find(r=>r.id===ds.fitRoom);if(r){r.fitout=r.fitout||{};const st=r.fitout[ds.fitCode]=r.fitout[ds.fitCode]||{};st[ds.f]=v;if(r.planImported)r.planReviewed=false;}}
+    else if (ds.info) P.info[ds.info] = v;
+    else if (t.hasAttribute('data-spa')) P.spaArea = v;
+    else if (ds.room) { const r = P.rooms.find(x => x.id === ds.room); if (r) { r[ds.f] = v; if (ds.f === 'wallBrand') r.wallSeries = ''; if (ds.f === 'wallWork' && ['living','bedroom','other'].includes(roomBase(r))) r.wallFinish = v.startsWith('墙纸') ? 'wallpaper' : v.startsWith('艺术漆') ? 'art' : 'paint'; if (r.planImported) {r.planReviewed = false; if(['L','W','H'].includes(ds.f)) r.surveyConfirmed=false;} } }
+    else if (ds.ansN) { const a=P.answers[ds.ansN]=P.answers[ds.ansN]||{};a[ds.k]=v;if(ds.ansN==='stairs' && ds.k==='material'){delete a.tileMethod;delete a.hang;delete a.woodType;delete a.stoneType;delete a.other;} }
+    else if (ds.line) {
+      const s = lineState(ds.line);
+      if (ds.f === 'qty' && v.trim() === '') delete s.qty; else s[ds.f] = v;
+    }
+    else if (ds.custom) { const c = P.custom.find(x => x.id === ds.custom); if (c) c[ds.f] = v; }
+    else if (ds.price) { (P.prices[ds.price] = P.prices[ds.price] || {})[ds.f] = v; }
+    else if (ds.set) P.settings[ds.set] = v;
+    else if (ds.pay) P.settings.pay[+ds.pay][ds.f] = v;
+    else if (ds.top) P[ds.top] = v;
+    else return;
+    refresh();
+  });
+  // 离开输入框时整体重画一次（更新红框、"必填原因"输入框的出现/消失等）
+  // 等焦点落到下一个框之后再重画，重画后再把焦点放回那个框
+  document.addEventListener('change', e => { if (e.target.matches('input, select')) setTimeout(render, 0); });
+
+  if(P.rooms.some(r=>r.workLegacy)){const originalRows=gen();P.rooms.filter(r=>r.workLegacy).forEach(r=>{r.work=Object.fromEntries(originalRows.filter(x=>x.roomId===r.id&&!FITOUT[x.code]&&!P.lines[x.key]?.off).map(x=>[x.code,true]));delete r.workLegacy;});}
+  render();
+})();
+</script>
+</body>
+</html>

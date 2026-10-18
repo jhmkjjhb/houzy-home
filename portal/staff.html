@@ -2105,6 +2105,7 @@ function fmtBigCd(deadlineIso, acked) {
 }
 
 function bigCountdownBar(o) {
+  if(o.status==='pending_payment'&&o._paymentHold?.expires_at)o={...o,deadline_at:o._paymentHold.expires_at};
   if (['completed', 'closed', 'cancelled'].includes(o.status)) return '';
   if (!o.deadline_at) return '';
   const acked = ackedAfterOverdue(o);
@@ -2117,6 +2118,15 @@ function bigCountdownBar(o) {
 
 // 延期按钮：发货→到货 +7天x2；安装 +5天x1。用完置灰
 function extendBtn(o) {
+  if(o.status==='pending_payment'&&o._paymentHold){
+    const h=o._paymentHold,used=Number(h.extend_count)||0,paid=o.payment_status!=='unpaid'||o.hitpay_paid_at||['completed','paid','succeeded','success'].includes(String(o.hitpay_status||'').toLowerCase());
+    if(paid)return '';
+    const expired=!!h.expired_at||new Date(h.expires_at).getTime()<=Date.now();
+    const atCap=h.max_expires_at&&Math.floor((new Date(h.max_expires_at)-new Date(h.expires_at))/86400000)<1;
+    const disabled=used>=2||expired||atCap||!h.enabled||!h.max_expires_at;
+    const text=expired?'挂单已到期，等待系统作废':used>=2?'延期已用完（2/2），本次到期后作废':atCap?'已达60天挂单上限，不可再延期':!h.enabled||!h.max_expires_at?'挂单延期规则未启用':`延期挂单（还可 ${2-used} 次，最长60天）`;
+    return `<div class="mb-3 text-sm"><p class="text-gray-500 mb-2">待客户付款 · 已延期 ${used}/2 次 · 必须手动延期并填写原因 · 未延期按建单24小时未付款自动取消；已延期按新截止时间执行 · 总期限不超过建单60天</p><button type="button" ${disabled?'disabled':''} onclick="extendPaymentHold('${o.id}')" class="px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50" style="background:#c8a96e;color:#1a3a2a">${text}</button></div>`;
+  }
   let cfg = null;
   if (o.status === 'shipped')    cfg = { kind:'ship',    used:o.ship_extend_count||0,    max:2, days:7, label:'发货延期' };
   if (o.status === 'installing') cfg = { kind:'install', used:o.install_extend_count||0, max:1, days:5, label:'安装延期' };
@@ -4133,6 +4143,11 @@ async function openDetail(id, backView) {
     } catch (_) { /* render the last state if reconciliation is unavailable */ }
   }
 
+  if(o.status==='pending_payment'){
+    const hold=await sb.rpc('get_payment_hold',{p_order_id:id});
+    if(!hold.error&&hold.data)o._paymentHold=hold.data;
+  }
+
   const { data: logs } = await sb.from('order_logs')
     .select('*').eq('order_id', id).order('created_at', { ascending: true });
 
@@ -6062,6 +6077,27 @@ function renderProdStagePanel(o) {
 
 // 厂家更新预计生产天数：deadline_at = 今天 + N 天（1≤N≤30），写日志，明确反馈
 // 延期：在原截止时间上加天数，计数+1，写日志；用完不允许
+const paymentHoldRequests=new Set();
+async function extendPaymentHold(orderId){
+  if(paymentHoldRequests.has(orderId))return;
+  paymentHoldRequests.add(orderId);
+  try{
+    const hold=await sb.rpc('get_payment_hold',{p_order_id:orderId});
+    if(hold.error||!hold.data){alert('读取挂单期限失败：'+(hold.error?.message||'请先部署挂单规则'));return;}
+    const h=hold.data,remaining=Math.floor((new Date(h.max_expires_at)-new Date(h.expires_at))/86400000);
+    if(!h.enabled||h.extend_count>=2||remaining<1||new Date(h.expires_at)<=new Date()){alert('当前订单不能继续延期，请刷新核对挂单状态');return;}
+    const reason=await houzyPrompt({title:'延期挂单',hint:`需主动申请并填写原因，不会自动延期。最多2次；从建单起最长60天，最晚至 ${new Date(h.max_expires_at).toLocaleString()}。本次最多延长${remaining}天。`,fields:[{key:'days',label:'延长天数（整数）',required:true,default:String(Math.min(7,remaining))},{key:'reason',label:'延期原因',required:true,multiline:true}],okText:'确认延期'});
+    if(!reason)return;
+    if(!String(reason.reason||'').trim()||String(reason.reason).length>500){alert('请填写500字以内的延期说明');return;}
+    const days=Number(reason.days);
+    if(!Number.isInteger(days)||days<1||days>remaining){alert(`请输入1至${remaining}的整数天数`);return;}
+    const {data,error}=await sb.rpc('extend_payment_hold',{p_order_id:orderId,p_days:days,p_reason:reason.reason});
+    if(error){alert('挂单延期失败：'+error.message);return;}
+    alert(`已延期（${data.extend_count}/2次），新截止时间：${new Date(data.expires_at).toLocaleString()}`);
+    await loadOrders();await openDetail(orderId);
+  }finally{paymentHoldRequests.delete(orderId);}
+}
+
 async function extendDeadline(orderId, kind) {
   const cfg = kind === 'ship'
     ? { col:'ship_extend_count',    max:2, days:7, label:'发货→到货' }
