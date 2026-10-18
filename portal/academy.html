@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>HOUZY 导购学堂</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@600&display=swap">
+<style>
+:root{
+  --bg:#fbf8f1; --surface:#ffffff; --sunk:#f4efe5; --ink:#1b211d; --muted:#6c6a62;
+  --green:#153927; --green2:#245640; --gold:#a8874a; --gold-soft:#c8a96e;
+  --line:rgba(168,135,74,.32); --line-soft:rgba(21,57,39,.10);
+  --ok:#2f7a4d; --ok-bg:#e6f2ea; --bad:#a6402f; --bad-bg:#f8e7e2; --warn:#8a6512; --warn-bg:#f8efd9;
+  --serif:'Noto Serif SC','Songti SC',Georgia,serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  --latin:'Playfair Display',Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1712; --surface:#16211b; --sunk:#1c2a22; --ink:#e9e6dc; --muted:#a3a093;
+    --green:#cfe3d4; --green2:#9fc4aa; --gold:#d4b57a; --gold-soft:#c8a96e;
+    --line:rgba(212,181,122,.28); --line-soft:rgba(233,230,220,.10);
+    --ok:#7fcf9c; --ok-bg:#1d3326; --bad:#f0a08f; --bad-bg:#3a201b; --warn:#e8c46e; --warn-bg:#352b14;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1712; --surface:#16211b; --sunk:#1c2a22; --ink:#e9e6dc; --muted:#a3a093;
+  --green:#cfe3d4; --green2:#9fc4aa; --gold:#d4b57a; --gold-soft:#c8a96e;
+  --line:rgba(212,181,122,.28); --line-soft:rgba(233,230,220,.10);
+  --ok:#7fcf9c; --ok-bg:#1d3326; --bad:#f0a08f; --bad-bg:#3a201b; --warn:#e8c46e; --warn-bg:#352b14;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:0 64px}
+a{color:var(--gold)}
+h1,h2,h3{font-family:var(--serif);text-wrap:balance;color:var(--green);line-height:1.3;margin:0}
+.mast{border-bottom:1px solid var(--line);padding-block:36px 26px;display:grid;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.mast h1{font-size:clamp(30px,5vw,46px);font-weight:900}
+.mast h1 .lat{font-family:var(--latin);font-weight:600;letter-spacing:.04em}
+.mast p{margin:0;max-width:68ch;color:var(--muted)}
+.progress{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.bar{flex:1 1 220px;max-width:360px;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold-soft);width:0;transition:width .4s}
+.layout{display:grid;grid-template-columns:240px 1fr;gap:36px;margin-top:28px;align-items:start}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:grid;gap:2px;font-size:14px}
+nav.toc button{all:unset;cursor:pointer;display:grid;grid-template-columns:28px 1fr 16px;gap:6px;align-items:center;padding:7px 10px;border-radius:8px;color:var(--ink)}
+nav.toc button:hover{background:var(--sunk)}
+nav.toc button:focus-visible{outline:2px solid var(--gold-soft)}
+nav.toc button[aria-current="true"]{background:var(--green);color:var(--bg)}
+nav.toc button[aria-current="true"] .no{color:var(--gold-soft)}
+nav.toc .no{font-family:var(--latin);color:var(--gold);font-size:13px}
+nav.toc .done{color:var(--ok);font-size:13px}
+nav.toc button[aria-current="true"] .done{color:var(--gold-soft)}
+.toc-label{font-size:11px;letter-spacing:.14em;color:var(--muted);padding:12px 10px 4px}
+main{min-width:0}
+section.ch{display:grid;gap:28px}
+.ch-head{display:grid;gap:8px}
+.ch-head h2{font-size:clamp(24px,3.4vw,32px);font-weight:900}
+.ch-head .meta{font-size:13px;color:var(--muted)}
+.lede{font-size:16px;max-width:68ch;margin:0}
+.block{display:grid;gap:12px}
+.block>h3{font-size:19px;display:flex;align-items:baseline;gap:10px}
+.block>h3 small{font-family:var(--sans);font-size:12px;letter-spacing:.12em;color:var(--gold);font-weight:700}
+.prose{max-width:72ch}
+.prose p{margin:0 0 10px}
+.prose ul,.prose ol{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.prose b{color:var(--green)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:4px}
+.fact .k{font-size:12px;letter-spacing:.1em;color:var(--gold);font-weight:700}
+.fact .v{font-family:var(--serif);font-size:17px;color:var(--green);font-weight:700}
+.fact p{margin:0;font-size:14px;color:var(--muted)}
+.talk{border-left:3px solid var(--gold-soft);background:var(--sunk);padding:12px 16px;border-radius:0 8px 8px 0;max-width:72ch}
+.talk .who{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.1em}
+.talk p{margin:4px 0 0}
+.qa{display:grid;gap:10px;max-width:76ch}
+details{background:var(--surface);border:1px solid var(--line-soft);border-radius:10px;padding:10px 16px}
+details summary{cursor:pointer;font-weight:700;color:var(--green)}
+details summary:focus-visible{outline:2px solid var(--gold-soft)}
+details p{margin:8px 0 2px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:13.5px;max-width:76ch}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:640px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top}
+th{background:var(--sunk);font-weight:700;color:var(--green);font-size:12.5px;letter-spacing:.04em;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--muted);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:999px;background:var(--sunk);color:var(--green2);margin:1px 3px 1px 0;white-space:nowrap}
+.tag.w{background:var(--warn-bg);color:var(--warn)}
+.filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filter input{flex:1 1 220px;max-width:340px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.filter input:focus-visible{outline:2px solid var(--gold-soft)}
+.count{font-size:12.5px;color:var(--muted)}
+.quiz{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:grid;gap:18px}
+.quiz h3{font-size:19px}
+.q{display:grid;gap:8px}
+.q .stem{font-weight:700}
+.opts{display:grid;gap:6px}
+.opts button{all:unset;cursor:pointer;border:1px solid var(--line-soft);border-radius:8px;padding:8px 12px;background:var(--bg)}
+.opts button:hover{border-color:var(--gold-soft)}
+.opts button:focus-visible{outline:2px solid var(--gold-soft)}
+.opts button.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.opts button.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.opts button[disabled]{cursor:default}
+.why{font-size:13.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.score{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
+.btn{all:unset;cursor:pointer;background:var(--green);color:var(--bg);padding:8px 16px;border-radius:8px;font-weight:700;font-size:14px}
+.btn.ghost{background:transparent;color:var(--green);border:1px solid var(--line)}
+.btn:focus-visible{outline:2px solid var(--gold-soft)}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:18px}
+.calc{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;max-width:640px}
+.calc .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.calc label{font-size:13px;color:var(--muted);display:grid;gap:3px}
+.calc input,.calc select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;width:150px}
+.calc .out{font-family:var(--serif);font-size:17px;color:var(--green);font-variant-numeric:tabular-nums}
+.steps{counter-reset:s;display:grid;gap:10px;max-width:76ch;padding:0;margin:0;list-style:none}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:10px}
+.steps li::before{content:counter(s);font-family:var(--latin);color:var(--gold);font-size:20px;line-height:1.3}
+.src{font-size:12.5px;color:var(--muted)}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr;gap:18px}
+  nav.toc{position:static;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}
+  .toc-label{grid-column:1/-1;padding-top:4px}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<style>
+[hidden]{display:none!important}
+#gate{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;font-family:'Noto Sans SC','PingFang SC',sans-serif;background:#fbf8f1;color:#153927}
+#gate .box{display:grid;gap:12px;max-width:360px}
+#gate a{color:#a8874a}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);padding-block:12px 0}
+.topbar a{color:var(--gold);text-decoration:none}
+</style>
+</head>
+<body>
+<div id="gate"><div class="box"><strong>HOUZY HOME 导购学堂</strong><span id="gate-msg">正在验证员工身份…</span></div></div>
+<div id="academy" hidden>
+<div class="wrap">
+  <div class="topbar"><span id="who"></span><span><a href="/portal/staff.html">← 返回员工后台</a></span></div>
+  <header class="mast">
+    <div class="eyebrow">HOUZY HOME · 合屋整装 · 新山 Mount Austin 展厅</div>
+    <h1>导购学堂 <span class="lat">Product Academy</span></h1>
+    <p>门店在售全部品类的完整学习资料，包括瓷砖、橱柜与台面、全屋定制（铝合金与木作）、收纳五金、卫浴、淋浴房和门窗。每章按「专业知识 → 卖点话术 → 客户常问 → 本店全部产品 → 小测验」编排。产品型号与规格取自 HOUZY 订单系统入库档案，零售价取自 2026 零售价目表。</p>
+    <div class="progress"><span id="progTxt">已通过 0 / 11 章</span><div class="bar"><i id="progBar"></i></div><span>测验答对 80% 记为通过，进度只保存在本机浏览器</span></div>
+  </header>
+  <div class="layout">
+    <nav class="toc" id="toc" aria-label="章节"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+</div>
+<script>
+/* ============ 产品数据（来源：HOUZY入库模版20260612_标品 + HOUZY-零售价目表 2026） ============ */
+const P = {
+tiles:[
+ // [名称, 色, 工艺, 规格mm, 厂家编号, 零售价RM/片]
+ ['韵白（单面/哑光）','韵白','金丝绒','750×1500','V1RS15701Y',126],
+ ['燕黄（单面/哑光）','燕黄','金丝绒','750×1500','V1RS15702Y',126],
+ ['岩灰（单面/哑光）','岩灰','金丝绒','750×1500','VIRS15703Y',126],
+ ['捷克灰（5面随机/哑光）','捷克灰','金丝绒','750×1500','V1RS15713Y',126],
+ ['米洛斯灰（6面随机/哑光）','米洛斯灰','金丝绒','750×1500','VIRS15716Y',126],
+ ['韵白（单面/哑光）','韵白','金丝绒','600×1200','V1RS12601Y',111],
+ ['燕黄（单面/哑光）','燕黄','金丝绒','600×1200','VIRS12602Y',111],
+ ['岩灰（单面/哑光）','岩灰','金丝绒','600×1200','V1RS12603Y',111],
+ ['米洛斯灰（6面随机/哑光）','米洛斯灰','金丝绒','600×1200','V1RS12616Y',111],
+ ['缇娜浅灰（8面随机/亮光）','缇娜浅灰','超级干粒模具','600×1200','V1FC126023Y',112],
+ ['熔岩白（12面随机/哑光）','熔岩白','超级干粒模具','600×1200','V1FC126020Y',112],
+ ['缇娜米白（8面随机/哑光）','缇娜米白','超级干粒模具','600×1200','V1FC126021Y',112],
+ ['缇娜米白（8面随机/哑光）M1','缇娜米白','超级干粒模具','600×1200','V1FC126021Y-M1',116],
+ ['缇娜米白（8面随机/哑光）M2','缇娜米白','超级干粒模具','600×1200','V1FC126021Y-M2',116],
+ ['印第安棕灰（12面随机/哑光）','印第安棕灰','超细干粒','750×1500','V1FC157001Y',131],
+ ['印第安雅灰（12面随机/哑光）','印第安雅灰','超细干粒','750×1500','V1FC157002Y',131],
+ ['印第安星灰（12面随机/哑光）','印第安星灰','超细干粒','750×1500','V1FC157003Y',131],
+ ['雅典米灰（9面随机/哑光）','雅典米灰','超细干粒','750×1500','V1FC157005Y',131],
+ ['雅典米灰（9面随机/哑光）','雅典米灰','超细干粒','750×1500','V1FC157006Y',131],
+ ['雅典浅驼','雅典浅驼','超细干粒','750×1500','V1FC157007Y',131],
+ ['法国莱姆石-米黄（8面随机/哑光）','米黄','超细干粒','750×1500','V1FC157012Y',131],
+ ['法国莱姆石-脂黄（8面随机/哑光）','脂黄','超细干粒','750×1500','V1FC157013Y',131],
+ ['熔岩白（10面随机/哑光）','熔岩白','超细干粒','750×1500','V1FC157020Y',131],
+ ['缇娜米白（8面随机/哑光）','缇娜米白','超细干粒','750×1500','V1FC157021Y',131],
+ ['缇娜浅灰（10面随机/哑光）','缇娜浅灰','超细干粒','750×1500 ⚠','V1FC157023Y',131],
+ ['印第安棕灰（15面随机/哑光）','印第安棕灰','超细干粒','600×1200','V1FC126001Y',111],
+ ['印第安雅灰（15面随机/哑光）','印第安雅灰','超细干粒','600×1200','V1FC126002Y',111],
+ ['印第安星灰（15面随机/哑光）','印第安星灰','超细干粒','600×1200','V1FC126003Y',111],
+ ['雅典米灰（12面随机/哑光）','雅典米灰','超细干粒','600×1200','V1FC126005Y',111],
+ ['雅典米杏（12面随机/哑光）','雅典米杏','超细干粒','600×1200','V1FC126006Y',111],
+ ['雅典浅驼（12面随机/哑光）','雅典浅驼','超细干粒','600×1200','V1FC126007Y',111],
+ ['法国莱姆石-米黄（12面随机/哑光）','米黄','超细干粒','600×1200','V1FC126012Y',111],
+ ['法国莱姆石-脂黄（12面随机/哑光）','脂黄','超细干粒','600×1200','V1FC126013Y',111],
+],
+cabinetBody:[
+ // [项目, 说明, 价]
+ ['地柜 Base Unit','高 725mm，不含台面，按「呎」计（吊牌价，享 35% 促销）','以展厅标价为准'],
+ ['吊柜 Wall Unit','高 ≤1400mm，按「呎」计（吊牌价，享 35% 促销）','以展厅标价为准'],
+ ['端板 End Panel','按平方呎计（享 35% 促销）','以展厅标价为准'],
+ ['Calacatta 瓷砖台面（抛光）ST-023','按呎计，实付价','RM 171 / 呎'],
+ ['台面安装','按呎计','RM 68 / 呎'],
+ ['金色拉手 KN9107','每个','RM 23'],
+ ['铝合金收边 Skirting','按呎计','RM 32 / 呎'],
+ ['顶线 Pelmet','按呎计','RM 23 / 呎'],
+ ['升级下嵌式水槽 Under-Mount','每单位','RM 225'],
+ ['水槽 / 炉头开孔','每个开孔','RM 180'],
+],
+cabinetPanel:[
+ ['喷涂·淋胶款 0.7mm',345],['喷涂·淋胶款 0.9mm',372],['喷涂·无胶款 0.7mm',372],['喷涂·无胶款 0.9mm',399],
+ ['PET覆膜·淋胶款',359],['PET覆膜·无胶款',386],['珠光/水纹·淋胶款',372],['珠光/水纹·无胶款',399],
+ ['插条式（传统结构）',426],['三合一焊接整板',399],['10厘蜂窝背板',288],['18蜂窝板 R型封边',479],
+ ['18厘移门',556],['造型门芯',399],['衣通杆',40],['普通铰链',8],['液压支撑杆',34],['反弹器',11],
+ ['透气格',34],['抽屉轨',47],['开槽铁形拉手',161],['特殊拉手',47],['机封斜边拉手',34],['切角加工',27],
+],
+acc:[
+ // [名称, 品牌, 适配柜宽/规格, 编号, 零售价, 用在哪]
+ ['抽油烟机','','710×430×540','XX001',1123,'厨房'],
+ ['灶具','','730×410','WLD001',884,'厨房'],
+ ['厨房推车','','35×65×39cm','CZ001',562,'厨房'],
+ ['飞碟拉篮 / 铂金飞碟3.0','','900 转角柜','101071',1084,'厨房·转角'],
+ ['星云升降机2.0','','900 吊柜','401294',857,'厨房·吊柜'],
+ ['希勒4.0pro 组合套装','','800 柜','303882+303592',1412,'厨房'],
+ ['星幕2.0电动升降机（隔空挥手/触控）','','600 吊柜，182宽','401401',1272,'厨房·吊柜'],
+ ['希勒4.0调味篮','','300 柜','306271',775,'厨房·窄柜'],
+ ['希勒高柜联动篮','','600 高柜，6层','202256S',1802,'厨房·高柜'],
+ ['希勒侧拉篮','','250 柜','304172',477,'厨房·窄柜'],
+ ['铂金2.0三边篮','','750 柜体','303693SL',460,'厨房'],
+ ['星链2.0碗碟三边篮','','750 柜','303673SL',636,'厨房'],
+ ['嵌门式垃圾桶','','400 柜','307012',910,'厨房·水槽柜'],
+ ['水槽 920316','','75×46cm','920316',897,'厨房'],
+ ['水槽 920314','','68×46cm','920314',870,'厨房'],
+ ['厨房抽拉龙头 980215','','—','980215',281,'厨房'],
+ ['龙头 980212','','—','980212',294,'厨房'],
+ ['内衣收纳盒','','800 柜，1套','703713A',663,'衣柜'],
+ ['挂衣杆 814','','内空 814mm','703581A-814',127,'衣柜'],
+ ['挂衣杆 764','','内空 764mm','703581A-764',127,'衣柜'],
+ ['挂衣杆管座','','2对','703580A',110,'衣柜'],
+ ['升降衣物架','','800–900 柜','703157P',562,'衣柜'],
+ ['顶装裤架','','400 柜','703502A',317,'衣柜'],
+ ['A系列顶装裤架','','柜深 ≥500mm','703908-4',290,'衣柜'],
+ ['顶装双排裤架','','800 柜','706126A',387,'衣柜'],
+ ['深皮篮','','800 柜体','703733A',950,'衣柜'],
+ ['高柜转角衣物篮','','≥800','703552A',1175,'衣柜·转角'],
+],
+toilet:[
+ // [名称, 型号, 品牌, 尺寸, 功能要点, 价]
+ ['家用简约静音抽水马桶','马可2149','','700×390×655','陶瓷 · 虹吸式',1092],
+ ['直排马桶','纳倍佳2号-梦之歌','','680×360×700','陶瓷 · 虹吸式',985],
+ ['普通马桶','小牧优品6001','','680×390×780','陶瓷 · 虹吸式',1092],
+ ['智能马桶（带水箱）顶配','D1-T 灰','','—','语音控制 · 带水箱 · 智能冲洗 · 加热座圈 · 暖风烘干 · 自动翻盖',1533],
+ ['智能马桶（带水箱）高配','H5-T 灰','','—','带水箱 · 智能冲洗 · 加热 · 烘干',1473],
+ ['智能马桶（水推标配带水箱）','H8-A','','—','标准智能 · 冲洗 · 加热 · 烘干',1499],
+ ['智能马桶（标配带水箱）','E1-T','','—','标配带水箱',1399],
+ ['智能马桶','2970','','640×345×715','陶瓷 · 标准 400 坑距',1190],
+ ['马桶','8803','','—','智能冲洗 · 加热座圈 · 暖风烘干 · 静音缓降 · 前置过滤',1098],
+ ['马桶','8804','','—','全管道施釉 · 自洁釉面 · 久坐舒适 · 轻音上水',1124],
+ ['智能马桶','H1','','—','无电清洗',1406],
+ ['智能马桶盖（分体盖板）','WLM002','','—','臀部清洗 · 女性清洗 · 静音缓降 · 前置过滤',402],
+],
+vanity:[
+ // [名称, 型号, 品牌, 颜色, 尺寸, 备注, 价]
+ ['双门智能镜柜 + 主柜','WSJ-2504-80','','象牙白','柜 800×500；镜 750×144×700','主柜配陶瓷盆',2028],
+ ['双门智能镜柜 + 主柜','WSJ-2505-80','','雪花灰 / 胡桃木','柜 800×500；镜 750×144×700','主柜配陶瓷盆',2455],
+ ['单门智能镜柜 + 主柜','WSJ-2506-60','','深灰','柜 600×500；镜 500×144×700','主柜配陶瓷盆',1446],
+ ['双门智能镜柜 + 主柜','WSJ-2508-80','','浅灰','柜 800×500；镜 750×144×700','主柜配陶瓷盆',1600],
+ ['主柜','WSJ-2601-80','','子午灰','800×500','主柜配陶瓷盆',1660],
+ ['台上盆 · 圆','HY325A','','哑光粉','400×400×130','',455],
+ ['台上盆 · 方','HY338','','哑光卡其','500×400×135','',455],
+ ['台上盆 · 圆','HY355','','白色','465×465×155','',355],
+ ['台上盆 · 方','HY501','','白色','540×350×150','',428],
+ ['挂墙式盆','HYp118','','白色','450×340（系统登记 49×450×340）','',412],
+ ['玻璃台上盆','GL10D','','透明玻璃','360×360×112','',669],
+ ['玻璃台上盆','GL38-IR','','透明玻璃','500×375×120','',817],
+ ['立柱盆','MGL-204C','','白色','400×400×850','',1098],
+ ['立柱盆','MGL-202','','白色','400×400×860','',950],
+ ['50 方柱盆','GYJJ001','','白色','500×390×720','',326],
+ ['电镀弹跳 / 陶瓷盖双用下水器','GYJJ002','','—','—','配面盆用',83],
+],
+shower:[
+ // [名称, 型号, 品牌, 颜色, 配置说明, 价]
+ ['数显灯带大置物四挡花洒','(D1-9) 2323-2QH','','枪灰','太空铝方杆 + T611J 顶喷，数显、灯带、大置物台',766],
+ ['二挡花洒（简易）','(D6-21) 3099-3','','枪灰','凌镀太空铝，ABS 墙座 + 101 手持',289],
+ ['四挡淋浴花洒','(F2-24) ZB4219','','枪灰','太空铝四挡',474],
+ ['数显灯带花洒','2117-2','','枪灰','数显 + 灯带',522],
+ ['圆筒三挡淋浴花洒','(F6-12) 2170-2LSJ','','拉丝金','1.5E/F + A1 防爆顶喷，成品',830],
+ ['圆轮二挡简易花洒','3126-2','','枪灰','太空铝，22 管 + F06 圆手持',316],
+ ['花洒','SXG-2018','','枪灰','—',582],
+ ['花洒','SXG-2228','','枪灰','—',412],
+ ['花洒','SXG-8028','','枪灰','—',302],
+ ['花洒','SXG-8038','','枪灰','—',448],
+ ['花洒（电镀）','SXG-8068','','银色','电镀',362],
+ ['境界花洒','WLM001','','枪灰','不锈钢主体，顶喷 300mm，手持面盖 Ø135，置物台 90×450',562],
+ ['平圆单孔面盆龙头','(A5-15-16) 4186QH','','枪灰','单孔冷热',162],
+ ['椭圆冷热面盆龙头','(A7-26) 4193','','枪灰','精铸把手',191],
+ ['高款面盆龙头','78112BRG','','玫瑰金','高款，配台上盆',455],
+ ['抽拉菜盆龙头','2199-2','','枪灰','厨房抽拉',238],
+ ['龙头','4100-2','','枪灰','—',185],
+ ['龙头','4100','','—','—',185],
+ ['抽拉龙头','8312','','—','抽拉',254],
+ ['浴缸龙头','H-2000-E38L','','铜','铜体电镀',763],
+ ['喷枪套装（荔枝轮马伴）','(B4-19) PM7090-2','','枪灰','套装',126],
+ ['喷枪套装','(B7-4-5) 7082-2','','枪灰','望眼 + 支架 + 方喷枪 + 电话管',174],
+ ['电镀喷枪三件套','8090','','枪灰','三件套',104],
+],
+enclosure:[
+ // [名称, 品牌/编号, 规格, 价, 备注]
+ ['一体淋浴板','XFD001','1.12 ㎡','RM 1,135',''],
+ ['淋浴房 · 一字型（移门）','—','按尺寸','RM 829','价目单位待店长确认'],
+ ['淋浴房 · 一字型（双移门）','—','按尺寸','RM 842','价目单位待店长确认'],
+ ['淋浴房 · 一字型（平开门）','—','按尺寸','RM 802','价目表原文为「平升门」'],
+ ['淋浴房 · 一字型（联动门）','—','按尺寸','RM 869','价目单位待店长确认'],
+ ['淋浴房 · 方形（双开门）','—','按尺寸','RM 896','价目单位待店长确认'],
+ ['淋浴房 · 钻石型（平开门）','—','按尺寸','RM 829','价目单位待店长确认'],
+ ['淋浴隔断 · 固定单片（Walk-in）','—','8 / 10mm 钢化玻璃，按尺寸','RM 802 起','按一字型淋浴房报价'],
+ ['淋浴隔断 · 一字推拉 / 平开','—','8mm 钢化玻璃，按尺寸','RM 802–869','按一字型淋浴房报价：平开 802 · 移门 829 · 双移门 842 · 联动门 869'],
+ ['淋浴隔断 · L 型转角','—','8mm 钢化玻璃，按尺寸','RM 829–896','按转角淋浴房报价：钻石型 829 · 方形 896'],
+ ['淋浴隔断 · 浴缸屏风','—','固定 / 旋转折叠','RM 802 起','按一字型淋浴房报价'],
+ ['挡水石基 · 空心塑钢','—','—','RM 320',''],
+ ['挡水石基 · 实心人造石','—','—','RM 360',''],
+ ['集成防漏淋浴盘（岩板）','SWY001','1400×1000','现场报价','高端款'],
+ ['漩涡地漏','SWY002','—','现场报价','配淋浴盘'],
+ ['独立式浴缸','XW2009B','高密度亚克力，哑光白','RM 3,655','保温好、易清洁'],
+],
+windows:[
+ // [系列, 壁厚mm, 开启方式, 标配五金/玻璃, 适用]
+ ['星盾70平开窗','1.4','固定 / 平开 / 外开','标配五金','入门平开窗、预算型'],
+ ['鸣镝60平开窗','1.4','固定 / 平开 / 外开','—','入门平开窗'],
+ ['鸣镝90单平开系统','1.8','固定 / 平开 / 外开','—','中端平开'],
+ ['鸣镝98注胶单平开系统','1.8','固定 / 外开','注胶工艺','中端，密封更好'],
+ ['星链102平开窗纱一体','1.8','固定 / 平开 / 外开','不锈钢静音铰链 + 304 防坠绳；信义 5+20A+5 中空','卧室主推：窗纱一体防蚊'],
+ ['悟空100双内开内倒窗','1.8','固定 / 内开 / 内倒','希美克黑色无基座执手','高层、通风防雨'],
+ ['祝融112平开窗纱一体','2.0','固定 / 平开 / 外开','美国希美克全套五金','中高端'],
+ ['鲲龙120窗纱一体','2.0','固定 / 平开 / 外开','美国希美克全套五金','高端旗舰平开'],
+ ['北斗四号118三轨断桥推拉窗','1.8','推拉（三轨）','—','三轨：两扇玻璃 + 一扇纱'],
+ ['北斗魁首125全景推拉窗','1.8','推拉','—','大视野景观位'],
+ ['北斗瞭望126提升推拉窗','1.8','提升推拉','—','密封好的推拉'],
+ ['东方红一号101漂移窗','1.8','固定 / 推拉','—','飘移开启'],
+ ['羲和电动提升窗','1.8','电动提升','—','高端电动'],
+ ['望舒126侧压窗','1.8','固定 / 推拉（侧压）','HOPO 全套侧压五金','推拉的方便 + 平开的密封'],
+ ['天枢48非断桥推拉门','1.4','推拉门','—','室内隔断、预算型'],
+ ['星舟两轨推拉门','1.4','两轨推拉门','—','室内/阳台'],
+ ['完美4013吊趟门','1.8','吊趟（吊轨推拉）','—','地面无轨，适合厨房/衣帽间'],
+ ['夔龙4516推拉门','1.8','推拉门','—','阳台门'],
+ ['探索昆仑推拉门','1.8','推拉门','—','中高端阳台门'],
+ ['哈勃重型推拉门','2.0','固定 / 推拉','—','大尺寸重型玻璃门'],
+ ['隐境X135全景门','2.0','推拉','—','极窄边框全景'],
+ ['绝影三号68折叠门窗','1.8','折叠','—','全开敞，连通花园/阳台'],
+ ['平开门（单包/双包）','1.8','平开门','—','卫生间、房间门'],
+ ['阳光房系列','3.0','—','—','阳光房、雨棚'],
+],
+};
+
+/* ============ 章节内容 ============ */
+const rm = n => 'RM ' + Number(n).toLocaleString('en-US');
+function table(head, rows, numCols=[] , codeCols=[]){
+  return `<div class="tbl"><table><thead><tr>${head.map((h,i)=>`<th class="${numCols.includes(i)?'num':''}">${h}</th>`).join('')}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${numCols.includes(i)?'num':''}${codeCols.includes(i)?' code':''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function filterable(id, head, rows, numCols, codeCols){
+  return `<div class="filter"><input id="f-${id}" type="search" placeholder="输入型号 / 名称 / 颜色筛选" data-target="t-${id}" aria-label="筛选产品"><span class="count" id="c-${id}">共 ${rows.length} 项</span></div><div id="t-${id}">${table(head,rows,numCols,codeCols)}</div>`;
+}
+
+const CH = [
+/* ---------------- 0 入门 ---------------- */
+{ id:'start', no:'00', title:'上岗第一课：HOUZY 是谁、怎么接待', short:'品牌与接待', meta:'建议用时 40 分钟 · 先学这一章',
+ body:()=>`
+ <p class="lede">客户进店前通常已经逛过 Big Bath、Alloy Kitchen 或 Shopee。他们留下来的理由是三件事：你懂材料、价格讲得清楚、能一站配齐。这一章先把公司讲清楚，再教接待流程。</p>
+ <div class="block"><h3><small>KNOW</small>公司要点（必须背）</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">公司</span><span class="v">合屋整装科技有限公司<br>HOUZY HOME SDN. BHD.</span><p>注册号 202601013740 · 2026 年成立</p></div>
+   <div class="fact"><span class="k">展厅</span><span class="v">141, Jalan Mutiara Emas 10/19</span><p>Taman Mount Austin, 81100 Johor Bahru · 每天 10:00–19:30</p></div>
+   <div class="fact"><span class="k">定位</span><span class="v">家居建材 + 一站式整装</span><p>B2C 业主零售、80–150㎡ 整装套餐；B2B 装修公司 / 经销商供货</p></div>
+   <div class="fact"><span class="k">7 大品类</span><span class="v">全铝橱柜 · 高定柜 · 卫浴五金 · 淋浴房 · 马桶 · 瓷砖 · 铝合金门窗</span><p>本手册把它们细分成 15 个系统类目</p></div>
+  </div></div>
+ <div class="block"><h3><small>PROMISE</small>五大服务承诺（客户最关心）</h3>
+  <div class="prose"><ol>
+   <li><b>全案透明</b>：材料、施工、单价逐项列明，签约价 = 最终价。</li>
+   <li><b>按约工期</b>：按合同工期，每周图文进度报告，延期按约赔付。</li>
+   <li><b>质保</b>：对外宣传为 5 年结构质保 + 2 年表面质保。每张订单的具体部件年限，以系统生成的质保卡为准，不要口头另加年限。</li>
+   <li><b>一对一管家</b>：一个对接人跟到底。</li>
+   <li><b>环保健康</b>：E1 级以上环保材料，甲醛不达标免费治理。</li>
+  </ol></div>
+  <div class="talk"><span class="who">一句话介绍公司</span><p>「我们是新山本地的整装品牌，橱柜、卫浴、瓷砖、门窗都在这个展厅，可以一次配齐。报价逐项列清楚，签约价就是最终价。」</p></div>
+ </div>
+ <div class="block"><h3><small>FLOW</small>接待六步</h3>
+  <ol class="steps">
+   <li><div><b>迎客（30 秒内）</b>：起身、微笑、问候，用客户习惯的语言（华语 / English / Bahasa）。先不推销，先问「今天是想看哪一块？」</div></li>
+   <li><div><b>问需求</b>：新房还是翻新？哪个区、什么户型、多少 sqft？哪些空间？预算范围？什么时候入住？家里有老人小孩吗？是否已有设计师？</div></li>
+   <li><div><b>带看体验</b>：让客户摸、开、坐、踩。拉篮拉一下，马桶按一次，铝柜敲一敲。体验比讲参数有用。</div></li>
+   <li><div><b>FABE 讲卖点</b>：特征 Feature → 优势 Advantage → 对他的好处 Benefit → 证据 Evidence（样品、检测、案例照片）。</div></li>
+   <li><div><b>出初步方案</b>：用系统「商品价目」报价，写清型号、尺寸、颜色、数量。不确定的价格或交期说「我和店长确认后给您」。</div></li>
+   <li><div><b>留资跟进</b>：加 WhatsApp，当天发产品照片和报价，约量房时间。</div></li>
+  </ol>
+ </div>
+ <div class="block"><h3><small>RULES</small>三条红线</h3>
+  <div class="prose"><ul>
+   <li>不承诺系统里没有核实过的价格、库存和交期。</li>
+   <li>不低于成本价报价（系统会拦截），折扣按店长授权。</li>
+   <li>不贬低同行品牌。可以客观比较材料和价格，例如「同配置整厨我们比 Alloy Kitchen 低约 10%」。</li>
+  </ul></div>
+  <div class="note">查实时价格和库存：员工后台 houzyhome.com/portal/staff.html →「新建订单」输入型号即可带出零售价；仓库扫码可查库存。操作方法见《门店员工系统使用手册》第 06–08 章。</div>
+ </div>`,
+ quiz:[
+  ['客户问「你们签约后会不会再加钱？」，标准回答是：',['看施工情况，可能会加','签约价就是最终价，材料、施工逐项列明','先签了再说','要问老板'],1,'「全案透明制」是五大承诺之一：签约价 = 最终价。'],
+  ['客户问某部件质保几年，你不确定，应该：',['按经验说一个年限','说终身质保','以系统生成的质保卡为准，或请店长确认','说和别家一样'],2,'质保年限按订单系统按部件生成，不能口头另加。'],
+  ['FABE 中的 B 指：',['品牌 Brand','对客户的好处 Benefit','预算 Budget','底价 Bottom price'],1,'Feature 特征 → Advantage 优势 → Benefit 好处 → Evidence 证据。'],
+  ['问需求时，下面哪一项不是必须了解的？',['入住时间','户型面积','客户的收入','家里有没有老人小孩'],2,'收入属于隐私，用「预算范围」来问。'],
+ ]},
+
+/* ---------------- 1 瓷砖 ---------------- */
+{ id:'tile', no:'01', title:'瓷砖全系列', short:'瓷砖', meta:'大板 33 款 · 另有 300×600 / 600×600 / 木纹砖',
+ body:()=>`
+ <p class="lede">本店瓷砖有 750×1500、600×1200 大板（33 款，分三种表面工艺），也有 300×600、600×600 和木纹砖。导购要会四件事：讲清楚吸水率和工艺、解释「N 面随机」、算片数、提醒同批次。</p>
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">吸水率 ≤ 0.5%</span><span class="v">瓷质砖（国际标准 ISO 13006 的 BIa 类）</span><p>吸水越低，越致密、越不容易渗污、开裂。客厅、厨卫、户外都能用。</p></div>
+   <div class="fact"><span class="k">工艺 · 金丝绒</span><span class="v">细腻柔光哑面</span><p>手感像丝绒，不反光、不刺眼，显高级。适合客厅、卧室。</p></div>
+   <div class="fact"><span class="k">工艺 · 干粒釉</span><span class="v">超级干粒模具 / 超细干粒</span><p>釉面撒干粒后高温烧成，有细微颗粒立体感，耐磨、表面更防滑；模具款带凹凸纹理。</p></div>
+   <div class="fact"><span class="k">N 面随机</span><span class="v">同一款有 N 种不同纹理面</span><p>例如「12 面随机」= 12 种纹理随机出现，铺出来像天然石材，不会一眼看到重复。「单面」= 每片纹理一样。</p></div>
+   <div class="fact"><span class="k">规格换算</span><span class="v">750×1500 = 1.125 ㎡/片<br>600×1200 = 0.72 ㎡/片</span><p>1 ㎡ = 10.764 sqft。马来西亚客户常说 sqft。</p></div>
+   <div class="fact"><span class="k">防滑</span><span class="v">浴室地面建议 R10 以上</span><p>R9 适合室内干区，R10 是浴室地面最低要求，淋浴区 / 户外建议 R11。具体等级以厂家检测报告为准。</p></div>
+  </div>
+  <div class="prose">
+   <p><b>批次号很重要：</b>同一款砖不同批次烧出来会有轻微色差。系统入库时瓷砖必须填批次号。开单和发货时，同一空间的砖要同一批次，客户后期补货也要按原批次找。</p>
+   <p><b>大板铺贴要点：</b>750×1500 大板必须用瓷砖胶，建议背涂 + 地面双面上胶；留缝 1.5–2mm 再做美缝；找平要求高，要提醒客户找有大板经验的泥工（公司可安排）。</p>
+   <p><b>损耗：</b>一般按 5–8% 加量，斜铺、异形空间、小面积损耗更高。</p>
+  </div>
+ </div>
+ <div class="block"><h3><small>MORE</small>更多规格：300×600 · 600×600 · 木纹砖</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">300×600</span><span class="v">0.18 ㎡ / 片 · 墙砖主力</span><p>厨房、卫生间墙面最常用。片小、重量轻，墙面不够平也好贴；可横贴（显宽）或竖贴（显高）。</p></div>
+   <div class="fact"><span class="k">600×600</span><span class="v">0.36 ㎡ / 片 · 经典地砖</span><p>新山排屋、公寓地面最常见的规格，搬运、切割、铺贴都方便，损耗低，人工费也比大板低。适合预算型整屋地面、厨房、阳台。</p></div>
+   <div class="fact"><span class="k">木纹砖</span><span class="v">有木地板的样子，没有木地板的烦恼</span><p>常见长条规格如 150×900、200×1200。不怕水、不怕白蚁、不会发霉起拱，适合新山的潮湿气候。可用于卧室、客厅、阳台。</p></div>
+   <div class="fact"><span class="k">铺法</span><span class="v">直铺 · 1/3 错缝 · 人字铺</span><p>长边 600mm 以上的砖不建议 1/2 错缝：砖中间略拱，半砖错开时高点对低点，容易出现高低差。用 1/3 错缝或直铺更平整。</p></div>
+  </div>
+  <div class="prose">
+   <p><b>木纹砖铺贴要点</b>：</p>
+   <ul>
+    <li>按 1/3 长度错缝，或做人字铺 / 鱼骨铺（更有设计感，损耗更高，约 10–15%）。</li>
+    <li>缝留 1.5–2mm，用接近砖色的美缝剂，看起来更像整片木地板。</li>
+    <li>铺前先把几箱砖摊开混排，避免同一种纹理挤在一起。</li>
+    <li>地面平整度要求高，大长条砖建议用找平器（调平夹）。</li>
+    <li>户外、阳台要选防滑等级更高的户外款。</li>
+   </ul>
+  </div>
+ </div>
+ <div class="block"><h3><small>CASE</small>搭配案例（给客户讲方案用）</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">案例 1 · 公寓卫生间</span><span class="v">墙 300×600 浅灰哑光直铺到顶<br>地 600×600 防滑哑光</span><p>小卫生间墙砖直铺（对缝）线条干净，显得整齐；地面选防滑款，淋浴区做淋浴房干湿分离。浅色墙 + 稍深地面，空间不压抑。</p></div>
+   <div class="fact"><span class="k">案例 2 · 排屋厨房</span><span class="v">墙 300×600 白色亮光横贴<br>地 600×600 水泥纹 / 石纹</span><p>亮光墙砖油污一擦就掉；横贴让厨房显宽。地面用耐脏的水泥纹或石纹，和全铝橱柜的木纹门板搭配。</p></div>
+   <div class="fact"><span class="k">案例 3 · 卧室木纹砖</span><span class="v">200×1200 木纹砖 1/3 错缝<br>同色美缝</span><p>卧室要温暖感但怕潮怕白蚁，木纹砖是木地板的替代方案。搭配木定制或铝合金木纹衣柜，色调统一。</p></div>
+   <div class="fact"><span class="k">案例 4 · 阳台 / 后院</span><span class="v">户外款木纹砖或 600×600 防滑砖</span><p>新山日晒雨淋，木地板和塑木在户外容易褪色变形；户外防滑砖耐晒耐水，常配折叠门把客厅和阳台连通。</p></div>
+   <div class="fact"><span class="k">案例 5 · 客厅预算对比</span><span class="v">600×600 经济整洁<br>750×1500 大板高级通透</span><p>同一个客厅，600×600 材料和人工都省；大板缝少、更显大，但要瓷砖胶和大板师傅。先问预算，再给两个方案让客户选。</p></div>
+   <div class="fact"><span class="k">案例 6 · 整屋统一</span><span class="v">客厅餐厅大板 + 卧室木纹砖<br>厨卫 300×600 墙 + 600×600 地</span><p>公区用大板显气派，卧室用木纹砖显温馨，厨卫用好打理的中小规格，一屋三种规格，色系保持统一。</p></div>
+  </div>
+  ${table(['砖类','马来西亚市场参考','说明'],[
+   ['普通陶瓷砖（墙砖常见）','约 RM 4–10 / sqft','吸水率较高，多用于墙面'],
+   ['瓷质砖 / 通体砖','约 RM 8–18 / sqft','耐磨、低吸水'],
+   ['600×600 瓷质砖（含铺贴）','约 RM 18–35 / sqft','地面主流规格'],
+   ['木纹砖','约 RM 30–70 / sqft','浮雕纹理、防滑款更贵']])}
+  <span class="src">市场参考价为 2026 年马来西亚 / 新山公开资料（多为含安装价），只用于帮客户理解价位，随市场变动；对客户报 HOUZY 价格以系统和展厅标价为准。 来源：<a href="https://myrenoservice.com/floor-tiles/" target="_blank" rel="noopener">马来西亚地砖造价</a> · <a href="https://clickbina.com/guides/tiles-comparison-malaysia/" target="_blank" rel="noopener">瓷砖种类对比</a> · <a href="https://www.mytyles.com/tiles/wooden-tiles" target="_blank" rel="noopener">木纹砖</a></span>
+  <div class="note">300×600、600×600 和木纹砖的本店型号和价格还没录入系统，对客户报价前先问店长。</div>
+  <span class="src">铺贴参考：<a href="https://cdnmedia.mapei.com/docs/librariesprovider65/line-technical-documentation-documents/installing-wood-look-porcelain-plank-tile.pdf" target="_blank" rel="noopener">MAPEI 木纹砖铺贴指南</a> · <a href="https://www.flooringclarity.com/one-tile-pattern-design-floors-walls/" target="_blank" rel="noopener">1/3 错缝铺法</a> · <a href="https://www.msisurfaces.com/blogs/post/2017/07/20/current-obsessions-avoid-these-mistakes-with-your-porcelain-wood-tile.aspx" target="_blank" rel="noopener">木纹砖常见错误</a> · <a href="https://www.houzz.com.sg/magazine/10-times-a-stack-bond-tile-pattern-got-our-attention-stsetivw-vs~78478522" target="_blank" rel="noopener">直铺（对缝）案例</a></span>
+ </div>
+ <div class="block"><h3><small>TOOL</small>片数计算器（现场直接用）</h3>
+  <div class="calc">
+   <div class="row">
+    <label for="tc-area">铺贴面积<input id="tc-area" type="number" min="0" step="0.1" value="40"></label>
+    <label for="tc-unit">单位<select id="tc-unit"><option value="m2">㎡</option><option value="sqft">sqft</option></select></label>
+    <label for="tc-size">规格<select id="tc-size"><option value="1.125">750×1500</option><option value="0.72">600×1200</option><option value="0.36">600×600</option><option value="0.18">300×600</option><option value="0.24">200×1200 木纹</option><option value="0.135">150×900 木纹</option></select></label>
+    <label for="tc-loss">损耗 %<input id="tc-loss" type="number" min="0" max="30" value="6"></label>
+   </div>
+   <div class="out" id="tc-out"></div>
+   <span class="src">示例值：40 ㎡ 客厅。结果向上取整，最终数量以量房为准。</span>
+  </div>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">客户：「这砖为什么比 Shopee 贵？」</span><p>「您摸一下这个金丝绒面，吸水率在 0.5% 以内，是瓷质砖，不是便宜的釉面砖。750×1500 大板，缝少，客厅看起来更整、更大。我们按片卖，一片 RM 126，折合每平方呎大概 RM 10，新山同类大板一般在 RM 7–18 一平方呎。」</p></div>
+  <div class="talk"><span class="who">客户：「浅色地砖会不会很快脏？」</span><p>「哑光面不像亮光砖那样一有脚印就看得到，干粒款表面有纹理，更耐脏也更防滑。日常用中性清洁剂拖就行。」</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>大板能铺墙吗？</summary><p>可以，但必须用瓷砖胶并由有经验的师傅施工，墙面要先找平。750×1500 单片约 25–30kg，搬运也要两人。</p></details>
+  <details><summary>浴室能用吗？会不会滑？</summary><p>可以用。浴室地面优先选干粒 / 哑光款，淋浴区可以搭配淋浴盘。具体防滑等级以厂家检测为准，不要口头保证「绝对不滑」。</p></details>
+  <details><summary>以后坏了一片能补吗？</summary><p>建议装修时多留 2–3 片备用，并保存批次号。日后补货按批次找，不同批次可能有轻微色差。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部瓷砖（33 款）</h3>
+  ${filterable('tile',['名称','颜色','工艺','规格 mm','型号','零售价 / 片'],
+    P.tiles.map(t=>[t[0],t[1],`<span class="tag">${t[2]}</span>`,t[3],t[4],rm(t[5])]),[5],[4])}
+  <div class="note">⚠ 系统入库表里这批砖的厚度登记为 10、11、12…19MM 依次递增，像是表格自动填充出错；缇娜浅灰 V1FC157023Y 登记为 600×1200，但价格按 750×1500 计。向客户说明厚度和这款规格前，请先看实物或厂家规格书。</div>
+ </div>`,
+ quiz:[
+  ['瓷质砖的吸水率标准是：',['≤ 0.5%','≤ 3%','≤ 6%','≤ 10%'],0,'ISO 13006 BIa 类瓷质砖吸水率 ≤ 0.5%。'],
+  ['「12 面随机」是什么意思？',['一箱 12 片','同款有 12 种纹理随机出现','可以铺 12 个面','12 年质保'],1,'N 面随机 = N 种纹理面，铺贴自然不重复。'],
+  ['客厅 40 ㎡，用 750×1500，加 6% 损耗，大约要几片？',['36 片','38 片','45 片','53 片'],1,'40 × 1.06 ÷ 1.125 = 37.7，向上取整 38 片。'],
+  ['为什么同一空间要用同一批次号的砖？',['价格不同','不同批次可能有色差','系统要求而已','不同批次尺寸不同'],1,'窑炉每批次烧成会有轻微色差。'],
+  ['厨房、卫生间墙面最常用的规格：',['750×1500','300×600','200×1200 木纹','1200×2400'],1,'300×600 片小重量轻，墙面好贴。'],
+  ['木纹砖推荐的铺法：',['1/2 错缝','1/3 错缝或人字铺','随便铺','竖着铺墙'],1,'长条砖中间略拱，1/2 错缝容易高低不平。'],
+  ['客户卧室想要木地板效果，但担心潮湿和白蚁：',['推荐实木地板','推荐木纹砖','推荐地毯','推荐亮光砖'],1,'木纹砖不怕水、不怕白蚁、不会起拱。'],
+  ['浴室地面建议的最低防滑等级：',['R9','R10','R13','不需要'],1,'R9 室内干区，R10 浴室地面，R11 淋浴区 / 户外。'],
+ ]},
+
+/* ---------------- 2 全铝橱柜 ---------------- */
+{ id:'cabinet', no:'02', title:'橱柜：布局、柜体、全铝工艺与台面', short:'橱柜与台面', meta:'厨房布局 · 柜体尺寸 · 全铝橱柜 · 7 种台面 · 报价项',
+ body:()=>`
+ <p class="lede">橱柜是整装里客单价最高、客户最用心比较的品类。导购要按顺序讲清楚四件事：<b>厨房怎么布局 → 橱柜由哪些柜组成 → 为什么选全铝 → 台面选哪种</b>。新山潮湿、白蚁多，夹板柜用几年就会发霉、起泡、被蛀，所以全铝橱柜是 HOUZY 最有说服力的产品。</p>
+ <div class="block"><h3><small>LAYOUT</small>厨房布局：先看户型再推荐</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">一字型</span><span class="v">所有柜子沿一面墙</span><p>适合公寓小厨房、窄长厨房。动线简单，台面长度有限。</p></div>
+   <div class="fact"><span class="k">L 型</span><span class="v">两面墙成直角</span><p>新山排屋最常见。转角要配飞碟拉篮，否则转角里面用不到。</p></div>
+   <div class="fact"><span class="k">U 型</span><span class="v">三面墙围合</span><p>台面和收纳最多，适合常做饭的大家庭。两侧间距建议 ≥ 1200mm。</p></div>
+   <div class="fact"><span class="k">二字型（走廊型）</span><span class="v">两面墙相对</span><p>一边洗切、一边烹饪。中间通道 1000–1200mm。</p></div>
+   <div class="fact"><span class="k">岛台型</span><span class="v">L / 一字 + 中间岛台</span><p>适合开放式厨房、大户型。岛台可做早餐台、备餐台。干厨 + 湿厨分开是马来西亚华人家庭常见做法。</p></div>
+   <div class="fact"><span class="k">黄金三角</span><span class="v">冰箱 → 水槽 → 炉灶</span><p>按「取菜 → 洗切 → 下锅」顺序排，三点之间不要太远也不要挤在一起。水槽和炉灶之间最好留 ≥ 600mm 切菜台面。</p></div>
+  </div>
+ </div>
+ <div class="block"><h3><small>PARTS</small>橱柜由哪些柜组成 · 标准尺寸</h3>
+  ${table(['柜体','作用','常用尺寸','讲解重点'],[
+   ['地柜','放锅具、碗碟、调料，上面放台面','高 725mm（不含台面）· 深 550–600mm','加台面后操作高度约 850–900mm，可按客户身高调整（身高 ÷ 2 + 50–100mm）'],
+   ['吊柜','装在墙上，放轻的杂物','深 300–350mm · 高 ≤ 1400mm','吊柜底离台面约 650–750mm，太低会碰头；可加升降拉篮'],
+   ['高柜','到顶储物、嵌入式电器','宽 600mm 常见','可做嵌入冰箱、蒸烤箱、联动拉篮'],
+   ['水槽柜','装水槽、下水、净水器','宽 800–900mm','柜内最潮湿，全铝最有优势；可加嵌门式垃圾桶'],
+   ['灶台柜','装炉灶','按灶具开孔（如 730×410）','下方放锅，配碗碟拉篮；不放易燃物'],
+   ['转角柜','L / U 型转角','900 转角','配飞碟拉篮，避免死角'],
+   ['窄边柜','灶台旁调料','250–300mm','配调味篮、侧拉篮'],
+   ['踢脚 / 收边','柜底挡板','高约 100mm','铝合金踢脚防水，拖地不泡柜脚']])}
+  <div class="prose"><p><b>HOUZY 橱柜两条线</b>：</p><ul>
+   <li><b>全铝合金橱柜</b>（主推）：柜体和门板全铝，防潮、防蛀、零甲醛，下面详细讲。</li>
+   <li><b>高定系列</b>：实木、烤漆、模压、不锈钢等多种门板工艺，给追求造型和质感的客户（板材知识见「全屋定制」章）。具体工艺和价格以店长资料为准。</li>
+  </ul></div>
+ </div>
+
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">材料</span><span class="v">全铝合金一体成型</span><p>防水、防潮、防白蚁，不发霉、不变形；没有人造板，所以没有甲醛释放。</p></div>
+   <div class="fact"><span class="k">对比夹板 / MDF</span><span class="v">怕水、怕蛀、含胶</span><p>夹板柜在水槽柜底最先坏：泡水起鼓、发霉、被白蚁吃空。全铝柜可以直接用水冲洗。</p></div>
+   <div class="fact"><span class="k">计价单位「呎」</span><span class="v">按柜体长度 running foot</span><p>1 呎 = 304.8mm。地柜 3 米长 ≈ 9.8 呎。端板按平方呎。</p></div>
+   <div class="fact"><span class="k">标准尺寸</span><span class="v">地柜高 725mm（不含台面）<br>吊柜高 ≤ 1400mm</span><p>加台面后操作高度约 850–900mm，可按客户身高调整。</p></div>
+  </div>
+  <div class="prose">
+   <p><b>门板 / 柜体工艺：是什么材料、有什么用</b></p>
+  </div>
+  ${table(['工艺','材料','怎么做','功能 / 好处','讲给客户听'],[
+   ['<b>喷涂</b>（0.7 / 0.9mm）','铝合金板 + 粉末涂料（常见聚酯粉末）','静电把粉末吸附到铝板上，高温烘烤固化成一层漆膜','上色、防腐蚀、耐刮；颜色可选最多。0.7 / 0.9mm 是铝皮厚度，0.9mm 更挺、更耐撞','「和铝合金门窗一样的烤漆，不怕水、不掉色，颜色随您挑。」'],
+   ['<b>PET 覆膜</b>','铝合金板 + PET 装饰膜（聚对苯二甲酸乙二醇酯，和矿泉水瓶同一类安全塑料）','把印好纹理的 PET 膜压贴在铝板表面','做出木纹、肤感（哑光防指纹）、高光等效果；耐磨、防潮、易清洁；膜本身不含甲醛','「看着是木纹、摸着像皮肤一样细腻，其实是铝，油污一擦就掉。」'],
+   ['<b>珠光</b>','铝合金板 + 含珠光颜料（云母类）的涂层','喷涂时在涂料里加入珠光颜料','表面在灯光下有细微光泽变化，更显高级；同样防水耐腐蚀','「灯一照有一层淡淡的光泽，比普通纯色更有质感。」'],
+   ['<b>水纹</b>','铝合金板 + 纹理涂层','喷涂时形成水波纹状的立体肌理','有手感和层次；纹理能遮盖细小划痕和指纹，耐看耐脏','「表面有一点水波纹的手感，日常小划痕不容易看出来。」'],
+   ['<b>淋胶款</b>','铝面板 + 铝蜂窝芯 + 复合胶（常见聚氨酯类胶水）','用淋胶机把胶水均匀「淋」在板面上，再和蜂窝芯压合','粘合牢固、平整度高、成本较低，是行业常见做法','「门板是几层铝压合成的，又轻又平整。」'],
+   ['<b>无胶款</b>','铝面板 + 铝蜂窝芯（不用胶水粘合）','用机械卡扣、焊接或一体成型等方式结合，不靠胶水','没有胶水，就没有胶水老化、开胶、脱层的风险；更环保，长期湿热环境更稳；同工艺贵一档','「连胶水都不用，长期在潮湿厨房也不会开胶，是更环保的升级款。」'],
+   ['<b>蜂窝板</b>（10 厘 / 18 厘）','两层铝合金面板 + 中间六角形铝箔蜂窝芯','把蜂窝芯夹在两层铝皮中间复合成板。「厘」就是毫米，10 厘 = 10mm 厚，18 厘 = 18mm 厚','像蜂巢一样轻但很硬：重量轻、不易变形、平整度好，还有一定隔音隔热效果。10 厘常做背板，18 厘做门板、移门','「门板里面是蜂巢结构，所以这么大的门也很轻、不会弯。」'],
+   ['<b>R 型封边</b>','铝合金封边条','在 18 厘蜂窝板边缘包一圈带圆角（R 角）的铝边','边角圆润不割手、防磕碰；把板芯封住，挡住水汽进入；外观更精致','「门板边是圆角的，小孩碰到不会刮伤。」'],
+   ['<b>三合一焊接整板</b>','铝合金板材','柜体侧板、顶底板等焊接成一个整体','结构整体性强、更稳、不易松动','「柜体是焊成一体的，用多少年都不会松垮。」'],
+   ['<b>插条式</b>','铝合金型材 + 板材','用铝型材插条把板材拼接、卡位组装','传统结构，方便拆装和维修更换','「传统拼装结构，以后哪块要换都方便。」']])}
+  <div class="note">上表是行业通用做法。本店各工艺具体用哪种铝材牌号、哪种胶水、无胶款具体用哪种结合方式，最好请工厂出一份工艺说明书核对。导购对客户只讲上面的通俗说法，不要自己补充型号和数据。</div>
+  <div class="prose">
+   <p><b>报价组成</b>：柜体（地柜 + 吊柜 + 端板）→ 台面 + 安装 → 五金配件 → 人工开孔。开业期间柜体享 35% 促销，台面、五金、人工不打折。</p>
+  </div>
+ </div>
+ <div class="block"><h3><small>MARKET</small>新山橱柜材料与市场价位（帮客户比较用）</h3>
+  ${table(['柜体材料','特点','马来西亚市场参考（每呎长度）'],[
+   ['三聚氰胺板（Melamine，颗粒板饰面）','最便宜，适合出租房、轻度使用；怕水，水槽柜最先坏','约 RM 150–280'],
+   ['夹板 + 饰面（Plywood + Laminate）','中档主流，日常做饭够用；防潮好过颗粒板','约 RM 250–450（新山手工夹板约 RM 330 起）'],
+   ['实木 / 高端实木饰面','质感最好，价格最高，需要保养','约 RM 600+'],
+   ['全铝合金','防水、防白蚁、零甲醛，最适合湿厨','新山同类约 RM 450 起；HOUZY 价格以展厅标价为准']])}
+  <div class="talk"><span class="who">客户拿夹板柜的报价来比</span><p>「夹板柜每呎便宜一些，但水槽柜、灶台柜这些天天碰水的位置，几年后容易发霉、起鼓、被白蚁蛀，到时候要整个换。全铝柜贵在前面，后面基本不用再花钱。我们同配置整厨比 Alloy Kitchen 低 10% 左右。」</p></div>
+  <span class="src">市场参考价为 2026 年马来西亚 / 新山公开资料（多为含安装价），只用于帮客户理解价位，随市场变动；对客户报 HOUZY 价格以系统和展厅标价为准。 来源：<a href="https://www.ampquartz.com/what-a-kitchen-cabinet-really-costs-in-johor-bahru-2026/" target="_blank" rel="noopener">新山橱柜造价 2026</a> · <a href="https://everkitchendesign.com/comprehensive-guide-towards-kitchen-cabinet-price-in-malaysia-2026/" target="_blank" rel="noopener">马来西亚橱柜价格指南</a></span>
+ </div>
+ <div class="block"><h3><small>COUNTERTOP</small>台面：有哪些种类，怎么推荐</h3>
+  <p class="prose">台面每天切菜、放热锅、泼油溅水，是厨房最容易被客户挑毛病的地方。先问客户三个问题：<b>做不做重油烹饪？会不会把热锅直接放台面？预算多少？</b>再从下面挑。</p>
+  ${table(['台面种类','是什么','优点','缺点','适合客户','马来西亚市场参考（含安装）'],[
+   ['<b>瓷砖台面 / 大板瓷砖台面</b>（本店 Calacatta ST-023）','用大规格瓷质砖切割做台面','耐高温、耐刮、不吸污、纹理好看、性价比高','长台面可能有拼缝；边角受重击会崩','预算适中、要大理石效果','本店价见下方报价项'],
+   ['<b>岩板</b>（烧结石）','天然矿物高温烧结的大板','耐高温（可放热锅）、耐刮、几乎不吸水、抗污','较脆，边角怕撞；加工要求高、价格较高','追求高端、开放式厨房、岛台','约 RM 300–450+ / 呎长度（约 RM 110–469 / sqft）'],
+   ['<b>石英石</b>','约 90% 石英砂 + 树脂压制','硬度高耐刮、颜色多、不易渗污、性价比好','怕高温，热锅直接放会烫出痕迹或变色','大多数家庭，记得用隔热垫','约 RM 110–160 / sqft（经济款）至 RM 600+ / sqft（进口高端品牌）'],
+   ['<b>天然大理石</b>','天然石材','纹理独一无二、高贵','软、吸水，怕酸（柠檬、醋）和油渍，需定期养护','重颜值、做饭少的客户','按石种差异很大，现场询价'],
+   ['<b>花岗岩</b>（Granite）','天然石材','很硬、耐热耐刮、耐用','颜色较深较单一，需定期封护','重油烹饪、要耐用','约 RM 120–400 / sqft'],
+   ['<b>不锈钢台面</b>','不锈钢板包覆','耐热、防水、卫生、一体水槽','容易刮花、有指纹，家庭感较弱','商用厨房、湿厨','按厚度和尺寸，现场询价'],
+   ['<b>人造石</b>（亚克力 / Solid Surface）','树脂 + 填料','可无缝拼接、可做一体盆、可修复','不耐高温、易刮花、易吸色','预算型、需要无缝造型','约 RM 140–200 / sqft']])}
+  <span class="src">市场参考价为 2026 年马来西亚 / 新山公开资料（多为含安装价），只用于帮客户理解价位，随市场变动；对客户报 HOUZY 价格以系统和展厅标价为准。 来源：<a href="https://sinnostone.com.my/blog/kitchen-countertop-materials-malaysia-guide/" target="_blank" rel="noopener">Sinnostone 台面指南</a> · <a href="https://www.dongpeng.my/blog/your-guide-to-sintered-stone-in-malaysia" target="_blank" rel="noopener">岩板指南</a> · <a href="https://www.ampquartz.com/quartz-countertops-johor/" target="_blank" rel="noopener">新山石英石</a></span>
+  <div class="grid2">
+   <div class="fact"><span class="k">台面常见加工</span><span class="v">挡水 · 前沿造型 · 开孔</span><p>后挡水防止水流到墙缝；前沿可做直边、圆边、加厚边；水槽、炉灶开孔按设备尺寸。</p></div>
+   <div class="fact"><span class="k">水槽安装</span><span class="v">台上盆 vs 下嵌式（台下盆）</span><p>下嵌式台面和水槽无缝，水渍一抹就进水槽，更好打理；本店可升级下嵌式（另计）。</p></div>
+   <div class="fact"><span class="k">台面计价</span><span class="v">按「呎」（长度）计</span><p>台面材料和安装分开计。本店瓷砖台面价格见下方报价项。</p></div>
+   <div class="fact"><span class="k">日常保养</span><span class="v">不同材质不同叮嘱</span><p>石英石：热锅放隔热垫；大理石：酸性液体立即擦；岩板 / 瓷砖：别用重物砸边角。</p></div>
+  </div>
+  <div class="talk"><span class="who">客户问「台面用什么好？」</span><p>「您平时炒菜多吗？锅会不会直接放台面？如果常做饭、锅直接放，推荐岩板或我们的大板瓷砖台面，耐高温、耐刮，还有大理石纹理。石英石也很耐用，就是热锅要放隔热垫。天然大理石好看，但怕酸和油，比较适合做饭少的家庭。」</p></div>
+  <div class="note">本店系统价目表目前只录入了 Calacatta 瓷砖台面。客户要其他台面时，先用上表的市场参考价帮客户了解价位，再由店长按实际供货报价。</div>
+ </div>
+ <div class="block"><h3><small>CASE</small>整厨报价示例（必须会讲）</h3>
+  ${table(['项目','数量','HOUZY 实付'],[
+   ['地柜 15 呎 + 吊柜 12 呎 + 端板 16 平方呎（享 35% 促销）','—','以展厅标价为准'],
+   ['Calacatta 台面 + 安装 15 呎','—','RM 3,585'],
+   ['拉手、顶线、收边、下嵌水槽、开孔','—','RM 1,686'],
+   ['<b>整厨合计</b>','','<b>按系统开单计算</b>'],
+   ['同配置 Alloy Kitchen 对比','','HOUZY 低约 10%']],[2])}
+  <div class="talk"><span class="who">讲法</span><p>「同样 15 呎地柜加 12 呎吊柜，我们整厨比同配置的 Alloy Kitchen 低 10% 左右，柜体同样享 35% 折扣，也可以分期。具体金额我按展厅标价和您的尺寸在系统里给您算。」</p></div>
+  <div class="note">报价有效期 14 天，数量以现场实测为准，不含电器（除非注明）。全铝柜体质保年限以系统质保卡为准。</div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>铝柜看起来会不会很「冷」、像工业风？</summary><p>不会。门板可以做木纹 PET 覆膜、珠光、肤感，外观和木柜很接近。带客户看展厅样柜，摸门板。</p></details>
+  <details><summary>铝柜会不会生锈？</summary><p>铝不会像铁一样生红锈，表面有氧化保护层，正常厨房环境下不会锈蚀。不要和「铁柜」「不锈钢柜」混为一谈。</p></details>
+  <details><summary>能承重吗？放石英石台面没问题吗？</summary><p>柜体结构按台面承重设计，展厅样柜可以演示。超重电器（如嵌入式蒸烤箱）在设计阶段告诉设计师加强。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>柜体与台面报价项</h3>
+  ${table(['项目','说明','价格'],P.cabinetBody,[2])}
+ </div>
+ <div class="block"><h3><small>RANGE</small>板材工艺与基础五金（价目表 24 项）</h3>
+  ${filterable('panel',['项目','建议零售价'],P.cabinetPanel.map(x=>[x[0],rm(x[1])]),[1],[])}
+  <div class="note">价目表没有写明这些板材项的计价单位（每平方米 / 每平方呎 / 每件）。报价前先在系统「商品价目」确认单位。</div>
+ </div>`,
+ quiz:[
+  ['新山客户最怕夹板柜出现的问题是：',['太重','发霉、起鼓、白蚁','颜色少','太贵'],1,'潮湿气候 + 白蚁是全铝柜的核心卖点。'],
+  ['全铝橱柜地柜按什么单位计价？',['每平方米','每呎（柜体长度）','每个柜','每公斤'],1,'地柜、吊柜按 running foot 计，端板按平方呎。'],
+  ['开业 35% 促销适用于哪部分？',['全部项目','只有台面','柜体（地柜、吊柜、端板）','只有五金'],2,'台面、五金、人工按实付价，不打折。'],
+  ['新山排屋最常见、转角需要配飞碟拉篮的厨房布局：',['一字型','L 型','二字型','岛台型'],1,'L 型转角不配拉篮，里面一半空间用不到。'],
+  ['地柜加台面后的操作高度一般是：',['650–700mm','850–900mm','1100mm','1400mm'],1,'地柜 725mm + 台面，约 850–900mm，可按身高调。'],
+  ['客户常把热锅直接放台面，不推荐哪种台面？',['岩板','瓷砖台面','石英石（不放隔热垫）','花岗岩'],2,'石英石含树脂，怕高温。'],
+  ['客户想要大理石纹理、又怕酸和油渍，推荐：',['天然大理石','岩板或大板瓷砖台面','人造石','实木台面'],1,'岩板 / 瓷砖台面有石纹，耐污耐热。'],
+  ['黄金三角指的是：',['冰箱、水槽、炉灶','吊柜、地柜、高柜','台面、门板、五金','客厅、厨房、餐厅'],0,'按取菜 → 洗切 → 下锅的动线排。'],
+  ['PET 覆膜门板的好处是：',['只能做纯色','可做木纹 / 肤感 / 高光，耐磨防潮易清洁','含甲醛','只能用在户外'],1,'PET 膜压贴在铝板上，外观多、好打理。'],
+  ['18 厘蜂窝板的「厘」指：',['厘米','毫米','层数','公斤'],1,'18 厘 = 18mm 厚。'],
+  ['R 型封边的作用：',['增加重量','圆角防磕碰、封住板芯挡水汽','改变颜色','降低价格'],1,'R 角是圆角铝封边。'],
+  ['淋胶款和无胶款的主要区别：',['颜色','复合方式，无胶款更环保、更稳定','厚度','品牌'],1,'无胶款不用胶水复合，同工艺贵一档。'],
+ ]},
+
+/* ---------------- 全屋定制 ---------------- */
+{ id:'wardrobe', no:'', title:'全屋定制：铝合金与木作（含衣柜）', short:'全屋定制', meta:'两种材料 · 板材 / 封边 / 门板 / 五金 / 各空间柜型',
+ body:()=>`
+ <p class="lede">全屋定制是指除厨房橱柜以外、按房子尺寸量身做的柜子：衣柜、衣帽间、玄关柜、电视柜、书柜、酒柜、榻榻米、洗衣房柜、阳台柜等。HOUZY 有两种材料：<b>全铝合金</b>和<b>木作（木质板材）</b>。导购要会讲材料、板材、工艺，并按空间推荐。</p>
+
+ <div class="block"><h3><small>SPACE</small>全屋定制做哪些柜</h3>
+  ${table(['空间','常做柜型','推荐材料','讲解重点'],[
+   ['玄关','鞋柜、换鞋凳、到顶收纳柜','铝合金 / 木作','鞋柜要透气（加透气格）；中间留空放钥匙；底部悬空放常穿的鞋'],
+   ['客厅','电视柜、展示柜、到顶收纳墙','木作 / 铝合金','电视柜预留线槽和插座位；开放格不要太多，难打理'],
+   ['餐厅','餐边柜、酒柜','木作 / 铝合金','中段留台面放小家电，预留插座'],
+   ['主卧','衣柜、梳妆台、床头柜','木作 / 铝合金','衣柜分区：长衣、短衣、叠放、抽屉、顶柜放被子'],
+   ['小孩房','衣柜 + 书桌、榻榻米','铝合金优先','零甲醛最重要；书桌高度可随孩子成长调整'],
+   ['衣帽间','开放式或带门衣柜、岛台','铝合金 / 木作','L 形 / U 形布局；转角用转角衣物篮'],
+   ['书房','书柜、书桌','木作 / 铝合金','书柜层板跨度不要太大，防止压弯'],
+   ['洗衣房','洗衣塔、到顶高柜、吊柜、洗衣台','铝合金','全屋最湿的地方，铝柜最合适'],
+   ['阳台 / 后院','储物柜、洗衣柜','铝合金','日晒雨淋，木柜不适合户外']])}
+ </div>
+
+ <div class="block"><h3><small>ALU</small>全铝合金定制</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">材料</span><span class="v">铝合金超厚蜂窝板</span><p>两层铝皮中间夹铝蜂窝芯，轻、硬、平整，大门板不容易变形。</p></div>
+   <div class="fact"><span class="k">优势</span><span class="v">防水 · 防霉 · 防白蚁 · 零甲醛</span><p>新山潮湿气候下最省心，柜体不吸水、不会被蛀，装完即可入住。</p></div>
+   <div class="fact"><span class="k">外观</span><span class="v">木纹 · 肤感 · 珠光 · 哑光饰面</span><p>外观可以做出接近木柜的效果，带客户摸样柜。</p></div>
+   <div class="fact"><span class="k">标配与计价</span><span class="v">柜体 + 柜门 + 五金 + 灯带</span><p>按正立面投影面积计价（宽 × 高，平方呎），单价以展厅标价和系统为准。功能五金、书桌、梳妆台另计。</p></div>
+  </div>
+ </div>
+
+ <div class="block"><h3><small>WOOD</small>木作定制：常见木板种类</h3>
+  <p class="prose">客户最常问「这是什么板？」。下面这张表要背熟，内容是市面上通用的板材知识。马来西亚市场最常见的是三聚氰胺板（颗粒板饰面）和夹板（Plywood），客户说「Melamine」「Plywood」时要能对上号。</p>
+  ${table(['板材','怎么做出来的','优点','缺点','适合用在'],[
+   ['<b>实木板</b>（原木 / 直拼板）','整块天然木材，或多条实木直接拼接','质感最好、天然木纹、可翻新','最贵；随湿度热胀冷缩，易开裂变形','高端门板、台面、家具'],
+   ['<b>指接板</b>','短实木条像手指一样咬合拼接','用胶少、实木感强、比原木便宜','可能有拼接纹；稳定性不如多层板','柜体、层板'],
+   ['<b>多层实木板</b>（夹板 / Plywood）','多层薄木片纵横交错热压','结构稳定不易变形、握钉力好、承重好','价格较高；表面需贴饰面','柜体、门板、浴室柜、厨房柜（中高端首选）'],
+   ['<b>生态板</b>（免漆板）','多层板或细木工板表面直接贴三聚氰胺饰面纸','免油漆、颜色多、耐磨、环保性好','封边质量决定耐用度','衣柜、书柜柜体'],
+   ['<b>颗粒板</b>（刨花板）','木屑颗粒加胶压制','平整、不易变形、价格友好、定制品牌常用','怕长时间泡水；握钉力一般，不适合反复拆装','衣柜、书柜（干区）'],
+   ['<b>欧松板</b>（OSB 定向结构板）','大片木刨片定向排列压制','强度高、用胶相对少','表面粗糙，需饰面；国内外品质参差','柜体、隔墙'],
+   ['<b>密度板</b>（MDF / HDF）','木纤维打碎加胶高压','表面最细腻，适合雕刻、烤漆、吸塑','最怕水，吸水膨胀；握钉力差','烤漆门板、造型门板'],
+   ['<b>细木工板</b>（大芯板）','中间实木条，两面贴薄木皮','轻、握钉力好、便宜','芯材质量差别大，易变形','木工现场打柜、门套']])}
+  <div class="grid2">
+   <div class="fact"><span class="k">环保等级</span><span class="v">E1 → E0 → ENF</span><p>甲醛释放量依次更低，ENF 最严格。客户问到时按本店板材检测报告回答，不要自己编等级。</p></div>
+   <div class="fact"><span class="k">封边</span><span class="v">PVC · ABS · 激光封边</span><p>板材侧面包边，挡住潮气进入板芯。封边不严是木柜受潮、起鼓的第一原因。激光封边几乎无胶线，最好。</p></div>
+   <div class="fact"><span class="k">饰面</span><span class="v">三聚氰胺 · PET · 木皮 · 烤漆</span><p>三聚氰胺耐磨好打理；PET 环保、肤感好；木皮是真木纹；烤漆亮丽但怕磕碰。</p></div>
+   <div class="fact"><span class="k">板厚</span><span class="v">柜体常用 18mm · 背板 5–9mm</span><p>背板太薄容易变形。层板跨度超过约 900mm 要加立板或加厚，防止压弯。</p></div>
+  </div>
+  <div class="prose"><p><b>门板工艺</b>：</p><ul>
+   <li><b>实木门板</b>：天然质感，可做线条造型，价格高。</li>
+   <li><b>烤漆门板</b>：密度板多层喷漆烘烤，颜色鲜亮、光滑，怕磕碰和油烟熏黄。</li>
+   <li><b>模压 / 吸塑门板</b>：密度板雕型后用 PVC 膜一体热压包覆，造型多、无封边、好打理，怕长期高温。</li>
+   <li><b>双饰面门板</b>：颗粒板 / 生态板两面贴饰面，性价比高，以平板为主。</li>
+   <li><b>玻璃 / 铝框门</b>：适合展示柜、酒柜，轻盈通透。</li>
+  </ul>
+  <p><b>新山使用提醒</b>：木柜尽量不要贴着潮湿外墙，背板离墙或做防潮处理；靠地的柜子做铝合金踢脚线或抬高；装修前先做白蚁防治。</p></div>
+ </div>
+
+ <div class="block"><h3><small>MARKET</small>木作衣柜市场价位（帮客户比较用）</h3>
+  ${table(['材料 / 档次','马来西亚市场参考（每呎长度）','说明'],[
+   ['三聚氰胺板（颗粒板饰面）','约 RM 180–350','入门款，干燥卧室可用'],
+   ['防潮夹板（MR Plywood）','约 RM 350–550','中档，耐用度更好'],
+   ['防潮夹板 + 高端饰面','约 RM 500–800','中高端，饰面选择多'],
+   ['实木','约 RM 700–1,200','高端，质感最好']])}
+  <p class="prose">常见三门衣柜市场价约 RM 2,500–6,000。注意：木作衣柜市场上多按「每呎长度」报价，HOUZY 铝合金衣柜按「正立面平方呎」报价，两种算法不能直接比单价，要比同一个衣柜的总价。</p>
+  <span class="src">市场参考价为 2026 年马来西亚 / 新山公开资料（多为含安装价），只用于帮客户理解价位，随市场变动；对客户报 HOUZY 价格以系统和展厅标价为准。 来源：<a href="https://clickbina.com/guides/built-in-wardrobe-cost-malaysia/" target="_blank" rel="noopener">马来西亚嵌入式衣柜造价 2026</a> · <a href="https://evergreencustomcabinets.com.my/custom-wardrobe-price-malaysia/" target="_blank" rel="noopener">定制衣柜价格指南</a></span>
+ </div>
+ <div class="block"><h3><small>HARDWARE</small>定制柜基础五金</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">铰链</span><span class="v">柜门的关节</span><p>阻尼铰链关门不撞、不夹手。全盖 / 半盖 / 内嵌三种盖法，按柜门和侧板关系选。</p></div>
+   <div class="fact"><span class="k">抽屉滑轨</span><span class="v">三节轨 · 隐藏轨</span><p>隐藏阻尼轨更安静、承重更好、外观干净；三节轨价格低。</p></div>
+   <div class="fact"><span class="k">拉手</span><span class="v">明装 · 隐形 · 免拉手</span><p>免拉手（反弹器 / 斜边拉手）外观简洁；有老人小孩的家庭明拉手更好用。</p></div>
+   <div class="fact"><span class="k">功能五金</span><span class="v">裤架 · 升降衣架 · 拉篮</span><p>详见「收纳五金」章，按柜宽配。</p></div>
+  </div>
+ </div>
+
+ <div class="block"><h3><small>COMPARE</small>铝合金还是木作：怎么推荐</h3>
+  ${table(['对比项','全铝合金','木作'],[
+   ['防潮防霉','不吸水、不发霉','看板材和封边，潮湿位置有风险'],
+   ['防白蚁','白蚁吃不动','需防蛀处理'],
+   ['甲醛','零甲醛','看环保等级（E1 / E0 / ENF）'],
+   ['质感造型','木纹等饰面，造型以简洁平板为主','天然木纹，线条、雕花、烤漆选择最多'],
+   ['适合空间','洗衣房、阳台、衣帽间、小孩房、靠外墙房间','常开冷气的主卧、客厅、书房'],
+   ['适合客户','怕潮怕蛀、有小孩老人、要省心','喜欢木质感、重视造型设计']])}
+  <div class="talk"><span class="who">客户问「铝的好还是木的好？」</span><p>先问：「这个柜子放在哪个房间？靠不靠外墙？之前家里的柜子有没有发霉或者白蚁？」潮湿或有白蚁顾虑，推荐全铝；常开冷气的主卧、很喜欢木质感，推荐木作。也可以混搭：主卧客厅做木作，洗衣房、衣帽间、小孩房做铝。</p></div>
+  <div class="talk"><span class="who">客户问「多层板和颗粒板差在哪？」</span><p>「多层板是一层层薄木片交错压出来的，结构稳、承重好、钉子咬得牢，比较贵；颗粒板是木屑压的，平整、便宜，放在干燥的卧室没问题，但怕长时间泡水。浴室、厨房这些潮湿地方，要么用多层板，要么直接用铝。」</p></div>
+ </div>
+
+ <div class="block"><h3><small>WARDROBE</small>衣柜设计要点</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">进深</span><span class="v">550–600mm</span><p>衣架挂衣服需要约 550mm 进深；推拉门衣柜再加门轨位置。</p></div>
+   <div class="fact"><span class="k">挂衣区高度</span><span class="v">长衣 ≥ 1400mm · 短衣 ≥ 900mm</span><p>长衣区挂大衣、裙子；短衣区可做上下两层，空间翻倍。</p></div>
+   <div class="fact"><span class="k">门型</span><span class="v">推拉门 · 平开门</span><p>房间窄、过道小选推拉门；平开门打开更全、看得清。</p></div>
+   <div class="fact"><span class="k">顶柜</span><span class="v">到顶放被子、行李箱</span><p>到顶柜不积灰，层高 2.8m 的房间顶柜很实用。</p></div>
+  </div>
+ </div>
+
+ <div class="block"><h3><small>TOOL</small>柜子正立面面积计算器</h3>
+  <div class="calc">
+   <div class="row">
+    <label for="wd-w">宽 m<input id="wd-w" type="number" min="0" step="0.1" value="3.8"></label>
+    <label for="wd-h">高 m<input id="wd-h" type="number" min="0" step="0.1" value="2.8"></label>
+   </div>
+   <div class="out" id="wd-out"></div>
+   <span class="src">示例：主卧到顶推拉门衣柜 3.8m × 2.8m。铝合金定制金额 = 面积 × 展厅标价单价；书桌 / 梳妆台 / 功能五金另计。最终以现场实测或设计图为准。</span>
+  </div>
+ </div>
+
+ <div class="block"><h3><small>MEASURE</small>量尺与开单要点</h3>
+  <ol class="steps">
+   <li><div><b>问清用途</b>：谁用？放什么？长衣、短衣、叠放、包、鞋各多少？要不要书桌、梳妆台？</div></li>
+   <li><div><b>量三个尺寸</b>：墙宽、层高（到顶还是留空）、可用进深。注意窗户、插座、空调、梁柱、踢脚线的位置。</div></li>
+   <li><div><b>定材料</b>：按空间和客户顾虑选铝合金或木作；木作要说明板材和环保等级。</div></li>
+   <li><div><b>配五金</b>：铰链、滑轨、拉手，加上功能五金（按柜宽）。</div></li>
+   <li><div><b>系统开单</b>：点「+ 衣柜（全套模块）」，逐项填柜体、柜门、内部配件、五金升级、安装人工，用不到的行删掉。</div></li>
+  </ol>
+  <div class="note">系统里目前没有木作定制的价格档案，先用上面的市场参考价帮客户了解价位，具体报价由店长按板材和设计出。另外，铝合金估算报价单按正立面「呎²」计价，系统衣柜模块的柜体、柜门默认单位是「延米」，开单前和店长确认计价单位。</div>
+ </div>`,
+ quiz:[
+  ['结构最稳、承重好、钉子咬得牢的常见板材是：',['密度板','多层实木板','颗粒板','细木工板'],1,'多层薄木片纵横交错压合，稳定不易变形。'],
+  ['最怕水、但最适合做烤漆和雕刻造型门板的是：',['密度板 MDF','多层板','铝蜂窝板','实木'],0,'密度板表面细腻，但吸水膨胀。'],
+  ['木柜受潮起鼓，最常见的原因是：',['颜色太深','封边不严，潮气进入板芯','柜子太大','五金太多'],1,'封边是挡潮第一道防线，激光封边最好。'],
+  ['板材环保等级从低到高是：',['ENF → E0 → E1','E1 → E0 → ENF','E0 → E1 → ENF','都一样'],1,'E1、E0、ENF 依次更环保。'],
+  ['洗衣房、阳台的柜子优先推荐：',['密度板烤漆','颗粒板','全铝合金','实木'],2,'最潮湿、日晒雨淋的位置，铝柜最合适。'],
+  ['3.8m × 2.8m 的衣柜正立面约多少平方呎？',['10.6 呎²','约 114.5 呎²','约 1,145 呎²','约 38 呎²'],1,'3.8 × 2.8 = 10.64 ㎡ × 10.7639 ≈ 114.5 呎²。'],
+ ]},
+
+/* ---------------- 3 柜内配件 ---------------- */
+{ id:'acc', no:'03', title:'厨房电器与柜内收纳五金', short:'收纳五金', meta:'27 个单品 · 厨房与衣柜收纳',
+ body:()=>`
+ <p class="lede">收纳五金是提升客单价最容易的地方，但每个拉篮都有对应柜宽，配错就装不进去。记住一句话：<b>先定柜宽，再选五金</b>。</p>
+ <div class="block"><h3><small>KNOW</small>按位置记五金</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">转角柜</span><span class="v">飞碟拉篮（900 柜）</span><p>L 型厨房转角是死角，飞碟转篮把里面的东西转出来。</p></div>
+   <div class="fact"><span class="k">吊柜</span><span class="v">星云升降机 · 星幕电动升降机</span><p>吊柜太高够不到，下拉到眼前。星幕 2.0 是电动的，挥手或触控即可升降。</p></div>
+   <div class="fact"><span class="k">灶台两侧窄柜</span><span class="v">调味篮（300）· 侧拉篮（250）</span><p>酱料瓶一排排拉出来，一眼找到。</p></div>
+   <div class="fact"><span class="k">地柜</span><span class="v">碗碟三边篮 · 铂金三边篮（750）</span><p>碗碟立放沥水，不用弯腰翻找。</p></div>
+   <div class="fact"><span class="k">高柜</span><span class="v">希勒高柜联动篮（600，6 层）</span><p>一拉 6 层全出，像小型食品储藏室。</p></div>
+   <div class="fact"><span class="k">水槽柜</span><span class="v">嵌门式垃圾桶（400）</span><p>开门垃圾桶跟着出来，厨房不放外置垃圾桶。</p></div>
+   <div class="fact"><span class="k">衣柜</span><span class="v">升降衣架 · 裤架 · 内衣盒 · 深皮篮</span><p>挂衣杆按内空选 764 / 814；顶装裤架要柜深 ≥ 500mm。</p></div>
+   <div class="fact"><span class="k">电器</span><span class="v">抽油烟机 · 灶具</span><p>开孔尺寸要和台面开孔一致（灶具 730×410）。</p></div>
+  </div>
+ </div>
+ <div class="block"><h3><small>TALK</small>加购话术</h3>
+  <div class="talk"><span class="who">客户已定整厨</span><p>「您家是 L 型厨房，这个转角如果不放拉篮，里面一半空间基本用不到。加一个飞碟拉篮 RM 1,084，转角的锅具能全部转出来。阿姨个子不高的话，吊柜可以加升降机，不用踩凳子。」</p></div>
+  <div class="talk"><span class="who">做演示</span><p>每次带客户到样柜，亲手拉一次联动篮、按一次电动升降机。五金靠手感卖，不靠讲。</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>已经做好的柜子能后加拉篮吗？</summary><p>要看柜宽和柜内是否有层板 / 铰链位。先量内空宽、深、高，再对照五金规格。不确定就请设计师上门确认，不要直接卖。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部配件（27 款）</h3>
+  ${filterable('acc',['名称','适配柜宽 / 规格','型号','位置','零售价'],
+    P.acc.map(a=>[a[0],a[2],a[3],`<span class="tag">${a[5]}</span>`,rm(a[4])]),[4],[2])}
+  <div class="note">系统里「龙头 980212」的编号登记成了 980215，和抽拉龙头重复，开单时注意核对实物型号。</div>
+ </div>`,
+ quiz:[
+  ['选收纳五金的第一步是：',['先看价格','先确定柜宽 / 内空尺寸','先选颜色','先问品牌'],1,'每款拉篮都有对应柜宽，配错装不进。'],
+  ['L 型厨房转角柜推荐：',['调味篮','飞碟拉篮','裤架','垃圾桶'],1,'飞碟拉篮适配 900 转角柜。'],
+  ['300 宽的窄柜适合放：',['希勒 4.0 调味篮','高柜联动篮','深皮篮','飞碟拉篮'],0,'调味篮 300 柜，侧拉篮 250 柜。'],
+  ['A 系列顶装裤架要求柜深：',['≥ 300mm','≥ 400mm','≥ 500mm','不限'],2,'系统规格：深 ≥ 500mm。'],
+ ]},
+
+/* ---------------- 4 马桶 ---------------- */
+{ id:'toilet', no:'04', title:'马桶与智能卫浴', short:'马桶', meta:'12 个单品 · 普通 / 智能 / 智能盖板',
+ body:()=>`
+ <p class="lede">卖马桶前必须先问两个问题：<b>坑距多少？卫生间旁边有没有插座？</b>答不出这两个，就不能保证装得上。</p>
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">坑距</span><span class="v">排污口中心到墙的距离</span><p>常见 300 / 400mm。买错坑距装不上或离墙太远。2970 是标准 400 坑距。先量再卖。</p></div>
+   <div class="fact"><span class="k">冲水方式</span><span class="v">虹吸式 vs 直冲式</span><p>虹吸式靠管道虹吸把污物吸走，噪音小、返味少、挂壁少，但需要足够水量和水压；直冲式靠水流直接冲走，冲力猛、不易堵、对水压要求低，但声音大。<b>水压低的家庭优先推荐直冲式。</b></p></div>
+   <div class="fact"><span class="k">带水箱智能马桶</span><span class="v">不怕水压低</span><p>无水箱款靠自来水压冲水，新山高层或老房子水压不足时冲不干净。本店 D1-T、H5-T、H8-A、E1-T 都带水箱，这是重要卖点。</p></div>
+   <div class="fact"><span class="k">智能功能</span><span class="v">冲洗 · 座圈加热 · 暖风烘干 · 自动翻盖</span><p>D1-T 顶配还有语音控制。H1 支持无电清洗，停电时也能用。</p></div>
+   <div class="fact"><span class="k">釉面</span><span class="v">全管道施釉 · 自洁釉</span><p>管道内也上釉，污物不易挂壁，减少堵塞和异味（8804）。</p></div>
+   <div class="fact"><span class="k">智能盖板</span><span class="v">普通马桶升级方案</span><p>WLM002 盖板 RM 402，装在现有马桶上就有清洗功能。要量马桶圈尺寸，并要有电源。</p></div>
+  </div>
+  <div class="prose"><p><b>用电安全</b>：智能马桶需要靠近马桶的防水插座，并且要接地、配漏电保护。没有插座的要提醒客户请持证电工布线，导购不要说「随便拉个线就行」。</p>
+  <p><b>节水标签</b>：马来西亚水务委员会 SPAN 有 WEPLS 节水产品标签，按星级评定，星越多越省水。客户问到时如实说明产品是否有该标签，没有就不要说有。</p></div>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">智能马桶</span><p>「这款带水箱，就算楼上楼下同时用水、水压低，也能一次冲干净。冬天不冷，座圈是加热的，洗完还有暖风烘干，老人用特别方便。新山 Big Bath 一体马桶大概 RM 998–1,388，我们这款智能的 RM 1,499 左右。」</p></div>
+  <div class="talk"><span class="who">预算有限</span><p>「如果预算有限，可以先买 RM 1,000 左右的虹吸普通马桶，再加一个 RM 402 的智能盖板，就有清洗功能了。」</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>智能马桶会不会漏电？</summary><p>正规安装要有接地和漏电保护的插座。请持证电工安装，并提醒客户不要用水直接冲洗电控部分。</p></details>
+  <details><summary>虹吸马桶会不会容易堵？</summary><p>虹吸管道比直冲细，不要冲卫生巾、湿纸巾。正常使用不会比直冲更容易堵，而且全管道施釉更不易挂污。</p></details>
+  <details><summary>不知道家里坑距怎么办？</summary><p>请客户拍照并用卷尺量「墙面到马桶后排污口中心」的距离；或量旧马桶后底座固定螺丝到墙。也可以安排量房。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部马桶（12 款）</h3>
+  ${filterable('toilet',['名称','型号','尺寸 mm','功能要点','零售价'],
+    P.toilet.map(t=>[t[0],t[1],t[3],t[4],rm(t[5])]),[4],[1])}
+  <div class="note">系统入库表里 8803 写的是「普通马桶」，备注却有智能冲洗、加热座圈等功能。卖之前看一下实物，确认它属于哪一类。</div>
+ </div>`,
+ quiz:[
+  ['卖马桶前必须先确认：',['颜色','坑距和插座','品牌','客户职业'],1,'坑距决定能不能装，插座决定能不能用智能款。'],
+  ['新山高层水压低，普通马桶推荐哪种冲水方式？',['虹吸式','直冲式','都一样','看颜色'],1,'直冲式靠水流直接冲走污物，对水量和水压要求低、冲力强、不易堵；虹吸式要足够水量才能形成虹吸，水压低时容易冲不干净。'],
+  ['水压低的家庭想买智能马桶，应选：',['无水箱智能马桶','带水箱智能马桶','都一样','不能用智能马桶'],1,'无水箱款靠自来水压冲水，水压低冲不干净；带水箱款先蓄水再冲。'],
+  ['虹吸式相比直冲式的优点：',['冲力更猛','噪音小、返味少','更便宜','不用水'],1,'虹吸式安静、防臭；直冲式冲力猛但声音大。'],
+  ['客户有一个普通马桶，想要清洗功能但预算少：',['必须换智能马桶','推荐智能盖板 WLM002','推荐浴缸','无法实现'],1,'盖板 RM 402，量好马桶圈尺寸、有电源即可。'],
+ ]},
+
+/* ---------------- 5 浴室柜 面盆 ---------------- */
+{ id:'vanity', no:'05', title:'全铝合金浴室柜、面盆与下水', short:'全铝浴室柜', meta:'16 个单品 · 全铝合金浴室柜 / 台上盆 / 立柱盆 / 玻璃盆',
+ body:()=>`
+ <p class="lede">HOUZY 的浴室柜全部是全铝合金柜体。浴室是全屋最湿的地方，柜子天天被水汽蒸、被水溅，木柜最容易在这里坏，所以「全铝」是这一章最重要的卖点。面盆、龙头、下水器要和柜子一起配，核心是「尺寸配得上、高度配得对」。</p>
+ <div class="block"><h3><small>CORE</small>全铝合金浴室柜：五个卖点</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">防水</span><span class="v">柜体不怕水，不会泡烂</span><p>夹板、颗粒板、MDF 柜吸水后会起鼓、分层、柜脚发黑。铝不吸水，溅湿了擦干就好，柜底积水也不会烂。</p></div>
+   <div class="fact"><span class="k">防霉</span><span class="v">柜内不发霉、不发臭</span><p>新山常年湿度高，木柜内侧和背板容易长霉、有霉味。铝材表面不会长霉，柜里放毛巾、纸巾也更干净。</p></div>
+   <div class="fact"><span class="k">防白蚁</span><span class="v">白蚁吃不动铝</span><p>白蚁是马来西亚住户最头疼的问题之一，浴室柜靠墙、靠地、潮湿，正好是白蚁最爱的位置。铝柜没有木纤维，不会被蛀空。</p></div>
+   <div class="fact"><span class="k">零甲醛</span><span class="v">没有人造板，没有胶水味</span><p>浴室空间小、门常关，人造板释放的甲醛容易积聚。全铝柜体没有板材胶黏剂释放问题，家里有小孩、孕妇更放心。</p></div>
+   <div class="fact"><span class="k">耐用</span><span class="v">不变形、不褪色、好清洁</span><p>热水澡的蒸汽、清洁剂都不会让柜体变形。表面用湿布加中性清洁剂一擦就干净。柜门、五金和镜柜灯具的质保以系统质保卡为准。</p></div>
+   <div class="fact"><span class="k">对比</span><span class="v">铝柜 vs 木柜 vs PVC 柜</span><p>木柜：好看但怕水怕蛀；PVC 柜：防水但软、易变色、承重差；全铝柜：防水、防蛀、结构硬，同时可以做木纹、肤感等饰面。</p></div>
+  </div>
+ </div>
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">智能镜柜</span><span class="v">WSJ 系列 · 全铝柜体</span><p>全铝主柜 + 智能镜柜 + 陶瓷盆一整套。镜柜带收纳和灯光（一般有 LED 照明、除雾功能，以实物为准）。800 宽双门、600 宽单门。</p></div>
+   <div class="fact"><span class="k">台上盆</span><span class="v">盆放在台面上</span><p>造型好看、颜色多（哑光粉、卡其）。要配高款龙头或墙出水龙头，普通矮龙头够不到盆中间。</p></div>
+   <div class="fact"><span class="k">立柱盆</span><span class="v">一体落地，省空间</span><p>适合小卫生间、客卫。没有柜子收纳，可以配镜柜。</p></div>
+   <div class="fact"><span class="k">挂墙盆</span><span class="v">HYp118</span><p>下方悬空，易打扫。墙体要能承重，需预埋固定。</p></div>
+   <div class="fact"><span class="k">玻璃盆</span><span class="v">GL10D / GL38-IR</span><p>通透有设计感，耐污，但要提醒避免硬物撞击。</p></div>
+   <div class="fact"><span class="k">下水器</span><span class="v">弹跳式 GYJJ002</span><p>按一下塞子弹起 / 落下，可蓄水。有溢水孔和无溢水孔的盆要配对应下水器。</p></div>
+  </div>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">开场：一句话讲全铝</span><p>「我们的浴室柜全部是全铝合金柜体。浴室天天有水汽，木柜用两三年柜脚就发黑起鼓，铝柜不吸水、不发霉，白蚁也咬不动，用多少年都是这个样子。」</p></div>
+  <div class="talk"><span class="who">客户正在看木纹款，说「这不是木头吗？」</span><p>「您摸一下，看着是木纹，其实里面是全铝。外观有木头的温暖，用起来是铝的耐水，两样好处都有。」</p></div>
+  <div class="talk"><span class="who">客户家里旧柜坏过</span><p>先问：「您之前的浴室柜是哪里先坏的？」客户多半会说柜底、柜脚、背板。接着讲：「对，那几个地方最常碰水。换成全铝的，这个问题就没有了，这次装好就不用再换了。」</p></div>
+  <div class="talk"><span class="who">客户嫌贵</span><p>「新山基础铝合金浴室柜大概 RM 458–588，只有柜子；IKEA 这一类镜柜 RM 1,200 以上，一般是木质板材。我们是全铝主柜加智能镜柜加陶瓷盆一整套。浴室柜一装就是十年，木柜两三年换一次，算下来铝柜更省。」</p></div>
+  <div class="talk"><span class="who">做演示</span><p>带客户到样柜前，打开柜门让他敲一敲柜体、摸一摸内侧，再说「这里面也是铝，不是板」。客户亲手摸到，比你讲十遍都有用。</p></div>
+  <div class="talk"><span class="who">配套</span><p>卖台上盆时，主动一起推荐高款龙头（如 78112BRG）和下水器，并说明原因：「这款盆高 13 厘米，普通龙头会溅水，要配高龙头。」</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>浴室柜会不会泡水烂掉？</summary><p>不会。我们是全铝合金柜体，铝不吸水，不会像木柜那样起鼓、分层。日常溅到水擦干即可；如果柜下水管漏水，及时报修水管就好，柜子本身不会被泡坏。</p></details>
+  <details><summary>铝柜会不会生锈？</summary><p>铝不会生铁那样的红锈，表面有氧化保护层，浴室环境正常使用不会锈蚀。不要用强酸、强碱或钢丝球清洁，以免刮伤表面饰面。</p></details>
+  <details><summary>铝柜摸起来会不会冷冰冰、像工业风？</summary><p>不会。表面可以做木纹、肤感、哑光等饰面，本店有象牙白、雪花灰 / 胡桃木、深灰、浅灰、子午灰几种颜色，带客户看样柜。</p></details>
+  <details><summary>铝柜能放重的东西吗？台面陶瓷盆压得住吗？</summary><p>柜体按配套陶瓷盆和日常收纳设计。安装时由师傅固定在墙上，确保牢固；特别重的物品（如整箱洗衣液）建议放下层。</p></details>
+  <details><summary>哑光彩色盆会不会难清洗？</summary><p>日常用软布和中性清洁剂即可，不要用钢丝球和强酸强碱。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部浴室柜与面盆（16 款）</h3>
+  ${filterable('vanity',['名称','型号','颜色','尺寸 mm','零售价'],
+    P.vanity.map(v=>[v[0]+(v[5]?`<br><span class="tag">${v[5]}</span>`:''),v[1],v[3],v[4],rm(v[6])]),[4],[1])}
+ </div>`,
+ quiz:[
+  ['台上盆一般需要配：',['矮龙头','高款龙头或墙出水龙头','不需要龙头','浴缸龙头'],1,'台上盆有高度，矮龙头会溅水、够不到。'],
+  ['小客卫空间有限，推荐：',['独立浴缸','立柱盆','双门 800 镜柜','岛台'],1,'立柱盆一体落地、占地小。'],
+  ['WSJ-2506-60 是：',['800 双门镜柜','600 单门镜柜','台上盆','马桶'],1,'60 = 600 宽单门。'],
+  ['HOUZY 浴室柜最核心的卖点是：',['价格最便宜','全铝合金柜体：防水、防霉、防白蚁、零甲醛','进口品牌','颜色最多'],1,'浴室最潮湿，全铝柜不吸水、不发霉、不被蛀。'],
+  ['客户说「木纹款不就是木头吗？」，正确回答：',['对，是实木','外观是木纹饰面，柜体是全铝，好看又耐水','是 PVC','不清楚'],1,'木纹是表面饰面，柜体仍是全铝。'],
+  ['客户问「铝柜会生锈吗？」：',['会，要定期上油','铝表面有氧化保护层，正常浴室环境不会锈蚀','只要不碰水就不会','会生红锈'],1,'铝不会生铁那样的红锈；避免强酸强碱和钢丝球。'],
+ ]},
+
+/* ---------------- 6 花洒龙头喷枪 ---------------- */
+{ id:'shower', no:'06', title:'花洒、龙头与喷枪', short:'花洒龙头', meta:'23 个单品 · 花洒 / 龙头 / 喷枪',
+ body:()=>`
+ <p class="lede">五金件价差大（RM 104–830），客户最常问「差在哪里」。答案在四个地方：阀芯、主体材料、表面处理、功能挡位。</p>
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">阀芯</span><span class="v">陶瓷阀芯</span><p>龙头的「心脏」，两片陶瓷片控制水流，耐磨、不滴水。便宜龙头漏水大多是阀芯问题。</p></div>
+   <div class="fact"><span class="k">主体材料</span><span class="v">铜 · 不锈钢 · 太空铝</span><p>铜体最耐用、最重；不锈钢不生锈；太空铝轻、不生锈、价格友好。浴缸龙头 H-2000 是铜体。</p></div>
+   <div class="fact"><span class="k">表面处理</span><span class="v">电镀 · 枪灰 · 拉丝金 · 玫瑰金</span><p>多层电镀更亮、更耐腐蚀。枪灰、拉丝金是时下流行色，不显水渍。</p></div>
+   <div class="fact"><span class="k">挡位</span><span class="v">二挡 / 三挡 / 四挡</span><p>挡位 = 出水模式数量（顶喷、手持、下出水、喷枪等）。挡位越多功能越全。</p></div>
+   <div class="fact"><span class="k">数显 / 灯带</span><span class="v">实时显示水温</span><p>老人小孩洗澡防烫，是加分卖点。</p></div>
+   <div class="fact"><span class="k">喷枪</span><span class="v">马桶旁冲洗喷枪</span><p>马来西亚家庭几乎每个厕所都装。套装含喷枪、软管（电话管）、支架、角阀（望眼）。</p></div>
+  </div>
+  <div class="prose"><p><b>和热水器配合</b>：新山家庭多用储水式或即热式热水器。花洒是混水阀，要有冷热两路进水；只有冷水管的卫生间要先确认热水方案。</p>
+  <p><b>节水</b>：SPAN 的 WEPLS 标签也覆盖龙头、混水阀和花洒。</p></div>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">客户：「两个花洒长得差不多，为什么差这么多钱？」</span><p>「这款 RM 766 是四挡，带数显水温和灯带，还有大置物台，洗发水可以直接放；那款 RM 289 是二挡简易款，只有顶喷和手持。家里有老人小孩的话，数显能看水温，防烫。」</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>枪灰色会不会掉色？</summary><p>正常使用不会。清洁用软布，不要用钢丝球、去污粉和强酸清洁剂，这类东西会损伤电镀层。</p></details>
+  <details><summary>水压小，花洒出水会不会很弱？</summary><p>顶喷面积越大，需要的水压越高。水压低的家庭推荐手持增压或小顶喷款，必要时加增压泵。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部花洒、龙头、喷枪（23 款）</h3>
+  ${filterable('shower',['名称','型号','颜色','配置','零售价'],
+    P.shower.map(s=>[s[0],s[1],s[3],s[4],rm(s[5])]),[4],[1])}
+  <div class="note">系统入库表里 2117-2 和 3126-2 的型号被 Excel 误识别成日期（显示为 2117-02-01 等）。价目表型号正确，系统档案待店长修正。</div>
+ </div>`,
+ quiz:[
+  ['龙头不滴水主要靠：',['表面电镀','陶瓷阀芯','颜色','软管长度'],1,'阀芯是龙头的核心部件。'],
+  ['花洒「四挡」指：',['四种颜色','四种出水模式','四年质保','四个零件'],1,'挡位 = 出水模式数量。'],
+  ['数显花洒对哪类家庭最有用？',['单身年轻人','有老人小孩','只用冷水','商铺'],1,'实时显示水温，防烫。'],
+ ]},
+
+/* ---------------- 7 淋浴房 ---------------- */
+{ id:'enclosure', no:'07', title:'淋浴房、淋浴隔断、淋浴盘与浴缸', short:'淋浴房隔断', meta:'干湿分离方案 · 淋浴房 / 淋浴隔断 / 淋浴盘 / 浴缸',
+ body:()=>`
+ <p class="lede">淋浴房解决的是「干湿分离」：洗完澡卫生间地面不湿、不滑、不发霉。按卫生间形状选型，按安全讲玻璃。</p>
+ <div class="block"><h3><small>KNOW</small>按空间选型</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">一字型</span><span class="v">长方形卫生间，淋浴区在一端</span><p>只需一面玻璃。可选移门、双移门、平开门、联动门。</p></div>
+   <div class="fact"><span class="k">方形</span><span class="v">淋浴区在墙角</span><p>两面玻璃，双开门。</p></div>
+   <div class="fact"><span class="k">钻石型</span><span class="v">墙角、空间较小</span><p>斜切门，进出更宽，占地更省。</p></div>
+   <div class="fact"><span class="k">挡水石基</span><span class="v">空心塑钢 · 实心人造石</span><p>淋浴房底部挡水条，实心人造石更扎实耐用。</p></div>
+  </div>
+  <div class="prose">
+   <p><b>玻璃安全</b>：淋浴房必须用钢化玻璃。钢化玻璃破碎时成小颗粒，不易伤人，但有极小概率自爆，所以要加贴防爆膜，碎了也不会四溅。这一点要主动告诉客户。</p>
+   <p><b>集成防漏淋浴盘</b>（SWY001，1400×1000 岩板）：整体淋浴底盘，不靠瓷砖缝防水，从根本上减少渗漏；配漩涡地漏排水快、防臭。属于高端款，价格现场报。</p>
+   <p><b>一体淋浴板</b>（XFD001，1.12 ㎡）：墙面整板，无砖缝，不藏污、不发霉。</p>
+   <p><b>独立式浴缸</b>（XW2009B，高密度亚克力）：保温好、易清洁。卖前确认：卫生间尺寸能否搬进、楼板承重（满水加人约 300kg 以上）、地漏和浴缸龙头位置。新山同类亚克力独立缸约 RM 3,688–6,300。</p>
+  </div>
+ </div>
+ <div class="block"><h3><small>SCREEN</small>淋浴隔断：比淋浴房更简洁的干湿分离</h3>
+  <p class="prose">淋浴隔断是用一片或几片玻璃把淋浴区隔开，不一定有门、不做全封闭。适合想要通透、简洁、好清洁的客户，也是公寓小卫生间最常用的方案。<b>淋浴房</b>是带门的半封闭或全封闭空间，保温、挡水更好；<b>淋浴隔断</b>更开放、更省钱、更不压抑。</p>
+  <div class="grid2">
+   <div class="fact"><span class="k">固定单片（Walk-in）</span><span class="v">一片玻璃，没有门</span><p>最简洁、最好打扫。淋浴区宽度建议 ≥ 900mm，花洒朝墙装，避免水溅出。</p></div>
+   <div class="fact"><span class="k">一字推拉 / 平开</span><span class="v">固定片 + 活动门</span><p>长方形卫生间常用。推拉门不占外部空间；平开门开口大，进出方便，门宽建议 ≥ 600mm。</p></div>
+   <div class="fact"><span class="k">L 型转角</span><span class="v">两面玻璃围住墙角</span><p>淋浴区在墙角时用，挡水效果比单片更好。</p></div>
+   <div class="fact"><span class="k">浴缸屏风</span><span class="v">装在浴缸边上的玻璃</span><p>固定或可旋转折叠，有浴缸又想淋浴时用，替代浴帘。</p></div>
+   <div class="fact"><span class="k">半墙 + 玻璃</span><span class="v">下半砌墙，上半玻璃</span><p>下方矮墙挡水、可做置物龛，上方玻璃透光，适合做设计感的卫生间。</p></div>
+   <div class="fact"><span class="k">无框 / 极窄框</span><span class="v">玻璃用墙夹、地槽固定</span><p>视觉最通透，用 10mm 较厚玻璃更稳。对墙面、地面的平直度和安装手艺要求最高。</p></div>
+  </div>
+  ${table(['部件','常见材料 / 规格','作用','讲解重点'],[
+   ['玻璃','钢化玻璃 6 / 8 / 10mm；透明、磨砂、长虹、灰玻、茶玻','隔水、透光','门片常用 8mm，大固定片或无框用 10mm。钢化玻璃碎了成小颗粒，不易伤人'],
+   ['防爆膜','PET 安全膜，贴在玻璃内侧','玻璃万一自爆，碎片粘在膜上不四溅','钢化玻璃有极小概率自爆，一定要贴'],
+   ['易洁镀膜','纳米疏水涂层','水珠滚落、少水垢','新山水质偏硬，镀膜后更好清洁，减少水垢白点'],
+   ['型材 / 五金','铝合金或 304 不锈钢；黑、枪灰、拉丝金等颜色','固定玻璃、承重','304 不锈钢不生锈；颜色可以和花洒、龙头搭配'],
+   ['稳定杆','不锈钢或铝合金顶拉杆','防止大块玻璃晃动','固定片较宽、较高时必须加'],
+   ['挡水条 / 石基','磁吸胶条、硅胶条；人造石或塑钢石基','挡住地面流水','配合地面坡度和地漏，才能真正不漏水'],
+   ['密封胶','防霉硅酮胶','玻璃与墙地之间密封','要用防霉款，打胶不严是漏水和发黑的主要原因']])}
+  <div class="grid2">
+   <div class="fact"><span class="k">量尺要点</span><span class="v">宽 · 高 · 墙是否垂直</span><p>淋浴区宽 ≥ 800–900mm；隔断高一般 1900–2000mm；看清墙面、地面是否垂直平整，花洒、开关、窗户位置要避开。</p></div>
+   <div class="fact"><span class="k">安装顺序</span><span class="v">先防水，后隔断</span><p>地面防水、瓷砖、地漏做完，再装隔断；墙体有水管、电线的位置不能打孔。</p></div>
+   <div class="fact"><span class="k">市场参考</span><span class="v">约 RM 44–70 / sqft（含安装）</span><p>按玻璃厚度、无框 / 有框、五金档次差别较大。常见 5'×6' 规格成套参考约 RM 1,800。HOUZY 淋浴隔断按同款淋浴房价目报价（见下方产品表）。</p></div>
+   <div class="fact"><span class="k">保养</span><span class="v">洗完澡刮一下水</span><p>用玻璃刮把水刮干，减少水垢；不要用钢丝球和强酸清洁剂，以免伤到镀膜和五金。</p></div>
+  </div>
+  <div class="talk"><span class="who">客户：「淋浴房和淋浴隔断选哪个？」</span><p>「卫生间小、想要通透好打扫，选淋浴隔断，一片玻璃就把水挡住了，看起来空间更大。家里有老人小孩、想要洗澡时暖一点、水一点都不溅出来，选带门的淋浴房。」</p></div>
+  <div class="talk"><span class="who">讲安全</span><p>「玻璃是钢化的，我们还会贴防爆膜，万一碎了碎片也粘在膜上，不会掉下来伤人。另外可以加一层易洁镀膜，洗完澡水珠自己滚下去，不容易留水垢。」</p></div>
+  <span class="src">市场参考价来自马来西亚公开报价（如 <a href="https://www.mudah.my/pasang-glass-skrin-mandian-l-shower-glass-panel-114590149.htm" target="_blank" rel="noopener">Mudah 淋浴玻璃安装</a>）和本店价目表中的新山参考价，只用于帮客户理解价位，随市场变动。</span>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">客户家里有老人</span><p>「做了干湿分离，洗手间外面地面一直是干的，老人上厕所不容易滑倒。玻璃是钢化的，再加防爆膜，万一碎了也不会掉下来伤人。」</p></div>
+ </div>
+ <div class="block"><h3><small>RANGE</small>淋浴房系列全部产品：淋浴房、淋浴隔断、淋浴盘、浴缸</h3>
+  ${table(['名称','型号','规格','零售价','备注'],P.enclosure.map(e=>[e[0],e[1],e[2],e[3],e[4]?`<span class="tag w">${e[4]}</span>`:'']),[3],[1])}
+  <div class="note">淋浴房各款在价目表里只有一个价格，没有写明是每套还是按面积。新山市场参考价为 RM 44 / sqft。报价前先和店长确认计价方式。</div>
+ </div>`,
+ quiz:[
+  ['长方形卫生间、淋浴在一端，推荐：',['方形','一字型','钻石型','不用淋浴房'],1,'一字型只需一面玻璃。'],
+  ['小公寓卫生间想要通透、好打扫，推荐：',['全封闭淋浴房','固定单片淋浴隔断','浴帘','不做干湿分离'],1,'一片玻璃挡水，空间看起来更大。'],
+  ['无框大块淋浴隔断一般用多厚的钢化玻璃？',['4mm','6mm','10mm','20mm'],2,'门片常用 8mm，大固定片或无框用 10mm。'],
+  ['淋浴隔断漏水、发黑最常见的原因：',['玻璃太厚','打胶不严、没用防霉胶','颜色太深','花洒太大'],1,'要用防霉硅酮胶并配合地面坡度和挡水条。'],
+  ['为什么淋浴房玻璃要加防爆膜？',['好看','钢化玻璃有极小概率自爆，防止碎片四溅','防水','隔音'],1,'钢化玻璃安全但可能自爆，防爆膜兜底。'],
+  ['卖独立浴缸前不需要确认的是：',['能否搬进卫生间','楼板承重','地漏位置','客户喜欢的电视剧'],3,'搬运、承重、排水是三大前提。'],
+ ]},
+
+/* ---------------- 8 门窗 ---------------- */
+{ id:'window', no:'08', title:'铝合金系统门窗', short:'铝合金门窗', meta:'24 个系列 · 按 ㎡ 定制报价',
+ body:()=>`
+ <p class="lede">门窗是定制品，没有现货价，按「宽 × 高 = ㎡ × 单价」报。导购要会讲断桥、玻璃、五金三大件，并会算面积。</p>
+ <div class="block"><h3><small>KNOW</small>专业知识</h3>
+  <div class="grid2">
+   <div class="fact"><span class="k">断桥铝</span><span class="v">中间有隔热条的铝型材</span><p>室内外两层铝之间用隔热条「断开」，热量不容易传进来。新山太阳猛，开冷气更省电。</p></div>
+   <div class="fact"><span class="k">壁厚</span><span class="v">1.4 / 1.8 / 2.0 / 3.0 mm</span><p>型材铝壁的厚度。越厚越结实、越抗风。卧室窗 1.8 起，大面积门窗 2.0。</p></div>
+   <div class="fact"><span class="k">中空玻璃</span><span class="v">5 白 + 20A + 5 白</span><p>两片 5mm 玻璃中间 20mm 空气层（A = 空气层）。隔音、隔热。27A 空气层更厚。</p></div>
+   <div class="fact"><span class="k">夹胶玻璃</span><span class="v">+ 1.14 PVB</span><p>玻璃中间夹 PVB 胶片，碎了不掉，安全、隔音更好。临街、高层推荐。</p></div>
+   <div class="fact"><span class="k">Low-E 玻璃</span><span class="v">低辐射镀膜</span><p>反射太阳热辐射，夏天室内更凉，减少紫外线晒褪色家具。</p></div>
+   <div class="fact"><span class="k">五金</span><span class="v">希美克 · HOPO 等</span><p>铰链、执手、锁点决定窗户能用多久、关得多严。304 防坠绳防止窗扇坠落。</p></div>
+  </div>
+  <div class="prose">
+   <p><b>开启方式</b>：</p>
+   <ul>
+    <li><b>平开 / 外开</b>：密封最好，隔音防雨强，最适合卧室。窗纱一体款防蚊。</li>
+    <li><b>内开内倒</b>：可以向内开，也可以上部向内倒通风，下雨天也能开窗透气，适合高层。</li>
+    <li><b>推拉</b>：不占空间，开启方便，密封比平开弱。三轨 = 两扇玻璃 + 一扇纱。</li>
+    <li><b>提升推拉 / 侧压</b>：推拉的便利 + 接近平开的密封，中高端推拉。</li>
+    <li><b>吊趟门</b>：轨道在上方，地面无轨不绊脚，厨房、衣帽间常用。</li>
+    <li><b>折叠门</b>：可以全部推开，连通花园或阳台。</li>
+   </ul>
+   <p><b>面积计算</b>：面积 ㎡ = 宽 mm × 高 mm ÷ 1,000,000。按合同约定，平开窗不足 1 ㎡ 按 1 ㎡ 计。开启扇、纱窗、护栏等附加项按件另计。</p>
+  </div>
+ </div>
+ <div class="block"><h3><small>TOOL</small>门窗面积计算器</h3>
+  <div class="calc">
+   <div class="row">
+    <label for="wc-w">宽 mm<input id="wc-w" type="number" min="0" value="1200"></label>
+    <label for="wc-h">高 mm<input id="wc-h" type="number" min="0" value="1500"></label>
+    <label for="wc-p">单价 RM/㎡<input id="wc-p" type="number" min="0" value="500"></label>
+    <label for="wc-min">不足 1㎡ 按 1㎡<select id="wc-min"><option value="1">是</option><option value="0">否</option></select></label>
+   </div>
+   <div class="out" id="wc-out"></div>
+   <span class="src">示例取自员工系统手册：1200 × 1500，RM 500/㎡。单价为演示值，实际单价按系统和店长报价。</span>
+  </div>
+ </div>
+ <div class="block"><h3><small>TALK</small>卖点话术</h3>
+  <div class="talk"><span class="who">客户：「普通铝窗便宜很多，为什么要断桥？」</span><p>「新山下午太阳直晒，普通铝窗框摸上去是烫的，热量直接进屋，冷气开得再大也不凉。断桥铝中间有隔热条，再配中空玻璃，房间凉得快、电费省，下大雨也不容易渗水。」</p></div>
+  <div class="talk"><span class="who">推荐主力</span><p>卧室主推 <b>星链 102 平开窗纱一体</b>：1.8mm 壁厚，信义中空玻璃，不锈钢静音铰链 + 304 防坠绳，窗和纱一体防蚊。要更高端选 <b>祝融 112 / 鲲龙 120</b>（2.0mm + 美国希美克五金）。</p></div>
+ </div>
+ <div class="block"><h3><small>Q&A</small>客户常问</h3><div class="qa">
+  <details><summary>下暴雨会不会漏水？</summary><p>平开 / 内开内倒窗多道密封，防雨最好；注胶系统窗密封更好。漏水多数是安装打胶问题，所以安装要由公司安排的师傅做，完工做淋水测试。</p></details>
+  <details><summary>多久能装好？</summary><p>门窗需要量尺 → 下单生产 → 物流 → 安装。具体交期以厂家确认为准，不要现场承诺日期。</p></details>
+  <details><summary>能装防盗网吗？</summary><p>可以加固定护栏（附加项），也可以选窗纱一体款。</p></details>
+ </div></div>
+ <div class="block"><h3><small>RANGE</small>本店全部门窗系列（24 个）</h3>
+  ${filterable('window',['系列','壁厚 mm','开启方式','标配五金 / 玻璃','适用'],P.windows,[1],[])}
+  <div class="note">门窗没有固定零售价。在员工系统「新建订单 → 铝合金门窗」里选系列，会自动带出壁厚、玻璃和五金，再按客户确认方案填单价。价目表上的门窗价格没有标明对应哪种开启方式和单位，不要直接对客户报。</div>
+ </div>`,
+ quiz:[
+  ['断桥铝最主要的好处是：',['更便宜','隔热，室内更凉、省电','更轻','颜色多'],1,'隔热条阻断热传导。'],
+  ['5 白 + 20A + 5 白 中的 20A 指：',['20 年质保','20mm 空气层','20 号铝','A 级玻璃'],1,'A = Air 空气层。'],
+  ['宽 1200mm × 高 1500mm 的窗面积是：',['1.8 ㎡','18 ㎡','2.7 ㎡','0.18 ㎡'],0,'1200 × 1500 ÷ 1,000,000 = 1.8 ㎡。'],
+  ['高层住户想下雨天也能开窗通风，推荐：',['推拉窗','内开内倒窗','折叠门','吊趟门'],1,'内倒模式上部开缝通风，雨水进不来。'],
+  ['卧室最推荐的开启方式：',['平开 / 窗纱一体','吊趟','折叠','非断桥推拉'],0,'平开密封隔音最好，窗纱一体防蚊。'],
+ ]},
+
+/* ---------------- 9 售后 & 系统 ---------------- */
+{ id:'after', no:'09', title:'质保、售后与系统开单', short:'质保与开单', meta:'对应《门店员工系统使用手册》V1.0',
+ body:()=>`
+ <p class="lede">卖出去只是开始。质保年限、开单信息、收款记录如果写错，后面厂家、仓库、安装都会跟着错。</p>
+ <div class="block"><h3><small>WARRANTY</small>系统按部件生成的质保年限</h3>
+  ${table(['系列','部件','系统质保年限'],[
+   ['厨房','全铝合金橱柜柜体 / 水槽','11 年'],['厨房','橱柜五金 / 台面 / 厨房龙头 / 抽屉系统','6 年'],['厨房','橱柜门板','4 年'],
+   ['卫浴','马桶陶瓷本体','11 年'],['卫浴','淋浴房框架 / 玻璃 / 卫浴龙头','6 年'],['卫浴','马桶冲水机构 / 卫浴五金 PVD / 浴室柜 / 花洒','4 年'],['卫浴','淋浴房五金 / 智能马桶电路','3 年'],
+   ['门窗','门框窗框型材','11 年'],['门窗','Low-E 玻璃','6 年'],['门窗','门窗五金','4 年'],['门窗','密封胶条 / 纱窗','3 年'],
+   ['瓷砖','瓷砖本体','11 年'],['瓷砖','釉面层 / 防滑性能','6 年']],[2])}
+  <div class="note">这张表取自员工后台的质保计算设置，和品牌手册里的「5 年结构 + 2 年表面」不一致。在老板确认以哪个为准之前，导购对外只说「质保以订单生成的质保卡为准」，不要报具体年限。</div>
+ </div>
+ <div class="block"><h3><small>ORDER</small>开单必查五项</h3>
+  <ol class="steps">
+   <li><div><b>客户</b>：+60 区号 + 去掉开头 0 的手机号，姓名、地址完整。</div></li>
+   <li><div><b>商品行</b>：尽量选系统已有 SKU；写清型号、尺寸、颜色、位置；单位别把呎当米、平方米当平方呎。</div></li>
+   <li><div><b>现货 / 定制</b>：仓库有货才选现货；厂家直供、门窗、橱柜是定制。</div></li>
+   <li><div><b>金额</b>：数量 × 单价 → 合计 → 设计师折扣 → 税务 → 安装费。安装费不要同时算进商品行。</div></li>
+   <li><div><b>付款计划</b>：全款 / 两期 50-50 / 三期 50-40-10（三期需店长）。收到钱才选「已付款」。</div></li>
+  </ol>
+  <div class="talk"><span class="who">售后接待</span><p>「我先帮您在系统里查一下订单和质保卡，拍一下问题位置的照片发我 WhatsApp，我今天之内给您回复处理方案。」先登记，再承诺处理时间，不推诿。</p></div>
+ </div>`,
+ quiz:[
+  ['马来西亚客户手机号 012-3456789，系统里应填：',['+60 0123456789','+60 123456789','0123456789','60-012'],1,'选 +60，本地号码去掉开头的 0。'],
+  ['三期付款（50/40/10）谁可以创建？',['任何店员','店长及以上','客户自己','厂家'],1,'普通店员选三期会被切回两期。'],
+  ['客户还没付款时，建单首期应选：',['已付款','未付款','随便','部分付款'],1,'收到钱再改为已付款，并选正确的付款方式。'],
+  ['客户问质保具体几年，目前正确做法：',['说 11 年','说 5 年','以订单生成的质保卡为准','说终身'],2,'公司两个口径未统一，以系统质保卡为准。'],
+ ]},
+];
+
+/* ============ 渲染 ============ */
+CH.forEach((c,i)=>c.no=String(i).padStart(2,'0'));
+const KEY='houzy-academy-v1';
+let state={passed:{},cur:'start'};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) state=Object.assign(state,s);}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}};
+
+function renderToc(){
+  const toc=document.getElementById('toc');
+  toc.innerHTML='<div class="toc-label">学习路线</div>'+CH.map(c=>`<button data-id="${c.id}" aria-current="${c.id===state.cur}"><span class="no">${c.no}</span><span>${c.short}</span><span class="done">${state.passed[c.id]?'✓':''}</span></button>`).join('')
+   +'<div class="toc-label">考核</div>'+`<button data-id="final" aria-current="${state.cur==='final'}"><span class="no">✦</span><span>上岗综合考核</span><span class="done">${state.passed.final?'✓':''}</span></button>`;
+  toc.querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.id));
+  const n=CH.filter(c=>state.passed[c.id]).length;
+  document.getElementById('progTxt').textContent=`已通过 ${n} / ${CH.length} 章${state.passed.final?' · 综合考核已通过':''}`;
+  document.getElementById('progBar').style.width=(n/CH.length*100)+'%';
+}
+function quizHtml(qs,id,title){
+  return `<div class="quiz" data-quiz="${id}"><h3>${title}</h3>${qs.map((q,i)=>`<div class="q" data-i="${i}" data-a="${q[2]}"><div class="stem">${i+1}. ${q[0]}</div><div class="opts">${q[1].map((o,j)=>`<button data-j="${j}">${String.fromCharCode(65+j)}. ${o}</button>`).join('')}</div><div class="why" hidden>${q[3]}</div></div>`).join('')}
+  <div class="score"><span id="sc-${id}">已答 0 / ${qs.length}</span><button class="btn ghost" data-reset="${id}">重做</button></div></div>`;
+}
+function bindQuiz(root,id,total){
+  let right=0,done=0;
+  root.querySelectorAll('.q').forEach(q=>{
+    q.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{
+      const a=+q.dataset.a, j=+b.dataset.j;
+      q.querySelectorAll('.opts button').forEach(x=>{x.disabled=true; if(+x.dataset.j===a) x.classList.add('right');});
+      if(j!==a) b.classList.add('wrong'); else right++;
+      done++; q.querySelector('.why').hidden=false;
+      const sc=document.getElementById('sc-'+id);
+      if(done===total){
+        const pass=right/total>=0.8;
+        sc.textContent=`得分 ${right} / ${total} · ${pass?'通过 ✓':'未通过，复习后重做'}`;
+        if(pass){state.passed[id]=true; save(); renderToc();}
+      } else sc.textContent=`已答 ${done} / ${total} · 答对 ${right}`;
+    });
+  });
+  root.querySelector('[data-reset]').onclick=()=>go(state.cur,true);
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function go(id,keepScroll){
+  state.cur=id; save(); renderToc();
+  const main=document.getElementById('main');
+  if(id==='final'){
+    const all=shuffle(CH.flatMap(c=>c.quiz)).slice(0,20);
+    main.innerHTML=`<section class="ch"><div class="ch-head"><div class="eyebrow">上岗综合考核</div><h2>从全部章节随机抽 20 题</h2><div class="meta">答对 16 题（80%）通过。每次重做都会重新抽题。通过后截图发给店长存档。</div></div>${quizHtml(all,'final','综合考核')}${pager(id)}</section>`;
+    bindQuiz(main.querySelector('.quiz'),'final',all.length);
+  } else {
+    const c=CH.find(x=>x.id===id)||CH[0];
+    main.innerHTML=`<section class="ch"><div class="ch-head"><div class="eyebrow">第 ${c.no} 章</div><h2>${c.title}</h2><div class="meta">${c.meta}</div></div>${c.body()}${quizHtml(c.quiz,c.id,'本章小测验')}${pager(c.id)}</section>`;
+    bindQuiz(main.querySelector('.quiz'),c.id,c.quiz.length);
+    main.querySelectorAll('.filter input').forEach(inp=>inp.oninput=()=>{
+      const box=document.getElementById(inp.dataset.target), v=inp.value.trim().toLowerCase(); let n=0;
+      box.querySelectorAll('tbody tr').forEach(tr=>{const hit=!v||tr.textContent.toLowerCase().includes(v); tr.hidden=!hit; if(hit)n++;});
+      document.getElementById('c-'+inp.dataset.target.slice(2)).textContent=`显示 ${n} 项`;
+    });
+    bindCalcs();
+  }
+  main.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  if(!keepScroll) window.scrollTo({top:0});
+}
+function pager(id){
+  const ids=CH.map(c=>c.id).concat('final'), i=ids.indexOf(id);
+  const name=x=>x==='final'?'综合考核':CH.find(c=>c.id===x).short;
+  return `<div class="pager">${i>0?`<button class="btn ghost" data-go="${ids[i-1]}">← ${name(ids[i-1])}</button>`:'<span></span>'}${i<ids.length-1?`<button class="btn" data-go="${ids[i+1]}">下一章：${name(ids[i+1])} →</button>`:''}</div>`;
+}
+function bindCalcs(){
+  const t=document.getElementById('tc-out');
+  if(t){const f=()=>{let a=+document.getElementById('tc-area').value||0; if(document.getElementById('tc-unit').value==='sqft') a=a/10.764;
+    const s=+document.getElementById('tc-size').value, l=+document.getElementById('tc-loss').value||0, n=Math.ceil(a*(1+l/100)/s-1e-9);
+    t.textContent=`约 ${a.toFixed(2)} ㎡ × (1 + ${l}%) ÷ ${s} ㎡/片 = ${n} 片`;};
+    ['tc-area','tc-unit','tc-size','tc-loss'].forEach(i=>document.getElementById(i).oninput=f); f();}
+  const wd=document.getElementById('wd-out');
+  if(wd){const f=()=>{const W=+document.getElementById('wd-w').value||0,H=+document.getElementById('wd-h').value||0,m=W*H;
+    wd.textContent=`正立面 ${m.toFixed(2)} ㎡ ≈ ${(m*10.7639).toFixed(1)} 呎²`;};
+    ['wd-w','wd-h'].forEach(i=>document.getElementById(i).oninput=f); f();}
+  const w=document.getElementById('wc-out');
+  if(w){const f=()=>{const W=+document.getElementById('wc-w').value||0,H=+document.getElementById('wc-h').value||0,p=+document.getElementById('wc-p').value||0;
+    const a=W*H/1e6, bill=(document.getElementById('wc-min').value==='1')?Math.max(a,1):a;
+    w.textContent=`实际面积 ${a.toFixed(2)} ㎡ · 计费面积 ${bill.toFixed(2)} ㎡ · 主体金额 ${rm(Math.round(bill*p))}`;};
+    ['wc-w','wc-h','wc-p','wc-min'].forEach(i=>document.getElementById(i).oninput=f); f();}
+}
+window.__startAcademy=()=>go(state.cur||'start',true);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async () => {
+  const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
+  const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+  // 只给门店员工看：店员及以上。顾客 / 厂家 / 物流 / 仓库账号不可见。
+  const ALLOWED = ['staff','store_manager','regional_manager','general_manager','admin','superadmin'];
+  const msg = document.getElementById('gate-msg');
+  try {
+    const sb = supabase.createClient(SB_URL, SB_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { location.href = '/portal/login.html'; return; }
+    const { data: profile } = await sb.rpc('get_my_profile');
+    if (!profile || !ALLOWED.includes(profile.role)) {
+      msg.innerHTML = '此页面仅限 HOUZY 门店员工查看。<br><a href="/">返回官网</a>';
+      return;
+    }
+    document.getElementById('who').textContent = (profile.name || '') + ' · 导购学堂';
+    document.getElementById('gate').hidden = true;
+    document.getElementById('academy').hidden = false;
+    window.__startAcademy();
+  } catch (e) {
+    msg.innerHTML = '身份验证失败，请检查网络后刷新，或<a href="/portal/login.html">重新登录</a>。';
+  }
+})();
+</script>
+</body>
+</html>
