@@ -341,6 +341,40 @@
 .careers-benefits{border-top:1px solid #bfc7bc;padding:18px 0;font-size:14px;line-height:1.8}.careers-actions{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 18px}.careers-actions a{padding:13px 18px;background:#193d30;color:#fff;text-decoration:none;font-size:14px;font-weight:600}.careers-actions a+a{background:transparent;color:#193d30;border:1px solid #193d30}.careers-actions a:hover{background:#c5a567;color:#193d30}.careers-actions a:focus-visible,.careers-details summary:focus-visible,.careers-poster:focus-visible{outline:3px solid #9b6b1c;outline-offset:4px}.careers-contact{font-size:12px;line-height:1.9;color:#526254}.careers-poster{display:block}.careers-poster img{width:100%;height:auto;display:block}.careers-poster span{display:block;padding:10px;text-align:center;font-size:12px;border:1px solid #c6cbbf}
 @media(max-width:760px){#careers{padding:44px 22px;scroll-margin-top:56px}.careers-layout{grid-template-columns:1fr;gap:30px}.careers-columns{grid-template-columns:1fr;gap:12px}.careers-poster{max-width:380px;justify-self:center}.careers-lead{font-size:16px}}
 </style>
+    <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
+    <script>
+      // 在 Google Ads 建好「WhatsApp Click」转化后，把 AW- 编号和转化标签填在这里；留空就不加载任何跟踪代码
+      window.HOUZY_ADS = { id: '', whatsappLabel: '' };
+      window.HOUZY_WA_NUMBERS = ['60105898786'];
+      (function () {
+        var cfg = window.HOUZY_ADS;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+        if (cfg.id) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(cfg.id);
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', cfg.id);
+        }
+        // wa.me/号码、api.whatsapp.com/send?phone=号码、web.whatsapp.com/send?phone=号码 三种写法都识别
+        function waNumber(href) {
+          var m = /(?:wa\.me\/|(?:api|web)\.whatsapp\.com\/send\/?\?(?:[^#]*&)?phone=)\+?(\d+)/.exec(href || '');
+          return m ? m[1] : '';
+        }
+        // 捕获阶段监听，按钮以后改样式或加别的点击处理也照样统计
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a) return;
+          var number = waNumber(a.href);
+          if (!number || window.HOUZY_WA_NUMBERS.indexOf(number) < 0) return;
+          var c = window.HOUZY_ADS;
+          if (!c.id || !c.whatsappLabel) return;
+          window.gtag('event', 'conversion', { send_to: c.id + '/' + c.whatsappLabel, transport_type: 'beacon' });
+        }, true);
+      })();
+    </script>
 </head>
 <body class="font-sans-cn text-gray-800 bg-houzy-cream">
 
