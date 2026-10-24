@@ -140,12 +140,6 @@
   <div id="order-query-message" class="text-sm text-red-600 mb-3" role="status"></div>
   <div id="orders-list"></div>
   <div id="renovation-results" class="mt-3" aria-live="polite"></div>
-    <div id="renovation-access" hidden class="mt-4 rounded-lg border border-gray-200 p-4">
-      <p class="text-sm font-semibold" style="color:#633899">查看整装合同 / View renovation contract</p>
-      <label for="renovation-code" class="block text-xs text-gray-500 mt-3 mb-2">整装合同需填写门店提供的查阅码；商品订单无需填写。 / Required for renovation contracts only.</label>
-      <input id="renovation-code" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0" onkeydown="if(event.key==='Enter')searchOrders()">
-      <button type="button" onclick="searchOrders()" class="mt-3 px-4 py-2 rounded-lg text-sm font-semibold" style="background:#633899;color:white">查看整装订单 / View renovation orders</button>
-    </div>
 
 </div>
 
@@ -327,7 +321,7 @@ function fmtDateTime(d) {
 }
 
 let customerSearchVersion = 0;
-for (const id of ['phone-in','country-code','renovation-code']) {
+for (const id of ['phone-in','country-code']) {
   document.getElementById(id).addEventListener('input', () => {
     customerSearchVersion++;
     document.getElementById('orders-list').replaceChildren();
@@ -343,12 +337,6 @@ async function searchOrders() {
   if (!raw.trim()) { showErr(ct('err_no_phone')); return; }
   const phone = RenoCore.normalizePhone(raw, document.getElementById('country-code').value);
   if (!phone) { showErr('请检查手机号及国家区号 / Please check phone and country code.'); return; }
-  const code = document.getElementById('renovation-code').value.normalize('NFKC').replace(/[\s-]/g,'').toLowerCase();
-  if (code && !/^[a-f0-9]{20}$/.test(code)) {
-    document.getElementById('renovation-access').hidden = false;
-    show('s-orders');
-    document.getElementById('order-query-message').textContent = '请填写完整合同查阅码 / Enter the complete contract access code.'; return;
-  }
   const version = ++customerSearchVersion;
   btn.textContent = ct('searching'); btn.disabled = true;
   document.getElementById('phone-err').classList.add('hidden');
@@ -358,7 +346,7 @@ async function searchOrders() {
   try {
     const [products, renovation] = await Promise.allSettled([
       sb.rpc('get_orders_by_phone', { p_phone: phone }),
-      lookupRenovationOrders(phone, code)
+      lookupRenovationOrders(phone)
     ]);
     if (version !== customerSearchVersion) return;
     myPhone = phone;
@@ -366,7 +354,7 @@ async function searchOrders() {
     myOrders = productFailed ? [] : (products.value.data || []);
     const renovationData = renovation.status === 'fulfilled' ? renovation.value : { error: '整装订单暂时无法查询，请重试。 / Unable to check renovation orders.' };
     if (myOrders.length) renderOrders();
-    renderRenovationOrders(renovationData, Boolean(code));
+    renderRenovationOrders(renovationData);
     if (productFailed) document.getElementById('order-query-message').textContent = '商品订单暂时无法查询，请重试。 / Unable to check product orders.';
     if (!myOrders.length && !renovationData.orders?.length && !productFailed && !renovationData.error) renderOrders();
     show('s-orders');
@@ -1003,6 +991,6 @@ function showCardOverlay(url, orderNo) {
   applyStaticI18n();
 })();
 </script>
-<script src="renovation/phone-lookup.js?v=phone-orders-20261024"></script>
+<script src="renovation/phone-lookup.js?v=phone-direct-20261024"></script>
 </body>
 </html>

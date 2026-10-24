@@ -165,12 +165,11 @@ $('view-contract').onclick=()=>guarded(async()=>{
 $('accept').onclick=()=>guarded(async()=>{const date=$('accepted-on').value;if(!date)throw new Error('请填写竣工验收日期');if(!work.length||work.some(w=>w.status!=='done'))throw new Error('先完成全部子订单，再确认竣工验收');const file=$('acceptance-file').files[0];if(!file)throw new Error('请上传双方竣工验收凭证');if(!confirm('确认验收凭证和日期无误，并按合同启动质保？')){message('已取消竣工验收，项目状态未改变。');return;}const path=await archive(file,'acceptance');await rpc('accept',{accepted_on:date,acceptance_path:path});await openProject(project.id);await loadList();message('竣工验收已保存，质保已按验收日期起算。');},'customer-action-message');
 $('customer-code').onclick=()=>guarded(async()=>{
  if(!project||project.state==='draft')throw new Error('先确认合同');
- const code=project.customer_token.replaceAll('-','').slice(0,20).toUpperCase().match(/.{4}/g).join('-');
- const text='HOUZY HOME 整装合同查询\n合同编号：'+project.contract_no+'\n登记手机号：+'+project.customer_phone+'\n合同查阅码：'+code+'\n入口：https://houzyhome.com/portal/customer.html\n请选择对应国家区号，输入登记手机号和查阅码。查阅码仅限业主及授权联系人，请勿公开转发。';
- await copyCustomerText(text,'已复制登记手机号、合同查阅码及查询入口，请发给业主。');
+ const text='HOUZY HOME 整装合同查询\n合同编号：'+project.contract_no+'\n登记手机号：+'+project.customer_phone+'\n入口：https://houzyhome.com/portal/customer.html\n请选择对应国家区号，输入登记手机号即可查看整装合同、清单及质保。';
+ await copyCustomerText(text,'已复制登记手机号及查询入口，请发给业主。');
 },'customer-action-message');
 $('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;await copyCustomerText(url.href,'已复制客户链接，仅发给业主或授权联系人。');},'customer-action-message');
-$('rotate-link').onclick=()=>guarded(async()=>{if(!project)throw new Error('请先打开项目');if(!confirm('旧客户链接和合同查阅码将立即失效，需要重新发送新查询资料，继续？')){message('已取消，旧客户链接仍然有效。');return;}const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接和查阅码已失效，请重新复制客户查询资料并发送给业主。');},'customer-action-message');
+$('rotate-link').onclick=()=>guarded(async()=>{if(!project)throw new Error('请先打开项目');if(!confirm('旧客户链接将立即失效；客户仍可用登记手机号查到新链接。继续？')){message('已取消，旧客户链接仍然有效。');return;}const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接已失效；客户可重新用登记手机号查询。');},'customer-action-message');
 $('export').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.download(project,snapshot);message('已导出Excel核对清单，包含当前页面的核对内容；导出不会保存或归档项目。');});
 $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.print(project,snapshot);});
 (async()=>{try{

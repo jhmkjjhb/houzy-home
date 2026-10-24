@@ -17,6 +17,7 @@ INSERT INTO profiles VALUES('${ids.staff}',true,'staff','${ids.store}','JB'),('$
 const migration=fs.readFileSync('supabase/renovation_orders_migration.sql','utf8');await db.exec(migration);await db.exec(migration);
 const phoneMigration=fs.readFileSync('supabase/renovation_phone_lookup_migration.sql','utf8');await db.exec(phoneMigration);await db.exec(phoneMigration);count++;
 const ordersMigration=fs.readFileSync('supabase/renovation_customer_orders_migration.sql','utf8');await db.exec(ordersMigration);await db.exec(ordersMigration);
+const directMigration=fs.readFileSync('supabase/renovation_phone_direct_view_migration.sql','utf8');await db.exec(directMigration);await db.exec(directMigration);
 async function actor(id,role='authenticated'){await db.exec(`RESET ROLE;SET request.jwt.claim.sub='${id}';SET ROLE ${role}`);}
 async function cmd(rev,action,data){return (await db.query('select public.renovation_command($1,$2,$3,$4::jsonb) as value',[ids.project,rev,action,JSON.stringify(data)])).rows[0].value;}
 async function rejects(fn,match){await assert.rejects(fn,match);count++;}
@@ -89,7 +90,10 @@ ok((await summary('60101234567')).length===1,'legacy Malaysian trunk-zero matche
 ok((await lookup('60101234567',privateCode)).length===1,'legacy Malaysian phone can unlock only with valid private code');
 await db.exec("RESET ROLE;UPDATE renovation_projects SET customer_phone='101234567'");await actor('','anon');
 ok((await summary('60101234567')).length===1,'legacy Malaysian mobile without country/trunk code matches');
+const direct=(await summary('60101234567'))[0];
+ok(direct.view_token===rotated&&direct.address==='15 Jalan Rebab'&&direct.net===s.net,'phone alone opens confirmed contract under requested access model');
+ok(!('customer_name' in direct)&&!('customer_phone' in direct)&&!('snapshot' in direct)&&!('contract_path' in direct),'direct lookup excludes internal data and storage paths');
 ok((await summary('65101234567')).length===0,'legacy mobile never matches another country');
-ok((await lookup('60101234567','')).length===0,'phone summaries do not bypass private contract code');
+ok((await lookup('60101234567','')).length===0,'legacy code RPC still rejects empty code independently of direct phone access');
 console.log('PASS',count,'database checks: migration rerun, scoped RLS, immutable contract, money, idempotency, workflow, customer privacy and revocation');
 await db.close();
