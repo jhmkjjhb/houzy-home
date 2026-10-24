@@ -118,18 +118,15 @@
              class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0"
              onkeydown="if(event.key==='Enter')searchOrders()">
     </div>
+    <details class="mb-4 rounded-lg border border-gray-200 p-3">
+      <summary class="text-sm font-semibold cursor-pointer" style="color:#633899">有整装合同？填写查阅码 / Renovation access code</summary>
+      <label for="renovation-code" class="block text-xs text-gray-500 mt-3 mb-2">整装合同需填写门店提供的查阅码；商品订单无需填写。 / Required for renovation contracts only.</label>
+      <input id="renovation-code" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0" onkeydown="if(event.key==='Enter')searchOrders()">
+    </details>
     <button onclick="searchOrders()" id="search-btn"
             class="w-full py-3 bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition text-sm"
-            data-i18n="btn_search">
-      查询订单
-    </button>
-    <div class="mt-5 pt-5 border-t border-gray-100">
-      <label for="renovation-code" class="block text-sm font-semibold mb-2" style="color:#633899">🏠 整装合同与质保 / Renovation</label>
-      <p class="text-xs text-gray-500 mb-2">使用上方登记手机号，并输入HOUZY提供的合同查阅码。查阅码不是短信验证码。</p>
-      <input id="renovation-code" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm mb-3" onkeydown="if(event.key==='Enter')searchRenovationByPhone()">
-      <button id="renovation-search" type="button" onclick="searchRenovationByPhone()" class="w-full py-3 rounded-lg text-sm font-semibold" style="background:#633899;color:#fff">查询我的整装合同 / Find my contract</button>
-      <div id="renovation-results" class="mt-3" aria-live="polite"></div>
-    </div>
+            data-i18n="btn_search">查询订单</button>
+    <p class="text-xs text-gray-500 mt-3 text-center">📦 商品订单 <span style="color:#633899"> · 🏠 整装订单</span></p>
     <p id="phone-err" class="text-red-500 text-xs mt-2 hidden"></p>
   </div>
 
@@ -145,7 +142,9 @@
     <h2 class="text-lg font-bold text-hg" data-i18n="my_orders">我的订单</h2>
     <button onclick="show('s-phone')" class="text-sm text-gray-400 hover:text-hg" data-i18n="research">← 重新查询</button>
   </div>
+  <div id="order-query-message" class="text-sm text-red-600 mb-3" role="status"></div>
   <div id="orders-list"></div>
+  <div id="renovation-results" class="mt-3" aria-live="polite"></div>
 </div>
 
 <!-- Screen: order detail -->
@@ -325,27 +324,52 @@ function fmtDateTime(d) {
   return dt.toLocaleString(_loc(), { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
+let customerSearchVersion = 0;
+for (const id of ['phone-in','country-code','renovation-code']) {
+  document.getElementById(id).addEventListener('input', () => {
+    customerSearchVersion++;
+    document.getElementById('orders-list').replaceChildren();
+    document.getElementById('renovation-results').replaceChildren();
+    document.getElementById('order-query-message').textContent = '';
+    myOrders = [];
+  });
+}
 async function searchOrders() {
+  const btn = document.getElementById('search-btn');
+  if (btn.disabled) return;
   const raw = document.getElementById('phone-in').value;
   if (!raw.trim()) { showErr(ct('err_no_phone')); return; }
-  const countryCode = document.getElementById('country-code').value;
-  const phone = RenoCore.normalizePhone(raw, countryCode);
+  const phone = RenoCore.normalizePhone(raw, document.getElementById('country-code').value);
   if (!phone) { showErr('请检查手机号及国家区号 / Please check phone and country code.'); return; }
-
-  const btn = document.getElementById('search-btn');
-  const err = document.getElementById('phone-err');
-  btn.textContent = ct('searching'); btn.disabled = true; err.classList.add('hidden');
-
-  // Always query one full international number; never retry with a bare local number.
-  const { data, error } = await sb.rpc('get_orders_by_phone', { p_phone: phone });
-  btn.textContent = ct('btn_search'); btn.disabled = false;
-
-  if (error) { showErr(ct('err_query_fail')); return; }
-
-  myPhone = phone;
-  myOrders = data || [];
-  renderOrders();
-  show('s-orders');
+  const code = document.getElementById('renovation-code').value.normalize('NFKC').replace(/[\s-]/g,'').toLowerCase();
+  if (code && !/^[a-f0-9]{20}$/.test(code)) {
+    document.getElementById('renovation-code').closest('details').open = true;
+    showErr('请填写完整合同查阅码，或清空后查询商品订单。 / Complete the access code, or clear it to search product orders.'); return;
+  }
+  const version = ++customerSearchVersion;
+  btn.textContent = ct('searching'); btn.disabled = true;
+  document.getElementById('phone-err').classList.add('hidden');
+  document.getElementById('order-query-message').textContent = '';
+  document.getElementById('orders-list').replaceChildren();
+  document.getElementById('renovation-results').replaceChildren();
+  try {
+    const [products, renovation] = await Promise.allSettled([
+      sb.rpc('get_orders_by_phone', { p_phone: phone }),
+      lookupRenovationOrders(phone, code)
+    ]);
+    if (version !== customerSearchVersion) return;
+    myPhone = phone;
+    const productFailed = products.status === 'rejected' || products.value.error;
+    myOrders = productFailed ? [] : (products.value.data || []);
+    const renovationData = renovation.status === 'fulfilled' ? renovation.value : { error: '整装订单暂时无法查询，请重试。 / Unable to check renovation orders.' };
+    if (myOrders.length) renderOrders();
+    renderRenovationOrders(renovationData, Boolean(code));
+    if (productFailed) document.getElementById('order-query-message').textContent = '商品订单暂时无法查询，请重试。 / Unable to check product orders.';
+    if (!myOrders.length && !renovationData.orders?.length && !productFailed && !renovationData.error) renderOrders();
+    show('s-orders');
+  } finally {
+    btn.textContent = ct('btn_search'); btn.disabled = false;
+  }
 }
 
 function showErr(msg) {
@@ -976,6 +1000,6 @@ function showCardOverlay(url, orderNo) {
   applyStaticI18n();
 })();
 </script>
-<script src="renovation/phone-lookup.js?v=phone-contract-20261024"></script>
+<script src="renovation/phone-lookup.js?v=unified-orders-20261024"></script>
 </body>
 </html>
