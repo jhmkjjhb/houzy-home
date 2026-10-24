@@ -57,6 +57,7 @@ function render(){
  $('accept').disabled=!project||project.state!=='executing'||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('customer-code').disabled=!project||project.state==='draft';
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  $('customer-action-help').textContent=!project||project.state==='draft'?'确认合同后，才能生成客户查询资料和客户链接。':!canManage?'可复制客户查询资料；竣工验收及使旧链接失效需由店长或上级操作。':project.state==='accepted'?'项目已竣工验收，可复制客户查询资料；使旧链接失效后须重新发送新资料。':'可复制客户查询资料。竣工验收需全部子单完成、填写验收日期并上传双方验收凭证。';
+ if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
@@ -73,8 +74,9 @@ async function openProject(id){
  work=results[0].data;render();
  $('work-orders').innerHTML=RenoWorkView.render(work,snapshot,project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
- const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接'};
+ const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
+ await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
 }
 async function archive(file,kind='contract'){
