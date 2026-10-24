@@ -16,6 +16,7 @@ INSERT INTO stores VALUES('${ids.store}','Austin','JB'),('${ids.other}','Other',
 INSERT INTO profiles VALUES('${ids.staff}',true,'staff','${ids.store}','JB'),('${ids.manager}',true,'store_manager','${ids.store}','JB'),('${ids.outsider}',true,'store_manager','${ids.other}','KL');`);
 const migration=fs.readFileSync('supabase/renovation_orders_migration.sql','utf8');await db.exec(migration);await db.exec(migration);
 const phoneMigration=fs.readFileSync('supabase/renovation_phone_lookup_migration.sql','utf8');await db.exec(phoneMigration);await db.exec(phoneMigration);count++;
+const ordersMigration=fs.readFileSync('supabase/renovation_customer_orders_migration.sql','utf8');await db.exec(ordersMigration);await db.exec(ordersMigration);
 async function actor(id,role='authenticated'){await db.exec(`RESET ROLE;SET request.jwt.claim.sub='${id}';SET ROLE ${role}`);}
 async function cmd(rev,action,data){return (await db.query('select public.renovation_command($1,$2,$3,$4::jsonb) as value',[ids.project,rev,action,JSON.stringify(data)])).rows[0].value;}
 async function rejects(fn,match){await assert.rejects(fn,match);count++;}
@@ -77,5 +78,18 @@ const matched=(await lookup('60101234567',privateCode))[0];
 ok(matched.view_token===rotated&&!('customer_phone' in matched)&&!('snapshot' in matched),'lookup returns only matching public summary and viewing capability');
 await db.exec("RESET ROLE;UPDATE renovation_projects SET state='draft'");await actor('','anon');
 ok((await lookup('60101234567',privateCode)).length===0,'draft contracts never returned');
+const summary=async(phone)=>(await db.query('select renovation_customer_orders($1) as value',[phone])).rows[0].value;
+const brief=(await summary('60101234567'))[0];
+ok(brief.state==='draft','draft order is discoverable without exposing a signed contract');
+ok(Object.keys(brief).sort().join(',')==='contract_no,created_at,id,state','phone list excludes address, identity, money, snapshot and capability');
+ok((await summary('65101234567')).length===0,'other country cannot list order');
+ok((await summary('')).length===0&&(await summary('letters')).length===0,'invalid phone cannot list orders');
+await db.exec("RESET ROLE;UPDATE renovation_projects SET customer_phone='0101234567',state='confirmed'");await actor('','anon');
+ok((await summary('60101234567')).length===1,'legacy Malaysian trunk-zero matches full international lookup');
+ok((await lookup('60101234567',privateCode)).length===1,'legacy Malaysian phone can unlock only with valid private code');
+await db.exec("RESET ROLE;UPDATE renovation_projects SET customer_phone='101234567'");await actor('','anon');
+ok((await summary('60101234567')).length===1,'legacy Malaysian mobile without country/trunk code matches');
+ok((await summary('65101234567')).length===0,'legacy mobile never matches another country');
+ok((await lookup('60101234567','')).length===0,'phone summaries do not bypass private contract code');
 console.log('PASS',count,'database checks: migration rerun, scoped RLS, immutable contract, money, idempotency, workflow, customer privacy and revocation');
 await db.close();
