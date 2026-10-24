@@ -6,7 +6,7 @@ try{
  if(!window.supabase)throw new Error('网络组件未加载，请刷新重试');
  const sb=supabase.createClient('https://csabbxiijzghooppayae.supabase.co','sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH',{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
  const {data:p,error}=await sb.rpc('renovation_customer_view',{p_token:token});if(error)throw new Error('暂时无法读取项目，请联系HOUZY核对链接');if(!p)throw new Error('项目尚未确认或链接已失效，请联系HOUZY');
- $('project').innerHTML=`<article class="project"><span class="type renovation">整装项目</span><h2>${esc(p.contract_no)}</h2><p>${esc(p.address)}</p><b>合同金额 RM ${Number(p.net).toLocaleString('en-MY',{minimumFractionDigits:2})}</b><p>${p.accepted_on?'竣工验收日期：'+esc(p.accepted_on):'尚未确认竣工验收；以下为合同约定质保，尚未起算。'}</p></article>`;
+ $('project').innerHTML=`<article class="project"><span class="type renovation">整装项目</span><h2>${esc(p.contract_no)}</h2><p>${esc(p.address)}</p><b>${Number(p.additions_total)>0?'项目应收总额':'合同金额'} RM ${Number(p.net).toLocaleString('en-MY',{minimumFractionDigits:2})}</b>${Number(p.additions_total)>0?`<p>原合同 RM ${Number(p.original_net).toLocaleString('en-MY',{minimumFractionDigits:2})} ＋ 新增工项／材料 RM ${Number(p.additions_total).toLocaleString('en-MY',{minimumFractionDigits:2})}</p>`:''}<p>${p.accepted_on?'竣工验收日期：'+esc(p.accepted_on):'尚未确认竣工验收；以下为合同约定质保，尚未起算。'}</p></article>`;
  const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
  $('lines').innerHTML=`<details id="customer-checklist"><summary style="font-size:19px;font-weight:700">我的工程与产品清单 <span class="muted">（共${p.lines.length}项，点击展开／收起）</span></summary>`+p.lines.map(l=>`<article class="customer-line"><h3>${esc(l.id)} · ${esc(l.name)} ${l.gift?'<span class="type renovation">赠送</span>':''}</h3><p>${esc(l.spec||'')} · ${esc(l.qty)} ${esc(l.unit)}</p>${(l.warranties||[]).map(w=>{
   const end=RenoCore.expires(p.accepted_on,w.years);
@@ -32,7 +32,7 @@ try{
   try{
    const {data,error}=await sb.rpc('renovation_customer_payment_view',{p_token:token});
    if(error||!data)throw new Error('付款记录暂时无法同步，请刷新重试或联系门店。');
-   if(p.state&&data.state!==p.state){location.reload();return;}
+   if((p.state&&data.state!==p.state)||Number(p.scope_revision||0)!==Number(data.scope_revision||0)){location.reload();return;}
    const openSections=[...$('customer-payments').querySelectorAll('details')].map(e=>e.open);
    $('customer-payments').innerHTML=RenoFinanceView.customer(data);
    $('customer-payments').querySelectorAll('details').forEach((e,i)=>e.open=Boolean(openSections[i]));

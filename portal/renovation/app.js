@@ -4,7 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const states={draft:'合同草稿',confirmed:'合同已确认',executing:'履约中',accepted:'已竣工验收'};
 const kinds={custom:'定制供货',stock:'现货材料',work:'施工服务',gift:'赠送项目'};
-let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[];
+let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[],additionData=null,draftPaymentWeights=[];
 function blank(){return {lines:[],payments:[],net:0,discount:0,signed_on:'',warnings:[],source_text:'',contract_path:''};}
 let feedbackTarget=null;
 function message(text,error=false){
@@ -23,7 +23,18 @@ async function copyCustomerText(text,success){
 async function rpc(action,data){const {data:row,error}=await sb.rpc('renovation_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;project=row;return row;}
 function input(value,attrs=''){return `<input value="${esc(value)}" ${attrs}>`;}
 function options(map,val){return Object.entries(map).map(([v,n])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(n)}</option>`).join('');}
-function updateTotals(){const result=C.validate(snapshot);$('gross').textContent=fmt(result.total);return result;}
+function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
+function updateTotals(recalculate=false){const result=C.validate(snapshot);
+ if(recalculate&&project?.state==='draft'&&Number.isFinite(result.total)&&result.total>=Number(snapshot.discount)){
+  const next=Math.round((result.total-Number(snapshot.discount))*100);
+  if(next!==Math.round(Number(snapshot.net)*100)){
+   snapshot.net=next/100;$('net').value=snapshot.net;
+   if(draftPaymentWeights.length!==snapshot.payments.length)draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);
+   const weight=draftPaymentWeights.reduce((a,b)=>a+b,0);
+   if(weight>0){const allocations=draftPaymentWeights.map(w=>Math.floor(next*w/weight));const order=draftPaymentWeights.map((w,i)=>({i,fraction:next*w/weight-allocations[i]})).sort((a,b)=>b.fraction-a.fraction);let remaining=next-allocations.reduce((a,b)=>a+b,0);for(let i=0;i<remaining;i++)allocations[order[i].i]++;snapshot.payments.forEach((p,i)=>p.amount=allocations[i]/100);renderPayments();}
+  }
+ }
+$('gross').textContent=fmt(result.total);return result;}
 function renderLines(){
  const locked=project&&project.state!=='draft';
  $('lines').innerHTML=snapshot.lines.map((l,i)=>`<details class="line" data-line="${i}"><summary><b>#${esc(l.id)} · ${esc(l.name)}</b><span class="muted"> · RM ${fmt(l.qty*l.rate)}</span></summary><div class="line-head"><h3>原文与执行安排</h3><button class="secondary" data-delete="${i}" ${locked?'disabled':''}>移除</button></div><div class="grid">
@@ -38,7 +49,7 @@ function renderPayments(){
  if(project&&project.state!=='draft')$('payments').querySelectorAll('input,button').forEach(e=>e.disabled=true);
 }
 function renderWarranty(){
- $('warranty-preview').innerHTML=snapshot.lines.map(l=>`<div class="customer-line"><b>${esc(l.id)} · ${esc(l.name)}</b>${(l.warranties||[]).map(w=>`<div class="term"><span>${esc(w.component)}</span><span>${w.years?esc(w.years)+'年':'期限待确认'} · ${project?.accepted_on?'到期 '+esc(C.expires(project.accepted_on,w.years)||'待补充'):'竣工验收后起算'}</span></div><div class="muted">${esc(w.source)}</div>`).join('')}</div>`).join('');
+ $('warranty-preview').innerHTML=effectiveSnapshot().lines.map(l=>`<div class="customer-line"><b>${esc(l.id)} · ${esc(l.name)}</b>${(l.warranties||[]).map(w=>`<div class="term"><span>${esc(w.component)}</span><span>${w.years?esc(w.years)+'年':'期限待确认'} · ${project?.accepted_on?'到期 '+esc(C.expires(project.accepted_on,w.years)||'待补充'):'竣工验收后起算'}</span></div><div class="muted">${esc(w.source)}</div>`).join('')}</div>`).join('');
 }
 function render(){
  $('editor').hidden=false;$('list').hidden=true;$('back-list').hidden=false;$('new-project').hidden=true;const locked=project&&project.state!=='draft';
@@ -49,7 +60,7 @@ function render(){
  $('discount').value=snapshot.discount;$('net').value=snapshot.net;$('signed-on').value=snapshot.signed_on||'';
  $('raw').textContent=snapshot.source_text||'暂无提取原文';
  $('warnings').innerHTML=(snapshot.warnings||[]).length?'<div class="warning"><b>导入核对提醒</b><ul>'+snapshot.warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>':'';
- for(const id of ['discount','net','signed-on','add-line','add-payment','save'])$(id).disabled=!project||locked;
+ for(const id of ['discount','net','signed-on','add-line','add-material','add-payment','save'])$(id).disabled=!project||locked;
  $('contract-file').disabled=!!locked;
  $('view-contract').textContent=upload?'预览所选合同PDF':'查看归档合同';
  $('view-contract').disabled=!upload&&!snapshot.contract_path;
@@ -58,25 +69,26 @@ function render(){
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  $('customer-action-help').textContent=!project||project.state==='draft'?'确认合同后，才能生成客户查询资料和客户链接。':!canManage?'可复制客户查询资料；竣工验收及使旧链接失效需由店长或上级操作。':project.state==='accepted'?'项目已竣工验收，可复制客户查询资料；使旧链接失效后须重新发送新资料。':'可复制客户查询资料。竣工验收需全部子单完成、填写验收日期并上传双方验收凭证。';
  if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
+ RenoAdditions.render({data:additionData,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy});
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
- const {data,error}=await sb.from('renovation_projects').select('id,contract_no,customer_name,address,state,revision,snapshot,created_at').order('created_at',{ascending:false}).limit(200);
+ const {data,error}=await sb.from('renovation_projects').select('id,contract_no,customer_name,address,state,revision,snapshot,additions_total,current_total,created_at').order('created_at',{ascending:false}).limit(200);
  if(error)throw new Error('整装档案暂不可用，请联系管理员完成整装功能部署。原商品订单仍可使用。');
- $('list').innerHTML=(data||[]).map(p=>`<article class="project"><span class="type renovation">🏠 整装主单</span><h2>${esc(p.contract_no)} · ${esc(p.customer_name)}</h2><p>${esc(p.address)}</p><div class="actions"><b>RM ${fmt(p.snapshot?.net)}</b><span>${states[p.state]}</span><button class="secondary" data-open="${p.id}">查看主单与子单 →</button></div></article>`).join('')||'<p>暂无整装项目，从新建订单开始。</p>';
+ $('list').innerHTML=(data||[]).map(p=>`<article class="project"><span class="type renovation">🏠 整装主单</span><h2>${esc(p.contract_no)} · ${esc(p.customer_name)}</h2><p>${esc(p.address)}</p><div class="actions"><b>RM ${fmt(p.current_total??p.snapshot?.net)}</b><span>${states[p.state]}</span><button class="secondary" data-open="${p.id}">查看主单与子单 →</button></div></article>`).join('')||'<p>暂无整装项目，从新建订单开始。</p>';
 }
 async function openProject(id){
- if(dirty&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
+ if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
  const {data,error}=await sb.from('renovation_projects').select('*').eq('id',id).single();if(error)throw error;
- project=data;snapshot=Object.assign(blank(),data.snapshot);dirty=false;upload=null;$('signed').checked=false;$('reviewed').checked=false;
- const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30)]);
+ project=data;snapshot=Object.assign(blank(),data.snapshot);draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=false;upload=null;$('signed').checked=false;$('reviewed').checked=false;
+ const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id})]);
  for(const r of results)if(r.error)throw r.error;
- work=results[0].data;render();
- $('work-orders').innerHTML=RenoWorkView.render(work,snapshot,project.state==='accepted');
+ work=results[0].data;additionData=results[2].data;render();
+ $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
- const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数'};
+ const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'作废增项'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
- await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy});
+ await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
 }
 async function archive(file,kind='contract'){
@@ -98,16 +110,16 @@ async function parsePDF(file){
  return C.extract(pages,{trustedTemplate:hash==='29268b3341f26213a1ad5bd7f7e4f3f083ee97b2c96f7eedf67ec3394ee87dca'});
  }finally{await doc.destroy();}
 }
-function reset(){project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
-window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+function reset(){RenoAdditions.clear();additionData=null;draftPaymentWeights=[];project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
+window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()){e.preventDefault();e.returnValue='';}});
 $('back-list').onclick=()=>guarded(async()=>{
- if(dirty&&!confirm('当前核对内容尚未保存，确定返回主订单列表？'))return;
+ if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定返回主订单列表？'))return;
  await loadList();dirty=false;$('editor').hidden=true;$('list').hidden=false;
  $('back-list').hidden=true;$('new-project').hidden=false;$('title').textContent='整装主订单';
  history.replaceState(null,'',location.pathname);message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');window.scrollTo(0,0);
 });
 $('list').onclick=e=>{const b=e.target.closest('[data-open]');if(b)guarded(()=>openProject(b.dataset.open));};
-$('new-project').onclick=()=>{if(dirty&&!confirm('当前核对内容尚未保存，确定离开？'))return;reset();};
+$('new-project').onclick=()=>{if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定离开？'))return;reset();};
 $('create').onclick=()=>guarded(async()=>{
  if(project)return;const p={store_id:$('store').value,contract_no:$('contract-no').value.trim(),customer_name:$('customer-name').value.trim(),customer_phone:$('customer-phone').value.trim(),address:$('address').value.trim()};
  if(Object.values(p).some(x=>!x))throw new Error('请补齐门店、合同编号、姓名、电话和施工地址');
@@ -125,15 +137,16 @@ $('contract-file').onchange=()=>guarded(async()=>{
  if(project&&parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
  if(snapshot.lines.length&&!confirm('导入将替换尚未锁定的清单，是否继续？'))return;
  if(!project){if(parsed.contract_no)$('contract-no').value=parsed.contract_no;if(parsed.address&&!$('address').value.trim())$('address').value=parsed.address;}
- upload=file;snapshot={...parsed,contract_path:''};dirty=true;render();message(`已提取${snapshot.lines.length}项。请核对原文、付款计划及质保，尚未归档或派工。`);
+ upload=file;snapshot={...parsed,contract_path:''};draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=true;render();message(`已提取${snapshot.lines.length}项。请核对原文、付款计划及质保，尚未归档或派工。`);
 });
-$('lines').oninput=e=>{const a=e.target.closest('[data-line]');if(!a||project?.state!=='draft')return;const l=snapshot.lines[+a.dataset.line],w=e.target.closest('[data-warranty]');if(w&&e.target.dataset.wkey){const k=e.target.dataset.wkey;l.warranties[+w.dataset.warranty][k]=k==='years'?(e.target.value===''?null:Number(e.target.value)):e.target.value;}else if(e.target.dataset.key){const k=e.target.dataset.key;l[k]=['qty','rate','page'].includes(k)?Number(e.target.value):e.target.value;a.querySelector('[data-amount]').textContent=fmt(l.qty*l.rate);}dirty=true;updateTotals();};
-$('lines').onclick=e=>{if(project?.state!=='draft')return;const b=e.target.closest('button');if(!b)return;const line=b.closest('[data-line]'),i=Number(line?.dataset.line);if(b.dataset.delete!==undefined)snapshot.lines.splice(i,1);else if(b.dataset.addWarranty!==undefined)snapshot.lines[i].warranties.push({component:'',years:null,source:''});else if(b.dataset.deleteWarranty!==undefined)snapshot.lines[i].warranties.splice(+b.dataset.deleteWarranty,1);else return;dirty=true;renderLines();updateTotals();};
-$('add-line').onclick=()=>{snapshot.lines.push({id:'M-'+crypto.randomUUID().slice(0,8),name:'',spec:'',qty:1,unit:'lot',rate:0,kind:'work',group:'待分组',warranties:[{component:'质保待核对',years:null,source:'待补充合同条款'}]});dirty=true;renderLines();};
-for(const [id,key] of [['discount','discount'],['net','net'],['signed-on','signed_on']])$(id).oninput=()=>{snapshot[key]=id==='signed-on'?$(id).value:Number($(id).value);dirty=true;updateTotals();};
-$('payments').oninput=e=>{const r=e.target.closest('[data-payment]');if(!r)return;const k=e.target.dataset.pkey;if(k){snapshot.payments[+r.dataset.payment][k]=k==='amount'?Number(e.target.value):e.target.value;dirty=true;}};
-$('payments').onclick=e=>{const i=e.target.dataset.deletePayment;if(i!==undefined){snapshot.payments.splice(+i,1);dirty=true;renderPayments();}};
-$('add-payment').onclick=()=>{snapshot.payments.push({name:'',amount:0});dirty=true;renderPayments();};
+$('lines').oninput=e=>{const a=e.target.closest('[data-line]');if(!a||project?.state!=='draft')return;const l=snapshot.lines[+a.dataset.line],w=e.target.closest('[data-warranty]');if(w&&e.target.dataset.wkey){const k=e.target.dataset.wkey;l.warranties[+w.dataset.warranty][k]=k==='years'?(e.target.value===''?null:Number(e.target.value)):e.target.value;}else if(e.target.dataset.key){const k=e.target.dataset.key;l[k]=['qty','rate','page'].includes(k)?Number(e.target.value):e.target.value;a.querySelector('[data-amount]').textContent=fmt(l.qty*l.rate);}dirty=true;updateTotals(true);};
+$('lines').onclick=e=>{if(project?.state!=='draft')return;const b=e.target.closest('button');if(!b)return;const line=b.closest('[data-line]'),i=Number(line?.dataset.line);if(b.dataset.delete!==undefined)snapshot.lines.splice(i,1);else if(b.dataset.addWarranty!==undefined)snapshot.lines[i].warranties.push({component:'',years:null,source:''});else if(b.dataset.deleteWarranty!==undefined)snapshot.lines[i].warranties.splice(+b.dataset.deleteWarranty,1);else return;dirty=true;renderLines();updateTotals(true);};
+function addDraftLine(kind='work'){snapshot.lines.push({id:'M-'+crypto.randomUUID().slice(0,8),name:'',spec:'',qty:1,unit:'lot',rate:0,kind,group:kind==='stock'?'新增材料':'新增工项',warranties:[{component:'质保待核对',years:null,source:'待补充合同条款'}]});dirty=true;renderLines();updateTotals(true);}
+$('add-line').onclick=()=>addDraftLine('work');$('add-material').onclick=()=>addDraftLine('stock');
+for(const [id,key] of [['discount','discount'],['net','net'],['signed-on','signed_on']])$(id).oninput=()=>{snapshot[key]=id==='signed-on'?$(id).value:Number($(id).value);dirty=true;updateTotals(id==='discount');};
+$('payments').oninput=e=>{const r=e.target.closest('[data-payment]');if(!r)return;const k=e.target.dataset.pkey;if(k){snapshot.payments[+r.dataset.payment][k]=k==='amount'?Number(e.target.value):e.target.value;dirty=true;draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);}};
+$('payments').onclick=e=>{const i=e.target.dataset.deletePayment;if(i!==undefined){snapshot.payments.splice(+i,1);dirty=true;draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);renderPayments();}};
+$('add-payment').onclick=()=>{snapshot.payments.push({name:'',amount:0});dirty=true;draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);renderPayments();};
 $('save').onclick=()=>guarded(async()=>{
  if(!project)throw new Error('请先保存项目草稿');const result=updateTotals();if(result.errors.length)throw new Error(result.errors.join('；'));
  if(upload){snapshot.contract_path=await archive(upload);upload=null;}
@@ -172,8 +185,8 @@ $('customer-code').onclick=()=>guarded(async()=>{
 },'customer-action-message');
 $('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;await copyCustomerText(url.href,'已复制客户链接，仅发给业主或授权联系人。');},'customer-action-message');
 $('rotate-link').onclick=()=>guarded(async()=>{if(!project)throw new Error('请先打开项目');if(!confirm('旧客户链接将立即失效；客户仍可用登记手机号查到新链接。继续？')){message('已取消，旧客户链接仍然有效。');return;}const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接已失效；客户可重新用登记手机号查询。');},'customer-action-message');
-$('export').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.download(project,snapshot);message('已导出Excel核对清单，包含当前页面的核对内容；导出不会保存或归档项目。');});
-$('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.print(project,snapshot);});
+$('export').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.download(project,effectiveSnapshot());message('已导出Excel核对清单，包含当前页面的核对内容；导出不会保存或归档项目。');});
+$('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.print(project,effectiveSnapshot());});
 (async()=>{try{
  if(!window.supabase)throw new Error('登录组件加载失败，请刷新或检查网络');
  sb=supabase.createClient('https://csabbxiijzghooppayae.supabase.co','sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH');
