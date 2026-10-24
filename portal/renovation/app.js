@@ -39,6 +39,8 @@ function render(){
  $('warnings').innerHTML=(snapshot.warnings||[]).length?'<div class="warning"><b>导入核对提醒</b><ul>'+snapshot.warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>':'';
  for(const id of ['discount','net','signed-on','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
  $('contract-file').disabled=!!locked;
+ $('view-contract').textContent=upload?'预览所选合同PDF':'查看归档合同';
+ $('view-contract').disabled=!upload&&!snapshot.contract_path;
  $('confirm').disabled=!project||locked;$('split').disabled=!project||!['confirmed','executing'].includes(project.state);
  $('accept').disabled=!project||project.state!=='executing';$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project;$('customer-code').disabled=!project||project.state==='draft';
  renderLines();renderPayments();updateTotals();renderWarranty();
@@ -128,7 +130,20 @@ $('confirm').onclick=()=>guarded(async()=>{
 });
 $('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject(project.id);await loadList();message('子订单已按执行分组生成，未增加客户应收。');});
 $('work-orders').onclick=e=>guarded(async()=>{const b=e.target.closest('[data-work]');if(!b)return;const i=+b.dataset.work;await rpc('work',{id:work[i].id,assignee:$('assignee-'+i).value,status:$('work-status-'+i).value});await openProject(project.id);});
-$('view-contract').onclick=()=>guarded(async()=>{if(!snapshot.contract_path)throw new Error('合同还未归档');const {data,error}=await sb.storage.from('renovation-contracts').createSignedUrl(snapshot.contract_path,120);if(error)throw error;const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.click();});
+$('view-contract').onclick=()=>guarded(async()=>{
+ if(!upload&&!snapshot.contract_path)throw new Error('请先选择合同PDF，或打开已有归档合同的项目');
+ // Open during the click gesture, before requesting a private storage URL.
+ const tab=window.open('about:blank','_blank');
+ if(!tab)throw new Error('浏览器拦截了合同窗口，请允许此网站弹出窗口后重试');
+ tab.opener=null;
+ try{
+  if(upload){const url=URL.createObjectURL(upload);tab.location.replace(url);setTimeout(()=>URL.revokeObjectURL(url),300000);message('正在预览所选合同PDF；请点击“保存核对版本”完成归档。');return;}
+  const {data,error}=await sb.storage.from('renovation-contracts').createSignedUrl(snapshot.contract_path,120);
+  if(error)throw error;
+  if(!data?.signedUrl)throw new Error('未能获取合同链接，请重试');
+  tab.location.replace(data.signedUrl);message('已打开归档合同PDF。');
+ }catch(e){tab.close();throw e;}
+});
 $('accept').onclick=()=>guarded(async()=>{const date=$('accepted-on').value;if(!date)throw new Error('请填写竣工验收日期');if(!work.length||work.some(w=>w.status!=='done'))throw new Error('先完成全部子订单，再确认竣工验收');const file=$('acceptance-file').files[0];if(!file)throw new Error('请上传双方竣工验收凭证');if(!confirm('确认验收凭证和日期无误，并按合同启动质保？'))return;const path=await archive(file,'acceptance');await rpc('accept',{accepted_on:date,acceptance_path:path});await openProject(project.id);await loadList();});
 $('customer-code').onclick=()=>guarded(async()=>{
  if(!project||project.state==='draft')throw new Error('先确认合同');
