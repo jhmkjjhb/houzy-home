@@ -37,7 +37,7 @@ function render(){
  $('discount').value=snapshot.discount;$('net').value=snapshot.net;$('signed-on').value=snapshot.signed_on||'';
  $('raw').textContent=snapshot.source_text||'暂无提取原文';
  $('warnings').innerHTML=(snapshot.warnings||[]).length?'<div class="warning"><b>导入核对提醒</b><ul>'+snapshot.warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>':'';
- for(const id of ['discount','net','signed-on','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
+ for(const id of ['discount','net','signed-on','add-line','add-payment','save'])$(id).disabled=!project||locked;
  $('contract-file').disabled=!!locked;
  $('view-contract').textContent=upload?'预览所选合同PDF':'查看归档合同';
  $('view-contract').disabled=!upload&&!snapshot.contract_path;
@@ -153,9 +153,8 @@ $('customer-code').onclick=()=>guarded(async()=>{
 });
 $('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;await navigator.clipboard.writeText(url.href);message('已复制客户链接，仅发给业主或授权联系人。');});
 $('rotate-link').onclick=()=>guarded(async()=>{if(!confirm('旧客户链接和合同查阅码将立即失效，需要重新发送新查询资料，继续？'))return;const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接和查阅码已失效，可以重新复制客户查询资料。');});
-$('export').onclick=()=>{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));a.href=url;a.download=(project?.contract_no||'整装清单')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-$('import-json').onclick=()=>$('json-file').click();
-$('json-file').onchange=()=>guarded(async()=>{const f=$('json-file').files[0];if(!f)return;if(f.size>2*1024*1024)throw new Error('JSON不得超过2MB');const s=JSON.parse(await f.text());if(!Array.isArray(s.lines)||s.lines.length>500||!Array.isArray(s.payments))throw new Error('清单格式无效');if(s.lines.some(l=>!l||typeof l!=='object'||!Array.isArray(l.warranties)||l.warranties.some(w=>!w||typeof w!=='object')))throw new Error('清单或质保记录格式无效');if(s.lines.some(l=>['id','name','group','unit','kind'].some(k=>typeof l[k]!=='string')||l.warranties.some(w=>typeof w.component!=='string'||typeof w.source!=='string'))||s.payments.some(p=>typeof p.name!=='string')||(s.warnings!==undefined&&!Array.isArray(s.warnings)))throw new Error('JSON字段类型不正确，请按导出格式填写');if(!confirm('用此JSON替换当前未锁定清单？对应PDF仍需上传。'))return;const path=snapshot.contract_path;snapshot={...blank(),...s,contract_path:path};dirty=true;render();});
+$('export').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.download(project,snapshot);message('已导出Excel核对清单，包含当前页面的核对内容；导出不会保存或归档项目。');});
+$('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.print(project,snapshot);});
 (async()=>{try{
  if(!window.supabase)throw new Error('登录组件加载失败，请刷新或检查网络');
  sb=supabase.createClient('https://csabbxiijzghooppayae.supabase.co','sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH');
