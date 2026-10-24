@@ -261,7 +261,7 @@
             <option value="completed" data-i18n-opt="status_completed">已完成</option>
             <option value="after_sales" data-i18n-opt="status_after_sales">质保服务</option>
             <option value="closed" data-i18n-opt="status_closed">已关闭</option>
-            <option value="cancelled" data-i18n-opt="status_cancelled">已取消</option>
+            <option value="cancelled" data-i18n-opt="status_cancelled">已取消</option><option value="reno:draft">整装 · 合同草稿</option><option value="reno:confirmed">整装 · 合同已确认</option><option value="reno:executing">整装 · 履约中</option><option value="reno:accepted">整装 · 已竣工验收</option>
           </select>
         </div>
         <!-- Row 2: store + date + month -->
@@ -277,10 +277,8 @@
       <!-- Monthly Stats Panel -->
       <div id="monthly-stats" class="hidden card p-4 mb-4"></div>
       <div class="card overflow-hidden overflow-x-auto">
-        <div class="mx-4 my-3 p-4 rounded-lg" style="background:#f2ebfa;border-left:4px solid #633899;color:#633899">
-          <a href="renovation.html" class="font-semibold">🏠 整装订单 · 合同／清单／子单／质保 →</a>
-          <p class="text-xs mt-1">普通商品订单如下；整装项目使用独立履约流程。</p>
-        </div>
+        <div class="mx-4 my-3 flex flex-wrap gap-3 text-xs"><span style="color:#245ea6">📦 普通销售订单</span><span style="color:#633899">🏠 整装订单</span></div>
+        <p id="renovation-list-error" class="px-4 text-sm text-red-600" role="status" hidden></p>
         <div id="orders-table"></div>
       </div>
     </div>
@@ -295,8 +293,8 @@
       <div class="card p-4 mb-4" style="border-left:4px solid #245ea6">
         <h2 class="font-semibold mb-3">订单类型 / Order type</h2>
         <div class="flex flex-wrap gap-3">
-          <span class="text-sm rounded px-3 py-2" style="background:#eaf2fd;color:#245ea6">📦 普通商品订单 / Product</span>
-          <a href="renovation.html" class="text-sm rounded px-3 py-2" style="background:#f2ebfa;color:#633899;border:1px solid #d8c5ed">🏠 新建整装订单 / Renovation →</a>
+          <span class="text-sm rounded px-3 py-2" style="background:#eaf2fd;color:#245ea6">📦 普通销售订单 / Sales</span>
+          <a href="renovation.html?new=1" class="text-sm rounded px-3 py-2" style="background:#f2ebfa;color:#633899;border:1px solid #d8c5ed">🏠 新建整装订单 / Renovation →</a>
         </div><p class="text-xs text-gray-500 mt-3">整装项目在专用档案中保存合同、工程清单及履约子单。</p>
       </div>
 
@@ -888,6 +886,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="renovation/order-list.js?v=unified-orders-20261024"></script>
 <script>
 // ── i18n ──
 const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -2380,6 +2379,8 @@ async function init() {
     if (canDo(FIELD_MIN_LEVEL.nav_reports)) el.classList.remove('hidden');
   });
   setLang(currentLang);
+  const requestedView = new URLSearchParams(window.location.search).get('view');
+  if (['orders','create'].includes(requestedView)) goto(requestedView);
   const hitpayReturn = new URLSearchParams(window.location.search);
   const hitpayOrder = hitpayReturn.get('order');
   if (hitpayReturn.get('hitpay') === 'success' && hitpayOrder) {
@@ -2519,6 +2520,7 @@ async function loadOrders() {
     !o.parent_order_id && !(o.description && o.description.startsWith('补件单'))
   );
   _ordersLoaded = true;
+  await RenoOrderList.load(sb);
 }
 
 async function loadCustomers() {
@@ -2617,7 +2619,7 @@ function renderDashboard() {
         const cd2 = deadlineRowInfo(o);
         const bg2 = cd2?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd2?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
         return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer" style="${bg2}" onclick="openDetail('${o.id}')">
-          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1"><span style="background:#eaf2fd;color:#245ea6;padding:2px 6px;border-radius:4px;font-family:inherit">📦 商品订单 / Product</span></div></td>
+          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1"><span style="background:#eaf2fd;color:#245ea6;padding:2px 6px;border-radius:4px;font-family:inherit">📦 普通销售订单 / Sales</span></div></td>
           <td class="py-2">${o.customers?.name || '-'}</td>
           <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
           <td class="py-2">${badge(o.status)}</td>
@@ -2903,7 +2905,7 @@ function renderMonthlyStats(orders, period, specificDate) {
   ).join('');
 
   const dayPfx = t('stat_day_pfx'); const monPfx = t('stat_month_pfx');
-  const title = specificDate ? `📅 ${specificDate} (${dayPfx})` : `${period} (${monPfx})`;
+  const title = (specificDate ? `📅 ${specificDate} (${dayPfx})` : `${period} (${monPfx})`)+' · 普通销售订单统计';
 
   panel.classList.remove('hidden');
   panel.innerHTML = `
@@ -2931,6 +2933,10 @@ function renderMonthlyStats(orders, period, specificDate) {
 }
 
 function renderOrdersTable(orders) {
+  const errorEl=document.getElementById('renovation-list-error');
+  errorEl.textContent=RenoOrderList.error;errorEl.hidden=!RenoOrderList.error;
+  const renovation=RenoOrderList.filtered({query:document.getElementById('f-search').value.toLowerCase(),status:document.getElementById('f-status').value,store:document.getElementById('f-store')?.value||'',date:document.getElementById('f-date').value,month:document.getElementById('f-month').value,dateOf:klDateStr});
+  orders=[...orders,...renovation].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   const _now = Date.now();
   const overdueCount = orders.filter(o => !['completed','closed'].includes(o.status) && o.deadline_at && new Date(o.deadline_at) < _now && !ackedAfterOverdue(o)).length;
   const paidStuckCount = orders.filter(o => o.status === 'paid' && o.deadline_at && new Date(o.deadline_at) < _now && !ackedAfterOverdue(o)).length;
@@ -2955,6 +2961,7 @@ function renderOrdersTable(orders) {
   }
 
   const rowsData = orders.map(o => {
+    if(o.__renovation)return {o,cd:null,cdHtml:"",alarmBadge:"",alarming:false};
     const cd = deadlineRowInfo(o);
     const acked = ackedAfterOverdue(o);
     const alarming = !!cd?.overdue && !acked;          // 真正要报警：超时且没人跟进过
@@ -2973,9 +2980,10 @@ function renderOrdersTable(orders) {
       <th class="px-4 py-3">${t('th_store')}</th><th class="px-4 py-3">${t('th_amount')}</th>
       <th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
     </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
-      const rowBg = alarming ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
+      if(o.__renovation)return RenoOrderList.content(o,false,fmtAmt,fmtDate,stores);
+      const rowBg = alarming ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : 'border-left:3px solid #245ea6;';
       return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
-        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1 text-xs" style="color:#245ea6">📦 商品订单 / Product</div></td>
+        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1 text-xs" style="color:#245ea6">📦 普通销售订单 / Sales</div></td>
         <td class="px-4 py-3"><div class="font-medium">${o.customers?.name||'-'}</div><div class="text-gray-400 text-xs">${o.customers?.phone||''}</div></td>
         <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name||'-'}</td>
         <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount,o.currency)}</td>
@@ -2991,10 +2999,11 @@ function renderOrdersTable(orders) {
 
   // Mobile: card list (hidden on md+)
   const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
-    const borderColor = alarming ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
+    if(o.__renovation)return RenoOrderList.content(o,true,fmtAmt,fmtDate,stores);
+    const borderColor = alarming ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : 'border-l-4 border-blue-500';
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
       <div class="flex items-start justify-between gap-2 mb-1.5">
-        <span class="font-mono text-sm font-bold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<span class="block text-xs mt-1" style="color:#245ea6">📦 商品订单 / Product</span></span>
+        <span class="font-mono text-sm font-bold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<span class="block text-xs mt-1" style="color:#245ea6">📦 普通销售订单 / Sales</span></span>
         <div class="flex items-center gap-1 flex-wrap justify-end">
           ${badge(o.status)}
           ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
@@ -4301,7 +4310,7 @@ async function openDetail(id, backView) {
     <div class="card p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div><span style="display:inline-block;background:#eaf2fd;color:#245ea6;padding:3px 9px;border-radius:5px;font-size:12px;margin-top:6px">📦 商品订单 / Product</span>
+          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div><span style="display:inline-block;background:#eaf2fd;color:#245ea6;padding:3px 9px;border-radius:5px;font-size:12px;margin-top:6px">📦 普通销售订单 / Sales</span>
           <div class="text-gray-400 text-sm">${o.stores?.name}</div>
         </div>
         ${badge(o.status)}
