@@ -36,13 +36,13 @@ try{
    const openSections=[...$('customer-payments').querySelectorAll('details')].map(e=>e.open);
    $('customer-payments').innerHTML=RenoFinanceView.customer(data);
    $('customer-payments').querySelectorAll('details').forEach((e,i)=>e.open=Boolean(openSections[i]));
-   $('payment-sync').textContent='已与门店同步 · '+new Date().toLocaleTimeString('zh-CN')+' · 每30秒自动更新';
+   $('payment-sync').textContent='已与门店同步 · '+new Date().toLocaleTimeString('zh-CN')+' · 每30分钟自动更新';
   }catch(e){$('payment-sync').textContent=e.message;$('customer-payments').replaceChildren();}
   finally{paymentBusy=false;$('refresh-payments').disabled=false;}
  }
  $('refresh-payments').onclick=refreshPayments;
  await refreshPayments();
- const refreshTimer=setInterval(()=>{if(!document.hidden)refreshPayments();},30000);
+ const refreshTimer=setInterval(()=>{if(!document.hidden)refreshPayments();},30*60*1000);
  window.addEventListener('pagehide',()=>clearInterval(refreshTimer),{once:true});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPayments();});
 
