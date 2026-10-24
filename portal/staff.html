@@ -277,6 +277,10 @@
       <!-- Monthly Stats Panel -->
       <div id="monthly-stats" class="hidden card p-4 mb-4"></div>
       <div class="card overflow-hidden overflow-x-auto">
+        <div class="mx-4 my-3 p-4 rounded-lg" style="background:#f2ebfa;border-left:4px solid #633899;color:#633899">
+          <a href="renovation.html" class="font-semibold">🏠 整装订单 · 合同／清单／子单／质保 →</a>
+          <p class="text-xs mt-1">普通商品订单如下；整装项目使用独立履约流程。</p>
+        </div>
         <div id="orders-table"></div>
       </div>
     </div>
@@ -286,6 +290,14 @@
       <div class="flex items-center gap-3 mb-6">
         <button onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
         <h1 class="text-xl font-bold text-gray-800" data-i18n="create_title">新建订单</h1>
+      </div>
+
+      <div class="card p-4 mb-4" style="border-left:4px solid #245ea6">
+        <h2 class="font-semibold mb-3">订单类型 / Order type</h2>
+        <div class="flex flex-wrap gap-3">
+          <span class="text-sm rounded px-3 py-2" style="background:#eaf2fd;color:#245ea6">📦 普通商品订单 / Product</span>
+          <a href="renovation.html" class="text-sm rounded px-3 py-2" style="background:#f2ebfa;color:#633899;border:1px solid #d8c5ed">🏠 新建整装订单 / Renovation →</a>
+        </div><p class="text-xs text-gray-500 mt-3">整装项目在专用档案中保存合同、工程清单及履约子单。</p>
       </div>
 
       <!-- Step 1: Customer -->
@@ -2605,7 +2617,7 @@ function renderDashboard() {
         const cd2 = deadlineRowInfo(o);
         const bg2 = cd2?.overdue ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd2?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
         return `<tr class="border-b border-gray-50 hover:opacity-90 cursor-pointer" style="${bg2}" onclick="openDetail('${o.id}')">
-          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+          <td class="py-2 font-mono text-xs" style="color:${cd2?.overdue?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1"><span style="background:#eaf2fd;color:#245ea6;padding:2px 6px;border-radius:4px;font-family:inherit">📦 商品订单 / Product</span></div></td>
           <td class="py-2">${o.customers?.name || '-'}</td>
           <td class="py-2">${fmtAmt(o.amount, o.currency)}</td>
           <td class="py-2">${badge(o.status)}</td>
@@ -2963,7 +2975,7 @@ function renderOrdersTable(orders) {
     </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
       const rowBg = alarming ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : '';
       return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
-        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}</td>
+        <td class="px-4 py-3 font-mono text-xs font-semibold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<div class="mt-1 text-xs" style="color:#245ea6">📦 商品订单 / Product</div></td>
         <td class="px-4 py-3"><div class="font-medium">${o.customers?.name||'-'}</div><div class="text-gray-400 text-xs">${o.customers?.phone||''}</div></td>
         <td class="px-4 py-3 text-gray-500 text-xs">${o.stores?.name||'-'}</td>
         <td class="px-4 py-3 font-semibold">${fmtAmt(o.amount,o.currency)}</td>
@@ -2982,7 +2994,7 @@ function renderOrdersTable(orders) {
     const borderColor = alarming ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : '';
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
       <div class="flex items-start justify-between gap-2 mb-1.5">
-        <span class="font-mono text-sm font-bold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}</span>
+        <span class="font-mono text-sm font-bold" style="color:${alarming?'#dc2626':'#1a3a2a'}">${o.order_no}<span class="block text-xs mt-1" style="color:#245ea6">📦 商品订单 / Product</span></span>
         <div class="flex items-center gap-1 flex-wrap justify-end">
           ${badge(o.status)}
           ${o.status==='in_production'&&o.prod_stage ? `<span class="text-xs px-1.5 py-0.5 rounded font-medium" style="background:#fffbeb;color:#92400e;border:1px solid #f59e0b">${PROD_STAGE_LABELS[o.prod_stage]||o.prod_stage}</span>` : ''}
@@ -4289,7 +4301,7 @@ async function openDetail(id, backView) {
     <div class="card p-5 mb-4">
       <div class="flex items-start justify-between mb-4">
         <div>
-          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div>
+          <div class="font-mono font-bold text-hg text-xl">${o.order_no}</div><span style="display:inline-block;background:#eaf2fd;color:#245ea6;padding:3px 9px;border-radius:5px;font-size:12px;margin-top:6px">📦 商品订单 / Product</span>
           <div class="text-gray-400 text-sm">${o.stores?.name}</div>
         </div>
         ${badge(o.status)}
@@ -8335,6 +8347,7 @@ async function confirmDispatch(orderId) {
   openDetail(orderId);
 }
 </script>
+
 
 </body>
 </html>

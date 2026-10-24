@@ -371,7 +371,7 @@ function renderOrders() {
          class="bg-white rounded-xl shadow-sm p-5 mb-3 cursor-pointer hover:shadow-md transition-shadow border border-gray-100 active:scale-[0.99]">
       <div class="flex items-start justify-between mb-2">
         <div>
-          <div class="font-mono font-bold text-hg text-sm">${esc(o.order_no)}</div>
+          <div class="font-mono font-bold text-hg text-sm">${esc(o.order_no)}</div><span style="display:inline-block;background:#eaf2fd;color:#245ea6;border-radius:4px;padding:2px 6px;font-size:12px;margin-top:4px">📦 商品订单 / Product</span>
           <div class="text-gray-400 text-xs mt-0.5">${esc(o.store_name)} · ${fmtDate(o.created_at)}</div>
         </div>
         ${badge(o.status)}

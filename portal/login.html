@@ -773,15 +773,21 @@ async function redirect(data) {
     return;
   }
   const role = data?.role || 'customer';
-  // 从导购学堂跳来登录的门店员工,登录后回到导购学堂(只放行这一个站内地址,防止被用来跳转到外站)
-  const next = new URLSearchParams(window.location.search).get('next');
-  const ACADEMY_ROLES = ['staff','store_manager','regional_manager','general_manager','superadmin','admin'];
-  if (next === '/portal/academy.html' && ACADEMY_ROLES.includes(role)) { window.location.href = next; return; }
   const map = {
     staff:'staff.html', store_manager:'staff.html', regional_manager:'staff.html',
     general_manager:'staff.html', superadmin:'staff.html', admin:'staff.html',
     warehouse:'warehouse.html', supplier:'supplier.html', logistics:'logistics.html', customer:'customer.html'
   };
+  const nextPage = new URLSearchParams(window.location.search).get('next');
+  const staffRoles = ['staff','store_manager','regional_manager','general_manager','superadmin','admin'];
+  if (staffRoles.includes(role) && nextPage === '/portal/academy.html') {
+    window.location.href = '/portal/academy.html';
+    return;
+  }
+  if (staffRoles.includes(role) && nextPage === 'renovation.html') {
+    window.location.href = 'renovation.html';
+    return;
+  }
   window.location.href = map[role] || 'customer.html';
 }
 
