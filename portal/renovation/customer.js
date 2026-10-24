@@ -32,6 +32,7 @@ try{
   try{
    const {data,error}=await sb.rpc('renovation_customer_payment_view',{p_token:token});
    if(error||!data)throw new Error('付款记录暂时无法同步，请刷新重试或联系门店。');
+   if(p.state&&data.state!==p.state){location.reload();return;}
    const openSections=[...$('customer-payments').querySelectorAll('details')].map(e=>e.open);
    $('customer-payments').innerHTML=RenoFinanceView.customer(data);
    $('customer-payments').querySelectorAll('details').forEach((e,i)=>e.open=Boolean(openSections[i]));
