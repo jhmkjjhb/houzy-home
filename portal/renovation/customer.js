@@ -12,6 +12,18 @@ try{
   const end=RenoCore.expires(p.accepted_on,w.years);
   return `<div class="term"><b>${esc(w.component)}</b><span>${w.years?esc(w.years)+'年':'期限待确认'} · ${!w.years?'联系HOUZY补充凭证':!p.accepted_on?'竣工验收后起算':`${end<today?'已届满':'质保期内'}，到期日 ${esc(end)}`}</span></div><div class="muted">依据：${esc(w.source)}</div>`;
  }).join('')||'<p>此项质保范围待确认，请联系HOUZY。</p>'}</article>`).join('');
+ const viewButton=$('view-signed-contract');viewButton.hidden=false;
+ viewButton.onclick=async()=>{
+  if(viewButton.disabled)return;viewButton.disabled=true;$('contract-message').textContent='正在准备临时合同链接…';
+  try{
+   const {data,error}=await sb.functions.invoke('renovation-contract',{body:{token}});
+   if(error||!data?.url)throw new Error(data?.error||'暂时无法打开合同，请稍后重试或联系HOUZY。');
+   const target=new URL(data.url);
+   if(target.protocol!=='https:'||target.hostname!=='csabbxiijzghooppayae.supabase.co'||!target.pathname.startsWith('/storage/v1/object/sign/renovation-contracts/'))throw new Error('合同链接无效，请联系HOUZY。');
+   // Same-tab navigation avoids popup blocking after an asynchronous request.
+   $('contract-message').textContent='合同链接已准备，有效期2分钟。';location.assign(target.href);
+  }catch(e){$('contract-message').textContent=e.message;}finally{viewButton.disabled=false;}
+ };
  $('lines').hidden=false;$('message').textContent='请按具体产品及部件查看质保范围。';
 }catch(e){$('message').textContent=e.message;$('message').classList.add('error');}
 })();

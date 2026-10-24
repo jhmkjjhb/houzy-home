@@ -14,7 +14,8 @@ ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 GRANT SELECT,INSERT ON storage.objects TO authenticated;
 INSERT INTO stores VALUES('${ids.store}','Austin','JB'),('${ids.other}','Other','KL');
 INSERT INTO profiles VALUES('${ids.staff}',true,'staff','${ids.store}','JB'),('${ids.manager}',true,'store_manager','${ids.store}','JB'),('${ids.outsider}',true,'store_manager','${ids.other}','KL');`);
-const migration=fs.readFileSync('supabase/renovation_orders_migration.sql','utf8');await db.exec(migration);await db.exec(migration);count++;
+const migration=fs.readFileSync('supabase/renovation_orders_migration.sql','utf8');await db.exec(migration);await db.exec(migration);
+const phoneMigration=fs.readFileSync('supabase/renovation_phone_lookup_migration.sql','utf8');await db.exec(phoneMigration);await db.exec(phoneMigration);count++;
 async function actor(id,role='authenticated'){await db.exec(`RESET ROLE;SET request.jwt.claim.sub='${id}';SET ROLE ${role}`);}
 async function cmd(rev,action,data){return (await db.query('select public.renovation_command($1,$2,$3,$4::jsonb) as value',[ids.project,rev,action,JSON.stringify(data)])).rows[0].value;}
 async function rejects(fn,match){await assert.rejects(fn,match);count++;}
@@ -63,5 +64,18 @@ await actor(ids.manager);
 const rotated=(await db.query('select renovation_rotate_link($1,$2) as token',[ids.project,p.revision])).rows[0].token;
 ok(rotated!==token,'link rotated');
 await actor('','anon');ok((await db.query('select renovation_customer_view($1) as value',[token])).rows[0].value===null,'old customer link revoked');
+const lookup=async(phone,code)=>(await db.query('select renovation_customer_lookup($1,$2) as value',[phone,code])).rows[0].value;
+const privateCode=rotated.replaceAll('-','').slice(0,20);
+ok((await lookup('60101234567','')).length===0,'phone alone cannot disclose projects');
+ok((await lookup('60101234567','00000000000000000000')).length===0,'wrong private code denied');
+ok((await lookup('65101234567',privateCode)).length===0,'different country/phone denied');
+ok((await lookup('+60 (10) 123-4567',privateCode.toUpperCase().match(/.{4}/g).join('-'))).length===1,'phone and private code formatting normalised');
+ok((await lookup('0060101234567',privateCode)).length===1,'international 00 prefix supported');
+ok((await lookup('foo60101234567',privateCode)).length===0,'letters never silently removed from phone');
+ok((await lookup('60101234567',token.replaceAll('-','').slice(0,20))).length===0,'old lookup code revoked with old link');
+const matched=(await lookup('60101234567',privateCode))[0];
+ok(matched.view_token===rotated&&!('customer_phone' in matched)&&!('snapshot' in matched),'lookup returns only matching public summary and viewing capability');
+await db.exec("RESET ROLE;UPDATE renovation_projects SET state='draft'");await actor('','anon');
+ok((await lookup('60101234567',privateCode)).length===0,'draft contracts never returned');
 console.log('PASS',count,'database checks: migration rerun, scoped RLS, immutable contract, money, idempotency, workflow, customer privacy and revocation');
 await db.close();

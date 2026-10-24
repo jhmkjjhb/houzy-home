@@ -37,9 +37,10 @@ function render(){
  $('discount').value=snapshot.discount;$('net').value=snapshot.net;$('signed-on').value=snapshot.signed_on||'';
  $('raw').textContent=snapshot.source_text||'暂无提取原文';
  $('warnings').innerHTML=(snapshot.warnings||[]).length?'<div class="warning"><b>导入核对提醒</b><ul>'+snapshot.warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>':'';
- for(const id of ['discount','net','signed-on','contract-file','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
+ for(const id of ['discount','net','signed-on','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
+ $('contract-file').disabled=!!locked;
  $('confirm').disabled=!project||locked;$('split').disabled=!project||!['confirmed','executing'].includes(project.state);
- $('accept').disabled=!project||project.state!=='executing';$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project;
+ $('accept').disabled=!project||project.state!=='executing';$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project;$('customer-code').disabled=!project||project.state==='draft';
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
@@ -90,16 +91,20 @@ $('new-project').onclick=()=>{if(dirty&&!confirm('当前核对内容尚未保存
 $('create').onclick=()=>guarded(async()=>{
  if(project)return;const p={store_id:$('store').value,contract_no:$('contract-no').value.trim(),customer_name:$('customer-name').value.trim(),customer_phone:$('customer-phone').value.trim(),address:$('address').value.trim()};
  if(Object.values(p).some(x=>!x))throw new Error('请补齐门店、合同编号、姓名、电话和施工地址');
+ const phone=C.normalizePhone(p.customer_phone);if(!phone)throw new Error('请填写含国家区号的完整客户手机号，例如+60101234567');p.customer_phone=phone;
  // Retain UUID for safe retry if the response is lost.
  const key=JSON.stringify(p);let id=sessionStorage.getItem('reno-create-'+key);if(!id){id=crypto.randomUUID();sessionStorage.setItem('reno-create-'+key,id);}
  const {data,error}=await sb.rpc('renovation_command',{p_id:id,p_revision:0,p_action:'create',p_data:p});if(error)throw error;
- project=data;await openProject(project.id);await loadList();
+ project=data;render();history.replaceState(null,'','#'+project.id);await loadList();
+ message(upload?'项目草稿已保存，已选择的合同与清单已保留；请核对后点击“保存核对版本”归档。':'项目草稿已保存，可以选择合同PDF。');
 });
 $('contract-file').onchange=()=>guarded(async()=>{
- const file=$('contract-file').files[0];if(!file)return;if(!project)throw new Error('请先保存客户与项目草稿');
+ const file=$('contract-file').files[0];if(!file)return;
+ if(file.size>20*1024*1024||!(/\.pdf$/i.test(file.name)))throw new Error('请选择20MB以内的PDF合同');
  message('正在读取PDF文字与表格…');const parsed=await parsePDF(file);
- if(parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
+ if(project&&parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
  if(snapshot.lines.length&&!confirm('导入将替换尚未锁定的清单，是否继续？'))return;
+ if(!project){if(parsed.contract_no)$('contract-no').value=parsed.contract_no;if(parsed.address&&!$('address').value.trim())$('address').value=parsed.address;}
  upload=file;snapshot={...parsed,contract_path:''};dirty=true;render();message(`已提取${snapshot.lines.length}项。请核对原文、付款计划及质保，尚未归档或派工。`);
 });
 $('lines').oninput=e=>{const a=e.target.closest('[data-line]');if(!a||project?.state!=='draft')return;const l=snapshot.lines[+a.dataset.line],w=e.target.closest('[data-warranty]');if(w&&e.target.dataset.wkey){const k=e.target.dataset.wkey;l.warranties[+w.dataset.warranty][k]=k==='years'?(e.target.value===''?null:Number(e.target.value)):e.target.value;}else if(e.target.dataset.key){const k=e.target.dataset.key;l[k]=['qty','rate','page'].includes(k)?Number(e.target.value):e.target.value;a.querySelector('[data-amount]').textContent=fmt(l.qty*l.rate);}dirty=true;updateTotals();};
@@ -125,8 +130,14 @@ $('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject
 $('work-orders').onclick=e=>guarded(async()=>{const b=e.target.closest('[data-work]');if(!b)return;const i=+b.dataset.work;await rpc('work',{id:work[i].id,assignee:$('assignee-'+i).value,status:$('work-status-'+i).value});await openProject(project.id);});
 $('view-contract').onclick=()=>guarded(async()=>{if(!snapshot.contract_path)throw new Error('合同还未归档');const {data,error}=await sb.storage.from('renovation-contracts').createSignedUrl(snapshot.contract_path,120);if(error)throw error;const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';a.click();});
 $('accept').onclick=()=>guarded(async()=>{const date=$('accepted-on').value;if(!date)throw new Error('请填写竣工验收日期');if(!work.length||work.some(w=>w.status!=='done'))throw new Error('先完成全部子订单，再确认竣工验收');const file=$('acceptance-file').files[0];if(!file)throw new Error('请上传双方竣工验收凭证');if(!confirm('确认验收凭证和日期无误，并按合同启动质保？'))return;const path=await archive(file,'acceptance');await rpc('accept',{accepted_on:date,acceptance_path:path});await openProject(project.id);await loadList();});
+$('customer-code').onclick=()=>guarded(async()=>{
+ if(!project||project.state==='draft')throw new Error('先确认合同');
+ const code=project.customer_token.replaceAll('-','').slice(0,20).toUpperCase().match(/.{4}/g).join('-');
+ const text='HOUZY HOME 整装合同查询\n合同编号：'+project.contract_no+'\n登记手机号：+'+project.customer_phone+'\n合同查阅码：'+code+'\n入口：https://houzyhome.com/portal/customer.html\n请选择对应国家区号，输入登记手机号和查阅码。查阅码仅限业主及授权联系人，请勿公开转发。';
+ await navigator.clipboard.writeText(text);message('已复制登记手机号、合同查阅码及查询入口，请发给业主。');
+});
 $('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;await navigator.clipboard.writeText(url.href);message('已复制客户链接，仅发给业主或授权联系人。');});
-$('rotate-link').onclick=()=>guarded(async()=>{if(!confirm('旧客户链接将立即失效，需要重新发送新链接，继续？'))return;const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接已失效，可以重新复制新链接。');});
+$('rotate-link').onclick=()=>guarded(async()=>{if(!confirm('旧客户链接和合同查阅码将立即失效，需要重新发送新查询资料，继续？'))return;const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接和查阅码已失效，可以重新复制客户查询资料。');});
 $('export').onclick=()=>{const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}));a.href=url;a.download=(project?.contract_no||'整装清单')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('import-json').onclick=()=>$('json-file').click();
 $('json-file').onchange=()=>guarded(async()=>{const f=$('json-file').files[0];if(!f)return;if(f.size>2*1024*1024)throw new Error('JSON不得超过2MB');const s=JSON.parse(await f.text());if(!Array.isArray(s.lines)||s.lines.length>500||!Array.isArray(s.payments))throw new Error('清单格式无效');if(s.lines.some(l=>!l||typeof l!=='object'||!Array.isArray(l.warranties)||l.warranties.some(w=>!w||typeof w!=='object')))throw new Error('清单或质保记录格式无效');if(s.lines.some(l=>['id','name','group','unit','kind'].some(k=>typeof l[k]!=='string')||l.warranties.some(w=>typeof w.component!=='string'||typeof w.source!=='string'))||s.payments.some(p=>typeof p.name!=='string')||(s.warnings!==undefined&&!Array.isArray(s.warnings)))throw new Error('JSON字段类型不正确，请按导出格式填写');if(!confirm('用此JSON替换当前未锁定清单？对应PDF仍需上传。'))return;const path=snapshot.contract_path;snapshot={...blank(),...s,contract_path:path};dirty=true;render();});

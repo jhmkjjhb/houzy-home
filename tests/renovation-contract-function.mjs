@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+let handler,requests=[],mode='valid';
+globalThis.Deno={serve:fn=>handler=fn,env:{get:key=>({SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'fixture-only-key'}[key])}};
+globalThis.fetch=async(url,options)=>{requests.push({url:String(url),options});if(String(url).includes('/rest/v1/'))return Response.json(mode==='missing'?[]:[{id:'11111111-1111-4111-8111-111111111111',snapshot:{contract_path:mode==='badpath'?'different-project/contract.pdf':'11111111-1111-4111-8111-111111111111/contract.pdf'}}]);return Response.json({signedURL:'/object/sign/renovation-contracts/11111111-1111-4111-8111-111111111111/contract.pdf?token=fixture'});};
+await import('../supabase/functions/renovation-contract/index.ts');
+const token='22222222-2222-4222-8222-222222222222';
+const request=(body,origin='https://houzyhome.com')=>handler(new Request('https://fixture/functions/v1/renovation-contract',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(body)}));
+let r=await request({token});assert.equal(r.status,200);let data=await r.json();assert.equal(data.expires_in,120);assert(data.url.startsWith('https://fixture.supabase.co/storage/v1/object/sign/renovation-contracts/'));
+assert(requests[0].url.includes('state=neq.draft'));assert.equal(JSON.parse(requests[1].options.body).expiresIn,120);assert.equal(r.headers.get('Cache-Control'),'no-store');
+const before=requests.length;r=await request({token:'bad'});assert.equal(r.status,400);assert.equal(requests.length,before);
+r=await request({token},'https://untrusted.example');assert.equal(r.status,403);assert.equal(requests.length,before);
+r=await request({token,extra:'x'.repeat(1100)});assert.equal(r.status,413);
+mode='missing';r=await request({token});assert.equal(r.status,404);
+mode='badpath';requests=[];r=await request({token});assert.equal(r.status,404);assert.equal(requests.length,1,'never signs a path outside the matched project');
+console.log('PASS: private document token, origin, body limits, locked contracts, project path binding, 120-second URL and no-store');

@@ -4,6 +4,16 @@
 const money=n=>Math.round((Number(n)+Number.EPSILON)*100);
 const cash=n=>(n/100).toFixed(2);
 const GROUPS=['厨房铝柜','岩板台面','门窗玻璃','全屋定制','淋浴隔断','车廊泥水','客厅泥水','天花','浴室泥水','PVC折叠门','电气','油漆','保护清洁','赠品及设计'];
+function normalizePhone(raw,country=''){
+ let n=String(raw||'').normalize('NFKC').replace(/[\s().\-\u200B-\u200F]/g,'');
+ if(!/^\+?\d+$/.test(n))return null;
+ const explicit=n.startsWith('+')||n.startsWith('00');n=n.replace(/^\+/,'').replace(/^00/,'');
+ if(country){
+  if(explicit&&!n.startsWith(country))return null;
+  if(!explicit){n=n.replace(/^0+/,'');if(!(n.startsWith(country)&&n.length-country.length>=7))n=country+n;}
+ }
+ return /^[1-9]\d{7,14}$/.test(n)?n:null;
+}
 function validate(s){
  const errors=[],ids=new Set();let total=0;
  if(!Array.isArray(s.lines)||!s.lines.length)errors.push('没有识别到清单，请补充合同附件或手工录入');
@@ -103,5 +113,5 @@ function extract(pages,options={}){
  s.warnings.push('业主、签署状态、签约日期及工期必须人工核对。','防水5年是通用条款；附件未单列防水，不自动创建防水已承保项目。','第25项本合同写明含开发商标准砖，请与旧报价的排除范围核对。','自动提取的质保需逐项审核；按厂家质保及赠品期限留空，不推测。');
  return s;
 }
-return {money,cash,validate,expires,extract,GROUPS};
+return {money,cash,validate,expires,extract,GROUPS,normalizePhone};
 });
