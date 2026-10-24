@@ -118,11 +118,6 @@
              class="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0"
              onkeydown="if(event.key==='Enter')searchOrders()">
     </div>
-    <details class="mb-4 rounded-lg border border-gray-200 p-3">
-      <summary class="text-sm font-semibold cursor-pointer" style="color:#633899">有整装合同？填写查阅码 / Renovation access code</summary>
-      <label for="renovation-code" class="block text-xs text-gray-500 mt-3 mb-2">整装合同需填写门店提供的查阅码；商品订单无需填写。 / Required for renovation contracts only.</label>
-      <input id="renovation-code" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0" onkeydown="if(event.key==='Enter')searchOrders()">
-    </details>
     <button onclick="searchOrders()" id="search-btn"
             class="w-full py-3 bg-hg text-white font-semibold rounded-lg hover:bg-green-900 transition text-sm"
             data-i18n="btn_search">查询订单</button>
@@ -145,6 +140,13 @@
   <div id="order-query-message" class="text-sm text-red-600 mb-3" role="status"></div>
   <div id="orders-list"></div>
   <div id="renovation-results" class="mt-3" aria-live="polite"></div>
+    <div id="renovation-access" hidden class="mt-4 rounded-lg border border-gray-200 p-4">
+      <p class="text-sm font-semibold" style="color:#633899">查看整装合同 / View renovation contract</p>
+      <label for="renovation-code" class="block text-xs text-gray-500 mt-3 mb-2">整装合同需填写门店提供的查阅码；商品订单无需填写。 / Required for renovation contracts only.</label>
+      <input id="renovation-code" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm min-w-0" onkeydown="if(event.key==='Enter')searchOrders()">
+      <button type="button" onclick="searchOrders()" class="mt-3 px-4 py-2 rounded-lg text-sm font-semibold" style="background:#633899;color:white">查看整装订单 / View renovation orders</button>
+    </div>
+
 </div>
 
 <!-- Screen: order detail -->
@@ -343,8 +345,9 @@ async function searchOrders() {
   if (!phone) { showErr('请检查手机号及国家区号 / Please check phone and country code.'); return; }
   const code = document.getElementById('renovation-code').value.normalize('NFKC').replace(/[\s-]/g,'').toLowerCase();
   if (code && !/^[a-f0-9]{20}$/.test(code)) {
-    document.getElementById('renovation-code').closest('details').open = true;
-    showErr('请填写完整合同查阅码，或清空后查询商品订单。 / Complete the access code, or clear it to search product orders.'); return;
+    document.getElementById('renovation-access').hidden = false;
+    show('s-orders');
+    document.getElementById('order-query-message').textContent = '请填写完整合同查阅码 / Enter the complete contract access code.'; return;
   }
   const version = ++customerSearchVersion;
   btn.textContent = ct('searching'); btn.disabled = true;
@@ -1000,6 +1003,6 @@ function showCardOverlay(url, orderNo) {
   applyStaticI18n();
 })();
 </script>
-<script src="renovation/phone-lookup.js?v=unified-orders-20261024"></script>
+<script src="renovation/phone-lookup.js?v=single-entry-20261024"></script>
 </body>
 </html>
