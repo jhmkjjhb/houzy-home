@@ -37,7 +37,8 @@ function render(){
  $('discount').value=snapshot.discount;$('net').value=snapshot.net;$('signed-on').value=snapshot.signed_on||'';
  $('raw').textContent=snapshot.source_text||'暂无提取原文';
  $('warnings').innerHTML=(snapshot.warnings||[]).length?'<div class="warning"><b>导入核对提醒</b><ul>'+snapshot.warnings.map(w=>`<li>${esc(w)}</li>`).join('')+'</ul></div>':'';
- for(const id of ['discount','net','signed-on','contract-file','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
+ for(const id of ['discount','net','signed-on','add-line','add-payment','save','import-json'])$(id).disabled=!project||locked;
+ $('contract-file').disabled=!!locked;
  $('confirm').disabled=!project||locked;$('split').disabled=!project||!['confirmed','executing'].includes(project.state);
  $('accept').disabled=!project||project.state!=='executing';$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project;
  renderLines();renderPayments();updateTotals();renderWarranty();
@@ -93,13 +94,16 @@ $('create').onclick=()=>guarded(async()=>{
  // Retain UUID for safe retry if the response is lost.
  const key=JSON.stringify(p);let id=sessionStorage.getItem('reno-create-'+key);if(!id){id=crypto.randomUUID();sessionStorage.setItem('reno-create-'+key,id);}
  const {data,error}=await sb.rpc('renovation_command',{p_id:id,p_revision:0,p_action:'create',p_data:p});if(error)throw error;
- project=data;await openProject(project.id);await loadList();
+ project=data;render();history.replaceState(null,'','#'+project.id);await loadList();
+ message(upload?'项目草稿已保存，已选择的合同与清单已保留；请核对后点击“保存核对版本”归档。':'项目草稿已保存，可以选择合同PDF。');
 });
 $('contract-file').onchange=()=>guarded(async()=>{
- const file=$('contract-file').files[0];if(!file)return;if(!project)throw new Error('请先保存客户与项目草稿');
+ const file=$('contract-file').files[0];if(!file)return;
+ if(file.size>20*1024*1024||!(/\.pdf$/i.test(file.name)))throw new Error('请选择20MB以内的PDF合同');
  message('正在读取PDF文字与表格…');const parsed=await parsePDF(file);
- if(parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
+ if(project&&parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
  if(snapshot.lines.length&&!confirm('导入将替换尚未锁定的清单，是否继续？'))return;
+ if(!project){if(parsed.contract_no)$('contract-no').value=parsed.contract_no;if(parsed.address&&!$('address').value.trim())$('address').value=parsed.address;}
  upload=file;snapshot={...parsed,contract_path:''};dirty=true;render();message(`已提取${snapshot.lines.length}项。请核对原文、付款计划及质保，尚未归档或派工。`);
 });
 $('lines').oninput=e=>{const a=e.target.closest('[data-line]');if(!a||project?.state!=='draft')return;const l=snapshot.lines[+a.dataset.line],w=e.target.closest('[data-warranty]');if(w&&e.target.dataset.wkey){const k=e.target.dataset.wkey;l.warranties[+w.dataset.warranty][k]=k==='years'?(e.target.value===''?null:Number(e.target.value)):e.target.value;}else if(e.target.dataset.key){const k=e.target.dataset.key;l[k]=['qty','rate','page'].includes(k)?Number(e.target.value):e.target.value;a.querySelector('[data-amount]').textContent=fmt(l.qty*l.rate);}dirty=true;updateTotals();};
