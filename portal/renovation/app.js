@@ -6,7 +6,7 @@ const states={draft:'合同草稿',confirmed:'合同已确认',executing:'履约
 const kinds={custom:'定制供货',stock:'现货材料',work:'施工服务',gift:'赠送项目'};
 let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[];
 function blank(){return {lines:[],payments:[],net:0,discount:0,signed_on:'',warnings:[],source_text:'',contract_path:''};}
-function message(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);}
+function message(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);const local=$('save-message');if(local){local.textContent=text;local.classList.toggle('error',error);}}
 async function guarded(fn){if(busy)return;busy=true;try{await fn();}catch(e){message(e.message||String(e),true);}finally{busy=false;}}
 async function rpc(action,data){const {data:row,error}=await sb.rpc('renovation_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;project=row;return row;}
 function input(value,attrs=''){return `<input value="${esc(value)}" ${attrs}>`;}
@@ -77,6 +77,8 @@ async function parsePDF(file){
  const doc=await pdfjs.getDocument({data:buffer,isEvalSupported:false}).promise;
  try{if(doc.numPages>100)throw new Error('合同超过100页，请拆分后核对');const pages=[];
  for(let i=1;i<=doc.numPages;i++){const p=await doc.getPage(i),v=p.getViewport({scale:1}),content=await p.getTextContent();pages.push(content.items.filter(t=>t.str?.trim()).map(t=>({text:t.str,x:t.transform[4]*595.276/v.width,y:v.height-t.transform[5],page:i})));}
+ const verified=window.RenoVerifiedContracts?.[hash];
+ if(verified)return {...structuredClone(verified),source_text:pages.flat().map(t=>t.text).join(' ')};
  return C.extract(pages,{trustedTemplate:hash==='29268b3341f26213a1ad5bd7f7e4f3f083ee97b2c96f7eedf67ec3394ee87dca'});
  }finally{await doc.destroy();}
 }
@@ -123,7 +125,9 @@ $('save').onclick=()=>guarded(async()=>{
  await rpc('save',snapshot);dirty=false;await openProject(project.id);await loadList();message('合同原件和核对版本已保存；确认签署前仍是草稿。');
 });
 $('confirm').onclick=()=>guarded(async()=>{
- if(dirty)throw new Error('先保存本次核对版本，再确认合同');
+ if(dirty||!project?.snapshot?.lines?.length)throw new Error('合同尚未保存归档，请先点击上方“保存核对版本”，成功后再确认合同');
+ if(!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role))throw new Error('合同需由店长或上级确认，请联系店长打开本项目核对并确认');
+ if(!snapshot.signed_on)throw new Error('请先填写签约日期并保存核对版本，再确认合同');
  if(!$('signed').checked||!$('reviewed').checked)throw new Error('请完成签署及清单核对确认');
  if(!confirm('确认后锁定合同清单与质保；后续不得直接覆盖，确定？'))return;
  await rpc('confirm',{signed:true,reviewed:true});await openProject(project.id);await loadList();
