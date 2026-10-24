@@ -57,7 +57,7 @@ async function openProject(id){
  const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30)]);
  for(const r of results)if(r.error)throw r.error;
  work=results[0].data;render();
- $('work-orders').innerHTML=work.map((w,i)=>`<details class="work"><summary><span class="type renovation">整装子单</span> <b>${esc(w.group_name)}</b> · ${{draft:'草稿',assigned:'已分配',working:'进行中',done:'已完成'}[w.status]}</summary><p>原清单项：${w.line_ids.map(esc).join('、')} · 不重复收取客户费用</p><div class="work-controls"><label>负责人${input(w.assignee,`id="assignee-${i}"`)}</label><label>状态<select id="work-status-${i}">${options({draft:'草稿',assigned:'已分配',working:'进行中',done:'已完成'},w.status)}</select></label><button data-work="${i}" ${project.state==='accepted'?'disabled':''}>保存进度</button></div></details>`).join('');
+ $('work-orders').innerHTML=RenoWorkView.render(work,snapshot,project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
  const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
