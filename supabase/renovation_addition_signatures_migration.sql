@@ -94,7 +94,7 @@ BEGIN
   IF p_data->>'kind'='refund' AND NOT manager THEN RAISE EXCEPTION '退款须由店长或上级登记'; END IF;
   IF p_data->>'kind'='receipt' AND paid+pending+amt>total THEN RAISE EXCEPTION '收款金额超过合同剩余应收（含待核对现金）'; END IF;
   IF p_data->>'kind'='refund' AND amt>paid THEN RAISE EXCEPTION '退款金额超过已确认净收款'; END IF;
-  IF EXISTS(SELECT 1 FROM renovation_payments WHERE project_id=p_id AND kind=p_data->>'kind' AND method=p_data->>'method' AND reference=trim(p_data->>'reference') AND voided_at IS NULL) THEN RAISE EXCEPTION '同一参考号或收据编号已登记，请勿重复收款'; END IF;
+  IF EXISTS(SELECT 1 FROM renovation_payments WHERE kind=p_data->>'kind' AND lower(reference)=lower(trim(p_data->>'reference')) AND voided_at IS NULL) THEN RAISE EXCEPTION '同一参考号或收据编号已在本项目或其他项目登记，请勿重复收款；一笔转账付多个项目请在参考号后加项目编号区分'; END IF;
   verified:=(p_data->>'method'<>'cash' OR manager);
   INSERT INTO renovation_payments(id,project_id,kind,amount,method,paid_on,reference,note,created_by,verified_by,verified_at,installment)
    VALUES(p_entry,p_id,p_data->>'kind',amt,p_data->>'method',(p_data->>'paid_on')::date,trim(p_data->>'reference'),coalesce(p_data->>'note',''),auth.uid(),CASE WHEN verified THEN auth.uid() END,CASE WHEN verified THEN now() END,stage) RETURNING * INTO e;
@@ -334,5 +334,28 @@ BEGIN
 END;$$;
 REVOKE ALL ON FUNCTION public.renovation_customer_sign_addition(uuid,uuid,uuid,text,text,jsonb,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.renovation_customer_sign_addition(uuid,uuid,uuid,text,text,jsonb,boolean) TO anon,authenticated;
+-- One bank reference / receipt number is one real payment across all projects.
+-- The unique index also closes the race between two projects locked separately.
+DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM renovation_payments WHERE voided_at IS NULL GROUP BY kind,lower(reference) HAVING count(*)>1) THEN
+  RAISE EXCEPTION '已有重复的有效收退款参考号，请先核对并作废重复记录后再迁移';
+ END IF;
+END;$$;
+CREATE UNIQUE INDEX IF NOT EXISTS renovation_payments_reference_uniq ON public.renovation_payments(kind,lower(reference)) WHERE voided_at IS NULL;
+-- Phone lookup must show the same total as the contract page (signed additions included),
+-- whichever order the earlier phone/additions migrations were applied in.
+CREATE OR REPLACE FUNCTION public.renovation_customer_orders(p_phone text)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+ SELECT coalesce(jsonb_agg(
+  jsonb_build_object('id',p.id,'contract_no',p.contract_no,'state',p.state,'created_at',p.created_at)
+  || CASE WHEN p.state<>'draft' THEN jsonb_build_object('address',p.address,'scope_revision',p.scope_revision,'net',p.current_total,'original_net',p.snapshot->'net','additions_total',p.additions_total,'view_token',p.customer_token)
+     ELSE '{}'::jsonb END
+  ORDER BY p.created_at DESC),'[]'::jsonb)
+ FROM public.renovation_projects p
+ WHERE length(p_phone)<=50 AND public._reno_normalize_phone(p_phone) IS NOT NULL
+ AND public._reno_lookup_phone(p.customer_phone)=public._reno_normalize_phone(p_phone);
+$$;
+REVOKE ALL ON FUNCTION public.renovation_customer_orders(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.renovation_customer_orders(text) TO anon,authenticated;
 NOTIFY pgrst,'reload schema';
 COMMIT;

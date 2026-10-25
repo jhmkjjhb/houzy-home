@@ -1,5 +1,10 @@
 -- Additional work/material charges are separate from the immutable signed snapshot.
 BEGIN;
+-- Later migrations redefine functions created here; re-running this file would
+-- silently restore older money/permission rules, so refuse once they exist.
+DO $guard$ BEGIN IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='renovation_additions' AND column_name='signature_status') THEN
+ RAISE EXCEPTION '此迁移已被 renovation_addition_signatures_migration.sql 取代，重跑会恢复旧规则，已停止。请按《整装订单上线与验收》的迁移顺序执行。';
+END IF; END $guard$;
 ALTER TABLE public.renovation_projects ADD COLUMN IF NOT EXISTS additions_total numeric(14,2) NOT NULL DEFAULT 0 CHECK(additions_total>=0);
 ALTER TABLE public.renovation_projects ADD COLUMN IF NOT EXISTS current_total numeric GENERATED ALWAYS AS (coalesce((snapshot->>'net')::numeric,0)+additions_total) STORED;
 ALTER TABLE public.renovation_projects ADD COLUMN IF NOT EXISTS scope_revision integer NOT NULL DEFAULT 0;

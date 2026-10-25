@@ -101,6 +101,24 @@ await actor('','anon');await reject(()=>report(),/permission denied/);
 await db.exec('RESET ROLE');const admin=uuid();await db.query("insert into profiles values($1,true,'admin',null,null)",[admin]);
 await db.exec('alter table orders add column currency text');await db.query("update orders set currency='SGD' where id=$1",[foreign]);
 await actor(admin);perf=(await report()).data;ok(perf.length===2&&perf.some(r=>r.currency==='SGD'&&r.total_net_received===999)&&perf.some(r=>r.currency==='MYR'&&r.total_net_received===660),'currencies kept separate with no invented exchange rate');
+// Phone lookup is the customer's first screen: its total must equal the contract page, signed additions included.
+await db.exec('RESET ROLE');const live=await project();await actor('','anon');
+const byPhone=(await db.query('select renovation_customer_orders($1) value',['+60101234567'])).rows[0].value.find(r=>r.id===id);
+const contractPage=(await db.query('select renovation_customer_view($1) value',[live.customer_token])).rows[0].value;
+ok(Number(byPhone.net)===Number(live.current_total)&&Number(byPhone.net)===Number(contractPage.net),'phone lookup total matches contract page including signed additions');
+// One bank reference is one real payment: a second project, another method or other letter case cannot count it again.
+await db.exec('RESET ROLE');const used=(await db.query("select reference from renovation_payments where voided_at is null and kind='receipt' limit 1")).rows[0].reference;
+const dupProject=uuid();await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'SIGN-TEST-2','Owner','60109999999','Other address','executing',$4::jsonb)`,[dupProject,store,staff,JSON.stringify(original)]);
+const pay2=(reference,method='bank_transfer')=>db.query('select renovation_payment_command($1,0,$2,$3,$4::jsonb)',[dupProject,'add',uuid(),JSON.stringify({kind:'receipt',amount:10,method,paid_on:today,reference,installment:1})]);
+await actor(manager);await reject(()=>pay2(used),/其他项目/);await reject(()=>pay2(used.toLowerCase(),'ewallet'),/其他项目/);
+await db.exec('RESET ROLE');await reject(()=>db.query("insert into renovation_payments(id,project_id,kind,amount,method,paid_on,reference,created_by,verified_by,verified_at) values($1,$2,'receipt',10,'cash',$3,$4,$5,$5,now())",[uuid(),dupProject,today,used,manager]),/duplicate key|unique/);
+checks++;
+// Re-running a superseded migration would silently restore unsigned receivables and old totals; it must stop untouched.
+const defs=async()=>(await db.query("select string_agg(md5(pg_get_functiondef(p.oid)),',' order by p.oid) d from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and (p.proname like 'renovation%' or p.proname like '\\_reno%')")).rows[0].d;
+const before=await defs();
+for(const file of ['renovation_orders','renovation_payments','renovation_payment_installments','renovation_phone_lookup','renovation_customer_orders','renovation_phone_direct_view','renovation_additions'])
+{await reject(()=>db.exec(fs.readFileSync(`supabase/${file}_migration.sql`,'utf8')),/已被.*取代/);await db.exec('ROLLBACK');}
+ok(await defs()===before,'superseded migrations refuse to re-run and leave live functions unchanged');
 await db.exec('RESET ROLE');
 await db.exec(fs.readFileSync('tests/fixtures/renovation-signature-performance-smoke.sql','utf8'));checks++;
 console.log('PASS',checks,'customer signature gate and combined store performance checks');await db.close();

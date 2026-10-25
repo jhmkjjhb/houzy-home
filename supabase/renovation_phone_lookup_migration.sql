@@ -1,6 +1,11 @@
 -- Phone is a lookup key, not proof of identity. A private per-contract code is
 -- required before returning even the main project summary or its capability URL.
 BEGIN;
+-- Later migrations redefine functions created here; re-running this file would
+-- silently restore older money/permission rules, so refuse once they exist.
+DO $guard$ BEGIN IF to_regprocedure('public._reno_lookup_phone(text)') IS NOT NULL THEN
+ RAISE EXCEPTION '此迁移已被 renovation_customer_orders_migration.sql 取代，重跑会恢复旧规则，已停止。请按《整装订单上线与验收》的迁移顺序执行。';
+END IF; END $guard$;
 CREATE OR REPLACE FUNCTION public._reno_normalize_phone(p_phone text)
 RETURNS text LANGUAGE sql IMMUTABLE SET search_path=public,pg_temp AS $$
  WITH cleaned AS (SELECT regexp_replace(translate(coalesce(p_phone,''),'０１２３４５６７８９','0123456789'),'[[:space:]()+.\-]','','g') AS n),
