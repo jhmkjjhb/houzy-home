@@ -1,5 +1,6 @@
-// The private project token is a bearer capability, obtained via phone + contract
-// access code or explicitly shared by staff. Never accept a caller-supplied path.
+// The private project token is a bearer capability returned by the registered-phone
+// lookup (owner-approved: phone alone, no access code) or shared by staff. Never accept
+// a caller-supplied path.
 const origins = new Set(['https://houzyhome.com', 'https://www.houzyhome.com']);
 Deno.serve(async (req: Request) => {
  const origin = req.headers.get('origin');

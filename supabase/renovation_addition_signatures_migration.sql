@@ -90,6 +90,10 @@ BEGIN
   IF amt IS NULL OR amt<=0 OR amt<>round(amt,2) OR amt>999999999999.99 OR (p_data->>'kind') IS NULL OR p_data->>'kind' NOT IN ('receipt','refund')
    OR (p_data->>'method') IS NULL OR p_data->>'method' NOT IN ('bank_transfer','ewallet','card','cash') THEN RAISE EXCEPTION '请填写有效收款类别、方式及两位小数金额'; END IF;
   IF (p_data->>'paid_on')::date IS NULL OR (p_data->>'paid_on')::date>(now() AT TIME ZONE 'Asia/Kuala_Lumpur')::date OR NOT isfinite((p_data->>'paid_on')::date) THEN RAISE EXCEPTION '请填写有效收退款日期，不得晚于今天'; END IF;
+  -- Deposits may precede signing slightly; anything earlier is a typo. Back-dating into a
+  -- closed month changes settled performance, so it needs a manager and a written reason.
+  IF nullif(p.snapshot->>'signed_on','') IS NOT NULL AND (p_data->>'paid_on')::date<(p.snapshot->>'signed_on')::date-30 THEN RAISE EXCEPTION '收退款日期不得早于签约日前30天，请核对日期'; END IF;
+  IF (p_data->>'paid_on')::date<date_trunc('month',now() AT TIME ZONE 'Asia/Kuala_Lumpur')::date AND (NOT manager OR coalesce(length(trim(p_data->>'note')),0)=0) THEN RAISE EXCEPTION '补登上月或更早的收退款会改动已结算业绩，须由店长或上级登记，并在备注写明原因'; END IF;
   IF coalesce(length(trim(p_data->>'reference')),0) NOT BETWEEN 1 AND 200 OR length(coalesce(p_data->>'note',''))>1000 THEN RAISE EXCEPTION '请填写银行参考号或收据编号（最多200字），备注最多1000字'; END IF;
   IF p_data->>'kind'='refund' AND NOT manager THEN RAISE EXCEPTION '退款须由店长或上级登记'; END IF;
   IF p_data->>'kind'='receipt' AND paid+pending+amt>total THEN RAISE EXCEPTION '收款金额超过合同剩余应收（含待核对现金）'; END IF;

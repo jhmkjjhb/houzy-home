@@ -101,6 +101,12 @@ await actor('','anon');await reject(()=>report(),/permission denied/);
 await db.exec('RESET ROLE');const admin=uuid();await db.query("insert into profiles values($1,true,'admin',null,null)",[admin]);
 await db.exec('alter table orders add column currency text');await db.query("update orders set currency='SGD' where id=$1",[foreign]);
 await actor(admin);perf=(await report()).data;ok(perf.length===2&&perf.some(r=>r.currency==='SGD'&&r.total_net_received===999)&&perf.some(r=>r.currency==='MYR'&&r.total_net_received===660),'currencies kept separate with no invented exchange rate');
+// Cancelled merchandise orders have no refund ledger: their money is shown for refund review, never as performance.
+await db.exec('RESET ROLE');const cancelledPaid=uuid(),cancelledLegacy=uuid();
+for(const [oid,amount,pay] of [[cancelledPaid,70,'partial'],[cancelledLegacy,30,'paid']])await db.query("insert into orders values($1,$2,$3,$4,$5::date,$6,'cancelled')",[oid,store,staff,amount,today,pay]);
+await db.query("insert into order_payments values($1,$2,70,'transfer',$3::date,now())",[uuid(),cancelledPaid,today]);
+await actor(manager);perf=(await report()).data[0];
+ok(perf.total_net_received===660&&perf.merchandise_net_received===380&&perf.cancelled_order_received===100&&perf.cancelled_order_count===2,'cancelled order receipts excluded from performance and listed separately');
 // Phone lookup is the customer's first screen: its total must equal the contract page, signed additions included.
 await db.exec('RESET ROLE');const live=await project();await actor('','anon');
 const byPhone=(await db.query('select renovation_customer_orders($1) value',['+60101234567'])).rows[0].value.find(r=>r.id===id);
@@ -109,7 +115,14 @@ ok(Number(byPhone.net)===Number(live.current_total)&&Number(byPhone.net)===Numbe
 // One bank reference is one real payment: a second project, another method or other letter case cannot count it again.
 await db.exec('RESET ROLE');const used=(await db.query("select reference from renovation_payments where voided_at is null and kind='receipt' limit 1")).rows[0].reference;
 const dupProject=uuid();await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'SIGN-TEST-2','Owner','60109999999','Other address','executing',$4::jsonb)`,[dupProject,store,staff,JSON.stringify(original)]);
-const pay2=(reference,method='bank_transfer')=>db.query('select renovation_payment_command($1,0,$2,$3,$4::jsonb)',[dupProject,'add',uuid(),JSON.stringify({kind:'receipt',amount:10,method,paid_on:today,reference,installment:1})]);
+const pay2=(reference,method='bank_transfer')=>db.query('select renovation_payment_command($1,(select revision from renovation_projects where id=$1),$2,$3,$4::jsonb)',[dupProject,'add',uuid(),JSON.stringify({kind:'receipt',amount:10,method,paid_on:today,reference,installment:1})]);
+// Dates: a deposit may precede signing by 30 days; back-dating into a closed month rewrites settled performance.
+const [signedOn,tooEarly,lastMonth]=Object.values((await db.query("select ($1::date-40)::text a,($1::date-71)::text b,(date_trunc('month',$1::date)::date-1)::text c",[today])).rows[0]);
+await db.query(`update renovation_projects set snapshot=snapshot||jsonb_build_object('signed_on',$2::text) where id=$1`,[dupProject,signedOn]);
+const pay3=(paid_on,note='')=>db.query('select renovation_payment_command($1,(select revision from renovation_projects where id=$1),$2,$3,$4::jsonb)',[dupProject,'add',uuid(),JSON.stringify({kind:'receipt',amount:10,method:'bank_transfer',paid_on,reference:'DATE-'+uuid(),note,installment:1})]);
+await actor(manager);await reject(()=>pay3(tooEarly,'typo'),/签约日前30天/);await reject(()=>pay3(lastMonth),/备注写明原因/);
+await actor(staff);await reject(()=>pay3(lastMonth,'late slip'),/须由店长/);
+await actor(manager);await pay3(lastMonth,'Bank slip found late');ok(true,'manager may back-date into a closed month with a written reason');
 await actor(manager);await reject(()=>pay2(used),/其他项目/);await reject(()=>pay2(used.toLowerCase(),'ewallet'),/其他项目/);
 await db.exec('RESET ROLE');await reject(()=>db.query("insert into renovation_payments(id,project_id,kind,amount,method,paid_on,reference,created_by,verified_by,verified_at) values($1,$2,'receipt',10,'cash',$3,$4,$5,$5,now())",[uuid(),dupProject,today,used,manager]),/duplicate key|unique/);
 checks++;
