@@ -23,7 +23,7 @@ async function copyCustomerText(text,success){
 async function rpc(action,data){const {data:row,error}=await sb.rpc('renovation_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;project=row;return row;}
 function input(value,attrs=''){return `<input value="${esc(value)}" ${attrs}>`;}
 function options(map,val){return Object.entries(map).map(([v,n])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(n)}</option>`).join('');}
-function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
+function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled&&!p.pending_signature),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
 function updateTotals(recalculate=false){const result=C.validate(snapshot);
  if(recalculate&&project?.state==='draft'&&Number.isFinite(result.total)&&result.total>=Number(snapshot.discount)){
   const next=Math.round((result.total-Number(snapshot.discount))*100);
@@ -86,7 +86,7 @@ async function openProject(id){
  work=results[0].data;additionData=results[2].data;render();
  $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
- const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'作废增项'};
+ const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
  await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
