@@ -37,5 +37,6 @@ window.RenoWorkspace=(()=>{
   },{rootMargin:'-135px 0px -50% 0px',threshold:0});
   document.querySelectorAll('#editor>.panel').forEach(section=>observer.observe(section));
  }
- return {update};
+ function setEditor(active){document.body.classList.toggle('editing-project',active);}
+ return {update,setEditor};
 })();

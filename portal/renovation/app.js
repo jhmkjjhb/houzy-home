@@ -52,6 +52,7 @@ function renderWarranty(){
  $('warranty-preview').innerHTML=effectiveSnapshot().lines.map(l=>`<div class="customer-line"><b>${esc(l.id)} · ${esc(l.name)}</b>${(l.warranties||[]).map(w=>`<div class="term"><span>${esc(w.component)}</span><span>${w.years?esc(w.years)+'年':'期限待确认'} · ${project?.accepted_on?'到期 '+esc(C.expires(project.accepted_on,w.years)||'待补充'):'竣工验收后起算'}</span></div><div class="muted">${esc(w.source)}</div>`).join('')}</div>`).join('');
 }
 function render(){
+ window.RenoWorkspace?.setEditor(true);
  $('editor').hidden=false;$('list').hidden=true;$('back-list').hidden=false;$('new-project').hidden=true;const locked=project&&project.state!=='draft';
  if(project){$('contract-no').value=project.contract_no;$('customer-name').value=project.customer_name;$('customer-phone').value=project.customer_phone;$('address').value=project.address;$('store').value=project.store_id;}
  for(const id of ['store','contract-no','customer-name','customer-phone','address'])$(id).disabled=!!project;
@@ -118,7 +119,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()){e.
 $('back-list').onclick=()=>guarded(async()=>{
  if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定返回主订单列表？'))return;
  await loadList();dirty=false;$('editor').hidden=true;$('list').hidden=false;
- $('back-list').hidden=true;$('new-project').hidden=false;$('title').textContent='整装主订单';
+ $('back-list').hidden=true;$('new-project').hidden=false;$('title').textContent='整装主订单';window.RenoWorkspace?.setEditor(false);
  history.replaceState(null,'',location.pathname);message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');window.scrollTo(0,0);
 });
 $('list').onclick=e=>{const b=e.target.closest('[data-open]');if(b)guarded(()=>openProject(b.dataset.open));};
