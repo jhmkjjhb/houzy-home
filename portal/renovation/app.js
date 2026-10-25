@@ -75,10 +75,12 @@ function render(){
 async function loadList(){
  const {data,error}=await sb.from('renovation_projects').select('id,contract_no,customer_name,address,state,revision,snapshot,additions_total,current_total,created_at').order('created_at',{ascending:false}).limit(200);
  if(error)throw new Error('整装档案暂不可用，请联系管理员完成整装功能部署。原商品订单仍可使用。');
- $('list').innerHTML=(data||[]).map(p=>`<article class="project"><span class="type renovation">🏠 整装主单</span><h2>${esc(p.contract_no)} · ${esc(p.customer_name)}</h2><p>${esc(p.address)}</p><div class="actions"><b>RM ${fmt(p.current_total??p.snapshot?.net)}</b><span>${states[p.state]}</span><button class="secondary" data-open="${p.id}">查看主单与子单 →</button></div></article>`).join('')||'<p>暂无整装项目，从新建订单开始。</p>';
+ $('list').innerHTML=(data||[]).map(p=>`<article class="project" data-project-state="${esc(p.state)}" data-search="${esc([p.contract_no,p.customer_name,p.address].join(' ').toLocaleLowerCase())}"><div class="project-identity"><div class="project-topline"><span class="type renovation">整装主单</span><span class="project-status" data-state="${esc(p.state)}">${esc(states[p.state]||p.state)}</span><small>合同 · 履约 · 质保</small></div><h2>${esc(p.contract_no)} · ${esc(p.customer_name)}</h2><p class="project-address">${esc(p.address)}</p></div><div class="project-side"><b class="project-amount"><small>RM</small>${fmt(p.current_total??p.snapshot?.net)}</b><button class="secondary" data-open="${esc(p.id)}">查看项目档案 →</button></div></article>`).join('')||'<div class="empty-state"><span class="empty-symbol" aria-hidden="true">⌂</span><h3>建立第一份整装项目档案</h3><p>点击“新建整装订单”，填写客户资料并归档合同。</p></div>';
+ window.RenoWorkspace?.update(data||[]);
 }
 async function openProject(id){
  if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
+ const resetScroll=$('editor').hidden||project?.id!==id;
  const {data,error}=await sb.from('renovation_projects').select('*').eq('id',id).single();if(error)throw error;
  project=data;snapshot=Object.assign(blank(),data.snapshot);draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=false;upload=null;$('signed').checked=false;$('reviewed').checked=false;
  const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id})]);
@@ -86,10 +88,11 @@ async function openProject(id){
  work=results[0].data;additionData=results[2].data;render();
  $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
- const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'作废增项'};
+ const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
  await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
+ if(resetScroll)window.scrollTo(0,0);
 }
 async function archive(file,kind='contract'){
  if(!project)throw new Error('请先补齐客户资料并保存项目草稿，再归档文件');

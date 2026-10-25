@@ -712,11 +712,13 @@
 
       <!-- Tabs -->
       <div class="flex gap-2 border-b border-gray-200 mb-4 overflow-x-auto">
+        <button id="rtab-store" onclick="switchReportTab('store')" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500">门店业绩（商品＋整装）</button>
         <button id="rtab-sst"   onclick="switchReportTab('sst')"   class="px-4 py-2 text-sm font-semibold border-b-2" style="color:#1a3a2a;border-color:#1a3a2a">SST 税务</button>
         <button id="rtab-perf"  onclick="switchReportTab('perf')"  class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800">员工业绩 · 提成</button>
         <button id="rtab-rates" onclick="switchReportTab('rates')" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800">提成比例配置</button>
       </div>
 
+      <div id="rpane-store" class="rpane hidden"><div id="store-performance-content"></div></div>
       <!-- SST Tab -->
       <div id="rpane-sst" class="rpane">
         <div class="card p-4 mb-3" style="background:linear-gradient(135deg,#1a3a2a 0%,#2d5e43 100%);color:#c8a96e">
@@ -886,7 +888,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="renovation/order-list.js?v=additions-20261025"></script>
+<script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=additions-20261025"></script>
 <script>
 // ── i18n ──
 const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
@@ -2593,18 +2595,19 @@ function renderDashboard() {
     [scope+'订单',    total],
     ['进行中',         active],
     ['已完成 / 质保',   done],
-    [scope+'已收款',   fmtAmt(revenue)],
+    [scope+'净收款（含整装）', '读取中…'],
   ];
   const _h = new Date().getHours();
   const _greet = _h<11?'早安':_h<13?'午安':_h<18?'下午好':'晚上好';
   const _ge = document.getElementById('dash-greet'); if (_ge) _ge.textContent = `${_greet},${profile?.name||''}`;
   document.getElementById('stats').innerHTML = periodBar +
-    cards.map(([lbl, v]) => `
+    cards.map(([lbl, v],index) => `
     <div class="card hz-kpi p-4">
       <div class="hz-kpi-label">${lbl}</div>
-      <div class="hz-kpi-val">${v}</div>
+      <div class="hz-kpi-val" ${index===3?'id="dash-store-revenue"':''}>${v}</div>
     </div>`).join('');
 
+  if(window.StorePerformance)StorePerformance.renderDashboard(sb,pKey);
   const recent = arr.slice(0, 8);
   const _emptyMsg = _ordersLoaded
     ? `<p class="text-gray-400 text-sm text-center py-6">${t('no_orders')}</p>`
@@ -2749,7 +2752,7 @@ function renderDashboardKpis(d) {
     <!-- KPI 1: 总收款 + 按支付方式 -->
     <div class="card p-4 md:col-span-2">
       <div class="flex items-center justify-between mb-2">
-        <div class="text-xs text-gray-400">💰 总收款额 + 支付方式</div>
+        <div class="text-xs text-gray-400">💰 商品订单收款额（原订单口径）</div>
         ${trend(cur.revenue_total, prev.revenue_total)}
       </div>
       <div class="text-2xl font-bold mb-3" style="color:#1a3a2a">${fmtAmt(cur.revenue_total)}</div>
@@ -7502,7 +7505,7 @@ function exportSettleXlsx() {
 let _sstData  = null;
 let _perfData = null;
 let _ratesData = null;
-let _currentReportTab = 'sst';
+let _currentReportTab = 'store';
 
 function loadReportsPage() {
   if (!canDo(FIELD_MIN_LEVEL.nav_reports)) {
@@ -7516,11 +7519,12 @@ function loadReportsPage() {
     const d = new Date();
     mEl.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   }
-  reloadReports();
+  switchReportTab(_currentReportTab);
 }
 
 function reloadReports() {
   // 当前激活的 tab 决定加载哪个数据集
+  if (_currentReportTab === 'store') StorePerformance.loadReport(sb);
   if (_currentReportTab === 'sst')   loadSstReport();
   if (_currentReportTab === 'perf')  loadPerfReport();
   if (_currentReportTab === 'rates') loadRatesConfig();
@@ -7529,7 +7533,7 @@ function reloadReports() {
 function switchReportTab(tab) {
   _currentReportTab = tab;
   // Tab 样式切换
-  [['sst','rtab-sst','rpane-sst'],
+  [['store','rtab-store','rpane-store'],['sst','rtab-sst','rpane-sst'],
    ['perf','rtab-perf','rpane-perf'],
    ['rates','rtab-rates','rpane-rates']].forEach(([k, btnId, paneId]) => {
     const btn  = document.getElementById(btnId);

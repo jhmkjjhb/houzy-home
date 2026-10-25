@@ -25,6 +25,7 @@ try{
   }catch(e){$('contract-message').textContent=e.message;}finally{viewButton.disabled=false;}
  };
  $('lines').hidden=false;$('message').textContent='请按具体产品及部件查看质保范围。';
+ await RenoAdditionSigning.mount(sb,token);
  $('customer-finance-panel').hidden=false;
  let paymentBusy=false;
  async function refreshPayments(){
@@ -32,7 +33,8 @@ try{
   try{
    const {data,error}=await sb.rpc('renovation_customer_payment_view',{p_token:token});
    if(error||!data)throw new Error('付款记录暂时无法同步，请刷新重试或联系门店。');
-   if((p.state&&data.state!==p.state)||Number(p.scope_revision||0)!==Number(data.scope_revision||0)){location.reload();return;}
+   if((p.state&&data.state!==p.state)||Number(p.scope_revision||0)!==Number(data.scope_revision||0)){if(!RenoAdditionSigning.isDirty()){location.reload();return;}}
+   await RenoAdditionSigning.refresh();
    const openSections=[...$('customer-payments').querySelectorAll('details')].map(e=>e.open);
    $('customer-payments').innerHTML=RenoFinanceView.customer(data);
    $('customer-payments').querySelectorAll('details').forEach((e,i)=>e.open=Boolean(openSections[i]));
