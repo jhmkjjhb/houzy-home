@@ -43,6 +43,6 @@ window.RenoAdditionSigning=(()=>{
    };
   }catch(e){el.textContent=e.message;}
  }
- async function mount(client,projectToken){sb=client;token=projectToken;document.getElementById('customer-additions-panel').hidden=false;await refresh();await loadSigning();window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});window.addEventListener('resize',()=>{if(canvas&&ctx)paint();});}
- return {mount,refresh,isDirty:()=>dirty};
+ async function mount(client,projectToken){sb=client;token=projectToken;document.getElementById('customer-additions-panel').hidden=false;await refresh();await loadSigning();window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});window.addEventListener('resize',()=>{if(canvas&&ctx)paint();});window.addEventListener('reno:customer-step',()=>{if(canvas&&ctx&&canvas.clientWidth)paint();});}
+ return {mount,refresh,refreshSigning:()=>!dirty&&!busy?loadSigning():Promise.resolve(),isDirty:()=>dirty,isBusy:()=>busy};
 })();

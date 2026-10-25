@@ -23,7 +23,7 @@ async function copyCustomerText(text,success){
 async function rpc(action,data){const {data:row,error}=await sb.rpc('renovation_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;project=row;return row;}
 function input(value,attrs=''){return `<input value="${esc(value)}" ${attrs}>`;}
 function options(map,val){return Object.entries(map).map(([v,n])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(n)}</option>`).join('');}
-function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
+function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled&&!p.pending_signature),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
 function updateTotals(recalculate=false){const result=C.validate(snapshot);
  if(recalculate&&project?.state==='draft'&&Number.isFinite(result.total)&&result.total>=Number(snapshot.discount)){
   const next=Math.round((result.total-Number(snapshot.discount))*100);
