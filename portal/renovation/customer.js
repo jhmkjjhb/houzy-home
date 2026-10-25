@@ -5,8 +5,25 @@
  const tips=['打开归档合同，核对工程清单、材料规格与双方约定。','付款计划与实际付款分别记录，待核对现金尚未计入已付。','新增单须经客户在专属链接电子签署后才生效。','执行分组状态由门店登记，不代表仓库实时库存或自动派工。','质保在竣工验收确认后起算，期限未知的部件请联系门店核对。'];
  const states={confirmed:'合同已确认',executing:'工程进行中',accepted:'已竣工验收'};
  const params=new URLSearchParams(location.search),uuid=s=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s||'');
- const token=location.hash.slice(1);let sb,project,step=uuid(params.get('addition'))&&uuid(params.get('sign'))?2:Math.max(0,labels.indexOf(params.get('section'))),tourTimer=null,refreshTimer=null,refreshBusy=false;
- function stopTour(){clearInterval(tourTimer);tourTimer=null;$('customer-tour').textContent='▷ 自动导览';$('customer-tour').setAttribute('aria-pressed','false');}
+ const token=location.hash.slice(1);let sb,project,step=uuid(params.get('addition'))&&uuid(params.get('sign'))?2:Math.max(0,labels.indexOf(params.get('section'))),tourTimer=null,tourCountdown=null,tourNextAt=0,refreshTimer=null,refreshBusy=false;
+ function stopTour(){clearInterval(tourTimer);clearInterval(tourCountdown);tourTimer=tourCountdown=null;$('customer-tour').textContent='▷ 自动导览';$('customer-tour').setAttribute('aria-pressed','false');if($('customer-tour-status'))$('customer-tour-status').hidden=true;}
+ function scrollTourScene(){
+  const scene=document.querySelector(`[data-customer-step="${step}"]`),nav=document.querySelector('.journey');
+  scene.style.scrollMarginTop=(innerWidth<761?(nav?.getBoundingClientRect().height||0)+16:24)+'px';
+  scene.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+ }
+ function updateTourFeedback(){
+  const seconds=Math.max(1,Math.ceil((tourNextAt-Date.now())/1000));
+  if($('customer-tour-status'))$('customer-tour-status').hidden=false;
+  const label=`正在导览 · ${step+1}/5 ${labels[step]}`;if($('customer-tour-label')&&$('customer-tour-label').textContent!==label)$('customer-tour-label').textContent=label;
+  if($('customer-tour-countdown'))$('customer-tour-countdown').textContent=step===4?`${seconds}秒后结束导览`:`${seconds}秒后进入${labels[step+1]}`;
+  if($('customer-tour-pause'))$('customer-tour-pause').textContent='暂停';
+ }
+ function advanceTour(){
+  if(document.hidden||RenoAdditionSigning.isDirty()||RenoAdditionSigning.isBusy()){stopTour();return;}
+  if(step===4){stopTour();if($('customer-tour-status'))$('customer-tour-status').hidden=false;if($('customer-tour-label'))$('customer-tour-label').textContent='五个章节已导览完成';if($('customer-tour-countdown'))$('customer-tour-countdown').textContent='可自由切换章节继续查看';if($('customer-tour-pause'))$('customer-tour-pause').textContent='关闭';return;}
+  selectStep(step+1);tourNextAt=Date.now()+6000;updateTourFeedback();scrollTourScene();
+ }
  function selectStep(index,manual=false){
   if(manual)stopTour();step=index;
   document.querySelectorAll('[data-customer-step]').forEach(el=>el.hidden=Number(el.dataset.customerStep)!==step);
@@ -48,7 +65,7 @@
   const initial=await sb.rpc('renovation_customer_view',{p_token:token});
   if(initial.error)throw new Error('暂时无法读取项目，请联系HOUZY核对链接。');
   if(!initial.data)throw new Error('项目尚未确认或链接已失效，请联系HOUZY。');
-  project=initial.data;renderProject(project);$('customer-workspace').hidden=false;$('customer-controls').hidden=false;$('customer-guide').hidden=false;selectStep(step);
+  project=initial.data;renderProject(project);$('customer-workspace').hidden=false;$('customer-guide').hidden=false;selectStep(step);
   $('message').textContent='项目档案已读取。请按章节查看合同、款项、工程与质保。';
   const viewButton=$('view-signed-contract');viewButton.hidden=false;
   viewButton.onclick=async()=>{
@@ -89,8 +106,11 @@
    if(tourTimer){stopTour();return;}
    if(RenoAdditionSigning.isDirty()||RenoAdditionSigning.isBusy()){$('message').textContent='请先完成当前签署或重新核对签署内容，再开始导览。';return;}
    $('customer-tour').textContent='Ⅱ 暂停导览';$('customer-tour').setAttribute('aria-pressed','true');
-   tourTimer=setInterval(()=>{if(document.hidden||RenoAdditionSigning.isDirty()||RenoAdditionSigning.isBusy()){stopTour();return;}if(step===4){stopTour();return;}selectStep(step+1);},9000);
+   selectStep(step===4?0:step);tourNextAt=Date.now()+6000;updateTourFeedback();scrollTourScene();
+   tourTimer=setInterval(advanceTour,6000);tourCountdown=setInterval(updateTourFeedback,250);
   };
+  if($('customer-tour-pause'))$('customer-tour-pause').onclick=stopTour;
+  $('customer-controls').hidden=false;
   $('customer-scenes').addEventListener('pointerdown',stopTour);$('customer-scenes').addEventListener('focusin',stopTour);
   $('refresh-payments').onclick=$('refresh-project').onclick=()=>{stopTour();return refresh();};
   await refresh();if($('customer-workspace').hidden)return;refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},30*60*1000);
