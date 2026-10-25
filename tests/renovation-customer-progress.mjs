@@ -1,0 +1,34 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const {PGlite}=await import(process.env.RENO_PGLITE_MODULE||'@electric-sql/pglite');const db=new PGlite();let checks=0;
+const ok=(v,m)=>{assert(v,m);checks++;};
+try{
+ await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA storage;
+ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ CREATE TABLE stores(id uuid PRIMARY KEY,name text,region text);CREATE TABLE profiles(id uuid PRIMARY KEY,active boolean,role text,store_id uuid,region text);
+ CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid,bucket_id text,name text);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;`);
+ for(const name of ['orders','payments','payment_installments','phone_lookup','customer_orders','additions','addition_signatures','rpc_permissions'])await db.exec(fs.readFileSync(`supabase/renovation_${name}_migration.sql`,'utf8'));
+ const migration=fs.readFileSync('supabase/renovation_customer_progress_migration.sql','utf8');await db.exec(migration);await db.exec(migration);checks++;
+ const store=crypto.randomUUID(),staff=crypto.randomUUID(),one=crypto.randomUUID(),two=crypto.randomUUID(),draft=crypto.randomUUID(),token=crypto.randomUUID(),other=crypto.randomUUID(),draftToken=crypto.randomUUID();
+ await db.query('INSERT INTO stores VALUES($1,\'Test\',\'JB\')',[store]);await db.query('INSERT INTO profiles VALUES($1,true,\'staff\',$2,\'JB\')',[staff,store]);
+ for(const [id,t,state] of [[one,token,'executing'],[two,other,'confirmed'],[draft,draftToken,'draft']])await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot,customer_token) VALUES($1::uuid,$2,$3,$1::uuid::text,'Private owner','Private phone','Address',$4,'{"net":1000}',$5)`,[id,store,staff,state,t]);
+ const work=async(project,name,status,cancelled=false)=>{const id=crypto.randomUUID();await db.query(`INSERT INTO renovation_work_orders(id,project_id,group_name,line_ids,assignee,status,cancelled_at) VALUES($1,$2,$3,'[]','Private staff name',$4,CASE WHEN $5 THEN now() END)`,[id,project,name,status,cancelled]);return id;};
+ await work(one,'Materials','done');await work(one,'Construction','working');await work(one,'Cancelled','done',true);await work(two,'Other project','assigned');
+ const signedWork=await work(one,'Internal UUID group','assigned');
+ await db.query(`INSERT INTO renovation_additions(id,project_id,category,name,qty,unit,rate,group_name,payment_node,installment,work_order_id,created_by,signature_status,signed_at,signer_name,signed_terms_hash,signature_strokes,signed_snapshot,signature_hash) VALUES($1,$2,'work','Extra',1,'lot',100,'Visible extra group','After confirmation',1,$3,$4,'signed',now(),'Test signer','hash','[]','{}','hash')`,[crypto.randomUUID(),one,signedWork,staff]);
+ const read=async(t)=>(await db.query('SELECT renovation_customer_progress_view($1) value',[t])).rows[0].value;
+ await db.exec('SET ROLE anon');let result=await read(token);
+ ok(result.work_orders.length===3,'only active project groups, including signed addition');
+ ok(result.work_orders.some(w=>w.group_name==='Visible extra group'),'addition uses customer-facing name');
+ ok(result.work_orders.filter(w=>w.status==='done').length===1,'actual statuses retained');
+ ok(!JSON.stringify(result).includes('Private'),'no private staff/customer fields');
+ ok(!JSON.stringify(result).includes('Internal UUID'),'internal addition group prefix excluded');
+ ok(result.work_orders.every(w=>Object.keys(w).sort().join(',')==='group_name,status,updated_at'),'explicit minimal whitelist');
+ ok(await read(draftToken)===null,'draft token denied');ok(await read(crypto.randomUUID())===null,'invalid token denied');ok(await read(null)===null,'null token denied');
+ ok((await read(other)).work_orders.length===1,'another token returns only its project');
+ await assert.rejects(()=>db.query('SELECT * FROM renovation_work_orders'),/permission denied/);checks++;
+ await assert.rejects(()=>db.query("UPDATE renovation_work_orders SET status='done'"),/permission denied/);checks++;
+ await db.exec('RESET ROLE');await db.query('UPDATE renovation_projects SET customer_token=$1 WHERE id=$2',[crypto.randomUUID(),one]);await db.exec('SET ROLE anon');ok(await read(token)===null,'revoked link no longer grants access');
+ await db.exec('RESET ROLE; SET ROLE authenticated');ok((await read(other)).state==='confirmed','authenticated callers can use customer token view');
+ await db.exec('RESET ROLE');const emptyToken=crypto.randomUUID();await db.query('UPDATE renovation_projects SET customer_token=$1,state=\'confirmed\' WHERE id=$2',[emptyToken,draft]);await db.exec('SET ROLE anon');ok((await read(emptyToken)).work_orders.length===0,'no fabricated groups for empty project');
+ console.log(`PASS ${checks} customer execution progress checks`);
+}finally{await db.close();}
