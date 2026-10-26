@@ -220,7 +220,7 @@
     .bar, .steps { display: none; }
   }
 </style>
-</head>
+<link rel="stylesheet" href="quote-painting.css?v=jb-painting-20261025"></head>
 <body>
 <div class="wrap">
   <header class="top">
@@ -240,9 +240,11 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script><script src="quote-painting.js?v=jb-painting-20261025"></script>
 <script>
 (function () {
   'use strict';
+  const PAINT=window.HouzyPainting;
 
   // =====================================================================
   //  一、价目表（全公司统一单价 · 示例价，请按公司实际价格修改这里）
@@ -479,6 +481,7 @@
   //  bom 写法：{ m: 材料编码, q: 每 1 单位项目用多少, main: 是否主材, w: 损耗%（辅材默认 5） }
   //  【全部是示范用量和示范价，请工程/采购同事按公司实际填写】
   // =====================================================================
+  PAINT.install(PRICE);
   const MATERIALS = {
     tile600:  { name: '地砖 600×600（客户选定款）', unit: '平方尺', price: 3.8 },
     walltile: { name: '墙砖 300×600（客户选定款）', unit: '平方尺', price: 3.8 },
@@ -1062,7 +1065,7 @@
       info: { customer: '', phone: '', address: '', staff: '',
               quoteNo: 'Q' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()),
               date: d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) },
-      houseType: tpl.id === 'condo' ? 'condo' : tpl.id === 'landed' ? 'terrace' : '', spaArea: '', levels: tpl.levels, rooms: [], catalogSnapshot:clone(companyCatalog), globalServices:{}, answers: clone(tpl.answers), lines: {}, custom: [], prices: {},
+      ...PAINT.initialState(), houseType: tpl.id === 'condo' ? 'condo' : tpl.id === 'landed' ? 'terrace' : '', spaArea: '', levels: tpl.levels, rooms: [], catalogSnapshot:clone(companyCatalog), globalServices:{}, answers: clone(tpl.answers), lines: {}, custom: [], prices: {},
       settings: clone(DEFAULT_SETTINGS), discount: '', discountBy: '', template: tpl.name, docGroup: 'room'
     };
     tpl.rooms.forEach(([t, n, lv, over]) => p.rooms.push(Object.assign(makeRoom(t, n, lv), over || {})));
@@ -1181,7 +1184,7 @@
   function applyCatalog(rows){companyCatalog=rows;P.catalogSnapshot=clone(rows);try{localStorage.setItem(CATALOG_STORE,JSON.stringify(rows));}catch(e){}catalogPreview=null;catalogEditingKey=null;catalogMessage=`已应用 ${rows.length} 条规格价格，前端及本报价已重新计算。`;}
   function catalogEditorHtml(){
     const c=catalogDraft,field=(k,label)=>fld(label,'',`data-catalog-field="${k}"`,c[k]??'',false,['mat','aux','lab','waste'].includes(k));
-    return `<div class="card"><h2>公司统一规格价目表</h2><p class="hint">员工只选规格、工艺、承包范围及工程量；公司在这里按项目和尺寸维护主材、辅材、人工及损耗，前端自动计算。包工包料计主材（含损耗）＋辅材＋人工；客户供砖计辅材＋人工。支持Excel .xlsx、CSV和JSON；模板编码及列名请保留。规格可填300×600 mm等，多个条件用分号分隔；*表示公司明确设定的通用价，具体规格优先匹配。当前应用 ${activeCatalog().length} 条。</p><label>上传公司价目文件<input type="file" data-catalog-file accept=".xlsx,.csv,.json"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn-ghost" data-catalog-template="all">下载全部项目模板</button><button class="btn-ghost" data-catalog-template="current">下载本单已选规格模板</button><button class="btn-ghost" data-catalog-export>导出已录价格</button></div>${catalogMessage?`<div class="note" role="status">${esc(catalogMessage)}</div>`:''}${catalogPreview?`<div class="note">已校验 ${catalogPreview.length} 条，应用后按新表重新匹配当前报价。<button class="primary" data-catalog-apply>应用上传价目表</button><button class="btn-ghost" data-catalog-cancel>取消</button></div>`:''}<details><summary style="cursor:pointer;padding:12px 0">新增／修改一条规格价格</summary><div class="grid3"><div class="fld"><label>装修项目<select data-catalog-field="code">${Object.keys(PRICE).map(code=>`<option value="${code}" ${c.code===code?'selected':''}>${esc(PRICE[code].name)} (${code})</option>`).join('')}</select></label></div>${field('spec','规格条件（*为通用）')}${field('brand','品牌（留空不限）')}${field('model','型号（留空不限）')}${field('method','工艺（留空不限）')}<div class="fld"><label>承包范围<select data-catalog-field="scope">${[['','通用'],['all','包工包料'],['labour','客户供料']].map(([v,l])=>`<option value="${v}" ${c.scope===v?'selected':''}>${l}</option>`).join('')}</select></label></div>${field('unit','综合计价单位')}${field('materialUnit','材料计价单位')}${field('mat','材料单价 RM')}${field('aux','辅材单价 RM')}${field('lab','人工单价 RM')}${field('waste','材料损耗%')}</div><button class="primary" data-catalog-save>保存规格价格并重新计算</button></details><div class="scroll-x"><table class="ptable"><thead><tr><th>项目</th><th>规格／品牌／工艺</th><th>范围与单位</th><th>材料</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>${activeCatalog().map((r,i)=>`<tr><td>${esc(PRICE[r.code]?.name||r.code)}</td><td>${esc([r.spec,r.brand,r.model,r.method].filter(Boolean).join('；'))}</td><td>${r.scope==='labour'?'客户供料':r.scope==='all'?'包工包料':'通用'} / ${esc(r.unit)}<br>材料/${esc(r.materialUnit)}</td><td>${nf2(r.mat)}</td><td>${nf2(r.aux)}</td><td>${nf2(r.lab)}</td><td>${r.waste}</td><td><button class="btn-ghost" data-catalog-edit="${i}">编辑</button></td></tr>`).join('')||'<tr><td colspan="8">尚未录入公司规格价格。请上传文件或新增规格价。</td></tr>'}</tbody></table></div><p class="hint">价目表保存在本机浏览器；其他电脑需导入同一文件。已有报价保留自己的价目快照，上传应用后才更新本报价。</p></div>`;
+    return `<div class="card"><h2>公司统一规格价目表</h2><p class="hint">员工只选规格、工艺、承包范围及工程量；公司在这里按项目和尺寸维护主材、辅材、人工及损耗，前端自动计算。已应用新山油漆专项价时，油漆以专项综合单价为准，不在此拆分。包工包料计主材（含损耗）＋辅材＋人工；客户供砖计辅材＋人工。支持Excel .xlsx、CSV和JSON；模板编码及列名请保留。规格可填300×600 mm等，多个条件用分号分隔；*表示公司明确设定的通用价，具体规格优先匹配。当前应用 ${activeCatalog().length} 条。</p><label>上传公司价目文件<input type="file" data-catalog-file accept=".xlsx,.csv,.json"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn-ghost" data-catalog-template="all">下载全部项目模板</button><button class="btn-ghost" data-catalog-template="current">下载本单已选规格模板</button><button class="btn-ghost" data-catalog-export>导出已录价格</button></div>${catalogMessage?`<div class="note" role="status">${esc(catalogMessage)}</div>`:''}${catalogPreview?`<div class="note">已校验 ${catalogPreview.length} 条，应用后按新表重新匹配当前报价。<button class="primary" data-catalog-apply>应用上传价目表</button><button class="btn-ghost" data-catalog-cancel>取消</button></div>`:''}<details><summary style="cursor:pointer;padding:12px 0">新增／修改一条规格价格</summary><div class="grid3"><div class="fld"><label>装修项目<select data-catalog-field="code">${Object.keys(PRICE).map(code=>`<option value="${code}" ${c.code===code?'selected':''}>${esc(PRICE[code].name)} (${code})</option>`).join('')}</select></label></div>${field('spec','规格条件（*为通用）')}${field('brand','品牌（留空不限）')}${field('model','型号（留空不限）')}${field('method','工艺（留空不限）')}<div class="fld"><label>承包范围<select data-catalog-field="scope">${[['','通用'],['all','包工包料'],['labour','客户供料']].map(([v,l])=>`<option value="${v}" ${c.scope===v?'selected':''}>${l}</option>`).join('')}</select></label></div>${field('unit','综合计价单位')}${field('materialUnit','材料计价单位')}${field('mat','材料单价 RM')}${field('aux','辅材单价 RM')}${field('lab','人工单价 RM')}${field('waste','材料损耗%')}</div><button class="primary" data-catalog-save>保存规格价格并重新计算</button></details><div class="scroll-x"><table class="ptable"><thead><tr><th>项目</th><th>规格／品牌／工艺</th><th>范围与单位</th><th>材料</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>${activeCatalog().map((r,i)=>`<tr><td>${esc(PRICE[r.code]?.name||r.code)}</td><td>${esc([r.spec,r.brand,r.model,r.method].filter(Boolean).join('；'))}</td><td>${r.scope==='labour'?'客户供料':r.scope==='all'?'包工包料':'通用'} / ${esc(r.unit)}<br>材料/${esc(r.materialUnit)}</td><td>${nf2(r.mat)}</td><td>${nf2(r.aux)}</td><td>${nf2(r.lab)}</td><td>${r.waste}</td><td><button class="btn-ghost" data-catalog-edit="${i}">编辑</button></td></tr>`).join('')||'<tr><td colspan="8">尚未录入公司规格价格。请上传文件或新增规格价。</td></tr>'}</tbody></table></div><p class="hint">价目表保存在本机浏览器；其他电脑需导入同一文件。已有报价保留自己的价目快照，上传应用后才更新本报价。</p></div>`;
   }
 
   function makeRoom(type, name, level) {
@@ -1242,7 +1245,7 @@
     C.rows.forEach(r => {
       if (!r.on) return;
       if(r.tileInfo){if(r.tileInfo.ready&&r.supply!=='customer')tileMaterials.push({code:r.key,name:'瓷砖 '+r.pick,unit:'片',qty:r.tileInfo.pieces,raw:r.qty*(1+num(r.tileInfo.waste)/100)/r.tileInfo.pieceArea,uses:[r.roomName+'·'+r.name]});unsplit++;pending.push({...r,name:r.name+'（辅材包装及配件待拆分）'});return;}
-      if(r.catalogMatch){unsplit++;pending.push(r);return;}
+      if(r.bundle||r.catalogMatch){unsplit++;pending.push(r);return;}
       if (!r.code || !BOM[r.code]) { unsplit++;pending.push(r);return; }
       BOM[r.code].forEach(b => {
         if (b.main && r.supply === 'customer') return;   // 客户自备的主材不用买
@@ -1654,6 +1657,7 @@
   function compute() {
     const rows = gen().map(l => {
       const d = PRICE[l.code], st = P.lines[l.key] || {}, p = price(l.code);
+      const painting=PAINT.makeRow(l,st);if(painting)return painting;
       if(TILE_CODES.includes(l.code)&&P.rooms.find(r=>r.id===l.roomId)?.tileConfig?.[l.code])return tilePriceRow(l,st);
       if(activeCatalog().length)return companyRow(l,st);
       const manual = st.qty !== undefined && st.qty !== null && st.qty !== '';
@@ -1671,6 +1675,7 @@
       return Object.assign({}, l, { name: l.code==='counter' && fitSelected(P.rooms.find(r=>r.id===l.roomId)||{},'counter') ? '厨房定制台面' : d.name, unit: d.unit, stage: d.stage, forced: !!d.forced, soft: d.stage === 'soft', desc: FITOUT[l.code] && fitSelected(P.rooms.find(r=>r.id===l.roomId)||{},l.code) ? '按本项确认的材质、尺寸和配置制作安装；价格以核定清单为准。' : d.desc || '',
         st, manual, autoQty: l.qty, qty, on: !st.off, supply, p, uMat, mOwn, pick, hasMain: p.mat > 0 || p.bomMat, uAux: p.aux, uLab: p.lab, uPrice: unit, mat, aux, lab, total });
     });
+    rows.push(...PAINT.extraRows());
     P.custom.forEach(c => {
       const qty = num(c.qty), uPrice = num(c.mat) + num(c.lab), total = Math.round(qty * uPrice), mat = Math.round(qty * num(c.mat));
       rows.push({ key: 'c:' + c.id, custom: c, code: null, roomId: 'custom', roomName: c.room || '全屋', name: c.name || '（未命名自定义项）',
@@ -1678,18 +1683,18 @@
         uMat: num(c.mat), uAux: 0, uLab: num(c.lab), uPrice, mat, aux: 0, lab: total - mat, total, formula: '自定义项目', st: {} });
     });
 
-    let hard = 0, material = 0, auxSum = 0, soft = 0;
+    let hard = 0, material = 0, auxSum = 0, soft = 0, bundle = 0;
     const byStage = {};
     rows.forEach(r => {
       byStage[r.stage] = byStage[r.stage] || 0;
       if (!r.on) return;
       byStage[r.stage] += r.total;
-      if (r.soft) soft += r.total; else { hard += r.lab; material += r.mat; auxSum += r.aux; }
+      if(r.bundle)bundle+=r.total;else if (r.soft) soft += r.total; else { hard += r.lab; material += r.mat; auxSum += r.aux; }
     });
     const floorSum = totalFloor();
     const designArea = num(P.spaArea) || floorSum;
     const design = Math.round(designArea * num(P.settings.designRate));
-    const base = round2(hard + material + auxSum + soft);
+    const base = round2(hard + material + auxSum + soft + bundle);
     const mgmt = Math.round(base * num(P.settings.mgmtRate) / 100);
     const before = round2(base + design + mgmt);
     const discount = Math.min(Math.round(num(P.discount)), before);
@@ -1700,7 +1705,7 @@
     const pay = P.settings.pay.map(x => ({ name: x.name, pct: num(x.pct), amt: 0 }));
     let paid = 0;
     pay.forEach((x, i) => { x.amt = i === pay.length - 1 ? round2(total - paid) : round2(total * x.pct / 100); paid = round2(paid+x.amt); });
-    return { sst, rows, byStage, hard, material, auxSum, soft, base, design, designArea, floorSum, mgmt, before, discount, total, pay };
+    return { sst, rows, byStage, hard, material, auxSum, soft, bundle, base, design, designArea, floorSum, mgmt, before, discount, total, pay };
   }
 
   // =====================================================================
@@ -1708,6 +1713,7 @@
   // =====================================================================
   function checks(C) {
     const red = [], yellow = [];
+    const paintIssues=PAINT.issues(C.rows);paintIssues.red.forEach(m=>red.push({m,go:2}));paintIssues.yellow.forEach(m=>yellow.push({m,go:2}));
     C.rows.filter(r=>r.on&&r.catalogPending).forEach(r=>red.push({m:`「${r.roomName} · ${r.name}」${r.catalogReason}，请在价目表补齐`,go:5}));
     if(!houseDef(P.houseType)) red.push({m:'请先选择住宅类型',go:1});
     P.rooms.filter(r => r.planImported && !r.surveyConfirmed).forEach(r => red.push({m: `「${roomLabel(r)}」图纸尺寸待现场复尺确认`,go:1}));
@@ -1898,7 +1904,7 @@
 
   function renderStep2() {
     let h = `<div class="card" style="padding:12px 14px"><p class="hint" style="margin:0">这些问题<b>每一题都要问客户</b>并选"是/否"。红框 = 还没回答。答"是"系统会自动把对应项目和配套项目加进清单，不用自己记。</p></div>`;
-    h += serviceHtml();
+    h += serviceHtml()+PAINT.editorHtml();
     h += `<div class="group-title">全屋问题</div>`;
     activeQs().forEach(q => {
       const a = ans(q.id), done = a.v === true || a.v === false;
@@ -1923,6 +1929,7 @@
   }
 
   function lineHtml(r) {
+    if(r.painting)return PAINT.lineHtml(r);
     const open = expanded.has(r.key);
     const needReason = (!r.on && r.forced && !String(r.st.offReason || '').trim()) || (r.manual && !String(r.st.qtyReason || '').trim());
     const tags = (r.forced ? '<span class="tag req">必做</span>' : '') + (r.supply === 'customer' ? '<span class="tag cust">客户自备</span>' : '') + (r.manual ? '<span class="tag man">手动数量</span>' : '') + (r.pick || r.mOwn ? `<span class="tag pick">${esc(r.pick || '主材自定价')}</span>` : '');
@@ -2024,7 +2031,7 @@
       g.rows.forEach((r, ri) => {
         rowsH += `<tr><td>${gi + 1}.${ri + 1}</td><td>${P.docGroup === 'stage' ? `<span class="rn">${esc(r.roomName)}</span>` : ''}${esc(r.name)}</td>
           <td>${esc(r.unit)}</td><td class="r">${nf(r.qty)}</td>
-          <td class="r">${r.supply === 'customer' ? '甲供' : nf2(r.uMat)}</td><td class="r">${nf2(r.uAux)}</td><td class="r">${nf2(r.uLab)}</td>
+          ${r.bundle?'<td colspan="3" class="r">综合工料包价（未拆分）</td>':`<td class="r">${r.supply === 'customer' ? '甲供' : nf2(r.uMat)}</td><td class="r">${nf2(r.uAux)}</td><td class="r">${nf2(r.uLab)}</td>`}
           <td class="r">${nf2(r.uPrice)}</td><td class="r"><b>${rm(r.total)}</b></td>
           <td class="ds">${r.pick ? `<b class="pk">主材：${esc(r.pick)}</b>；` : ''}${esc(r.desc)}${r.supply === 'customer' ? '（主材客户自备，只收辅材+人工）' : ''}</td></tr>`;
       });
@@ -2041,7 +2048,7 @@
       <div class="sum">
         <div><span>主材</span><span class="mono">${rm(C.material)}</span></div>
         <div><span>辅材</span><span class="mono">${rm(C.auxSum)}</span></div>
-        <div><span>施工人工</span><span class="mono">${rm(C.hard)}</span></div>
+        <div><span>施工人工</span><span class="mono">${rm(C.hard)}</span></div>${C.bundle?`<div><span>综合工料包价</span><span class="mono">${rm(C.bundle)}</span></div>`:""}
         <div><span>软装</span><span class="mono">${rm(C.soft)}</span></div>
         <div><span>设计费（${nf(C.designArea)} 平方尺 × RM ${nf(P.settings.designRate)}）</span><span class="mono">${rm(C.design)}</span></div>
         <div><span>管理费（以上工程直接费 × ${nf(P.settings.mgmtRate)}%，不含设计费）</span><span class="mono">${rm(C.mgmt)}</span></div>
@@ -2078,11 +2085,11 @@
     lines.push(['序号', '项目名称', '位置', '单位', '数量', '主材单价', '辅材单价', '人工单价', '单价', '合价', '工艺做法及材料说明'].map(q).join(','));
     docGroups(C).forEach((g, gi) => {
       lines.push([q(gi + 1), q(g.name), '', '', '', '', '', '', '', q(g.rows.reduce((a, r) => a + r.total, 0))].join(','));
-      g.rows.forEach((r, ri) => lines.push([gi + 1 + '.' + (ri + 1), r.name, r.roomName, r.unit, r1(r.qty), r.supply === 'customer' ? '甲供' : r.uMat.toFixed(2),
-        r.uAux.toFixed(2), r.uLab.toFixed(2), r.uPrice.toFixed(2), r.total, (r.pick ? '主材：' + r.pick + '；' : '') + r.desc].map(q).join(',')));
+      g.rows.forEach((r, ri) => lines.push([gi + 1 + '.' + (ri + 1), r.name, r.roomName, r.unit, r1(r.qty), r.bundle?'综合工料（未拆分）':r.supply === 'customer' ? '甲供' : r.uMat.toFixed(2),
+        r.bundle?'':r.uAux.toFixed(2), r.bundle?'':r.uLab.toFixed(2), r.uPrice.toFixed(2), r.total, (r.pick ? '主材：' + r.pick + '；' : '') + r.desc].map(q).join(',')));
     });
     lines.push('');
-    [['主材', C.material], ['辅材', C.auxSum], ['施工人工', C.hard], ['软装', C.soft], ['设计费', C.design], ['管理费', C.mgmt], ['优惠', -C.discount], ['SST', C.sst], ['工程总造价', C.total]]
+    [['主材', C.material], ['辅材', C.auxSum], ['施工人工', C.hard], ...(C.bundle?[['综合工料包价',C.bundle]]:[]), ['软装', C.soft], ['设计费', C.design], ['管理费', C.mgmt], ['优惠', -C.discount], ['SST', C.sst], ['工程总造价', C.total]]
       .forEach(([k, v]) => lines.push([q(k), q(v)].join(',')));
     download(lines, `报价单_${i.customer || '未命名'}_${i.quoteNo}.csv`);
   }
@@ -2114,7 +2121,7 @@
 
   function renderStep5() {
     const s = P.settings;
-    let h = catalogEditorHtml() + `<div class="card"><h2>收费设置</h2><div class="grid3">
+    let h = PAINT.editorHtml()+catalogEditorHtml() + `<div class="card"><h2>收费设置</h2><div class="grid3">
         ${fld('设计费', 'RM/平方尺', 'data-set="designRate"', s.designRate, false, true)}
         ${fld('管理费', '%', 'data-set="mgmtRate"', s.mgmtRate, false, true)}
         ${fld('优惠需审批线', '%', 'data-set="discountLimit"', s.discountLimit, false, true)}
@@ -2134,6 +2141,7 @@
     STAGES.forEach(st => {
       h += `<tr><td colspan="7" style="font-weight:700;color:var(--navy);padding-top:10px">${st.no}. ${st.name}</td></tr>`;
       Object.keys(PRICE).filter(c => PRICE[c].stage === st.id).forEach(c => {
+        if(PAINT.isManaged()&&PAINT.isPainting(c))return;
         const p = price(c), chg = priceChanged(c);
         h += `<tr class="${chg ? 'chg' : ''}"><td>${PRICE[c].name}<div class="pdesc">${PRICE[c].desc || ''}</div></td><td>${PRICE[c].unit}</td>
           <td><input inputmode="decimal" data-price="${c}" data-f="mat" value="${p.mat}" ></td>
@@ -2354,6 +2362,7 @@
   document.addEventListener('change', e => { if (e.target.matches('input, select')) setTimeout(render, 0); });
 
   if(P.rooms.some(r=>r.workLegacy)){const originalRows=gen();P.rooms.filter(r=>r.workLegacy).forEach(r=>{r.work=Object.fromEntries(originalRows.filter(x=>x.roomId===r.id&&!FITOUT[x.code]&&!P.lines[x.key]?.off).map(x=>[x.code,true]));delete r.workLegacy;});}
+  PAINT.connect({getProject:()=>P,render,refresh});
   render();
 })();
 </script>
