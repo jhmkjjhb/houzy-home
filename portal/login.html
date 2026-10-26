@@ -784,6 +784,10 @@ async function redirect(data) {
     window.location.href = '/portal/academy.html';
     return;
   }
+  if (staffRoles.includes(role) && nextPage === 'quote.html') {
+    window.location.href = 'quote.html';
+    return;
+  }
   if (staffRoles.includes(role) && nextPage === 'renovation.html') {
     window.location.href = 'renovation.html';
     return;
