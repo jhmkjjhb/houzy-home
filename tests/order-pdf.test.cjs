@@ -1,5 +1,12 @@
 const assert = require('node:assert/strict');
 const {snapshot,render} = require('../portal/order-pdf.js');
+const vm = require('node:vm');
+const fs = require('node:fs');
+const configWindow = {};
+vm.runInNewContext(fs.readFileSync(require.resolve('../portal/order-pdf-company.js'),'utf8'), {window:configWindow});
+assert.ok(configWindow.HOUZY_PDF_COMPANY.taxStatus);
+assert.ok(configWindow.HOUZY_PDF_COMPANY.bankName);
+assert.ok(configWindow.HOUZY_PDF_COMPANY.accountNumber);
 const base = {amount:1000,currency:'MYR',payment_status:'unpaid',status:'pending_payment',order_no:'H-001',created_at:'2026-10-26T08:00:00Z',customers:{name:'王先生'}};
 const company = {legalName:'HOUZY HOME SDN. BHD.',registrationNumber:'202601013740',taxStatus:'TEST-TIN',bankName:'TEST BANK',accountName:'TEST COMPANY',accountNumber:'TEST-123'};
 let s = snapshot(base,[]);
@@ -8,7 +15,11 @@ assert.equal(s.paid,0);
 assert.match(render(base,[],[],company),/订单确认及付款通知/);
 assert.match(render(base,[],[],company),/Payment Notice/);
 assert.match(render(base,[],[],company),/TEST-123/);
+assert.match(render(base,[],[],configWindow.HOUZY_PDF_COMPANY),/Tax ID:/);
+assert.match(render(base,[],[],configWindow.HOUZY_PDF_COMPANY),/United Overseas Bank/);
+assert.match(render({...base,currency:'SGD'},[],[],configWindow.HOUZY_PDF_COMPANY),/exchange rate with the company/);
 assert.match(render(base,[],[],company),/Order Confirmation Signatures/);
+assert.doesNotMatch(render({...base,notes:'internal commission 20%'},[],[],company),/internal commission/);
 assert.match(render(base,[],[],company),/MYR 1000\.00/);
 assert.match(render(base,[],[],company),/请按约定付款安排支付未收余额/);
 s = snapshot({...base,payment_status:'partial'},[

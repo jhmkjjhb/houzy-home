@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync(require.resolve('../portal/staff.html'),'utf8');
+const start=source.indexOf('async function downloadOrderPDF(orderId) {');
+const end=source.indexOf('\nfunction onUpdStatusChange()',start);
+assert.ok(start>=0 && end>start);
+const co={};vm.runInNewContext(fs.readFileSync(require.resolve('../portal/order-pdf-company.js'),'utf8'),{window:co});
+const order={id:'1',order_no:'ORDER-1',amount:1000,currency:'MYR',payment_status:'partial',status:'pending_payment',created_at:'2026-10-26',customers:{name:'Demo'}};
+const payments=[{amount:250,method:'transfer',paid_at:'2026-10-26'}];
+let saved=false, captured='', filename='', removed=false, alertText='';
+const button={innerHTML:'Download PDF',disabled:false};
+const document={querySelector:()=>button,fonts:{ready:Promise.resolve()},body:{appendChild(node){captured=node.innerHTML}},createElement:()=>({style:{},firstElementChild:{},remove(){removed=true}})};
+const sb={from(table){return {select(){return {eq(){return {single:async()=>({data:order}),order:async()=>({data:table==='order_items'?[]:payments})}}}}}}};
+const ctx={window:co,document,sb,console,alert:v=>{alertText=v},HouzyOrderPDF:require('../portal/order-pdf.js'),html2pdf:()=>({set(options){filename=options.filename;return this},from(){return this},async save(){saved=true}})};
+vm.runInNewContext(source.slice(start,end),ctx);
+(async()=>{
+ await ctx.downloadOrderPDF('1');
+ assert.equal(alertText,'');assert.equal(saved,true);assert.equal(removed,true);assert.equal(button.disabled,false);
+ assert.equal(button.innerHTML,'Download PDF');assert.equal(filename,'ORDER-1-statement.pdf');
+ assert.match(captured,/订单确认及付款通知/);assert.match(captured,/United Overseas Bank/);assert.match(captured,/MYR 750\.00/);
+ console.log('order PDF download integration check passed');
+})().catch(e=>{console.error(e);process.exitCode=1});
