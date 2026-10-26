@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 // Every external service is a fixture: no Firecrawl credits or OpenAI tokens are spent by this test.
 let handler,checks=0;const ok=(v,m)=>{assert(v,m);checks++;};
-const ENV={SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'service-fixture',SUPABASE_ANON_KEY:'anon-fixture',FIRECRAWL_API_KEY:'fc-fixture',OPENAI_API_KEY:'oa-fixture',RADAR_CRON_SECRET:'cron-fixture'};
+const ENV={SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'service-fixture',SUPABASE_ANON_KEY:'anon-fixture',FIRECRAWL_API_KEY:'fc-fixture',OPENAI_API_KEY:'oa-fixture',RADAR_CRON_SECRET:'cron-fixture',RADAR_RETRY_SCALE:'0'};
+let limited=0;
 globalThis.Deno={serve:fn=>handler=fn,env:{get:k=>ENV[k]}};
 let calls=[],busy=false,inserted=[],patches=[],runPatch=null,aiBodies=[];
 const KNOWN='facebook.com/groups/1/posts/known';
@@ -13,9 +14,11 @@ globalThis.fetch=async(url,opt={})=>{
  if(u.includes('/lead_radar_runs?select=id&status=eq.running'))return Response.json(busy?[{id:'r0'}]:[]);
  if(u.endsWith('/rest/v1/lead_radar_runs')&&method==='POST')return Response.json([{id:'run-1'}]);
  if(u.includes('/lead_radar_runs?id=eq.')){runPatch=body;return new Response(null,{status:204});}
- if(u.includes('/lead_radar_queries'))return Response.json([{query:'kitchen cabinet JB'},{query:'新山 装修 推荐'}]);
+ if(u.includes('/lead_radar_queries'))return Response.json([{query:'kitchen cabinet JB'},{query:'新山 装修 推荐'},{query:'busy JB'}]);
  if(u==='https://api.firecrawl.dev/v2/search'){
   if(body.query==='新山 装修 推荐')return new Response('down',{status:500});
+  // Free plans rate-limit bursts: the first try is refused, the retry succeeds.
+  if(body.query==='busy JB'){if(limited++===0)return new Response('slow down',{status:429,headers:{'retry-after':'5'}});return Response.json({creditsUsed:2,data:{web:[]}});}
   ok(body.tbs==='qdr:w'&&body.country==='MY','searches are limited to the last week in Malaysia');
   return Response.json({creditsUsed:2,data:{web:[
    {url:'https://www.facebook.com/groups/1/posts/111/?mibextid=x',title:'Need kitchen cabinet',description:'2 days ago · Need full kitchen cabinet in Skudai, contractors pls WhatsApp me 012-345 6821'},
@@ -48,6 +51,7 @@ busy=true;r=await call({'x-radar-secret':'cron-fixture'});ok(r.status===409,'con
 calls=[];r=await call({'x-radar-secret':'cron-fixture'});const out=await r.json();
 ok(r.status===200&&out.status==='partial','one failed query makes the run partial, not failed');
 ok(runPatch.errors.some(e=>e.step==='search'&&e.detail.includes('新山 装修 推荐')),'failed query recorded for the admin');
+ok(limited===2&&!runPatch.errors.some(e=>e.detail.includes('busy JB')),'a rate-limited search is retried instead of lost');
 ok(inserted.length===2&&inserted.every(i=>i.url_key!==KNOWN),'duplicates and already-stored posts are not saved again');
 const fb=inserted.find(i=>i.url_key==='facebook.com/groups/1/posts/111');
 ok(fb.platform==='facebook_group'&&fb.published_hint==='2 days ago'&&fb.date_verified===true,'platform and search-engine date saved');
@@ -57,7 +61,7 @@ const demand=patches.find(p=>p.id==='id-111'),ad=patches.find(p=>p.id==='id-ad1'
 ok(demand.posted_contact==='+60123456821'&&demand.invites_contact===true,'invited number taken from the post text');
 ok(demand.suggested_reply.includes('https://wa.me/60105898786?text=')&&demand.suggested_reply.includes('Radar-id-111'),'reply carries a HOUZY WhatsApp link tagged with the post');
 ok(ad.posted_contact===null&&ad.invites_contact===false&&ad.score<20&&ad.service===null,"a competitor's number in an ad is never stored");
-ok(runPatch.new_items===2&&runPatch.demand_items===1&&runPatch.search_credits===2&&runPatch.ai_input_tokens===900,'run log records counts and spend');
+ok(runPatch.new_items===2&&runPatch.demand_items===1&&runPatch.search_credits===4&&runPatch.queries_run===2&&runPatch.ai_input_tokens===900,'run log records counts and spend');
 ok(calls.some(c=>c.u.endsWith('/rpc/lead_radar_purge')),'old posts purged after each run');
 
 // A manager can run it by hand; the run is attributed to them.

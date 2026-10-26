@@ -5,6 +5,8 @@ import { CLASSIFY_SCHEMA, SYSTEM_PROMPT, buildUserInput, malaysianMobile, parseC
 
 const origins = new Set(['https://houzyhome.com', 'https://www.houzyhome.com']);
 const env = (k: string) => Deno.env.get(k) || '';
+// Tests set RADAR_RETRY_SCALE=0 so rate-limit waits do not slow them down.
+const retryScale = env('RADAR_RETRY_SCALE') === '0' ? 0 : 1;
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin');
@@ -53,10 +55,17 @@ Deno.serve(async (req: Request) => {
     // Edge Functions have a wall-clock limit, so searches run five at a time.
     const search = async (q: { query: string }) => {
       try {
-        const res = await fetch('https://api.firecrawl.dev/v2/search', {
-          method: 'POST', headers: { Authorization: `Bearer ${firecrawl}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: q.query, limit: 10, tbs: 'qdr:w', country: 'MY', sources: ['web'] }), signal: AbortSignal.timeout(60000),
-        });
+        let res: Response;
+        // Rate limited (HTTP 429, e.g. on the free plan): wait as told, up to 30 s, and try again twice.
+        for (let attempt = 0; ; attempt++) {
+          res = await fetch('https://api.firecrawl.dev/v2/search', {
+            method: 'POST', headers: { Authorization: `Bearer ${firecrawl}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q.query, limit: 10, tbs: 'qdr:w', country: 'MY', sources: ['web'] }), signal: AbortSignal.timeout(60000),
+          });
+          if (res.status !== 429 || attempt >= 2) break;
+          const wait = Math.min(30, Math.max(1, Number(res.headers.get('retry-after')) || 10 * (attempt + 1)));
+          await new Promise(r => setTimeout(r, wait * 1000 * retryScale));
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body = await res.json();
         stats.queries_run++; stats.search_credits += Number(body?.creditsUsed) || 0;
