@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>HOUZY · 需求雷达</title><meta name="theme-color" content="#153927"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@500;700&amp;display=swap" rel="stylesheet"><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="houzy-brand.css?v=5"><link rel="stylesheet" href="renovation/style.css?v=work-details-20261024"><link rel="stylesheet" href="renovation/workspace.css?v=employee-journey-20261025"><link rel="stylesheet" href="lead-radar/style.css?v=radar-20261026"><script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script><script defer src="lead-radar/app.js?v=radar-20261026"></script></head>
+<body class="renovation-workspace"><a class="workspace-skip" href="#main-content">跳转到主要内容</a>
+<aside class="workspace-sidebar" aria-label="员工后台导航">
+<a class="workspace-brand" href="staff.html"><img src="/favicon.svg" alt="" width="40" height="40"><span><strong>HOUZY HOME</strong><small>合屋 · 员工工作台</small></span></a>
+<div class="sidebar-caption">工作空间</div>
+<nav class="workspace-nav"><a href="staff.html?view=dashboard"><span aria-hidden="true">◫</span>工作总览</a><a href="staff.html?view=orders"><span aria-hidden="true">▤</span>商品订单</a><a href="renovation.html"><span aria-hidden="true">⌂</span>整装订单<small>项目</small></a><a class="selected" href="lead-radar.html" aria-current="page"><span aria-hidden="true">◎</span>需求雷达<small>获客</small></a><a href="staff.html?view=create"><span aria-hidden="true">＋</span>新建商品订单</a></nav>
+<div class="sidebar-project"><span class="sidebar-caption">需求雷达</span><p>每天早上，<br>找出正在找装修的人。</p><div class="sidebar-rule"></div><small>公开帖子 · AI 筛选<br>员工回复 · 客户主动联系</small></div>
+<a class="sidebar-return" href="staff.html">← 返回员工后台</a>
+</aside>
+<header class="workspace-topbar"><a class="mobile-brand" href="staff.html"><img src="/favicon.svg" alt="" width="28" height="28">HOUZY HOME</a><nav aria-label="面包屑"><a href="staff.html">员工后台</a><span aria-hidden="true">/</span><span>需求雷达</span></nav><span class="workspace-module"><i></i>获客</span><a class="mobile-return" href="staff.html">返回后台 ↗</a></header>
+<main id="main-content">
+<div class="heading"><div><p class="eyebrow">HOUZY HOME <span>／</span> 获客</p><h1>需求雷达</h1><p class="heading-description">每天自动搜索新山的公开装修求助帖，AI 过滤同行广告。请到原帖回复，引导客户主动 WhatsApp 我们。</p></div><div class="actions"><button id="run-now" hidden>立即运行一次</button></div></div>
+<p id="message" role="status" aria-live="polite">正在验证员工登录…</p>
+<p id="run-info" class="radar-run" hidden></p>
+
+<div id="overview" class="project-overview" hidden>
+ <div class="overview-cell"><span>待处理的真实需求</span><strong id="count-new">0</strong><small>近 30 天，未回复</small></div>
+ <div class="overview-cell"><span>已过滤</span><strong id="count-filtered">0</strong><small>同行广告、外地和无关帖子</small></div>
+ <div class="overview-cell"><span>已回复 / 已联系</span><strong id="count-replied">0</strong><small>近 30 天</small></div>
+ <div class="overview-cell"><span>已转客户</span><strong id="count-won">0</strong><small>本月</small></div>
+</div>
+
+<section id="trends" class="panel radar-trends" aria-labelledby="trends-heading" hidden>
+ <div class="radar-trends-head"><h2 id="trends-heading">需求趋势</h2>
+  <div class="radar-seg" role="group" aria-label="统计周期"><button type="button" data-period="7" aria-pressed="true">近 7 天</button><button type="button" data-period="30" aria-pressed="false">近 30 天</button></div></div>
+ <div class="radar-tgrid">
+  <div><h3>按服务类型</h3><div id="trend-service"></div></div>
+  <div><h3>按地区</h3><div id="trend-area"></div></div>
+  <div><h3>常被提到的词</h3><div id="trend-keywords" class="radar-kw"></div></div>
+ </div>
+ <p class="radar-note">只统计 AI 判断为真实需求的帖子。样本少时仅供参考。</p>
+</section>
+
+<section id="feed-section" hidden>
+ <div class="radar-tools">
+  <label for="filter-service">服务类型<select id="filter-service"><option value="">全部</option><option value="full_house">全屋装修</option><option value="kitchen">厨房橱柜</option><option value="wardrobe">衣柜</option><option value="bathroom">浴室</option><option value="aluminium">铝合金柜</option><option value="other">其他</option></select></label>
+  <label for="filter-platform">来源<select id="filter-platform"><option value="">全部</option></select></label>
+  <label for="filter-state">状态<select id="filter-state"><option value="open">未处理</option><option value="done">已处理</option><option value="all">全部</option></select></label>
+  <label for="filter-search" class="radar-search">搜索<input id="filter-search" type="search" placeholder="地区、关键词或帖子内容" autocomplete="off"></label>
+ </div>
+ <div id="feed" class="radar-feed"></div>
+</section>
+
+<section id="filtered-section" class="panel" hidden>
+ <details><summary id="filtered-summary">查看 AI 过滤掉的帖子</summary><p class="radar-note">如果发现真实需求被误判，请告诉管理员调整关键词。</p><div id="filtered"></div></details>
+</section>
+
+<section id="admin-section" class="panel" hidden>
+ <details><summary>搜索关键词（总经理及管理员可修改）</summary>
+  <p class="radar-note">每个启用的关键词每天搜索一次，每次约消耗 2 个 Firecrawl 积分。每天最多运行前 25 个。</p>
+  <form id="query-form" class="radar-query-form"><label for="query-text">新关键词<input id="query-text" maxlength="200" required placeholder="例如：Tebrau kitchen cabinet recommend"></label><label for="query-lang">语言<select id="query-lang"><option value="en">英文</option><option value="zh">中文</option><option value="ms">马来语</option></select></label><button type="submit">添加</button></form>
+  <div id="queries"></div>
+ </details>
+</section>
+<p class="radar-note radar-footer">只读取搜索引擎收录的公开内容，不自动回复。帖子里的号码只在客户明确邀请承包商联系时保存，且只能联系一次。未转客户的帖子 90 天后自动删除。</p>
+</main>
+</body></html>
