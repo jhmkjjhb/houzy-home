@@ -1,6 +1,11 @@
 -- Phone lookup returns only order identifiers and state. Private contract data
 -- and capability tokens still require renovation_customer_lookup(phone, code).
 BEGIN;
+-- Later migrations redefine functions created here; re-running this file would
+-- silently restore older money/permission rules, so refuse once they exist.
+DO $guard$ BEGIN IF to_regclass('public.renovation_additions') IS NOT NULL THEN
+ RAISE EXCEPTION '此迁移已被 renovation_additions_migration.sql 取代，重跑会恢复旧规则，已停止。请按《整装订单上线与验收》的迁移顺序执行。';
+END IF; END $guard$;
 -- Historical Malaysian mobile entries may omit +60 or use a trunk zero.
 -- Only recognise the Malaysian mobile shape, never arbitrary suffix matching.
 CREATE OR REPLACE FUNCTION public._reno_lookup_phone(p_phone text)

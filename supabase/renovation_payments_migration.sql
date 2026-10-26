@@ -1,6 +1,11 @@
 -- Actual renovation receipts, separate from contract milestone plans and legacy
 -- merchandise order receivables. No historical payments are inferred/backfilled.
 BEGIN;
+-- Later migrations redefine functions created here; re-running this file would
+-- silently restore older money/permission rules, so refuse once they exist.
+DO $guard$ BEGIN IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='renovation_payments' AND column_name='installment') THEN
+ RAISE EXCEPTION '此迁移已被 renovation_payment_installments_migration.sql 取代，重跑会恢复旧规则，已停止。请按《整装订单上线与验收》的迁移顺序执行。';
+END IF; END $guard$;
 CREATE TABLE IF NOT EXISTS public.renovation_payments(
  id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES public.renovation_projects(id),
  kind text NOT NULL CHECK(kind IN ('receipt','refund')),amount numeric(14,2) NOT NULL CHECK(amount>0),

@@ -1,5 +1,10 @@
 -- Preserve each incoming transfer and allocate it to a locked contract instalment.
 BEGIN;
+-- Later migrations redefine functions created here; re-running this file would
+-- silently restore older money/permission rules, so refuse once they exist.
+DO $guard$ BEGIN IF to_regclass('public.renovation_additions') IS NOT NULL THEN
+ RAISE EXCEPTION '此迁移已被 renovation_additions_migration.sql 取代，重跑会恢复旧规则，已停止。请按《整装订单上线与验收》的迁移顺序执行。';
+END IF; END $guard$;
 ALTER TABLE public.renovation_payments ADD COLUMN IF NOT EXISTS installment integer CHECK(installment>=1);
 CREATE OR REPLACE FUNCTION public._reno_check_installment_totals(p_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
