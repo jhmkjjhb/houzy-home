@@ -154,6 +154,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="order-pdf-company.js"></script>
+<script src="order-pdf.js"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -524,13 +527,20 @@ async function openDetail(id) {
     `<div class="text-center py-10 text-gray-400">${ct('loading')}</div>`;
   show('s-detail');
 
-  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }] = await Promise.all([
+  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }, { data: statementResp }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_detail_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
+    sb.rpc('get_order_statement_by_phone', { p_order_id: id, p_phone: myPhone }),
   ]);
   const _draws = Array.isArray(drawResp) ? drawResp : [];
+  let paymentSnapshot = {stage:'verify'};
+  if (statementResp?.order) {
+    try { paymentSnapshot = HouzyOrderPDF.snapshot(statementResp.order, statementResp.payments || []); }
+    catch (error) { console.warn('[Customer order payment]', error); }
+  }
+  if (statementResp?.order) { o.payment_status = statementResp.order.payment_status; o.amount = statementResp.order.amount; }
 
   // 以服务器最新 status 为准(缓存列表可能已过期),签收面板按最新状态判断
   const freshStatus = freshOrder?.status || o.status;
@@ -739,8 +749,8 @@ async function openDetail(id) {
         </div>` : ''}
         <div class="flex justify-between">
           <span class="text-gray-500">${ct('pay_status')}</span>
-          <span class="font-medium ${o.payment_status === 'paid' ? 'text-green-600' : 'text-red-500'}">
-            ${o.payment_status === 'paid' ? ct('paid_yes') : ct('paid_no')}
+          <span class="font-medium ${paymentSnapshot?.stage === 'paid' ? 'text-green-600' : paymentSnapshot?.stage === 'partial' ? 'text-amber-700' : 'text-red-500'}">
+            ${paymentSnapshot?.stage === 'paid' ? '已付款 / Paid in Full' : paymentSnapshot?.stage === 'partial' ? '部分付款 / Partially Paid' : paymentSnapshot?.stage === 'verify' ? '待核实 / Under Review' : paymentSnapshot?.stage === 'cancelled' ? '已作废 / Cancelled' : '待付款 / Awaiting Payment'}
           </span>
         </div>
         <div class="flex justify-between">
@@ -752,6 +762,11 @@ async function openDetail(id) {
           <span class="text-gray-700">${fmtDate(o.completed_at)}</span>
         </div>` : ''}
       </div>
+      <button type="button" onclick="downloadCustomerOrderPDF('${id}')"
+        class="mt-4 w-full py-3 rounded-xl font-semibold text-sm border" style="background:#153927;color:#f5f2ed;border-color:#153927">
+        下载最新订单 PDF / Download Latest Statement
+      </button>
+      <p class="mt-2 text-xs text-gray-500 text-center">每次下载显示最新付款状态 / Each download shows the latest payment status</p>
       ${progressBar}
     </div>
 
@@ -789,6 +804,43 @@ async function openDetail(id) {
     const c = document.getElementById('dwg-sig-' + dw.supplier_id);
     if (c) _dwgSigs[dw.supplier_id] = _initDwgSigOn(c);
   });
+}
+
+async function downloadCustomerOrderPDF(orderId) {
+  const button = document.querySelector(`button[onclick="downloadCustomerOrderPDF('${orderId}')"]`);
+  const previous = button?.innerHTML;
+  let wrapper;
+  if (button) { button.disabled = true; button.textContent = '正在获取最新付款记录 / Loading latest payments…'; }
+  try {
+    if (!myPhone || !myOrders.some(o => o.id === orderId)) throw new Error('请重新查询订单 / Please search for your order again.');
+    const {data, error} = await sb.rpc('get_order_statement_by_phone', {p_order_id:orderId,p_phone:myPhone});
+    if (error || !data?.order || !Array.isArray(data.items) || !Array.isArray(data.payments)) {
+      throw new Error('暂时无法取得最新订单及收款记录，请重试。 / Unable to load the latest order and payment records.');
+    }
+    const company = window.HOUZY_PDF_COMPANY;
+    if (!company?.taxStatus || !company?.bankName || !company?.accountNumber) throw new Error('公司收款资料尚未核实 / Company payment details are unavailable.');
+    const stage = HouzyOrderPDF.snapshot(data.order, data.payments).stage;
+    wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
+    wrapper.innerHTML = HouzyOrderPDF.render(data.order, data.items, data.payments, company);
+    document.body.appendChild(wrapper);
+    await document.fonts.ready;
+    await html2pdf().set({
+      margin:[8,0,8,0],
+      filename:`${String(data.order.order_no || 'order').replace(/[^a-zA-Z0-9_-]/g,'_')}-${stage}-${new Date().toISOString().slice(0,10)}.pdf`,
+      image:{type:'jpeg',quality:0.97},
+      html2canvas:{scale:2,useCORS:true,logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy'],avoid:['tr','.keep','header']},
+    }).from(wrapper.firstElementChild).save();
+    await openDetail(orderId);
+  } catch (error) {
+    console.error('[Customer order PDF]', error);
+    alert(error.message || '订单 PDF 生成失败 / Unable to generate order PDF');
+  } finally {
+    wrapper?.remove();
+    if (button) { button.innerHTML = previous; button.disabled = false; }
+  }
 }
 
 // 复用现有签名风格的小画板（多个共存，按 supplier_id 区分）
