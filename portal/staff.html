@@ -4489,6 +4489,7 @@ async function downloadOrderPDF(orderId) {
       throw new Error('无法读取完整订单及收款资料，请稍后重试。Unable to load complete order and payment data.');
     }
     const order = results[0].data;
+    const stage = HouzyOrderPDF.snapshot(order, results[2].data).stage;
     wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
     wrapper.innerHTML = HouzyOrderPDF.render(order, results[1].data, results[2].data, company);
@@ -4496,7 +4497,7 @@ async function downloadOrderPDF(orderId) {
     await document.fonts.ready;
     await html2pdf().set({
       margin: [8, 0, 8, 0],
-      filename: `${String(order.order_no || 'order').replace(/[^a-zA-Z0-9_-]/g, '_')}-statement.pdf`,
+      filename: `${String(order.order_no || 'order').replace(/[^a-zA-Z0-9_-]/g, '_')}-${stage}-${new Date().toISOString().slice(0,10)}.pdf`,
       image: {type: 'jpeg', quality: 0.97},
       html2canvas: {scale: 2, useCORS: true, logging: false},
       jsPDF: {unit:'mm',format:'a4',orientation:'portrait'},
