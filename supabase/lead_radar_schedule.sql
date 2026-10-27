@@ -11,6 +11,7 @@ DO $$ BEGIN
   PERFORM vault.create_secret('PASTE_THE_SAME_SECRET_AS_RADAR_CRON_SECRET','lead_radar_cron_secret');
  END IF;
  IF EXISTS(SELECT 1 FROM cron.job WHERE jobname='lead-radar-daily') THEN PERFORM cron.unschedule('lead-radar-daily'); END IF;
+ IF EXISTS(SELECT 1 FROM cron.job WHERE jobname='lead-radar-classify') THEN PERFORM cron.unschedule('lead-radar-classify'); END IF;
 END $$;
 SELECT cron.schedule('lead-radar-daily','0 23 * * *',$job$
  SELECT net.http_post(
@@ -19,5 +20,13 @@ SELECT cron.schedule('lead-radar-daily','0 23 * * *',$job$
   body:='{}'::jsonb,
   timeout_milliseconds:=300000);
 $job$);
--- Check: SELECT jobname,schedule,active FROM cron.job WHERE jobname='lead-radar-daily';
--- Stop:  SELECT cron.unschedule('lead-radar-daily');
+-- Follow-ups at 07:20 and 07:40: one run cannot analyse a whole day's posts within the time limit; these only analyse what is left (no search credits).
+SELECT cron.schedule('lead-radar-classify','20,40 23 * * *',$job$
+ SELECT net.http_post(
+  url:='https://csabbxiijzghooppayae.supabase.co/functions/v1/lead-radar',
+  headers:=jsonb_build_object('Content-Type','application/json','x-radar-secret',(SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='lead_radar_cron_secret')),
+  body:='{"mode":"classify"}'::jsonb,
+  timeout_milliseconds:=300000);
+$job$);
+-- Check: SELECT jobname,schedule,active FROM cron.job WHERE jobname LIKE 'lead-radar%';
+-- Stop:  SELECT cron.unschedule('lead-radar-daily'); SELECT cron.unschedule('lead-radar-classify');

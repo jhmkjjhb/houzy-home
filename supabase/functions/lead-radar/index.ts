@@ -12,6 +12,7 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin');
   const cors: Record<string, string> = { 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Vary': 'Origin', 'Cache-Control': 'no-store', 'Content-Type': 'application/json' };
   if (origin && origins.has(origin)) cors['Access-Control-Allow-Origin'] = origin;
+  const started = Date.now();
   const reply = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers: cors });
   if (origin && !origins.has(origin)) return reply(403, { error: '不允许的访问来源' });
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -42,15 +43,21 @@ Deno.serve(async (req: Request) => {
   const since = new Date(Date.now() - 15 * 60000).toISOString();
   const busy = await rest(`lead_radar_runs?select=id&status=eq.running&started_at=gte.${encodeURIComponent(since)}&limit=1`).then(r => r.ok ? r.json() : []);
   if (Array.isArray(busy) && busy.length) return reply(409, { error: '雷达正在运行，请稍后再试' });
+  // {"mode":"classify"} skips searching and only analyses posts left pending (the scheduler sends it after the main run).
+  const classifyOnly = (await req.json().catch(() => ({})))?.mode === 'classify';
   const created = await rest('lead_radar_runs', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ trigger, triggered_by: triggeredBy }) });
   if (!created.ok) return reply(503, { error: '无法创建运行记录' });
   const run = (await created.json())[0];
   const errors: { step: string; detail: string }[] = [];
   const stats = { queries_run: 0, results_seen: 0, new_items: 0, demand_items: 0, search_credits: 0, ai_input_tokens: 0, ai_output_tokens: 0 };
 
+  // Edge Functions are stopped at 150 s on the free plan: stop starting new work before that and leave the rest for the next run.
+  const deadline = started + (Number(env('RADAR_TIME_BUDGET')) || 120) * 1000, left = () => deadline - Date.now();
   try {
     const maxQueries = Math.max(1, Math.min(50, Number(env('RADAR_MAX_QUERIES')) || 25));
     const queries: { query: string }[] = await rest(`lead_radar_queries?select=query&active=is.true&order=created_at&limit=${maxQueries}`).then(r => r.ok ? r.json() : []);
+    // Shuffled so that, when time runs short, a different set of keywords is skipped each day.
+    for (let i = queries.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [queries[i], queries[j]] = [queries[j], queries[i]]; }
     const hits = new Map<string, SearchHit>();
     // Edge Functions have a wall-clock limit, so searches run five at a time.
     const search = async (q: { query: string }) => {
@@ -64,6 +71,7 @@ Deno.serve(async (req: Request) => {
           });
           if (res.status !== 429 || attempt >= 2) break;
           const wait = Math.min(30, Math.max(1, Number(res.headers.get('retry-after')) || 10 * (attempt + 1)));
+          if (wait * 1000 * retryScale > left() - 20000) break;
           await new Promise(r => setTimeout(r, wait * 1000 * retryScale));
         }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -77,7 +85,10 @@ Deno.serve(async (req: Request) => {
         }
       } catch (e) { errors.push({ step: 'search', detail: `${q.query}: ${(e as Error).message}`.slice(0, 300) }); }
     };
-    for (let i = 0; i < queries.length; i += 5) await Promise.all(queries.slice(i, i + 5).map(search));
+    for (let i = 0; i < (classifyOnly ? 0 : queries.length); i += 5) {
+      if (left() < 20000) { errors.push({ step: 'time', detail: `时间不够，${queries.length - i} 个关键词今天未搜索` }); break; }
+      await Promise.all(queries.slice(i, i + 5).map(search));
+    }
 
     // Skip posts already stored by earlier runs.
     const keys = [...hits.keys()], known = new Set<string>();
@@ -102,7 +113,7 @@ Deno.serve(async (req: Request) => {
     const classify = async (batch: typeof pending) => {
       try {
         const res = await fetch('https://api.openai.com/v1/responses', {
-          method: 'POST', headers: { Authorization: `Bearer ${openai}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(90000),
+          method: 'POST', headers: { Authorization: `Bearer ${openai}`, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(Math.max(5000, Math.min(90000, left() + 20000))),
           body: JSON.stringify({ model, input: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: buildUserInput(batch) }], text: { format: { type: 'json_schema', name: 'lead_triage', schema: CLASSIFY_SCHEMA, strict: true } } }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status} ${(await res.text()).slice(0, 160)}`);
@@ -125,11 +136,14 @@ Deno.serve(async (req: Request) => {
     };
     const batches: (typeof pending)[] = [];
     for (let i = 0; i < pending.length; i += 15) batches.push(pending.slice(i, i + 15));
-    for (let i = 0; i < batches.length; i += 3) await Promise.all(batches.slice(i, i + 3).map(classify));
+    for (let i = 0; i < batches.length; i += 3) {
+      if (left() < 30000) { errors.push({ step: 'time', detail: '时间不够，其余帖子留待下次分析' }); break; }
+      await Promise.all(batches.slice(i, i + 3).map(classify));
+    }
     await rest('rpc/lead_radar_purge', { method: 'POST', body: '{}' }).catch(() => null);
   } catch (e) { errors.push({ step: 'run', detail: (e as Error).message.slice(0, 300) }); }
 
-  const status = !errors.length ? 'ok' : stats.queries_run ? 'partial' : 'failed';
+  const status = !errors.length ? 'ok' : stats.queries_run || (classifyOnly && stats.ai_output_tokens) ? 'partial' : 'failed';
   await rest(`lead_radar_runs?id=eq.${run.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ...stats, status, errors, finished_at: new Date().toISOString() }) }).catch(() => null);
   return reply(status === 'failed' ? 502 : 200, { run_id: run.id, status, ...stats, errors });
 });

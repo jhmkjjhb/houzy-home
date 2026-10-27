@@ -66,6 +66,12 @@ ok(calls.some(c=>c.u.endsWith('/rpc/lead_radar_purge')),'old posts purged after 
 
 // A manager can run it by hand; the run is attributed to them.
 calls=[];r=await call({authorization:'Bearer gm-token'});ok(r.status===200&&calls.find(c=>c.u.endsWith('/rest/v1/lead_radar_runs')&&c.method==='POST').body.triggered_by==='gm-user','manual run attributed to the manager');
+// Follow-up runs only analyse what is still pending: no search credits are spent.
+calls=[];r=await handler(new Request('https://fixture/functions/v1/lead-radar',{method:'POST',headers:{'x-radar-secret':'cron-fixture'},body:JSON.stringify({mode:'classify'})}));
+ok(r.status===200&&!calls.some(c=>c.u.includes('firecrawl'))&&calls.some(c=>c.u.includes('openai')),'classify-only run spends no search credits');
+// Out of time (the free plan stops functions at 150 s): no new searches start and the run says why, instead of being killed mid-way.
+ENV.RADAR_TIME_BUDGET='1';calls=[];r=await call({'x-radar-secret':'cron-fixture'});
+ok(!calls.some(c=>c.u.includes('firecrawl')||c.u.includes('openai'))&&runPatch.status==='failed'&&runPatch.errors.some(e=>e.step==='time'),'time budget stops new paid work and is logged');delete ENV.RADAR_TIME_BUDGET;
 // Missing keys stop the run with a clear message instead of a half-run.
 delete ENV.OPENAI_API_KEY;r=await call({'x-radar-secret':'cron-fixture'});ok(r.status===503&&(await r.json()).error.includes('OpenAI'),'missing key reported');
 console.log('PASS',checks,'lead radar function checks: caller auth, cost guards, de-duplication, partial failure, contact rule, reply link, run log');

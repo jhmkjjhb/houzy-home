@@ -77,11 +77,12 @@ For each post decide:
 - label "ad": a contractor, supplier, designer or agent promoting their own service, even if it says "looking for customers" or "recommendations wanted".
 - label "out_of_area": a real renovation need outside Johor.
 - label "irrelevant": anything else (influencer collaborations, jobs, news, general tips).
+Search snippets often mix a thread's original question with replies, and a page title may come from a contractor's reply or post. If any part of the text shows a homeowner asking for this kind of work in Johor, label "demand" and say in the reason that the request is in the thread or comments.
 score 0-100 = how likely HOUZY could win this job soon (explicit need, scope, timing and budget raise it; vague or old posts lower it). Non-demand posts score below 20.
 confidence 0-1 = how sure you are of the label from the text given.
 area: the Johor area named, or "" if none. keywords: up to 5 short phrases in the post's own language that describe the need.
 reason: one sentence in Simplified Chinese explaining the label for HOUZY staff.
-invites_contact: true only if the poster explicitly asks contractors to message or call them (e.g. "WhatsApp me", "PM me your quote", "contact me at").
+invites_contact: true only if the poster explicitly asks contractors to message or call them (e.g. "WhatsApp me", "PM me your quote", "contact me at"); false whenever the request sits in a thread or comments with other people's text, because any number there may belong to someone else.
 reply: for "demand" only, a short friendly public reply in the post's language from HOUZY HOME, offering a free site measurement; do not invent prices, projects or promotions; do not include any phone number or link (one is appended). For other labels, "".
 Use only the given text. Never invent details.`;
 
