@@ -66,6 +66,8 @@
   @media (min-width:768px) { .ord-desktop { display:block; } .ord-mobile { display:none; } }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="order-pdf-company.js"></script>
+<script src="order-pdf.js"></script>
 <script src="https://hit-pay.com/hitpay.js"></script>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:Inter,'Noto Sans SC',sans-serif">
@@ -4470,191 +4472,42 @@ async function openDetail(id, backView) {
 
 async function downloadOrderPDF(orderId) {
   const btn = document.querySelector(`button[onclick="downloadOrderPDF('${orderId}')"]`);
-  if (btn) { btn.textContent = t('pdf_generating') || '生成中…'; btn.disabled = true; }
-
-  const [
-    { data: o },
-    { data: items },
-  ] = await Promise.all([
-    sb.from('orders').select('*, stores(name,code), customers(name,phone,address), suppliers(name)').eq('id', orderId).single(),
-    sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
-  ]);
-
-  // Use current UI language for the PDF
-  const L = STAFF_I18N[currentLang] || STAFF_I18N['zh-CN'];
-  const pdfLang = { 'zh-CN':'zh-CN', 'zh-TW':'zh-TW', 'en':'en-MY', 'ms':'ms-MY', 'th':'th-TH' }[currentLang] || 'zh-CN';
-  const fontFamily = currentLang === 'th'
-    ? "'Noto Sans Thai', 'Noto Sans SC', Arial, sans-serif"
-    : "'Noto Sans SC', Arial, sans-serif";
-
-  const currency = o.currency || 'MYR';
-  const sym = CURRENCY_SYMBOL[currency] || currency;
-  const pmLabelMap = {
-    cash:     { 'zh-CN':'现金','zh-TW':'現金','en':'Cash','ms':'Tunai','th':'เงินสด' },
-    transfer: { 'zh-CN':'银行转账','zh-TW':'銀行轉帳','en':'Bank Transfer','ms':'Pindahan Bank','th':'โอนธนาคาร' },
-    ewallet:  { 'zh-CN':'电子钱包','zh-TW':'電子錢包','en':'E-Wallet','ms':'E-Dompet','th':'E-Wallet' },
-    card:     { 'zh-CN':'刷卡','zh-TW':'刷卡','en':'Card','ms':'Kad','th':'บัตร' },
-  };
-  const pmText  = o.payment_method ? (pmLabelMap[o.payment_method]?.[currentLang] || o.payment_method) : '';
-  const payText = o.payment_status === 'paid' ? L.pdf_paid : o.payment_status === 'partial' ? L.pdf_partial : L.pdf_unpaid;
-  const payColor = o.payment_status === 'paid' ? '#1a3a2a' : o.payment_status === 'partial' ? '#d97706' : '#dc2626';
-  const dateStr = new Date(o.created_at).toLocaleDateString(pdfLang);
-
-  // 单行渲染（跨分组共用，斑马纹用全局计数器）
-  let _zebra = 0;
-  const _pdfItemRow = (item) => {
-    const sub = Number(item.total_price || (item.quantity * item.unit_price));
-    const bg  = (_zebra++ % 2 === 0) ? '#fff' : '#f9f9f7';
-    return `<tr style="background:${bg}">
-      <td style="padding:7px 10px;border-bottom:1px solid #eee">${item.product_name}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #eee;color:#666">${item.model_spec || '—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:center">${item.quantity} ${item.uom || item.unit}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right">${sym} ${Number(item.unit_price).toFixed(2)}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:600">${sym} ${sub.toFixed(2)}</td>
-    </tr>`;
-  };
-  // 分模块报价：任一明细带 section → 按模块分组、每组出小计；否则平铺（老订单不受影响）
-  const _hasSections = (items || []).some(it => it.section);
-  let _bodyRows;
-  if (!_hasSections) {
-    _bodyRows = (items || []).map(_pdfItemRow).join('');
-  } else {
-    const _grp = {};
-    (items || []).forEach(it => { const k = it.section || '__ungrouped__'; (_grp[k] = _grp[k] || []).push(it); });
-    // 白名单之外的 section（如「铝合金门窗」）也要展示，按首次出现顺序补在白名单之后、未分组之前
-    const _known = new Set([...QUOTE_SECTIONS, '__ungrouped__']);
-    const _extras = Object.keys(_grp).filter(k => !_known.has(k));
-    const _order = [...QUOTE_SECTIONS, ..._extras, '__ungrouped__'];
-    _bodyRows = _order.filter(k => _grp[k]).map(k => {
-      const gi  = _grp[k];
-      const rawLbl = (k === '__ungrouped__') ? '其他项目' : k;
-      const lbl = sectionLabel(rawLbl);
-      const gs  = gi.reduce((s,it) => s + Number(it.total_price || (it.quantity * it.unit_price)), 0);
-      return `<tr><td colspan="5" style="padding:7px 10px;background:#1a3a2a;color:#c8a96e;font-weight:700;font-size:12px;letter-spacing:0.5px">${lbl}</td></tr>
-        ${gi.map(_pdfItemRow).join('')}
-        <tr><td colspan="4" style="padding:6px 10px;background:#f5f2ed;text-align:right;font-weight:600;color:#555;font-size:11.5px">${lbl} · ${L.pdf_subtotal}</td>
-          <td style="padding:6px 10px;background:#f5f2ed;text-align:right;font-weight:700;color:#1a3a2a">${sym} ${gs.toFixed(2)}</td></tr>`;
-    }).join('');
-  }
-
-  const itemsHtml = (items && items.length) ? `
-    <div style="margin-top:20px">
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-        <thead>
-          <tr style="background:#1a3a2a;color:#fff">
-            <th style="padding:8px 10px;text-align:left;font-weight:600">${L.pdf_product}</th>
-            <th style="padding:8px 10px;text-align:left;font-weight:600">${L.pdf_spec}</th>
-            <th style="padding:8px 10px;text-align:center;font-weight:600">${L.pdf_qty}</th>
-            <th style="padding:8px 10px;text-align:right;font-weight:600">${L.pdf_unit_price}</th>
-            <th style="padding:8px 10px;text-align:right;font-weight:600">${L.pdf_amount_col}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${_bodyRows}
-        </tbody>
-        <tfoot>
-          <tr style="background:#f5f2ed">
-            <td colspan="4" style="padding:9px 10px;text-align:right;font-weight:600;color:#1a3a2a">${L.pdf_subtotal}</td>
-            <td style="padding:9px 10px;text-align:right;font-weight:700;color:#1a3a2a">
-              ${sym} ${items.reduce((s,i)=>s+Number(i.total_price||(i.quantity*i.unit_price)),0).toFixed(2)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>` : '';
-
-  const html = `
-    <div style="font-family:${fontFamily};padding:32px 36px;max-width:720px;margin:0 auto;color:#222;background:#fff">
-
-      <!-- Header -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a3a2a;margin-bottom:22px">
-        <div>
-          <div style="font-size:24px;font-weight:700;color:#1a3a2a;letter-spacing:1px">HOUZY HOME</div>
-          <div style="font-size:12px;color:#888;margin-top:3px">${o.stores?.name || ''}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">${L.pdf_title}</div>
-          <div style="font-size:20px;font-weight:700;color:#1a3a2a;font-family:monospace;margin-top:2px">${o.order_no}</div>
-          <div style="font-size:11px;color:#888;margin-top:4px">${dateStr}</div>
-        </div>
-      </div>
-
-      <!-- Customer + Order info -->
-      <div style="display:flex;gap:28px;margin-bottom:20px">
-        <div style="flex:1;padding:14px;background:#f9f9f7;border-radius:8px">
-          <div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${L.pdf_customer_info}</div>
-          <div style="font-size:15px;font-weight:700;color:#1a3a2a">${o.customers?.name || '—'}</div>
-          <div style="font-size:13px;color:#555;margin-top:3px">${o.customers?.phone || ''}</div>
-          ${o.customers?.address ? `<div style="font-size:12px;color:#777;margin-top:3px">${o.customers.address}</div>` : ''}
-        </div>
-        <div style="flex:1;padding:14px;background:#f9f9f7;border-radius:8px">
-          <div style="font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${L.pdf_order_info}</div>
-          <div style="font-size:12.5px;margin-bottom:4px"><span style="color:#999">${L.pdf_payment}：</span><span style="font-weight:700;color:${payColor}">${payText}</span></div>
-          ${pmText ? `<div style="font-size:12.5px;margin-bottom:4px"><span style="color:#999">${L.pdf_method}：</span>${pmText}</div>` : ''}
-          ${o.suppliers?.name ? `<div style="font-size:12.5px;margin-bottom:4px"><span style="color:#999">${L.pdf_supplier}：</span>${o.suppliers.name}</div>` : ''}
-          ${o.deadline_at ? `<div style="font-size:12.5px"><span style="color:#999">${L.pdf_est_install}：</span><strong>${new Date(o.deadline_at).toLocaleDateString(pdfLang)}</strong></div>` : ''}
-        </div>
-      </div>
-
-      ${o.description ? `<div style="background:#f5f2ed;border-radius:6px;padding:10px 14px;font-size:13px;color:#555;margin-bottom:4px">${o.description}</div>` : ''}
-
-      <!-- Items table or simple total -->
-      ${itemsHtml || `<div style="background:#f5f2ed;border-radius:8px;padding:18px;text-align:center;color:#888;font-size:13px;margin-top:8px">
-        <div style="font-size:12px;color:#aaa;margin-bottom:4px">${L.pdf_total}</div>
-        <div style="font-size:24px;font-weight:700;color:#1a3a2a">${sym} ${Number(o.amount).toFixed(2)}</div>
-      </div>`}
-
-      <!-- Grand total bar -->
-      <div style="margin-top:10px;padding:13px 18px;background:#1a3a2a;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
-        <span style="color:#c8a96e;font-size:13px;font-weight:600">${L.pdf_total}</span>
-        <span style="color:#fff;font-size:22px;font-weight:700">${sym} ${Number(o.amount).toFixed(2)}</span>
-      </div>
-
-      ${o.notes ? `<div style="margin-top:12px;padding:10px 14px;border:1px dashed #ddd;border-radius:6px;font-size:12px;color:#777">${L.pdf_notes}：${o.notes}</div>` : ''}
-
-      <!-- Signature section -->
-      <div style="margin-top:28px;padding:18px 20px;border:1.5px solid #e5e7eb;border-radius:10px">
-        <div style="font-size:12px;font-weight:700;color:#1a3a2a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">${L.pdf_sig_title}</div>
-        <div style="font-size:12px;color:#c8a96e;font-weight:600;background:#fffbeb;border-radius:6px;padding:10px 14px;margin-bottom:18px;line-height:1.6">
-          ⚠️ ${L.pdf_disclaimer}
-        </div>
-        <div style="display:flex;gap:32px">
-          <div style="flex:1">
-            <div style="font-size:11px;color:#888;margin-bottom:36px">${L.pdf_customer_sig}</div>
-            <div style="border-top:1.5px solid #333;padding-top:6px;font-size:11px;color:#aaa">${L.pdf_customer_sig} / ${L.pdf_date_sig}</div>
-          </div>
-          <div style="flex:1">
-            <div style="font-size:11px;color:#888;margin-bottom:36px">${L.pdf_staff_sig}</div>
-            <div style="border-top:1.5px solid #333;padding-top:6px;font-size:11px;color:#aaa">${L.pdf_staff_sig} / ${L.pdf_date_sig}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="margin-top:22px;padding-top:12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:10.5px;color:#bbb">
-        <span>HOUZY HOME © ${new Date().getFullYear()}</span>
-        <span>${L.pdf_printed}：${new Date().toLocaleString(pdfLang)}</span>
-      </div>
-    </div>`;
-
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:750px;background:#fff';
-  wrapper.innerHTML = html;
-  document.body.appendChild(wrapper);
-
-  await html2pdf().set({
-    margin:        0,
-    filename:      `${o.order_no}.pdf`,
-    image:         { type: 'jpeg', quality: 0.97 },
-    html2canvas:   { scale: 2, useCORS: true, logging: false },
-    jsPDF:         { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:     { mode: 'avoid-all' },
-  }).from(wrapper.firstElementChild).save();
-
-  document.body.removeChild(wrapper);
-  if (btn) {
-    btn.innerHTML = `<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>${t('pdf_download_btn') || '下载订单 PDF'}`;
-    btn.disabled = false;
+  const previous = btn?.innerHTML;
+  let wrapper;
+  if (btn) { btn.textContent = '生成中 / Generating…'; btn.disabled = true; }
+  try {
+    const company = window.HOUZY_PDF_COMPANY;
+    if (!company?.taxStatus || !company?.bankName || !company?.accountName || !company?.accountNumber) {
+      throw new Error('公司税务及收款资料待核实，请联系管理员。Company payment details require verification.');
+    }
+    const results = await Promise.all([
+      sb.from('orders').select('*, stores(name,code), customers(name,phone,address)').eq('id', orderId).single(),
+      sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
+      sb.from('order_payments').select('*').eq('order_id', orderId).order('seq'),
+    ]);
+    if (results.some(r => r.error) || !results[0].data || !Array.isArray(results[1].data) || !Array.isArray(results[2].data)) {
+      throw new Error('无法读取完整订单及收款资料，请稍后重试。Unable to load complete order and payment data.');
+    }
+    const order = results[0].data;
+    wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
+    wrapper.innerHTML = HouzyOrderPDF.render(order, results[1].data, results[2].data, company);
+    document.body.appendChild(wrapper);
+    await document.fonts.ready;
+    await html2pdf().set({
+      margin: [8, 0, 8, 0],
+      filename: `${String(order.order_no || 'order').replace(/[^a-zA-Z0-9_-]/g, '_')}-statement.pdf`,
+      image: {type: 'jpeg', quality: 0.97},
+      html2canvas: {scale: 2, useCORS: true, logging: false},
+      jsPDF: {unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak: {mode:['css','legacy'],avoid:['tr','.keep','header']},
+    }).from(wrapper.firstElementChild).save();
+  } catch (error) {
+    console.error('[Order PDF]', error);
+    alert(error.message || '订单 PDF 生成失败 / Unable to generate order PDF');
+  } finally {
+    wrapper?.remove();
+    if (btn) { btn.innerHTML = previous; btn.disabled = false; }
   }
 }
 

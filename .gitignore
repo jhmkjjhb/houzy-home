@@ -1,6 +1,7 @@
 # 密钥/敏感配置 — 绝对不能进 Git
 .env
 .env.*
+supabase/private/
 *.key
 *.pem
 
