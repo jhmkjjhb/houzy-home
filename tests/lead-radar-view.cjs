@@ -11,6 +11,11 @@ const items=[
 let t=V.trends(items,7,now);ok(t.total===2&&t.service[0][0]==='厨房橱柜'&&t.service[0][1]===2,'7-day trend counts only recent demand');
 ok(t.keywords.find(k=>k[0]==='kitchen cabinet')[1]===2,'keywords merged regardless of letter case');
 ok(V.trends(items,30,now).total===3,'30-day window includes older demand');
+// One place, one row: the AI's spellings of the same area are merged so trend counts are not split.
+ok(['JB','Johor Bahru','新山','johor bahru '].every(x=>V.areaOf(x)==='新山')&&V.areaOf('Skudai, JB')==='Skudai'&&V.areaOf('Nusajaya')==='Iskandar Puteri'&&V.areaOf('Jbx Park')==='Jbx Park','area spellings merged, specific place wins');
+const mixed=[{label:'demand',area:'JB',keywords:['cari kontraktor','area jb'],found_at:at(1)},{label:'demand',area:'Johor Bahru',keywords:['Johor Bahru','kitchen'],found_at:at(1)}];
+const tm=V.trends(mixed,7,now);ok(tm.area.length===1&&tm.area[0][0]==='新山'&&tm.area[0][1]===2,'JB and Johor Bahru counted as one area');
+ok(!tm.keywords.some(([k])=>/jb|johor/.test(k))&&tm.keywords.length===2,'place names are not shown as keywords');
 // Default view is the work queue: unhandled demand only, highest score first.
 let v=V.visible(items,{state:'open'});ok(v.length===1&&v[0].id==='a','open queue hides handled posts and ads');
 v=V.visible(items,{state:'all'});ok(v.map(i=>i.id).join()==='a,c,b','all demand sorted by score');

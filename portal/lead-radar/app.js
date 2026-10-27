@@ -9,10 +9,17 @@ window.LeadRadarView=(()=>{
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const safeUrl=u=>/^https?:\/\//i.test(String(u||''))?String(u):null;
  const age=(i,now)=>now-new Date(i.found_at).getTime();
+ // The AI writes areas freely (JB, Johor Bahru, 新山…); one name per place so the trend counts add up. Specific places first: "Skudai, JB" is Skudai.
+ const AREAS=[['Skudai',['skudai','士古来','taman universiti']],['Iskandar Puteri',['iskandar puteri','nusajaya','依斯干达','公主城','gelang patah','bukit indah','horizon hills','medini','puteri harbour']],
+  ['Mount Austin',['mount austin','mt austin','奥斯汀']],['Tebrau',['tebrau','地不佬','setia tropika','bandar baru uda']],['Kulai',['kulai','古来']],['Senai',['senai','士乃']],
+  ['Pasir Gudang',['pasir gudang','巴西古当']],['Masai',['masai','马西','permas']],['Kempas',['kempas','甘拜']],['新山',['johor bahru','新山','jb','johor','柔佛']]];
+ const areaOf=a=>{const t=String(a||'').trim().toLowerCase();if(!t)return '';
+  for(const [name,aliases] of AREAS)if(aliases.some(x=>x==='jb'?/(^|[^a-z])jb([^a-z]|$)/.test(t):t.includes(x)))return name;return String(a).trim();};
+ const isPlace=k=>AREAS.some(([,aliases])=>aliases.some(x=>k.replace(/^(area|kawasan|di|in)\s+/,'')===x));
  function trends(items,days,now=Date.now()){
   const demand=items.filter(i=>i.label==='demand'&&age(i,now)<=days*864e5);
   const tally=pick=>{const m=new Map();for(const i of demand)for(const k of new Set(pick(i).map(x=>String(x||'').trim()).filter(Boolean)))m.set(k,(m.get(k)||0)+1);return [...m].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,6);};
-  return {total:demand.length,service:tally(i=>[SERVICES[i.service]||'其他']),area:tally(i=>[i.area]),keywords:tally(i=>(i.keywords||[]).map(k=>String(k).toLowerCase()))};
+  return {total:demand.length,service:tally(i=>[SERVICES[i.service]||'其他']),area:tally(i=>[areaOf(i.area)]),keywords:tally(i=>(i.keywords||[]).map(k=>String(k).trim().toLowerCase()).filter(k=>!isPlace(k)))};
  }
  function visible(items,f){
   const q=(f.search||'').trim().toLowerCase();
@@ -43,7 +50,7 @@ window.LeadRadarView=(()=>{
   return `<article class="radar-card${i.status==='invalid'||i.status==='won'?' radar-done':''}" data-id="${esc(i.id)}">
   <div class="radar-score radar-${tier}"><b>${Number(i.score)||0}</b><small>意向分</small></div>
   <div class="radar-body">
-   <div class="radar-meta"><span class="radar-chip radar-service">${esc(SERVICES[i.service]||'其他')}</span><span class="radar-chip">${esc(PLATFORMS[i.platform]||i.platform)}</span>${i.area?`<span>${esc(i.area)}</span>`:''}${date}${LANG[i.lang]?`<span>${LANG[i.lang]}</span>`:''}</div>
+   <div class="radar-meta"><span class="radar-chip radar-service">${esc(SERVICES[i.service]||'其他')}</span><span class="radar-chip">${esc(PLATFORMS[i.platform]||i.platform)}</span>${i.area?`<span>${esc(areaOf(i.area))}</span>`:''}${date}${LANG[i.lang]?`<span>${LANG[i.lang]}</span>`:''}</div>
    ${i.title?`<h3>${esc(i.title)}</h3>`:''}<p class="radar-quote">${esc(i.snippet)}</p>
    <p class="radar-why"><b>AI 判断：</b>${esc(i.reason)}</p>
    ${wa?`<div class="radar-callbox"><span class="radar-chip radar-call">客户已留号</span><span class="radar-num">${esc(i.posted_contact)}</span><button type="button" class="radar-wa" data-contact="${esc(i.id)}" ${used?'disabled':''}>${used?'已联系过':'WhatsApp 联系（只限一次）'}</button><small>客户在帖子里邀请承包商联系。开头说明是看到他的帖子；客户拒绝后请标记“无效”。</small></div>`:''}
@@ -54,7 +61,7 @@ window.LeadRadarView=(()=>{
   </div></article>`;
  }
  function filteredRow(i){const link=safeUrl(i.url);return `<div class="radar-frow"><span>${esc(LABELS[i.label]||i.label)}</span><div><p>${link?`<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(i.title||link)}</a>`:esc(i.title)}</p><p class="radar-note">${esc(i.snippet).slice(0,240)}</p><p class="radar-note">AI 理由：${esc(i.reason)}</p></div></div>`;}
- return {SERVICES,PLATFORMS,STATUS,esc,trends,visible,counts,bars,card,filteredRow,contactUrl};
+ return {SERVICES,PLATFORMS,STATUS,esc,areaOf,trends,visible,counts,bars,card,filteredRow,contactUrl};
 })();
 
 (()=>{
