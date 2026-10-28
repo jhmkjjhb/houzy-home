@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync(require.resolve('../portal/customer.html'),'utf8');
+const start=source.indexOf('async function downloadCustomerOrderPDF(orderId) {');
+const end=source.indexOf('// 复用现有签名风格的小画板',start);
+assert.ok(start>=0 && end>start);
+const co={};vm.runInNewContext(fs.readFileSync(require.resolve('../portal/order-pdf-company.js'),'utf8'),{window:co});
+const order={id:'1',order_no:'ORDER-1',amount:1000,currency:'MYR',payment_status:'unpaid',status:'pending_payment',created_at:'2026-10-26',customers:{name:'Demo'}};
+let payments=[], rpcCalls=0, captured='', filename='', refreshes=0, alertText='';
+const button={innerHTML:'Download PDF',disabled:false};
+const document={querySelector:()=>button,fonts:{ready:Promise.resolve()},body:{appendChild(node){captured=node.innerHTML}},createElement:()=>({style:{},firstElementChild:{},remove(){}})};
+const sb={async rpc(name,args){assert.equal(name,'get_order_statement_by_phone');assert.equal(args.p_phone,'+60123456789');rpcCalls++;return {data:{order,items:[],payments}}}};
+const ctx={window:co,document,sb,console,alert:v=>{alertText=v},HouzyOrderPDF:require('../portal/order-pdf.js'),html2pdf:()=>({set(options){filename=options.filename;return this},from(){return this},async save(){}}),openDetail:async()=>{refreshes++}};
+vm.runInNewContext("let myPhone='+60123456789';let myOrders=[{id:'1'}];\n"+source.slice(start,end),ctx);
+(async()=>{
+ await ctx.downloadCustomerOrderPDF('1');
+ assert.equal(alertText,'');assert.equal(rpcCalls,1);assert.match(filename,/ORDER-1-unpaid-/);assert.match(captured,/待付款 \/ Awaiting Payment/);
+ payments=[{amount:1000,method:'transfer',paid_at:'2026-10-27T03:00:00Z'}];order.payment_status='paid';
+ await ctx.downloadCustomerOrderPDF('1');
+ assert.equal(rpcCalls,2);assert.equal(refreshes,2);assert.match(filename,/ORDER-1-paid-/);assert.match(captured,/已付款 · 已结清/);
+ assert.match(captured,/MYR 0\.00/);assert.equal(button.disabled,false);
+ console.log('customer re-download uses latest payment stage');
+})().catch(e=>{console.error(e);process.exitCode=1});

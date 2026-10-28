@@ -1,0 +1,26 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync(require.resolve('../portal/staff.html'),'utf8');
+const start=source.indexOf('async function downloadOrderPDF(orderId) {');
+const end=source.indexOf('\nfunction onUpdStatusChange()',start);
+assert.ok(start>=0 && end>start);
+const co={};vm.runInNewContext(fs.readFileSync(require.resolve('../portal/order-pdf-company.js'),'utf8'),{window:co});
+const order={id:'1',order_no:'ORDER-1',amount:1000,currency:'MYR',payment_status:'unpaid',status:'pending_payment',created_at:'2026-10-26',customers:{name:'Demo'}};
+let payments=[];
+let saved=false, captured='', filename='', removed=false, alertText='';
+const button={innerHTML:'Download PDF',disabled:false};
+const document={querySelector:()=>button,fonts:{ready:Promise.resolve()},body:{appendChild(node){captured=node.innerHTML}},createElement:()=>({style:{},firstElementChild:{},remove(){removed=true}})};
+const sb={from(table){return {select(){return {eq(){return {single:async()=>({data:order}),order:async()=>({data:table==='order_items'?[]:payments})}}}}}}};
+const ctx={window:co,document,sb,console,alert:v=>{alertText=v},HouzyOrderPDF:require('../portal/order-pdf.js'),html2pdf:()=>({set(options){filename=options.filename;return this},from(){return this},async save(){saved=true}})};
+vm.runInNewContext(source.slice(start,end),ctx);
+(async()=>{
+ await ctx.downloadOrderPDF('1');
+ assert.equal(alertText,'');assert.equal(saved,true);assert.equal(removed,true);assert.equal(button.disabled,false);
+ assert.equal(button.innerHTML,'Download PDF');assert.match(filename,/ORDER-1-unpaid-.*\.pdf/);
+ assert.match(captured,/待付款/);assert.match(captured,/United Overseas Bank/);assert.match(captured,/MYR 1000\.00/);
+ payments=[{amount:1000,method:'transfer',paid_at:'2026-10-26'}];order.payment_status='paid';
+ await ctx.downloadOrderPDF('1');
+ assert.match(filename,/ORDER-1-paid-.*\.pdf/);assert.match(captured,/已付款 · 已结清/);assert.match(captured,/MYR 0\.00/);
+ console.log('order PDF download integration check passed');
+})().catch(e=>{console.error(e);process.exitCode=1});
