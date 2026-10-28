@@ -91,9 +91,10 @@
     // Fresh project-wide figures for the overview block, read at the same moment as the milestone.
     const view=await sb.rpc('renovation_customer_payment_view',{p_token:token});
     if(view.error||!view.data)throw new Error(view.error?.message||'Unable to read the payment plan / 暂时无法读取付款计划');
+    if(data.is_addition){data.addition_number=(view.data.installments||[]).filter(p=>p.is_addition&&Number(p.number)<=stage).length;data.reference=`${data.reference.replace(/-P\d+$/,'')}-A${String(data.addition_number).padStart(2,'0')}`;}
     data.overview=RenoInstallmentStatement.overview(view.data);
     await RenoInstallmentStatement.download(data,window.HOUZY_PDF_COMPANY);
-    $('payment-sync').textContent=`第 ${stage} 期付款单已按最新已确认收款生成。若刚完成付款，请重新下载查看最新状态。`;
+    $('payment-sync').textContent=`${data.is_addition?`第 ${data.addition_number} 个增项`:`原合同第 ${stage} 期`}付款单已按最新已确认收款生成。若刚完成付款，请重新下载查看最新状态。`;
    }catch(error){$('payment-sync').textContent=error.message||'PDF 下载失败，请刷新后重试。';}
    finally{statementBusy=false;button.disabled=false;button.textContent=oldText;}
   });
