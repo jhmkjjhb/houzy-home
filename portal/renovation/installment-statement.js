@@ -33,7 +33,7 @@ window.RenoInstallmentStatement=(()=>{
    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const content=wrapper.firstElementChild;
    if(!content||content.textContent.trim().length<100)throw new Error('Payment statement content is empty / 付款单内容为空');
-   await html2pdf().set({margin:[8,0,8,0],filename:`${String(data.reference).replace(/[^a-zA-Z0-9_-]/g,'_')}-${data.status}-${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:0.97},html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#fff',onclone:doc=>{const capture=doc.querySelector('.reno-pdf-capture');if(capture){capture.style.zIndex='2147483647';capture.style.visibility='visible';}}},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['tr','.block','header','footer']}}).from(content).save();
+   await html2pdf().set({margin:[8,0,8,0],filename:`${String(data.reference).replace(/[^a-zA-Z0-9_-]/g,'_')}-${data.status}-${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:0.97},html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#fff',scrollX:0,scrollY:0,onclone:doc=>{const capture=doc.querySelector('.reno-pdf-capture');if(capture){capture.style.zIndex='2147483647';capture.style.visibility='visible';}}},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['tr','.block','header','footer']}}).from(content).save();
   }finally{wrapper.remove();}
  }
  return Object.freeze({render,download});
