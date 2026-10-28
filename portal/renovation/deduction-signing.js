@@ -4,7 +4,7 @@ window.RenoDeductionSigning=(()=>{
  const params=new URLSearchParams(location.search),id=params.get('deduction'),token=params.get('sign');
  const uuid=s=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s||'');
  let sb,view,strokes=[],canvas,ctx,busy=false,dirty=false;
- const markup=t=>`<h3>#${E(t.line_id)} · ${E(t.line_name)}</h3><p>主合同：${E(t.contract_no)}</p><div class="grid"><div>原清单金额<br><b>${M(t.original_amount)}</b></div><div>签约折后比例<br><b>${E((Number(t.discount_ratio)*100).toFixed(4))}%</b></div><div>本次减少应收<br><b>${M(t.discount_credit)}</b></div></div><p>减项原因：${E(t.reason)}</p><p class="muted">${E(t.note)}</p>`;
+ const markup=t=>`<h3>#${E(t.line_id)} · ${E(t.line_name)}</h3><p>主合同：${E(t.contract_no)}</p>${t.partial?`<p><b>部分减项</b>：本项照常施工，仅减少未做部分。原项金额 ${M(t.line_amount)}。</p>`:''}<div class="grid"><div>${t.partial?'减少部分原清单价':'原清单金额'}<br><b>${M(t.original_amount)}</b></div><div>签约折后比例<br><b>${E((Number(t.discount_ratio)*100).toFixed(4))}%</b></div><div>本次减少应收<br><b>${M(t.discount_credit)}</b></div></div><p>减项原因：${E(t.reason)}</p><p class="muted">${E(t.note)}</p>`;
  function paint(){if(!ctx||!canvas)return;const w=canvas.clientWidth||600,h=180,dpr=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#22362e';for(const stroke of strokes){if(stroke.length<2)continue;ctx.beginPath();ctx.moveTo(stroke[0][0]*w,stroke[0][1]*h);for(const p of stroke.slice(1))ctx.lineTo(p[0]*w,p[1]*h);ctx.stroke();}}
  async function load(){
   const el=document.getElementById('deduction-signing');el.hidden=false;el.textContent='正在读取减项确认单…';
