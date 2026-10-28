@@ -4490,11 +4490,16 @@ async function downloadOrderInstallmentPDF(orderId, seq, pct, expectedAmount) {
     ]);
     if (orderResult.error || paymentsResult.error || !orderResult.data) throw new Error('Unable to load the latest order payment / 无法读取最新订单收款资料。');
     const order = orderResult.data;
-    let payment = (paymentsResult.data || []).find(p => p.method !== 'cash' || p.verified_at) || null;
-    if (!payment && Number(seq) === 1 && ['completed','paid','succeeded','success'].includes(String(order.hitpay_status||'').toLowerCase()) && Number(order.hitpay_amount) === Number(expectedAmount)) payment={method:'hitpay',amount:order.hitpay_amount,paid_at:order.hitpay_paid_at,verified_at:order.hitpay_paid_at||true};
-    const pendingCash = (paymentsResult.data || []).filter(p => p.method === 'cash' && !p.verified_at).reduce((sum,p)=>sum+Number(p.amount||0),0);
+    let stagePayments = paymentsResult.data || [];
+    let payment = stagePayments.find(p => p.method !== 'cash' || p.verified_at) || null;
     const amount = Math.round(Number(expectedAmount) * 100) / 100;
-    const received = payment ? Math.round(Number(payment.amount||0)*100)/100 : 0;
+    if (!payment && !stagePayments.length && Number(seq) === 1 && ['completed','paid','succeeded','success'].includes(String(order.hitpay_status||'').toLowerCase()) && Number(order.hitpay_amount) === amount) {
+      payment={method:'hitpay',amount:order.hitpay_amount,paid_at:order.hitpay_paid_at,verified_at:order.hitpay_paid_at||true};stagePayments=[payment];
+    } else if (!payment && !stagePayments.length && Number(seq) === 1 && (order.payment_status==='paid'||order.status==='paid')) {
+      payment={method:order.payment_method||'—',amount,paid_at:order.updated_at,verified_at:true};stagePayments=[payment];
+    }
+    const pendingCash = stagePayments.filter(p => p.method === 'cash' && !p.verified_at).reduce((sum,p)=>sum+Number(p.amount||0),0);
+    const received = Math.round(stagePayments.filter(p=>p.method!=='cash'||p.verified_at).reduce((sum,p)=>sum+Number(p.amount||0),0)*100)/100;
     const balance = Math.max(0, Math.round((amount-received)*100)/100);
     const paid = amount > 0 && balance <= 0;
     const currency = String(order.currency || 'MYR').toUpperCase();
