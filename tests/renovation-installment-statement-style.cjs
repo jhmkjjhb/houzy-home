@@ -23,5 +23,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE);const fs=require('node:f
  const phones=await page.evaluate(({base,company})=>[RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000,contact_phone:'+60 12-888 0001'},company),RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000},company)],{base,company});
  assert(phones[0].includes('+60 12-888 0001')&&!phones[0].includes('+60 10-5898786'),'owner phone replaces the store number');
  assert(phones[1].includes('+60 10-5898786'),'store number when the owner has no phone');
- console.log('PASS: statement keeps white header and plain headings inside page CSS; unpaid shows bank account first, paid shows none');await b.close();
+ // Overview: 2 settled (100+200), 1 partly paid (300, 200 left), 1 unpaid (400); cancelled and unsigned additions excluded.
+ const view={summary:{total:1000,paid:400},installments:[{amount:100,balance:0},{amount:200,balance:0},{amount:300,balance:200},{amount:400,balance:400},{amount:50,balance:50,cancelled:true},{amount:80,balance:80,pending_signature:true}]};
+ const o=await page.evaluate(v=>RenoInstallmentStatement.overview(v),view);
+ assert.deepEqual(o,{project_total:1000,paid_total:400,installments:4,settled_count:2,settled_amount:300,open_count:2,open_balance:600});
+ const html=await page.evaluate(({base,company,o})=>RenoInstallmentStatement.render({...base,status:'partial',received:30000,refunded:0,pending:0,balance:65000,overview:o},company),{base,company,o});
+ for(const t of ['项目总额','RM 1,000.00','累计已确认收款','RM 400.00','已付清 2 期（共 4 期）','RM 300.00','未付清 2 期，尚欠','RM 600.00'])assert(html.includes(t),'overview shows '+t);
+ console.log('PASS: statement keeps white header and plain headings inside page CSS; unpaid shows bank account first, paid shows none; project overview counts settled/open milestones');await b.close();
 })().catch(e=>{console.error('FAIL:',e.message);process.exit(1);});

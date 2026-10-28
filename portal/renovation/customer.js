@@ -88,6 +88,10 @@
    try{
     const {data,error}=await sb.rpc('renovation_customer_installment_statement',{p_token:token,p_installment:stage});
     if(error||!data)throw new Error(error?.message||'Unable to read the latest milestone payment / 暂时无法读取本期付款');
+    // Fresh project-wide figures for the overview block, read at the same moment as the milestone.
+    const view=await sb.rpc('renovation_customer_payment_view',{p_token:token});
+    if(view.error||!view.data)throw new Error(view.error?.message||'Unable to read the payment plan / 暂时无法读取付款计划');
+    data.overview=RenoInstallmentStatement.overview(view.data);
     await RenoInstallmentStatement.download(data,window.HOUZY_PDF_COMPANY);
     $('payment-sync').textContent=`第 ${stage} 期付款单已按最新已确认收款生成。若刚完成付款，请重新下载查看最新状态。`;
    }catch(error){$('payment-sync').textContent=error.message||'PDF 下载失败，请刷新后重试。';}

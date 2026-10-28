@@ -7,6 +7,13 @@ window.RenoInstallmentStatement=(()=>{
  const labels={paid:['PAID IN FULL','已付清'],partial:['PARTIALLY PAID','部分付款'],review:['PAYMENT UNDER REVIEW','付款待核对'],unpaid:['PAYMENT DUE','待付款']};
  const methods={bank_transfer:'Bank transfer / 银行转账',ewallet:'E-wallet / 电子钱包',card:'Card / 银行卡',cash:'Cash / 现金'};
  const field=(en,zh,value)=>`<div class="field"><span>${en}<small>${zh}</small></span><strong>${value}</strong></div>`;
+ // Whole-project position for the statement: cancelled and unsigned addition milestones are left out;
+ // a partly paid milestone counts as open with its remaining balance.
+ function overview(view){
+  const live=(view?.installments||[]).filter(s=>!s.cancelled&&!s.pending_signature&&Number(s.amount)>0);
+  const settled=live.filter(s=>Number(s.balance)<=0),open=live.filter(s=>Number(s.balance)>0),sum=(list,k)=>list.reduce((n,s)=>n+Number(s[k]||0),0);
+  return {project_total:Number(view.summary.total),paid_total:Number(view.summary.paid),installments:live.length,settled_count:settled.length,settled_amount:sum(settled,'amount'),open_count:open.length,open_balance:sum(open,'balance')};
+ }
  function render(data,company){
   if(!data||!labels[data.status]||!Number.isInteger(Number(data.installment))||Number(data.amount)<=0||!company?.legalName||!company?.registrationNumber||!company?.taxStatus||!company?.bankName||!company?.accountName||!company?.accountNumber)throw new Error('Payment statement details are incomplete / 付款单资料不完整');
   const state=labels[data.status],paid=data.status==='paid',history=Array.isArray(data.entries)?data.entries:[];
@@ -17,6 +24,7 @@ window.RenoInstallmentStatement=(()=>{
   </style><header><div><div class="brand">HOUZY HOME</div><strong>${esc(company.legalName)}</strong><small>Registration No. / 公司注册号: ${esc(company.registrationNumber)}</small><small>TIN / 税号: ${esc(company.taxStatus)}</small><small>${esc(company.businessAddress||'')}</small><small>${esc(data.contact_phone||company.contactPhone||'')}</small></div><div class="meta"><h1>${headline}</h1><small>${headlineZh}</small><p><strong>${esc(data.reference)}</strong><small>Generated / 生成时间: ${esc(date(data.generated_at))}</small></p></div></header>
   <div class="status"><strong>${state[0]}</strong><small>${state[1]} · ${paid?'This milestone is settled / 本期已结清':data.status==='review'?'Some payments require allocation or verification / 部分付款待归期或核对':'Based on confirmed payment records / 以已确认收款为准'}</small></div>
   <div class="cols"><section class="panel block"><h2>Customer / 客户</h2><p><strong>${esc(data.customer_name)}</strong></p><p>${esc(data.address)}</p></section><section class="panel block"><h2>Project / 项目</h2><p>Contract No. / 合同编号: <strong>${esc(data.contract_no)}</strong></p><p>Milestone / 期数: <strong>${esc(data.installment)}</strong></p><p>Scope / 节点: ${esc(data.stage_name)}</p><p>Current project total / 项目当前总额: ${money(data.project_total)}</p></section></div>
+  ${data.overview?`<section class="block" style="margin-bottom:14px"><h2>Project payment overview / 项目付款总览</h2>${field('Project total','项目总额',money(data.overview.project_total))}${field('Confirmed paid to date','累计已确认收款',money(data.overview.paid_total))}${field(`Settled milestones: ${data.overview.settled_count} of ${data.overview.installments}`,`已付清 ${data.overview.settled_count} 期（共 ${data.overview.installments} 期），合计`,money(data.overview.settled_amount))}<div class="total">${field(`Open milestones: ${data.overview.open_count}`,`未付清 ${data.overview.open_count} 期，尚欠`,money(data.overview.open_balance))}</div></section>`:''}
   <section class="block"><h2>Milestone payment / 本期付款</h2>${field('Milestone amount','本期应付',money(data.amount))}${field('Confirmed receipts','已确认收款',money(data.received))}${Number(data.refunded)>0?field('Confirmed refunds','已确认退款',money(data.refunded)):''}${Number(data.pending)>0?field('Pending verification','待核对付款',money(data.pending)):''}<div class="total">${field(paid?'Balance settled':'Outstanding balance',paid?'已结清':'本期还差',money(data.balance))}</div></section>
   ${paid?'':`<section class="panel block" style="margin-top:11px"><h2>Payment account / 收款账户</h2>${field('Bank','银行',esc(company.bankName))}${field('Account name','账户名称',esc(company.accountName))}${field('Account number','账号',esc(company.accountNumber))}${field('Currency','币种',esc(company.accountCurrency||'MYR'))}${field('Transfer reference','转账备注',esc(data.reference))}</section>`}
   ${history.length?`<section style="margin-top:11px"><h2>Payment history for this milestone / 本期收退款记录</h2><table><thead><tr><th>Date / 日期</th><th>Type / 类别</th><th>Method / 方式</th><th>Status / 状态</th><th class="right">Amount / 金额</th></tr></thead><tbody>${history.map(e=>`<tr><td>${esc(day(e.paid_on))}</td><td>${e.kind==='refund'?'Refund / 退款':'Receipt / 收款'}</td><td>${esc(methods[e.method]||e.method)}</td><td>${e.verified?'Confirmed / 已确认':'Pending / 待核对'}</td><td class="right">${money(e.amount)}</td></tr>`).join('')}</tbody></table></section>`:''}
@@ -36,5 +44,5 @@ window.RenoInstallmentStatement=(()=>{
    await html2pdf().set({margin:[8,0,8,0],filename:`${String(data.reference).replace(/[^a-zA-Z0-9_-]/g,'_')}-${data.status}-${new Date().toISOString().slice(0,10)}.pdf`,image:{type:'jpeg',quality:0.97},html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#fff',scrollX:0,scrollY:0,onclone:doc=>{const capture=doc.querySelector('.reno-pdf-capture');if(capture){capture.style.zIndex='2147483647';capture.style.visibility='visible';}}},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['tr','.block','header','footer']}}).from(content).save();
   }finally{wrapper.remove();}
  }
- return Object.freeze({render,download});
+ return Object.freeze({render,download,overview});
 })();
