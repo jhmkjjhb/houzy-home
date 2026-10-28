@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto'),C=require('../portal/renovation/core.js');
 const context={window:{}};vm.runInNewContext(fs.readFileSync('portal/renovation/verified-contract.js','utf8'),context);
-const entries=Object.entries(context.window.RenoVerifiedContracts);assert.equal(entries.length,1);
+const entries=Object.entries(context.window.RenoVerifiedContracts).filter(([,v])=>!v.sealed);assert.equal(entries.length,1);
 const snapshot=JSON.parse(JSON.stringify(entries[0][1]));assert.equal(snapshot.lines.length,42);assert.equal(C.validate(snapshot).errors.length,0);assert.equal(C.validate(snapshot).total,190371.25);assert.equal(snapshot.discount,19371.25);assert.equal(snapshot.net,171000);assert.equal(C.validate(snapshot).payments,171000);assert.equal(snapshot.signed_on,'');assert(!snapshot.contract_no,'do not invent an identifier absent from the PDF');
 (async()=>{
  if(process.argv[2]){

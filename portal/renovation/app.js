@@ -106,13 +106,23 @@ async function parsePDF(file){
  pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
  const buffer=await file.arrayBuffer();
  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer))).map(n=>n.toString(16).padStart(2,'0')).join('');
+ // Read the reviewed copy before pdf.js takes ownership of the buffer.
+ const verified=window.RenoVerifiedContracts?.[hash];
+ const reviewed=verified?(verified.sealed?await unseal(verified.sealed,buffer):structuredClone(verified)):null;
  const doc=await pdfjs.getDocument({data:buffer,isEvalSupported:false}).promise;
  try{if(doc.numPages>100)throw new Error('合同超过100页，请拆分后核对');const pages=[];
  for(let i=1;i<=doc.numPages;i++){const p=await doc.getPage(i),v=p.getViewport({scale:1}),content=await p.getTextContent();pages.push(content.items.filter(t=>t.str?.trim()).map(t=>({text:t.str,x:t.transform[4]*595.276/v.width,y:v.height-t.transform[5],page:i})));}
- const verified=window.RenoVerifiedContracts?.[hash];
- if(verified)return {...structuredClone(verified),source_text:pages.flat().map(t=>t.text).join(' ')};
+ if(reviewed)return {...reviewed,source_text:pages.flat().map(t=>t.text).join(' ')};
  return C.extract(pages,{trustedTemplate:hash==='29268b3341f26213a1ad5bd7f7e4f3f083ee97b2c96f7eedf67ec3394ee87dca'});
  }finally{await doc.destroy();}
+}
+// Reviewed copies holding owner details are published sealed: the key derives from the PDF bytes, so only someone holding the original contract can read them.
+async function unseal(sealed,buffer){
+ const prefix=new TextEncoder().encode('houzy-verified-contract-key\n'),both=new Uint8Array(prefix.length+buffer.byteLength);
+ both.set(prefix);both.set(new Uint8Array(buffer),prefix.length);
+ const key=await crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',both),'AES-GCM',false,['decrypt']);
+ const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+ return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(sealed.iv)},key,bytes(sealed.data))));
 }
 function reset(){RenoAdditions.clear();additionData=null;draftPaymentWeights=[];project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
 window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()){e.preventDefault();e.returnValue='';}});
@@ -137,10 +147,12 @@ $('create').onclick=()=>guarded(async()=>{
 $('contract-file').onchange=()=>guarded(async()=>{
  const file=$('contract-file').files[0];if(!file)return;
  if(file.size>20*1024*1024||!(/\.pdf$/i.test(file.name)))throw new Error('请选择20MB以内的PDF合同');
- message('正在读取PDF文字与表格…');const parsed=await parsePDF(file);
+ message('正在读取PDF文字与表格…');const {customer_name,customer_phone,...parsed}=await parsePDF(file);
  if(project&&parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
  if(snapshot.lines.length&&!confirm('导入将替换尚未锁定的清单，是否继续？'))return;
- if(!project){if(parsed.contract_no)$('contract-no').value=parsed.contract_no;if(parsed.address&&!$('address').value.trim())$('address').value=parsed.address;}
+ if(!project){if(parsed.contract_no)$('contract-no').value=parsed.contract_no;if(parsed.address&&!$('address').value.trim())$('address').value=parsed.address;
+  // Owner details only prefill the project fields; they are not copied into the contract snapshot.
+  if(customer_name&&!$('customer-name').value.trim())$('customer-name').value=customer_name;if(customer_phone&&!$('customer-phone').value.trim())$('customer-phone').value=customer_phone;}
  upload=file;snapshot={...parsed,contract_path:''};draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=true;render();message(`已提取${snapshot.lines.length}项。请核对原文、付款计划及质保，尚未归档或派工。`);
 });
 $('lines').oninput=e=>{const a=e.target.closest('[data-line]');if(!a||project?.state!=='draft')return;const l=snapshot.lines[+a.dataset.line],w=e.target.closest('[data-warranty]');if(w&&e.target.dataset.wkey){const k=e.target.dataset.wkey;l.warranties[+w.dataset.warranty][k]=k==='years'?(e.target.value===''?null:Number(e.target.value)):e.target.value;}else if(e.target.dataset.key){const k=e.target.dataset.key;l[k]=['qty','rate','page'].includes(k)?Number(e.target.value):e.target.value;a.querySelector('[data-amount]').textContent=fmt(l.qty*l.rate);}dirty=true;updateTotals(true);};
