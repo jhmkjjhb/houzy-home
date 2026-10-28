@@ -4,7 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const states={draft:'合同草稿',confirmed:'合同已确认',executing:'履约中',accepted:'已竣工验收'};
 const kinds={custom:'定制供货',stock:'现货材料',work:'施工服务',gift:'赠送项目'};
-let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[],additionData=null,draftPaymentWeights=[];
+let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[],additionData=null,deductionData=null,draftPaymentWeights=[];
 function blank(){return {lines:[],payments:[],net:0,discount:0,signed_on:'',warnings:[],source_text:'',contract_path:''};}
 let feedbackTarget=null;
 function message(text,error=false){
@@ -23,7 +23,7 @@ async function copyCustomerText(text,success){
 async function rpc(action,data){const {data:row,error}=await sb.rpc('renovation_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;project=row;return row;}
 function input(value,attrs=''){return `<input value="${esc(value)}" ${attrs}>`;}
 function options(map,val){return Object.entries(map).map(([v,n])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(n)}</option>`).join('');}
-function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled&&!p.pending_signature),has_additions:additionData.additions_total>0,original_net:snapshot.net,additions_total:additionData.additions_total,warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[])]}:snapshot;}
+function effectiveSnapshot(){return project&&project.state!=='draft'&&additionData?{...snapshot,lines:additionData.lines,net:additionData.total,payments:additionData.plan.filter(p=>!p.cancelled&&!p.pending_signature),has_additions:additionData.additions_total>0,has_deductions:Number(deductionData?.deductions_total)>0,original_net:snapshot.net,additions_total:additionData.additions_total,deductions_total:deductionData?.deductions_total||0,deductions:(deductionData?.entries||[]).filter(d=>d.status==='signed'),warnings:[...(snapshot.warnings||[]),...(additionData.additions_total>0?['本清单包含单独登记的新增工项／材料，原合同PDF未改写。']:[]),...(Number(deductionData?.deductions_total)>0?['本清单已扣除客户签署的减项，原合同PDF及减项确认凭据保留。']:[])]}:snapshot;}
 function updateTotals(recalculate=false){const result=C.validate(snapshot);
  if(recalculate&&project?.state==='draft'&&Number.isFinite(result.total)&&result.total>=Number(snapshot.discount)){
   const next=Math.round((result.total-Number(snapshot.discount))*100);
@@ -37,7 +37,7 @@ function updateTotals(recalculate=false){const result=C.validate(snapshot);
 $('gross').textContent=fmt(result.total);return result;}
 function renderLines(){
  const locked=project&&project.state!=='draft';
- $('lines').innerHTML=snapshot.lines.map((l,i)=>`<details class="line" data-line="${i}"><summary><b>#${esc(l.id)} · ${esc(l.name)}</b><span class="muted"> · RM ${fmt(l.qty*l.rate)}</span></summary><div class="line-head"><h3>原文与执行安排</h3><button class="secondary" data-delete="${i}" ${locked?'disabled':''}>移除</button></div><div class="grid">
+ $('lines').innerHTML=snapshot.lines.map((l,i)=>`<details class="line" data-line="${i}"><summary><b>#${esc(l.id)} · ${esc(l.name)}${deductionData?.entries?.some(d=>d.status==='signed'&&d.line_id===String(l.id))?' · 已签减项，不再执行':''}</b><span class="muted"> · RM ${fmt(l.qty*l.rate)}</span></summary><div class="line-head"><h3>原文与执行安排</h3><button class="secondary" data-delete="${i}" ${locked?'disabled':''}>移除</button></div><div class="grid">
  <label>原清单编号${input(l.id,'data-key="id"')}</label><label>执行方式<select data-key="kind">${options(kinds,l.kind)}</select></label><label class="wide">子订单执行分组${input(l.group,'data-key="group" list="groups"')}</label>
  <label class="full">名称${input(l.name,'data-key="name"')}</label><label class="full">规格／范围${input(l.spec,'data-key="spec"')}</label>
  <label>数量${input(l.qty,'data-key="qty" type="number" min="0.001" step="any"')}</label><label>单位${input(l.unit,'data-key="unit"')}</label><label>合同单价 RM${input(l.rate,'data-key="rate" type="number" min="0" step="0.01"')}</label><label>来源页码${input(l.page||'','data-key="page" type="number" min="1"')}</label></div>
@@ -70,7 +70,8 @@ function render(){
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  $('customer-action-help').textContent=!project||project.state==='draft'?'确认合同后，才能生成客户查询资料和客户链接。':!canManage?'可复制客户查询资料；竣工验收及使旧链接失效需由店长或上级操作。':project.state==='accepted'?'项目已竣工验收，可复制客户查询资料；使旧链接失效后须重新发送新资料。':'可复制客户查询资料。竣工验收需全部子单完成、填写验收日期并上传双方验收凭证。';
  if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
- RenoAdditions.render({data:additionData,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy});
+ RenoAdditions.render({data:additionData,deductionsTotal:deductionData?.deductions_total,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoDeductions.isDirty()});
+ RenoDeductions.render({data:deductionData,project,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
@@ -80,18 +81,18 @@ async function loadList(){
  window.RenoWorkspace?.update(data||[]);
 }
 async function openProject(id){
- if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
+ if((dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty())&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
  const resetScroll=$('editor').hidden||project?.id!==id;
  const {data,error}=await sb.from('renovation_projects').select('*').eq('id',id).single();if(error)throw error;
  project=data;snapshot=Object.assign(blank(),data.snapshot);draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=false;upload=null;$('signed').checked=false;$('reviewed').checked=false;
- const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id})]);
+ const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id}),sb.rpc('renovation_deduction_view',{p_id:id})]);
  for(const r of results)if(r.error)throw r.error;
- work=results[0].data;additionData=results[2].data;render();
+ work=results[0].data;additionData=results[2].data;deductionData=results[3].data;render();
  $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted');
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
- const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单'};
+ const actionNames={save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单',deduction_add:'登记原合同减项',deduction_void:'撤销待签减项',deduction_customer_signed:'客户电子签署减项'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
- await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
+ await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()&&!RenoDeductions.isDirty()});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
  if(resetScroll)window.scrollTo(0,0);
 }
@@ -124,16 +125,16 @@ async function unseal(sealed,buffer){
  const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(sealed.iv)},key,bytes(sealed.data))));
 }
-function reset(){RenoAdditions.clear();additionData=null;draftPaymentWeights=[];project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
-window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()){e.preventDefault();e.returnValue='';}});
+function reset(){RenoAdditions.clear();RenoDeductions.clear();additionData=null;deductionData=null;draftPaymentWeights=[];project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
+window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty()){e.preventDefault();e.returnValue='';}});
 $('back-list').onclick=()=>guarded(async()=>{
- if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定返回主订单列表？'))return;
+ if((dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty())&&!confirm('当前核对内容尚未保存，确定返回主订单列表？'))return;
  await loadList();dirty=false;$('editor').hidden=true;$('list').hidden=false;
  $('back-list').hidden=true;$('new-project').hidden=false;$('title').textContent='整装主订单';window.RenoWorkspace?.setEditor(false);
  history.replaceState(null,'',location.pathname);message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');window.scrollTo(0,0);
 });
 $('list').onclick=e=>{const b=e.target.closest('[data-open]');if(b)guarded(()=>openProject(b.dataset.open));};
-$('new-project').onclick=()=>{if((dirty||RenoAdditions.isDirty())&&!confirm('当前核对内容尚未保存，确定离开？'))return;reset();};
+$('new-project').onclick=()=>{if((dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty())&&!confirm('当前核对内容尚未保存，确定离开？'))return;reset();};
 $('create').onclick=()=>guarded(async()=>{
  if(project)return;const p={store_id:$('store').value,contract_no:$('contract-no').value.trim(),customer_name:$('customer-name').value.trim(),customer_phone:$('customer-phone').value.trim(),address:$('address').value.trim()};
  if(Object.values(p).some(x=>!x))throw new Error('请补齐门店、合同编号、姓名、电话和施工地址');

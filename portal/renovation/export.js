@@ -4,7 +4,10 @@ window.RenoExport=(()=>{
  function rows(project,snapshot){
   const result=[['HOUZY HOME · 整装合同核对清单'],['合同编号',project?.contract_no||'未保存项目'],['业主',project?.customer_name||''],['项目地址',project?.address||''],['签约日期',snapshot.signed_on||'待核对'],['核对版本',project?.revision||'未保存'],['说明','本表供核对使用，合同及双方有效签署文件为准；付款计划不代表实际收款。'],[],['工程明细'],['编号','名称','规格／范围','数量','单位','单价 RM','金额 RM','执行分组','合同页码','部件质保／依据']];
   for(const l of snapshot.lines)result.push([l.id,l.name,l.spec,l.qty,l.unit,l.rate,Math.round((Number(l.qty)*Number(l.rate)+Number.EPSILON)*100)/100,l.group,l.page||'',(l.warranties||[]).map(w=>`${w.component}：${w.years? w.years+'年':'期限待确认'}；${w.source||'依据待补充'}`).join('\n')]);
-  result.push([],['清单合计 RM',snapshot.lines.reduce((a,l)=>a+Math.round((Number(l.qty)*Number(l.rate)+Number.EPSILON)*100),0)/100],['整单优惠 RM',snapshot.discount],[snapshot.has_additions?'项目当前应收总额 RM':'合同总价 RM',snapshot.net],[],['付款计划（非实际收款）'],['付款节点','约定应收 RM']);
+  if(snapshot.has_additions||snapshot.has_deductions){
+   result.push([],['原合同清单合计 RM',Number(snapshot.original_net)+Number(snapshot.discount)],['原合同整单优惠 RM',snapshot.discount],['原合同净价 RM',snapshot.original_net],['已签增项合计 RM',snapshot.additions_total||0],['已签减项折后合计 RM',snapshot.deductions_total||0],['项目当前应收总额 RM',snapshot.net]);
+  }else result.push([],['清单合计 RM',snapshot.lines.reduce((a,l)=>a+Math.round((Number(l.qty)*Number(l.rate)+Number.EPSILON)*100),0)/100],['整单优惠 RM',snapshot.discount],['合同总价 RM',snapshot.net]);
+  result.push([],['付款计划（非实际收款）'],['付款节点','约定应收 RM']);
   for(const p of snapshot.payments)result.push([p.name,p.amount]);
   result.push([],['待核对提醒']);for(const w of snapshot.warnings||[])result.push([w]);
   return result;

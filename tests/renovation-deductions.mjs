@@ -1,0 +1,76 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const {PGlite}=await import(process.env.RENO_PGLITE_MODULE||'@electric-sql/pglite');
+const db=new PGlite();let checks=0;
+const ok=(value,message)=>{assert(value,message);checks++;};
+const reject=async(fn,pattern)=>{await assert.rejects(fn,pattern);checks++;};
+const store='10000000-0000-4000-8000-000000000001',staff='20000000-0000-4000-8000-000000000001',id='30000000-0000-4000-8000-000000000001';
+await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA storage;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+CREATE TABLE stores(id uuid PRIMARY KEY,name text,region text);CREATE TABLE profiles(id uuid PRIMARY KEY,active boolean,role text,store_id uuid,region text);
+CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text);
+INSERT INTO stores VALUES('${store}','Austin','JB');INSERT INTO profiles VALUES('${staff}',true,'staff','${store}','JB');`);
+for(const name of ['renovation_orders','renovation_payments','renovation_payment_installments','renovation_phone_lookup','renovation_customer_orders','renovation_additions','renovation_addition_signatures','renovation_signing_link','renovation_payment_allocations','renovation_customer_progress'])
+ await db.exec(fs.readFileSync(`supabase/${name}_migration.sql`,'utf8'));
+const migration=fs.readFileSync('supabase/renovation_deductions_migration.sql','utf8');
+await db.exec(migration);await db.exec(migration);checks++;
+const snapshot={net:171000,discount:19371.25,payments:[{name:'定金',amount:42750},{name:'水电',amount:68400},{name:'泥水',amount:51300},{name:'交付',amount:8550}],lines:[
+ {id:'20',name:'拆除并新建大门门柱',qty:1,rate:2800,kind:'work',group:'车廊',unit:'lot',warranties:[]},
+ {id:'21',name:'其他工程',qty:1,rate:187571.25,kind:'work',group:'车廊',unit:'lot',warranties:[]}]};
+await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot)
+ VALUES($1,$2,$3,'TEST-REDUCTION','Owner','60101234567','Test address','confirmed',$4::jsonb)`,[id,store,staff,JSON.stringify(snapshot)]);
+await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'门柱','["20"]'::jsonb),($1,'其他工程','["21"]'::jsonb)`,[id]);
+const rev=async()=>(await db.query('SELECT revision FROM renovation_projects WHERE id=$1',[id])).rows[0].revision;
+const actor=async(who,role='authenticated')=>db.exec(`RESET ROLE;SET request.jwt.claim.sub='${who}';SET ROLE ${role}`);
+const command=async(action,entry,data)=>(await db.query('SELECT renovation_deduction_command($1,$2,$3,$4,$5::jsonb) value',[id,await rev(),action,entry,JSON.stringify(data)])).rows[0].value;
+await actor(staff);
+const entry=crypto.randomUUID();const proposed=await command('add',entry,{line_id:'20',reason:'客户决定取消门柱施工'});
+ok(Number(proposed.original_amount)===2800&&Number(proposed.discount_credit)===2515.09,'original item discounted proportionally to RM 2515.09');
+ok(Number((await db.query('SELECT current_total FROM renovation_projects WHERE id=$1',[id])).rows[0].current_total)===171000,'pending deduction leaves total unchanged');
+await reject(()=>command('add',crypto.randomUUID(),{line_id:'20',reason:'duplicate'}),/已有待签或已签/);
+const token=proposed.signing_token;
+await actor('','anon');
+const view=async(key=token)=>(await db.query('SELECT renovation_deduction_sign_view($1,$2) value',[entry,key])).rows[0].value;
+const v=await view();ok(v.terms.discount_credit===2515.09&&v.terms.line_id==='20'&&v.terms_hash.length===64,'signing link shows only the deduction');
+ok(!JSON.stringify(v).includes('customer_token')&&!('current_total' in v.terms),'signing link does not expose customer token or project total');
+ok(await view(crypto.randomUUID())===null,'wrong signing token cannot open deduction');
+const ink=[[[0.1,0.2],[0.13,0.25],[0.2,0.3],[0.25,0.15],[0.3,0.3],[0.4,0.45],[0.5,0.3],[0.6,0.2]]];
+const sign=async(hash=v.terms_hash)=>(await db.query('SELECT renovation_deduction_sign($1,$2,$3,$4,$5::jsonb,true) value',[entry,token,hash,'Owner',JSON.stringify(ink)])).rows[0].value;
+await reject(()=>sign('0'.repeat(64)),/刷新核对/);
+const signed=await sign();ok(signed.ok&&signed.signature_hash.length===64,'customer signs and keeps immutable signature hash');
+await db.exec('RESET ROLE');
+const p=(await db.query('SELECT current_total,deductions_total,adjusted_payments FROM renovation_projects WHERE id=$1',[id])).rows[0];
+ok(Number(p.current_total)===168484.91&&Number(p.deductions_total)===2515.09,'project total falls by signed credit');
+ok(Number(p.adjusted_payments[3].amount)===6034.91,'credit comes off latest unpaid original installment');
+const lines=(await db.query('SELECT _reno_effective_lines($1) value',[id])).rows[0].value;
+ok(lines.length===1&&lines[0].id==='21','signed removed line no longer appears in effective scope');
+const work=(await db.query('SELECT group_name,status FROM renovation_work_orders WHERE project_id=$1 ORDER BY group_name',[id])).rows;
+ok(work.find(w=>w.group_name==='门柱').status==='done'&&work.find(w=>w.group_name==='其他工程').status==='draft','removed only work group closes without changing active work');
+const customerToken=(await db.query('SELECT customer_token FROM renovation_projects WHERE id=$1',[id])).rows[0].customer_token;
+await actor('','anon');const customer=(await db.query('SELECT renovation_customer_view($1) value',[customerToken])).rows[0].value;
+ok(customer.deductions.length===1&&customer.lines.length===1&&Number(customer.net)===168484.91,'customer view shows signed deduction and adjusted total');
+const progress=(await db.query('SELECT renovation_customer_progress_view($1) value',[customerToken])).rows[0].value;
+ok(progress.work_orders.length===1&&progress.work_orders[0].group_name==='其他工程','customer progress hides work group with no remaining scope');
+const pay=(await db.query('SELECT renovation_customer_payment_view($1) value',[customerToken])).rows[0].value;
+ok(Number(pay.summary.total)===168484.91&&Number(pay.installments[3].amount)===6034.91,'payment plan and summary match adjusted total');
+await reject(()=>sign(v.terms_hash+'x'),/不可覆盖/);
+await db.exec('RESET ROLE');
+const other=crypto.randomUUID();
+await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot)
+ VALUES($1,$2,$3,'TEST-REDUCTION-2','Owner','60101234567','Test address','confirmed',$4::jsonb)`,[other,store,staff,JSON.stringify(snapshot)]);
+await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids,assignee,status) VALUES($1,'车廊','["20"]'::jsonb,'工长','assigned')`,[other]);
+await actor(staff);
+await reject(()=>db.query('SELECT renovation_deduction_command($1,0,$2,$3,$4::jsonb)',[other,'add',crypto.randomUUID(),JSON.stringify({line_id:'20',reason:'已施工项目'})]),/已安排或开始施工/);
+await db.exec('RESET ROLE');
+await db.query('DELETE FROM renovation_work_orders WHERE project_id=$1',[other]);
+await actor(staff);
+const pending=crypto.randomUUID();
+const waiting=(await db.query('SELECT renovation_deduction_command($1,0,$2,$3,$4::jsonb) value',[other,'add',pending,JSON.stringify({line_id:'20',reason:'客户取消'})])).rows[0].value;
+await db.exec('RESET ROLE');
+await reject(()=>db.query("UPDATE renovation_projects SET state='accepted' WHERE id=$1",[other]),/待客户签署的减项/);
+await db.query(`INSERT INTO renovation_payments(id,project_id,kind,amount,method,paid_on,reference,note,created_by,verified_by,verified_at)
+ VALUES($1,$2,'receipt',170000,'bank_transfer',current_date,'PAID-BEFORE-REDUCTION','',$3,$3,now())`,[crypto.randomUUID(),other,staff]);
+await actor('','anon');
+const waitingView=(await db.query('SELECT renovation_deduction_sign_view($1,$2) value',[pending,waiting.signing_token])).rows[0].value;
+await reject(()=>db.query('SELECT renovation_deduction_sign($1,$2,$3,$4,$5::jsonb,true)',[pending,waiting.signing_token,waitingView.terms_hash,'Owner',JSON.stringify(ink)]),/超过项目总额/);
+console.log('PASS',checks,'signed deduction checks');await db.close();
