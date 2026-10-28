@@ -28,6 +28,8 @@ window.RenoFinance=(()=>{
     const unassignedPaid=(data.entries||[]).filter(e=>!e.voided_at&&!e.allocations?.length&&!e.installment&&e.verified_at).reduce((sum,e)=>sum+(e.kind==='refund'?-Number(e.amount):Number(e.amount)),0);
     const paid=Number(stage.paid||0),pending=Number(stage.pending||0),amount=Number(stage.amount||0);
     const statement={reference:`${project.contract_no}-P${String(installment).padStart(2,'0')}`,contract_no:project.contract_no,customer_name:project.customer_name,address:project.address,installment,stage_name:stage.name,amount,received:Number(stage.received||0),refunded:Number(stage.refunded||0),paid,pending,balance:Number(stage.balance??Math.max(0,amount-paid)),project_total:Number(data.summary.total),original_total:Number(data.summary.original_total??data.summary.total),additions_total:Number(data.summary.additions_total||0),deductions_total:Number(data.summary.deductions_total||0),unassigned_paid:Math.max(0,unassignedPaid),status:paid>=amount&&amount>0?'paid':pending>0||unassignedPaid>0?'review':paid>0?'partial':'unpaid',entries:history,generated_at:new Date().toISOString()};
+    // The order owner's phone goes on the PDF; without one the store number is used.
+    const contact=await sb.rpc('renovation_statement_contact',{p_id:project.id});if(contact.error)throw contact.error;statement.contact_phone=contact.data?.contact_phone||'';
     await RenoInstallmentStatement.download(statement,window.HOUZY_PDF_COMPANY);
     el.querySelector('[data-feedback]').textContent=`第 ${installment} 期付款单已按最新收款记录生成。`;
    }catch(error){el.querySelector('[data-feedback]').textContent=error.message||'付款单PDF生成失败，请刷新后重试。';}

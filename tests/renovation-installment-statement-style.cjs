@@ -7,7 +7,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE);const fs=require('node:f
  const css=['houzy-brand.css','renovation/style.css','renovation/workspace.css','renovation/customer-workspace.css'].map(f=>fs.readFileSync('portal/'+f,'utf8')).join('\n');
  await page.setContent(`<meta charset=utf-8><style>${css}</style><body class="customer-workspace"><div id="out"></div></body>`);
  await page.addScriptTag({content:fs.readFileSync('portal/renovation/installment-statement.js','utf8')});
- const company={legalName:'HOUZY HOME SDN. BHD.',registrationNumber:'1',taxStatus:'C 1',bankName:'UOB',accountName:'HOUZY HOME SDN. BHD.',accountNumber:'226-308-905-9'};
+ const company={legalName:'HOUZY HOME SDN. BHD.',registrationNumber:'1',taxStatus:'C 1',bankName:'UOB',accountName:'HOUZY HOME SDN. BHD.',accountNumber:'226-308-905-9',contactPhone:'+60 10-5898786'};
  const base={installment:2,amount:95000,reference:'R-P02',generated_at:'2026-10-28T08:00:00Z',customer_name:'Owner',address:'A',contract_no:'C',stage_name:'S',project_total:100000,entries:[{paid_on:'2026-10-01',kind:'receipt',method:'bank_transfer',verified:true,amount:30000}]};
  for(const [status,extra] of [['partial',{received:30000,refunded:0,pending:0,balance:65000}],['paid',{received:95000,refunded:0,pending:0,balance:0}]]){
   const r=await page.evaluate(({d,company})=>{const out=document.getElementById('out');out.innerHTML=RenoInstallmentStatement.render(d,company);
@@ -19,5 +19,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE);const fs=require('node:f
   if(status==='paid')assert(r.bank<0&&!r.account,'paid statement shows no bank account');
   else assert(r.account&&r.bank>0&&r.bank<r.history,'unpaid statement shows the bank account before the payment history');
  }
+ // Order owner's phone replaces the store number; without it the store number stays.
+ const phones=await page.evaluate(({base,company})=>[RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000,contact_phone:'+60 12-888 0001'},company),RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000},company)],{base,company});
+ assert(phones[0].includes('+60 12-888 0001')&&!phones[0].includes('+60 10-5898786'),'owner phone replaces the store number');
+ assert(phones[1].includes('+60 10-5898786'),'store number when the owner has no phone');
  console.log('PASS: statement keeps white header and plain headings inside page CSS; unpaid shows bank account first, paid shows none');await b.close();
 })().catch(e=>{console.error('FAIL:',e.message);process.exit(1);});
