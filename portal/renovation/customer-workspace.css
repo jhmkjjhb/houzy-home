@@ -72,3 +72,5 @@
 .customer-tour-status strong{display:block;font-size:12px;font-weight:500}.customer-tour-status span{display:block;font-size:10px;color:#e4cf9b;margin-top:4px}.customer-tour-status .quiet{color:#e4cf9b;border-color:#c8a96e66;min-height:36px;padding:7px 14px;flex-shrink:0}.customer-tour-status .quiet:hover{background:#ffffff0b}
 .customer-workspace:has(.customer-tour-status:not([hidden])){padding-bottom:92px}
 @media(max-width:760px){.customer-tour-status{bottom:max(12px,env(safe-area-inset-bottom));gap:12px;padding:12px 14px}.customer-tour-status strong{font-size:11px}.customer-tour-status span{font-size:10px}}
+
+.customer-workspace .stage-statement-download{margin:10px 0 2px;min-height:46px;padding:12px 18px}
