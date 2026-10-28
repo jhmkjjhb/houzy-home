@@ -23,11 +23,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE);const fs=require('node:f
  const phones=await page.evaluate(({base,company})=>[RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000,contact_phone:'+60 12-888 0001'},company),RenoInstallmentStatement.render({...base,status:'unpaid',received:0,refunded:0,pending:0,balance:95000},company)],{base,company});
  assert(phones[0].includes('+60 12-888 0001')&&!phones[0].includes('+60 10-5898786'),'owner phone replaces the store number');
  assert(phones[1].includes('+60 10-5898786'),'store number when the owner has no phone');
- // Overview: 2 settled (100+200), 1 partly paid (300, 200 left), 1 unpaid (400); cancelled and unsigned additions excluded.
- const view={summary:{total:1000,paid:400},installments:[{amount:100,balance:0},{amount:200,balance:0},{amount:300,balance:200},{amount:400,balance:400},{amount:50,balance:50,cancelled:true},{amount:80,balance:80,pending_signature:true}]};
+ // Overview: contract milestones and variations are counted apart; cancelled/unsigned variations excluded.
+ const view={summary:{total:1077,paid:500,original_total:1000,additions_total:100,deductions_total:23},installments:[{number:1,amount:100,balance:0},{number:2,amount:200,balance:0},{number:3,amount:300,balance:200},{number:4,amount:377,balance:377},{number:5,amount:60,balance:0,is_addition:true},{number:6,amount:40,balance:40,is_addition:true},{number:7,amount:50,balance:50,is_addition:true,cancelled:true},{number:8,amount:80,balance:80,is_addition:true,pending_signature:true}]};
  const o=await page.evaluate(v=>RenoInstallmentStatement.overview(v),view);
- assert.deepEqual(o,{project_total:1000,paid_total:400,installments:4,settled_count:2,settled_amount:300,open_count:2,open_balance:600});
+ assert.deepEqual([o.contract,o.variations,o.open_balance,o.contract_stages],[{count:4,settled_count:2,settled_amount:300,open_count:2,open_balance:577},{count:2,settled_count:1,settled_amount:60,open_count:1,open_balance:40},617,4]);
  const html=await page.evaluate(({base,company,o})=>RenoInstallmentStatement.render({...base,status:'partial',received:30000,refunded:0,pending:0,balance:65000,overview:o},company),{base,company,o});
- for(const t of ['项目总额','RM 1,000.00','累计已确认收款','RM 400.00','已付清 2 期（共 4 期）','RM 300.00','未付清 2 期，尚欠','RM 600.00'])assert(html.includes(t),'overview shows '+t);
+ for(const t of ['原合同分期','2 期 · RM 300.00','2 期 · RM 577.00','增项（另行计算）','1 项 · RM 60.00','1 项 · RM 40.00','已签减项','− RM 23.00','最后几期未付款','RM 617.00','共 4 期'])assert(html.includes(t),'overview shows '+t);
  console.log('PASS: statement keeps white header and plain headings inside page CSS; unpaid shows bank account first, paid shows none; project overview counts settled/open milestones');await b.close();
 })().catch(e=>{console.error('FAIL:',e.message);process.exit(1);});
