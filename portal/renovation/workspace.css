@@ -122,3 +122,5 @@
 @media print{.workspace-sidebar,.workspace-topbar,.steps,.heading>.actions,.list-tools{display:none!important}.renovation-workspace main{margin:0;padding:0;max-width:none}.renovation-workspace .panel{box-shadow:none;break-inside:avoid}}
 
 .renovation-workspace.editing-project #project-overview,.renovation-workspace.editing-project #list-workspace{display:none}
+.renovation-workspace button.stage-statement-download{display:inline-flex;align-items:center;justify-content:center;min-height:38px;margin:8px 0 0;padding:6px 11px;border:1px solid #9db39e;border-radius:7px;background:#f5f8f3;color:#153927;font-size:12px;font-weight:600;line-height:1.4}
+.renovation-workspace button.stage-statement-download:hover{background:#e8f0e7;border-color:#718d73}
