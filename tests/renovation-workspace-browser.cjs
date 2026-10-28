@@ -8,6 +8,9 @@ const fixture=()=>{
   if(name==='get_my_profile')return {data:{id:'manager',role:'store_manager',store_id:'store'}};
   if(name==='renovation_addition_view'){const p=projects.find(p=>p.id===args.p_id);return {data:{entries:[],lines:p.snapshot.lines,plan:p.snapshot.payments,original_total:p.snapshot.net,total:p.snapshot.net,additions_total:0}};}
   if(name==='renovation_payment_view')return {data:{summary:{total:171000,paid:72750,balance:98250,status:'partial',original_total:171000},installments:[{number:1,name:'签约首期款',amount:42750,paid:42750,balance:0,percentage:25},{number:2,name:'施工进场',amount:68400,paid:30000,balance:38400,percentage:40}],entries:[]}};
+  // Change orders (10-28) and contract e-signature load with every project.
+  if(name==='renovation_deduction_view'){const p=projects.find(p=>p.id===args.p_id);return {data:{entries:[],lines:p.snapshot.lines,original_net:p.snapshot.net,original_gross:p.snapshot.net,deductions_total:0,current_total:p.current_total}};}
+  if(name==='renovation_contract_esign_view')return {data:null};
   throw new Error('Unexpected RPC '+name);
  };
  window.supabase={createClient:()=>({rpc,auth:{getSession:async()=>({data:{session:{user:{id:'manager'}}}})},from(table){let id;const q={select(){return q},eq(k,v){if(k==='id')id=v;return q},order(){return q},limit(){return q},single(){return Promise.resolve({data:projects.find(p=>p.id===id)})},then(resolve,reject){let data=table==='stores'?[{id:'store',name:'Austin 门店'}]:table==='renovation_projects'?projects:table==='renovation_audit'?[{action:'confirm',created_at:'2026-10-24T10:00:00Z'}]:[{id:'work',group_name:'橱柜安装',line_ids:['01'],status:'draft',assignee:''}];return Promise.resolve({data}).then(resolve,reject)}};return q}})};
