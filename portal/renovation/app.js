@@ -72,6 +72,7 @@ function render(){
  if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
  RenoAdditions.render({data:additionData,deductionsTotal:deductionData?.deductions_total,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoDeductions.isDirty()});
  RenoDeductions.render({data:deductionData,project,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
+ RenoContractEsign.render({project,sb,isDirty:()=>dirty||!!upload,onChange:async()=>{await openProject(project.id);await loadList();}}).catch(e=>message(e.message,true));
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
@@ -173,9 +174,12 @@ $('save').onclick=()=>guarded(async()=>{
 $('confirm').onclick=()=>guarded(async()=>{
  if(dirty||!project?.snapshot?.lines?.length)throw new Error('合同尚未保存归档，请先点击上方“保存核对版本”，成功后再确认合同');
  if(!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role))throw new Error('合同需由店长或上级确认，请联系店长打开本项目核对并确认');
- if(!snapshot.signed_on)throw new Error('请先填写签约日期并保存核对版本，再确认合同');
+ const esign=RenoContractEsign.active();
+ if(!esign&&!snapshot.signed_on)throw new Error('请先填写签约日期并保存核对版本，再确认合同');
  if(!$('signed').checked||!$('reviewed').checked)throw new Error('请完成签署及清单核对确认');
- if(!confirm('确认后锁定合同清单与质保；后续不得直接覆盖，确定？'))return;
+ if(!confirm(esign?'将把业主签名和您的会签附到合同PDF末尾归档，并锁定合同清单与质保；后续不得直接覆盖，确定？':'确认后锁定合同清单与质保；后续不得直接覆盖，确定？'))return;
+ // Countersigning bumps the project revision; reload it before the existing confirm command.
+ if(await RenoContractEsign.beforeConfirm({project,sb})){const {data,error}=await sb.from('renovation_projects').select('revision').eq('id',project.id).single();if(error)throw error;project.revision=data.revision;}
  await rpc('confirm',{signed:true,reviewed:true});await openProject(project.id);await loadList();
 });
 $('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject(project.id);await loadList();message('子订单已按执行分组生成，未增加客户应收。');});
