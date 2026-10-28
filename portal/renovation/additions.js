@@ -28,8 +28,9 @@ window.RenoAdditions=(()=>{
    };
   }
   el.querySelectorAll('[data-copy-sign]').forEach(b=>b.onclick=async()=>{
-   const a=data.entries.find(a=>a.id===b.dataset.copySign),url=new URL('renovation-customer.html',location.href);url.searchParams.set('addition',a.id);url.searchParams.set('sign',a.signing_token);url.hash=project.customer_token;
-   try{await navigator.clipboard.writeText(url.href);feedback.textContent='已复制专属签署链接，请发给业主或其授权签署人。';}
+   // Signing-only page: may be forwarded to a family member, so it carries no project token.
+   const a=data.entries.find(a=>a.id===b.dataset.copySign),url=new URL('renovation-sign.html',location.href);url.searchParams.set('addition',a.id);url.searchParams.set('sign',a.signing_token);
+   try{await navigator.clipboard.writeText(url.href);feedback.textContent='已复制专属签署链接：只显示这张新增单，可发给业主或其授权的家人代签。';}
    catch(e){feedback.replaceChildren();const label=document.createElement('label');label.textContent='请手动复制以下专属签署链接：';const input=document.createElement('textarea');input.readOnly=true;input.value=url.href;label.append(input);feedback.append(label);input.focus();input.select();}
   });
   el.querySelectorAll('[data-void]').forEach(b=>b.onclick=()=>{const reason=prompt('请填写作废原因。已收款或已安排执行的增项需先核对，不能直接作废。');if(reason?.trim())send('void',b.dataset.void,{reason:reason.trim()});});

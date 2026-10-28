@@ -1,0 +1,58 @@
+// Signing-only link: a delegate (e.g. a family member) holding just the addition's signing link can view and sign
+// that addition, but cannot read the project or other additions, and never sees project-wide totals.
+import fs from 'node:fs';import assert from 'node:assert/strict';
+const {PGlite}=await import(process.env.RENO_PGLITE_MODULE||'@electric-sql/pglite');const db=new PGlite();let checks=0;
+const ok=(v,m)=>{assert(v,m);checks++;};const reject=async(fn,re)=>{await assert.rejects(fn,re);checks++;};
+const store='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002',staff='20000000-0000-4000-8000-000000000001',manager='20000000-0000-4000-8000-000000000002',outside='20000000-0000-4000-8000-000000000003',id='30000000-0000-4000-8000-000000000001';
+await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA storage;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+GRANT USAGE ON SCHEMA auth,storage TO authenticated,anon;
+CREATE TABLE stores(id uuid PRIMARY KEY,name text,region text);CREATE TABLE profiles(id uuid PRIMARY KEY,active boolean,role text,store_id uuid,region text);
+CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+INSERT INTO stores VALUES('${store}','Austin','JB'),('${other}','Other','KL');INSERT INTO profiles VALUES('${staff}',true,'staff','${store}','JB'),('${manager}',true,'store_manager','${store}','JB'),('${outside}',true,'store_manager','${other}','KL');`);
+await db.exec(fs.readFileSync('supabase/renovation_orders_migration.sql','utf8'));
+const migration=fs.readFileSync('supabase/renovation_payments_migration.sql','utf8');await db.exec(migration);await db.exec(migration);checks++;
+const installmentMigration=fs.readFileSync('supabase/renovation_payment_installments_migration.sql','utf8');await db.exec(installmentMigration);await db.exec(installmentMigration);checks++;
+await db.exec(fs.readFileSync('supabase/renovation_phone_lookup_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_customer_orders_migration.sql','utf8'));
+const additionsMigration=fs.readFileSync('supabase/renovation_additions_migration.sql','utf8');await db.exec(additionsMigration);await db.exec(additionsMigration);checks++;
+
+await db.exec(fs.readFileSync('supabase/renovation_addition_signatures_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_addition_signatures_migration.sql','utf8'));checks++;
+await db.exec(fs.readFileSync('supabase/renovation_rpc_permissions_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_rpc_permissions_migration.sql','utf8'));checks++;
+const linkMigration=fs.readFileSync('supabase/renovation_signing_link_migration.sql','utf8');await db.exec(linkMigration);await db.exec(linkMigration);checks++;
+const today=(await db.query("select (now() at time zone 'Asia/Kuala_Lumpur')::date::text d")).rows[0].d;
+const uuid=()=>crypto.randomUUID();
+async function actor(who,role='authenticated'){await db.exec(`RESET ROLE;SET request.jwt.claim.sub='${who}';SET ROLE ${role}`);}
+const original={net:1000,discount:0,payments:[{name:'Deposit',amount:500},{name:'Handover',amount:500}],lines:[{id:'BASE',name:'Original',qty:1,rate:1000,kind:'work',group:'Base',unit:'lot',warranties:[]}]};
+await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'SIGN-TEST','Owner','60101234567','Test address','executing',$4::jsonb)`,[id,store,staff,JSON.stringify(original)]);
+let rev=0;
+const payload=(name='Extra work',rate=100)=>({category:'work',name,spec:'Extra scope',qty:2,unit:'lot',rate,group_name:'Extra group',payment_node:'After customer signature'});
+const addition=async(entry,data,action='add')=>(await db.query('select renovation_addition_command($1,$2,$3,$4,$5::jsonb) value',[id,rev,action,entry,JSON.stringify(data)])).rows[0].value;
+await actor(staff);const one=uuid();await addition(one,payload());rev++;
+const second=uuid();await addition(second,payload('Other extra',50));rev++;
+const p0=(await db.query('select customer_token from renovation_projects where id=$1',[id])).rows[0];
+const signing=(await db.query('select signing_token from renovation_additions where id=$1',[one])).rows[0].signing_token;
+const otherSigning=(await db.query('select signing_token from renovation_additions where id=$1',[second])).rows[0].signing_token;
+const linkView=async(entry=one,key=signing)=>(await db.query('select renovation_signing_link_view($1,$2) value',[entry,key])).rows[0].value;
+await actor('','anon');
+const lv=await linkView();
+ok(lv.terms.amount===200&&lv.terms.name==='Extra work'&&lv.terms_hash.length===64,'delegate sees the addition being signed');
+ok(!('current_total' in lv.terms)&&!('after_sign_total' in lv.terms),'project-wide totals are not sent to the delegate');
+ok(!JSON.stringify(lv).includes(p0.customer_token),'signing link never returns the project token');
+ok(await linkView(one,otherSigning)===null&&await linkView(second,signing)===null&&await linkView(one,uuid())===null,'a signing token opens only its own addition');
+const full=(await db.query('select renovation_customer_addition_sign_view($1,$2,$3) value',[p0.customer_token,one,signing])).rows[0].value;
+ok(full.terms_hash===lv.terms_hash,'delegate signs the same terms hash the owner would');
+const ink=[[[0.1,0.2],[0.13,0.25],[0.2,0.3],[0.25,0.15],[0.3,0.3],[0.4,0.45],[0.5,0.3],[0.6,0.2]]];
+const signLink=async(hash=lv.terms_hash,key=signing,name='Family delegate')=>(await db.query('select renovation_signing_link_sign($1,$2,$3,$4,$5::jsonb,$6) value',[one,key,hash,name,JSON.stringify(ink),true])).rows[0].value;
+await reject(()=>signLink(lv.terms_hash,uuid()),/签署链接无效/);
+await reject(()=>signLink('0'.repeat(64)),/刷新核对/);
+const done=await signLink();ok(done.ok&&done.signature_hash.length===64,'delegate signs through the link');
+await db.exec('RESET ROLE');
+const row=(await db.query('select signature_status,signer_name,work_order_id from renovation_additions where id=$1',[one])).rows[0];
+ok(row.signature_status==='signed'&&row.signer_name==='Family delegate'&&row.work_order_id,'signature recorded with signer name and work order, same as owner signing');
+const proj=(await db.query('select additions_total from renovation_projects where id=$1',[id])).rows[0];ok(Number(proj.additions_total)===200,'only the signed addition counts toward receivable');
+const audit=(await db.query("select count(*)::int n from renovation_audit where action='addition_customer_signed' and actor is null")).rows[0].n;ok(audit===1,'signature audited without an employee actor');
+await actor('','anon');const after=await linkView();ok(after.status==='signed'&&!('after_sign_total' in after.terms),'signed view also hides project totals');
+await reject(()=>signLink(lv.terms_hash,signing,'Someone else'),/不可覆盖/);
+console.log('PASS',checks,'signing-only link checks');await db.close();
