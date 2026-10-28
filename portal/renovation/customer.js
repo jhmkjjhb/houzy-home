@@ -79,6 +79,20 @@
    }catch(e){$('contract-message').textContent=e.message;}finally{viewButton.disabled=false;}
   };
   await RenoAdditionSigning.mount(sb,token);$('customer-finance-panel').hidden=false;
+  let statementBusy=false;
+  $('customer-payments').addEventListener('click',async e=>{
+   const button=e.target.closest('[data-stage-statement]');if(!button||statementBusy)return;
+   const stage=Number(button.dataset.stageStatement);if(!Number.isInteger(stage)||stage<1)return;
+   stopTour();statementBusy=true;button.disabled=true;
+   const oldText=button.textContent;button.textContent='Preparing latest PDF / 正在生成最新付款单…';
+   try{
+    const {data,error}=await sb.rpc('renovation_customer_installment_statement',{p_token:token,p_installment:stage});
+    if(error||!data)throw new Error(error?.message||'Unable to read the latest milestone payment / 暂时无法读取本期付款');
+    await RenoInstallmentStatement.download(data,window.HOUZY_PDF_COMPANY);
+    $('payment-sync').textContent=`第 ${stage} 期付款单已按最新已确认收款生成。若刚完成付款，请重新下载查看最新状态。`;
+   }catch(error){$('payment-sync').textContent=error.message||'PDF 下载失败，请刷新后重试。';}
+   finally{statementBusy=false;button.disabled=false;button.textContent=oldText;}
+  });
   async function refresh(){
    if(refreshBusy)return;refreshBusy=true;$('refresh-payments').disabled=$('refresh-project').disabled=true;
    try{
