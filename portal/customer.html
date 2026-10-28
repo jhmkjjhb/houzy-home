@@ -156,7 +156,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="order-pdf-company.js"></script>
-<script src="order-pdf.js"></script>
+<script src="order-pdf.js?v=pagebreak-20261028"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -831,7 +831,7 @@ async function downloadCustomerOrderPDF(orderId) {
       image:{type:'jpeg',quality:0.97},
       html2canvas:{scale:2,useCORS:true,logging:false},
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy'],avoid:['tr','.keep','header']},
+      pagebreak:{mode:['css','legacy'],avoid:['tr','.keep','header','footer']},
     }).from(wrapper.firstElementChild).save();
     await openDetail(orderId);
   } catch (error) {
