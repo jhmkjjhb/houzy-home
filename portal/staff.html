@@ -893,6 +893,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="staff-i18n-phrases.js?v=i18n-20261029"></script>
 <script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=additions-20261025"></script>
 <script>
 // ── i18n ──
@@ -1461,6 +1462,7 @@ function setLang(lang) {
   else if (!document.getElementById('v-customers').classList.contains('hidden')) renderCustomersTable(allCustomers);
   document.getElementById('lang-drop')?.classList.add('hidden');
   document.getElementById('m-lang-drop')?.classList.add('hidden');
+  window.StaffPhrases?.apply(lang);
 }
 
 // 把 ISO 时间转成吉隆坡(UTC+8 固定)当地的 "YYYY-MM-DDTHH:mm..." 串，便于按日期/月份截取
@@ -2686,7 +2688,7 @@ function renderDashboardKpis(d) {
   // 支付方式拆分图（横向条）
   const pay = cur.payment_breakdown || {};
   const payOrdered = [
-    ['现金 Cash',     pay.cash || 0,     '#1a3a2a'],
+    ['现金',          pay.cash || 0,     '#1a3a2a'],
     ['Touch n Go',    pay.tng || 0,      '#c8a96e'],
     ['银行转账 FPX',   pay.fpx || 0,      '#2d5e43'],
     ['信用卡',         pay.card || 0,    '#a07f4a'],
