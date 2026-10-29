@@ -6,7 +6,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 (async()=>{const browser=await chromium.launch();const page=await browser.newPage();let checks=0;const ok=(v,m)=>{assert(v,m);checks++;};
 const js=fs.readFileSync(path.join(__dirname,'../portal/staff-i18n-phrases.js'),'utf8');
 await page.setContent(`<body><div class="nav-sec">主面板</div><span id="radar">需求雷达</span>
-<input id="q" placeholder="门店"><div id="cust">王人</div><div id="role">店长 · 001 Austin</div><div id="box"></div>
+<input id="q" placeholder="门店"><div id="cust">王人</div><div id="role">店长 · 001 Austin</div><div id="box"></div><div id="box2"></div>
 <div translate="no" id="keep">本月</div><script>${js}</script></body>`);
 await page.evaluate(()=>StaffPhrases.apply('en'));
 ok(await page.textContent('#radar')==='Lead Radar','sidebar item translated');
@@ -18,6 +18,12 @@ await page.evaluate(()=>{document.getElementById('box').innerHTML='<div>📈 与
 await page.waitForFunction(()=>document.getElementById('box').textContent.includes('Last month'));
 const box=await page.textContent('#box');
 ok(box.includes('📈 Compared with last month')&&box.includes('Last month: RM 27.30')&&box.includes('No slow-moving stock (all sold within 60 days)'),'asynchronously rendered dashboard translated: '+box);
+await page.evaluate(()=>{document.getElementById('box2').innerHTML='<div id="d1">10月20日</div><div id="d2">质保开始：2026年10月20日 · 1年</div><div id="s1">📦 普通销售订单 / Sales</div><div id="p1">货已到，请催收尾款</div>';});
+await page.waitForFunction(()=>document.getElementById('d1').textContent!=='10月20日');
+ok(await page.textContent('#d1')==='20/10','Chinese short date becomes day/month instead of a half-translated "10月20日"');
+ok(await page.textContent('#d2')==='Warranty starts: 20/10/2026 · 1 yr','full date kept intact before the single-character word "年" is translated: '+await page.textContent('#d2'));
+ok(await page.textContent('#s1')==='📦 Sales order','bilingual badge does not repeat itself in English');
+ok(await page.textContent('#p1')==='Goods arrived, please collect the balance','Chinese punctuation becomes Western punctuation');
 await page.evaluate(()=>StaffPhrases.apply('th'));
 ok(await page.textContent('#radar')==='เรดาร์ลูกค้า','switching between foreign languages uses the Chinese original');
 await page.evaluate(()=>StaffPhrases.apply('zh-TW'));
