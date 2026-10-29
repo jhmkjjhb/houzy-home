@@ -2704,8 +2704,8 @@ function renderDashboardKpis(d) {
     </div>`).join('') || '<p class="text-xs text-gray-400 text-center py-3">本月暂无收款</p>';
 
   // 5 大品类
-  const catLabels = { 'CG':'橱柜','WY':'卫浴','DZ':'衣柜','DB':'瓷砖/地板','MC':'门窗','QT':'其他' };
-  const catColors = { 'CG':'#1a3a2a','WY':'#2d5e43','DZ':'#c8a96e','DB':'#a07f4a','MC':'#5b8a6e','QT':'#9ca3af' };
+  const catLabels = { 'ZZ':'整装','CG':'橱柜','WY':'卫浴','DZ':'衣柜','DB':'瓷砖/地板','MC':'门窗','QT':'其他' };
+  const catColors = { 'ZZ':'#7a5c2e','CG':'#1a3a2a','WY':'#2d5e43','DZ':'#c8a96e','DB':'#a07f4a','MC':'#5b8a6e','QT':'#9ca3af' };
   const cat = cur.category_breakdown || {};
   const catEntries = Object.entries(cat).filter(([k,v]) => v > 0).sort((a,b) => b[1] - a[1]);
   const catTotal = catEntries.reduce((s,[,v]) => s + Number(v), 0);
@@ -2757,10 +2757,11 @@ function renderDashboardKpis(d) {
     <!-- KPI 1: 总收款 + 按支付方式 -->
     <div class="card p-4 md:col-span-2">
       <div class="flex items-center justify-between mb-2">
-        <div class="text-xs text-gray-400">💰 商品订单收款额（原订单口径）</div>
+        <div class="text-xs text-gray-400">💰 本月收款（商品 + 整装）</div>
         ${trend(cur.revenue_total, prev.revenue_total)}
       </div>
-      <div class="text-2xl font-bold mb-3" style="color:#1a3a2a">${fmtAmt(cur.revenue_total)}</div>
+      <div class="text-2xl font-bold mb-1" style="color:#1a3a2a">${fmtAmt(cur.revenue_total)}</div>
+      <div class="text-xs text-gray-500 mb-3">商品订单 ${fmtAmt(cur.goods_revenue ?? cur.revenue_total)} · 整装 ${fmtAmt(cur.renovation_revenue || 0)}</div>
       <div class="space-y-1.5">${payBars}</div>
     </div>
 
@@ -2769,7 +2770,7 @@ function renderDashboardKpis(d) {
       <div class="text-xs text-gray-400 mb-2">📋 订单 / 客户 / 客单价</div>
       <div class="space-y-2">
         <div class="flex items-baseline justify-between">
-          <span class="text-xs text-gray-500">订单数</span>
+          <span class="text-xs text-gray-500">订单数${cur.renovation_cnt ? `<span class="text-gray-400">（含整装 ${cur.renovation_cnt}）</span>` : ''}</span>
           <span class="font-bold text-lg" style="color:#1a3a2a">${cur.order_cnt||0}</span>
           ${trend(cur.order_cnt, prev.order_cnt)}
         </div>
