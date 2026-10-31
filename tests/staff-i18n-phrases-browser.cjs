@@ -24,6 +24,11 @@ ok(await page.textContent('#d1')==='20/10','Chinese short date becomes day/month
 ok(await page.textContent('#d2')==='Warranty starts: 20/10/2026 · 1 yr','full date kept intact before the single-character word "年" is translated: '+await page.textContent('#d2'));
 ok(await page.textContent('#s1')==='📦 Sales order','bilingual badge does not repeat itself in English');
 ok(await page.textContent('#p1')==='Goods arrived, please collect the balance','Chinese punctuation becomes Western punctuation');
+await page.evaluate(()=>{document.getElementById('box2').innerHTML='<div id="c1">🇲🇾 马来西亚 +60</div><div id="c2">手机号码格式不正确，请重新检查</div><div id="c3">高</div><div id="c4">宽 mm</div>';});
+await page.waitForFunction(()=>document.getElementById('c1').textContent!=='🇲🇾 马来西亚 +60');
+ok(await page.textContent('#c1')==='🇲🇾 Malaysia +60','new-order country picker is translated');
+ok(await page.textContent('#c2')==='Phone number format is invalid, please check again','new-order validation message is translated: '+await page.textContent('#c2'));
+ok(await page.textContent('#c3')==='高'&&await page.textContent('#c4')==='W mm','a one-character customer name (e.g. surname 高) is data and stays untouched; window size label is translated');
 await page.evaluate(()=>StaffPhrases.apply('th'));
 ok(await page.textContent('#radar')==='เรดาร์ลูกค้า','switching between foreign languages uses the Chinese original');
 await page.evaluate(()=>StaffPhrases.apply('zh-TW'));
