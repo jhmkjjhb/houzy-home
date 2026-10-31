@@ -3777,7 +3777,8 @@ async function lookupCustomer() {
   if (!raw || !validatePhone()) return;
   const cc = document.getElementById('c-country').value || '60';
   const phone = cc + customerPhoneDigits(raw, cc);
-  const { data } = await sb.from('customers').select('*').eq('phone', phone).limit(1);
+  // 老客户可能是同事建的，customers 表按可见范围过滤，按电话精确查走专用函数
+  const { data } = await sb.rpc('find_customer_by_phone', { p_phone: phone });
   if (version !== customerLookupVersion ||
       raw !== cleanCustomerPhone(document.getElementById('c-phone').value) ||
       cc !== (document.getElementById('c-country').value || '60')) return;
