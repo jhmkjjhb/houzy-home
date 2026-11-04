@@ -6069,6 +6069,8 @@ async function extendPaymentHold(orderId){
     if(!Number.isInteger(days)||days<1||days>remaining){alert(`请输入1至${remaining}的整数天数`);return;}
     const {data,error}=await sb.rpc('extend_payment_hold',{p_order_id:orderId,p_days:days,p_reason:reason.reason});
     if(error){alert('挂单延期失败：'+error.message);return;}
+    // 已发出的付款链接跟着延期；这里失败也没关系，每 15 分钟还会同步一次
+    sb.functions.invoke('hitpay-close-links',{body:{}}).catch(()=>{});
     alert(`已延期（${data.extend_count}/2次），新截止时间：${new Date(data.expires_at).toLocaleString()}`);
     await loadOrders();await openDetail(orderId);
   }finally{paymentHoldRequests.delete(orderId);}

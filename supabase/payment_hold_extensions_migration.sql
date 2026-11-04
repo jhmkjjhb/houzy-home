@@ -1,4 +1,4 @@
--- Ready for test deployment; NOT applied to production. User confirmed total hold cap: 60 days from creation.
+-- User confirmed total hold cap: 60 days from creation. Run order_payment_hold_links_migration.sql right after this.
 -- Preserve cancelled orders/logs; replaces the legacy 15-day physical deletion job.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.payment_hold_policy (
