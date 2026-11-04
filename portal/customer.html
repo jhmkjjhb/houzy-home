@@ -527,12 +527,13 @@ async function openDetail(id) {
     `<div class="text-center py-10 text-gray-400">${ct('loading')}</div>`;
   show('s-detail');
 
-  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }, { data: statementResp }] = await Promise.all([
+  const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }, { data: statementResp }, { data: payQuote }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_detail_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_items_by_phone', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('drawing_customer_list', { p_order_id: id, p_phone: myPhone }),
     sb.rpc('get_order_statement_by_phone', { p_order_id: id, p_phone: myPhone }),
+    sb.rpc('order_customer_payment_quote', { p_order: id, p_phone: myPhone }),
   ]);
   const _draws = Array.isArray(drawResp) ? drawResp : [];
   let paymentSnapshot = {stage:'verify'};
@@ -762,6 +763,11 @@ async function openDetail(id) {
           <span class="text-gray-700">${fmtDate(o.completed_at)}</span>
         </div>` : ''}
       </div>
+      ${payQuote?.payable ? `<button type="button" onclick="startCustomerPayment('${id}')" id="customer-pay-btn"
+        class="mt-4 w-full py-3 rounded-xl font-semibold text-sm" style="background:#c8a96e;color:#153927">
+        立即支付 / Pay Now · RM ${Number(payQuote.amount).toFixed(2)}${payQuote.installments > 1 ? ` · 第${payQuote.seq}期 / Installment ${payQuote.seq}` : ''}
+      </button>
+      <p id="customer-pay-msg" class="mt-2 text-xs text-center" style="color:#b91c1c" role="status"></p>` : ''}
       <button type="button" onclick="downloadCustomerOrderPDF('${id}')"
         class="mt-4 w-full py-3 rounded-xl font-semibold text-sm border" style="background:#153927;color:#f5f2ed;border-color:#153927">
         下载最新订单 PDF / Download Latest Statement
@@ -803,6 +809,35 @@ async function openDetail(id) {
     if (dw.cust_confirmed_at) return;
     const c = document.getElementById('dwg-sig-' + dw.supplier_id);
     if (c) _dwgSigs[dw.supplier_id] = _initDwgSigOn(c);
+  });
+}
+
+// 金额由服务器决定，这里只传订单和手机号
+async function startCustomerPayment(orderId) {
+  const button = document.getElementById('customer-pay-btn'), msg = document.getElementById('customer-pay-msg');
+  if (!myPhone || !myOrders.some(o => o.id === orderId)) { msg.textContent = '请重新查询订单 / Please search for your order again.'; return; }
+  button.disabled = true; msg.textContent = '';
+  const failure = '暂时无法打开付款页面，请稍后重试或联系门店。 / Unable to open the payment page. Please try again or contact the store.';
+  try {
+    const { data, error } = await sb.functions.invoke('hitpay-customer-payment', { body: { order_id: orderId, phone: myPhone } });
+    if (error) throw error;
+    if (data?.payment_url) { location.assign(data.payment_url); return; }
+    msg.textContent = data?.message || failure;
+  } catch (e) { console.error('[Customer payment]', e); msg.textContent = failure; }
+  button.disabled = false;
+}
+
+// 从付款页回来：这里只说明在确认中，是否已付以 HitPay 的正式通知为准
+if (new URLSearchParams(location.search).get('hitpay') === 'return') {
+  addEventListener('DOMContentLoaded', () => {
+    const note = document.createElement('div');
+    note.id = 'hitpay-return-note';
+    note.setAttribute('role', 'status');
+    note.className = 'mb-4 rounded-xl p-3 text-sm';
+    note.style.cssText = 'background:#fef3c7;color:#92400e';
+    note.textContent = '正在确认您的付款，请稍候查询订单；确认后会显示已支付。 / We are confirming your payment. Search your order shortly to see the updated status.';
+    document.getElementById('search-btn')?.closest('div')?.prepend(note);
+    history.replaceState({}, '', location.pathname);
   });
 }
 

@@ -4250,7 +4250,6 @@ async function openDetail(id, backView) {
   // creating a new payment request merely by opening an unpaid order.
   if ((o.hitpay_payment_id || o.hitpay_payment_url)
       && o.payment_status !== 'paid'
-      && o.status !== 'paid'
       && !['completed','paid','succeeded','success'].includes(String(o.hitpay_status || '').toLowerCase())) {
     try {
       const { data: sync } = await sb.functions.invoke('hitpay-payment', { body: { order_id: id } });
@@ -6245,6 +6244,10 @@ function renderPaymentPanel(o, payments) {
                 class="btn-primary text-sm px-4 py-1.5 flex-shrink-0 whitespace-nowrap">
           立即支付
         </button>
+      </div>
+      <div id="pay-share-${seq}" class="mt-2 flex gap-3 justify-end text-xs">
+        <button type="button" onclick="shareHitPayLink('${o.id}',${seq},false)" class="underline text-gray-600">复制链接</button>
+        <button type="button" onclick="shareHitPayLink('${o.id}',${seq},true)" class="underline text-gray-600">发 WhatsApp</button>
       </div>` : ''}
     </div>`;
   }).join('');
@@ -6255,9 +6258,10 @@ function renderPaymentPanel(o, payments) {
     ? `<span class="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-50 text-amber-600">${paidCnt}/${n} 期已收</span>`
     : `<span class="text-xs px-2.5 py-1 rounded-full font-medium bg-green-50 text-green-700">全款已收</span>`;
 
-  // HitPay hosted checkout link for a staff-created order. The API key stays in
-  // the Supabase Edge Function; the browser only receives the customer URL.
-  const hitpayBlock = '';
+  // 金额对不上的付款不会计入，要店长处理
+  const hitpayBlock = String(o.hitpay_status || '').toLowerCase() === 'review'
+    ? `<div class="mb-3 rounded-lg px-3 py-2.5 text-sm" style="background:#fee2e2;color:#991b1b">HitPay 收到一笔金额不符的付款，未计入收款。请店长到 HitPay 后台核对，详情见订单日志。</div>`
+    : '';
 
   return `<div class="card p-5 mb-4">
     <div class="flex items-center justify-between mb-3">
@@ -6282,37 +6286,58 @@ async function refreshPaymentFold(orderId) {
   if (order) body.innerHTML = renderPaymentPanel(order, payments || []);
 }
 
-async function generateHitPayLink(orderId) {
-  const button = (typeof event !== 'undefined' && event) ? event.currentTarget : null;
-  if (button) { button.disabled = true; button.textContent = '生成中…'; }
-  const { data, error } = await sb.functions.invoke('hitpay-payment', { body: { order_id: orderId } });
-  if (button) { button.disabled = false; button.textContent = data?.payment_url ? '打开系统内付款' : '生成付款并支付'; }
+// 员工和客户共用同一条付款链接：金额由服务器按当前这一期计算
+async function requestHitPayLink(orderId, seq) {
+  const { data, error } = await sb.functions.invoke('hitpay-payment', { body: { order_id: orderId, seq, action: 'link' } });
   if (error || data?.error) {
     let detail = data?.error || error?.message || '生成 HitPay 付款链接失败';
     try {
       if (error?.context) {
-        const raw = await error.context.text();
-        const parsed = JSON.parse(raw);
+        const parsed = JSON.parse(await error.context.text());
         if (parsed?.error) detail = parsed.error;
       }
     } catch (_) {}
+    if (data?.status === 'completed' || data?.reconciled) { alert('这笔 HitPay 付款已完成，收款记录已更新。'); await openDetail(orderId); return null; }
     alert(detail);
+    return null;
+  }
+  if (!data?.payment_url) {
+    alert(data?.reconciled || data?.status === 'completed' ? '这笔 HitPay 付款已完成，收款记录已更新。' : (data?.message || '现在不能生成付款链接'));
+    await openDetail(orderId);
+    return null;
+  }
+  return data;
+}
+
+async function generateHitPayLink(orderId, seq) {
+  const button = (typeof event !== 'undefined' && event) ? event.currentTarget : null;
+  if (button) { button.disabled = true; button.textContent = '生成中…'; }
+  const data = await requestHitPayLink(orderId, seq);
+  if (button) { button.disabled = false; button.textContent = '立即支付'; }
+  if (!data) return;
+  await navigator.clipboard?.writeText(data.payment_url).catch(() => {});
+  showHitPayCheckout(data.payment_url, data.payment_id, orderId);
+  await openDetail(orderId);
+}
+
+// 客户没有自己付款时，员工把同一条链接发给客户
+async function shareHitPayLink(orderId, seq, whatsapp) {
+  // 必须在点击当下打开窗口，等读完服务器再开会被手机浏览器拦截
+  const tab = whatsapp ? window.open('about:blank', '_blank') : null;
+  const data = await requestHitPayLink(orderId, seq);
+  if (!data) { tab?.close(); return; }
+  if (whatsapp) {
+    const phone = String(data.customer_phone || '').replace(/\D/g, '');
+    const label = data.installments > 1 ? `第${data.seq}期` : '全款';
+    const text = `您好，这是您 HOUZY HOME 订单的付款链接（${label} RM ${Number(data.amount).toFixed(2)}）：\n${data.payment_url}`;
+    if (tab) tab.location = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     return;
   }
-  if (data?.payment_url) {
-    if (data.reconciled || data.status === 'completed') {
-      const { error: syncError } = await sb.from('orders').update({ status: 'paid', payment_status: 'paid' }).eq('id', orderId);
-      if (syncError) {
-        alert(`HitPay 已付款，但订单状态写入失败：${syncError.message}`);
-        return;
-      }
-      alert('这笔 HitPay 付款已完成，订单状态已同步为已收款。');
-      await openDetail(orderId);
-      return;
-    }
-    await navigator.clipboard?.writeText(data.payment_url).catch(() => {});
-    showHitPayCheckout(data.payment_url, data.payment_id, orderId);
-    await openDetail(orderId);
+  try {
+    await navigator.clipboard.writeText(data.payment_url);
+    alert(`付款链接已复制（RM ${Number(data.amount).toFixed(2)}），可以发给客户。`);
+  } catch (_) {
+    prompt('请复制付款链接发给客户：', data.payment_url);
   }
 }
 
@@ -6382,11 +6407,12 @@ function updatePaymentAction(seq) {
   const method = document.getElementById(`pay-method-${seq}`)?.value || 'hitpay';
   const button = document.getElementById(`pay-action-${seq}`);
   if (button) button.textContent = method === 'hitpay' ? '立即支付' : '确认收款';
+  document.getElementById(`pay-share-${seq}`)?.classList.toggle('hidden', method !== 'hitpay');
 }
 
 async function handlePaymentAction(orderId, seq, pct, amount, currency) {
   const method = document.getElementById(`pay-method-${seq}`)?.value || 'hitpay';
-  if (method === 'hitpay') return generateHitPayLink(orderId);
+  if (method === 'hitpay') return generateHitPayLink(orderId, seq);
   return recordPayment(orderId, seq, pct, amount, currency);
 }
 

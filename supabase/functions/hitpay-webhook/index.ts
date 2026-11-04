@@ -26,16 +26,15 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('HOUZY_SUPABASE_SERVICE_KEY');
     if (!serviceKey) return json({ error: 'Webhook service key is not configured' }, 503);
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
-    let query = admin.from('orders').select('id,payment_status,status,amount,hitpay_payment_id').limit(1);
-    query = reference ? query.eq('order_no', reference) : query.eq('hitpay_payment_id', paymentId);
-    const { data: rows, error } = await query;
-    const order = rows?.[0];
-    if (error || !order) return json({ ok: true, ignored: true });
     const completed = ['completed', 'paid', 'succeeded', 'success'].includes(status) || event.event_type === 'payment_request.completed';
-    const update: Record<string, unknown> = { hitpay_status: status || 'received' };
-    if (paymentId) update.hitpay_payment_id = paymentId;
-    if (completed) { update.hitpay_status = 'completed'; update.hitpay_paid_at = new Date().toISOString(); update.payment_status = 'paid'; update.status = 'paid'; }
-    await admin.from('orders').update(update).eq('id', order.id);
+    if (completed) {
+      // The database checks the amount against what is due, and ignores a repeat of the same event.
+      const amount = payload.amount ?? null;
+      const { error } = await admin.rpc('hitpay_record_payment', { p_request: paymentId || null, p_reference: reference || null, p_amount: amount == null ? null : Number(amount) });
+      if (error) return json({ error: error.message }, 500); // HitPay retries
+    } else if (paymentId && ['failed', 'expired', 'canceled', 'cancelled'].includes(status)) {
+      await admin.from('order_payment_links').update({ status: 'failed' }).eq('payment_request_id', paymentId).eq('status', 'open');
+    }
     return json({ ok: true });
   } catch (error) { return json({ error: error instanceof Error ? error.message : 'Invalid payload' }, 400); }
 });
