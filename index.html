@@ -313,16 +313,18 @@
     </style>
 
 <style id="seasonal-campaign-style">
-#seasonal-campaign{padding-top:80px;background:#003d35;color:#fff8ed;scroll-margin-top:80px}
-.campaign-inner{max-width:1250px;min-height:100px;margin:auto;padding:21px 40px;display:flex;align-items:center;justify-content:space-between;gap:32px}
-.campaign-copy{border-left:2px solid #c8a96e;padding-left:19px;min-width:0}
-.campaign-eyebrow{display:block;color:#efd9b6;font-size:11px;font-weight:700;letter-spacing:.16em;line-height:1.3;margin-bottom:5px}
-#seasonal-campaign .campaign-title{font-family:Georgia,'Noto Serif SC',serif;font-size:clamp(22px,2.2vw,29px) !important;font-weight:500;line-height:1.2;letter-spacing:0;margin:0 0 3px}
-.campaign-description{font-size:13px;line-height:1.45;color:#dbe7df;margin:0}
-.campaign-cta{flex:none;display:inline-flex;align-items:center;gap:16px;border:1px solid #efd9b6;padding:11px 16px;color:#efd9b6;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;transition:background .2s,color .2s}
-.campaign-cta:hover{background:#efd9b6;color:#003d35}.campaign-cta:focus-visible{outline:3px solid #fff;outline-offset:4px}
-@media(max-width:760px){#seasonal-campaign{padding-top:56px;scroll-margin-top:56px}.campaign-inner{min-height:0;padding:15px 22px;gap:14px}.campaign-copy{padding-left:12px}#seasonal-campaign .campaign-title{font-size:20px !important}.campaign-eyebrow{font-size:9px;letter-spacing:.08em}.campaign-description{display:none}.campaign-cta{padding:9px 10px;font-size:11px;gap:5px}}
-@media(max-width:360px){.campaign-inner{align-items:flex-start;flex-direction:column}.campaign-cta{margin-left:14px}}
+#seasonal-campaign{padding-top:80px;background:linear-gradient(105deg,#ffe5b4 0%,#f9c778 64%,#f4ae62 100%);color:#0b3d34;scroll-margin-top:80px}
+.campaign-inner{max-width:1250px;min-height:108px;margin:auto;padding:15px 40px;display:flex;align-items:center;gap:25px}
+.campaign-copy{border-left:3px solid #b9482b;padding-left:17px;min-width:0;flex:1}
+.campaign-eyebrow{display:block;color:#9b3b25;font-size:11px;font-weight:800;letter-spacing:.1em;line-height:1.3;margin-bottom:5px}
+#seasonal-campaign .campaign-title{font-family:'Noto Serif SC',Georgia,serif;font-size:clamp(24px,2.4vw,32px) !important;font-weight:600;line-height:1.18;letter-spacing:0;margin:0 0 3px;color:#0b3d34}
+.campaign-description{font-size:13px;line-height:1.45;color:#365146;margin:0}
+.campaign-offer{flex:none;display:grid;justify-items:center;gap:0;min-width:94px;color:#a33b22;transform:rotate(-5deg)}
+.campaign-offer strong{font:700 49px/.95 Georgia,serif;letter-spacing:-.06em}.campaign-offer small{font-size:10px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.campaign-cta{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:14px;background:#a93a25;border:1px solid #a93a25;padding:13px 18px;color:#fffdf8;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:4px 4px 0 #0c4438;transition:transform .2s,box-shadow .2s,background .2s}
+.campaign-cta:hover{background:#8f2f1f;transform:translate(-2px,-2px);box-shadow:6px 6px 0 #0c4438}.campaign-cta:focus-visible{outline:3px solid #0c4438;outline-offset:4px}
+@media(max-width:760px){#seasonal-campaign{padding-top:56px;scroll-margin-top:56px}.campaign-inner{min-height:0;padding:13px 19px 15px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 10px}.campaign-copy{padding-left:11px}.campaign-eyebrow{font-size:9px;letter-spacing:0}.campaign-description{display:none}#seasonal-campaign .campaign-title{font-size:20px !important;line-height:1.25}.campaign-offer{min-width:70px}.campaign-offer strong{font-size:38px}.campaign-offer small{font-size:8px}.campaign-cta{grid-column:1/-1;justify-self:start;margin-left:14px;padding:9px 13px;font-size:11px;box-shadow:3px 3px 0 #0c4438}}
+@media(max-width:360px){#seasonal-campaign .campaign-title{font-size:18px !important}.campaign-offer{min-width:60px}.campaign-offer strong{font-size:34px}}
 </style>
 
 <style id="careers-style">
@@ -445,10 +447,11 @@
       <div class="campaign-inner">
         <div class="campaign-copy">
           <span class="campaign-eyebrow" data-i18n="campaign_date">NOV 2026 — JAN 2027</span>
-          <h2 class="campaign-title" id="campaign-title" data-i18n="campaign_title">A real materials factory · 一站式整装</h2>
-          <p class="campaign-description" data-i18n="campaign_description">Our materials factory in Foshan · One journey from design to delivery · Eligible works 8% off.</p>
+          <h2 class="campaign-title" id="campaign-title" data-i18n="campaign_title">Ready for a new home? Save 8% this season.</h2>
+          <p class="campaign-description" data-i18n="campaign_description">A real materials factory, design and construction in one place. Eligible renovation works only.</p>
         </div>
-        <a class="campaign-cta" href="/campaign/renewal-2026.html"><span data-i18n="campaign_cta">Explore the 8% offer</span><span aria-hidden="true">↗</span></a>
+        <div class="campaign-offer"><strong>8%</strong><small data-i18n="campaign_offer">ELIGIBLE WORKS</small></div>
+        <a class="campaign-cta" href="/campaign/renewal-2026.html#calculator"><span data-i18n="campaign_cta">See how much you save</span><span aria-hidden="true">↗</span></a>
       </div>
     </section>
 
@@ -1708,11 +1711,11 @@
     Object.keys(academyTranslations).forEach(lang => Object.assign(i18n[lang], academyTranslations[lang]));
 
     const campaignTranslations = {
-      en: {campaign_date:'NOV 2026 — JAN 2027',campaign_title:'A real materials factory · 一站式整装',campaign_description:'Our materials factory in Foshan · One journey from design to delivery · Eligible works 8% off.',campaign_cta:'Explore the 8% offer'},
-      'zh-CN': {campaign_date:'2026年11月—2027年1月',campaign_title:'真正有材料工厂的整装公司',campaign_description:'佛山材料工厂直达 · 设计施工一站落地 · 合资格工程享 8% 优惠。',campaign_cta:'查看 8% 礼遇'},
-      'zh-TW': {campaign_date:'2026年11月—2027年1月',campaign_title:'真正有材料工廠的整裝公司',campaign_description:'佛山材料工廠直達 · 設計施工一站落地 · 合資格工程享 8% 優惠。',campaign_cta:'查看 8% 禮遇'},
-      ms: {campaign_date:'NOV 2026 — JAN 2027',campaign_title:'Syarikat ubah suai dengan kilang bahan',campaign_description:'Kilang bahan Foshan · Reka bentuk hingga pembinaan · Kerja layak diskaun 8%.',campaign_cta:'Lihat tawaran 8%'},
-      th: {campaign_date:'พ.ย. 2026 — ม.ค. 2027',campaign_title:'บริษัทตกแต่งบ้านที่มีโรงงานวัสดุ',campaign_description:'วัสดุจากโรงงานฝอซาน · ออกแบบและก่อสร้างในที่เดียว · งานที่ร่วมรายการลด 8%',campaign_cta:'ดูข้อเสนอ 8%'}
+      en: {campaign_date:'FOSHAN MATERIALS FACTORY · SEASONAL OFFER',campaign_title:'Ready for a new home? Save 8% this season.',campaign_description:'A real materials factory, design and construction in one place. Eligible renovation works only.',campaign_offer:'ELIGIBLE WORKS',campaign_cta:'See how much you save'},
+      'zh-CN': {campaign_date:'佛山材料工厂直达 · 本季限时',campaign_title:'想装新家？先省 8%。',campaign_description:'真正有材料工厂的整装公司。设计、施工与线上质保一站管理；优惠限合资格装修工程。',campaign_offer:'合资格工程',campaign_cta:'算算能省多少'},
+      'zh-TW': {campaign_date:'佛山材料工廠直達 · 本季限時',campaign_title:'想裝新家？先省 8%。',campaign_description:'真正有材料工廠的整裝公司。設計、施工與線上質保一站管理；優惠限合資格裝修工程。',campaign_offer:'合資格工程',campaign_cta:'算算能省多少'},
+      ms: {campaign_date:'KILANG BAHAN FOSHAN · TAWARAN MUSIM INI',campaign_title:'Rumah baharu? Kira penjimatan 8%.',campaign_description:'Kilang bahan sebenar, reka bentuk dan pembinaan dalam satu tempat. Untuk kerja ubah suai yang layak.',campaign_offer:'KERJA LAYAK',campaign_cta:'Kira penjimatan anda'},
+      th: {campaign_date:'โรงงานวัสดุฝอซาน · ข้อเสนอฤดูกาลนี้',campaign_title:'บ้านใหม่ในฝัน? ดูส่วนลด 8%',campaign_description:'โรงงานวัสดุจริง พร้อมงานออกแบบและก่อสร้างในที่เดียว สำหรับงานที่ร่วมรายการ',campaign_offer:'งานที่ร่วมรายการ',campaign_cta:'คำนวณส่วนลด'}
     };
     Object.keys(campaignTranslations).forEach(lang => Object.assign(i18n[lang], campaignTranslations[lang]));
 
