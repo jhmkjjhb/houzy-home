@@ -67,7 +67,7 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="order-pdf-company.js"></script>
-<script src="order-pdf.js?v=pagebreak-20261028"></script>
+<script src="order-pdf.js?v=bill-to-20261104"></script>
 <script src="https://hit-pay.com/hitpay.js"></script>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:Inter,'Noto Sans SC',sans-serif">
@@ -345,6 +345,21 @@
         <div>
           <label class="label" data-i18n="lbl_address">地址</label>
           <input type="text" id="c-address" placeholder="配送地址（选填）" data-i18n-ph="ph_address" class="input">
+        </div>
+        <div class="mt-3">
+          <label class="label">开单给</label>
+          <div class="flex gap-4 text-sm">
+            <label class="flex items-center gap-1"><input type="radio" name="bill-to" value="individual" checked onchange="toggleBillingForm()"> 开单给个人</label>
+            <label class="flex items-center gap-1"><input type="radio" name="bill-to" value="company" onchange="toggleBillingForm()"> 开单给公司</label>
+          </div>
+          <div id="billing-form" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div class="sm:col-span-2"><label class="label">公司名称 *</label><input type="text" id="b-company" maxlength="200" class="input"></div>
+            <div><label class="label">公司注册号 *</label><input type="text" id="b-reg" maxlength="100" class="input"></div>
+            <div><label class="label">公司电话</label><input type="text" id="b-phone" maxlength="50" class="input"></div>
+            <div class="sm:col-span-2"><label class="label">公司地址 *</label><input type="text" id="b-address" maxlength="500" class="input"></div>
+            <div><label class="label">税号（TIN）</label><input type="text" id="b-tax" maxlength="50" class="input"></div>
+            <p id="billing-prefill-note" class="hidden sm:col-span-2 text-xs text-gray-500">已带出这位客户上次的公司资料，请核对。</p>
+          </div>
         </div>
       </div>
 
@@ -893,7 +908,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="staff-i18n-phrases.js?v=i18n-create-20261031"></script>
+<script src="staff-i18n-phrases.js?v=bill-to-20261104"></script>
 <script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=additions-20261025"></script>
 <script>
 // ── i18n ──
@@ -3697,6 +3712,7 @@ function resetCreateForm() {
   ['c-phone','c-name','c-address','o-amount','o-desc','o-notes'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  fillBillingForm(null);
   // SST 含税切换默认关
   setTaxMode('none');   // 税务模式重置为"不收税"（同时刷新按钮高亮 + 隐藏提示）
   document.getElementById('customer-found').classList.add('hidden');
@@ -3756,6 +3772,56 @@ function validatePhone() {
   err.classList.add('hidden'); inp.style.borderColor = '#1a3a2a'; return true;
 }
 
+// 开单给公司：公司资料按订单单独保存
+const BILLING_FIELDS = { 'b-company':'company_name', 'b-reg':'registration_no', 'b-address':'address', 'b-phone':'phone', 'b-tax':'tax_id' };
+let _billingPrefilled = false;
+function toggleBillingForm() {
+  const company = document.querySelector('input[name="bill-to"]:checked')?.value === 'company';
+  document.getElementById('billing-form').classList.toggle('hidden', !company);
+}
+function fillBillingForm(billing, prefilled = false) {
+  Object.entries(BILLING_FIELDS).forEach(([id, key]) => { document.getElementById(id).value = billing?.[key] || ''; });
+  document.querySelector(`input[name="bill-to"][value="${billing ? 'company' : 'individual'}"]`).checked = true;
+  _billingPrefilled = prefilled;
+  document.getElementById('billing-prefill-note').classList.toggle('hidden', !prefilled);
+  toggleBillingForm();
+}
+function readBillingForm() {
+  if (document.querySelector('input[name="bill-to"]:checked')?.value !== 'company') return null;
+  const billing = {};
+  Object.entries(BILLING_FIELDS).forEach(([id, key]) => { billing[key] = document.getElementById(id).value.trim(); });
+  return billing;
+}
+function billingBlock(o) {
+  const b = o.order_billing;
+  const v = key => escHtml(b?.[key] || '');
+  return `<div class="col-span-2 sm:col-span-3">
+    ${b ? `<div><span class="text-gray-400">开单给</span> <span class="font-medium">${v('company_name')}</span></div>
+      <div class="text-gray-700">Reg. No.: ${v('registration_no')}${b.tax_id ? ` · TIN: ${v('tax_id')}` : ''}</div>
+      <div class="text-gray-700">${v('address')}${b.phone ? ` · H/P: ${v('phone')}` : ''}</div>` : `<span class="text-gray-400">开单给</span> <span>开单给个人</span>`}
+    <details class="mt-1"><summary class="text-xs text-gray-500 cursor-pointer">修改开单资料</summary>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+        <div class="sm:col-span-2"><label class="label">公司名称 *</label><input id="db-company_name" class="input" maxlength="200" value="${v('company_name')}"></div>
+        <div><label class="label">公司注册号 *</label><input id="db-registration_no" class="input" maxlength="100" value="${v('registration_no')}"></div>
+        <div><label class="label">公司电话</label><input id="db-phone" class="input" maxlength="50" value="${v('phone')}"></div>
+        <div class="sm:col-span-2"><label class="label">公司地址 *</label><input id="db-address" class="input" maxlength="500" value="${v('address')}"></div>
+        <div><label class="label">税号（TIN）</label><input id="db-tax_id" class="input" maxlength="50" value="${v('tax_id')}"></div>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button type="button" class="btn-gold px-3 py-1 text-sm" onclick="saveOrderBilling('${o.id}', true)">保存开单资料</button>
+        ${b ? `<button type="button" class="px-3 py-1 text-sm border border-gray-300 rounded" onclick="saveOrderBilling('${o.id}', false)">改回开单给个人</button>` : ''}
+      </div>
+    </details>
+  </div>`;
+}
+async function saveOrderBilling(orderId, company) {
+  const data = {};
+  if (company) Object.values(BILLING_FIELDS).forEach(key => { data[key] = document.getElementById('db-' + key).value.trim(); });
+  const { error } = await sb.rpc('set_order_billing', { p_order: orderId, p_data: data });
+  if (error) { alert(error.message); return; }
+  await openDetail(orderId);
+}
+
 function debounceSearch() {
   clearTimeout(searchTimer);
   const el = document.getElementById('customer-found');
@@ -3789,6 +3855,10 @@ async function lookupCustomer() {
     document.getElementById('c-address').value = data[0].address || '';
     el.dataset.id = data[0].id;
     el.dataset.phone = phone;
+    const { data: lastBilling } = await sb.rpc('find_customer_billing', { p_phone: phone });
+    if (version !== customerLookupVersion) return;
+    const untouched = _billingPrefilled || !Object.keys(BILLING_FIELDS).some(id => document.getElementById(id).value.trim());
+    if (untouched) fillBillingForm(lastBilling || null, !!lastBilling);
   } else {
     el.classList.add('hidden');
     delete el.dataset.id;
@@ -3887,6 +3957,10 @@ async function submitOrder() {
 
   if (!storeId) { showCreateErr('请选择门店'); return; }
   if (!orderAmount || orderAmount <= 0) { showCreateErr('请输入有效金额'); return; }
+  const billingInput = _supplementParentId ? null : readBillingForm();
+  if (billingInput && (!billingInput.company_name || !billingInput.registration_no || !billingInput.address)) {
+    showCreateErr('开单给公司：请填写公司名称、注册号和地址'); return;
+  }
 
   // Validate items: must have at least one named row, and total must match order amount(不含安装费)
   const itemsForCheck = getItemRows();
@@ -4065,6 +4139,19 @@ async function submitOrder() {
       }).eq('id', order.id);
     }
 
+    // 开单资料：补件单跟随原单。保存失败则按未成功处理，finally 会撤销这张单。
+    let billingToSave = billingInput;
+    if (parentRedirectId) {
+      const { data: parentBilling, error: pbErr } = await sb.from('order_billing')
+        .select('company_name,registration_no,address,phone,tax_id').eq('order_id', parentRedirectId).maybeSingle();
+      if (pbErr) { showCreateErr('读取原单开单资料失败: ' + pbErr.message); return; }
+      billingToSave = parentBilling;
+    }
+    if (billingToSave) {
+      const { error: billErr } = await sb.rpc('set_order_billing', { p_order: order.id, p_data: billingToSave });
+      if (billErr) { showCreateErr('开单资料保存失败: ' + billErr.message); return; }
+    }
+
     // 提交成功，清空补件单上下文
     _supplementParentId = null;
     _supplementCustomerId = null;
@@ -4154,7 +4241,7 @@ async function openDetail(id, backView) {
   goto('detail');
 
   let { data: o } = await sb.from('orders')
-    .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
+    .select('*, stores(name,code), customers(name,phone,address), order_billing(company_name,registration_no,address,phone,tax_id), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
     .eq('id', id).single();
   if (!o) return;
 
@@ -4169,7 +4256,7 @@ async function openDetail(id, backView) {
       const { data: sync } = await sb.functions.invoke('hitpay-payment', { body: { order_id: id } });
       if (sync?.reconciled || sync?.status === 'completed') {
         const fresh = await sb.from('orders')
-          .select('*, stores(name,code), customers(name,phone,address), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
+          .select('*, stores(name,code), customers(name,phone,address), order_billing(company_name,registration_no,address,phone,tax_id), profiles!orders_staff_id_fkey(name), suppliers(name,phone), designers(name,studio,phone,model_type)')
           .eq('id', id).single();
         if (fresh.data) o = fresh.data;
       }
@@ -4331,6 +4418,7 @@ async function openDetail(id, backView) {
         <div><span class="text-gray-400">${t('lbl_customer')}</span> <span class="font-medium">${o.customers?.name}</span></div>
         <div><span class="text-gray-400">${t('lbl_mobile')}</span> <span>${o.customers?.phone}</span></div>
         ${o.customers?.address ? `<div class="col-span-2 sm:col-span-3"><span class="text-gray-400">配送地址</span> <span class="text-gray-700">${o.customers.address}</span></div>` : ''}
+        ${billingBlock(o)}
         <div><span class="text-gray-400">${t('lbl_amount_d')}</span> <span class="font-bold text-hg">${fmtAmt(o.amount, o.currency)}</span>${Number(o.install_fee)>0 ? `<span class="text-xs text-gray-400 ml-1">(含安装费 ${fmtAmt(o.install_fee, o.currency)})</span>` : ''}${o.needs_install === false ? `<span class="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium ml-1">不需安装</span>` : ''}</div>
         <div><span class="text-gray-400">${t('lbl_payment')}</span>
           <span class="font-medium" style="${o.payment_status==='paid'?'color:#1a3a2a':o.payment_status==='partial'?'color:#d97706':'color:#dc2626'}">
@@ -4485,7 +4573,7 @@ async function downloadOrderPDF(orderId) {
       throw new Error('公司税务及收款资料待核实，请联系管理员。Company payment details require verification.');
     }
     const results = await Promise.all([
-      sb.from('orders').select('*, stores(name,code), customers(name,phone,address)').eq('id', orderId).single(),
+      sb.from('orders').select('*, stores(name,code), customers(name,phone,address), order_billing(company_name,registration_no,address,phone,tax_id)').eq('id', orderId).single(),
       sb.from('order_items').select('*').eq('order_id', orderId).order('sort_order'),
       sb.from('order_payments').select('*').eq('order_id', orderId).order('seq'),
     ]);

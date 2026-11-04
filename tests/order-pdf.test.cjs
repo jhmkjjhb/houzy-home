@@ -58,3 +58,17 @@ const hostile = render({...base,customers:{name:'<script>alert(1)</script>'}},[{
 assert.doesNotMatch(hostile,/<script>|<img/);
 assert.match(hostile,/&lt;script&gt;/);
 console.log('order PDF financial, bilingual, reminder and escaping checks passed');
+
+// Company billing: the company leads the PDF, the customer becomes the contact, and hostile text stays inert.
+{
+  const billed = {...base, customers:{name:'王先生',phone:'60167475446',address:'配送地址 A'}, order_billing:{company_name:'SpaceMade <b>Sdn Bhd</b>',registration_no:'202501014187 (1615601-X)',address:'28B Jalan Pendekar 17',phone:'016-7475446',tax_id:''}};
+  const html = render(billed,[],[],company);
+  assert.ok(html.includes('Bill To') && html.includes('SpaceMade &lt;b&gt;Sdn Bhd&lt;/b&gt;'));
+  assert.ok(html.includes('202501014187 (1615601-X)') && html.includes('28B Jalan Pendekar 17') && html.includes('016-7475446'));
+  assert.ok(html.includes('Contact') && html.includes('王先生') && html.includes('配送地址 A'));
+  assert.ok(!html.includes('TIN: ') , 'an empty tax number prints nothing');
+  assert.ok(render({...billed,order_billing:{...billed.order_billing,tax_id:'C123'}},[],[],company).includes('TIN: C123'));
+  const individual = render({...base,order_billing:null},[],[],company);
+  assert.ok(!individual.includes('Bill To') && individual.includes('Customer Details'), 'individual orders print as before');
+  assert.equal(individual, render(base,[],[],company));
+}
