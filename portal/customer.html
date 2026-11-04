@@ -156,7 +156,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="order-pdf-company.js"></script>
-<script src="order-pdf.js?v=bill-to-20261104"></script>
+<script src="order-pdf.js?v=product-code-20261104"></script>
 <script>
 const SB_URL = 'https://csabbxiijzghooppayae.supabase.co';
 const SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
@@ -822,7 +822,9 @@ async function downloadCustomerOrderPDF(orderId) {
     const stage = HouzyOrderPDF.snapshot(data.order, data.payments).stage;
     wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
-    wrapper.innerHTML = HouzyOrderPDF.render(data.order, data.items, data.payments, company);
+    // 产品编号读不到时仍让客户拿到 PDF，不因此挡住付款资料
+    const pdfItems = await HouzyOrderPDF.withProductCodes(sb, data.items).catch(() => data.items);
+    wrapper.innerHTML = HouzyOrderPDF.render(data.order, pdfItems, data.payments, company);
     document.body.appendChild(wrapper);
     await document.fonts.ready;
     await html2pdf().set({

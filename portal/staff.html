@@ -67,7 +67,7 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="order-pdf-company.js"></script>
-<script src="order-pdf.js?v=bill-to-20261104"></script>
+<script src="order-pdf.js?v=product-code-20261104"></script>
 <script src="https://hit-pay.com/hitpay.js"></script>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:Inter,'Noto Sans SC',sans-serif">
@@ -4284,6 +4284,8 @@ async function openDetail(id, backView) {
     sb.from('order_attachments').select('*').eq('order_id', id).order('uploaded_at'),
     sb.from('orders').select('id,order_no,status,amount,created_at,parent_order_id,description').eq('parent_order_id', id).order('created_at'),
   ]);
+  // 商品明细显示产品编号；读不到时明细照常显示，只是没有编号
+  const itemsWithCodes = await HouzyOrderPDF.withProductCodes(sb, items || []).catch(() => items || []);
   // 图纸三方确认数据(按 order×supplier)
   const { data: _drawings } = await sb.rpc('drawing_get_for_order', { p_order_id: id });
   // 各厂家发货流水(按 order×supplier；本厂家只动自己,店面汇总查看)
@@ -4528,7 +4530,7 @@ async function openDetail(id, backView) {
         _fold('drawing',  '📐', '图纸三方确认',         renderDrawingCard(o, items, supList, _drawings),        _open.has('drawing')),
         _fold('suppliers','🏭', '各厂家进度',           renderSupplierStatusCard(o, items, supList, _shipments), _open.has('suppliers')),
         _fold('arrive',   '📦', '物流到货确认',         _arriveCard,                                              _open.has('arrive')),
-        _fold('items',    '📋', '商品明细 / 供应商分配', renderItemsCard(items, o, supList),                       _open.has('items')),
+        _fold('items',    '📋', '商品明细 / 供应商分配', renderItemsCard(itemsWithCodes, o, supList),                       _open.has('items')),
         _fold('children', '📦', '补件 / 子订单',         renderChildOrdersCard(childOrders),                       _open.has('children')),
         _fold('attach',   '📎', '附件 / 图片',           renderAttachmentsCard(attachments, o.id),                _open.has('attach')),
         ['after_sales','completed'].includes(o.status) ? _fold('warranty','🛡','质保信息', renderWarrantyPanel(o, logs, o.id), true) : '',
@@ -4584,7 +4586,8 @@ async function downloadOrderPDF(orderId) {
     const stage = HouzyOrderPDF.snapshot(order, results[2].data).stage;
     wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
-    wrapper.innerHTML = HouzyOrderPDF.render(order, results[1].data, results[2].data, company);
+    const pdfItems = await HouzyOrderPDF.withProductCodes(sb, results[1].data);
+    wrapper.innerHTML = HouzyOrderPDF.render(order, pdfItems, results[2].data, company);
     document.body.appendChild(wrapper);
     await document.fonts.ready;
     await html2pdf().set({
@@ -5235,6 +5238,7 @@ function renderItemsCard(items, o, supList) {
       <tr class="border-b border-gray-50">
         <td class="py-2 pr-3">
           <div class="text-sm text-gray-800">${item.product_name}</div>
+          ${item.product_code ? `<div class="text-xs font-mono text-gray-500 mt-0.5">${escHtml(item.product_code)}</div>` : ''}
           <div class="mt-0.5 flex items-center gap-1 flex-wrap">
             ${item.section ? `<span class="text-xs px-1.5 py-0.5 rounded-full font-semibold" style="background:#1a3a2a;color:#c8a96e">${item.section}</span>` : ''}
             ${item.product_type ? ptBadge(item.product_type) : `<span class="text-xs text-orange-400">未设类型</span>`}

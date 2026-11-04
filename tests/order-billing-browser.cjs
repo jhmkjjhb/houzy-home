@@ -5,7 +5,7 @@ const out='output/playwright/order-billing';fs.mkdirSync(out,{recursive:true});
 const stub=`(()=>{const calls=window.__calls=[];const state=window.__state={billing:null,last:null};
 const profile={id:'u1',name:'Amy',role:'store_manager',store_id:'s1',active:true,region:'JB'};
 const order=id=>({id,order_no:'001-20261104-0001',amount:100,currency:'MYR',status:'pending_payment',payment_status:'unpaid',store_id:'s1',staff_id:'u1',created_at:'2026-11-04T08:00:00Z',stores:{name:'Austin',code:'001'},customers:{id:'c1',name:'王先生',phone:'60167475446',address:'配送 Jalan A'},order_billing:state.billing,profiles:{name:'Amy'},suppliers:null,designers:null});
-const rows={stores:[{id:'s1',name:'Austin',code:'001',active:true,region:'JB'}]};
+const rows={stores:[{id:'s1',name:'Austin',code:'001',active:true,region:'JB'}],products:[{sku:'HH-B01-0023',name:'熔岩白（10面随机/哑光）'}],order_items:[{id:'i1',order_id:'o1',product_name:'熔岩白（10面随机/哑光）',model_spec:'熔岩白',quantity:260,unit:'片',unit_price:1,total_price:260,fulfillment_type:'stock'},{id:'i2',order_id:'o1',product_name:'手写商品',quantity:1,unit:'套',unit_price:1,total_price:1}]};
 function q(table){let single=false;const f={select(){return f},eq(){return f},neq(){return f},in(){return f},is(){return f},gte(){return f},lte(){return f},lt(){return f},gt(){return f},not(){return f},or(){return f},ilike(){return f},order(){return f},limit(){return f},range(){return f},
  single(){single=true;return f},maybeSingle(){single=true;return f},
  insert(v){calls.push({insert:table,v});return f},update(v){calls.push({update:table,v});return f},delete(){return f},upsert(){return f},
@@ -48,6 +48,8 @@ try{
  await page.evaluate(s=>{__state.billing=s;},{...SPACE,company_name:'Evil <img src=x onerror=window.__pwned=1> Sdn Bhd'});await page.evaluate(()=>openDetail('o1','orders'));
  await page.getByText('Reg. No.: 202501014187').first().waitFor();await page.waitForTimeout(200);ok(!(await page.evaluate(()=>window.__pwned)),'company text cannot run as code');
  ok((await page.locator('#db-company_name').inputValue()).startsWith('Evil <img'),'edit form shows the raw text');
+ // Item list carries our product code, directly under the product it belongs to.
+ await page.getByText('HH-B01-0023').first().waitFor({state:'attached'});const row=await page.locator('tr',{hasText:'熔岩白（10面随机/哑光）'}).first().textContent();ok(row.includes('HH-B01-0023'),'item row shows its product code');ok(!(await page.locator('tr',{hasText:'手写商品'}).first().textContent()).includes('HH-'),'a hand-written item shows none');await page.screenshot({path:out+'/item-code.png',fullPage:true});
  // Editing an existing order
  await page.locator('summary',{hasText:'修改开单资料'}).click();await page.locator('#db-company_name').fill(SPACE.company_name);await page.getByRole('button',{name:'保存开单资料'}).click();
  await page.getByText('SpaceMade Interior Design Sdn Bhd').first().waitFor();await page.screenshot({path:out+'/order-detail.png',fullPage:true});

@@ -33,6 +33,16 @@
     const paidAt = records.filter(p => p.confirmed && p.paid_at).map(p => p.paid_at).sort().at(-1) || null;
     return {total, paid, pending, balance:Math.max(0,total-paid), credit:Math.max(0,paid-total), records, legacy, disputed, cancelled, stage, paidAt};
   }
+  // 产品编号（HH-…）按商品名称精确对应产品库。同名多个产品时无法确定，宁可不印也不印错。
+  async function withProductCodes(client, items) {
+    const names = [...new Set(items.map(i => String(i.product_name || '').trim()).filter(Boolean))];
+    if (!names.length) return items;
+    const { data, error } = await client.from('products').select('sku,name').in('name', names);
+    if (error) throw error;
+    const byName = new Map();
+    for (const row of data || []) byName.set(row.name, byName.has(row.name) ? null : row.sku);
+    return items.map(i => ({...i, product_code: byName.get(String(i.product_name || '').trim()) || null}));
+  }
   function render(order, items, payments, company, now = new Date()) {
     const bill = order.order_billing;
     const s = snapshot(order, payments);
@@ -60,7 +70,7 @@ ${!configured ? '<p class="draft">内部预览 · 公司收款资料待核实 / 
 <div class="stage ${escape(s.stage)} keep"><strong>${escape(paymentState)}</strong><small>${escape(stage[2])} / ${escape(stage[3])} · 截至 / As of: ${date(now)}</small>${s.stage === 'paid' && s.paidAt ? `<small>最近确认收款 / Last Confirmed Payment: ${date(s.paidAt)}</small>` : ''}</div>
 ${bill ? `<div class="cols"><section class="panel"><h2>${pair('开单给','Bill To')}</h2><strong>${escape(bill.company_name)}</strong><div>Reg. No.: ${escape(bill.registration_no)}</div>${bill.tax_id ? `<div>TIN: ${escape(bill.tax_id)}</div>` : ''}<div>${escape(bill.address)}</div>${bill.phone ? `<div>H/P: ${escape(bill.phone)}</div>` : ''}</section><section class="panel"><h2>${pair('联系人','Contact')}</h2><strong>${escape(order.customers?.name || '—')}</strong><div>${escape(order.customers?.phone)}</div>${order.customers?.address ? `<div>配送地址 / Delivery: ${escape(order.customers.address)}</div>` : ''}</section></div>` : ''}<div class="cols">${bill ? '' : `<section class="panel"><h2>${pair('客户信息','Customer Details')}</h2><strong>${escape(order.customers?.name || '—')}</strong><div>${escape(order.customers?.phone)}</div><div>${escape(order.customers?.address)}</div></section>`}<section class="panel"${bill ? ' style="grid-column:1/-1"' : ''}><h2>${pair('订单信息','Order Details')}</h2><div>订单进度 / Order Progress: ${orderProgress}</div>${row('付款方式 / Payment method', escape(methods[order.payment_method || s.records.at(-1)?.method] || order.payment_method || s.records.at(-1)?.method || '—'))}${order.deadline_at ? row('预计安装日期 / Estimated installation',date(order.deadline_at)) : ''}</section></div>
 ${order.description ? `<p>${escape(order.description)}</p>` : ''}
-<table><thead><tr><th>${pair('货品名称 / 规格','Product / Specification')}</th><th>${pair('数量','Quantity')}</th><th class="num">${pair('单价','Unit Price')}</th><th class="num">${pair('小计','Amount')}</th></tr></thead><tbody>${items.map(i => `<tr><td><strong>${escape(i.product_name)}</strong><small>${escape(i.model_spec)}</small>${i.group_name ? `<small>${escape(i.group_name)}</small>`:''}</td><td>${escape(i.quantity)} ${escape(i.uom || i.unit || '')}</td><td class="num">${money(cents(i.unit_price))}</td><td class="num">${money(cents(i.total_price ?? Number(i.quantity)*Number(i.unit_price)))}</td></tr>`).join('')}</tbody></table>
+<table><thead><tr><th>${pair('货品名称 / 规格','Product / Specification')}</th><th>${pair('数量','Quantity')}</th><th class="num">${pair('单价','Unit Price')}</th><th class="num">${pair('小计','Amount')}</th></tr></thead><tbody>${items.map(i => `<tr><td><strong>${escape(i.product_name)}</strong>${i.product_code ? `<small>编号 / Code: ${escape(i.product_code)}</small>` : ''}<small>${escape(i.model_spec)}</small>${i.group_name ? `<small>${escape(i.group_name)}</small>`:''}</td><td>${escape(i.quantity)} ${escape(i.uom || i.unit || '')}</td><td class="num">${money(cents(i.unit_price))}</td><td class="num">${money(cents(i.total_price ?? Number(i.quantity)*Number(i.unit_price)))}</td></tr>`).join('')}</tbody></table>
 <section class="keep panel">${items.length ? row('商品小计 / Items Subtotal',money(itemsTotal)) : ''}${items.length && adjustment ? row('订单调整 / Order Adjustment',money(adjustment)) : ''}${row('订单总金额 / Order Total',money(s.total))}${row('已确认收款 / Confirmed Payments',money(s.paid))}${s.pending ? row('现金待核对 / Cash Pending Verification',money(s.pending)) : ''}${s.credit ? row('超付金额 / Overpayment',money(s.credit)):''}</section>
 <div class="balance keep">${row(pair(s.cancelled || s.legacy || s.disputed ? '账面差额（需核实）':'未收余额',s.cancelled || s.legacy || s.disputed ? 'Recorded Difference (Verify)':'Outstanding Balance'),money(s.balance))}</div>
 ${s.legacy ? '<p class="notice">本订单仅有历史付款状态，未取得对应收款明细，请先与公司核实，勿据此重复付款。<br>Only a legacy payment status is available. Please verify with the company before making any further payment.</p>':''}
@@ -73,6 +83,6 @@ ${!foreignCurrency && (s.stage === 'unpaid' || s.stage === 'partial') ? '<p clas
 <section class="keep signatures-panel"><h2>${pair('订单确认签字','Order Confirmation Signatures')}</h2><p>签署后确认订单内容 / The parties confirm this order upon signing.</p><div class="signatures"><div class="signature">客户签名及日期 / Customer Signature & Date</div><div class="signature">公司代表签名及日期 / Company Representative & Date</div></div></section>
 <footer>付款状态以本单生成时已记录并确认的收款为准。付款后请重新下载查看最新状态。本单并非税务发票或电子发票。<br>Payment status reflects confirmed records at the time generated. Download again after payment to view the latest status. This document is not a tax invoice or e-Invoice.<br>生成时间 / Generated: ${date(now)} · houzyhome.com</footer></article>`;
   }
-  root.HouzyOrderPDF = Object.freeze({snapshot,render});
+  root.HouzyOrderPDF = Object.freeze({snapshot,render,withProductCodes});
   if (typeof module !== 'undefined') module.exports = root.HouzyOrderPDF;
 })(typeof window !== 'undefined' ? window : globalThis);

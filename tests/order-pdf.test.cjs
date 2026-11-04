@@ -72,3 +72,22 @@ console.log('order PDF financial, bilingual, reminder and escaping checks passed
   assert.ok(!individual.includes('Bill To') && individual.includes('Customer Details'), 'individual orders print as before');
   assert.equal(individual, render(base,[],[],company));
 }
+
+// Product codes: printed when the name identifies exactly one product. A wrong code is worse than
+// none, because staff order from these numbers.
+(async () => {
+  const {withProductCodes} = require('../portal/order-pdf.js');
+  const products = [{sku:'HH-B01-0023',name:'熔岩白（10面随机/哑光）'},{sku:'HH-B01-0011',name:'熔岩白（12面随机/哑光）'},{sku:'HH-X-1',name:'同名'},{sku:'HH-X-2',name:'同名'}];
+  let asked;
+  const client = {from:t=>{assert.equal(t,'products');return {select:()=>({in:async(_c,names)=>{asked=names;return {data:products.filter(p=>names.includes(p.name)),error:null};}})};}};
+  const items = [{product_name:'熔岩白（10面随机/哑光）'},{product_name:' 熔岩白（12面随机/哑光） '},{product_name:'同名'},{product_name:'手写商品'},{product_name:'熔岩白（10面随机/哑光）'}];
+  const out = await withProductCodes(client,items);
+  assert.equal(out[0].product_code,'HH-B01-0023');assert.equal(out[1].product_code,'HH-B01-0011','surrounding spaces do not lose the match');
+  assert.equal(out[2].product_code,null,'two products with one name print no code');assert.equal(out[3].product_code,null,'unknown item prints no code');
+  assert.equal(asked.length,4,'each name is asked once');assert.equal(items[0].product_code,undefined,'input is not changed');
+  await assert.rejects(withProductCodes({from:()=>({select:()=>({in:async()=>({data:null,error:new Error('down')})})})},items),/down/);
+  assert.deepEqual(await withProductCodes({from(){throw new Error('no query for empty orders');}},[]),[]);
+  const html = render(base,[{product_name:'熔岩白',product_code:'HH-<b>1',quantity:1,unit_price:1}],[],company);assert.ok(html.includes('Code: HH-&lt;b&gt;1'));
+  assert.ok(!render(base,[{product_name:'手写',quantity:1,unit_price:1}],[],company).includes('Code:'),'no empty code line');
+  console.log('product code checks passed');
+})().catch(e=>{console.error(e);process.exit(1);});
