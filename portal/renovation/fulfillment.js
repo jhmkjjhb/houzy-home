@@ -50,7 +50,7 @@ window.RenoFulfillment=(()=>{
   else if(live)body=`<p><b>纸质确认单待审核</b>：${E(live.signer_name)}（${E(live.signer_relation)}）。</p><div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(live.paper_path)}">查看扫描件</button>${o.manager?`<button type="button" data-act="review_paper" data-id="${live.id}" data-approve="1">审核通过</button><button type="button" class="secondary" data-act="review_paper" data-id="${live.id}" data-approve="">退回</button>`:'<span class="muted">须由店长或上级审核</span>'}</div>`;
   else{
    const waiting=customs.filter(i=>['pending','confirmed'].includes(i.stage));
-   if(waiting.length)body=`<div class="work-controls" data-form>${file(signed?'新版定稿图纸（旧签名将失效）':'定稿图纸或确认文件','document',PDF_IMG)}${field('备注（选填）','note')}<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'整单发起业主签名'}（${waiting.length}项）</button></div>`;
+   if(waiting.length)body=`<div class="work-controls" data-form>${file(signed?'新版定稿图纸（旧签名将失效，业主会看到）':'定稿图纸或确认文件（业主会看到，请勿含成本价）','document',PDF_IMG)}${field('给业主的说明（选填，业主会看到）','note')}<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'整单发起业主签名'}（${waiting.length}项）</button></div>`;
   }
   return `<div class="work-terms"><b>业主签名 · 定制必签</b>${body}${history?`<ul>${history}</ul>`:''}</div>`;
  }
@@ -80,7 +80,7 @@ window.RenoFulfillment=(()=>{
   const rows=items.map(i=>`<label class="check"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}> #${E(i.line_id)} ${E(i.name)} · ${kindNames[i.kind]} · ${E(stage(i))}${i.change_pending?' · 改单待签名':''}${i.issue_note?` · <span class="warning">问题：${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</span>`:''}</label>`).join('');
   return `<details class="work-terms"><summary>按项查看和处理例外（${items.length}项）</summary>${rows}${o.locked?'':`<p class="muted">勾选后，上方的下单、到货、完成只处理勾选的项，可用于分开下单。</p>
    <div class="work-controls" data-form>${field('问题说明（缺件、破损、尺寸不对等）','note')}${field('跟进日期','follow_up_on','type="date"')}<button type="button" class="secondary" data-act="flag_issue">标记问题</button><button type="button" class="secondary" data-act="resolve_issue">问题已解决</button></div>
-   ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（已下单后修改）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}`}</details>`;
+   ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（业主会看到）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}`}</details>`;
  }
  function panel(w,tracking,options){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');

@@ -4,7 +4,7 @@ import fs from 'node:fs';import assert from 'node:assert/strict';
 const {PGlite}=await import(process.env.RENO_PGLITE_MODULE||'@electric-sql/pglite');const db=new PGlite();let checks=0;
 const ok=(v,m)=>{assert(v,m);checks++;};const reject=async(fn,re)=>{await assert.rejects(fn,re);checks++;};
 const store='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002';
-const staff='20000000-0000-4000-8000-000000000001',manager='20000000-0000-4000-8000-000000000002',colleague='20000000-0000-4000-8000-000000000003',outsider='20000000-0000-4000-8000-000000000004',legacyOwner='20000000-0000-4000-8000-000000000005';
+const staff='20000000-0000-4000-8000-000000000001',manager='20000000-0000-4000-8000-000000000002',colleague='20000000-0000-4000-8000-000000000003',outsider='20000000-0000-4000-8000-000000000004',legacyOwner='20000000-0000-4000-8000-000000000005',customerUser='20000000-0000-4000-8000-000000000006',supplierUser='20000000-0000-4000-8000-000000000007';
 const id='30000000-0000-4000-8000-000000000001',oldId='30000000-0000-4000-8000-000000000002';
 await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;CREATE SCHEMA storage;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
@@ -12,7 +12,7 @@ GRANT USAGE ON SCHEMA auth,storage TO authenticated,anon;GRANT EXECUTE ON FUNCTI
 CREATE TABLE stores(id uuid PRIMARY KEY,name text,region text);CREATE TABLE profiles(id uuid PRIMARY KEY,name text DEFAULT '',active boolean,role text,store_id uuid,region text,phone text);
 CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);CREATE TABLE storage.objects(id uuid DEFAULT gen_random_uuid(),bucket_id text,name text);ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;GRANT SELECT,INSERT ON storage.objects TO authenticated,anon;
 INSERT INTO stores VALUES('${store}','Austin','JB'),('${other}','Other','KL');
-INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('${staff}','Ali',true,'staff','${store}','JB','+60 11'),('${manager}','Mei',true,'store_manager','${store}','JB','+60 22'),('${colleague}','Bo',true,'staff','${store}','JB','+60 33'),('${outsider}','Out',true,'staff','${other}','KL',null),('${legacyOwner}','Old',true,'staff','${store}','JB',null);`);
+INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('${staff}','Ali',true,'staff','${store}','JB','+60 11'),('${manager}','Mei',true,'store_manager','${store}','JB','+60 22'),('${colleague}','Bo',true,'staff','${store}','JB','+60 33'),('${outsider}','Out',true,'staff','${other}','KL',null),('${legacyOwner}','Old',true,'staff','${store}','JB',null),('${customerUser}','Cust',true,'customer',null,null,null),('${supplierUser}','Sup',true,'supplier',null,null,null);`);
 for(const name of ['renovation_orders','renovation_payments','renovation_payment_installments','renovation_phone_lookup','renovation_customer_orders','renovation_additions','renovation_addition_signatures','renovation_signing_link','renovation_payment_allocations','renovation_customer_progress','renovation_deductions','renovation_partial_deductions','renovation_contract_esign','renovation_installment_statements','renovation_statement_contact'])
  await db.exec(fs.readFileSync(`supabase/${name}_migration.sql`,'utf8'));
 // Performance reports need tables outside this test, so they are stubbed. The real files must still contain the text the migration patches.
@@ -199,6 +199,26 @@ const after=(await sys('SELECT created_by,sales_by FROM renovation_projects WHER
 ok((await sys('SELECT active FROM profiles WHERE id=$1',[colleague]))[0].active===false,'account off');
 ok((await sys(`SELECT forced FROM renovation_handovers WHERE from_user=$1 ORDER BY created_at DESC LIMIT 1`,[colleague]))[0].forced===true,'marked as forced');
 await db.exec(`RESET ROLE;UPDATE profiles SET active=false WHERE id='${outsider}'`);checks++; // no work: normal disable still fine
+
+// Internal detail stays internal, even for a customer or supplier who has a login.
+for(const outside of [customerUser,supplierUser]){
+ await actor(outside);
+ for(const table of ['renovation_work_items','renovation_custom_confirmations','renovation_purchase_batches','renovation_handovers','renovation_audit','renovation_work_orders'])
+  ok((await db.query(`SELECT * FROM ${table}`)).rows.length===0,`${table} hidden from non-staff`);
+ ok((await db.query(`SELECT * FROM storage.objects WHERE bucket_id='renovation-fulfillment'`)).rows.length===0,'files hidden from non-staff');
+ const seen=(await db.query('SELECT renovation_my_todos() v')).rows[0].v;ok(seen.items.length===0&&seen.handovers.length===0,'no to-dos for non-staff');
+ ok((await db.query('SELECT renovation_handover_people() v')).rows[0].v.length===0,'no staff list for non-staff');
+ await reject(()=>db.query('SELECT renovation_fulfillment_command($1,0,$2,$3::jsonb)',[id,'arrive','{}']),/无此项目权限/);
+}
+// The customer's two views carry only these fields: no assignee, supplier, order number, price, problem note or staff.
+await actor(staff,'anon');
+const customerProgress=(await db.query('SELECT renovation_customer_progress_view(t) v FROM (SELECT $1::uuid t) x',[(await (async()=>{const r=await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]);await actor(staff,'anon');return r;})())[0].customer_token])).rows[0].v;
+ok(customerProgress.work_orders.every(w=>Object.keys(w).sort().join()==='group_name,status,updated_at'),'customer progress: group, status, date only');
+const signedCopy=(await sys('SELECT terms FROM renovation_custom_confirmations WHERE work_order_id=$1 ORDER BY version LIMIT 1',[custom.id]))[0].terms;
+ok(Object.keys(signedCopy).sort().join()==='address,change_note,contract_no,customer_name,document_sha256,group_name,lines,note,version','signing page fields are fixed');
+ok(signedCopy.lines.every(l=>Object.keys(l).sort().join()==='id,name,qty,spec,unit'),'signing lines carry no price, supplier or stage');
+await actor(staff,'anon');const reopened=(await db.query('SELECT renovation_custom_sign_open($1,$2,$3) v',[(await (async()=>{const r=await latest(custom.id);await actor(staff,'anon');return r;})()).id,(await (async()=>{const r=await latest(custom.id);await actor(staff,'anon');return r;})()).signing_token,'4567'])).rows[0].v;
+ok(Object.keys(reopened).every(k=>['status','terms','terms_hash','document_path','signed_at','signer_name','signer_relation','signature_hash'].includes(k)),'signing response has no internal fields');
 
 // Re-running keeps everything
 const before=(await sys('SELECT count(*)::int n FROM renovation_work_items'))[0].n;await db.exec('RESET ROLE');await db.exec(migration);ok((await sys('SELECT count(*)::int n FROM renovation_work_items'))[0].n===before,'re-run keeps tracking data');
