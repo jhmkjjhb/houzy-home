@@ -179,7 +179,8 @@
           <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_store">所属店面 *</label>
             <select id="reg-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
               <option value="" style="background:#1a3a2a" data-i18n-opt="opt_select_store">请选择所属店面</option>
-            </select></div>
+            </select>
+            <div id="reg-store-load-error" class="hidden text-xs text-red-400 mt-2" role="alert"><span data-i18n="err_store_load">门店列表读取失败，请检查网络后重试。</span> <button type="button" onclick="loadRegisterStores()" class="underline text-gd" data-i18n="btn_reload_stores">重新读取</button></div></div>
         </div>
         <!-- Supplier fields -->
         <div id="reg-supplier-fields" class="space-y-3 hidden">
@@ -233,7 +234,8 @@
           <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_store">所属店面 *</label>
             <select id="reg-wh-store" class="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gd">
               <option value="" style="background:#1a3a2a" data-i18n-opt="opt_select_store">请选择所属店面</option>
-            </select></div>
+            </select>
+            <div id="reg-wh-store-load-error" class="hidden text-xs text-red-400 mt-2" role="alert"><span data-i18n="err_store_load">门店列表读取失败，请检查网络后重试。</span> <button type="button" onclick="loadRegisterStores()" class="underline text-gd" data-i18n="btn_reload_stores">重新读取</button></div></div>
         </div>
         <!-- Password -->
         <div><label class="block text-xs text-gray-400 mb-1" data-i18n="lbl_password">密码 *</label>
@@ -311,6 +313,8 @@ const LOGIN_I18N = {
     ph_reenter_pw: '请再次输入密码',
     ph_optional: '选填',
     opt_select_store: '请选择所属店面',
+    err_store_load: '门店列表读取失败，请检查网络后重试。',
+    btn_reload_stores: '重新读取',
     submit_btn: '提交申请',
     click_to_home: '点击空白处返回官网',
     pt_WY: '卫浴', pt_CG: '橱柜', pt_DB: '地板/地砖', pt_DJ: '灯具', pt_MC: '门窗',
@@ -391,6 +395,8 @@ const LOGIN_I18N = {
     ph_reenter_pw: '請再次輸入密碼',
     ph_optional: '選填',
     opt_select_store: '請選擇所屬店面',
+    err_store_load: '門店列表讀取失敗，請檢查網絡後重試。',
+    btn_reload_stores: '重新讀取',
     submit_btn: '提交申請',
     click_to_home: '點擊空白處返回官網',
     pt_WY: '衛浴', pt_CG: '櫥櫃', pt_DB: '地板/地磚', pt_DJ: '燈具', pt_MC: '門窗',
@@ -471,6 +477,8 @@ const LOGIN_I18N = {
     ph_reenter_pw: 'Re-enter password',
     ph_optional: 'Optional',
     opt_select_store: 'Please select a store',
+    err_store_load: 'Could not load the store list. Check your network and try again.',
+    btn_reload_stores: 'Try again',
     submit_btn: 'Submit Application',
     click_to_home: 'Click outside to return to website',
     pt_WY: 'Bathroom', pt_CG: 'Kitchen Cabinet', pt_DB: 'Flooring / Tiles', pt_DJ: 'Lighting',
@@ -552,6 +560,8 @@ const LOGIN_I18N = {
     ph_reenter_pw: 'Masukkan semula kata laluan',
     ph_optional: 'Pilihan',
     opt_select_store: 'Sila pilih cawangan',
+    err_store_load: 'Senarai cawangan gagal dimuatkan. Semak rangkaian anda dan cuba lagi.',
+    btn_reload_stores: 'Cuba lagi',
     submit_btn: 'Hantar Permohonan',
     click_to_home: 'Klik di luar untuk kembali ke laman web',
     pt_WY: 'Bilik Mandi', pt_CG: 'Kabinet Dapur', pt_DB: 'Lantai / Jubin', pt_DJ: 'Pencahayaan',
@@ -633,6 +643,8 @@ const LOGIN_I18N = {
     ph_reenter_pw: 'ป้อนรหัสผ่านอีกครั้ง',
     ph_optional: 'ไม่บังคับ',
     opt_select_store: 'กรุณาเลือกสาขา',
+    err_store_load: 'โหลดรายชื่อสาขาไม่สำเร็จ โปรดตรวจสอบเครือข่ายแล้วลองอีกครั้ง',
+    btn_reload_stores: 'ลองอีกครั้ง',
     submit_btn: 'ส่งใบสมัคร',
     click_to_home: 'คลิกพื้นที่ว่างเพื่อกลับสู่เว็บไซต์',
     pt_WY: 'ห้องน้ำ', pt_CG: 'ตู้ครัว', pt_DB: 'พื้น / กระเบื้อง', pt_DJ: 'ไฟ',
@@ -746,14 +758,22 @@ function showLogin()  { showPanel('login-panel'); }
 function showForgot() { showPanel('forgot-panel'); }
 async function showRegister() {
   showPanel('reg-panel');
-  const { data } = await sb.from('stores').select('id, name').eq('active', true).order('name');
+  await loadRegisterStores();
+}
+// 门店列表读不到时要明确提示：否则下拉框只剩一项，看起来像是选不了
+async function loadRegisterStores() {
+  const retry = document.querySelectorAll('[onclick="loadRegisterStores()"]');
+  retry.forEach(b => { b.disabled = true; });
+  let data = null;
+  try { ({ data } = await sb.from('stores').select('id, name').eq('active', true).order('name')); } catch (e) { data = null; }
+  retry.forEach(b => { b.disabled = false; });
+  const failed = !data?.length;
   const noStoreOpt = `<option value="" style="background:#1a3a2a">${t('opt_select_store')}</option>`;
-  const opts = data?.length
-    ? noStoreOpt + data.map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('')
-    : noStoreOpt;
+  const opts = noStoreOpt + (data || []).map(s => `<option value="${s.id}" style="background:#1a3a2a">${s.name}</option>`).join('');
   ['reg-store','reg-wh-store'].forEach(id => {
     const sel = document.getElementById(id);
-    if (sel && sel.options.length <= 1) sel.innerHTML = opts;
+    if (sel && sel.options.length <= 1 && !failed) sel.innerHTML = opts;
+    document.getElementById(id + '-load-error')?.classList.toggle('hidden', !failed);
   });
 }
 
