@@ -1,0 +1,113 @@
+/* Style collections page. Shares nav, footer and tokens with partner.css; every rule here is prefixed c-. */
+body.c-page{--c-bg:#e1e7d9;--c-ink:#17382b;--c-soft:#3e5a4c;--c-accent:#7a5a26;--c-deep:#17382b;--c-on-deep:#f4f1e6;background:var(--c-bg);color:var(--c-ink);transition:background-color .6s ease,color .6s ease}
+.c-intro{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:56px;align-items:end;padding-block:44px 30px}
+.c-intro h1{margin:0;font-family:"Noto Serif SC",serif;font-size:clamp(32px,3.5vw,48px);font-weight:600;line-height:1.24;letter-spacing:-.01em}
+.c-intro p{margin:0;color:var(--c-soft);font-size:16px;line-height:1.85;transition:color .6s ease}
+
+/* Style picker: the names are the navigation, set large enough to read as the page's headline device. */
+.c-stage{display:grid;grid-template-columns:minmax(250px,330px) minmax(0,1fr);gap:48px;padding-bottom:104px;align-items:stretch}
+.c-names{display:flex;flex-direction:column;justify-content:flex-start}
+.c-name{display:flex;align-items:baseline;justify-content:space-between;gap:14px;width:100%;padding:15px 0 13px;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--c-ink) 24%,transparent);color:inherit;text-align:left;opacity:.62;transition:opacity .25s ease}
+.c-name:last-child{border-bottom:1px solid color-mix(in srgb,var(--c-ink) 24%,transparent)}
+.c-name strong{font-family:"Playfair Display",Georgia,serif;font-size:clamp(28px,2.9vw,40px);font-weight:500;line-height:1.1}
+.c-name span{font-family:"Noto Serif SC",serif;font-size:14px;white-space:nowrap}
+.c-name:hover{opacity:.88}
+.c-name[aria-selected=true]{opacity:1}
+.c-name[aria-selected=true] strong{font-style:italic}
+.c-summary{margin:26px 0 0;font-size:15.5px;line-height:1.85}
+.c-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.c-btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:13px 20px;background:var(--c-deep);color:var(--c-on-deep);border:1px solid var(--c-deep);font-size:13px;font-weight:700;text-decoration:none;transition:background-color .6s ease,color .6s ease}
+.c-btn:hover{filter:brightness(1.18)}
+
+/* The room and its material board. The board overlaps the photo, like samples laid on a plan. */
+.c-room-wrap{position:relative;margin-right:calc((min(1220px,100vw - 72px) - 100vw)/2);padding-bottom:72px}
+.c-room{margin:0;height:min(60vh,620px);min-height:400px;overflow:hidden;background:var(--c-deep)}
+.c-room img{width:100%;height:100%;object-fit:cover;transition:opacity .35s ease}
+.c-room img.is-swapping{opacity:0}
+.c-board{position:absolute;left:-28px;bottom:0;width:min(470px,calc(100% - 40px));padding:18px 18px 15px;background:#fbfaf6;color:#20302a;box-shadow:0 22px 48px rgba(8,20,14,.26)}
+.c-board h2{margin:0 0 12px;font-size:12px;font-weight:700;color:#4c5c54}
+.c-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:0;padding:0;list-style:none}
+.c-chip i{display:block;aspect-ratio:1;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(20,40,30,.14);animation:c-chip-in .45s ease backwards;animation-delay:calc(var(--i)*55ms)}
+.c-chip span{display:block;margin-top:7px;font-size:11.5px;line-height:1.35}
+.c-chip[data-kind=tile] i{background-size:320%}
+.c-chip[data-kind=rattan] i{background-color:#b98f58;background-image:repeating-linear-gradient(45deg,rgba(70,44,16,.42) 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,rgba(255,236,200,.34) 0 2px,transparent 2px 7px)}
+.c-board small{display:block;margin-top:11px;color:#596a61;font-size:11px;line-height:1.5}
+/* Credit for a real designer. Hidden until a style names one. */
+.c-designer{margin-top:12px;padding-top:11px;border-top:1px solid #dcdcd2}
+.c-designer[hidden]{display:none}
+.c-designer-label{display:block;margin-bottom:4px;font-size:11px;color:#596a61}
+.c-designer img{display:block;max-width:190px;max-height:48px;margin-bottom:3px;object-fit:contain;object-position:left}
+.c-designer strong{display:block;font-size:14px;font-weight:700}
+.c-designer-role{display:block;margin-top:2px;font-size:12px;color:#4c5c54}
+@keyframes c-chip-in{from{opacity:0;transform:translateY(9px)}}
+
+/* Gallery */
+.c-section{padding-block:0 104px}
+.c-head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:26px}
+.c-head h2{margin:0;font-family:"Noto Serif SC",serif;font-size:clamp(26px,2.7vw,36px);font-weight:600}
+.c-count{font-size:13px;color:var(--c-soft)}
+.c-gallery{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:clamp(150px,17vw,240px);gap:12px}
+.c-shot{position:relative;grid-column:span 2;padding:0;border:0;background:var(--c-deep);overflow:hidden;color:#fff;text-align:left}
+.c-shot:first-child{grid-column:span 4;grid-row:span 2}
+.c-shot:nth-child(n+4){grid-column:span 3}
+.c-shot img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.c-shot:hover img{transform:scale(1.03)}
+.c-shot span{position:absolute;left:0;bottom:0;padding:6px 10px;background:rgba(10,24,18,.76);font-size:12px}
+
+/* Inspiration wall: more images for one style, clearly separated from the style's own photos. */
+.c-section[hidden]{display:none}
+.c-ideas-note{margin:-14px 0 16px;color:var(--c-soft);font-size:14px}
+.c-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.c-filter{min-height:40px;padding:0 16px;background:none;border:1px solid color-mix(in srgb,var(--c-ink) 35%,transparent);color:inherit;font-size:13px}
+.c-filter[aria-pressed=true]{background:var(--c-deep);border-color:var(--c-deep);color:var(--c-on-deep)}
+.c-ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.c-idea{display:block;width:100%;aspect-ratio:3/2;padding:0;border:0;background:var(--c-deep);overflow:hidden}
+.c-idea img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.c-idea:hover img{transform:scale(1.03)}
+
+/* Facts */
+.c-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-block:0;padding-block:30px 104px;border-top:1px solid color-mix(in srgb,var(--c-ink) 24%,transparent)}
+.c-facts dt{margin-bottom:9px;font-size:13px;font-weight:700;color:var(--c-accent);transition:color .6s ease}
+.c-facts dd{margin:0;font-size:15.5px;line-height:1.8}
+
+/* Closing band */
+.c-close{background:var(--c-deep);color:var(--c-on-deep);transition:background-color .6s ease,color .6s ease}
+.c-close-inner{display:flex;justify-content:space-between;align-items:center;gap:40px;padding-block:58px}
+.c-close h2{margin:0 0 8px;font-family:"Noto Serif SC",serif;font-size:clamp(24px,2.6vw,34px);font-weight:600}
+.c-close p{margin:0;font-size:15px;line-height:1.7;opacity:.88}
+.c-close .c-btn{flex:none;background:var(--c-on-deep);color:var(--c-deep);border-color:var(--c-on-deep)}
+
+/* Lightbox */
+.c-box{width:min(1180px,calc(100vw - 32px));max-height:calc(100vh - 32px);padding:0;border:0;background:#0b1712;color:#fff}
+.c-box::backdrop{background:rgba(6,14,10,.84)}
+.c-box img{width:100%;max-height:calc(100vh - 96px);object-fit:contain;background:#0b1712}
+.c-box-bar{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:13px}
+.c-box-bar p{flex:1;margin:0}
+.c-box-bar button{min-width:44px;min-height:40px;padding:0 12px;background:none;border:1px solid rgba(255,255,255,.4);color:#fff}
+
+@media(max-width:980px){
+  .c-intro{grid-template-columns:1fr;gap:18px;padding-block:44px 28px}
+  .c-stage{grid-template-columns:1fr;gap:20px;padding-bottom:72px}
+  .c-names{flex-direction:row;overflow-x:auto;gap:22px;margin-inline:-36px;padding-inline:36px;scrollbar-width:none}
+  .c-name,.c-name:last-child{flex:none;width:auto;display:block;padding:8px 0;border:0;border-bottom:2px solid transparent}
+  .c-name[aria-selected=true]{border-bottom-color:currentColor}
+  .c-name strong{display:block;font-size:26px}
+  .c-side{display:contents}
+  .c-names{order:1}.c-room-wrap{order:2;margin-inline:0}.c-copy{order:3}
+  .c-board{left:14px}
+  .c-facts{grid-template-columns:1fr;gap:24px;padding-block:26px 72px}
+  .c-section{padding-bottom:72px}
+}
+@media(max-width:650px){
+  .c-names{margin-inline:-18px;padding-inline:18px}
+  .c-room-wrap{margin-inline:-18px;padding-bottom:0}
+  .c-room{height:66vw;min-height:250px}
+  .c-board{position:static;width:auto;margin:-18px 18px 0;position:relative}
+  .c-gallery{grid-template-columns:repeat(2,1fr);grid-auto-rows:38vw;gap:8px}
+  .c-shot,.c-shot:nth-child(n+4){grid-column:span 1;grid-row:span 1}
+  .c-shot:first-child{grid-column:span 2;grid-row:span 2}
+  .c-ideas{grid-template-columns:repeat(2,1fr);gap:8px}
+  .c-close-inner{flex-direction:column;align-items:flex-start;gap:22px;padding-block:44px}
+  .c-head{flex-direction:column;gap:4px}
+}
+@media(prefers-reduced-motion:reduce){body.c-page,.c-room img,.c-shot img,.c-idea img,.c-btn,.c-close,.c-facts dt{transition:none}.c-chip i{animation:none}}

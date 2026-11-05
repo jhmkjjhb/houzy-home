@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153927">
+  <meta name="description" content="HOUZY HOME 六种家居风格：看空间实景，对照每种风格的主要用料，再通过 WhatsApp 与新山门店沟通。">
+  <title>风格系列 | HOUZY HOME</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/partner.css">
+  <link rel="stylesheet" href="/collections.css">
+    <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
+    <script>
+      // 在 Google Ads 建好「WhatsApp Click」转化后，把 AW- 编号和转化标签填在这里；留空就不加载任何跟踪代码
+      window.HOUZY_ADS = { id: 'AW-18514639316', whatsappLabel: 'AgCTCM7I_aIdENTzu_xE' };
+      window.HOUZY_WA_NUMBERS = ['60105898786', '60168208891'];  // 门店号 + 初文
+      (function () {
+        var cfg = window.HOUZY_ADS;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+        if (cfg.id) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(cfg.id);
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', cfg.id);
+        }
+        // wa.me/号码、api.whatsapp.com/send?phone=号码、web.whatsapp.com/send?phone=号码 三种写法都识别
+        function waNumber(href) {
+          var m = /(?:wa\.me\/|(?:api|web)\.whatsapp\.com\/send\/?\?(?:[^#]*&)?phone=)\+?(\d+)/.exec(href || '');
+          return m ? m[1] : '';
+        }
+        // 捕获阶段监听，按钮以后改样式或加别的点击处理也照样统计
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a) return;
+          var number = waNumber(a.href);
+          if (!number || window.HOUZY_WA_NUMBERS.indexOf(number) < 0) return;
+          var c = window.HOUZY_ADS;
+          if (!c.id || !c.whatsappLabel) return;
+          window.gtag('event', 'conversion', { send_to: c.id + '/' + c.whatsappLabel, transport_type: 'beacon' });
+        }, true);
+      })();
+    </script>
+</head>
+<body class="c-page">
+  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
+  <main>
+    <div class="wrap c-intro">
+      <h1 data-key="heroTitle">六种家的样子，<br>从用料开始看懂</h1>
+      <p data-key="heroLead">每种风格都配一块材料板。先看空间，再看它用了什么，喜欢哪一种就发给我们。</p>
+    </div>
+
+    <div class="wrap c-stage">
+      <div class="c-side">
+        <div class="c-names" role="tablist" aria-label="Styles" id="names"></div>
+        <div class="c-copy">
+          <p class="c-summary" id="summary"></p>
+          <div class="c-actions"><a class="c-btn" id="ask" target="_blank" rel="noopener"></a></div>
+        </div>
+      </div>
+      <div class="c-room-wrap" role="tabpanel" id="panel">
+        <figure class="c-room"><img id="room" alt="" width="1200" height="900"></figure>
+        <aside class="c-board" aria-labelledby="board-title">
+          <h2 id="board-title" data-key="boardTitle">这个风格的材料板</h2>
+          <ul class="c-chips" id="chips"></ul>
+          <small data-key="boardNote">屏幕颜色仅供参考，实际以门店样品为准。</small>
+          <div class="c-designer" id="designer" hidden></div>
+        </aside>
+      </div>
+    </div>
+
+    <section class="wrap c-section" aria-labelledby="gallery-title">
+      <div class="c-head"><h2 id="gallery-title"></h2><span class="c-count" id="count"></span></div>
+      <p class="c-ideas-note" data-key="photoNote">本页图片为风格示意，不是 HOUZY 的完工项目。</p>
+      <div class="c-gallery" id="gallery"></div>
+    </section>
+
+    <section class="wrap c-section" id="ideas" aria-labelledby="ideas-title" hidden>
+      <div class="c-head"><h2 id="ideas-title" data-key="ideasTitle">更多奶油风灵感</h2><span class="c-count" id="ideas-count"></span></div>
+      <p class="c-ideas-note" data-key="ideasNote">以下图片来自图库，仅作风格灵感，不是 HOUZY 的完工作品。</p>
+      <div class="c-filters" id="ideas-filters" role="group" aria-labelledby="ideas-title"></div>
+      <div class="c-ideas" id="ideas-list"></div>
+    </section>
+
+    <dl class="wrap c-facts">
+      <div><dt data-key="factFit">适合的家</dt><dd id="fit"></dd></div>
+      <div><dt data-key="factMaterial">主要用料</dt><dd id="material"></dd></div>
+      <div><dt data-key="factBudget">预算怎么算</dt><dd data-key="budgetText">按面积和用料报价。发户型图给我们，先估一个范围。</dd></div>
+    </dl>
+
+    <section class="c-close">
+      <div class="wrap c-close-inner">
+        <div><h2 id="close-title"></h2><p data-key="closeText">把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。</p></div>
+        <a class="c-btn" id="ask2" target="_blank" rel="noopener"></a>
+      </div>
+    </section>
+  </main>
+  <footer class="foot"><div class="wrap foot-inner"><span>© 2026 HOUZY HOME SDN. BHD. · Johor Bahru, Malaysia</span><a href="/" data-key="backSite">返回官网</a></div></footer>
+
+  <dialog class="c-box" id="box" aria-label="Photo">
+    <img id="box-img" alt="">
+    <div class="c-box-bar"><p id="box-text"></p><button type="button" id="box-prev" aria-label="Previous">←</button><button type="button" id="box-next" aria-label="Next">→</button><button type="button" id="box-close" data-key="close">关闭</button></div>
+  </dialog>
+
+  <script>
+    const WHATSAPP = '60105898786';
+    const T = '/images/tiles/full/', S = '/images/styles/';
+    const ROOM = {
+      living:{zh:'客厅',en:'Living room'}, dining:{zh:'餐厅',en:'Dining'}, kitchen:{zh:'厨房',en:'Kitchen'},
+      space:{zh:'空间',en:'Space'}, bed:{zh:'卧室',en:'Bedroom'}, other:{zh:'细节',en:'Details'}, all:{zh:'全部',en:'All'}, bath:{zh:'卫浴',en:'Bathroom'}
+    };
+    /* Replace a style's photos, materials or wording here. The page rebuilds itself from this list.
+       designer: real people only, with their consent. Leave null and no credit is shown.
+       Format: { name:'Full Name', title:{zh:'职位',en:'Title'}, years:8, signature:'/images/designers/name.png' }; years and signature are optional. */
+    const STYLES = [
+      { designer:null, id:'hening', name:'Hening', zh:'静白', meaning:{zh:'马来语“宁静”',en:'Malay for stillness'},
+        theme:{bg:'#eeeeea',ink:'#272a28',soft:'#55594f',accent:'#655f50',deep:'#383b37',onDeep:'#f3f3ef'},
+        summary:{zh:'柜子藏起杂物，墙和地连成一片。东西少了，屋子就安静下来。',en:'Cabinets take the clutter, walls and floors run together. With less in view, the home goes quiet.'},
+        fit:{zh:'中小户型，或收纳需求大、又不想看见杂物的家庭。',en:'Smaller homes, or families with a lot to store and no wish to see it.'},
+        material:{zh:'浅灰微水泥感地砖、哑光白柜门、白墙、细线灯带。',en:'Pale grey cement-look tile, matt white doors, white walls, slim light lines.'},
+        hero:S+'eNHZC6dEi0Y.jpg',
+        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'浅灰地砖',en:'Pale grey tile'},{color:'#f2f1ec',zh:'哑光白柜门',en:'Matt white door'},{color:'#d9d7cf',zh:'暖白墙漆',en:'Warm white paint'},{color:'#a9a79d',zh:'灰色台面',en:'Grey worktop'}],
+        shots:[[S+'IJrfWHWvh5Y.jpg','space'],[S+'gijwI4X-7ig.jpg','kitchen'],[S+'EZ_WwY2vS-Y.jpg','bed'],[S+'fDqcKdxvNkI.jpg','space'],[S+'Cmq9Sy5PW18.jpg','living']] },
+      { designer:null, id:'kayu', name:'Kayu', zh:'原木', meaning:{zh:'马来语“木”',en:'Malay for wood'},
+        theme:{bg:'#ecdfcb',ink:'#35261a',soft:'#5d4632',accent:'#7a4c1f',deep:'#4a3220',onDeep:'#f8f0e2'},
+        summary:{zh:'大面积的木色和米色，白天晒得暖，晚上灯一开更暖。',en:'Generous timber and beige. Warm in daylight, warmer when the lamps come on.'},
+        fit:{zh:'有孩子或长辈的家庭，想要耐看、住久了也不腻的家。',en:'Homes with children or grandparents, and anyone after a look that stays easy to live with.'},
+        material:{zh:'米色柔光砖、橡木色柜门、藤木餐椅、奶油色墙漆。',en:'Beige soft-sheen tile, oak-tone doors, cane and timber chairs, cream paint.'},
+        hero:S+'OihXclRy8n0.jpg',
+        chips:[{tile:T+'V1FC126021Y-1.webp',zh:'米色柔光砖',en:'Beige soft tile'},{color:'#b98d5e',zh:'橡木色柜门',en:'Oak-tone door'},{color:'#e7d8bf',zh:'奶油色墙漆',en:'Cream paint'},{color:'#8c6a45',zh:'胡桃木色层板',en:'Walnut-tone shelf'}],
+        shots:[[S+'77JACslA8G0.jpg','living'],[S+'4ORa79MZypI.jpg','kitchen'],[S+'DsH3VOZanYA.jpg','dining'],[S+'RqO6kwm4tZY.jpg','living'],[S+'NRLYAOmqd_c.jpg','other']] },
+      { designer:null, id:'krim', name:'Krim', zh:'奶油', meaning:{zh:'马来语“奶油”',en:'Malay for cream'},
+        theme:{bg:'#f4ecdd',ink:'#3a2f25',soft:'#65553f',accent:'#775630',deep:'#5c4633',onDeep:'#fbf5e9'},
+        summary:{zh:'圆角、柔光和奶咖色，整个屋子像裹了一层奶油。看着软，住着也放松。',en:'Rounded edges, soft light and milky coffee tones. The whole home feels gentle, and easy to relax in.'},
+        fit:{zh:'新婚或有小孩的家庭，喜欢柔和、干净的感觉，中小户型也不显压迫。',en:'Young couples and families with small children who like a soft, clean look. Smaller homes stay open and light.'},
+        material:{zh:'奶油色柔光砖、奶咖色墙漆、圆角柜门、浅色布艺。本地天气潮湿，布料建议选防潮易清洁的。',en:'Cream soft-sheen tile, milky coffee paint, rounded cabinet doors, pale fabrics. In this humid climate, choose fabrics that resist damp and clean easily.'},
+        hero:S+'SZ-DsEZxzlg.jpg',
+        chips:[{tile:T+'V1RS15702Y-1.webp',zh:'奶油色柔光砖',en:'Cream soft tile'},{color:'#d8c5a8',zh:'奶咖色墙漆',en:'Milky coffee paint'},{color:'#efe3cf',zh:'圆角柜门',en:'Rounded door'},{color:'#e3d6c3',zh:'浅色布艺',en:'Pale fabric'}],
+        shots:[[S+'4UJdTZdwh8o.jpg','living'],[S+'c0JoR_-2x3E.jpg','living'],[S+'O5Ueow319AM.jpg','bed'],[S+'7y0DGa1vlXQ.jpg','kitchen'],[S+'lZfBkUqknEI.jpg','space']] },
+      { designer:null, id:'senja', name:'Senja', zh:'暮金', meaning:{zh:'马来语“黄昏”',en:'Malay for dusk'},
+        theme:{bg:'#2a211b',ink:'#f2e8da',soft:'#d4c5b0',accent:'#d6ae6c',deep:'#14100c',onDeep:'#f6ecdd'},
+        summary:{zh:'深色木、细金属线和低处的灯光。适合晚上回到家才慢慢亮起来的屋子。',en:'Dark timber, fine metal lines and low light, for a home that comes alive after dark.'},
+        fit:{zh:'常在家招待朋友、餐厨区比较大的家庭。',en:'Homes that host often and have a generous kitchen and dining area.'},
+        material:{zh:'深胡桃木饰面、古铜色金属线条、暖色岩板、隐藏灯带。',en:'Dark walnut veneer, bronze metal trims, warm sintered stone, hidden light lines.'},
+        hero:S+'XRFrXFoA3wQ.jpg',
+        chips:[{color:'#3f2c20',zh:'深胡桃木饰面',en:'Dark walnut'},{color:'#a7824a',zh:'古铜色线条',en:'Bronze trim'},{tile:T+'V1RS12601Y-1.webp',zh:'暖色岩板',en:'Warm stone'},{color:'#e4cfae',zh:'暖光色温',en:'Warm light'}],
+        shots:[[S+'vz9IbCAXHKQ.jpg','bed'],[S+'iUjIiP0sMTs.jpg','kitchen'],[S+'jt-Pld5EU2s.jpg','dining'],[S+'s9U9wTy1pmw.jpg','space'],[S+'_0d1WKtONVA.jpg','other']] },
+      { designer:null, id:'serambi', name:'Serambi', zh:'廊下', meaning:{zh:'马来语“外廊”',en:'Malay for veranda'},
+        theme:{bg:'#e1e7d9',ink:'#17382b',soft:'#3e5a4c',accent:'#6f5121',deep:'#17382b',onDeep:'#f4f1e6'},
+        summary:{zh:'本地老屋外廊的那份凉意：拱形、藤编和植物的绿，让室内外不再分得那么开。',en:'The cool of a Malaysian veranda: arches, woven rattan and planted green, with less of a line between indoors and out.'},
+        fit:{zh:'有大窗或阳台的家，喜欢植物和自然通风的家庭。',en:'Homes with big windows or a balcony, and families who like plants and moving air.'},
+        material:{zh:'暖米色大板砖、藤编面板、灰绿墙漆、浅色木饰面。',en:'Warm beige large-format tile, rattan panels, grey-green paint, pale timber veneer.'},
+        hero:S+'DY7wJD6Ly2s.jpg',
+        chips:[{tile:T+'VIRS12602Y-1.webp',zh:'米色大板砖',en:'Beige tile'},{kind:'rattan',zh:'藤编面板',en:'Rattan panel'},{color:'#8a9a84',zh:'灰绿墙漆',en:'Grey-green paint'},{color:'#c4a47c',zh:'浅色木饰面',en:'Pale veneer'}],
+        shots:[[S+'ncP6nMaUCPs.jpg','living'],[S+'RAXD1BlJmSs.jpg','bed'],[S+'NtmheMV9n_Q.jpg','space'],[S+'VSCwUAzNTvA.jpg','bath'],[S+'CEa_RRJBTAU.jpg','living']] },
+      { designer:null, id:'batu', name:'Batu', zh:'石墨', meaning:{zh:'马来语“石”',en:'Malay for stone'},
+        theme:{bg:'#2d3234',ink:'#eef0ef',soft:'#c9cfd0',accent:'#c3cdcf',deep:'#14181a',onDeep:'#eef0ef'},
+        summary:{zh:'石材、黑钢和水泥色，线条硬朗，耐看也耐用。',en:'Stone, black steel and cement tones. Hard lines that wear well.'},
+        fit:{zh:'喜欢利落线条，下厨频繁，希望台面和柜门耐用的家庭。',en:'People who like clean lines, cook a lot and want hard-wearing worktops and doors.'},
+        material:{zh:'灰色水泥感大板、黑色柜门、石材台面、黑钢线条。',en:'Grey cement-look slabs, black doors, stone worktops, black steel trims.'},
+        hero:S+'s95oB2n9jng.jpg',
+        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'水泥感大板',en:'Cement-look slab'},{color:'#1e2224',zh:'黑色柜门',en:'Black door'},{color:'#6c7172',zh:'石材台面',en:'Stone worktop'},{color:'#34383a',zh:'黑钢线条',en:'Black steel'}],
+        shots:[[S+'j6MCxix3o2c.jpg','kitchen'],[S+'f7fZg21B3ms.jpg','bed'],[S+'RKi6pLKBayg.jpg','kitchen'],[S+'euzt9ipzSWA.jpg','dining'],[S+'n_w2qXLkmns.jpg','space']] }
+    ];
+    /* Licensed stock photos. Sources are listed in images/styles/CREDITS.md. Add new ones there too. */
+    const IDEAS = [['z6Yn9hhlrJw','living'],['x3mSC1WnWhc','living'],['xyygOyZO5VA','living'],['Kh4tedFdHz4','living'],['NTaF5rBmlyE','living'],['aPD1yNUYP0w','living'],['aObxGPf7J1o','living'],['-_eNaluvWv0','living'],['e0oJLc5FYsg','living'],['tHkJAMcO3QE','living'],['8xAn1QJU7gk','bed'],['ghPHKipv790','bed'],['Sh22mtTd2GA','bed'],['WRy3gg0qAW4','kitchen'],['zAvzWN6CE5w','kitchen'],['aSsDDa65fbs','kitchen'],['htmZWzApbJE','kitchen'],['MSsr73R8it8','kitchen']];
+    STYLES.find(s => s.id === 'krim').ideas = IDEAS.map(([id,room]) => ['/images/styles/ideas/'+id+'.jpg',room]);
+    const copy = {
+      zh:{title:'风格系列 | HOUZY HOME',navHome:'返回首页',heroTitle:'六种家的样子，<br>从用料开始看懂',heroLead:'每种风格都配一块材料板。先看空间，再看它用了什么，喜欢哪一种就发给我们。',boardTitle:'这个风格的材料板',boardNote:'屏幕颜色仅供参考，实际以门店样品为准。',factFit:'适合的家',factMaterial:'主要用料',factBudget:'预算怎么算',budgetText:'按面积和用料报价。发户型图给我们，先估一个范围。',closeText:'把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',photoNote:'本页图片为风格示意，不是 HOUZY 的完工项目。',ideasTitle:'更多奶油风灵感',ideasNote:'以下图片来自图库，仅作风格灵感，不是 HOUZY 的完工作品。',ideaLabel:'灵感参考',designedBy:'设计师',years:n=>`从业 ${n} 年`,ask:n=>`咨询 ${n} 风格`,gallery:n=>`${n} 的空间`,count:n=>`${n} 张`,closeTitle:n=>`喜欢 ${n}？聊聊你的家`,msg:n=>`你好，我在官网看到 ${n} 风格，想了解一下。`},
+      en:{title:'Style collections | HOUZY HOME',navHome:'Home',heroTitle:'Six ways to live,<br>read through their materials',heroLead:'Every style comes with a material board. See the space, see what it is made of, and tell us which one you like.',boardTitle:'Material board for this style',boardNote:'Screen colours are a guide. Store samples are the reference.',factFit:'Who it suits',factMaterial:'Main materials',factBudget:'How the budget works',budgetText:'Priced by area and materials. Send us your floor plan for a first estimate.',closeText:'Send your floor plan and favourite style on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',photoNote:'Photos on this page show the style. They are not HOUZY projects.',ideasTitle:'More cream style ideas',ideasNote:'These stock images are for style inspiration only. They are not HOUZY projects.',ideaLabel:'Inspiration',designedBy:'Designer',years:n=>`${n} years in practice`,ask:n=>`Ask about ${n}`,gallery:n=>`Inside ${n}`,count:n=>`${n} photos`,closeTitle:n=>`Like ${n}? Tell us about your home`,msg:n=>`Hi, I saw the ${n} style on your website and would like to know more.`}
+    };
+    const $ = id => document.getElementById(id);
+    let language = 'zh', current = STYLES[0], boxIndex = 0, boxList = [], boxLabel = '', ideaRoom = 'all';
+
+    function buildNames(){
+      $('names').replaceChildren(...STYLES.map(s=>{
+        const b=document.createElement('button');
+        b.type='button';b.className='c-name';b.setAttribute('role','tab');b.id='tab-'+s.id;b.setAttribute('aria-controls','panel');b.dataset.style=s.id;
+        const strong=document.createElement('strong');strong.textContent=s.name;strong.translate=false;
+        const span=document.createElement('span');span.textContent=s.zh;
+        b.append(strong,span);b.addEventListener('click',()=>select(s.id,true));return b;
+      }));
+    }
+    function render(){
+      const s=current,t=copy[language];
+      $('summary').textContent=s.summary[language];
+      $('fit').textContent=s.fit[language];
+      $('material').textContent=s.material[language];
+      const link=`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(t.msg(s.name))}`;
+      $('ask').href=link;$('ask2').href=link;$('ask').textContent=t.ask(s.name);$('ask2').textContent=t.ask(s.name);
+      $('gallery-title').textContent=t.gallery(s.name);
+      $('count').textContent=t.count(s.shots.length);
+      $('close-title').textContent=t.closeTitle(s.name);
+      $('room').alt=`${s.name} · ${s.summary[language]}`;
+      renderDesigner();
+      renderIdeas();
+      $('chips').replaceChildren(...s.chips.map((c,i)=>{
+        const li=document.createElement('li');li.className='c-chip';li.dataset.kind=c.tile?'tile':(c.kind||'color');li.style.setProperty('--i',i);
+        const sw=document.createElement('i');
+        if(c.tile)sw.style.backgroundImage=`url("${c.tile}")`;
+        if(c.color)sw.style.backgroundColor=c.color;
+        const label=document.createElement('span');label.textContent=c[language];
+        li.append(sw,label);return li;
+      }));
+      $('gallery').replaceChildren(...s.shots.map(([src,room],i)=>{
+        const b=document.createElement('button');b.type='button';b.className='c-shot';b.addEventListener('click',()=>openBox(s.shots,i,s.name));
+        const img=document.createElement('img');img.src=src;img.loading='lazy';img.alt=`${s.name} · ${ROOM[room][language]}`;
+        const label=document.createElement('span');label.textContent=ROOM[room][language];
+        b.append(img,label);return b;
+      }));
+    }
+    function renderIdeas(){
+      const list=current.ideas,box=$('ideas');
+      box.hidden=!list;
+      if(!list)return;
+      const t=copy[language],rooms=['all',...new Set(list.map(x=>x[1]))];
+      if(!rooms.includes(ideaRoom))ideaRoom='all';
+      const shown=ideaRoom==='all'?list:list.filter(x=>x[1]===ideaRoom);
+      $('ideas-count').textContent=t.count(shown.length);
+      $('ideas-filters').replaceChildren(...rooms.map(r=>{
+        const b=document.createElement('button');b.type='button';b.className='c-filter';b.textContent=ROOM[r][language];b.setAttribute('aria-pressed',String(r===ideaRoom));
+        b.addEventListener('click',()=>{ideaRoom=r;renderIdeas()});return b;
+      }));
+      $('ideas-list').replaceChildren(...shown.map(([src,room],i)=>{
+        const b=document.createElement('button');b.type='button';b.className='c-idea';b.addEventListener('click',()=>openBox(shown,i,t.ideaLabel));
+        const img=document.createElement('img');img.src=src;img.loading='lazy';img.alt=`${t.ideaLabel} · ${ROOM[room][language]}`;
+        b.append(img);return b;
+      }));
+    }
+    function renderDesigner(){
+      const d=current.designer,box=$('designer'),t=copy[language];
+      box.hidden=!d;box.replaceChildren();
+      if(!d)return;
+      const label=document.createElement('span');label.className='c-designer-label';label.textContent=t.designedBy;box.append(label);
+      if(d.signature){const img=document.createElement('img');img.src=d.signature;img.alt=d.name;box.append(img);}
+      const name=document.createElement('strong');name.textContent=d.name;box.append(name);
+      const role=[d.title[language],d.years?t.years(d.years):''].filter(Boolean).join(' · ');
+      const line=document.createElement('span');line.className='c-designer-role';line.textContent=role;box.append(line);
+    }
+    function swapRoom(src){
+      const room=$('room');
+      if(room.getAttribute('src')===src)return;
+      if(!room.getAttribute('src')){room.src=src;return;}
+      room.classList.add('is-swapping');
+      const next=new Image();
+      next.onload=next.onerror=()=>{room.src=src;room.classList.remove('is-swapping')};
+      next.src=src;
+    }
+    function select(id,updateHash){
+      current=STYLES.find(s=>s.id===id)||STYLES[0];
+      const v=current.theme,st=document.body.style;
+      st.setProperty('--c-bg',v.bg);st.setProperty('--c-ink',v.ink);st.setProperty('--c-soft',v.soft);st.setProperty('--c-accent',v.accent);st.setProperty('--c-deep',v.deep);st.setProperty('--c-on-deep',v.onDeep);
+      document.querySelectorAll('.c-name').forEach(b=>{const on=b.dataset.style===current.id;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;if(on&&updateHash)b.scrollIntoView({block:'nearest',inline:'center'})});
+      $('panel').setAttribute('aria-labelledby','tab-'+current.id);
+      swapRoom(current.hero);render();
+      if(updateHash)history.replaceState(null,'','#'+current.id);
+    }
+    function openBox(list,i,label){boxList=list;boxIndex=i;boxLabel=label;showBox();if(!$('box').open)$('box').showModal();}
+    function showBox(){
+      const [src,room]=boxList[boxIndex];
+      $('box-img').src=src;$('box-img').alt=`${boxLabel} · ${ROOM[room][language]}`;
+      $('box-text').textContent=`${boxLabel} · ${ROOM[room][language]} · ${boxIndex+1} / ${boxList.length}`;
+    }
+    function stepBox(d){boxIndex=(boxIndex+d+boxList.length)%boxList.length;showBox();}
+    function setLanguage(next){
+      if(!copy[next])return;language=next;
+      document.documentElement.lang=next==='zh'?'zh-CN':'en';document.title=copy[next].title;
+      document.querySelectorAll('[data-key]').forEach(el=>{const v=copy[next][el.dataset.key];if(v!==undefined)el.innerHTML=v});
+      document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===next)));
+      try{localStorage.setItem('houzy-partner-language',next)}catch(e){}
+      render();
+    }
+    $('names').addEventListener('keydown',e=>{
+      const step={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(!step)return;
+      e.preventDefault();
+      const i=STYLES.indexOf(current),n=STYLES[(i+step+STYLES.length)%STYLES.length];
+      select(n.id,true);$('tab-'+n.id).focus();
+    });
+    $('box-prev').addEventListener('click',()=>stepBox(-1));
+    $('box-next').addEventListener('click',()=>stepBox(1));
+    $('box-close').addEventListener('click',()=>$('box').close());
+    $('box').addEventListener('keydown',e=>{if(e.key==='ArrowLeft')stepBox(-1);if(e.key==='ArrowRight')stepBox(1)});
+    $('box').addEventListener('click',e=>{if(e.target===$('box'))$('box').close()});
+    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLanguage(b.dataset.lang)));
+    window.addEventListener('hashchange',()=>select(location.hash.slice(1),false));
+
+    buildNames();
+    select(location.hash.slice(1),false);
+    try{const site=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
+  </script>
+</body>
+</html>
