@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { linkForOrder } from '../_shared/hitpay-links.ts';
+import { linkForOrder, reconcile } from '../_shared/hitpay-links.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -19,7 +19,13 @@ Deno.serve(async (req) => {
     const { data: allowed, error } = await admin.rpc('order_customer_payment_quote', { p_order: orderId, p_phone: phone });
     if (error) throw new Error(error.message);
     if (!allowed) return reply({ error: '请重新查询订单' }, 404);
-    const out = await linkForOrder(orderId, 'customer', null, { admin, key, baseUrl: Deno.env.get('HOUZY_PUBLIC_URL') || 'https://houzyhome.com' });
+    const deps = { admin, key, baseUrl: Deno.env.get('HOUZY_PUBLIC_URL') || 'https://houzyhome.com' };
+    // Opening an order only looks for a payment already made; it never creates a link.
+    if (body.action === 'check') {
+      const checked = await reconcile(orderId, deps);
+      return reply({ reconciled: checked.recorded, status: checked.fullyPaid ? 'completed' : undefined });
+    }
+    const out = await linkForOrder(orderId, 'customer', null, deps);
     const { customer_phone: _hidden, ...safe } = out as Record<string, unknown>;
     return reply(safe);
   } catch (error) {

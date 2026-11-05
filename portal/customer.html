@@ -526,6 +526,7 @@ async function openDetail(id) {
   document.getElementById('detail-content').innerHTML =
     `<div class="text-center py-10 text-gray-400">${ct('loading')}</div>`;
   show('s-detail');
+  await syncCustomerPayment(id, o);
 
   const [{ data: logs }, { data: freshOrder }, { data: itemsResp }, { data: drawResp }, { data: statementResp }, { data: payQuote }] = await Promise.all([
     sb.rpc('get_order_timeline', { p_order_id: id, p_phone: myPhone }),
@@ -545,6 +546,7 @@ async function openDetail(id) {
 
   // 以服务器最新 status 为准(缓存列表可能已过期),签收面板按最新状态判断
   const freshStatus = freshOrder?.status || o.status;
+  o.status = freshStatus;
 
   // 用最新数据更新本地缓存，防止重新搜索后签名状态丢失
   if (freshOrder) {
@@ -812,6 +814,17 @@ async function openDetail(id) {
   });
 }
 
+// 打开未付订单时先向 HitPay 确认一次，付款通知迟到也能显示最新状态。最多等 4 秒，查不到就按现有状态显示。
+async function syncCustomerPayment(orderId, order) {
+  if (order.payment_status === 'paid' || ['cancelled','closed'].includes(order.status)) return;
+  try {
+    await Promise.race([
+      sb.functions.invoke('hitpay-customer-payment', { body: { order_id: orderId, phone: myPhone, action: 'check' } }),
+      new Promise(resolve => setTimeout(resolve, 4000)),
+    ]);
+  } catch (e) { console.warn('[Customer payment check]', e); }
+}
+
 // 金额由服务器决定，这里只传订单和手机号
 async function startCustomerPayment(orderId) {
   const button = document.getElementById('customer-pay-btn'), msg = document.getElementById('customer-pay-msg');
@@ -822,6 +835,8 @@ async function startCustomerPayment(orderId) {
     const { data, error } = await sb.functions.invoke('hitpay-customer-payment', { body: { order_id: orderId, phone: myPhone } });
     if (error) throw error;
     if (data?.payment_url) { location.assign(data.payment_url); return; }
+    // 付款其实已经完成：刷新页面，不留下“待付款”和付款按钮
+    if (data?.reason === 'paid' || data?.reconciled) { await openDetail(orderId); return; }
     msg.textContent = data?.message || failure;
   } catch (e) { console.error('[Customer payment]', e); msg.textContent = failure; }
   button.disabled = false;
