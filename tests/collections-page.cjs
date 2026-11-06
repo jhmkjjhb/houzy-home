@@ -64,7 +64,10 @@ const contrast = (a,b) => { const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p); return
   // The inspiration wall must never read as HOUZY's own work.
   await page.click('#tab-krim');
   ok(await page.locator('#ideas').isVisible(), 'cream style shows its inspiration wall');
-  ok((await page.textContent('#ideas')).match(/not HOUZY projects|不是 HOUZY 的完工作品/), 'inspiration wall says it is not HOUZY work');
+  // Stock photos must be labelled as reference, never as HOUZY's own work or showroom.
+  const ideasText = await page.textContent('#ideas');
+  ok(ideasText.match(/style reference|风格参考/), 'inspiration wall says photos are a style reference');
+  ok(!ideasText.match(/以往作品|HOUZY 作品|样品间实拍|HOUZY projects we built/), 'inspiration wall does not claim stock photos as HOUZY work');
   ok(await page.locator('.c-idea').count() === 18, 'all inspiration images listed');
   await page.locator('.c-filter').nth(2).click();
   const filtered = await page.locator('.c-idea').count();
