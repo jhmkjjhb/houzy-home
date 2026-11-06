@@ -295,13 +295,19 @@
       next.onload=next.onerror=()=>{room.src=src;room.classList.remove('is-swapping')};
       next.src=src;
     }
+    function dailyHero(style){
+      const choices=[style.hero,...style.shots.map(([src])=>src)];
+      const day=new Date().toISOString().slice(0,10);
+      let hash=0;for(const ch of style.id+'-'+day)hash=(hash*31+ch.charCodeAt(0))>>>0;
+      return choices[hash%choices.length];
+    }
     function select(id,updateHash){
       current=STYLES.find(s=>s.id===id)||STYLES[0];
       const v=current.theme,st=document.body.style;
       st.setProperty('--c-bg',v.bg);st.setProperty('--c-ink',v.ink);st.setProperty('--c-soft',v.soft);st.setProperty('--c-accent',v.accent);st.setProperty('--c-deep',v.deep);st.setProperty('--c-on-deep',v.onDeep);
       document.querySelectorAll('.c-name').forEach(b=>{const on=b.dataset.style===current.id;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;if(on&&updateHash)b.scrollIntoView({block:'nearest',inline:'center'})});
       $('panel').setAttribute('aria-labelledby','tab-'+current.id);
-      swapRoom(current.hero);render();
+      swapRoom(dailyHero(current));render();
       if(updateHash)history.replaceState(null,'','#'+current.id);
     }
     function openBox(list,i,label){boxList=list;boxIndex=i;boxLabel=label;showBox();if(!$('box').open)$('box').showModal();}
