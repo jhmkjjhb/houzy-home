@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#153927">
-  <meta name="description" content="HOUZY HOME 六种家居风格：看空间实景，对照每种风格的主要用料，再通过 WhatsApp 与新山门店沟通。">
+  <meta name="description" content="HOUZY HOME 六种家居风格：看空间、材料与影片，找到喜欢的感觉，再通过 WhatsApp 与新山门店沟通。">
   <title>风格系列 | HOUZY HOME</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,7 +48,7 @@
     </script>
 </head>
 <body class="c-page">
-  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/works.html" data-key="navWorks">作品欣赏</a><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
+  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="#films" data-key="navWorks">作品欣赏</a><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
   <main>
     <div class="wrap c-intro">
       <h1 data-key="heroTitle">六种家的样子，<br>从用料开始看懂</h1>
@@ -93,6 +93,17 @@
       <div><dt data-key="factBudget">预算怎么算</dt><dd data-key="budgetText">按面积和用料报价。发户型图给我们，先估一个范围。</dd></div>
     </dl>
 
+    <section class="c-films" id="films" aria-labelledby="films-title">
+      <div class="wrap">
+        <div class="c-films-head">
+          <div><span class="c-films-kicker" data-key="filmKicker">SPACE FILMS</span><h2 id="films-title" data-key="filmTitle">从一张图，走进一个空间。</h2></div>
+          <p data-key="filmLead">看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。</p>
+        </div>
+        <p class="c-films-note" data-key="filmNote">这些影片仅供风格参考；展示项目并非 HOUZY 的完工项目。</p>
+        <div class="c-films-grid" id="film-list"></div>
+      </div>
+    </section>
+
     <section class="c-close">
       <div class="wrap c-close-inner">
         <div><h2 id="close-title"></h2><p data-key="closeText">把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。</p></div>
@@ -107,8 +118,15 @@
     <div class="c-box-bar"><p id="box-text"></p><button type="button" id="box-prev" aria-label="Previous">←</button><button type="button" id="box-next" aria-label="Next">→</button><button type="button" id="box-close" data-key="close">关闭</button></div>
   </dialog>
 
+  <dialog class="c-film-box" id="film-box" aria-labelledby="film-box-title">
+    <video id="film-video" controls playsinline preload="none"></video>
+    <div class="c-film-box-bar"><p id="film-box-title"></p><button type="button" id="film-box-close" data-key="close">关闭</button></div>
+  </dialog>
+
+  <script src="/scripts/films.js"></script>
   <script>
     const WHATSAPP = '60105898786';
+    const FILMS = window.HOUZY_FILMS;
     const T = '/images/tiles/full/', S = '/images/styles/';
     const ROOM = {
       living:{zh:'客厅',en:'Living room'}, dining:{zh:'餐厅',en:'Dining'}, kitchen:{zh:'厨房',en:'Kitchen'},
@@ -176,6 +194,8 @@
     };
     copy.zh.navWorks = '作品欣赏';
     copy.en.navWorks = 'Works';
+    Object.assign(copy.zh,{filmKicker:'SPACE FILMS · 空间影像',filmTitle:'从一张图，走进一个空间。',filmLead:'看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。',filmNote:'这些影片仅供风格参考；展示项目并非 HOUZY 的完工项目。',filmPlay:'播放影片'});
+    Object.assign(copy.en,{filmKicker:'SPACE FILMS',filmTitle:'Step inside the space.',filmLead:'See how light, materials and movement shape a room. Open a film and find the feeling you want at home.',filmNote:'These films are style references; the featured projects were not completed by HOUZY.',filmPlay:'Play film'});
     const $ = id => document.getElementById(id);
     let language = 'zh', current = STYLES[0], boxIndex = 0, boxList = [], boxLabel = '', ideaRoom = 'all';
 
@@ -215,6 +235,30 @@
         const label=document.createElement('span');label.textContent=ROOM[room][language];
         b.append(img,label);return b;
       }));
+    }
+    function renderFilms(){
+      const t=copy[language];
+      $('film-list').replaceChildren(...FILMS.map(f=>{
+        const fig=document.createElement('figure');fig.className='c-film';
+        const button=document.createElement('button');button.type='button';button.className='c-film-open';
+        button.setAttribute('aria-label',`${t.filmPlay}: ${f.name[language]}`);
+        button.addEventListener('click',()=>openFilm(f));
+        const poster=document.createElement('img');poster.src=f.file+'.jpg';poster.alt='';poster.loading='lazy';poster.width=1280;poster.height=720;
+        const play=document.createElement('span');play.className='c-film-play';play.textContent=t.filmPlay;
+        button.append(poster,play);
+        const caption=document.createElement('figcaption');caption.className='c-film-caption';
+        const name=document.createElement('h3');name.textContent=f.name[language];
+        const meta=document.createElement('span');meta.className='c-film-meta';meta.textContent=[f.area,f.duration].filter(Boolean).join(' · ');
+        caption.append(name,meta);fig.append(button,caption);return fig;
+      }));
+    }
+    function openFilm(f){
+      const video=$('film-video');video.poster=f.file+'.jpg';video.src=f.file+'.mp4';
+      $('film-box-title').textContent=[f.name[language],f.area].filter(Boolean).join(' · ');
+      $('film-box').showModal();video.play().catch(()=>{});
+    }
+    function closeFilm(){
+      const video=$('film-video');video.pause();video.removeAttribute('src');video.load();
     }
     function renderIdeas(){
       const list=current.ideas,box=$('ideas');
@@ -276,6 +320,7 @@
       document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===next)));
       try{localStorage.setItem('houzy-partner-language',next)}catch(e){}
       render();
+      renderFilms();
     }
     $('names').addEventListener('keydown',e=>{
       const step={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(!step)return;
@@ -288,8 +333,11 @@
     $('box-close').addEventListener('click',()=>$('box').close());
     $('box').addEventListener('keydown',e=>{if(e.key==='ArrowLeft')stepBox(-1);if(e.key==='ArrowRight')stepBox(1)});
     $('box').addEventListener('click',e=>{if(e.target===$('box'))$('box').close()});
+    $('film-box-close').addEventListener('click',()=>$('film-box').close());
+    $('film-box').addEventListener('close',closeFilm);
+    $('film-box').addEventListener('click',e=>{if(e.target===$('film-box'))$('film-box').close()});
     document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLanguage(b.dataset.lang)));
-    window.addEventListener('hashchange',()=>select(location.hash.slice(1),false));
+    window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(STYLES.some(s=>s.id===id))select(id,false)});
 
     buildNames();
     select(location.hash.slice(1),false);

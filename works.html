@@ -25,15 +25,10 @@
     <video id="box-video" controls playsinline preload="none"></video>
     <div class="w-box-bar"><p id="box-title"></p><button type="button" id="box-close" data-key="close">关闭</button></div>
   </dialog>
+  <script src="/scripts/films.js"></script>
   <script>
     const WHATSAPP = '60105898786';
-    /* Add a project here; the page rebuilds itself from this list. Show project names only; area is optional. */
-    const WORKS = [
-      { id:'shimisenyu', name:{zh:'万科拾谧森语',en:'Vanke Shimi Senyu'}, file:'/videos/works/shimisenyu' },
-      { id:'huanggang', name:{zh:'湖北黄冈 · 泊心域合院',en:'Boxinyu Courtyard · Huanggang, Hubei'}, area:'127㎡', file:'/videos/works/huanggang' },
-      { id:'moshang', name:{zh:'陌上栖山庭',en:'Moshang Qishanting'}, file:'/videos/works/moshang' },
-      { id:'rongxin', name:{zh:'融信万科中興路一號 · 创意体验间',en:'Rongxin Vanke No. 1 Zhongxing Road · Creative Suite'}, area:'296㎡', file:'/videos/works/rongxin' }
-    ];
+    const WORKS = window.HOUZY_FILMS;
     const copy = {
       zh:{title:'作品欣赏 | HOUZY HOME',navStyles:'风格系列',navHome:'返回首页',heroTitle:'作品欣赏',heroLead:'从材质到空间，看看不同的居住表达。点开影片可以有声观看。',referenceNote:'以下影片仅供空间风格参考；展示项目并非 HOUZY 的完工项目。',closeTitle:'想聊聊你的家？',closeText:'把户型图和喜欢的作品发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',play:'播放影片',ask:'WhatsApp 咨询',msg:'你好，我在官网看了作品欣赏，想了解一下。'},
       en:{title:'Spaces on film | HOUZY HOME',navStyles:'Style collections',navHome:'Home',heroTitle:'Spaces on film',heroLead:'Explore how materials shape different spaces. Open a film to watch with sound.',referenceNote:'These films are style references; the featured projects were not completed by HOUZY.',closeTitle:'Want to talk about your home?',closeText:'Send your floor plan and favourite project to us on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',play:'Play film',ask:'Ask on WhatsApp',msg:'Hi, I saw the films on your website and would like to know more.'}
