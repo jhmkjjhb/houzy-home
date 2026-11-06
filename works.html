@@ -3,94 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1b1713">
-  <meta name="description" content="HOUZY HOME 作品欣赏：浏览空间影片，寻找适合自己的家居风格与材料灵感。">
-  <title>作品欣赏 | HOUZY HOME</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/partner.css">
-  <link rel="stylesheet" href="/works.css">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0;url=/collections.html#films">
+  <title>风格系列 | HOUZY HOME</title>
+  <script>location.replace('/collections.html#films')</script>
 </head>
-<body class="w-page">
-  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/collections.html" data-key="navStyles">风格系列</a><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
-  <main>
-    <div class="wrap w-intro"><h1 data-key="heroTitle">作品欣赏</h1><p data-key="heroLead">从材质到空间，看看不同的居住表达。点开影片可以有声观看。</p><p class="w-note" data-key="referenceNote">以下影片仅供空间风格参考；展示项目并非 HOUZY 的完工项目。</p></div>
-    <div class="wrap w-list" id="list"></div>
-    <section class="w-close"><div class="wrap w-close-inner"><div><h2 data-key="closeTitle">想聊聊你的家？</h2><p data-key="closeText">把户型图和喜欢的作品发到 WhatsApp，新山门店会和你对接。</p></div><a class="w-btn" id="ask" target="_blank" rel="noopener"></a></div></section>
-  </main>
-  <footer class="foot"><div class="wrap foot-inner"><span>© 2026 HOUZY HOME SDN. BHD. · Johor Bahru, Malaysia</span><a href="/" data-key="backSite">返回官网</a></div></footer>
-  <dialog class="w-box" id="box" aria-labelledby="box-title">
-    <video id="box-video" controls playsinline preload="none"></video>
-    <div class="w-box-bar"><p id="box-title"></p><button type="button" id="box-close" data-key="close">关闭</button></div>
-  </dialog>
-  <script src="/scripts/films.js"></script>
-  <script>
-    const WHATSAPP = '60105898786';
-    const WORKS = window.HOUZY_FILMS;
-    const copy = {
-      zh:{title:'作品欣赏 | HOUZY HOME',navStyles:'风格系列',navHome:'返回首页',heroTitle:'作品欣赏',heroLead:'从材质到空间，看看不同的居住表达。点开影片可以有声观看。',referenceNote:'以下影片仅供空间风格参考；展示项目并非 HOUZY 的完工项目。',closeTitle:'想聊聊你的家？',closeText:'把户型图和喜欢的作品发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',play:'播放影片',ask:'WhatsApp 咨询',msg:'你好，我在官网看了作品欣赏，想了解一下。'},
-      en:{title:'Spaces on film | HOUZY HOME',navStyles:'Style collections',navHome:'Home',heroTitle:'Spaces on film',heroLead:'Explore how materials shape different spaces. Open a film to watch with sound.',referenceNote:'These films are style references; the featured projects were not completed by HOUZY.',closeTitle:'Want to talk about your home?',closeText:'Send your floor plan and favourite project to us on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',play:'Play film',ask:'Ask on WhatsApp',msg:'Hi, I saw the films on your website and would like to know more.'}
-    };
-    const $ = id => document.getElementById(id);
-    let language = 'zh', openWork = null;
-    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const saveData = navigator.connection && navigator.connection.saveData;
-
-    const previews = new IntersectionObserver(entries => entries.forEach(e => {
-      const v = e.target;
-      if (e.isIntersecting) { if (!v.src) v.src = v.dataset.src; v.play().catch(() => {}); }
-      else v.pause();
-    }), { threshold:.45 });
-
-    function render(){
-      const t = copy[language];
-      $('list').replaceChildren(...WORKS.map(w => {
-        const fig = document.createElement('figure'); fig.className='w-film'; fig.id=w.id;
-        const btn = document.createElement('button'); btn.type='button'; btn.className='w-open'; btn.setAttribute('aria-label',`${t.play}：${w.name[language]}`);
-        btn.addEventListener('click',()=>openFilm(w));
-        const img = document.createElement('img'); img.src=w.file+'.jpg'; img.alt=''; img.loading='lazy'; img.width=1280; img.height=720;
-        btn.append(img);
-        if(!reduceMotion && !saveData){
-          const v = document.createElement('video'); v.muted=true; v.loop=true; v.playsInline=true; v.preload='none'; v.dataset.src=w.file+'-preview.mp4'; v.setAttribute('aria-hidden','true');
-          v.addEventListener('playing',()=>v.classList.add('is-on'));
-          btn.append(v); previews.observe(v);
-        }
-        const label = document.createElement('span'); label.className='w-play'; label.textContent=t.play; btn.append(label);
-        const cap = document.createElement('figcaption'); cap.className='w-caption';
-        const h = document.createElement('h2'); h.textContent=w.name[language];
-        const area = document.createElement('span'); area.className='w-area'; area.textContent=w.area||'';
-        cap.append(h,area); fig.append(btn,cap); return fig;
-      }));
-      $('ask').textContent=t.ask;
-      $('ask').href=`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(t.msg)}`;
-    }
-    function openFilm(w){
-      openWork=w;
-      const v=$('box-video'); v.poster=w.file+'.jpg'; v.src=w.file+'.mp4';
-      $('box-title').textContent=[w.name[language],w.area].filter(Boolean).join(' · ');
-      document.querySelectorAll('.w-open video').forEach(p=>p.pause());
-      $('box').showModal(); v.play().catch(()=>{});
-    }
-    function closed(){
-      const v=$('box-video'); v.pause(); v.removeAttribute('src'); v.load(); openWork=null;
-      document.querySelectorAll('.w-open video').forEach(p=>{ if(p.src) p.play().catch(()=>{}) });
-    }
-    function setLanguage(next){
-      if(!copy[next])return; language=next;
-      document.documentElement.lang=next==='zh'?'zh-CN':'en'; document.title=copy[next].title;
-      document.querySelectorAll('[data-key]').forEach(el=>{const v=copy[next][el.dataset.key]; if(v!==undefined) el.textContent=v});
-      document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===next)));
-      try{localStorage.setItem('houzy-partner-language',next)}catch(e){}
-      render();
-    }
-    $('box-close').addEventListener('click',()=>$('box').close());
-    $('box').addEventListener('close',closed);
-    $('box').addEventListener('click',e=>{if(e.target===$('box'))$('box').close()});
-    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLanguage(b.dataset.lang)));
-    render();
-    try{const site=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
-  </script>
+<body>
+  <p>作品影片已并入<a href="/collections.html#films">风格系列</a>。Films are now part of our <a href="/collections.html#films">style collections</a>.</p>
 </body>
 </html>
