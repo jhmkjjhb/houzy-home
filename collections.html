@@ -76,7 +76,6 @@
 
     <section class="wrap c-section" aria-labelledby="gallery-title">
       <div class="c-head"><h2 id="gallery-title"></h2><span class="c-count" id="count"></span></div>
-      <p class="c-ideas-note" data-key="photoNote">本页图片为风格示意，不是 HOUZY 的完工项目。</p>
       <div class="c-gallery" id="gallery"></div>
     </section>
 
@@ -99,7 +98,6 @@
           <div><span class="c-films-kicker" data-key="filmKicker">SPACE FILMS</span><h2 id="films-title" data-key="filmTitle">从一张图，走进一个空间。</h2></div>
           <p data-key="filmLead">看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。</p>
         </div>
-        <p class="c-films-note" data-key="filmNote">这些影片仅供风格参考；展示项目并非 HOUZY 的完工项目。</p>
         <div class="c-films-grid" id="film-list"></div>
       </div>
     </section>
@@ -189,11 +187,11 @@
     const IDEAS = [['al0srakHkkY','living'],['U39FPHKfDu0','living'],['XWRW66qiRp8','living'],['z6Yn9hhlrJw','living'],['x3mSC1WnWhc','living'],['7lZxYqwDNXo','living'],['xyygOyZO5VA','living'],['-_eNaluvWv0','living'],['-3PiIk77r6s','bed'],['qvBvGBsSIwE','bed'],['SlbqZHwaZx4','bed'],['axoOXNBzJHw','bed'],['YWxpCIqfDKs','kitchen'],['Jl5BfxX089Q','kitchen'],['c1sP_yx6NEw','kitchen']];
     STYLES.find(s => s.id === 'krim').ideas = IDEAS.map(([id,room]) => ['/images/styles/ideas/'+id+'.jpg',room]);
     const copy = {
-      zh:{title:'风格系列 | HOUZY HOME',navHome:'返回首页',heroTitle:'六种家的样子，<br>从用料开始看懂',heroLead:'每种风格都配一块材料板。先看空间，再看它用了什么，喜欢哪一种就发给我们。',boardTitle:'这个风格的材料板',boardNote:'屏幕颜色仅供参考，实际以门店样品为准。',factFit:'适合的家',factMaterial:'主要用料',factBudget:'预算怎么算',budgetText:'按面积和用料报价。发户型图给我们，先估一个范围。',closeText:'把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',photoNote:'本页图片为风格示意，不是 HOUZY 的完工项目。',ideasTitle:'更多奶油风灵感',ideasNote:'图片为风格参考，实物欢迎到 HOUZY 样品间看看。',ideaLabel:'灵感参考',designedBy:'设计师',years:n=>`从业 ${n} 年`,ask:n=>`咨询 ${n} 风格`,gallery:n=>`${n} 的空间`,count:n=>`${n} 张`,closeTitle:n=>`喜欢 ${n}？聊聊你的家`,msg:n=>`你好，我在官网看到 ${n} 风格，想了解一下。`},
-      en:{title:'Style collections | HOUZY HOME',navHome:'Home',heroTitle:'Six ways to live,<br>read through their materials',heroLead:'Every style comes with a material board. See the space, see what it is made of, and tell us which one you like.',boardTitle:'Material board for this style',boardNote:'Screen colours are a guide. Store samples are the reference.',factFit:'Who it suits',factMaterial:'Main materials',factBudget:'How the budget works',budgetText:'Priced by area and materials. Send us your floor plan for a first estimate.',closeText:'Send your floor plan and favourite style on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',photoNote:'Photos on this page show the style. They are not HOUZY projects.',ideasTitle:'More cream style ideas',ideasNote:'Photos are a style reference. Visit the HOUZY showroom to see the real thing.',ideaLabel:'Inspiration',designedBy:'Designer',years:n=>`${n} years in practice`,ask:n=>`Ask about ${n}`,gallery:n=>`Inside ${n}`,count:n=>`${n} photos`,closeTitle:n=>`Like ${n}? Tell us about your home`,msg:n=>`Hi, I saw the ${n} style on your website and would like to know more.`}
+      zh:{title:'风格系列 | HOUZY HOME',navHome:'返回首页',heroTitle:'六种家的样子，<br>从用料开始看懂',heroLead:'每种风格都配一块材料板。先看空间，再看它用了什么，喜欢哪一种就发给我们。',boardTitle:'这个风格的材料板',boardNote:'屏幕颜色仅供参考，实际以门店样品为准。',factFit:'适合的家',factMaterial:'主要用料',factBudget:'预算怎么算',budgetText:'按面积和用料报价。发户型图给我们，先估一个范围。',closeText:'把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',ideasTitle:'更多奶油风灵感',ideasNote:'图片为风格参考，实物欢迎到 HOUZY 样品间看看。',ideaLabel:'灵感参考',designedBy:'设计师',years:n=>`从业 ${n} 年`,ask:n=>`咨询 ${n} 风格`,gallery:n=>`${n} 的空间`,count:n=>`${n} 张`,closeTitle:n=>`喜欢 ${n}？聊聊你的家`,msg:n=>`你好，我在官网看到 ${n} 风格，想了解一下。`},
+      en:{title:'Style collections | HOUZY HOME',navHome:'Home',heroTitle:'Six ways to live,<br>read through their materials',heroLead:'Every style comes with a material board. See the space, see what it is made of, and tell us which one you like.',boardTitle:'Material board for this style',boardNote:'Screen colours are a guide. Store samples are the reference.',factFit:'Who it suits',factMaterial:'Main materials',factBudget:'How the budget works',budgetText:'Priced by area and materials. Send us your floor plan for a first estimate.',closeText:'Send your floor plan and favourite style on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',ideasTitle:'More cream style ideas',ideasNote:'Photos are a style reference. Visit the HOUZY showroom to see the real thing.',ideaLabel:'Inspiration',designedBy:'Designer',years:n=>`${n} years in practice`,ask:n=>`Ask about ${n}`,gallery:n=>`Inside ${n}`,count:n=>`${n} photos`,closeTitle:n=>`Like ${n}? Tell us about your home`,msg:n=>`Hi, I saw the ${n} style on your website and would like to know more.`}
     };
-    Object.assign(copy.zh,{filmKicker:'SPACE FILMS · 空间影像',filmTitle:'从一张图，走进一个空间。',filmLead:'看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。',filmNote:'这些影片仅供风格参考；展示项目并非 HOUZY 的完工项目。',filmPlay:'播放影片'});
-    Object.assign(copy.en,{filmKicker:'SPACE FILMS',filmTitle:'Step inside the space.',filmLead:'See how light, materials and movement shape a room. Open a film and find the feeling you want at home.',filmNote:'These films are style references; the featured projects were not completed by HOUZY.',filmPlay:'Play film'});
+    Object.assign(copy.zh,{filmKicker:'SPACE FILMS · 空间影像',filmTitle:'从一张图，走进一个空间。',filmLead:'看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。',filmPlay:'播放影片'});
+    Object.assign(copy.en,{filmKicker:'SPACE FILMS',filmTitle:'Step inside the space.',filmLead:'See how light, materials and movement shape a room. Open a film and find the feeling you want at home.',filmPlay:'Play film'});
     const $ = id => document.getElementById(id);
     let language = 'zh', current = STYLES[0], boxIndex = 0, boxList = [], boxLabel = '', ideaRoom = 'all';
 
