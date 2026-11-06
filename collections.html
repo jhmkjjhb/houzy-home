@@ -185,7 +185,7 @@
     ];
     /* Licensed stock photos. Sources are listed in images/styles/CREDITS.md. Add new ones there too. */
     const IDEAS = [['al0srakHkkY','living'],['U39FPHKfDu0','living'],['XWRW66qiRp8','living'],['z6Yn9hhlrJw','living'],['x3mSC1WnWhc','living'],['7lZxYqwDNXo','living'],['xyygOyZO5VA','living'],['-_eNaluvWv0','living'],['-3PiIk77r6s','bed'],['qvBvGBsSIwE','bed'],['SlbqZHwaZx4','bed'],['axoOXNBzJHw','bed'],['YWxpCIqfDKs','kitchen'],['Jl5BfxX089Q','kitchen'],['c1sP_yx6NEw','kitchen']];
-    const HANLU = ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21'].map((n,i) => ['/images/styles/hanlu/houzyhome-奶油风作品集-'+n+'.webp',['living','dining','living','kitchen','dining','living','living','bed','bed','living','bed','bed','living','living','bed','living','dining','bed','bed','stair','living'][i]]);
+    const HANLU = ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21'].map((n,i) => ['/images/styles/hanlu/houzyhome-奶油风作品集-'+n+'.webp',['living','dining','living','kitchen','dining','living','living','bed','bed','living','bed','bed','living','living','bed','living','dining','bed','bed','other','living'][i]]);
     STYLES.find(s => s.id === 'krim').shots = HANLU.slice(0,5);
     STYLES.find(s => s.id === 'krim').ideas = [...HANLU.slice(5), ...IDEAS.map(([id,room]) => ['/images/styles/ideas/'+id+'.jpg',room])];
     const copy = {
