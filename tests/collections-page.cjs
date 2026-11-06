@@ -68,7 +68,8 @@ const contrast = (a,b) => { const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p); return
   const ideasText = await page.textContent('#ideas');
   ok(ideasText.match(/style reference|风格参考/), 'inspiration wall says photos are a style reference');
   ok(!ideasText.match(/以往作品|HOUZY 作品|样品间实拍|HOUZY projects we built/), 'inspiration wall does not claim stock photos as HOUZY work');
-  ok(await page.locator('.c-idea').count() === 18, 'all inspiration images listed');
+  const krimIdeas = styles.find(s=>s.id==='krim').ideas.length;
+  ok(krimIdeas >= 12 && await page.locator('.c-idea').count() === krimIdeas, 'every cream inspiration image is shown, and there are enough to browse');
   await page.locator('.c-filter').nth(2).click();
   const filtered = await page.locator('.c-idea').count();
   ok(filtered > 0 && filtered < 18, 'room filter narrows the images');
