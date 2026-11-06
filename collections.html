@@ -48,7 +48,7 @@
     </script>
 </head>
 <body class="c-page">
-  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
+  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/works.html" data-key="navWorks">作品欣赏</a><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
   <main>
     <div class="wrap c-intro">
       <h1 data-key="heroTitle">六种家的样子，<br>从用料开始看懂</h1>
@@ -174,6 +174,8 @@
       zh:{title:'风格系列 | HOUZY HOME',navHome:'返回首页',heroTitle:'六种家的样子，<br>从用料开始看懂',heroLead:'每种风格都配一块材料板。先看空间，再看它用了什么，喜欢哪一种就发给我们。',boardTitle:'这个风格的材料板',boardNote:'屏幕颜色仅供参考，实际以门店样品为准。',factFit:'适合的家',factMaterial:'主要用料',factBudget:'预算怎么算',budgetText:'按面积和用料报价。发户型图给我们，先估一个范围。',closeText:'把户型图和喜欢的风格发到 WhatsApp，新山门店会和你对接。',backSite:'返回官网',close:'关闭',photoNote:'本页图片为风格示意，不是 HOUZY 的完工项目。',ideasTitle:'更多奶油风灵感',ideasNote:'图片为风格参考，实物欢迎到 HOUZY 样品间看看。',ideaLabel:'灵感参考',designedBy:'设计师',years:n=>`从业 ${n} 年`,ask:n=>`咨询 ${n} 风格`,gallery:n=>`${n} 的空间`,count:n=>`${n} 张`,closeTitle:n=>`喜欢 ${n}？聊聊你的家`,msg:n=>`你好，我在官网看到 ${n} 风格，想了解一下。`},
       en:{title:'Style collections | HOUZY HOME',navHome:'Home',heroTitle:'Six ways to live,<br>read through their materials',heroLead:'Every style comes with a material board. See the space, see what it is made of, and tell us which one you like.',boardTitle:'Material board for this style',boardNote:'Screen colours are a guide. Store samples are the reference.',factFit:'Who it suits',factMaterial:'Main materials',factBudget:'How the budget works',budgetText:'Priced by area and materials. Send us your floor plan for a first estimate.',closeText:'Send your floor plan and favourite style on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',photoNote:'Photos on this page show the style. They are not HOUZY projects.',ideasTitle:'More cream style ideas',ideasNote:'Photos are a style reference. Visit the HOUZY showroom to see the real thing.',ideaLabel:'Inspiration',designedBy:'Designer',years:n=>`${n} years in practice`,ask:n=>`Ask about ${n}`,gallery:n=>`Inside ${n}`,count:n=>`${n} photos`,closeTitle:n=>`Like ${n}? Tell us about your home`,msg:n=>`Hi, I saw the ${n} style on your website and would like to know more.`}
     };
+    copy.zh.navWorks = '作品欣赏';
+    copy.en.navWorks = 'Works';
     const $ = id => document.getElementById(id);
     let language = 'zh', current = STYLES[0], boxIndex = 0, boxList = [], boxLabel = '', ideaRoom = 'all';
 

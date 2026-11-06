@@ -387,11 +387,12 @@
                 </div>
                 
                 <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-8">
+                <div class="hidden xl:flex items-center space-x-5">
                     <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
                     <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_services">Services</a>
                     <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_packages">Packages</a>
                     <a href="/collections.html" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_styles">Styles</a>
+                    <a href="/works.html" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_works">Works</a>
                     <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_about">About</a>
                     <a href="#shop" class="text-houzy-gold font-semibold hover:text-houzy-green transition-colors" data-i18n="nav_shop">Shop</a>
                     <a href="#contact" class="px-6 py-2 bg-houzy-green text-white hover:bg-houzy-green-light transition-colors rounded-sm" data-i18n="nav_book">Book</a>
@@ -414,7 +415,7 @@
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <button class="md:hidden text-gray-700" onclick="toggleMobileMenu()">
+                <button class="xl:hidden text-gray-700" onclick="toggleMobileMenu()">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
@@ -423,12 +424,13 @@
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+        <div id="mobile-menu" class="hidden xl:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
                 <a href="#home" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
                 <a href="#services" class="block py-2 text-gray-700" data-i18n="nav_services">Services</a>
                 <a href="#packages" class="block py-2 text-gray-700" data-i18n="nav_packages">Packages</a>
                 <a href="/collections.html" class="block py-2 text-gray-700" data-i18n="nav_styles">Styles</a>
+                <a href="/works.html" class="block py-2 text-gray-700" data-i18n="nav_works">Works</a>
                 <a href="#about" class="block py-2 text-gray-700" data-i18n="nav_about">About</a>
                 <a href="#shop" class="block py-2 text-houzy-gold font-semibold" data-i18n="nav_shop">Shop</a>
                 <a href="#contact" class="block py-2 text-houzy-green font-medium" data-i18n="nav_book">Book</a>
@@ -1011,6 +1013,7 @@
                         <li><a href="#packages" class="hover:text-houzy-gold transition-colors" data-i18n="nav_packages">Packages</a></li>
                         <li><a href="#shop" class="hover:text-houzy-gold transition-colors" data-i18n="nav_shop">Shop</a></li>
                         <li><a href="/collections.html" class="hover:text-houzy-gold transition-colors" data-i18n="nav_styles">Styles</a></li>
+                        <li><a href="/works.html" class="hover:text-houzy-gold transition-colors" data-i18n="nav_works">Works</a></li>
                         <li><a href="#about" class="hover:text-houzy-gold transition-colors" data-i18n="nav_about">About</a></li>
                         <li><a href="#careers" class="hover:text-houzy-gold transition-colors">企业招聘 / Careers</a></li>
                         <li><a href="/partner.html" class="hover:text-houzy-gold transition-colors" data-i18n="partner_link">Partner with HOUZY</a></li>
@@ -1371,7 +1374,7 @@
     const i18n = {
       en: {
         nav_home:'Home', nav_showroom:'Showroom', nav_services:'Services', nav_packages:'Packages',
-        nav_styles:'Styles', nav_about:'About', nav_shop:'Shop', nav_book:'Book', nav_portal:'Customer Portal',
+        nav_styles:'Styles', nav_works:'Works', nav_about:'About', nav_shop:'Shop', nav_book:'Book', nav_portal:'Customer Portal',
         hero_tagline:'JOHOR BAHRU · HOME SOLUTIONS SHOWROOM',
         hero_h1:'A home worth living in,<br><span class="text-houzy-gold">beyond the render.</span>',
         hero_slogan:'Give life room to imagine.',
@@ -1442,7 +1445,7 @@
       },
       'zh-CN': {
         nav_home:'首页', nav_showroom:'展厅', nav_services:'服务', nav_packages:'套餐',
-        nav_styles:'风格系列', nav_about:'关于', nav_shop:'商城', nav_book:'预约', nav_portal:'客户中心',
+        nav_styles:'风格系列', nav_works:'作品欣赏', nav_about:'关于', nav_shop:'商城', nav_book:'预约', nav_portal:'客户中心',
         hero_tagline:'新山一站式家居整装体验馆',
         hero_h1:'家，不该只活在<br><span class="text-houzy-gold">效果图里</span>',
         hero_slogan:'给生活一个想象的空间', hero_sub1:'走进展厅，摸一摸真正要用的材料，看清选择与预算。',
@@ -1507,7 +1510,7 @@
       },
       'zh-TW': {
         nav_home:'首頁', nav_showroom:'展廳', nav_services:'服務', nav_packages:'套餐',
-        nav_styles:'風格系列', nav_about:'關於', nav_shop:'商城', nav_book:'預約', nav_portal:'客戶中心',
+        nav_styles:'風格系列', nav_works:'作品欣賞', nav_about:'關於', nav_shop:'商城', nav_book:'預約', nav_portal:'客戶中心',
         hero_tagline:'新山一站式家居整裝體驗館',
         hero_h1:'家，不該只活在<br><span class="text-houzy-gold">效果圖裡</span>',
         hero_slogan:'給生活一個想像的空間', hero_sub1:'走進展廳，摸一摸真正要用的材料，看清選擇與預算。',
@@ -1572,7 +1575,7 @@
       },
       ms: {
         nav_home:'Utama', nav_showroom:'Pameran', nav_services:'Perkhidmatan', nav_packages:'Pakej',
-        nav_styles:'Gaya', nav_about:'Tentang', nav_shop:'Kedai', nav_book:'Tempah', nav_portal:'Portal Pelanggan',
+        nav_styles:'Gaya', nav_works:'Galeri', nav_about:'Tentang', nav_shop:'Kedai', nav_book:'Tempah', nav_portal:'Portal Pelanggan',
         hero_tagline:'RUANG PAMERAN SOLUSI RUMAH DI JOHOR BAHRU',
         hero_h1:'Rumah impian bukan<br><span class="text-houzy-gold">sekadar dalam gambar.</span>',
         hero_slogan:'Beri ruang untuk kehidupan yang anda bayangkan.', hero_sub1:'Sentuh bahan sebenar, bandingkan pilihan dan fahami bajet anda.',
@@ -1637,7 +1640,7 @@
       },
       th: {
         nav_home:'หน้าแรก', nav_showroom:'โชว์รูม', nav_services:'บริการ', nav_packages:'แพ็กเกจ',
-        nav_styles:'สไตล์', nav_about:'เกี่ยวกับเรา', nav_shop:'ร้านค้า', nav_book:'จอง', nav_portal:'พอร์ทัลลูกค้า',
+        nav_styles:'สไตล์', nav_works:'ผลงาน', nav_about:'เกี่ยวกับเรา', nav_shop:'ร้านค้า', nav_book:'จอง', nav_portal:'พอร์ทัลลูกค้า',
         hero_tagline:'โชว์รูมตกแต่งบ้านครบวงจรในยะโฮร์บาห์รู',
         hero_h1:'บ้านที่อยากอยู่<br><span class="text-houzy-gold">ต้องมากกว่าภาพจำลอง</span>',
         hero_slogan:'ให้ชีวิตมีพื้นที่สำหรับจินตนาการ', hero_sub1:'สัมผัสวัสดุจริง เปรียบเทียบตัวเลือก และเข้าใจงบประมาณก่อนตัดสินใจ',
