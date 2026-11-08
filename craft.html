@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>硬装精工施工工艺 | HOUZY HOME</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --night:#12301F; --line:#2A4A38;
+      --paper:#F5F2ED; --ink:#1A1A1A; --muted:#7D776D; --green:#1A3A2A;
+      --copper:#A8874F; --copper2:#C8A96E; --gold-l:#E0C992; --bad:#B9493B;
+      --brick:#A9553E; --power:#E07A2B; --low:#8466B8; --hot:#C8483C; --cold:#3C78C2;
+      --membrane:#D9713A; --tile:#F4F1EA; --gyp:#F7F5F0; --wood:#9C7150;
+      --serif:"Noto Serif SC",serif; --mono:"Noto Sans SC",sans-serif; --num:"Playfair Display",serif;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--night);color:var(--paper);font:16px/1.7 "Noto Sans SC",sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+    a:focus-visible{outline:2px solid var(--copper2);outline-offset:3px}
+
+    .bar{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:12px clamp(18px,4vw,56px);background:rgba(18,48,31,.9);backdrop-filter:blur(10px);color:#F5F2ED;border-bottom:1px solid rgba(200,169,110,.25)}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+    .brand img{width:38px;height:38px;border-radius:6px}
+    .brand strong{display:block;font:600 18px/1.1 "Playfair Display",serif;letter-spacing:.12em}
+    .brand small{display:block;font:500 10px "Noto Sans SC",sans-serif;letter-spacing:.24em;color:#B9B2A6}
+    .bar .back{font-size:14px;text-decoration:none;color:var(--gold-l)}
+    .bar-r{display:flex;align-items:center;gap:16px}
+    .lang{background:none;border:1px solid var(--gold-l);color:var(--gold-l);border-radius:999px;padding:3px 14px;cursor:pointer;font:500 13px "Noto Sans SC",sans-serif}
+    .lang:focus-visible{outline:2px solid var(--gold-l);outline-offset:3px}
+
+    /* hero: the wall opens as you scroll */
+    .hero{height:300vh;position:relative}
+    .hero-in{position:sticky;top:0;height:100vh;padding-top:60px!important;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr);align-items:center;gap:2vw;padding:0 clamp(18px,4vw,56px);overflow:hidden}
+    .kicker{font:italic 500 15px "Playfair Display",serif;letter-spacing:.14em;color:var(--copper2)}
+    .hero h1{font:900 clamp(36px,4.6vw,74px)/1.12 var(--serif);margin:18px 0 22px;white-space:nowrap}
+    .hero h1 em{font-style:normal;color:var(--gold-l)}
+    .hero p{color:#B9B2A6;max-width:430px;margin:0}
+    html[lang="zh-CN"] .kicker{font-style:normal;font-family:"Playfair Display","Noto Sans SC",serif;letter-spacing:.2em}
+    html[lang="en"] .hero h1{white-space:normal;font-size:clamp(34px,3.7vw,58px)}
+    html[lang="en"] .spine span{display:none}
+    .hint{margin-top:36px;font:500 12px var(--mono);letter-spacing:.18em;color:#8B857B;display:flex;align-items:center;gap:12px}
+    .hint i{display:block;width:1px;height:42px;background:linear-gradient(var(--copper2),transparent);animation:drip 1.8s ease-in-out infinite;transform-origin:top}
+    @keyframes drip{0%{transform:scaleY(0)}60%{transform:scaleY(1);opacity:1}100%{opacity:0}}
+    #iso{width:100%;height:auto;max-height:92vh}
+    #iso .lbl{font:500 14px "Noto Sans SC",sans-serif;fill:#E9E3D8}
+    #iso .sub{font:400 12px "Noto Sans SC",sans-serif;fill:#A9B5AA}
+    #iso .n{font:600 13px var(--num);fill:var(--copper2)}
+    .meter{position:absolute;right:clamp(18px,4vw,56px);bottom:26px;font:500 11px var(--mono);letter-spacing:.16em;color:#8B857B}
+
+    .statement{background:var(--paper);color:var(--ink);padding:clamp(80px,12vw,150px) clamp(18px,8vw,140px)}
+    .statement p{font:700 clamp(26px,3.4vw,48px)/1.4 var(--serif);margin:0;max-width:1100px}
+    .statement p span{color:#9A9286}
+    .facts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:clamp(48px,7vw,90px);border-top:1px solid #CFC7BA}
+    .facts div{padding:22px 24px 0 0}
+    .facts b{display:block;font:600 clamp(42px,4.8vw,72px)/1 var(--num);color:var(--green);font-variant-numeric:lining-nums}
+    .facts b small{font-size:.42em;margin-left:4px;font-family:var(--num)}
+    .facts span{font-size:14px;color:var(--muted)}
+
+    .chapters{background:var(--paper);color:var(--ink);position:relative}
+    .spine{position:sticky;top:0;height:0;z-index:5}
+    .spine ol{position:absolute;left:clamp(10px,2vw,28px);top:22vh;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+    .spine a{display:flex;align-items:center;gap:10px;text-decoration:none;font:600 11px var(--mono);color:#B3AB9E}
+    .spine a::before{content:"";width:14px;height:1px;background:currentColor;transition:width .3s}
+    .spine a.cur{color:var(--ink)}
+    .spine a.cur::before{width:30px;background:var(--copper)}
+    .spine span{opacity:0;transition:opacity .3s;font:500 12px "Noto Sans SC"}
+    .spine a.cur span{opacity:1}
+
+    .ch{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:clamp(24px,5vw,80px);align-items:start;padding:clamp(80px,12vh,130px) clamp(18px,6vw,100px) clamp(80px,12vh,130px) clamp(80px,11vw,170px);border-top:1px solid #DDD5C8}
+    .ch:nth-child(even) .plate{order:-1}
+    .no{font:600 12px var(--mono);letter-spacing:.2em;color:var(--copper)}
+    .no b{font:500 clamp(64px,8vw,116px)/.9 var(--num);color:transparent;-webkit-text-stroke:1px #BDB4A6;display:block;margin-bottom:8px}
+    .ch h2{font:900 clamp(32px,3.4vw,50px)/1.15 var(--serif);margin:8px 0 14px}
+    .why{font-size:17px;color:#4A4640;margin:0 0 26px;max-width:540px}
+    .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#D3CBBE;border:1px solid #D3CBBE;margin:0 0 22px;max-width:560px}
+    .nums div{background:#FBF9F5;padding:14px 14px 12px}
+    .nums b{display:block;font:600 clamp(21px,2.1vw,28px)/1.1 var(--num);color:var(--green);font-variant-numeric:lining-nums}
+    .nums span{display:block;font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+    .flow{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 22px;padding:0;list-style:none;max-width:560px;counter-reset:f}
+    .flow li{font-size:13px;padding:4px 10px 4px 8px;border:1px solid #CFC7BA;border-radius:999px;background:#F8F5EF;counter-increment:f}
+    .flow li::before{content:counter(f);font:600 10px var(--mono);color:var(--copper);margin-right:6px}
+    .vs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #D3CBBE;border-radius:4px;overflow:hidden;font-size:14px;line-height:1.6;max-width:560px}
+    .vs > div{padding:14px 16px}
+    .vs h4{margin:0 0 6px;font:600 11px var(--mono);letter-spacing:.14em}
+    .vs .bad{background:#E9E2D7;color:#6E675E}
+    .vs .bad h4{color:var(--bad)}
+    .vs .good{background:var(--green);color:#ECE6DB}
+    .vs .good h4{color:var(--gold-l)}
+    .checks{list-style:none;margin:22px 0 0;padding:0;max-width:560px}
+    .checks li{display:flex;gap:12px;padding:9px 0;border-bottom:1px dashed #CFC7BA;font-size:15px}
+    .checks li::before{content:"✓";flex:none;width:20px;height:20px;border:1.5px solid var(--copper);color:var(--copper);border-radius:50%;font:700 11px/17px "Noto Sans SC";text-align:center;margin-top:3px}
+
+    .ptsh{margin:22px 0 4px;font:600 12px "Noto Sans SC";letter-spacing:.16em;color:var(--copper)}
+    .pts{list-style:none;margin:0;padding:0;max-width:560px}
+    .pts li{display:flex;gap:12px;padding:9px 8px;border-bottom:1px dashed #CFC7BA;cursor:default;border-radius:4px;transition:background .2s}
+    .pts li i{flex:none;width:24px;height:24px;border-radius:50%;background:var(--copper2);color:var(--green);font:700 13px/24px var(--num);font-style:normal;text-align:center;margin-top:2px}
+    .pts b{display:block;font-weight:500;font-size:15px}
+    .pts small{display:block;color:var(--muted);font-size:13px}
+    .pts li.hot{background:#EFE7D6}
+    .plate .hp{opacity:0;transition:opacity .4s ease calc(var(--d,0)*1s);cursor:pointer}
+    .in .plate .hp{opacity:1}
+    .plate .hp circle{fill:var(--copper2);stroke:#fff;stroke-width:2}
+    .plate .hp .ring{fill:none;stroke:var(--copper2);stroke-width:2;animation:ping 2.2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+    .plate .hp text{font:700 12px var(--num);fill:var(--green);text-anchor:middle}
+    .plate .hp.hot circle:not(.ring){fill:var(--green)}
+    .plate .hp.hot text{fill:#fff}
+    @keyframes ping{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.1);opacity:0}}
+    .plate{position:sticky;top:12vh;margin:0;background:#FBF9F5;border:1px solid #DDD5C8;border-radius:6px;padding:34px clamp(10px,1.6vw,22px) clamp(10px,1.6vw,22px);box-shadow:0 30px 60px -40px rgba(40,30,20,.45)}
+    .plate figcaption{position:absolute;top:12px;left:16px;right:16px;display:flex;justify-content:space-between;font:600 10px var(--mono);letter-spacing:.2em;color:#A79F92}
+    .plate svg{display:block;width:100%;height:auto;overflow:visible}
+    .plate .ln{fill:none;stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);transition:stroke-dashoffset 1.4s cubic-bezier(.6,0,.2,1) calc(var(--d,0)*1s)}
+    .plate .fx{opacity:0;transform:translateY(8px);transition:opacity .6s ease calc(var(--d,0)*1s),transform .6s ease calc(var(--d,0)*1s)}
+    .plate .lb{opacity:0;transition:opacity .5s ease calc(var(--d,0)*1s);font:500 12.5px "Noto Sans SC",sans-serif;fill:#2B2D30}
+    .plate .dm{font:500 12px "Noto Sans SC",sans-serif;fill:var(--copper)}
+    .plate .lb,.plate .dm{paint-order:stroke;stroke:#FBF9F5;stroke-width:4px;stroke-linejoin:round}
+    .plate .ldr{stroke:#2B2D30;stroke-width:1;fill:none}
+    .plate .dim{stroke:var(--copper);stroke-width:1;fill:none}
+    .in .plate .ln{stroke-dashoffset:0}
+    .in .plate .fx{opacity:1;transform:none}
+    .in .plate .lb{opacity:1}
+
+    .end{background:var(--night);padding:clamp(90px,14vw,180px) clamp(18px,8vw,140px)}
+    .end h2{font:900 clamp(34px,5vw,72px)/1.15 var(--serif);margin:16px 0 24px;max-width:900px}
+    .end p{color:#B9B2A6;max-width:560px;margin:0 0 36px}
+    .cta{display:inline-flex;align-items:center;gap:12px;background:var(--copper2);color:var(--green);text-decoration:none;font-weight:700;padding:16px 28px;border-radius:999px}
+    .cta:hover{background:var(--gold-l)}
+    .foot{padding:28px clamp(18px,4vw,56px);font:500 11px var(--mono);letter-spacing:.14em;color:#6F695F;border-top:1px solid var(--line)}
+
+    @media (max-width:900px){
+      .hero{height:240vh}
+      .hero-in{grid-template-columns:1fr;align-content:center;padding-top:64px;gap:0}
+      .hero h1{font-size:38px;margin:10px 0}
+      .hero p{font-size:14px}
+      .hint{display:none}
+      #iso{max-height:56vh}
+      .facts{grid-template-columns:1fr 1fr}
+      .spine{display:none}
+      .ch{grid-template-columns:1fr;padding:64px 18px}
+      .ch:nth-child(even) .plate{order:0}
+      .plate{position:relative;top:0}
+      .vs{grid-template-columns:1fr}
+      .nums div{padding:10px 8px}
+      .nums b{font-size:16px}
+      .nums span{font-size:11.5px}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{transition:none!important;animation:none!important}
+    }
+  </style>
+    <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
+    <script>
+      // 在 Google Ads 建好「WhatsApp Click」转化后，把 AW- 编号和转化标签填在这里；留空就不加载任何跟踪代码
+      window.HOUZY_ADS = { id: 'AW-18514639316', whatsappLabel: 'AgCTCM7I_aIdENTzu_xE' };
+      window.HOUZY_WA_NUMBERS = ['60105898786', '60168208891'];  // 门店号 + 初文
+      (function () {
+        var cfg = window.HOUZY_ADS;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+        if (cfg.id) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(cfg.id);
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', cfg.id);
+        }
+        // wa.me/号码、api.whatsapp.com/send?phone=号码、web.whatsapp.com/send?phone=号码 三种写法都识别
+        function waNumber(href) {
+          var m = /(?:wa\.me\/|(?:api|web)\.whatsapp\.com\/send\/?\?(?:[^#]*&)?phone=)\+?(\d+)/.exec(href || '');
+          return m ? m[1] : '';
+        }
+        // 捕获阶段监听，按钮以后改样式或加别的点击处理也照样统计
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a) return;
+          var number = waNumber(a.href);
+          if (!number || window.HOUZY_WA_NUMBERS.indexOf(number) < 0) return;
+          var c = window.HOUZY_ADS;
+          if (!c.id || !c.whatsappLabel) return;
+          window.gtag('event', 'conversion', { send_to: c.id + '/' + c.whatsappLabel, transport_type: 'beacon' });
+        }, true);
+      })();
+    </script>
+</head>
+<body>
+  <div class="bar"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><span class="bar-r"><a class="back" href="/" data-t="back">返回首页</a><button class="lang" id="lang" type="button">EN</button></span></div>
+
+  <section class="hero" id="hero">
+    <div class="hero-in">
+      <div>
+        <div class="kicker" data-t="kicker"></div>
+        <h1 data-h="h1"></h1>
+        <p data-t="lead"></p>
+        <div class="hint"><i></i><span data-t="hint"></span></div>
+      </div>
+      <svg id="iso" viewBox="0 0 900 680" role="img" data-a="isoT"></svg>
+    </div>
+    <div class="meter" id="meter"></div>
+  </section>
+
+  <section class="statement">
+    <p data-h="statement"></p>
+    <div class="facts">
+      <div><b id="nSteps">10</b><span data-t="f1"></span></div>
+      <div><b id="nChecks">0</b><span data-t="f2"></span></div>
+      <div><b>1<small>mm</small></b><span data-t="f3"></span></div>
+      <div><b>48<small>h</small></b><span data-t="f4"></span></div>
+    </div>
+  </section>
+
+  <section class="chapters" id="chapters">
+    <nav class="spine" aria-label="steps"><ol id="spine"></ol></nav>
+  </section>
+
+  <section class="end">
+    <div class="kicker">HOUZY HOME · Site Visit</div>
+    <h2 data-t="endH"></h2>
+    <p data-t="endP"></p>
+    <a class="cta" href="https://wa.me/60105898786" target="_blank" rel="noopener"><span data-t="endCta"></span> →</a>
+  </section>
+  <div class="foot">HOUZY HOME SDN. BHD. · 合屋整装 · JOHOR BAHRU</div>
+
+  <script>
+  /* Chapters: why it matters, key numbers, process flow, common vs HOUZY, checks, and a detail drawing. */
+  const CH=[
+    {t:'开工验房与保护',plate:'protect',pts:[[190, 227, "保护板铺满，接缝封胶带", "逐块踩看，破损当天补"], [433, 130, "门框、窗框单独包边", "看四边无外露"], [116, 282, "下水口加盖封堵", "掀开检查无碎渣"], [330, 300, "原有墙地、门窗问题拍照存档", "开工前照片发群"]],cap:'节点 · 成品保护',
+     why:'开工前先把房子"体检"一遍，原有问题拍照记录，分清责任；再把门窗、地面、仪表包起来。装修三个月，新房不该先多出划痕。',
+     nums:[['2m','靠尺测墙面垂直、平整度'],['淋水','窗外淋水，查窗边渗漏'],['6 处','电梯厅、入户门、门窗、燃气表、下水口、门槛']],
+     flow:['测墙地平整','门窗开合检查','窗边淋水','电箱检测','逐项包裹保护'],
+     bad:'不验房直接开工；地上铺一层编织袋，下水口不封，碎渣掉进管道。',good:'验房问题拍照存档；门窗贴专用膜，下水口加盖封堵，入户门和门槛单独包边。'},
+    {t:'砌墙',plate:'brick',pts:[[478, 315, "卫生间墙根反坎 18–20cm", "卷尺量高度，拍照"], [200, 322, "反坎植筋间距 200mm", "卷尺量间距"], [200, 192, "新旧墙拉结筋到位", "抹灰前拍照"], [125, 150, "新旧墙交界挂网", "抹灰前拍照"], [300, 48, "顶砖斜砌，塞紧不留空", "目测无缝隙"]],cap:'节点 · 卫生间墙根反坎 + 新旧墙拉结',
+     why:'卫生间墙根是最容易渗水的地方；新砌墙和旧墙材料不同，交界处不处理，一两年后就会裂缝。',
+     nums:[['18–20cm','卫生间墙根防水反坎高度'],['200mm','反坎植筋间距'],['挂网','新旧墙交界抹灰前挂网']],
+     flow:['放样弹线','植筋','支模','浇防水混凝土反坎','砖浇水湿润','砌筑 + 拉结筋','顶砖斜砌','挂网抹灰','浇水养护'],
+     bad:'墙直接砌在地面上，墙根靠防水涂料硬扛；新墙贴着旧墙砌，交界处抹灰了事。',good:'墙根先浇一道防水混凝土反坎；新旧墙植筋拉结；顶部斜砌封顶；交界处挂网抹灰；门洞用成品过梁。'},
+    {t:'墙面归方找平',plate:'level',pts:[[240, 120, "镀锌钢丝网螺丝固定", "手拉无松动"], [380, 100, "以墙面最高点打垂直线", "激光复核"], [140, 190, "灰饼按控制线做齐", "靠尺搭灰饼检查"], [100, 300, "抹灰无空鼓", "小锤敲击"]],cap:'节点 · 挂网 + 激光打点',
+     why:'墙不方，后面柜子装不严、瓷砖缝歪、踢脚线有缝。抹灰前先把墙"找方"，后面所有工种才有准确的基准。',
+     nums:[['镀锌','钢丝网防锈、增强抗裂'],['激光','以整面墙最高点为基准'],['灰饼','按控制线做找平基准点']],
+     flow:['墙面清理','刷界面剂','挂镀锌钢丝网','激光打点做灰饼','抹灰找平'],
+     bad:'直接在旧墙上抹灰，墙面浮灰没清，抹灰层空鼓、开裂。',good:'洒水清理、滚刷界面剂，挂镀锌钢丝网，激光定垂直线做灰饼，再按灰饼抹灰。'},
+    {t:'水电改造',plate:'mep',pts:[[170, 236, "线管间距 20mm", "卷尺抽查"], [200, 124, "管卡 ≤800mm，转弯和底盒 100mm 内必加", "卷尺量"], [204, 290, "底盒间距 15mm，水平对齐", "水平尺"], [110, 150, "大弧度转弯，无 90° 急弯", "目测"], [440, 70, "水管打压 0.6MPa，30 分钟不掉压", "拍压力表开始和结束读数"]],cap:'节点 · 线管排布与底盒',
+     why:'水管电线一旦封进墙里，出问题就要砸墙。排得整齐、固定牢、测试过，才能放心封起来。',
+     nums:[['20mm','线管之间的间距'],['≤800mm','管卡间距（转弯、底盒 100mm 内必加）'],['0.6MPa','水管打压，30 分钟不掉压']],
+     flow:['定位弹线','开槽','布管','管卡固定','穿线','底盒安装','打压测试','通电测试','拍照封槽'],
+     bad:'电线 90° 急弯，后期换不了线；线管挤在一起贴砖空鼓；接线用胶布缠，时间久了脱落。',good:'大弧度转弯，抽线换线都容易；线管留缝让砂浆包裹；底盒间距 15mm 对齐；接线用端子，线头加压线帽；强弱电交叉处用锡箔屏蔽。'},
+    {t:'管道隔音',plate:'pipe',pts:[[260, 90, "阻尼片贴实，重叠 3–5cm", "手压无气泡、无褶皱"], [260, 250, "隔音棉宽 = 周长 + 10cm", "卷尺量"], [300, 330, "弯头分块贴合，接缝重叠", "看无缝隙"]],cap:'节点 · 下水管双层隔音',
+     why:'楼上冲厕所的水声，会顺着下水管传进卧室。隔音不是加一层棉就行，要两层材料分别对付低频和高频噪音。',
+     nums:[['2 层','阻尼片 + 隔音棉'],['3–5cm','阻尼片重叠'],['+10cm','隔音棉宽度 = 周长 + 10cm 重叠']],
+     flow:['测管道周长','裁剪阻尼片','从顶部纵向粘贴','刮板压实','裁剪隔音棉','缠绕包裹','弯头分块贴合'],
+     bad:'只包一层隔音棉，或者直接不做，夜里水声清楚可闻。',good:'先贴阻尼片吸收管道震动（低频），再包隔音棉吸收水流声（高频）；接缝重叠压实，弯头分块贴合不留缝隙。'},
+    {t:'防水',plate:'water',pts:[[150, 300, "阴角、管根 R50mm 圆弧", "R 角模板比对"], [415, 300, "地漏附加层 上 50 · 外 200mm", "卷尺量，拍照"], [40, 300, "淋浴区墙面防水 1.8m", "卷尺量，拍照"], [132, 120, "两遍交叉刷，总厚 ≥1.5mm", "第一遍干透再刷第二遍"], [214, 292, "闭水 ≥20mm，48 小时不渗漏", "拍开始和结束水位，查楼下"]],cap:'节点 · 墙地阴角与地漏',
+     why:'卫生间漏水最难修：楼下天花发霉、要拆砖重做。墙用刚性防水好贴砖，地面用柔性防水能抗变形，这叫"墙刚地柔"。',
+     nums:[['1.8m','卫生间墙面防水高度'],['R50mm','阴角、管根抹成圆弧'],['≥1.5mm','两遍防水总厚度']],
+     flow:['基层处理','成品保护','节点处理','喷界面剂','第一遍（横刷）','第二遍（竖刷）','闭水试验','做保护层'],
+     bad:'只刷地面，墙角一笔带过；刷一遍就贴砖；不做闭水直接封。',good:'阴阳角、管根抹 R 角；地漏周边附加层向上 50mm、向外 200mm；第一遍横刷 0.5–0.8mm，第二遍竖刷 0.8–1.0mm；门口外延 0.5m，门两侧墙外加高 0.3m。'},
+    {t:'贴砖',plate:'tile',pts:[[60, 60, "垂直控制线误差 ≤1mm", "激光、靠尺"], [144, 100, "墙面和砖背双面上胶", "揭砖抽查满浆"], [400, 110, "墙面横齿、砖背竖齿交叉", "看齿痕方向"], [179, 187, "十字卡 2–3mm，缝宽一致", "目测、卡尺"], [159, 260, "每块砖无空鼓", "小锤逐块敲击"]],cap:'节点 · 双面上胶 · 齿痕交叉',
+     why:'空鼓的砖，敲起来声音发空，过几年会松动、开裂甚至脱落。砖缝歪、窄条砖在显眼位置，也是一眼就能看出的"手艺"。',
+     nums:[['≤1mm','垂直控制线误差'],['≥10mm','地面齿形刮刀齿深'],['2–3mm','十字卡控制砖缝']],
+     flow:['施工准备','基层处理','放线定位','出排版图','挑砖','砖背处理','调瓷砖胶','双面上胶','铺贴敲实','养护验收'],
+     bad:'凭经验目测排版，墙角出现细窄条砖；砖背点几坨水泥就贴；玻化砖泡水后空鼓。',good:'出纸质排版图，避开小于 1/3 的窄条；墙面横齿、砖背竖齿，交叉挤出空气；低吸水率砖刷背胶不泡水；门窗洞口留 1–2mm 伸缩缝。'},
+    {t:'吊顶',plate:'ceiling',pts:[[110, 100, "吊杆、龙骨连接牢固", "用力晃动无松动"], [260, 156, "龙骨平整度 ≤3mm/2m", "水平仪 + 2m 靠尺"], [155, 300, "板缝错开 ≥300mm", "卷尺量"], [269, 196, "切口 45° 倒角后嵌缝", "看切口"]],cap:'节点 · 轻钢龙骨 + 错缝封板',
+     why:'吊顶开裂多数出在石膏板接缝。龙骨不平、接缝落在同一根龙骨上，住几个月就会出现一条条裂线。',
+     nums:[['≤3mm/2m','龙骨平整度'],['≥300mm','相邻板缝错开距离'],['45°','切口倒角，宽 5–10mm 嵌缝']],
+     flow:['弹线定位','吊杆安装','主龙骨','副龙骨','激光调平','排版切割','错缝封板','嵌缝 + 防裂带'],
+     bad:'龙骨间距随意，板缝对成一条直线，切口不处理直接批腻子。',good:'水平仪查龙骨平整度、线坠查垂直度；"整板优先、错缝拼接"，接缝错开龙骨 300mm 以上；切口 45° 倒角，嵌缝膏填满。'},
+    {t:'油漆',plate:'paint',pts:[[140, 315, "基层含水率 ≤10%", "含水率仪"], [236, 155, "交界、线槽贴 50mm 网格布", "批腻子前拍照"], [260, 115, "腻子两遍，打磨平整", "侧光照墙面"], [284, 75, "面漆两遍，无流坠、无色差", "阳光下检查"]],cap:'节点 · 墙面构造',
+     why:'好的墙面，侧光照过去是平的。腻子和打磨决定平整度，基层干透和底漆决定以后会不会起皮、发霉。',
+     nums:[['≤10%','基层含水率才可刷漆'],['50mm','新旧墙交界贴网格布'],['≤30%','面漆兑水比例']],
+     flow:['基层检查','交界贴网格布','石膏找平','腻子两遍','打磨','底漆','面漆两遍'],
+     bad:'墙没干透就刷，一遍腻子一遍漆，侧光下看得出波浪，过一季开始起皮。',good:'含水率达标才施工；管线槽、新旧墙交界贴 50mm 网格布；腻子两遍打磨；门套、踢脚线装完后才刷最后一遍面漆。'},
+    {t:'安装与交付',plate:'handover',pts:[[88, 186, "台面、洁具与墙面打防霉胶", "看胶线连续无断"], [240, 171, "台面、柜体水平", "水平尺"], [270, 300, "柜门缝统一", "目测、调铰链"], [430, 60, "业主逐项验收签字", "验收单拍照"]],cap:'节点 · 台面收口',
+     why:'柜子、洁具、五金是每天都会用到的东西。差几毫米的水平、一道没打好的胶，用久了就是渗水和发霉。',
+     nums:[['水平','台面、柜体逐一校平'],['防霉胶','洁具与墙面交接收口'],['逐项','和业主一起验收']],
+     flow:['柜体安装','台面安装','洁具五金','灯具开关','打胶收口','全屋清洁','业主验收'],
+     bad:'装上能用就算完，台面边缘不打胶，柜门缝大小不一。',good:'台面和柜体用水平尺校平；台面、洁具与墙面交接处打防霉胶；柜门缝统一调整。'}
+  ];
+
+  const T={"zh": {"back": "返回首页", "h1": "看不见的地方，<br><em>才见功夫</em>", "lead": "一面卫生间墙，贴好瓷砖后只看得见表面。往下滑，把它一层层剖开，看每一层用什么材料、按什么尺寸做，为什么能用得久。", "hint": "向下滑动 · 剖开这面墙", "isoT": "卫生间墙体分层剖面图", "statement": "装修好不好，<span>交房那天看到的瓷砖和油漆说了不算。</span>真正决定能住多少年的，是封进墙里、埋进地下的那几层。", "f1": "道工序，按顺序做，不跳步", "f2": "个自检点，图上编号逐个查，合格才进下一步", "f3": "瓷砖垂直控制线误差上限", "f4": "闭水试验，楼下不渗不漏才贴砖", "endH": "工地随时可以来看。", "endP": "每道工序做到哪一步、验收结果如何，都可以约时间到现场看，也可以让我们发照片给你。", "endCta": "WhatsApp 预约看工地", "step": "第 {n} 道工序", "bad": "常见做法", "good": "HOUZY 做法", "ptsh": "验收自检 · 编号对应右图", "how": "怎么查：", "m0": "完成面", "m1": "剖开中", "m2": "全部分层", "title": "硬装精工施工工艺 | HOUZY HOME", "kicker": "HOUZY HOME · 硬装精工施工工艺"}, "en": {"back": "Home", "h1": "The work you can't see<br><em>is the work that lasts</em>", "lead": "Once a bathroom wall is tiled, you only see the surface. Scroll to open it up layer by layer and see the material, the measurement and the reason behind each one.", "hint": "SCROLL · OPEN THE WALL", "isoT": "Exploded cross-section of a bathroom wall", "statement": "A good renovation <span>isn't judged by the tiles and paint you see on handover day.</span> What decides how many years it lasts are the layers sealed inside the walls and under the floor.", "f1": "steps, done in order, none skipped", "f2": "checkpoints, numbered on each drawing; the next step starts only after they pass", "f3": "maximum error on the tile plumb line", "f4": "flood test; no tiling until nothing leaks below", "endH": "Come see the site any time.", "endP": "Book a visit to see which step your home is at and how each one was checked, or ask us to send you photos.", "endCta": "Book a site visit on WhatsApp", "step": "STEP {n}", "bad": "COMMON PRACTICE", "good": "HOUZY STANDARD", "ptsh": "CHECKPOINTS · NUMBERS MATCH THE DRAWING", "how": "How we check: ", "m0": "FINISHED", "m1": "OPENING", "m2": "ALL LAYERS", "title": "Renovation Craftsmanship | HOUZY HOME", "kicker": "HOUZY HOME · Renovation Craftsmanship"}};
+  const EN_CH=[{"t": "Site check & protection", "cap": "DETAIL · SITE PROTECTION", "why": "Before work starts we inspect the home and photograph any existing defects, so responsibility is clear. Then doors, windows, floors and meters are covered. Three months of work should not leave a new home scratched.", "nums": [["2m", "straightedge for wall plumb and floor level"], ["Water", "spray test outside every window"], ["6 areas", "lift lobby, front door, windows, gas meter, drains, thresholds"]], "flow": ["Measure walls & floors", "Check doors & windows", "Window spray test", "Check DB box", "Cover & protect"], "bad": "Work starts with no inspection; a single woven sack on the floor; drains left open so debris falls in.", "good": "Defects photographed and logged; windows filmed; drains capped; front door and threshold wrapped separately.", "pts": [["Boards cover the floor, joints taped", "Walk every board; repair tears the same day"], ["Door and window frames wrapped", "No edge left exposed"], ["Drains capped and sealed", "Lift the cap: no debris inside"], ["Existing walls, floors and windows photographed", "Photos sent to the group before work starts"]]}, {"t": "Brickwork", "cap": "DETAIL · BATHROOM KERB + TIES", "why": "The base of a bathroom wall is where water gets in most easily. New brick and old wall are different materials; if the joint is left untreated, it cracks within a year or two.", "nums": [["18–20cm", "waterproof concrete kerb at bathroom walls"], ["200mm", "spacing of kerb rebar"], ["Mesh", "over every new-to-old wall joint"]], "flow": ["Set out lines", "Rebar", "Formwork", "Pour kerb", "Wet the bricks", "Lay + tie in", "Angled top course", "Mesh & plaster", "Cure with water"], "bad": "Walls laid straight on the slab, relying on paint-on waterproofing; new bricks butted against the old wall and plastered over.", "good": "A waterproof concrete kerb first; new wall tied into the old with rebar; top course laid at an angle; joints meshed before plaster; precast lintels over doors.", "pts": [["Bathroom kerb 18–20cm high", "Tape measure, photographed"], ["Kerb rebar at 200mm", "Tape measure"], ["Ties into existing wall in place", "Photographed before plastering"], ["Mesh over the new-to-old joint", "Photographed before plastering"], ["Top course angled and packed tight", "No visible gaps"]]}, {"t": "Squaring & levelling walls", "cap": "DETAIL · MESH + LASER DOTS", "why": "If walls aren't square, cabinets won't sit tight, tile joints run crooked and skirting leaves gaps. Squaring the wall before plastering gives every later trade a true reference.", "nums": [["Galvanised", "steel mesh: rust-proof, crack-resistant"], ["Laser", "plumb line set from the wall's highest point"], ["Dots", "mortar dots mark the finished plane"]], "flow": ["Clean wall", "Primer", "Fix galvanised mesh", "Laser & mortar dots", "Plaster to level"], "bad": "Plaster straight over a dusty old wall, so the plaster layer turns hollow and cracks.", "good": "Wash the wall, roll on primer, fix galvanised mesh, set laser lines and mortar dots, then plaster to the dots.", "pts": [["Galvanised mesh screwed down", "Pull by hand: no movement"], ["Plumb line set from the highest point", "Re-checked with laser"], ["Mortar dots aligned to control lines", "Straightedge across the dots"], ["No hollow spots in plaster", "Tap test with a hammer"]]}, {"t": "Plumbing & wiring", "cap": "DETAIL · CONDUIT LAYOUT & BOXES", "why": "Once pipes and cables are sealed into a wall, any fault means breaking it open. Neat, fixed and tested runs are the only ones that should be closed up.", "nums": [["20mm", "gap between conduits"], ["≤800mm", "clip spacing (always within 100mm of bends and boxes)"], ["0.6MPa", "water pressure test, no drop for 30 min"]], "flow": ["Mark out", "Chase", "Lay conduit", "Clip", "Pull cable", "Fit boxes", "Pressure test", "Circuit test", "Photograph & close"], "bad": "Sharp 90° bends that make re-wiring impossible; conduits bundled so tiles go hollow; joints wrapped in tape that peels off.", "good": "Wide bends for easy re-wiring; gaps so mortar grips every conduit; boxes 15mm apart and level; proper connectors and caps; foil shielding where power crosses data.", "pts": [["Conduits 20mm apart", "Spot-checked with tape"], ["Clips ≤800mm, within 100mm of bends and boxes", "Tape measure"], ["Boxes 15mm apart and level", "Spirit level"], ["Wide bends, no sharp 90°", "Visual check"], ["Water pipes 0.6MPa, no drop in 30 min", "Gauge photographed at start and end"]]}, {"t": "Pipe soundproofing", "cap": "DETAIL · TWO-LAYER DRAIN WRAP", "why": "Flushing upstairs travels down the drain pipe into your bedroom. One layer of foam isn't enough: two materials deal with low and high frequencies separately.", "nums": [["2 layers", "damping sheet + acoustic wrap"], ["3–5cm", "damping sheet overlap"], ["+10cm", "wrap width = circumference + 10cm"]], "flow": ["Measure pipe", "Cut damping sheet", "Apply top-down", "Press flat", "Cut wrap", "Wind on", "Fit around bends"], "bad": "One layer of foam, or nothing at all, so water noise is clearly heard at night.", "good": "Damping sheet first to absorb pipe vibration (low frequency), then acoustic wrap for water noise (high frequency); seams overlapped and bends fitted piece by piece.", "pts": [["Damping sheet pressed flat, 3–5cm overlap", "No bubbles or creases"], ["Wrap width = circumference + 10cm", "Tape measure"], ["Bends fitted in pieces, seams overlapped", "No visible gaps"]]}, {"t": "Waterproofing", "cap": "DETAIL · CORNER & FLOOR DRAIN", "why": "A leaking bathroom is the hardest fault to fix: mould on the ceiling below and tiles torn out. Walls get a rigid coating that tiles bond to; floors get a flexible one that moves without cracking.", "nums": [["1.8m", "shower wall waterproofing height"], ["R50mm", "rounded corners and pipe bases"], ["≥1.5mm", "total thickness of two coats"]], "flow": ["Prepare surface", "Protect fittings", "Treat details", "Spray primer", "Coat 1 (across)", "Coat 2 (down)", "Flood test", "Screed cover"], "bad": "Floor only, a quick stroke at the corners, one coat, then straight to tiling with no flood test.", "good": "Rounded corners and pipe bases; extra layer around drains 50mm up and 200mm out; coat 1 across at 0.5–0.8mm, coat 2 down at 0.8–1.0mm; 0.5m past the door and 0.3m up either side.", "pts": [["Corners and pipe bases rounded to R50mm", "Checked with an R gauge"], ["Drain reinforcement 50mm up, 200mm out", "Tape measure, photographed"], ["Shower wall coated to 1.8m", "Tape measure, photographed"], ["Two crossed coats, total ≥1.5mm", "Coat 1 fully dry before coat 2"], ["Flood test ≥20mm deep for 48 hours", "Water level photographed; ceiling below checked"]]}, {"t": "Tiling", "cap": "DETAIL · DOUBLE-BUTTERED, CROSSED NOTCHES", "why": "Hollow tiles sound dull, then loosen, crack or fall off within a few years. Crooked joints and thin slivers in plain sight are workmanship anyone can spot.", "nums": [["≤1mm", "plumb line error"], ["≥10mm", "floor trowel notch depth"], ["2–3mm", "joint width set by spacers"]], "flow": ["Prepare", "Clean substrate", "Set lines", "Tile layout plan", "Sort tiles", "Treat tile backs", "Mix adhesive", "Butter both sides", "Lay & tamp", "Cure & inspect"], "bad": "Layout judged by eye, leaving thin slivers in corners; a few dabs of mortar on the back; vitrified tiles soaked and later hollow.", "good": "A printed layout with no cut under 1/3 tile; wall notched across and tile back notched down to push air out; low-absorption tiles primed, never soaked; 1–2mm gap at door and window frames.", "pts": [["Plumb line error ≤1mm", "Laser and straightedge"], ["Adhesive on wall and tile back", "Lift a tile to check coverage"], ["Wall notches across, tile notches down", "Check notch direction"], ["2–3mm spacers, even joints", "Visual and gauge"], ["No hollow tiles", "Every tile tapped"]]}, {"t": "Ceiling", "cap": "DETAIL · STEEL FRAME + STAGGERED BOARDS", "why": "Most ceiling cracks start at board joints. An uneven frame, or joints all landing on one channel, will show hairline cracks within months.", "nums": [["≤3mm/2m", "frame flatness"], ["≥300mm", "offset between neighbouring joints"], ["45°", "chamfered cut edges, 5–10mm, filled"]], "flow": ["Set out", "Hangers", "Main channels", "Cross channels", "Laser level", "Plan & cut", "Staggered boards", "Fill & tape joints"], "bad": "Random channel spacing, joints lined up in one long seam, cut edges skimmed straight over.", "good": "Flatness checked with a level and plumb with a line; full boards first, joints staggered ≥300mm off the same channel; cut edges chamfered 45° and filled.", "pts": [["Hangers and channels fixed tight", "Shaken by hand: no movement"], ["Frame flatness ≤3mm/2m", "Level + 2m straightedge"], ["Board joints offset ≥300mm", "Tape measure"], ["Cut edges chamfered 45° before filling", "Edge inspected"]]}, {"t": "Painting", "cap": "DETAIL · WALL BUILD-UP", "why": "A good wall looks flat even under side light. Skim coats and sanding decide the flatness; a dry substrate and primer decide whether paint later peels or grows mould.", "nums": [["≤10%", "substrate moisture before painting"], ["50mm", "mesh tape over new-to-old joints"], ["≤30%", "water added to top coat"]], "flow": ["Check substrate", "Mesh tape joints", "Gypsum level", "Two skim coats", "Sand", "Primer", "Two top coats"], "bad": "Painting a damp wall with one skim coat and one coat of paint: ripples under side light and peeling within a season.", "good": "Work starts only below the moisture limit; 50mm mesh tape over chases and joints; two skim coats sanded; final coat after door frames and skirting are fitted.", "pts": [["Substrate moisture ≤10%", "Moisture meter"], ["50mm mesh tape over joints and chases", "Photographed before skimming"], ["Two skim coats, sanded flat", "Side light across the wall"], ["Two top coats, no runs or colour patches", "Checked in daylight"]]}, {"t": "Installation & handover", "cap": "DETAIL · COUNTER EDGE", "why": "Cabinets, sanitaryware and fittings are used every day. A few millimetres off level or a missed bead of sealant becomes leaks and mould over time.", "nums": [["Level", "every counter and cabinet"], ["Sealant", "anti-mould bead where fittings meet walls"], ["Item by item", "checked together with you"]], "flow": ["Cabinets", "Counters", "Sanitaryware", "Lights & switches", "Seal edges", "Clean", "Handover check"], "bad": "Working means done: no sealant along the counter, uneven door gaps.", "good": "Counters and cabinets levelled; anti-mould sealant wherever fittings meet the wall; door gaps adjusted evenly.", "pts": [["Anti-mould sealant at counter and fittings", "Continuous bead, no breaks"], ["Counter and cabinets level", "Spirit level"], ["Even cabinet door gaps", "Visual; hinges adjusted"], ["Owner checks every item and signs off", "Signed form photographed"]]}];
+  const EN_LB={"防潮膜 · 挡住水泥浆": "Moisture film · stops slurry", "硬质保护板 · 防砸防划": "Rigid board · impact-proof", "接缝胶带封边": "Taped joints", "门框单独包边": "Frames wrapped", "下水口加盖封堵": "Drains capped", "反坎 18–20cm · 防水混凝土": "Kerb 18–20cm · waterproof concrete", "植筋 · 间距 200mm": "Rebar · 200mm apart", "拉结筋 · 连住旧墙": "Ties into old wall", "交界挂网 · 防开裂": "Mesh over joint · no cracks", "顶砖斜砌 · 封顶严实": "Angled top course · packed tight", "旧墙": "EXISTING", "镀锌钢丝网 · 螺丝固定": "Galvanised mesh · screwed", "灰饼 · 找平基准点": "Mortar dot · level reference", "激光垂直线": "Laser plumb line", "按灰饼抹灰": "Plaster to the dots", "镀锌管卡 · 间距 ≤800mm": "Galvanised clips · ≤800mm", "底盒 100mm 内加管卡": "Clip within 100mm of box", "大弧度转弯": "Wide bends", "抽线、换线都容易": "easy to re-wire", "打压 0.6MPa · 30min": "0.6MPa · 30 min test", "强电红 · 弱电灰": "Power red · data grey", "管口加锁扣": "Locknut at every entry", "声桥 = 漏声": "Gaps = noise leaks", "PVC 下水管": "PVC drain pipe", "① 阻尼片 · 吸收管道震动": "① Damping sheet · absorbs vibration", "低频 · 重叠 3–5cm": "Low freq · 3–5cm overlap", "② 隔音棉 · 吸收水流声": "② Acoustic wrap · absorbs flow noise", "高频 · 周长 + 10cm": "High freq · circumference + 10cm", "阴角 R50mm 圆弧": "Corner rounded R50mm", "+ 加强层，不留死角": "+ reinforcing layer", "第一遍 横刷 0.5–0.8mm": "Coat 1 across · 0.5–0.8mm", "第二遍 竖刷 0.8–1.0mm": "Coat 2 down · 0.8–1.0mm", "地漏附加层": "Drain reinforcement", "上 50 · 外 200mm": "50 up · 200mm out", "淋浴区墙面 1.8m": "Shower wall 1.8m", "闭水 ≥20mm · 48h": "Flood ≥20mm · 48h", "墙面齿形满涂": "Notched coat on wall", "砖背再刮一层": "Tile back buttered", "十字卡 2–3mm · 缝宽一致": "2–3mm spacers · even joints", "基层横齿 + 砖背竖齿": "Wall across + tile down", "交叉挤出空气 → 不空鼓": "Crossed notches push out air", "齿深 ≥10mm（地面）": "Notch ≥10mm (floor)", "俯视 · 封板排版": "Plan view · board layout", "吊杆 → 主龙骨 → 副龙骨": "Hanger → main → cross channel", "切口 45° 倒角 · 嵌缝": "45° chamfer · filled", "平整度 ≤3mm/2m": "Flatness ≤3mm/2m", "验收单签字": "Signed checklist", "防霉胶收口 · 水进不去": "Anti-mould seal · keeps water out", "水平尺校平": "Levelled", "门缝统一调整": "Even door gaps"};
+  /* Detail drawings, 520 x 380. ln = line that draws in, fx = fades in, lb = label; --d is delay (s). */
+  const PL={
+    protect:`
+      <rect x="30" y="250" width="460" height="90" fill="#CFCAC0"/><rect x="30" y="250" width="460" height="10" fill="#E8E2D8"/>
+      <g class="fx" style="--d:.2"><rect x="30" y="242" width="460" height="6" fill="#7FA7C9" opacity=".75"/></g>
+      <g class="fx" style="--d:.5"><rect x="30" y="214" width="228" height="26" fill="#D9CBB0"/><rect x="262" y="214" width="228" height="26" fill="#D9CBB0"/>
+        <path d="M30 220h228M30 227h228M30 234h228M262 220h228M262 227h228M262 234h228" stroke="#C2B394"/></g>
+      <g class="fx" style="--d:.9"><rect x="236" y="208" width="48" height="8" fill="#E0C992"/></g>
+      <g class="fx" style="--d:1.1"><rect x="420" y="60" width="26" height="152" fill="#9C7150"/><rect x="414" y="54" width="38" height="160" fill="none" stroke="#7FA7C9" stroke-width="5" stroke-dasharray="6 4" rx="4"/></g>
+      <g class="fx" style="--d:1.2"><rect x="96" y="262" width="40" height="40" fill="#6E6A62"/><circle cx="116" cy="282" r="14" fill="#2B2D30"/><rect x="88" y="254" width="56" height="10" rx="3" fill="#3C78C2"/></g>
+      <path class="ldr ln" style="--d:1.3;--len:120" d="M60 244 V150 H90"/><text class="lb" style="--d:1.5" x="96" y="154">防潮膜 · 挡住水泥浆</text>
+      <path class="ldr ln" style="--d:1.4;--len:120" d="M190 220 V110 H210"/><text class="lb" style="--d:1.6" x="216" y="114">硬质保护板 · 防砸防划</text>
+      <path class="ldr ln" style="--d:1.5;--len:120" d="M260 210 V72 H290"/><text class="lb" style="--d:1.7" x="296" y="76">接缝胶带封边</text>
+      <path class="ldr ln" style="--d:1.6;--len:80" d="M412 140 H350"/><text class="lb" style="--d:1.8" x="344" y="160" text-anchor="end">门框单独包边</text>
+      <path class="ldr ln" style="--d:1.7;--len:120" d="M116 300 V350 H170"/><text class="lb" style="--d:1.9" x="176" y="354">下水口加盖封堵</text>`,
+    brick:`
+      <rect x="20" y="40" width="100" height="300" fill="#BDB8AE"/>
+      <path d="M20 60l100 100M20 140l100 100M20 220l100 100M50 40l70 70" stroke="#A9A397"/>
+      <g id="brickRows"></g>
+      <g class="fx" style="--d:.1"><rect x="120" y="290" width="380" height="50" fill="#8E8A82"/><path d="M120 300h380" stroke="#7A766E"/></g>
+      <g class="fx" style="--d:.3" stroke="#3A3D40" stroke-width="3"><path d="M160 340v-34M200 340v-34M240 340v-34M280 340v-34M320 340v-34M360 340v-34M400 340v-34M440 340v-34M480 340v-34"/></g>
+      <g class="fx" style="--d:1.6"><rect x="100" y="40" width="50" height="250" fill="url(#mesh)"/></g>
+      <g class="fx" style="--d:1.3" stroke="#C8483C" stroke-width="4" stroke-linecap="round"><path d="M60 102H250M60 192H250M60 252H250"/></g>
+      <g class="fx" style="--d:1.4"><path d="M120 40 l30 -0 M150 40 l20 18 M170 40 l20 18 M190 40 l20 18 M210 40 l20 18 M230 40 l20 18 M250 40 l20 18 M270 40 l20 18 M290 40 l20 18 M310 40 l20 18 M330 40 l20 18 M350 40 l20 18 M370 40 l20 18 M390 40 l20 18 M410 40 l20 18 M430 40 l20 18 M450 40 l20 18 M470 40 l20 18" stroke="#A9553E" stroke-width="6"/></g>
+      <g class="fx" style="--d:2"><path class="dim" d="M508 290 V340 M502 290 H514 M502 340 H514"/><text class="dm" x="500" y="368" text-anchor="end">反坎 18–20cm · 防水混凝土</text></g>
+      <path class="ldr ln" style="--d:1.9;--len:120" d="M300 320 V368 H250"/><text class="lb" style="--d:2.1" x="244" y="372" text-anchor="end">植筋 · 间距 200mm</text>
+      <path class="ldr ln" style="--d:2;--len:140" d="M240 192 H330 V168"/><text class="lb" style="--d:2.2" x="336" y="166">拉结筋 · 连住旧墙</text>
+      <path class="ldr ln" style="--d:2.1;--len:120" d="M140 120 H330 V108"/><text class="lb" style="--d:2.3" x="336" y="106">交界挂网 · 防开裂</text>
+      <text class="lb" style="--d:2.3" x="336" y="30">顶砖斜砌 · 封顶严实</text>
+      <text class="dm fx" style="--d:2.4" x="24" y="34">旧墙</text>`,
+    level:`
+      <rect x="30" y="30" width="460" height="320" fill="#CFCAC0"/>
+      <g class="fx" style="--d:.2"><rect x="30" y="30" width="460" height="320" fill="#E6C84F" opacity=".35"/></g>
+      <g class="fx" style="--d:.6"><rect x="30" y="30" width="460" height="320" fill="url(#weld)"/></g>
+      <g class="fx" style="--d:.9" fill="#3A3D40"><circle cx="80" cy="80" r="4"/><circle cx="260" cy="80" r="4"/><circle cx="440" cy="80" r="4"/><circle cx="80" cy="300" r="4"/><circle cx="260" cy="300" r="4"/><circle cx="440" cy="300" r="4"/></g>
+      <line class="ln" style="--d:1.1;--len:330" x1="140" y1="30" x2="140" y2="350" stroke="#2EB34A" stroke-width="2.5"/>
+      <line class="ln" style="--d:1.2;--len:330" x1="380" y1="30" x2="380" y2="350" stroke="#2EB34A" stroke-width="2.5"/>
+      <line class="ln" style="--d:1.3;--len:470" x1="30" y1="190" x2="490" y2="190" stroke="#2EB34A" stroke-width="2.5"/>
+      <g class="fx" style="--d:1.7" fill="#8E8A82" stroke="#6E6A62"><rect x="126" y="56" width="28" height="28" rx="3"/><rect x="366" y="56" width="28" height="28" rx="3"/><rect x="126" y="176" width="28" height="28" rx="3"/><rect x="366" y="176" width="28" height="28" rx="3"/><rect x="126" y="296" width="28" height="28" rx="3"/><rect x="366" y="296" width="28" height="28" rx="3"/></g>
+      <g class="fx" style="--d:2.1"><path d="M30 350 L30 230 Q150 210 260 240 L260 350 Z" fill="#B7B2A8"/></g>
+      <path class="ldr ln" style="--d:2.2;--len:120" d="M240 120 H300"/><text class="lb" style="--d:2.4" x="306" y="124">镀锌钢丝网 · 螺丝固定</text>
+      <path class="ldr ln" style="--d:2.3;--len:80" d="M154 196 H220 V220"/><text class="lb" style="--d:2.5" x="214" y="236">灰饼 · 找平基准点</text>
+      <text class="dm fx" style="--d:2.4" x="386" y="22">激光垂直线</text>
+      <text class="lb" style="--d:2.5" x="40" y="340">按灰饼抹灰</text>`,
+    mep:`
+      <rect x="30" y="20" width="460" height="340" fill="#D6D1C7"/>
+      <g id="conduits"></g>
+      <g class="fx" style="--d:1.2"><rect x="140" y="250" width="56" height="56" fill="#E0523A"/><rect x="211" y="250" width="56" height="56" fill="#E0523A"/><rect x="282" y="250" width="56" height="56" fill="#9AA3AD"/>
+        <rect x="150" y="260" width="36" height="36" fill="#F4F1EA" opacity=".6"/><rect x="221" y="260" width="36" height="36" fill="#F4F1EA" opacity=".6"/><rect x="292" y="260" width="36" height="36" fill="#F4F1EA" opacity=".6"/></g>
+      <g class="fx" style="--d:1.5"><path class="dim" d="M196 320 V334 M211 320 V334 M196 328 H211"/><text class="dm" x="204" y="350" text-anchor="middle">15mm</text></g>
+      <g class="fx" style="--d:1.6"><path class="dim" d="M160 236 H180 M160 230 V242 M180 230 V242"/><text class="dm" x="152" y="240" text-anchor="end">20mm</text></g>
+      <g class="fx" style="--d:1.7" fill="#9AA0A3"><rect x="148" y="120" width="104" height="8" rx="2"/><rect x="148" y="214" width="104" height="8" rx="2"/></g>
+      <path class="ldr ln" style="--d:1.8;--len:140" d="M252 124 H330"/><text class="lb" style="--d:2" x="336" y="128">镀锌管卡 · 间距 ≤800mm</text>
+      <path class="ldr ln" style="--d:1.9;--len:140" d="M252 218 H330"/><text class="lb" style="--d:2.1" x="336" y="222">底盒 100mm 内加管卡</text>
+      <path class="ldr ln" style="--d:2;--len:160" d="M110 100 Q80 120 70 150"/><text class="lb" style="--d:2.2" x="40" y="170">大弧度转弯</text>
+      <text class="lb" style="--d:2.2" x="40" y="188">抽线、换线都容易</text>
+      <g class="fx" style="--d:1.9"><circle cx="440" cy="70" r="34" fill="#fff" stroke="#1A1A1A" stroke-width="2"/><path d="M415 80 A26 26 0 0 1 465 80" fill="none" stroke="#DDD5C8" stroke-width="5"/><line x1="440" y1="70" x2="456" y2="54" stroke="#C8483C" stroke-width="3" stroke-linecap="round"/><text class="dm" x="440" y="12" text-anchor="middle">打压 0.6MPa · 30min</text></g>
+      <path class="ldr ln" style="--d:2.1;--len:120" d="M338 278 H380"/><text class="lb" style="--d:2.3" x="386" y="274">强电红 · 弱电灰</text><text class="lb" style="--d:2.3" x="386" y="292">管口加锁扣</text>`,
+    pipe:`
+      <g class="fx" style="--d:.1"><rect x="210" y="20" width="100" height="340" fill="#E9E7E2" stroke="#B9B3A8"/><path d="M226 20 V360" stroke="#fff" stroke-width="6" opacity=".7"/></g>
+      <g class="fx" style="--d:.6"><path d="M200 60 H320 V360 H200 Z" fill="url(#foil)"/><path d="M200 60 H320" stroke="#B8902A" stroke-width="2"/></g>
+      <g class="fx" style="--d:1.1"><path d="M186 120 H334 V360 H186 Z" fill="#C9CDD1"/><path d="M186 120 H334 V360 H186 Z" fill="url(#quilt)"/></g>
+      <g class="fx" style="--d:1.5"><path d="M200 60 l120 0" stroke="#B8902A" stroke-width="2"/><path class="dim" d="M200 100 H186 M200 94 V106"/></g>
+      <g class="fx" style="--d:1.6"><path d="M330 170 q30 14 0 28 M344 166 q40 20 0 40 M358 162 q50 26 0 52" stroke="#9A958C" stroke-width="2" fill="none" opacity=".5"/>
+        <path d="M120 230 l14 -6 M110 248 l24 -4" stroke="#C8483C" stroke-width="2"/><text class="dm" x="60" y="276">声桥 = 漏声</text></g>
+      <path class="ldr ln" style="--d:1.8;--len:160" d="M260 40 H400"/><text class="lb" style="--d:2" x="406" y="44">PVC 下水管</text>
+      <path class="ldr ln" style="--d:1.9;--len:160" d="M314 90 H400"/><text class="lb" style="--d:2.1" x="406" y="86">① 阻尼片 · 吸收管道震动</text><text class="dm fx" style="--d:2.1" x="406" y="104">低频 · 重叠 3–5cm</text>
+      <path class="ldr ln" style="--d:2;--len:160" d="M334 250 H400"/><text class="lb" style="--d:2.2" x="406" y="246">② 隔音棉 · 吸收水流声</text><text class="dm fx" style="--d:2.2" x="406" y="264">高频 · 周长 + 10cm</text>`,
+    water:`
+      <rect x="60" y="20" width="60" height="300" fill="#BDB8AE"/>
+      <rect x="60" y="320" width="440" height="40" fill="#BDB8AE"/>
+      <g class="fx" style="--d:.2"><path d="M120 270 V290 Q120 320 150 320 H170 V314 H150 Q126 314 126 290 V270 Z" fill="#9A958C"/></g>
+      <path class="ln" style="--d:.4;--len:760" d="M126 30 V288 Q126 312 150 312 H500" stroke="var(--membrane)" stroke-width="5"/>
+      <path class="ln" style="--d:.9;--len:760" d="M132 30 V288 Q132 306 150 306 H500" stroke="#B85A2C" stroke-width="5"/>
+      <g class="fx" style="--d:1.2"><path d="M138 232 V286 Q138 298 152 298 H230" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/></g>
+      <g class="fx" style="--d:1.3"><rect x="390" y="300" width="50" height="22" fill="#6E6A62"/><path d="M370 300 h90" stroke="#5A3A20" stroke-width="5"/></g>
+      <g class="fx" style="--d:1.7"><rect x="138" y="280" width="362" height="24" fill="#5AA0DE" opacity=".35"/><path d="M138 280 H500" stroke="#3C78C2" stroke-width="2"/></g>
+      <path class="ldr ln" style="--d:1.4;--len:160" d="M150 312 L250 230 H270"/><text class="lb" style="--d:1.6" x="276" y="234">阴角 R50mm 圆弧</text><text class="lb" style="--d:1.6" x="276" y="252">+ 加强层，不留死角</text>
+      <path class="ldr ln" style="--d:1.5;--len:100" d="M132 120 H200"/><text class="lb" style="--d:1.7" x="206" y="116">第一遍 横刷 0.5–0.8mm</text><text class="lb" style="--d:1.7" x="206" y="134">第二遍 竖刷 0.8–1.0mm</text>
+      <path class="ldr ln" style="--d:1.6;--len:120" d="M415 300 V180 H440"/><text class="lb" style="--d:1.8" x="372" y="166">地漏附加层</text><text class="dm fx" style="--d:1.8" x="372" y="184">上 50 · 外 200mm</text>
+      <g class="fx" style="--d:1.8"><path class="dim" d="M40 30 V312 M34 30 H46 M34 312 H46"/><text class="dm" x="32" y="172" transform="rotate(-90 32 172)" text-anchor="middle">淋浴区墙面 1.8m</text></g>
+      <text class="dm fx" style="--d:2" x="236" y="296">闭水 ≥20mm · 48h</text>`,
+    tile:`
+      <rect x="30" y="30" width="80" height="320" fill="#BDB8AE"/>
+      <path class="ln" style="--d:.2;--len:330" d="M114 30 V350" stroke="var(--membrane)" stroke-width="6"/>
+      <g class="fx" style="--d:.6"><path id="comb" d="" fill="#A9A49B"/></g>
+      <g class="fx" style="--d:1"><rect x="140" y="34" width="8" height="150" fill="#A9A49B"/><rect x="140" y="190" width="8" height="150" fill="#A9A49B"/></g>
+      <g class="fx" style="--d:1.3"><rect x="148" y="34" width="22" height="150" fill="var(--tile)" stroke="#CFC7BA"/><rect x="148" y="190" width="22" height="150" fill="var(--tile)" stroke="#CFC7BA"/></g>
+      <g class="fx" style="--d:1.6"><path d="M164 184 h12 v-6 h6 v6 h12 v6 h-12 v6 h-6 v-6 h-12 z" fill="#E07A2B"/></g>
+      <g class="fx" style="--d:1.8"><rect x="300" y="40" width="190" height="130" fill="#A9A49B"/><path id="hz" d="" stroke="#8B867D" stroke-width="3"/>
+        <rect x="330" y="70" width="190" height="130" fill="#C9C4BA" opacity=".9" transform="rotate(-6 425 135)"/><path id="vt" d="" stroke="#A7A298" stroke-width="3" transform="rotate(-6 425 135)"/></g>
+      <path class="ldr ln" style="--d:1.9;--len:200" d="M128 100 H180 V250 H210"/><text class="lb" style="--d:2" x="216" y="246">墙面齿形满涂</text><text class="lb" style="--d:2" x="216" y="264">砖背再刮一层</text>
+      <path class="ldr ln" style="--d:2;--len:100" d="M194 187 H230 V300"/><text class="lb" style="--d:2.2" x="236" y="306">十字卡 2–3mm · 缝宽一致</text>
+      <text class="lb" style="--d:2.2" x="300" y="222">基层横齿 + 砖背竖齿</text><text class="lb" style="--d:2.2" x="300" y="240">交叉挤出空气 → 不空鼓</text>
+      <text class="dm fx" style="--d:2.3" x="300" y="30">齿深 ≥10mm（地面）</text>`,
+    ceiling:`
+      <rect x="20" y="20" width="480" height="40" fill="#BDB8AE"/>
+      <g stroke="#8F8A80" stroke-width="3"><path class="ln" style="--d:.2;--len:100" d="M110 60 V150 M260 60 V150 M410 60 V150"/></g>
+      <g class="fx" style="--d:.7"><rect x="40" y="150" width="440" height="12" fill="#9AA0A3"/></g>
+      <g class="fx" style="--d:1" fill="#B4BABD"><rect x="60" y="164" width="14" height="22"/><rect x="160" y="164" width="14" height="22"/><rect x="260" y="164" width="14" height="22"/><rect x="360" y="164" width="14" height="22"/><rect x="450" y="164" width="14" height="22"/></g>
+      <line class="ln" style="--d:1.1;--len:480" x1="20" y1="186" x2="500" y2="186" stroke="#2EB34A" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <g class="fx" style="--d:1.4"><rect x="40" y="188" width="226" height="16" fill="var(--gyp)" stroke="#CFC7BA"/><rect x="272" y="188" width="208" height="16" fill="var(--gyp)" stroke="#CFC7BA"/>
+        <path d="M262 204 L269 192 L276 204" fill="#E0C992"/></g>
+      <g class="fx" style="--d:1.6" fill="#555"><circle cx="67" cy="196" r="2.5"/><circle cx="167" cy="196" r="2.5"/><circle cx="367" cy="196" r="2.5"/><circle cx="457" cy="196" r="2.5"/></g>
+      <g class="fx" style="--d:1.9"><text class="dm" x="40" y="244">俯视 · 封板排版</text>
+        <g stroke="#CFC7BA" fill="var(--gyp)"><rect x="40" y="254" width="150" height="40"/><rect x="190" y="254" width="150" height="40"/><rect x="340" y="254" width="140" height="40"/>
+        <rect x="40" y="294" width="80" height="40"/><rect x="120" y="294" width="150" height="40"/><rect x="270" y="294" width="150" height="40"/><rect x="420" y="294" width="60" height="40"/></g>
+        <path class="dim" d="M120 342 V354 M190 342 V354 M120 350 H190"/><text class="dm" x="155" y="372" text-anchor="middle">≥300mm</text></g>
+      <path class="ldr ln" style="--d:1.8;--len:120" d="M260 100 H330"/><text class="lb" style="--d:2" x="336" y="104">吊杆 → 主龙骨 → 副龙骨</text>
+      <path class="ldr ln" style="--d:1.9;--len:120" d="M269 196 V222 H330"/><text class="lb" style="--d:2.1" x="336" y="226">切口 45° 倒角 · 嵌缝</text>
+      <text class="dm fx" style="--d:2.1" x="24" y="178">平整度 ≤3mm/2m</text>`,
+    paint:`<g id="paintStack"></g>`,
+    handover:`
+      <rect x="30" y="30" width="60" height="320" fill="var(--tile)" stroke="#CFC7BA"/>
+      <path d="M30 90H90M30 150H90M30 210H90M30 270H90" stroke="#CFC7BA"/>
+      <g class="fx" style="--d:.3"><rect x="90" y="190" width="360" height="20" fill="#EEEAE2" stroke="#C9C2B6"/><rect x="110" y="210" width="320" height="140" fill="var(--wood)"/><path d="M270 210V350" stroke="#7E583B"/></g>
+      <g class="fx" style="--d:.8"><rect x="180" y="160" width="120" height="22" rx="4" fill="#fff" stroke="#9AA0A3"/><path d="M196 171 H284" stroke="#3C9A5A" stroke-width="3"/><circle cx="240" cy="171" r="5" fill="#C7E7C3" stroke="#3C9A5A"/></g>
+      <g class="fx" style="--d:1.2"><circle cx="94" cy="192" r="52" fill="#FBF9F5" stroke="#1A1C1E" stroke-width="2"/>
+        <clipPath id="mag"><circle cx="94" cy="192" r="50"/></clipPath>
+        <g clip-path="url(#mag)"><rect x="40" y="130" width="54" height="120" fill="var(--tile)"/><rect x="94" y="196" width="80" height="60" fill="#EEEAE2"/><path d="M94 196 q-12 0 -12 -12 v-4 h12z" fill="#F7F7F7" stroke="#B7B2A8"/></g></g>
+      <g class="fx" style="--d:1.9"><rect x="430" y="30" width="72" height="92" rx="4" fill="#fff" stroke="#9A958C" stroke-width="2"/><rect x="452" y="24" width="28" height="12" rx="3" fill="#9A958C"/><path d="M442 56h48M442 72h48M442 88h30" stroke="#CFC7BA" stroke-width="3"/><path d="M444 106 q10 -12 20 0 t20 0" fill="none" stroke="#1A3A2A" stroke-width="2"/><text class="dm" x="466" y="140" text-anchor="middle">验收单签字</text></g>
+      <path class="ldr ln" style="--d:1.6;--len:240" d="M80 178 L60 110 H160"/><text class="lb" style="--d:1.8" x="166" y="114">防霉胶收口 · 水进不去</text>
+      <path class="ldr ln" style="--d:1.7;--len:100" d="M300 171 H340"/><text class="lb" style="--d:1.9" x="346" y="175">水平尺校平</text>
+      <path class="ldr ln" style="--d:1.8;--len:100" d="M270 300 H340"/><text class="lb" style="--d:2" x="346" y="304">门缝统一调整</text>`
+  };
+
+  const DEFS=`<defs>
+    <pattern id="mesh" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8M8 0L0 8" stroke="#6E6A62" stroke-width=".8"/></pattern>
+    <pattern id="weld" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M0 0H22M0 0V22" stroke="#8C9196" stroke-width="1.6"/></pattern>
+    <pattern id="foil" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#D9B34A"/><circle cx="5" cy="5" r="3" fill="#E8C866"/></pattern>
+    <pattern id="quilt" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H14M0 0V14" stroke="#A9AEB3" stroke-width="1"/></pattern></defs>`;
+
+  let lang='zh';
+  try{const site=localStorage.getItem('houzy-lang');lang=localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en')}catch(e){}
+  if(lang!=='en')lang='zh';
+  /* ---------- hero: isometric wall that opens on scroll ---------- */
+  const iso=document.getElementById('iso');
+  const W=360,H=300,C=.866;
+  const P=(x,y,z)=>[330+(x-y)*C,330+(x+y)*.5-z];
+  const pts=a=>a.map(p=>P(...p).map(n=>n.toFixed(1)).join(',')).join(' ');
+  const LAYERS=[
+    {name:'砖墙 + 防水反坎',sub:'植筋 200mm · 反坎 18–20cm',en:['Brick + waterproof kerb','rebar 200mm · kerb 18–20cm'],t:30,f:'#A9553E',s:'#7F3E2C',tp:'#C47A62',tex:'brick'},
+    {name:'水电管线',sub:'线管间距 20mm · 打压 0.6MPa',en:['Pipes & wiring','conduits 20mm apart · 0.6MPa test'],t:10,tex:'pipes'},
+    {name:'防水层',sub:'两遍交叉 · 总厚 ≥1.5mm',en:['Waterproofing','two crossed coats · ≥1.5mm'],t:4,f:'#D9713A',s:'#A9542A',tp:'#E89462'},
+    {name:'瓷砖胶',sub:'双面上胶 · 齿痕交叉',en:['Tile adhesive','both sides · crossed notches'],t:5,f:'#9A958C',s:'#7A766E',tp:'#B5B0A6',tex:'comb'},
+    {name:'瓷砖',sub:'十字卡 2–3mm · 逐块敲击',en:['Tile','2–3mm spacers · every tile tapped'],t:8,f:'#F4F1EA',s:'#CFC9BE',tp:'#FFFFFF',tex:'tile'}
+  ];
+  const poly=(a,fill)=>`<polygon points="${pts(a)}" fill="${fill}"/>`;
+  const line=(a,b,st,sw,ex='')=>{const p=P(...a),q=P(...b);return `<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" stroke="${st}" stroke-width="${sw}" ${ex}/>`};
+  const pipe=(path,y,st,sw)=>`<polyline points="${path.map(([x,z])=>P(x,y,z).map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${st}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  function drawIso(e){
+    let s='',y=0;const gap=64*e,anchors=[];
+    LAYERS.forEach((L,i)=>{
+      const y0=y+gap*i,y1=y0+L.t;y+=L.t;
+      if(L.tex==='pipes'){
+        const yy=y0+2;
+        s+=pipe([[40,H],[40,180],[60,160],[120,160]],yy,'#E07A2B',4)+pipe([[52,H],[52,186],[68,172],[120,172]],yy,'#E07A2B',4)+pipe([[90,H],[90,220],[200,220]],yy,'#8466B8',3)
+          +pipe([[0,64],[250,64],[250,120]],yy,'#C8483C',5)+pipe([[0,46],[290,46],[290,120]],yy,'#3C78C2',5);
+      } else {
+        s+=poly([[0,y0,H],[W,y0,H],[W,y1,H],[0,y1,H]],L.tp)+poly([[W,y0,0],[W,y1,0],[W,y1,H],[W,y0,H]],L.s)+poly([[0,y1,0],[W,y1,0],[W,y1,H],[0,y1,H]],L.f);
+        if(L.tex==='brick'){
+          s+=poly([[0,y1,0],[W,y1,0],[W,y1,26],[0,y1,26]],'#8E8A82');
+          for(let r=1;r<10;r++)s+=line([0,y1,26+r*28],[W,y1,26+r*28],'#E7D2C6',1.1,'opacity=".5"');
+          for(let r=0;r<10;r++)for(let x=(r%2?30:60);x<W;x+=60)s+=line([x,y1,26+r*28],[x,y1,Math.min(H,26+r*28+28)],'#E7D2C6',1.1,'opacity=".5"');}
+        if(L.tex==='comb')for(let z=10;z<H;z+=10)s+=line([0,y1,z],[W,y1,z],'#7A766E',1,'opacity=".55"');
+        if(L.tex==='tile'){for(let x=60;x<W;x+=60)s+=line([x,y1,0],[x,y1,H],'#C9C2B6',1.4);for(let z=60;z<H;z+=60)s+=line([0,y1,z],[W,y1,z],'#C9C2B6',1.4);}
+      }
+      anchors.push(P(W,y0+L.t/2,H*.82-i*6));
+    });
+    s=`<ellipse cx="${P(W/2,y/2+gap*2,0)[0]}" cy="${P(W/2,y/2+gap*2,0)[1]+26}" rx="${310+gap*2}" ry="${36+gap*.3}" fill="#000" opacity=".28"/>`+s;
+    const op=Math.max(0,Math.min(1,(e-.45)/.35));
+    anchors.forEach((a,i)=>{const lx=690,ly=96+i*92;
+      s+=`<g opacity="${op.toFixed(2)}"><circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="3.5" fill="#E0C992"/><path d="M${a[0].toFixed(1)} ${a[1].toFixed(1)} L${lx-20} ${ly} H${lx-6}" stroke="#E0C992" stroke-width="1" fill="none" opacity=".7"/>
+        <text x="${lx}" y="${ly-4}"><tspan class="n">0${i+1}  </tspan><tspan class="lbl">${lang==='en'?LAYERS[i].en[0]:LAYERS[i].name}</tspan></text><text class="sub" x="${lx}" y="${ly+16}">${lang==='en'?LAYERS[i].en[1]:LAYERS[i].sub}</text></g>`});
+    iso.innerHTML=s;
+    document.getElementById('meter').textContent=T[lang][e<.1?'m0':e<.9?'m1':'m2']+' · '+Math.round(e*100)+'%';
+  }
+  let lastE=-1;
+  function onScroll(){
+    const h=document.getElementById('hero'),r=h.getBoundingClientRect();
+    const e=Math.min(1,Math.max(0,-r.top/(h.offsetHeight-innerHeight))*1.25);
+    if(Math.abs(e-lastE)>.002){lastE=e;drawIso(e)}
+    let cur=0;document.querySelectorAll('.ch').forEach((c,i)=>{if(c.getBoundingClientRect().top<innerHeight*.5)cur=i+1});
+    document.querySelectorAll('#spine a').forEach((a,i)=>a.classList.toggle('cur',i+1===cur));
+  }
+
+  /* ---------- chapters ---------- */
+  const wrap=document.getElementById('chapters');
+  const loc=(c,i)=>lang==='en'?Object.assign({},c,EN_CH[i],{pts:c.pts.map((p,k)=>[p[0],p[1],EN_CH[i].pts[k][0],EN_CH[i].pts[k][1]])}):c;
+  const localize=svg=>lang==='zh'?svg:svg.replace(/>([^<>]+)</g,(m,t)=>EN_LB[t.trim()]?'>'+EN_LB[t.trim()]+'<':m);
+  let io;
+  function build(){
+  const L=T[lang];
+  wrap.querySelectorAll('.ch').forEach(n=>n.remove());
+  CH.forEach((c0,i)=>{const c=loc(c0,i);
+    const n=String(i+1).padStart(2,'0'),sec=document.createElement('article');sec.className='ch';sec.id='step'+(i+1);
+    sec.innerHTML=`<div>
+        <div class="no"><b>${n}</b>${L.step.replace('{n}',i+1)}</div>
+        <h2>${c.t}</h2><p class="why">${c.why}</p>
+        <div class="nums">${c.nums.map(([b,s])=>`<div><b>${b}</b><span>${s}</span></div>`).join('')}</div>
+        <ol class="flow">${c.flow.map(f=>`<li>${f}</li>`).join('')}</ol>
+        <div class="vs"><div class="bad"><h4>✕ ${L.bad}</h4>${c.bad}</div><div class="good"><h4>✓ ${L.good}</h4>${c.good}</div></div>
+        <div class="ptsh">${L.ptsh}</div>
+        <ol class="pts">${c.pts.map((p,k)=>`<li data-k="${k}"><i>${k+1}</i><div><b>${p[2]}</b><small>${L.how}${p[3]}</small></div></li>`).join('')}</ol></div>
+      <figure class="plate"><figcaption><span>${c.cap}</span><span>${n} / ${String(CH.length).padStart(2,'0')}</span></figcaption>
+        <svg viewBox="0 0 520 380" role="img" aria-label="${c.cap}">${DEFS}${localize(PL[c.plate])}<g class="hs">${c.pts.map((p,k)=>`<g class="hp" data-k="${k}" style="--d:${(2.4+k*.15).toFixed(2)}" transform="translate(${p[0]} ${p[1]})"><circle class="ring" r="13"/><circle r="11"/><text y="4">${k+1}</text></g>`).join('')}</g></svg></figure>`;
+    wrap.appendChild(sec);
+  });
+  document.getElementById('spine').innerHTML=CH.map((c,i)=>`<li><a href="#step${i+1}">${String(i+1).padStart(2,'0')}<span>${loc(c,i).t}</span></a></li>`).join('');
+  document.getElementById('nSteps').textContent=CH.length;
+  document.getElementById('nChecks').textContent=CH.reduce((n,c)=>n+c.pts.length,0);
+
+  // generated parts of drawings
+  (function(){
+    let h='';for(let r=0;r<8;r++){const y=262-r*28;for(let x=120+(r%2?-30:0);x<500;x+=60){const x0=Math.max(120,x),w=Math.min(x+57,500)-x0;if(w>4)h+=`<rect class="fx" style="--d:${(.5+r*.07).toFixed(2)}" x="${x0}" y="${y+1}" width="${w}" height="25" fill="var(--brick)"/>`}}
+    document.getElementById('brickRows').innerHTML=h;
+    let d='M118 30';for(let y=30;y<350;y+=10)d+=` L136 ${y+5} L118 ${y+10}`;document.getElementById('comb').setAttribute('d',d+' Z');
+    let hz='',vt='';for(let y=52;y<170;y+=12)hz+=`M300 ${y}H490`;for(let x=342;x<520;x+=12)vt+=`M${x} 70V200`;
+    document.getElementById('hz').setAttribute('d',hz);document.getElementById('vt').setAttribute('d',vt);
+    // conduits: parallel runs with a wide-radius bend, gap between each
+    let cd='';const col=['#E0523A','#E0523A','#E0523A','#9AA3AD','#9AA3AD'];
+    col.forEach((c,i)=>{const x=160+i*20,r=60+i*20;
+      const p=`M${x} 20 V${250-0} `;cd+=`<path class="ln" style="--d:${(.2+i*.12).toFixed(2)};--len:500" d="M${x} 250 V${150} Q${x} ${150-r*.6} ${x-r*.6} ${150-r*.6} H30" stroke="${c}" stroke-width="12" fill="none" stroke-linecap="round"/>`});
+    document.getElementById('conduits').innerHTML=cd;
+    const names=lang==='en'?['Brick / substrate','Primer','Cement render','Gypsum levelling','Mesh tape (50mm at joints)','Two skim coats + sanding','Primer + top coats']:['砖墙 / 基层','界面剂','水泥砂浆打底','石膏找平','网格布（交界 50mm）','腻子两遍 + 打磨','乳胶漆 底漆 + 面漆'];
+    const cols=['#BDB8AE','#D7D2C4','#A9A49B','#ECE8E0','#E3C66A','#F3F0EA','#EADBC3'];let ph='';
+    names.forEach((n,i)=>{const y=330-i*40,x=10+i*24;
+      ph+=`<g class="fx" style="--d:${(i*.22).toFixed(2)}"><path d="M${x} ${y} L${x+220} ${y} L${x+260} ${y-30} L${x+40} ${y-30} Z" fill="${cols[i]}" stroke="#CFC7BA"/><path d="M${x} ${y} v12 h220 l40 -30 v-12" fill="${cols[i]}" stroke="#CFC7BA" style="filter:brightness(.9)"/></g>
+          <text class="lb" style="--d:${(i*.22+.4).toFixed(2)}" x="${x+268}" y="${y-8}">${n}</text>`});
+    ph+=`<text class="dm fx" style="--d:2" x="10" y="372">${lang==='en'?'Moisture ≤10% before painting · top coat water ≤30%':'含水率 ≤10% 才刷 · 面漆兑水 ≤30%'}</text>`;
+    document.getElementById('paintStack').innerHTML=ph;
+  })();
+
+  document.querySelectorAll('.ch').forEach(sec=>{
+    const on=(k,v)=>sec.querySelectorAll(`[data-k="${k}"]`).forEach(e=>e.classList.toggle('hot',v));
+    sec.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k;
+      e.addEventListener('mouseenter',()=>on(k,true));e.addEventListener('mouseleave',()=>on(k,false));
+      e.addEventListener('click',()=>{sec.querySelectorAll('.hot').forEach(x=>x.classList.remove('hot'));on(k,true)})});
+  });
+  if(io)io.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}}),{threshold:.2});
+  document.querySelectorAll('.ch').forEach(s=>io.observe(s));
+  }
+  function render(){
+    const L=T[lang];
+    document.documentElement.lang=lang==='zh'?'zh-CN':'en';document.title=L.title;
+    document.querySelectorAll('[data-t]').forEach(e=>e.textContent=L[e.dataset.t]);
+    document.querySelectorAll('[data-h]').forEach(e=>e.innerHTML=L[e.dataset.h]);
+    document.querySelectorAll('[data-a]').forEach(e=>e.setAttribute('aria-label',L[e.dataset.a]));
+    document.getElementById('lang').textContent=lang==='zh'?'EN':'中文';
+    build();lastE=-1;onScroll();
+  }
+  document.getElementById('lang').onclick=()=>{lang=lang==='zh'?'en':'zh';try{localStorage.setItem('houzy-partner-language',lang)}catch(e){}render()};
+  addEventListener('scroll',()=>requestAnimationFrame(onScroll),{passive:true});
+  addEventListener('resize',onScroll);
+  render();
+  </script>
+</body>
+</html>
