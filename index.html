@@ -19,314 +19,7 @@
     <meta name="description" content="HOUZY HOME SDN. BHD. — Johor Bahru's one-stop premium home renovation solutions. Kitchen, bathroom, wardrobe, flooring. Touch. Compare. Create.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Sans+Thai:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'houzy-green': '#1a3a2a',
-                        'houzy-green-light': '#2d5e43',
-                        'houzy-gold': '#c8a96e',
-                        'houzy-gold-light': '#e0c992',
-                        'houzy-cream': '#f5f2ed',
-                        'houzy-dark': '#1a1a1a',
-                    },
-                    fontFamily: {
-                        'serif-cn': ['Noto Serif SC', 'serif'],
-                        'serif-en': ['Playfair Display', 'serif'],
-                        'sans-cn': ['Noto Sans SC', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .gradient-green {
-            background: linear-gradient(135deg, #1a3a2a 0%, #0f2a1c 100%);
-        }
-        .gradient-gold {
-            background: linear-gradient(135deg, #c8a96e 0%, #a08050 100%);
-        }
-        .text-shadow {
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .hover-lift {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .hover-lift:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-        .animate-fade-in {
-            animation: fadeIn 1s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .parallax-bg {
-            background-attachment: fixed;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-        @media (max-width: 767px) {
-            html, body {
-                width: 100%;
-                overflow-x: hidden;
-            }
-            body {
-                background: #f5f2ed;
-            }
-            #navbar .h-20 {
-                height: 56px;
-            }
-            #navbar img[alt="HOUZY HOME"] {
-                width: 30px;
-                height: 30px;
-            }
-            #navbar h1 {
-                font-size: 0.9rem;
-                line-height: 1;
-                letter-spacing: 0.06em;
-            }
-            #navbar h1 + p {
-                font-size: 0.52rem;
-                letter-spacing: 0.12em;
-            }
-            #mobile-menu {
-                max-height: calc(100vh - 56px);
-                overflow-y: auto;
-                box-shadow: 0 18px 40px rgba(26, 58, 42, 0.14);
-            }
-            #mobile-menu a {
-                min-height: 40px;
-                display: flex;
-                align-items: center;
-                border-bottom: 1px solid rgba(26, 58, 42, 0.08);
-                font-size: 0.9rem;
-            }
-            #home {
-                min-height: auto;
-                align-items: flex-end;
-                justify-content: flex-start;
-                padding-top: 76px;
-                padding-bottom: 42px;
-            }
-            #home .absolute.inset-0.bg-gradient-to-r {
-                background: linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.22) 70%, rgba(0, 0, 0, 0.34) 100%);
-            }
-            #hero-video {
-                object-position: 58% center;
-            }
-            #home .relative.z-20 {
-                width: 100%;
-            }
-            #home .max-w-2xl {
-                max-width: 100%;
-            }
-            #home [data-i18n="hero_tagline"] {
-                font-size: 0.62rem;
-                letter-spacing: 0.12em;
-                margin-bottom: 0.55rem;
-            }
-            #home h1 {
-                font-size: clamp(2rem, 10vw, 2.85rem);
-                line-height: 1;
-                margin-bottom: 0.7rem;
-                letter-spacing: 0;
-            }
-            #home [data-i18n="hero_slogan"] {
-                font-size: 0.96rem;
-                margin-bottom: 0.45rem;
-            }
-            #home [data-i18n="hero_sub1"],
-            #home [data-i18n="hero_sub2"] {
-                font-size: 0.86rem;
-                line-height: 1.45;
-                max-width: 19rem;
-            }
-            #home .flex.flex-col.sm\:flex-row {
-                gap: 0.6rem;
-                margin-top: 0.9rem;
-            }
-            #home .flex.flex-col.sm\:flex-row a {
-                width: 100%;
-                padding: 0.78rem 1rem;
-                min-height: 42px;
-                font-size: 0.92rem;
-            }
-            #hero-sound {
-                width: 36px;
-                height: 36px;
-                right: 14px;
-                bottom: 12px;
-            }
-            #home .animate-bounce {
-                display: none;
-            }
-            section.py-20,
-            footer.py-12 {
-                padding-top: 2.2rem;
-                padding-bottom: 2.2rem;
-            }
-            section .mb-16 {
-                margin-bottom: 1.35rem;
-            }
-            section .mb-12 {
-                margin-bottom: 1.2rem;
-            }
-            [data-i18n="svc_label"],
-            [data-i18n="pkg_label"],
-            [data-i18n="shop_label"],
-            [data-i18n="about_label"],
-            [data-i18n="contact_label"] {
-                letter-spacing: 0.14em;
-                font-size: 0.62rem;
-            }
-            section h2,
-            [data-i18n="svc_h2"],
-            [data-i18n="pkg_h2"],
-            [data-i18n="shop_h2"],
-            [data-i18n="about_h2"],
-            [data-i18n="contact_h2"] {
-                font-size: clamp(1.55rem, 7.2vw, 2rem) !important;
-                line-height: 1.12;
-                letter-spacing: 0;
-            }
-            #services .group,
-            #packages .hover-lift,
-            #shop .hover-lift {
-                transform: none !important;
-            }
-            #services .group,
-            #packages .bg-white,
-            #packages .bg-houzy-green,
-            #shop .bg-white\/5 {
-                border-radius: 0.5rem;
-            }
-            #services .group {
-                padding: 1rem;
-                display: grid;
-                grid-template-columns: 44px 1fr;
-                gap: 0.75rem;
-                align-items: start;
-            }
-            #services .group > div:first-child {
-                width: 44px;
-                height: 44px;
-                margin-bottom: 0;
-            }
-            #services .group svg {
-                width: 24px;
-                height: 24px;
-            }
-            #services .group h3,
-            #packages h3,
-            #shop h3 {
-                font-size: 1.12rem;
-                line-height: 1.18;
-            }
-            #services .group p,
-            #packages p,
-            #shop p {
-                font-size: 0.82rem;
-                line-height: 1.45;
-            }
-            #services .group h3,
-            #services .group p {
-                grid-column: 2;
-            }
-            #services .group h3 {
-                margin-top: 0.05rem;
-            }
-            #packages .p-8,
-            #shop .p-6 {
-                padding: 0.95rem;
-            }
-            #packages img,
-            #shop img {
-                max-height: 180px;
-                object-fit: cover;
-            }
-            #packages .text-4xl,
-            #shop .text-4xl {
-                font-size: 1.6rem;
-            }
-            #shop .grid {
-                gap: 0.75rem;
-            }
-            #shop .aspect-square {
-                aspect-ratio: 4 / 3;
-            }
-            #prodgal-modal .p-4 {
-                padding: 0.75rem;
-            }
-            #prodgal-modal .text-2xl {
-                font-size: 1.35rem;
-            }
-            #pg-grid {
-                grid-template-columns: 1fr 1fr !important;
-                gap: 0.55rem;
-            }
-            #about .grid.grid-cols-3 {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-                text-align: left;
-            }
-            #about .grid.grid-cols-3 > div {
-                padding: 0.75rem 0.85rem;
-                background: #f5f2ed;
-                border-left: 3px solid #c8a96e;
-            }
-            #about .absolute.-bottom-6.-left-6 {
-                position: static;
-                width: 100%;
-                margin-top: 1rem;
-                padding: 0.85rem;
-                transform: none;
-            }
-            #contact input,
-            #contact select,
-            #contact textarea {
-                font-size: 16px;
-            }
-            #contact .aspect-video {
-                min-height: 210px;
-                width: 100%;
-                max-width: 100%;
-            }
-            #contact iframe {
-                width: 100% !important;
-                max-width: 100%;
-            }
-            footer .grid {
-                gap: 1.15rem;
-            }
-            .hover-lift:hover {
-                transform: none;
-                box-shadow: none;
-            }
-        }
-    </style>
-
-<style id="seasonal-campaign-style">
-#seasonal-campaign{padding-top:80px;background:linear-gradient(105deg,#ffe5b4 0%,#f9c778 64%,#f4ae62 100%);color:#0b3d34;scroll-margin-top:80px}
-.campaign-inner{max-width:1250px;min-height:108px;margin:auto;padding:15px 40px;display:flex;align-items:center;gap:25px}
-.campaign-copy{border-left:3px solid #b9482b;padding-left:17px;min-width:0;flex:1}
-.campaign-eyebrow{display:block;color:#9b3b25;font-size:11px;font-weight:800;letter-spacing:.1em;line-height:1.3;margin-bottom:5px}
-#seasonal-campaign .campaign-title{font-family:'Noto Serif SC',Georgia,serif;font-size:clamp(24px,2.4vw,32px) !important;font-weight:600;line-height:1.18;letter-spacing:0;margin:0 0 3px;color:#0b3d34}
-.campaign-description{font-size:13px;line-height:1.45;color:#365146;margin:0}
-.campaign-offer{flex:none;display:grid;justify-items:center;gap:0;min-width:94px;color:#a33b22;transform:rotate(-5deg)}
-.campaign-offer strong{font:700 49px/.95 Georgia,serif;letter-spacing:-.06em}.campaign-offer small{font-size:10px;font-weight:800;letter-spacing:.06em;white-space:nowrap}
-.campaign-cta{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:14px;background:#a93a25;border:1px solid #a93a25;padding:13px 18px;color:#fffdf8;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:4px 4px 0 #0c4438;transition:transform .2s,box-shadow .2s,background .2s}
-.campaign-cta:hover{background:#8f2f1f;transform:translate(-2px,-2px);box-shadow:6px 6px 0 #0c4438}.campaign-cta:focus-visible{outline:3px solid #0c4438;outline-offset:4px}
-@media(max-width:760px){#seasonal-campaign{padding-top:56px;scroll-margin-top:56px}.campaign-inner{min-height:0;padding:13px 19px 15px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 10px}.campaign-copy{padding-left:11px}.campaign-eyebrow{font-size:9px;letter-spacing:0}.campaign-description{display:none}#seasonal-campaign .campaign-title{font-size:20px !important;line-height:1.25}.campaign-offer{min-width:70px}.campaign-offer strong{font-size:38px}.campaign-offer small{font-size:8px}.campaign-cta{grid-column:1/-1;justify-self:start;margin-left:14px;padding:9px 13px;font-size:11px;box-shadow:3px 3px 0 #0c4438}}
-@media(max-width:360px){#seasonal-campaign .campaign-title{font-size:18px !important}.campaign-offer{min-width:60px}.campaign-offer strong{font-size:34px}}
-</style>
-
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@400&family=Noto+Sans+Thai:wght@300;400&display=swap" rel="stylesheet">
 <style id="careers-style">
 #careers{background:#f5f3ed;color:#193d30;padding:72px 24px;scroll-margin-top:80px;border-top:5px solid #c5a567}
 .careers-wrap{max-width:1180px;margin:auto}.careers-eyebrow{font-size:12px;letter-spacing:.2em;color:#75613e;margin-bottom:12px}
@@ -335,6 +28,175 @@
 .careers-about{font-size:14px;line-height:1.8;color:#47584e}.careers-details{border-top:1px solid #bfc7bc;margin-top:24px}.careers-details summary{cursor:pointer;font-weight:600;padding:18px 0;font-size:16px}.careers-columns{display:grid;grid-template-columns:1fr 1fr;gap:25px;padding-bottom:20px}.careers-columns h3{font-size:16px;font-weight:700;margin-bottom:12px}.careers-columns ul{padding-left:18px;list-style:disc}.careers-columns li{font-size:13px;line-height:1.65;margin-bottom:12px}.careers-columns li span{display:block;color:#657066}
 .careers-benefits{border-top:1px solid #bfc7bc;padding:18px 0;font-size:14px;line-height:1.8}.careers-actions{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0 18px}.careers-actions a{padding:13px 18px;background:#193d30;color:#fff;text-decoration:none;font-size:14px;font-weight:600}.careers-actions a+a{background:transparent;color:#193d30;border:1px solid #193d30}.careers-actions a:hover{background:#c5a567;color:#193d30}.careers-actions a:focus-visible,.careers-details summary:focus-visible,.careers-poster:focus-visible{outline:3px solid #9b6b1c;outline-offset:4px}.careers-contact{font-size:12px;line-height:1.9;color:#526254}.careers-poster{display:block}.careers-poster img{width:100%;height:auto;display:block}.careers-poster span{display:block;padding:10px;text-align:center;font-size:12px;border:1px solid #c6cbbf}
 @media(max-width:760px){#careers{padding:44px 22px;scroll-margin-top:56px}.careers-layout{grid-template-columns:1fr;gap:30px}.careers-columns{grid-template-columns:1fr;gap:12px}.careers-poster{max-width:380px;justify-self:center}.careers-lead{font-size:16px}}
+</style>
+<style id="home-v7">
+/* Rules: one background at a time, one text colour, two type families, three sizes, no ornament.
+   The background follows the time of day in Johor Bahru. */
+:root{
+  --sans:"Outfit","Noto Sans SC",system-ui,sans-serif; --serif:"Noto Serif SC",serif;
+  --gap:10px; --side:260px; --hd:80px; --pad:30px;
+  --bg:#ECEEE8; --tile:#E1E4DC; --ink:#1B1E1B; --soft:#5F645E; --rule:rgba(27,30,27,.14);
+}
+[data-time="afternoon"]{--bg:#F4F0E6; --tile:#E9E3D6; --ink:#1C1C1A; --soft:#69655C; --rule:rgba(28,28,26,.14)}
+[data-time="evening"]{--bg:#E9D9C0; --tile:#DFCBAD; --ink:#2A2116; --soft:#634F37; --rule:rgba(42,33,22,.16)}
+[data-time="night"]{--bg:#181712; --tile:#22201A; --ink:#E8E2D4; --soft:#A29C8F; --rule:rgba(232,226,212,.14)}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:var(--hd)}
+body{background:var(--bg);color:var(--ink);font:300 14px/1.85 var(--sans);letter-spacing:.1em;-webkit-font-smoothing:antialiased;transition:background-color 1.4s ease,color 1.4s ease}
+a{color:inherit;text-decoration:none}
+img{display:block;width:100%;height:100%;object-fit:cover}
+ul{list-style:none;padding:0}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter-spacing:inherit}
+.hidden{display:none!important}
+:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
+.s{font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+.h{font:400 15px/1.6 var(--serif);letter-spacing:.24em}
+.soft{color:var(--soft)}
+
+.hd{position:sticky;top:0;z-index:20;height:var(--hd);display:flex;align-items:center;padding:0 var(--pad);background:var(--bg);transition:background-color 1.4s ease}
+.mark{display:flex;align-items:center;gap:14px;font:300 17px/1 var(--sans);letter-spacing:.32em}
+.mark img{width:26px;height:26px;border-radius:4px}
+.hr{margin-left:auto;display:flex;align-items:center;gap:28px}
+.hr a:hover,.side a:hover,.ft a:hover,.more:hover,.lang>button:hover{opacity:.55}
+.lang{position:relative}
+#lang-menu{position:absolute;right:0;top:30px;background:var(--bg);border:1px solid var(--rule);padding:8px 0;min-width:150px;text-transform:none;letter-spacing:.08em}
+#lang-menu button{display:block;width:100%;text-align:left;padding:6px 16px;font-size:13px}
+#lang-menu button:hover{background:var(--tile)}
+.burger{display:none;margin-left:auto;width:44px;height:44px;position:relative}
+.burger::before,.burger::after{content:"";position:absolute;left:11px;right:11px;height:1px;background:var(--ink);top:18px}
+.burger::after{top:26px}
+
+.layout{display:grid;grid-template-columns:var(--side) minmax(0,1fr);gap:0 40px;padding:0 var(--pad)}
+.side{position:sticky;top:var(--hd);align-self:start;max-height:calc(100vh - var(--hd));overflow:auto;padding:20px 0 40px;scrollbar-width:none}
+.side::-webkit-scrollbar{display:none}
+.side section{margin-bottom:30px}
+.side .h{display:block;margin-bottom:10px}
+.side li{font-size:12px;letter-spacing:.14em;line-height:2.3}
+.side li::before{content:"•";margin-right:8px}
+.side .note{display:block;font-size:12px;letter-spacing:.1em;color:var(--soft);line-height:1.8;margin-top:8px}
+.side .big{font:400 18px/1 var(--serif);letter-spacing:.24em;display:block;margin:6px 0 12px 14px}
+
+.field{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);padding-bottom:var(--gap);min-width:0}
+.tile{position:relative;overflow:hidden;background:var(--tile);color:#fff;transition:background-color 1.4s ease}
+.tile img{transition:transform 1.6s cubic-bezier(.2,.7,.2,1)}
+.tile:hover img{transform:scale(1.025)}
+.lab{position:absolute;left:14px;top:12px;right:14px;z-index:2;font:400 16px/1.4 var(--serif);letter-spacing:.2em;text-shadow:0 1px 10px rgba(0,0,0,.25)}
+.lab small{display:block;font:300 12px/1.6 var(--sans);letter-spacing:.16em;margin-top:2px;opacity:.92}
+.photo-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.34),rgba(0,0,0,.08) 22%,transparent 38%);pointer-events:none}
+.t4{aspect-ratio:2/3}
+.t2{grid-column:span 2;aspect-ratio:7/5}
+.t-all{grid-column:1/-1}
+
+.hero{aspect-ratio:2/1;max-height:calc(100vh - var(--hd) - 20px)}
+.hero img{position:absolute;inset:0}
+.hero .line{z-index:1;opacity:1;transition:opacity 2.6s ease .8s}
+.live .hero .line{opacity:0}
+.hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(0,0,0,.28),transparent 30%);pointer-events:none}
+.hero .foot{position:absolute;left:14px;right:14px;bottom:12px;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;text-shadow:0 1px 10px rgba(0,0,0,.3)}
+
+.intro{grid-column:1/-1;display:grid;grid-template-columns:2fr 1fr 1fr;gap:var(--gap) 40px;padding:56px 0 60px;border-bottom:1px solid var(--rule);margin-bottom:var(--gap)}
+.intro p.lead{font:400 21px/1.8 var(--serif);letter-spacing:.12em}
+.intro ul li{line-height:2.2}
+.intro ul li::before{content:"—";margin-right:10px;color:var(--soft)}
+
+.craft{color:var(--ink)}
+.craft .lab{text-shadow:none}
+.craft svg{position:absolute;inset:14% 4% 2% 4%;width:92%;height:84%}
+.craft .ly{transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.craft:hover .ly,.craft:focus-visible .ly{transform:translate(calc(var(--k) * -26px),calc(var(--k) * 15px))}
+.craft .poly{fill:var(--tile);stroke:currentColor;stroke-width:1;stroke-linejoin:round;vector-effect:non-scaling-stroke;transition:fill 1.4s ease}
+.craft .detail{fill:none;stroke:currentColor;stroke-width:.6;opacity:.55;vector-effect:non-scaling-stroke}
+.craft .hint{position:absolute;left:14px;bottom:12px;color:var(--soft)}
+
+.shop{grid-column:1/-1;padding:56px 0 8px}
+.shop .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+.goods{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+.good .ph{aspect-ratio:1;overflow:hidden;background:var(--tile)}
+.good img{transition:transform 1.6s cubic-bezier(.2,.7,.2,1)}
+.good:hover img{transform:scale(1.03)}
+.good .t{margin-top:12px;font-size:13px;letter-spacing:.06em;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.good .p{font-size:12px;letter-spacing:.14em;color:var(--soft);margin-top:2px}
+.good.sk .ph{animation:pulse 1.4s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.55}}
+.shop.off{display:none}
+
+/* content blocks under the grid */
+.block{grid-column:1/-1;padding:80px 0 20px;border-top:1px solid var(--rule);margin-top:50px}
+.bh{display:flex;justify-content:space-between;align-items:baseline;gap:30px;margin-bottom:34px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 22px;border:1px solid var(--ink);font-size:12px;letter-spacing:.18em;text-transform:uppercase;transition:background-color .3s,color .3s}
+.btn:hover,.btn.k{background:var(--ink);color:var(--bg)}
+.btn.k:hover{background:transparent;color:var(--ink)}
+.pk{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+.pk article{background:var(--tile);padding:30px 26px 30px;transition:background-color 1.4s ease}
+.pk h3{font:400 16px/1.5 var(--serif);letter-spacing:.2em;margin:10px 0 20px}
+.pk .price{font:300 30px/1 var(--sans);letter-spacing:.04em}
+.pk .trad{font-size:12px;color:var(--soft);text-decoration:line-through;margin-top:8px}
+.pk ul{margin:22px 0 26px;border-top:1px solid var(--rule)}
+.pk li{padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.campaign{margin-top:22px}
+.campaign a{border-bottom:1px solid var(--rule);padding-bottom:3px}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:40px 60px}
+.ab .lead{font:400 21px/1.8 var(--serif);letter-spacing:.12em}
+.ab p+p{margin-top:16px}
+.ab div>p{color:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:34px;border-top:1px solid var(--rule)}
+.stats div{padding-top:18px}
+.stats b{display:block;font:300 28px/1 var(--sans);font-weight:300}
+.stats span{display:block;margin-top:8px;font-size:12px;color:var(--soft)}
+.ct{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.ct>div{background:var(--tile);padding:30px 26px;transition:background-color 1.4s ease}
+.ct p{margin-bottom:14px}
+
+/* careers keeps its own block; quiet it to match the page */
+#careers{background:transparent!important;color:var(--ink)!important;border-top:1px solid var(--rule)!important;margin:60px var(--pad) 0;padding:72px 0!important}
+#careers .careers-about,#careers .careers-lead{color:var(--soft)!important}
+#careers .careers-facts span{background:transparent!important;border-color:var(--rule)!important}
+#careers .careers-actions a{background:var(--ink)!important;color:var(--bg)!important;border:1px solid var(--ink)!important}
+#careers .careers-actions a+a{background:transparent!important;color:var(--ink)!important}
+#careers .careers-heading{font-family:var(--serif)!important;font-weight:400!important;font-size:28px!important;letter-spacing:.12em}
+
+.ft{display:grid;grid-template-columns:var(--side) 1fr 1fr 1fr;gap:40px;padding:80px var(--pad) calc(50px + env(safe-area-inset-bottom));border-top:1px solid var(--rule);margin-top:40px}
+.ft .s{display:block;margin-bottom:14px}
+.ft p,.ft li{font-size:12px;letter-spacing:.12em;line-height:2.1}
+.ft .staff{grid-column:2/-1;display:grid;grid-template-columns:1fr 1fr;gap:40px;border-top:1px solid var(--rule);padding-top:30px}
+.ft .staff a{border-bottom:1px solid var(--rule);font-size:12px}
+.ft .copy{grid-column:1/-1;font-size:11px}
+
+.mbar,.mnav{display:none}
+@media (max-width:1100px){.intro{grid-template-columns:1fr 1fr}.intro p.lead{grid-column:1/-1}.hr{gap:20px}}
+@media (max-width:899px){
+  :root{--hd:64px;--pad:16px;--gap:8px}
+  body{font-size:15px}
+  .hr{display:none}.burger{display:block}
+  .layout{grid-template-columns:1fr}
+  .side{display:none}
+  .field{grid-template-columns:1fr 1fr}
+  .hero{aspect-ratio:4/5;max-height:none}
+  .t4{aspect-ratio:3/4}
+  .t2{grid-column:1/-1;aspect-ratio:4/3}
+  .hero .foot{flex-direction:column;align-items:flex-start;gap:4px}
+  .intro{grid-template-columns:1fr;padding:36px 0 40px}
+  .intro p.lead,.ab .lead{font-size:18px}
+  .goods{grid-template-columns:1fr 1fr}
+  .pk,.ab,.ct{grid-template-columns:1fr}
+  .block{padding-top:56px;margin-top:30px}
+  #careers{margin:40px var(--pad) 0}
+  .ft{grid-template-columns:1fr 1fr;padding-top:60px;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .ft .staff{grid-column:1/-1;grid-template-columns:1fr}
+  .mbar{display:grid;grid-template-columns:1fr 1fr;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);border-top:1px solid var(--rule);padding:8px 16px calc(8px + env(safe-area-inset-bottom));gap:8px;transform:translateY(100%);transition:transform .4s}
+  .mbar.show{transform:none}
+  .mbar a{height:44px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ink)}
+  .mbar a.k{background:var(--ink);color:var(--bg)}
+  .mnav{display:block;position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;padding:calc(var(--hd) + 8px) var(--pad) 40px;transform:translateX(100%);visibility:hidden;transition:transform .5s cubic-bezier(.2,.7,.2,1),visibility 0s .5s}
+  .mnav.open{transform:none;visibility:visible;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+  .mnav .x{position:absolute;top:10px;right:6px;width:44px;height:44px;font-size:26px;font-weight:300}
+  .mnav section{margin-bottom:26px}.mnav .h{display:block;margin-bottom:10px}
+  .mnav li{font-size:13px;line-height:2.4}.mnav li::before{content:"•";margin-right:8px}
+  .mnav .note{display:block;font-size:13px;color:var(--soft);margin-top:6px}
+  .mnav .big{font:400 18px/1 var(--serif);letter-spacing:.24em;display:block;margin:4px 0 20px}
+  .mlang{display:flex;gap:18px;border-top:1px solid var(--rule);padding-top:18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
     <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
     <script>
@@ -371,586 +233,104 @@
       })();
     </script>
 </head>
-<body class="font-sans-cn text-gray-800 bg-houzy-cream">
+<body>
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <img src="favicon.svg" alt="HOUZY HOME" class="w-10 h-10 rounded-md flex-shrink-0">
-                    <div>
-                        <h1 class="font-serif-en text-xl font-semibold text-houzy-green tracking-wider">HOUZY</h1>
-                        <p class="text-xs text-gray-500 tracking-widest">HOME SOLUTIONS</p>
-                    </div>
-                </div>
-                
-                <!-- Desktop Menu -->
-                <div class="hidden xl:flex items-center space-x-5">
-                    <a href="#home" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_home">Home</a>
-                    <a href="#services" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_services">Services</a>
-                    <a href="#packages" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_packages">Packages</a>
-                    <a href="/collections.html" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_styles">Styles</a>
-                    <a href="/craft.html" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_craft">Craftsmanship</a>
-                    <a href="#about" class="text-gray-700 hover:text-houzy-green transition-colors" data-i18n="nav_about">About</a>
-                    <a href="#shop" class="text-houzy-gold font-semibold hover:text-houzy-green transition-colors" data-i18n="nav_shop">Shop</a>
-                    <a href="#contact" class="px-6 py-2 bg-houzy-green text-white hover:bg-houzy-green-light transition-colors rounded-sm" data-i18n="nav_book">Book</a>
-                    <a href="/portal/login.html" class="px-6 py-2 border border-houzy-green text-houzy-green hover:bg-houzy-green hover:text-white transition-colors rounded-sm text-sm" data-i18n="nav_portal">Customer Portal</a>
-                    <!-- Language Selector -->
-                    <div class="relative" id="lang-picker">
-                        <button onclick="toggleLangMenu()" class="flex items-center gap-1 text-xs text-gray-500 hover:text-houzy-green border border-gray-200 rounded px-2 py-1 transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-                            <span id="lang-label">EN</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="lang-menu" class="hidden absolute right-0 top-9 bg-white shadow-lg border border-gray-100 rounded-lg py-1 w-36 z-[100]">
-                            <button onclick="setLanguage('en')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">English</button>
-                            <button onclick="setLanguage('zh-CN')" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">简体中文</button>
-                            <button onclick="setLanguage('zh-TW')" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">繁體中文</button>
-                            <button onclick="setLanguage('ms')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">Bahasa Melayu</button>
-                            <button onclick="setLanguage('th')"    class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-gray-700">ภาษาไทย</button>
-                        </div>
-                    </div>
-                </div>
+<header class="hd">
+  <a class="mark" href="/"><img src="/favicon.svg" alt="" width="26" height="26">HOUZY HOME</a>
+  <nav class="hr s" aria-label="Main">
+    <div class="lang" id="lang-picker">
+      <button type="button" onclick="toggleLangMenu()" aria-haspopup="true"><span id="lang-label">EN</span> ▾</button>
+      <div id="lang-menu" class="hidden">
+        <button type="button" onclick="setLanguage('en')">English</button>
+        <button type="button" onclick="setLanguage('zh-CN')">简体中文</button>
+        <button type="button" onclick="setLanguage('zh-TW')">繁體中文</button>
+        <button type="button" onclick="setLanguage('ms')">Bahasa Melayu</button>
+        <button type="button" onclick="setLanguage('th')">ไทย</button>
+      </div>
+    </div>
+    <a href="https://houzyhomestore.com" target="_blank" rel="noopener" data-i18n="nav_shop">Shop</a>
+    <a href="https://wa.me/60105898786" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="/portal/login.html" data-i18n="nav_portal">Customer Portal</a>
+    <a href="#contact" data-i18n="nav_book">Book</a>
+  </nav>
+  <button class="burger" id="burger" type="button" aria-label="Menu" aria-controls="mnav"></button>
+</header>
 
-                <!-- Mobile Menu Button -->
-                <button class="xl:hidden text-gray-700" onclick="toggleMobileMenu()">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
+<div class="layout">
+  <aside class="side" id="side">
+    <section><a class="h" href="/collections.html" data-i18n="nav_styles">Styles</a>
+      <ul><li><a href="/collections.html">Hening <span data-i18n="h7_hening">静白</span></a></li><li><a href="/collections.html">Kayu <span data-i18n="h7_kayu">原木</span></a></li><li><a href="/collections.html">Krim <span data-i18n="h7_krim">奶油</span></a></li><li><a href="/collections.html">Senja <span data-i18n="h7_senja">暮金</span></a></li><li><a href="/collections.html">Serambi <span data-i18n="h7_serambi">廊下</span></a></li><li><a href="/collections.html">Batu <span data-i18n="h7_batu">石墨</span></a></li></ul></section>
+    <section><a class="h" href="/craft.html" data-i18n="nav_craft">Craftsmanship</a>
+      <ul><li><a href="/craft.html" data-i18n="h7_c1">10 build stages</a></li><li><a href="/craft.html" data-i18n="h7_c2">43 checkpoints</a></li></ul></section>
+    <section><a class="h" href="#packages" data-i18n="pkg_h2">Renovation Packages</a>
+      <ul><li><a href="#packages"><span data-i18n="pkg1_name">Standard</span> · RM 29,999</a></li><li><a href="#packages"><span data-i18n="pkg2_name">Premium</span> · RM 42,999</a></li><li><a href="#packages"><span data-i18n="pkg3_name">Luxury</span> · RM 59,999</a></li></ul>
+      <a class="note" href="/campaign/renewal-2026.html#calculator" data-i18n="campaign_title">Ready for a new home? Save 8% this season.</a></section>
+    <section><a class="h" href="#shop" data-i18n="h7_shop_h">Online Shop</a>
+      <ul><li><a href="https://houzyhomestore.com" target="_blank" rel="noopener" data-i18n="h7_all_plain">All products</a></li></ul></section>
+    <section><a class="h" href="#about" data-i18n="about_label">Our Story</a>
+      <ul><li><a href="#about" data-i18n="h7_a1">2023 · Started in Johor Bahru</a></li><li><a href="#about" data-i18n="h7_b3">20 years of full-home renovation</a></li></ul></section>
+    <a class="big" href="#contact" data-i18n="contact_h2">Book a Visit</a>
+  </aside>
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden xl:hidden bg-white border-t">
-            <div class="px-4 py-3 space-y-2">
-                <a href="#home" class="block py-2 text-gray-700" data-i18n="nav_home">Home</a>
-                <a href="#services" class="block py-2 text-gray-700" data-i18n="nav_services">Services</a>
-                <a href="#packages" class="block py-2 text-gray-700" data-i18n="nav_packages">Packages</a>
-                <a href="/collections.html" class="block py-2 text-gray-700" data-i18n="nav_styles">Styles</a>
-                <a href="/craft.html" class="block py-2 text-gray-700" data-i18n="nav_craft">Craftsmanship</a>
-                <a href="#about" class="block py-2 text-gray-700" data-i18n="nav_about">About</a>
-                <a href="#shop" class="block py-2 text-houzy-gold font-semibold" data-i18n="nav_shop">Shop</a>
-                <a href="#contact" class="block py-2 text-houzy-green font-medium" data-i18n="nav_book">Book</a>
-                <a href="/portal/login.html" class="block py-2 text-houzy-gold font-medium" data-i18n="nav_portal">Customer Portal</a>
-                <div class="pt-2 border-t flex flex-wrap gap-2">
-                    <button onclick="setLanguage('en');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">EN</button>
-                    <button onclick="setLanguage('zh-CN');toggleMobileMenu()" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">简体</button>
-                    <button onclick="setLanguage('zh-TW');toggleMobileMenu()" class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">繁體</button>
-                    <button onclick="setLanguage('ms');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">BM</button>
-                    <button onclick="setLanguage('th');toggleMobileMenu()"    class="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50">ไทย</button>
-                </div>
-            </div>
-        </div>
-    </nav>
+  <main class="field" id="home">
+    <a class="tile t-all hero photo-tile" href="#contact" id="hero">
+      <img class="photo" id="heroImg" alt="" sizes="(max-width:899px) 100vw, 75vw" fetchpriority="high">
+      <img class="line" id="heroLine" alt="" aria-hidden="true" sizes="(max-width:899px) 100vw, 75vw">
+      <h1 class="lab"><span data-i18n="h7_h1">A home worth living in, beyond the render</span><small data-i18n="h7_tag_sub">HOUZY HOME · One-stop home renovation, Johor Bahru</small></h1>
+      <div class="foot s"><span id="tagLine"></span><span id="status"></span></div>
+    </a>
 
+    <div class="intro">
+      <p class="lead" data-i18n-html="h7_lead">Design, materials and build —<br>one team, all the way home.</p>
+      <ul><li data-i18n="h7_b1">Materials direct from our Foshan factory</li><li data-i18n="h7_b2">10 build stages · 43 checkpoints</li><li data-i18n="h7_b3">20 years of full-home renovation</li></ul>
+      <p class="soft" data-i18n="h7_p">Visit our Mount Austin showroom: touch the materials, compare designs and talk budget before you decide.</p>
+    </div>
 
-    <section id="seasonal-campaign" aria-labelledby="campaign-title">
-      <div class="campaign-inner">
-        <div class="campaign-copy">
-          <span class="campaign-eyebrow" data-i18n="campaign_date">NOV 2026 — JAN 2027</span>
-          <h2 class="campaign-title" id="campaign-title" data-i18n="campaign_title">Ready for a new home? Save 8% this season.</h2>
-          <p class="campaign-description" data-i18n="campaign_description">A real materials factory, design and construction in one place. Eligible renovation works only.</p>
-        </div>
-        <div class="campaign-offer"><strong>8%</strong><small data-i18n="campaign_offer">ELIGIBLE WORKS</small></div>
-        <a class="campaign-cta" href="/campaign/renewal-2026.html#calculator"><span data-i18n="campaign_cta">See how much you save</span><span aria-hidden="true">↗</span></a>
+    <a class="tile t4 photo-tile" href="/collections.html"><img src="images/home/c3-600.webp" srcset="images/home/c3-600.webp 600w, images/home/c3-900.webp 900w" sizes="(max-width:899px) 50vw, 20vw" alt="" loading="lazy"><span class="lab"><span data-i18n="nav_styles">Styles</span><small data-i18n="h7_s_styles">6 collections</small></span></a>
+    <a class="tile t4 craft" href="/craft.html"><svg id="iso" viewBox="-185 -300 480 580" aria-hidden="true"></svg><span class="lab"><span data-i18n="nav_craft">Craftsmanship</span><small data-i18n="h7_b2">10 build stages · 43 checkpoints</small></span><span class="hint s" data-i18n="h7_hint">Take it apart →</span></a>
+    <a class="tile t4 photo-tile" href="#packages"><img src="images/home/t-kitchen-700.webp" alt="" loading="lazy"><span class="lab"><span data-i18n="pkg_h2">Renovation Packages</span><small data-i18n="h7_s_pkg">From RM 29,999</small></span></a>
+    <a class="tile t4 photo-tile" href="#about"><img src="images/home/t-living-700.webp" alt="" loading="lazy"><span class="lab"><span data-i18n="about_label">Our Story</span><small data-i18n="h7_s_about">Since 2023</small></span></a>
+
+    <section class="shop off" id="shop" aria-labelledby="shop-h">
+      <div class="top"><span class="h" id="shop-h" data-i18n="h7_shop_h">Online Shop</span><a class="more s" href="https://houzyhomestore.com" target="_blank" rel="noopener" data-i18n="h7_all">All products →</a></div>
+      <div class="goods" id="goods"></div>
+    </section>
+
+    <a class="tile t-all photo-tile" href="#contact" style="aspect-ratio:2.4/1"><img src="images/home/t-wide-1400.webp" srcset="images/home/t-wide-700.webp 700w, images/home/t-wide-1400.webp 1400w" sizes="(max-width:899px) 100vw, 75vw" alt="" loading="lazy"><span class="lab"><span data-i18n="contact_h2">Book a Visit</span><small data-i18n="h7_s_visit">Come and touch the materials for your home</small></span></a>
+    <a class="tile t2 photo-tile" href="https://houzyhomestore.com" target="_blank" rel="noopener"><img src="images/home/t-shop-1400.webp" srcset="images/home/t-shop-700.webp 700w, images/home/t-shop-1400.webp 1400w" sizes="(max-width:899px) 100vw, 38vw" alt="" loading="lazy"><span class="lab"><span data-i18n="h7_shop_h">Online Shop</span><small data-i18n="h7_s_shop">Shop online</small></span></a>
+    <a class="tile t2 photo-tile" href="/partner.html"><img src="images/home/t-partner-1400.webp" srcset="images/home/t-partner-700.webp 700w, images/home/t-partner-1400.webp 1400w" sizes="(max-width:899px) 100vw, 38vw" alt="" loading="lazy"><span class="lab"><span data-i18n="h7_partner">Partners</span><small data-i18n="partner_link">Partner with HOUZY</small></span></a>
+
+    <!-- Packages -->
+    <section class="block" id="packages" aria-labelledby="pkg-h">
+      <div class="bh"><h2 class="h" id="pkg-h" data-i18n="pkg_h2">Renovation Packages</h2><p class="soft" data-i18n="pkg_p">Transparent pricing, what you see is what you get</p></div>
+      <div class="pk">
+        <article><p class="s soft" data-i18n="pkg1_area">For 80m²</p><h3 data-i18n="pkg1_name">Standard Package</h3><p class="price">RM 29,999</p><p class="trad" data-i18n="pkg1_trad"></p><ul><li data-i18n="pkg1_l1"></li><li data-i18n="pkg1_l2"></li><li data-i18n="pkg1_l3"></li><li data-i18n="pkg1_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Standard%20Package" target="_blank" rel="noopener" data-i18n="pkg1_cta">Enquire</a></article>
+        <article><p class="s soft"><span data-i18n="pkg2_area">For 120m²</span> · <span data-i18n="pkg_popular">Most Popular</span></p><h3 data-i18n="pkg2_name">Premium Package</h3><p class="price">RM 42,999</p><p class="trad" data-i18n="pkg2_trad"></p><ul><li data-i18n="pkg2_l1"></li><li data-i18n="pkg2_l2"></li><li data-i18n="pkg2_l3"></li><li data-i18n="pkg2_l4"></li></ul><a class="btn k" href="https://wa.me/60105898786?text=Premium%20Package" target="_blank" rel="noopener" data-i18n="pkg2_cta">Book Now</a></article>
+        <article><p class="s soft" data-i18n="pkg3_area">For 150m²</p><h3 data-i18n="pkg3_name">Luxury Package</h3><p class="price">RM 59,999</p><p class="trad" data-i18n="pkg3_trad"></p><ul><li data-i18n="pkg3_l1"></li><li data-i18n="pkg3_l2"></li><li data-i18n="pkg3_l3"></li><li data-i18n="pkg3_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Luxury%20Package" target="_blank" rel="noopener" data-i18n="pkg3_cta">Enquire</a></article>
+      </div>
+      <p class="soft s campaign"><a href="/campaign/renewal-2026.html#calculator"><span data-i18n="campaign_title">Ready for a new home? Save 8% this season.</span> <span data-i18n="campaign_cta">See how much you save</span> →</a></p>
+    </section>
+
+    <!-- About -->
+    <section class="block" id="about" aria-labelledby="about-h">
+      <div class="bh"><h2 class="h" id="about-h" data-i18n="about_label">Our Story</h2></div>
+      <div class="ab">
+        <p class="lead" data-i18n="about_h2">From the home you imagine to the life you live</p>
+        <div><p data-i18n="about_p1"></p><p data-i18n="about_p2"></p><p data-i18n="about_p3"></p>
+          <div class="stats"><div><b>20</b><span data-i18n="about_stat1"></span></div><div><b>3</b><span data-i18n="about_stat2"></span></div><div><b>2023</b><span data-i18n="about_stat3"></span></div></div></div>
       </div>
     </section>
 
-    <!-- Hero Section -->
-    <section id="home" class="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <!-- Background Image -->
-        <div class="absolute inset-0 z-0">
-            <div class="absolute inset-0 z-10" style="background: linear-gradient(90deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.12) 42%, rgba(0,0,0,0.02) 100%);"></div>
-            <video id="hero-video" class="w-full h-full object-cover" autoplay muted loop playsinline preload="auto" poster="videos/hero-poster.jpg">
-                <source src="videos/hero-bedroom.mp4" type="video/mp4">
-                <img src="videos/hero-poster.jpg" alt="HOUZY HOME" class="w-full h-full object-cover">
-            </video>
-        </div>
-
-        <!-- Content -->
-        <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
-            <div class="max-w-2xl animate-fade-in">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-4 font-medium" data-i18n="hero_tagline">PREMIUM HOME SOLUTIONS</p>
-                <h1 class="font-serif-cn text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight" data-i18n-html="hero_h1">A home worth living in,<br><span class="text-houzy-gold">beyond the render.</span></h1>
-                <p class="font-serif-en text-xl md:text-2xl italic mb-4 text-houzy-gold-light" data-i18n="hero_slogan">Give life room to imagine.</p>
-                <p class="text-lg md:text-xl text-gray-200 mb-2 leading-relaxed" data-i18n="hero_sub1">Touch the materials. See the choices. Know the cost.</p>
-                <p class="text-base text-gray-300 mb-8 leading-relaxed" data-i18n="hero_sub2">Design, materials and renovation with one team in Johor Bahru.</p>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="https://houzy-home-solutions.myshopify.com/zh-hans" target="_blank" rel="noopener" class="px-8 py-4 bg-white text-houzy-green font-semibold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_shop">Shop Now</a>
-                    <a href="https://wa.me/60105898786" target="_blank"
-                       class="px-8 py-4 border-2 border-white text-white font-semibold hover:bg-white hover:text-houzy-green transition-all text-center rounded-sm" data-i18n="hero_btn_wa">WhatsApp Us</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sound Toggle -->
-        <button id="hero-sound" type="button" onclick="toggleHeroSound()" aria-label="开启或关闭视频声音" title="开启/关闭声音"
-                class="absolute bottom-8 right-6 z-30 w-11 h-11 rounded-full bg-black/35 hover:bg-black/55 text-white flex items-center justify-center backdrop-blur-sm transition-all">
-            <svg id="hero-snd-on" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>
-            <svg id="hero-snd-off" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 4l16 16"/></svg>
-        </button>
-
-        <!-- Scroll Indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
-            </svg>
-        </div>
+    <!-- Contact -->
+    <section class="block" id="contact" aria-labelledby="contact-h">
+      <div class="bh"><h2 class="h" id="contact-h" data-i18n="contact_h2">Book a Visit</h2><p class="soft" data-i18n="contact_p">Visit our showroom to start your dream home journey</p></div>
+      <div class="ct">
+        <div><p class="s soft" data-i18n="h7_f_showroom">Showroom</p><p>141, Jalan Mutiara Emas 10/19,<br>Taman Mount Austin, 81100 Johor Bahru,<br>Johor Darul Takzim, Malaysia</p><p data-i18n="h7_hours">Daily 10:00 – 19:30</p><a class="btn" href="https://maps.google.com/?q=141+Jalan+Mutiara+Emas+10/19+Taman+Mount+Austin+81100+Johor+Bahru+Johor+Malaysia" target="_blank" rel="noopener" data-i18n="map_cta">Open in Google Maps</a></div>
+        <div><p class="s soft">WhatsApp</p><p><a href="https://wa.me/60105898786" target="_blank" rel="noopener">+60 10-589 8786</a><br><a href="https://wa.me/60168208891" target="_blank" rel="noopener">初文 · +60 16-820 8891</a></p><a class="btn k" href="https://wa.me/60105898786" target="_blank" rel="noopener" data-i18n="nav_book">Book</a></div>
+      </div>
     </section>
-
-    <!-- Services Section -->
-    <section id="services" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="svc_label">OUR SERVICES</p>
-                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="svc_h2">Four Core Services</h2>
-                <p class="font-serif-en text-lg text-gray-500 italic mb-4" data-i18n="svc_sub_en">Four Core Services</p>
-                <p class="text-gray-600 max-w-2xl mx-auto" data-i18n="svc_p">From inspiration to completion, professional guidance throughout</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Service 1 -->
-                <div class="group p-8 bg-houzy-cream hover:bg-houzy-green transition-all duration-300 hover-lift cursor-pointer">
-                    <div class="w-16 h-16 bg-houzy-green group-hover:bg-houzy-gold rounded-full flex items-center justify-center mb-6 transition-colors">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc1_h">Design Inspiration</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc1_sub">Design Inspiration</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc1_p">One-on-one design consultation tailored to your lifestyle</p>
-                </div>
-
-                <!-- Service 2 -->
-                <div class="group p-8 bg-houzy-cream hover:bg-houzy-green transition-all duration-300 hover-lift cursor-pointer">
-                    <div class="w-16 h-16 bg-houzy-green group-hover:bg-houzy-gold rounded-full flex items-center justify-center mb-6 transition-colors">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc2_h">Material Selection</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc2_sub">Material Selection</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc2_p">Premium materials sourced globally, one-stop selection for tiles, cabinets & bathrooms</p>
-                </div>
-
-                <!-- Service 3 -->
-                <div class="group p-8 bg-houzy-cream hover:bg-houzy-green transition-all duration-300 hover-lift cursor-pointer">
-                    <div class="w-16 h-16 bg-houzy-green group-hover:bg-houzy-gold rounded-full flex items-center justify-center mb-6 transition-colors">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc3_h">Professional Support</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc3_sub">Professional Support</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc3_p">Dedicated project manager, APP progress tracking, one-tap warranty and 45-day delivery commitment</p>
-                </div>
-
-                <!-- Service 4 -->
-                <div class="group p-8 bg-houzy-cream hover:bg-houzy-green transition-all duration-300 hover-lift cursor-pointer">
-                    <div class="w-16 h-16 bg-houzy-green group-hover:bg-houzy-gold rounded-full flex items-center justify-center mb-6 transition-colors">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold text-houzy-green group-hover:text-white mb-1" data-i18n="svc4_h">One-Stop Solution</h3>
-                    <p class="font-serif-en text-sm text-gray-400 group-hover:text-gray-300 mb-3 italic" data-i18n="svc4_sub">One-Stop Solution</p>
-                    <p class="text-gray-600 group-hover:text-gray-300 text-sm leading-relaxed" data-i18n="svc4_p">Design + Materials + Construction + Furnishing, move-in ready</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-
-    <!-- Packages Section -->
-    <section id="packages" class="py-20 bg-houzy-cream">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="pkg_label">PACKAGES</p>
-                <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="pkg_h2">Renovation Packages</h2>
-                <p class="font-serif-en text-lg text-gray-500 italic mb-4" data-i18n="pkg_h2_en">Renovation Packages</p>
-                <p class="text-gray-600 max-w-2xl mx-auto" data-i18n="pkg_p">Transparent pricing, what you see is what you get</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Essential - RM29,999 -->
-                <div class="bg-white rounded-lg overflow-hidden shadow-lg hover-lift">
-                    <div class="p-8">
-                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1" data-i18n="pkg1_name">Standard Package</h3>
-                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="pkg1_name_en">Standard Package</p>
-                        <p class="text-gray-500 text-sm mb-2" data-i18n="pkg1_area">For 80m²</p>
-                        <div class="mb-6">
-                            <span class="text-4xl font-bold text-houzy-green">RM29,999</span>
-                        </div>
-                        <ul class="text-gray-600 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l1">Full House Tiles</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l2">3m Kitchen Cabinet</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l3">1 Bathroom Set</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg1_l4">Hardware & Accessories</span></li>
-                        </ul>
-                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg1_trad">Traditional ≈ RM 35,000–50,000</p>
-                        <a href="#contact" class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm" data-i18n="pkg1_cta">Enquire</a>
-                    </div>
-                </div>
-
-                <!-- Premium - RM42,999 (Featured) -->
-                <div class="bg-houzy-green rounded-lg overflow-hidden shadow-xl hover-lift transform scale-105">
-                    <div class="bg-houzy-gold text-houzy-green text-center py-2 text-sm font-semibold" data-i18n="pkg_popular">Most Popular</div>
-                    <div class="p-8 text-white">
-                        <h3 class="font-serif-cn text-2xl font-bold mb-1" data-i18n="pkg2_name">Premium Package</h3>
-                        <p class="font-serif-en text-gray-300 text-sm mb-2 italic" data-i18n="pkg2_name_en">Premium Package</p>
-                        <p class="text-gray-300 text-sm mb-2" data-i18n="pkg2_area">For 120m²</p>
-                        <div class="mb-6">
-                            <span class="text-4xl font-bold text-houzy-gold">RM42,999</span>
-                        </div>
-                        <ul class="text-gray-300 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l1">Floor & Wall Tiles</span></li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l2">Kitchen Cabinet</span></li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l3">2 Bathroom Sets</span></li>
-                            <li class="flex items-start"><span class="text-houzy-gold mr-2">✓</span> <span data-i18n="pkg2_l4">Full Hardware Set</span></li>
-                        </ul>
-                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg2_trad">Traditional ≈ RM 55,000–80,000</p>
-                        <a href="#contact" class="block w-full py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm" data-i18n="pkg2_cta">Book Now</a>
-                    </div>
-                </div>
-
-                <!-- Luxury - RM59,999 -->
-                <div class="bg-white rounded-lg overflow-hidden shadow-lg hover-lift">
-                    <div class="p-8">
-                        <h3 class="font-serif-cn text-2xl font-bold text-houzy-green mb-1" data-i18n="pkg3_name">Luxury Package</h3>
-                        <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="pkg3_name_en">Luxury Package</p>
-                        <p class="text-gray-500 text-sm mb-2" data-i18n="pkg3_area">For 150m²</p>
-                        <div class="mb-6">
-                            <span class="text-4xl font-bold text-houzy-green">RM59,999</span>
-                        </div>
-                        <ul class="text-gray-600 text-sm mb-8 space-y-2">
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l1">Upgraded Tiles & Kitchen</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l2">2 Bathroom Sets</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l3">Premium Hardware</span></li>
-                            <li class="flex items-start"><span class="text-green-500 mr-2">✓</span> <span data-i18n="pkg3_l4">Full Coverage</span></li>
-                        </ul>
-                        <p class="text-xs text-gray-400 mb-4" data-i18n="pkg3_trad">Traditional ≈ RM 80,000–120,000</p>
-                        <a href="#contact" class="block w-full py-3 text-center border-2 border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm" data-i18n="pkg3_cta">Enquire</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Shop Section -->
-    <section id="shop" class="py-20 bg-houzy-dark text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="shop_label">ONLINE STORE</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="shop_h2">Shop Online</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="shop_h2_en">Shop Online</p>
-                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="shop_p">Premium materials delivered to your door</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                <!-- Feature 1 -->
-                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f1_h">Authentic Products</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f1_sub">Authentic Products</p>
-                    <p class="text-gray-400 text-sm" data-i18n="shop_f1_p">Brand direct supply, guaranteed authentic</p>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f2_h">Fast Delivery</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f2_sub">Fast Delivery</p>
-                    <p class="text-gray-400 text-sm" data-i18n="shop_f2_p">Same-day delivery within Johor Bahru</p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="text-center p-8 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                    <div class="w-16 h-16 bg-houzy-gold rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-8 h-8 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-serif-cn text-xl font-semibold mb-2" data-i18n="shop_f3_h">Expert Support</h3>
-                    <p class="font-serif-en text-houzy-gold text-sm italic mb-3" data-i18n="shop_f3_sub">Expert Support</p>
-                    <p class="text-gray-400 text-sm" data-i18n="shop_f3_p">Questions about materials? WhatsApp us anytime</p>
-                </div>
-            </div>
-
-
-            <!-- CTA Buttons -->
-            <div class="text-center">
-                <p class="text-gray-400 mb-8 text-sm" data-i18n="shop_cta_p">Choose your preferred way to shop</p>
-                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                    <a href="https://houzy-home-solutions.myshopify.com/zh-hans" target="_blank"
-                       class="w-full sm:w-auto px-12 py-5 bg-houzy-gold text-houzy-green text-lg font-bold hover:bg-houzy-gold-light transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                        <span data-i18n="shop_btn1">Visit Shop</span>
-                    </a>
-                    <span class="text-gray-600 hidden sm:block" data-i18n="shop_or">or</span>
-                    <a href="https://wa.me/60105898786" target="_blank"
-                       class="w-full sm:w-auto px-12 py-5 border-2 border-houzy-gold text-houzy-gold text-lg font-bold hover:bg-houzy-gold hover:text-houzy-green transition-all text-center rounded-sm hover-lift flex items-center justify-center gap-3">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                        </svg>
-                        <span data-i18n="shop_btn2">WhatsApp Enquiry</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 6 Product Categories (产品中心) -->
-            <div class="text-center mb-10">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">OUR RANGE</p>
-                <h3 class="font-serif-cn text-3xl font-bold mb-1">6 大产品品类</h3>
-                <p class="font-serif-en text-base text-gray-400 italic">6 Product Categories · Whole-Home Building Materials</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('images/products/aluminium-kitchen.jpg')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">01</span><h3 class="font-serif-cn text-lg font-bold">全铝合金橱柜</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Full-Aluminium Kitchen Cabinetry</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">为南洋潮湿气候而生——全铝一体成型，告别发霉、虫蛀与甲醛，一柜用一生。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>全铝材质 · 防潮防蛀</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>零甲醛 · E1 级环保</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>耐用不变形不褪色</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>L型 / U型 / 一字 / 岛台</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">防潮</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">零甲醛</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">易洁</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">定制</span></div>
-                        <button onclick="pgGo('橱柜')" class="w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">查看图集 View Gallery</button>
-                    </div>
-                </div>
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1620626011761-996317702149?w=800&q=80')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">02</span><h3 class="font-serif-cn text-lg font-bold">卫浴五金</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Bathroom Hardware</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">花洒、龙头、毛巾架、置物——高级感藏在指尖触及的细节里，优质铜体与精密阀芯，经久耐用。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>优质铜体 / 不锈钢 · 耐腐蚀</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>精密陶瓷阀芯 · 不滴水</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>多层电镀 · 持久光泽</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>整套搭配 · 风格统一</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">铜体</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">陶瓷阀芯</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">耐腐蚀</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">整套</span></div>
-                        <button onclick="pgGo('卫浴')" class="w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">查看图集 View Gallery</button>
-                    </div>
-                </div>
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">03</span><h3 class="font-serif-cn text-lg font-bold">淋浴房</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Shower Enclosures</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">干湿分离，让浴室清爽有序。钻石型、弧形、一字型、方形、步入式，总有一款贴合你的空间。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>钢化玻璃 + 防爆膜</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>五金顺滑静音</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>易洁纳米涂层</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>多形态 · 任意布局</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">钢化玻璃</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">干湿分离</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">易洁</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">多形态</span></div>
-                        <button onclick="pgGo('卫浴')" class="w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">查看图集 View Gallery</button>
-                    </div>
-                </div>
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&q=80')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">04</span><h3 class="font-serif-cn text-lg font-bold">马桶 · 智能卫浴</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Toilets & Smart Sanitary</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">智能、节水、壁挂、分体、一体——把洁净、舒适与科技，带进每一天的生活。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>强力冲洗 · 节水</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>智能即热 · 除菌 · 烘干</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>釉面易洁</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>壁挂 / 分体 / 一体多选</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">智能</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">节水</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">即热</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">易洁</span></div>
-                        <button onclick="pgGo('卫浴')" class="w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">查看图集 View Gallery</button>
-                    </div>
-                </div>
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">05</span><h3 class="font-serif-cn text-lg font-bold">瓷砖</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Tiles · Marble · Stone · Wood · Concrete</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">大理石纹、洞石、木纹、水泥纹，750×1500mm 大板，瓷化吸水率 ≤ 0.5%，客厅、厨卫、户外全空间适配。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>大板规格 · 缝隙少</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>瓷化 · 吸水率 ≤ 0.5%</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>防滑耐磨</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>多纹理 · 大理石/木纹/水泥</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">大板</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">低吸水</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">防滑</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">全空间</span></div>
-                        <button onclick="pgGo('瓷砖')" class="w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">查看图集 View Gallery</button>
-                    </div>
-                </div>
-                <div class="bg-white/5 rounded-lg overflow-hidden hover:bg-white/10 transition-all hover-lift flex flex-col">
-                    <div class="h-44 bg-cover bg-center" style="background-image:url('https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80')"></div>
-                    <div class="p-6 flex flex-col flex-1">
-                        <div class="flex items-baseline gap-2 mb-1"><span class="font-serif-en text-houzy-gold text-sm">06</span><h3 class="font-serif-cn text-lg font-bold">铝合金门窗</h3></div>
-                        <p class="font-serif-en text-houzy-gold text-xs italic mb-3">Aluminium Doors & Windows</p>
-                        <p class="text-gray-300 text-sm mb-3 leading-relaxed">推拉、平开、折叠、上悬、落地、飘窗——断桥隔热与 LowE 玻璃，隔音、节能、抗风耐候。</p>
-                        <ul class="text-gray-400 text-xs space-y-1 mb-4"><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>断桥铝型材 · 隔热</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>LowE 中空玻璃 · 节能</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>多道密封 · 静音</span></li><li class="flex gap-1.5"><span class="text-houzy-gold">◆</span><span>多系统 · 推拉/平开/折叠/飘窗</span></li></ul>
-                        <div class="flex flex-wrap gap-1.5 mb-4 mt-auto"><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">断桥</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">LowE</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">静音</span><span class="px-2 py-0.5 border border-houzy-gold/40 text-houzy-gold text-[10px] rounded-full">抗风</span></div>
-                        <a href="https://wa.me/60105898786" target="_blank" class="block w-full py-2.5 border border-houzy-gold text-houzy-gold text-sm text-center hover:bg-houzy-gold hover:text-houzy-green transition-all rounded-sm">WhatsApp 咨询 Enquire</a>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- Filterable Product Gallery (分类标签页 + 子筛选) -->
-            <!-- Product Gallery Modal (点卡片弹出) -->
-            <div id="prodgal-modal" class="fixed inset-0 z-[150] hidden bg-houzy-dark overflow-y-auto" onclick="if(event.target===this)pgClose()">
-                <button onclick="pgClose()" class="fixed top-5 right-5 z-[160] w-11 h-11 rounded-full bg-white/10 hover:bg-houzy-gold hover:text-houzy-green text-white text-2xl leading-none flex items-center justify-center transition-colors">&times;</button>
-            <div id="prodgal" class="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-                <div class="text-center mb-8">
-                    <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2">PRODUCT GALLERY</p>
-                    <h3 class="font-serif-cn text-3xl font-bold mb-1">产品图库 · 分类筛选</h3>
-                    <p class="font-serif-en text-base text-gray-400 italic">Browse by Category · Style · Space</p>
-                </div>
-                <div id="pg-cats" class="flex flex-wrap justify-center gap-2 mb-3"></div>
-                <div id="pg-spaces" class="flex flex-wrap justify-center gap-2 mb-6"></div>
-                <div id="pg-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
-                <p id="pg-empty" class="text-center text-gray-500 text-sm py-10 hidden">该分类图片整理中，敬请期待…</p>
-            </div>
-            </div>
-            <script>
-            const PG_DATA=[{s:"images/products/aluminium-kitchen.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/kitchen-modern.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/kitchen-chinese.jpg",c:"橱柜",t:"新中式",p:"厨房"},{s:"images/products/kitchen-industrial.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/kitchen-nordic.jpg",c:"橱柜",t:"北欧",p:"厨房"},{s:"images/products/kitchen-luxury.jpg",c:"橱柜",t:"轻奢",p:"厨房"},{s:"images/products/cabinets/cab-001.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-002.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-003.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-004.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-005.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-006.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-007.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-008.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-009.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-010.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-011.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-012.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-013.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-014.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-015.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-016.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-017.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-018.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-019.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-020.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-021.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-022.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-023.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-024.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-025.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-026.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-027.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-028.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-029.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-030.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-031.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-032.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-033.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-034.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-035.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-036.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-037.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-038.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-039.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-040.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-041.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-042.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-043.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/products/cabinets/cab-044.jpg",c:"橱柜",t:"现代",p:"厨房"},{s:"images/products/cabinets/cab-045.jpg",c:"橱柜",t:"木色",p:"厨房"},{s:"images/products/cabinets/cab-046.jpg",c:"橱柜",t:"工业",p:"厨房"},{s:"images/tiles/thumb/V1FC126001Y-1.webp",full:"images/tiles/full/V1FC126001Y-1.webp",cap:"V1FC126001Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126002Y-1.webp",full:"images/tiles/full/V1FC126002Y-1.webp",cap:"V1FC126002Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126003Y-1.webp",full:"images/tiles/full/V1FC126003Y-1.webp",cap:"V1FC126003Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126003Y-2.webp",full:"images/tiles/full/V1FC126003Y-2.webp",cap:"V1FC126003Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126005Y-1.webp",full:"images/tiles/full/V1FC126005Y-1.webp",cap:"V1FC126005Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126005Y-2.webp",full:"images/tiles/full/V1FC126005Y-2.webp",cap:"V1FC126005Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126006Y-1.webp",full:"images/tiles/full/V1FC126006Y-1.webp",cap:"V1FC126006Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126006Y-2.webp",full:"images/tiles/full/V1FC126006Y-2.webp",cap:"V1FC126006Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126007Y-1.webp",full:"images/tiles/full/V1FC126007Y-1.webp",cap:"V1FC126007Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126007Y-2.webp",full:"images/tiles/full/V1FC126007Y-2.webp",cap:"V1FC126007Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126012Y-1.webp",full:"images/tiles/full/V1FC126012Y-1.webp",cap:"V1FC126012Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126013Y-1.webp",full:"images/tiles/full/V1FC126013Y-1.webp",cap:"V1FC126013Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126020Y-1.webp",full:"images/tiles/full/V1FC126020Y-1.webp",cap:"V1FC126020Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-1.webp",full:"images/tiles/full/V1FC126021Y-1.webp",cap:"V1FC126021Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-2.webp",full:"images/tiles/full/V1FC126021Y-2.webp",cap:"V1FC126021Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-3.webp",full:"images/tiles/full/V1FC126021Y-3.webp",cap:"V1FC126021Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-M1-1.webp",full:"images/tiles/full/V1FC126021Y-M1-1.webp",cap:"V1FC126021Y-M1 · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-M1-2.webp",full:"images/tiles/full/V1FC126021Y-M1-2.webp",cap:"V1FC126021Y-M1 · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-M1-3.webp",full:"images/tiles/full/V1FC126021Y-M1-3.webp",cap:"V1FC126021Y-M1 · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126021Y-M2-1.webp",full:"images/tiles/full/V1FC126021Y-M2-1.webp",cap:"V1FC126021Y-M2 · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126023Y-1.webp",full:"images/tiles/full/V1FC126023Y-1.webp",cap:"V1FC126023Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC126023Y-2.webp",full:"images/tiles/full/V1FC126023Y-2.webp",cap:"V1FC126023Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157001Y-1.webp",full:"images/tiles/full/V1FC157001Y-1.webp",cap:"V1FC157001Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157001Y-2.webp",full:"images/tiles/full/V1FC157001Y-2.webp",cap:"V1FC157001Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157002Y-1.webp",full:"images/tiles/full/V1FC157002Y-1.webp",cap:"V1FC157002Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157002Y-2.webp",full:"images/tiles/full/V1FC157002Y-2.webp",cap:"V1FC157002Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157003Y-1.webp",full:"images/tiles/full/V1FC157003Y-1.webp",cap:"V1FC157003Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157003Y-2.webp",full:"images/tiles/full/V1FC157003Y-2.webp",cap:"V1FC157003Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157005Y-1.webp",full:"images/tiles/full/V1FC157005Y-1.webp",cap:"V1FC157005Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157005Y-2.webp",full:"images/tiles/full/V1FC157005Y-2.webp",cap:"V1FC157005Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157006Y-1.webp",full:"images/tiles/full/V1FC157006Y-1.webp",cap:"V1FC157006Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157006Y-2.webp",full:"images/tiles/full/V1FC157006Y-2.webp",cap:"V1FC157006Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157007Y-1.webp",full:"images/tiles/full/V1FC157007Y-1.webp",cap:"V1FC157007Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157007Y-2.webp",full:"images/tiles/full/V1FC157007Y-2.webp",cap:"V1FC157007Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157012Y-1.webp",full:"images/tiles/full/V1FC157012Y-1.webp",cap:"V1FC157012Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157012Y-2.webp",full:"images/tiles/full/V1FC157012Y-2.webp",cap:"V1FC157012Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157013Y-1.webp",full:"images/tiles/full/V1FC157013Y-1.webp",cap:"V1FC157013Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157013Y-2.webp",full:"images/tiles/full/V1FC157013Y-2.webp",cap:"V1FC157013Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157020Y-1.webp",full:"images/tiles/full/V1FC157020Y-1.webp",cap:"V1FC157020Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157020Y-2.webp",full:"images/tiles/full/V1FC157020Y-2.webp",cap:"V1FC157020Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157020Y-3.webp",full:"images/tiles/full/V1FC157020Y-3.webp",cap:"V1FC157020Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157021Y-1.webp",full:"images/tiles/full/V1FC157021Y-1.webp",cap:"V1FC157021Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157023Y-1.webp",full:"images/tiles/full/V1FC157023Y-1.webp",cap:"V1FC157023Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1FC157023Y-2.webp",full:"images/tiles/full/V1FC157023Y-2.webp",cap:"V1FC157023Y · 效果实景",c:"瓷砖",t:"柔光面",p:"实景"},{s:"images/tiles/thumb/V1RS12601Y-1.webp",full:"images/tiles/full/V1RS12601Y-1.webp",cap:"V1RS12601Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS12603Y-1.webp",full:"images/tiles/full/V1RS12603Y-1.webp",cap:"V1RS12603Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS12603Y-2.webp",full:"images/tiles/full/V1RS12603Y-2.webp",cap:"V1RS12603Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS12616Y-1.webp",full:"images/tiles/full/V1RS12616Y-1.webp",cap:"V1RS12616Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS12616Y-2.webp",full:"images/tiles/full/V1RS12616Y-2.webp",cap:"V1RS12616Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15701Y-1.webp",full:"images/tiles/full/V1RS15701Y-1.webp",cap:"V1RS15701Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15701Y-2.webp",full:"images/tiles/full/V1RS15701Y-2.webp",cap:"V1RS15701Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15701Y-3.webp",full:"images/tiles/full/V1RS15701Y-3.webp",cap:"V1RS15701Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15702Y-1.webp",full:"images/tiles/full/V1RS15702Y-1.webp",cap:"V1RS15702Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15702Y-2.webp",full:"images/tiles/full/V1RS15702Y-2.webp",cap:"V1RS15702Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15713Y-1.webp",full:"images/tiles/full/V1RS15713Y-1.webp",cap:"V1RS15713Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/V1RS15713Y-2.webp",full:"images/tiles/full/V1RS15713Y-2.webp",cap:"V1RS15713Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS12602Y-1.webp",full:"images/tiles/full/VIRS12602Y-1.webp",cap:"VIRS12602Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS15703Y-1.webp",full:"images/tiles/full/VIRS15703Y-1.webp",cap:"VIRS15703Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS15703Y-2.webp",full:"images/tiles/full/VIRS15703Y-2.webp",cap:"VIRS15703Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS15703Y-3.webp",full:"images/tiles/full/VIRS15703Y-3.webp",cap:"VIRS15703Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS15703Y-4.webp",full:"images/tiles/full/VIRS15703Y-4.webp",cap:"VIRS15703Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"},{s:"images/tiles/thumb/VIRS15716Y-1.webp",full:"images/tiles/full/VIRS15716Y-1.webp",cap:"VIRS15716Y · 效果实景",c:"瓷砖",t:"岩面",p:"实景"}];
-            const PG_CATS=["橱柜","卫浴","瓷砖","衣柜","门窗"];
-            let pgCat="橱柜", pgStyle="全部", pgSpace="全部";
-            function pgChip(label,active,onclick){return `<button onclick="${onclick}" class="px-4 py-1.5 text-sm rounded-full border transition-all ${active?'bg-houzy-gold text-houzy-green border-houzy-gold font-semibold':'border-white/20 text-gray-300 hover:border-houzy-gold hover:text-houzy-gold'}">${label}</button>`;}
-            function pgSetCat(c){pgCat=c;pgStyle="全部";pgSpace="全部";pgRender();}
-            function pgSetStyle(x){pgStyle=x;pgRender();}
-            function pgSetSpace(x){pgSpace=x;pgRender();}
-            function pgRender(){
-                const inCat=PG_DATA.filter(d=>d.c===pgCat);
-                const styles=["全部",...Array.from(new Set(inCat.map(d=>d.t)))];
-                const spaces=["全部",...Array.from(new Set(inCat.map(d=>d.p)))];
-                document.getElementById("pg-cats").innerHTML=PG_CATS.map(c=>pgChip(c+(PG_DATA.some(d=>d.c===c)?"":" ·待补"),c===pgCat,`pgSetCat('${c}')`)).join("");
-                document.getElementById("pg-spaces").innerHTML= spaces.length>2? '<span class="text-gray-500 text-xs self-center mr-1">空间</span>'+spaces.map(x=>pgChip(x,x===pgSpace,`pgSetSpace('${x}')`)).join(""):"";
-                const list=inCat.filter(d=>(pgStyle==="全部"||d.t===pgStyle)&&(pgSpace==="全部"||d.p===pgSpace));
-                const grid=document.getElementById("pg-grid"), empty=document.getElementById("pg-empty");
-                if(!list.length){grid.innerHTML="";empty.classList.remove("hidden");return;}
-                empty.classList.add("hidden");
-                grid.innerHTML=list.map((d,i)=>`<div onclick="pgOpen(${i})" class="group relative aspect-square overflow-hidden rounded-lg cursor-pointer bg-white/5"><img loading="lazy" src="${d.s}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"><div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity"><span class="text-white text-[11px]">${d.t} · ${d.p}</span></div></div>`).join("");
-                window.__pgList=list;
-            }
-            function pgOpen(i){const list=window.__pgList||[];if(!list.length)return;galleries._pg={title:pgCat+" · "+pgStyle,subtitle:list.length+" 张 · 点击或方向键浏览",images:list.map(d=>({src:d.full||d.s,thumb:d.s,caption:d.cap||(d.t+" · "+d.p)}))};openGallery("_pg");currentIndex=i;renderGallery();}
-            function pgGo(c){pgSetCat(c);var m=document.getElementById("prodgal-modal");if(m){m.classList.remove("hidden");document.body.style.overflow="hidden";}}
-            function pgClose(){var m=document.getElementById("prodgal-modal");if(m)m.classList.add("hidden");document.body.style.overflow="";}
-            document.addEventListener("DOMContentLoaded",pgRender);
-            </script>
-
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
-                    <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="about_label">ABOUT US</p>
-                    <h2 class="font-serif-cn text-4xl font-bold text-houzy-green mb-2" data-i18n="about_h2">From the home you imagine to the life you live</h2>
-                    <p class="font-serif-en text-lg text-gray-500 italic mb-6" data-i18n="about_h2_en">About HOUZY HOME</p>
-                    <p class="text-gray-600 leading-relaxed mb-6" data-i18n="about_p1">A home is felt in the everyday moments: a kitchen that makes mornings easier, storage that gives everyone room, and a place you look forward to returning to. Those moments start with choices you can understand and make for yourself.</p>
-                    <p class="text-gray-600 leading-relaxed mb-6" data-i18n="about_p2">HOUZY HOME began in Johor Bahru in 2023, drawing on 20 years of whole-home project experience from a China-based company whose team has worked across Guangzhou, Shenzhen and Hong Kong.</p>
-                    <p class="text-gray-600 leading-relaxed mb-8" data-i18n="about_p3">At our showroom, you can touch materials, compare options and talk through your budget before deciding. We bring together Foshan factory sourcing and materials suited to each project, then guide the work from design and construction to handover and aftercare.</p>
-                    <div class="grid grid-cols-3 gap-6 text-center">
-                        <div>
-                            <div class="text-3xl font-bold text-houzy-green mb-1">20</div>
-                            <div class="text-sm text-gray-500" data-i18n="about_stat1">Years of experience</div>
-                        </div>
-                        <div>
-                            <div class="text-3xl font-bold text-houzy-green mb-1">3</div>
-                            <div class="text-sm text-gray-500" data-i18n="about_stat2">Guangzhou · Shenzhen · Hong Kong</div>
-                        </div>
-                        <div>
-                            <div class="text-3xl font-bold text-houzy-green mb-1">2023</div>
-                            <div class="text-sm text-gray-500" data-i18n="about_stat3">Southeast Asia chapter</div>
-                        </div>
-                    </div>
-                    <a href="/partner.html" class="inline-flex mt-8 px-6 py-3 border border-houzy-green text-houzy-green font-semibold hover:bg-houzy-green hover:text-white transition-colors rounded-sm" data-i18n="partner_cta">Explore partnership ↗</a>
-                </div>
-                <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80"
-                         alt="现代家居空间设计示意"
-                         class="rounded-lg shadow-2xl">
-                    <div class="absolute -bottom-6 -left-6 bg-houzy-green text-white p-6 rounded-lg">
-                         <p class="font-serif-cn text-lg italic" data-i18n="about_quote">“Give life room to imagine.”</p>
-                         <p class="text-houzy-gold text-xs mt-2" data-i18n="about_reason">— The idea behind HOUZY HOME</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="py-20 gradient-green text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <p class="text-houzy-gold text-sm tracking-[0.3em] mb-2" data-i18n="contact_label">CONTACT US</p>
-                <h2 class="font-serif-cn text-4xl font-bold mb-2" data-i18n="contact_h2">Book a Visit</h2>
-                <p class="font-serif-en text-lg text-gray-400 italic mb-4" data-i18n="contact_h2_en">Book a Visit</p>
-                <p class="text-gray-300 max-w-2xl mx-auto" data-i18n="contact_p">Visit our showroom to start your dream home journey</p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <!-- Contact Info -->
-                <div class="space-y-8">
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-houzy-gold rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg mb-1" data-i18n="loc_h">Location</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="loc_sub">Showroom Address</p>
-                            <p class="text-gray-300">141, Jalan Mutiara Emas 10/19,<br>Taman Mount Austin, 81100<br>Johor Bahru, Johor Darul Tazim, Malaysia</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-houzy-gold rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg mb-1">WhatsApp</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="wa_sub">Contact Us</p>
-                            <p class="text-gray-300">+60 10-5898786 · 初文 +60 16-820 8891</p>
-                            <div class="flex flex-wrap gap-2 mt-2">
-                                <a href="https://wa.me/60105898786" target="_blank"
-                                   class="inline-block px-4 py-2 bg-houzy-gold text-houzy-green text-sm font-semibold rounded-sm hover:bg-houzy-gold-light transition-colors">
-                                    +60 10-5898786
-                                </a>
-                                <a href="https://wa.me/60168208891" target="_blank"
-                                   class="inline-block px-4 py-2 border border-houzy-gold text-houzy-gold text-sm font-semibold rounded-sm hover:bg-houzy-gold hover:text-houzy-green transition-colors">
-                                    初文 · +60 16-820 8891
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start space-x-4">
-                        <div class="w-12 h-12 bg-houzy-gold rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg class="w-6 h-6 text-houzy-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg mb-1" data-i18n="hrs_h">Business Hours</h3>
-                            <p class="font-serif-en text-gray-400 text-sm mb-2 italic" data-i18n="hrs_sub">Business Hours</p>
-                            <p class="text-gray-300" data-i18n="hrs_val">Daily: 10:00 AM – 7:30 PM</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Map -->
-                <div class="bg-white/10 rounded-lg p-8">
-                    <div class="aspect-video rounded-lg overflow-hidden">
-                        <iframe
-                            src="https://www.google.com/maps?q=141+Jalan+Mutiara+Emas+10%2F19+Taman+Mount+Austin+81100+Johor+Bahru+Malaysia&output=embed"
-                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
-                            referrerpolicy="no-referrer-when-downgrade">
-                        </iframe>
-                    </div>
-                    <a href="https://maps.google.com/?q=141+Jalan+Mutiara+Emas+10/19+Taman+Mount+Austin+81100+Johor+Bahru+Johor+Malaysia" target="_blank"
-                       class="block w-full mt-6 py-3 text-center bg-houzy-gold text-houzy-green font-semibold hover:bg-houzy-gold-light transition-colors rounded-sm" data-i18n="map_cta">Open in Google Maps</a>
-                </div>
-            </div>
-        </div>
-    </section>
+  </main>
+</div>
 
     <section id="careers" aria-labelledby="careers-heading">
       <div class="careers-wrap">
@@ -989,385 +369,20 @@
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="bg-houzy-dark text-white py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                <!-- Logo -->
-                <div class="col-span-1 md:col-span-2">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <img src="favicon.svg" alt="HOUZY HOME" class="w-10 h-10 rounded-md flex-shrink-0">
-                        <div>
-                            <h3 class="font-serif-en text-xl font-semibold tracking-wider">HOUZY</h3>
-                            <p class="text-xs text-gray-400 tracking-widest">HOME SOLUTIONS</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-400 text-sm leading-relaxed max-w-md" data-i18n-html="footer_company">HOUZY HOME SDN. BHD.<br><span class="italic">Johor Bahru's One-Stop Premium Home Solutions</span></p>
-                </div>
+<footer class="ft">
+  <div><span class="s">HOUZY HOME SDN. BHD.</span><p>141, Jalan Mutiara Emas 10/19<br>Taman Mount Austin, 81100 Johor Bahru<br><span data-i18n="h7_hours">Daily 10:00 – 19:30</span></p></div>
+  <div><span class="s" data-i18n="h7_f_more">More</span><ul><li><a href="#careers">企业招聘 / Careers</a></li><li><a href="/partner.html" data-i18n="partner_link">Partner with HOUZY</a></li><li><a href="/brand.html" target="_blank" rel="noopener" data-i18n="footer_brand_book">Brand &amp; Identity</a></li><li><a href="/hub/">员工入口 / Staff</a></li></ul></div>
+  <div><span class="s" data-i18n="h7_f_follow">Follow</span><ul><li><a href="https://www.instagram.com/houzyhome" target="_blank" rel="noopener noreferrer">Instagram</a></li><li><a href="https://www.facebook.com/share/1ETsA9Cttx/" target="_blank" rel="noopener noreferrer">Facebook</a></li><li><a href="https://xhslink.com/m/1sEcjBUkPek" target="_blank" rel="noopener noreferrer">小红书</a></li><li><a href="https://houzyhomestore.com" target="_blank" rel="noopener" data-i18n="h7_shop_h">Online Shop</a></li></ul></div>
+  <div><span class="s" data-i18n="h7_f_contact">Contact</span><p><a href="https://wa.me/60105898786" target="_blank" rel="noopener">WhatsApp +60 10-589 8786</a><br><a href="https://wa.me/60168208891" target="_blank" rel="noopener">初文 +60 16-820 8891</a></p></div>
+  <div class="staff">
+    <section id="staff-manual" aria-labelledby="staff-manual-title"><p class="s" id="staff-manual-title" data-i18n="manual_title">Staff System Manual</p><p class="soft" data-i18n="manual_desc"></p><p class="soft" data-i18n="manual_meta"></p><a href="/docs/houzy-home-staff-manual-v1.pdf" download="HOUZY_HOME_门店员工系统使用手册.pdf" data-i18n="manual_download">Download manual PDF</a></section>
+    <section id="staff-academy" aria-labelledby="staff-academy-title"><p class="s" id="staff-academy-title" data-i18n="academy_title">Staff Academy</p><p class="soft" data-i18n="academy_desc"></p><p class="soft" data-i18n="academy_meta"></p><a href="/portal/academy.html" rel="nofollow" data-i18n="academy_open">Staff login</a></section>
+  </div>
+  <p class="copy soft"><span data-i18n="footer_copy">© 2026 HOUZY HOME SDN. BHD. All rights reserved.</span></p>
+</footer>
 
-                <!-- Quick Links -->
-                <div>
-                    <h4 class="font-semibold mb-4" data-i18n="footer_links_h">Quick Links</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#home" class="hover:text-houzy-gold transition-colors" data-i18n="nav_home">Home</a></li>
-                        <li><a href="#packages" class="hover:text-houzy-gold transition-colors" data-i18n="nav_packages">Packages</a></li>
-                        <li><a href="#shop" class="hover:text-houzy-gold transition-colors" data-i18n="nav_shop">Shop</a></li>
-                        <li><a href="/collections.html" class="hover:text-houzy-gold transition-colors" data-i18n="nav_styles">Styles</a></li>
-                        <li><a href="/craft.html" class="hover:text-houzy-gold transition-colors" data-i18n="nav_craft">Craftsmanship</a></li>
-                        <li><a href="#about" class="hover:text-houzy-gold transition-colors" data-i18n="nav_about">About</a></li>
-                        <li><a href="#careers" class="hover:text-houzy-gold transition-colors">企业招聘 / Careers</a></li>
-                        <li><a href="/partner.html" class="hover:text-houzy-gold transition-colors" data-i18n="partner_link">Partner with HOUZY</a></li>
-                        <li><a href="brand.html" target="_blank" rel="noopener" class="hover:text-houzy-gold transition-colors" data-i18n="footer_brand_book">品牌与视觉</a></li>
-                    </ul>
-                </div>
-
-                <!-- Services -->
-                <div>
-                    <h4 class="font-semibold mb-4" data-i18n="footer_svc_h">Services</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li data-i18n="svc_kitchen">Kitchen</li>
-                        <li data-i18n="svc_wardrobe">Wardrobe</li>
-                        <li data-i18n="svc_bathroom">Bathroom</li>
-                        <li data-i18n="svc_flooring">Flooring</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-gray-500 text-sm"><span data-i18n="footer_copy">© 2026 HOUZY HOME SDN. BHD. All rights reserved.</span> &nbsp;·&nbsp; <a href="/hub/" class="text-gray-600 hover:text-gray-300 underline underline-offset-2">员工入口</a></p>
-                <div class="flex flex-wrap gap-3 justify-center md:justify-end">
-                    <!-- Facebook -->
-                    <a href="https://www.facebook.com/share/1ETsA9Cttx/" target="_blank" rel="noopener noreferrer"
-                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
-                       style="background-color:#1877F2;">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                        Facebook
-                    </a>
-                    <!-- Instagram -->
-                    <a href="https://www.instagram.com/houzyhome" target="_blank" rel="noopener noreferrer"
-                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
-                       style="background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                        </svg>
-                        Instagram
-                    </a>
-                    <!-- 官方小红书 -->
-                    <a href="https://xhslink.com/m/1sEcjBUkPek" target="_blank" rel="noopener noreferrer"
-                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold transition-opacity hover:opacity-80"
-                       style="background-color:#FF2442;">
-                        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.5 6.5h-2v1.25c0 .414.336.75.75.75h.5v1.5h-.5A2.25 2.25 0 0113 9.75V8.5h-1v5.25a1.75 1.75 0 01-3.5 0V8.5H7v5.25a3.25 3.25 0 006.5 0V10h.25A2.25 2.25 0 0016 7.75V8h.5v.5z"/>
-                            <path d="M8.75 10h1.5v3.75a.75.75 0 01-1.5 0V10z"/>
-                        </svg>
-                        官方小红书
-                    </a>
-                    <!-- 官方 TikTok -->
-                    <a href="#" target="_blank" rel="noopener noreferrer"
-                       class="flex items-center gap-2 px-4 py-2 rounded-sm text-white text-sm font-semibold border border-gray-600 transition-opacity hover:opacity-80"
-                       style="background-color:#010101;">
-                        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.78a4.85 4.85 0 01-1.07-.09z"/>
-                        </svg>
-                        官方 TikTok
-                    </a>
-                </div>
-            </div>
-            <section id="staff-manual" aria-labelledby="staff-manual-title" class="mt-8 border-t border-gray-800 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h4 id="staff-manual-title" class="font-semibold text-houzy-gold" data-i18n="manual_title">员工系统使用手册 / Staff System Manual</h4>
-                    <p class="mt-2 text-sm text-gray-400" data-i18n="manual_desc">后台操作、订单流程与门店日常工作说明</p>
-                    <p class="mt-1 text-xs text-gray-500" data-i18n="manual_meta">中文版 PDF · 32 页 · V1.0 · 2026-09-14</p>
-                </div>
-                <a href="/docs/houzy-home-staff-manual-v1.pdf" download="HOUZY_HOME_门店员工系统使用手册.pdf"
-                   class="inline-flex items-center justify-center gap-2 self-start sm:self-center px-5 py-3 rounded-sm bg-houzy-gold text-houzy-green font-semibold text-sm hover:bg-houzy-gold-light transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-                    <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg>
-                    <span data-i18n="manual_download">下载手册 PDF</span>
-                </a>
-            </section>
-            <section id="staff-academy" aria-labelledby="staff-academy-title" class="mt-6 border-t border-gray-800 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h4 id="staff-academy-title" class="font-semibold text-houzy-gold" data-i18n="academy_title">导购学堂 / Staff Academy</h4>
-                    <p class="mt-2 text-sm text-gray-400" data-i18n="academy_desc">全品类产品知识、销售话术与上岗考核</p>
-                    <p class="mt-1 text-xs text-gray-500" data-i18n="academy_meta">仅限门店员工 · 需登录员工账号</p>
-                </div>
-                <a href="/portal/academy.html" rel="nofollow"
-                   class="inline-flex items-center justify-center gap-2 self-start sm:self-center px-5 py-3 rounded-sm border border-houzy-gold text-houzy-gold font-semibold text-sm hover:bg-houzy-gold hover:text-houzy-green transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-                    <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6.5 12 3l8 3.5-8 3.5-8-3.5Zm3 2v5c0 1.7 2.2 3 5 3s5-1.3 5-3v-5M20 6.5V12"/></svg>
-                    <span data-i18n="academy_open">员工登录进入</span>
-                </a>
-            </section>
-        </div>
-    </footer>
-
-    <!-- Gallery Modal -->
-    <div id="gallery-modal" class="fixed inset-0 z-[200] hidden flex-col bg-black/95" onclick="handleModalClick(event)">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 bg-black/60 flex-shrink-0">
-            <div>
-                <h2 id="gallery-title" class="font-serif-cn text-2xl font-bold text-white"></h2>
-                <p id="gallery-subtitle" class="font-serif-en text-houzy-gold text-sm italic mt-1"></p>
-            </div>
-            <div class="flex items-center gap-6">
-                <span id="gallery-counter" class="text-gray-400 text-sm"></span>
-                <button onclick="closeGallery()" class="text-white hover:text-houzy-gold transition-colors">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Image Area -->
-        <div class="flex-1 flex items-center justify-center relative px-4 py-2 min-h-0">
-            <button onclick="prevImage(event)" class="absolute left-2 md:left-6 z-10 w-12 h-12 bg-black/50 hover:bg-houzy-gold text-white hover:text-houzy-green rounded-full flex items-center justify-center transition-all">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            <div class="h-full flex flex-col items-center justify-center">
-                <img id="gallery-main-img" src="" alt="" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl">
-                <p id="gallery-caption" class="text-gray-300 text-sm mt-3 text-center"></p>
-            </div>
-            <button onclick="nextImage(event)" class="absolute right-2 md:right-6 z-10 w-12 h-12 bg-black/50 hover:bg-houzy-gold text-white hover:text-houzy-green rounded-full flex items-center justify-center transition-all">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Thumbnails -->
-        <div id="gallery-thumbnails" class="flex gap-2 px-6 py-3 overflow-x-auto justify-center flex-shrink-0"></div>
-
-        <!-- CTA -->
-        <div class="text-center py-4 flex-shrink-0">
-            <a href="https://wa.me/60105898786" target="_blank"
-               class="inline-flex items-center gap-2 px-8 py-3 bg-houzy-gold text-houzy-green font-semibold rounded-sm hover:bg-houzy-gold-light transition-colors">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                <span data-i18n="gallery_wa_cta">WhatsApp for Quote</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- 右下角固定的 WhatsApp 按钮：手机上滑到哪里都能直接咨询门店；点击照样计入上面的 Google Ads 转化 -->
-    <a href="https://wa.me/60105898786" target="_blank" rel="noopener" id="wa-float" aria-label="WhatsApp HOUZY HOME"
-       class="fixed right-4 z-[90] inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#25D366] text-white text-sm font-semibold shadow-lg hover:bg-[#1ebe5b] transition-colors"
-       style="bottom: calc(1rem + env(safe-area-inset-bottom));">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-        </svg>
-        <span data-i18n="hero_btn_wa">WhatsApp Us</span>
-    </a>
-
-    <!-- JavaScript -->
-    <script>
-        // Gallery Data
-        const galleries = {
-            kitchen: {
-                title: '厨房A',
-                subtitle: 'Kitchen A — U型主推款 · 3.3m×4.0m · 轻奢高端收纳',
-                images: [
-                    { src: 'images/products/kitchen-modern.jpg', caption: '现代极简 · 大理石岛台 | Modern Minimalist · Marble Island' },
-                    { src: 'images/products/kitchen-chinese.jpg', caption: '新中式 · 实木茶意 | New Chinese · Solid Wood & Tea' },
-                    { src: 'images/products/kitchen-industrial.jpg', caption: '工业风 · 黑金质感 | Industrial · Dark & Bold' },
-                    { src: 'images/products/kitchen-nordic.jpg', caption: '北欧原木 · 自然温润 | Nordic · Light Oak' },
-                    { src: 'images/products/kitchen-luxury.jpg', caption: '轻奢金 · 高定质感 | Light Luxury · Gold Accent' },
-                    { src: 'images/products/cabinets/cab-001.jpg', caption: '橱柜实拍 · 01 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-002.jpg', caption: '橱柜实拍 · 02 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-003.jpg', caption: '橱柜实拍 · 03 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-004.jpg', caption: '橱柜实拍 · 04 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-005.jpg', caption: '橱柜实拍 · 05 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-006.jpg', caption: '橱柜实拍 · 06 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-007.jpg', caption: '橱柜实拍 · 07 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-008.jpg', caption: '橱柜实拍 · 08 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-009.jpg', caption: '橱柜实拍 · 09 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-010.jpg', caption: '橱柜实拍 · 10 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-011.jpg', caption: '橱柜实拍 · 11 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-012.jpg', caption: '橱柜实拍 · 12 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-013.jpg', caption: '橱柜实拍 · 13 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-014.jpg', caption: '橱柜实拍 · 14 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-015.jpg', caption: '橱柜实拍 · 15 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-016.jpg', caption: '橱柜实拍 · 16 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-017.jpg', caption: '橱柜实拍 · 17 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-018.jpg', caption: '橱柜实拍 · 18 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-019.jpg', caption: '橱柜实拍 · 19 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-020.jpg', caption: '橱柜实拍 · 20 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-021.jpg', caption: '橱柜实拍 · 21 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-022.jpg', caption: '橱柜实拍 · 22 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-023.jpg', caption: '橱柜实拍 · 23 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-024.jpg', caption: '橱柜实拍 · 24 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-025.jpg', caption: '橱柜实拍 · 25 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-026.jpg', caption: '橱柜实拍 · 26 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-027.jpg', caption: '橱柜实拍 · 27 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-028.jpg', caption: '橱柜实拍 · 28 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-029.jpg', caption: '橱柜实拍 · 29 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-030.jpg', caption: '橱柜实拍 · 30 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-031.jpg', caption: '橱柜实拍 · 31 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-032.jpg', caption: '橱柜实拍 · 32 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-033.jpg', caption: '橱柜实拍 · 33 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-034.jpg', caption: '橱柜实拍 · 34 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-035.jpg', caption: '橱柜实拍 · 35 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-036.jpg', caption: '橱柜实拍 · 36 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-037.jpg', caption: '橱柜实拍 · 37 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-038.jpg', caption: '橱柜实拍 · 38 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-039.jpg', caption: '橱柜实拍 · 39 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-040.jpg', caption: '橱柜实拍 · 40 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-041.jpg', caption: '橱柜实拍 · 41 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-042.jpg', caption: '橱柜实拍 · 42 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-043.jpg', caption: '橱柜实拍 · 43 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-044.jpg', caption: '橱柜实拍 · 44 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-045.jpg', caption: '橱柜实拍 · 45 | Real Cabinet Showcase' },
-                    { src: 'images/products/cabinets/cab-046.jpg', caption: '橱柜实拍 · 46 | Real Cabinet Showcase' },
-                ]
-            },
-            bathroom: {
-                title: '卫浴穿越体验区',
-                subtitle: 'Bathroom Experience — Feel the Quality · Love the Details · 全景呈现·沉浸体验',
-                images: [
-                    { src: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85', caption: '卫浴穿越体验区全景 | Full Bathroom Experience Zone' },
-                    { src: 'https://images.unsplash.com/photo-1620626011761-996317702149?w=1200&q=85', caption: '淋浴花洒系统 · 真实场景呈现 | Shower System — Real Space' },
-                    { src: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1200&q=85', caption: '双盆浴室柜台面展示 | Double Basin Vanity Display' },
-                    { src: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1200&q=85', caption: '独立浴缸区 · 沉浸乐享 | Freestanding Bathtub Zone' },
-                    { src: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200&q=85', caption: '整体搭配推荐 · 专业设计建议 | Styling Ideas & Expert Advice' },
-                ]
-            },
-            materials: {
-                title: '瓷砖选材区',
-                subtitle: 'Tile Selection — One Surface, Endless Possibilities · 无限可能的表面，成就您的理想空间',
-                images: [
-                    { src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85', caption: '大理石纹 Marble · 1200×2400mm | 天然纹路，高贵典雅' },
-                    { src: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=85', caption: '石材纹 Stone · 1200×2400mm | 自然质感，经久耐用' },
-                    { src: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=85', caption: '水泥纹 Concrete · 1200×1600mm | 工业风格，简约现代' },
-                    { src: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=85', caption: '木纹砖 Wood Look · 1200×1600mm | 木质温感，易于清洁' },
-                    { src: 'https://images.unsplash.com/photo-1505873242700-f289a29e1e0f?w=1200&q=85', caption: '特色砖 Special · 高端大理石 Premium | 匠心之选，彰显品位' },
-                ]
-            },
-            wardrobe: {
-                title: '衣柜空间',
-                subtitle: 'Wardrobe Space — 4.4m×4.0m · 全屋定制 · Tailored Storage, Timeless Living',
-                images: [
-                    { src: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=1200&q=85', caption: '衣柜空间整体效果 · 4.4m×4.0m | Full Wardrobe Space Overview' },
-                    { src: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=1200&q=85', caption: '开放式挂衣区 · 科学分区设计 | Open Hanging Zone — Smart Zoning' },
-                    { src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=85', caption: '包包鞋履展示区 · 高效收纳系统 | Bags & Shoes Display — Efficient Storage' },
-                    { src: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&q=85', caption: '抽屉与层板收纳细节 | Drawer & Shelf Storage Details' },
-                    { src: 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=1200&q=85', caption: '颜值担当 · 专属定制设计 | Premium Aesthetics — Personalized Design' },
-                ]
-            },
-            consultation: {
-                title: '洽谈区 · 展厅全景',
-                subtitle: 'Showroom Tour — TOUCH. COMPARE. CREATE. · 触摸·对比·创造理想家',
-                images: [
-                    { src: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=85', caption: '展厅全景 · 五大体验空间一览 | Full Showroom — Five Experience Spaces' },
-                    { src: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=85', caption: '厨房A展区 · 场景灵感 | Kitchen A Zone — Scene Inspiration' },
-                    { src: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1200&q=85', caption: '卫浴体验区 · 沉浸感受 | Bathroom Zone — Immersive Experience' },
-                    { src: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85', caption: '瓷砖选材区 · 触摸对比 | Tile Selection Zone — Touch & Compare' },
-                    { src: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=85', caption: '洽谈区 · 一对一专业设计顾问服务 | Consultation — One-on-One Expert Guidance' },
-                ]
-            }
-        };
-
-        let currentGallery = null;
-        let currentIndex = 0;
-
-        function openGallery(key) {
-            currentGallery = galleries[key];
-            currentIndex = 0;
-            const modal = document.getElementById('gallery-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-            renderGallery();
-        }
-
-        function closeGallery() {
-            const modal = document.getElementById('gallery-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.style.overflow = '';
-        }
-
-        function handleModalClick(e) {
-            if (e.target === document.getElementById('gallery-modal')) closeGallery();
-        }
-
-        function renderGallery() {
-            const g = currentGallery;
-            const img = g.images[currentIndex];
-            document.getElementById('gallery-title').textContent = g.title;
-            document.getElementById('gallery-subtitle').textContent = g.subtitle;
-            document.getElementById('gallery-main-img').src = img.src;
-            document.getElementById('gallery-main-img').alt = img.caption;
-            document.getElementById('gallery-caption').textContent = img.caption;
-            document.getElementById('gallery-counter').textContent = `${currentIndex + 1} / ${g.images.length}`;
-            const thumbs = document.getElementById('gallery-thumbnails');
-            thumbs.innerHTML = g.images.map((im, i) => `
-                <img src="${im.thumb || im.src}" onclick="setImage(${i})" loading="lazy"
-                     class="h-16 w-24 object-cover rounded cursor-pointer flex-shrink-0 transition-all ${i === currentIndex ? 'ring-2 ring-houzy-gold opacity-100' : 'opacity-50 hover:opacity-90'}"
-                     alt="${im.caption}">
-            `).join('');
-        }
-
-        function prevImage(e) {
-            e.stopPropagation();
-            currentIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length;
-            renderGallery();
-        }
-
-        function nextImage(e) {
-            e.stopPropagation();
-            currentIndex = (currentIndex + 1) % currentGallery.images.length;
-            renderGallery();
-        }
-
-        function setImage(i) {
-            currentIndex = i;
-            renderGallery();
-        }
-
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            if (document.getElementById('gallery-modal').classList.contains('hidden')) return;
-            if (e.key === 'ArrowLeft') { currentIndex = (currentIndex - 1 + currentGallery.images.length) % currentGallery.images.length; renderGallery(); }
-            if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % currentGallery.images.length; renderGallery(); }
-            if (e.key === 'Escape') closeGallery();
-        });
-
-        // Mobile Menu Toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        }
-
-        // Navbar Scroll Effect
-        window.addEventListener('scroll', function() {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('shadow-md');
-            } else {
-                navbar.classList.remove('shadow-md');
-            }
-        });
-
-        // Smooth Scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                    // Close mobile menu if open
-                    document.getElementById('mobile-menu').classList.add('hidden');
-                }
-            });
-        });
-    </script>
+<nav class="mnav" id="mnav" aria-label="Menu"><button class="x" id="mclose" type="button" aria-label="Close">×</button><div id="mnavBody"></div><div class="mlang s"><button type="button" onclick="setLanguage('en')">EN</button><button type="button" onclick="setLanguage('zh-CN')">简</button><button type="button" onclick="setLanguage('zh-TW')">繁</button><button type="button" onclick="setLanguage('ms')">BM</button><button type="button" onclick="setLanguage('th')">ไทย</button></div></nav>
+<div class="mbar s" id="mbar"><a href="https://wa.me/60105898786" target="_blank" rel="noopener">WhatsApp</a><a class="k" href="#contact" data-i18n="nav_book">Book</a></div>
 
     <!-- i18n -->
     <script>
@@ -1773,10 +788,135 @@
     })();
     </script>
 <script>
-  (function(){function vid(){return document.getElementById('hero-video');}
-  function startSlow(){var v=vid();if(!v)return;if(v.muted)v.playbackRate=0.5;var p=v.play();if(p&&p.catch)p.catch(function(){});}
-  document.addEventListener('DOMContentLoaded',function(){startSlow();var hv=vid();if(hv)hv.addEventListener('loadedmetadata',function(){if(hv.muted)hv.playbackRate=0.5;});});
-  window.toggleHeroSound=function(){var v=vid();if(!v)return;v.muted=!v.muted;var on=document.getElementById('hero-snd-on'),off=document.getElementById('hero-snd-off');if(v.muted){v.playbackRate=0.5;if(on)on.classList.add('hidden');if(off)off.classList.remove('hidden');}else{v.playbackRate=1;v.volume=1;if(on)on.classList.remove('hidden');if(off)off.classList.add('hidden');}var p=v.play();if(p&&p.catch)p.catch(function(){});};})();
+/* New homepage strings (5 languages), merged into the existing i18n table. */
+const homeV7Translations = {
+  en:{h7_h1:'A home worth living in, beyond the render',h7_tag_sub:'HOUZY HOME · One-stop home renovation, Johor Bahru',
+      h7_morning:'Morning — it starts with a kitchen that just works',h7_afternoon:'Afternoon — a place for everyone at home',h7_evening:'After work — the light you want to hurry home to',h7_night:'Late at night — time for the home to grow quiet',
+      h7_open:'Showroom open · until 7:30 pm',h7_before:'Showroom opens at 10:00 am',h7_closed:'Showroom closed · opens 10:00 am tomorrow',
+      h7_lead:'Design, materials and build —<br>one team, all the way home.',h7_b1:'Materials direct from our Foshan factory',h7_b2:'10 build stages · 43 checkpoints',h7_b3:'20 years of full-home renovation',
+      h7_p:'Visit our Mount Austin showroom: touch the materials, compare designs and talk budget before you decide.',
+      h7_s_styles:'6 collections',h7_s_pkg:'From RM 29,999',h7_s_about:'Since 2023',h7_s_visit:'Come and touch the materials for your home',h7_s_shop:'Shop online',h7_partner:'Partners',h7_hint:'Take it apart →',
+      h7_shop_h:'Online Shop',h7_all:'All products →',h7_all_plain:'All products',h7_c1:'10 build stages',h7_c2:'43 checkpoints',h7_a1:'2023 · Started in Johor Bahru',
+      h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
+      h7_f_showroom:'Showroom',h7_f_follow:'Follow',h7_f_contact:'Contact',h7_f_more:'More',h7_hours:'Daily 10:00 – 19:30',h7_from:'From {p}'},
+  'zh-CN':{h7_h1:'家，不该只活在效果图里',h7_tag_sub:'HOUZY HOME · 新山一站式家居整装',
+      h7_morning:'早晨，从一个顺手好用的厨房开始',h7_afternoon:'午后，让家里每个人都有自己的位置',h7_evening:'下班了，总有一盏想早点回去的灯',h7_night:'夜深了，家该安静下来',
+      h7_open:'展厅营业中 · 至 19:30',h7_before:'展厅 10:00 开门',h7_closed:'展厅已打烊 · 明早 10:00',
+      h7_lead:'设计、选材到施工，<br>一个团队陪你住进去。',h7_b1:'佛山工厂直供材料',h7_b2:'10 道工序 · 43 个验收点',h7_b3:'20 年全案整装经验',
+      h7_p:'走进 Mount Austin 展厅，先摸材料、比方案、谈预算，再决定家的样子。',
+      h7_s_styles:'6 个风格系列',h7_s_pkg:'RM 29,999 起',h7_s_about:'2023 年起',h7_s_visit:'来展厅，摸一摸你家的材料',h7_s_shop:'在线选购',h7_partner:'合作伙伴',h7_hint:'拆开看看 →',
+      h7_shop_h:'线上商城',h7_all:'全部商品 →',h7_all_plain:'全部商品',h7_c1:'10 道工序',h7_c2:'43 个验收自检点',h7_a1:'2023 · 新山起步',
+      h7_hening:'静白',h7_kayu:'原木',h7_krim:'奶油',h7_senja:'暮金',h7_serambi:'廊下',h7_batu:'石墨',
+      h7_f_showroom:'展厅',h7_f_follow:'关注',h7_f_contact:'联系',h7_f_more:'更多',h7_hours:'每天 10:00 – 19:30',h7_from:'{p} 起'},
+  'zh-TW':{h7_h1:'家，不該只活在效果圖裡',h7_tag_sub:'HOUZY HOME · 新山一站式家居整裝',
+      h7_morning:'早晨，從一個順手好用的廚房開始',h7_afternoon:'午後，讓家裡每個人都有自己的位置',h7_evening:'下班了，總有一盞想早點回去的燈',h7_night:'夜深了，家該安靜下來',
+      h7_open:'展廳營業中 · 至 19:30',h7_before:'展廳 10:00 開門',h7_closed:'展廳已打烊 · 明早 10:00',
+      h7_lead:'設計、選材到施工，<br>一個團隊陪你住進去。',h7_b1:'佛山工廠直供材料',h7_b2:'10 道工序 · 43 個驗收點',h7_b3:'20 年全案整裝經驗',
+      h7_p:'走進 Mount Austin 展廳，先摸材料、比方案、談預算，再決定家的樣子。',
+      h7_s_styles:'6 個風格系列',h7_s_pkg:'RM 29,999 起',h7_s_about:'2023 年起',h7_s_visit:'來展廳，摸一摸你家的材料',h7_s_shop:'線上選購',h7_partner:'合作夥伴',h7_hint:'拆開看看 →',
+      h7_shop_h:'線上商城',h7_all:'全部商品 →',h7_all_plain:'全部商品',h7_c1:'10 道工序',h7_c2:'43 個驗收自檢點',h7_a1:'2023 · 新山起步',
+      h7_hening:'靜白',h7_kayu:'原木',h7_krim:'奶油',h7_senja:'暮金',h7_serambi:'廊下',h7_batu:'石墨',
+      h7_f_showroom:'展廳',h7_f_follow:'關注',h7_f_contact:'聯絡',h7_f_more:'更多',h7_hours:'每天 10:00 – 19:30',h7_from:'{p} 起'},
+  ms:{h7_h1:'Rumah untuk didiami, bukan sekadar render',h7_tag_sub:'HOUZY HOME · Ubah suai rumah sehenti, Johor Bahru',
+      h7_morning:'Pagi — bermula dengan dapur yang mudah digunakan',h7_afternoon:'Petang — ruang untuk setiap ahli keluarga',h7_evening:'Selepas kerja — lampu yang membuat anda mahu cepat pulang',h7_night:'Lewat malam — masa untuk rumah menjadi tenang',
+      h7_open:'Bilik pameran dibuka · hingga 7:30 mlm',h7_before:'Bilik pameran dibuka 10:00 pagi',h7_closed:'Bilik pameran ditutup · dibuka 10:00 pagi esok',
+      h7_lead:'Reka bentuk, bahan dan pembinaan —<br>satu pasukan hingga anda berpindah masuk.',h7_b1:'Bahan terus dari kilang Foshan kami',h7_b2:'10 peringkat kerja · 43 titik semakan',h7_b3:'20 tahun pengalaman ubah suai penuh',
+      h7_p:'Kunjungi bilik pameran Mount Austin: sentuh bahan, banding reka bentuk dan bincang bajet sebelum membuat keputusan.',
+      h7_s_styles:'6 koleksi',h7_s_pkg:'Dari RM 29,999',h7_s_about:'Sejak 2023',h7_s_visit:'Datang dan sentuh bahan untuk rumah anda',h7_s_shop:'Beli dalam talian',h7_partner:'Rakan Kongsi',h7_hint:'Lihat lapisannya →',
+      h7_shop_h:'Kedai Dalam Talian',h7_all:'Semua produk →',h7_all_plain:'Semua produk',h7_c1:'10 peringkat kerja',h7_c2:'43 titik semakan',h7_a1:'2023 · Bermula di Johor Bahru',
+      h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
+      h7_f_showroom:'Bilik Pameran',h7_f_follow:'Ikuti',h7_f_contact:'Hubungi',h7_f_more:'Lagi',h7_hours:'Setiap hari 10:00 – 19:30',h7_from:'Dari {p}'},
+  th:{h7_h1:'บ้านที่อยู่ได้จริง ไม่ใช่แค่ภาพเรนเดอร์',h7_tag_sub:'HOUZY HOME · รีโนเวทบ้านครบวงจร ยะโฮร์บาห์รู',
+      h7_morning:'ยามเช้า เริ่มจากครัวที่ใช้งานง่าย',h7_afternoon:'ยามบ่าย ให้ทุกคนในบ้านมีมุมของตัวเอง',h7_evening:'เลิกงานแล้ว มีไฟดวงหนึ่งที่อยากรีบกลับไปหา',h7_night:'ดึกแล้ว ถึงเวลาที่บ้านจะเงียบสงบ',
+      h7_open:'โชว์รูมเปิดอยู่ · ถึง 19:30 น.',h7_before:'โชว์รูมเปิด 10:00 น.',h7_closed:'โชว์รูมปิดแล้ว · เปิดพรุ่งนี้ 10:00 น.',
+      h7_lead:'ออกแบบ เลือกวัสดุ จนถึงก่อสร้าง<br>ทีมเดียวดูแลจนคุณย้ายเข้าอยู่',h7_b1:'วัสดุส่งตรงจากโรงงานฝอซาน',h7_b2:'10 ขั้นตอน · 43 จุดตรวจรับ',h7_b3:'ประสบการณ์รีโนเวททั้งหลัง 20 ปี',
+      h7_p:'แวะโชว์รูม Mount Austin สัมผัสวัสดุ เปรียบเทียบแบบ และคุยงบประมาณก่อนตัดสินใจ',
+      h7_s_styles:'6 คอลเลกชัน',h7_s_pkg:'เริ่มต้น RM 29,999',h7_s_about:'ตั้งแต่ปี 2023',h7_s_visit:'มาสัมผัสวัสดุสำหรับบ้านของคุณ',h7_s_shop:'ช้อปออนไลน์',h7_partner:'พาร์ทเนอร์',h7_hint:'ดูแต่ละชั้น →',
+      h7_shop_h:'ร้านค้าออนไลน์',h7_all:'สินค้าทั้งหมด →',h7_all_plain:'สินค้าทั้งหมด',h7_c1:'10 ขั้นตอนงาน',h7_c2:'43 จุดตรวจรับ',h7_a1:'2023 · เริ่มต้นที่ยะโฮร์บาห์รู',
+      h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
+      h7_f_showroom:'โชว์รูม',h7_f_follow:'ติดตาม',h7_f_contact:'ติดต่อ',h7_f_more:'เพิ่มเติม',h7_hours:'ทุกวัน 10:00 – 19:30',h7_from:'เริ่มต้น {p}'}
+};
+Object.keys(homeV7Translations).forEach(l => Object.assign(i18n[l], homeV7Translations[l]));
+const curLang = () => i18n[document.documentElement.lang] ? document.documentElement.lang : 'en';
+const tr = k => (i18n[curLang()] || i18n.en)[k] ?? i18n.en[k] ?? '';
+
+/* ---------- Time of day (Johor Bahru): background, text colour, hero picture and line ---------- */
+const $ = id => document.getElementById(id);
+const jb = () => { const d = new Date(); return new Date(d.getTime() + d.getTimezoneOffset() * 6e4 + 8 * 36e5); };
+const period = h => h >= 20 || h < 6 ? 'night' : h >= 17 ? 'evening' : h >= 11 ? 'afternoon' : 'morning';
+let shownTime = '';
+function applyTime() {
+  const n = jb(), h = n.getHours(), m = h * 60 + n.getMinutes(), k = period(h);
+  document.documentElement.dataset.time = k;
+  $('tagLine').textContent = tr('h7_' + k);
+  $('status').textContent = m >= 600 && m < 1170 ? tr('h7_open') : (m < 600 ? tr('h7_before') : tr('h7_closed'));
+  if (shownTime !== k) {
+    shownTime = k; document.body.classList.remove('live');
+    let c = 0; const ok = () => { if (++c === 2) setTimeout(() => document.body.classList.add('live'), 50); };
+    $('heroImg').onload = $('heroLine').onload = ok;
+    $('heroLine').srcset = `images/home/${k}-line-900.webp 900w, images/home/${k}-line-1600.webp 1600w`;
+    $('heroImg').srcset = `images/home/${k}-900.webp 900w, images/home/${k}-1600.webp 1600w`;
+  }
+}
+
+/* ---------- Craft tile: isometric wall drawn in line; layers part on hover ---------- */
+(() => {
+  const C = .866, S = .5, W = 300, H = 270, P = (x, y, z) => [(x - y) * C, (x + y) * S - z], pt = a => a.map(v => v.toFixed(1)).join(',');
+  const poly = pts => `<polygon class="poly" points="${pts.map(p => pt(P(...p))).join(' ')}"/>`;
+  const slab = (y0, y1, z0, z1) => poly([[0,y1,z0],[W,y1,z0],[W,y1,z1],[0,y1,z1]]) + poly([[0,y0,z1],[W,y0,z1],[W,y1,z1],[0,y1,z1]]) + poly([[W,y0,z0],[W,y1,z0],[W,y1,z1],[W,y0,z1]]);
+  const ln = pts => `<polyline class="detail" points="${pts.map(p => pt(P(...p))).join(' ')}"/>`;
+  const courses = y => { let s = ''; for (let z = 52; z < H; z += 20) s += ln([[0,y,z],[W,y,z]]); return s; };
+  const grid = y => { let s = ''; for (let x = 60; x < W; x += 60) s += ln([[x,y,0],[x,y,H]]); for (let z = 60; z < H; z += 60) s += ln([[0,y,z],[W,y,z]]); return s; };
+  const L = [
+    slab(0,40,0,H) + courses(40) + ln([[0,40,32],[W,40,32]]),
+    ln([[40,40,H],[40,40,150],[150,40,150]]) + ln([[80,40,H],[80,40,118],[230,40,118]]) + ln([[262,40,36],[262,40,210]]) + ln([[284,40,36],[284,40,180]]),
+    slab(40,50,0,H), slab(50,54,0,180), slab(54,60,0,H) + grid(60)
+  ];
+  $('iso').innerHTML = poly([[0,0,0],[W,0,0],[W,190,0],[0,190,0]]) + L.map((g, i) => `<g class="ly" style="--k:${i}">${g}</g>`).join('');
+})();
+
+/* ---------- Shop strip: four random products, live from Shopify ----------
+   Storefront API public token: read-only product data, made for web pages.
+   Tiles are skipped because their catalogue photos are plain swatches. On any failure the strip stays hidden. */
+const SHOP = { domain: 'houzy-home-solutions.myshopify.com', store: 'https://houzyhomestore.com', token: 'ddd93d5304c21b3e1edd2b166671ae25', version: '2025-01' };
+let shopItems = [];
+function renderShop() {
+  if (!shopItems.length) return;
+  const fmt = p => { const a = Number(p.amount); return (p.currencyCode === 'MYR' ? 'RM ' : p.currencyCode + ' ') + a.toLocaleString('en-MY', { minimumFractionDigits: a % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  $('goods').innerHTML = shopItems.map(p => {
+    const r = p.priceRange, ranged = Number(r.maxVariantPrice.amount) > Number(r.minVariantPrice.amount);
+    const price = ranged ? tr('h7_from').replace('{p}', fmt(r.minVariantPrice)) : fmt(r.minVariantPrice);
+    return `<a class="good" href="${esc(p.onlineStoreUrl || SHOP.store + '/products/' + p.handle)}" target="_blank" rel="noopener"><div class="ph"><img src="${esc(p.featuredImage.url)}" alt="${esc(p.featuredImage.altText || p.title)}" loading="lazy"></div><div class="t">${esc(p.title)}</div><div class="p">${price}</div></a>`;
+  }).join('');
+}
+(async () => {
+  try {
+    const q = '{products(first:100,sortKey:BEST_SELLING){nodes{title handle productType availableForSale onlineStoreUrl featuredImage{url(transform:{maxWidth:600,maxHeight:600,crop:CENTER}) altText} priceRange{minVariantPrice{amount currencyCode} maxVariantPrice{amount}}}}}';
+    const r = await fetch(`https://${SHOP.domain}/api/${SHOP.version}/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.token }, body: JSON.stringify({ query: q }) });
+    const j = await r.json();
+    const list = (j.data?.products?.nodes || []).filter(p => p.availableForSale && p.featuredImage && !/tile|瓷砖/i.test((p.productType || '') + ' ' + p.title));
+    if (list.length < 4) return;
+    for (let i = list.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [list[i], list[k]] = [list[k], list[i]]; }
+    shopItems = list.slice(0, 4); renderShop(); $('shop').classList.remove('off');
+  } catch (e) { /* leave the strip hidden */ }
+})();
+
+/* Re-render the dynamic text when the language changes. */
+const baseSetLanguage = setLanguage;
+setLanguage = function (lang) { baseSetLanguage(lang); applyTime(); renderShop(); };
+
+/* ---------- Phone: menu reuses the side column; quiet bottom bar after the first picture ---------- */
+$('mnavBody').innerHTML = $('side').innerHTML;
+const mnav = $('mnav'), setM = o => { mnav.classList.toggle('open', o); document.body.style.overflow = o ? 'hidden' : ''; $('burger').setAttribute('aria-expanded', o); };
+$('burger').onclick = () => setM(true); $('mclose').onclick = () => setM(false);
+mnav.addEventListener('click', e => { if (e.target.closest('a') || e.target.closest('.mlang button')) setM(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape') setM(false); });
+const bar = $('mbar'), hero = $('hero'), contact = $('contact');
+addEventListener('scroll', () => bar.classList.toggle('show', hero.getBoundingClientRect().bottom < 0 && contact.getBoundingClientRect().top > innerHeight * .6), { passive: true });
+
+/* Apply the saved language now that the new strings exist (also renders time-of-day text). */
+setLanguage(localStorage.getItem('houzy-lang') || 'en'); setInterval(applyTime, 30000);
 </script>
 </body>
 </html>
