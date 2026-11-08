@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>HOUZY HOME 精工施工交底卡（工人版）</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#1A3A2A;--gold:#C8A96E;--cream:#F5F2ED;--ink:#1A1A1A;--muted:#6B665E;--no:#B3261E;--ok:#1F7A3E}
+    *{box-sizing:border-box}
+    body{margin:0;background:#E9E5DE;color:var(--ink);font:17px/1.6 "Noto Sans SC",sans-serif}
+    header{background:var(--green);color:var(--cream);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+    header img{width:36px;height:36px;border-radius:6px}
+    header strong{font:600 18px "Playfair Display",serif;letter-spacing:.1em;display:block;line-height:1.1}
+    header small{font-size:12px;color:#C9C2B4}
+    header button{margin-left:8px;background:var(--gold);color:var(--green);border:0;border-radius:6px;padding:8px 14px;font:700 15px "Noto Sans SC";cursor:pointer}
+    header #lang{margin-left:auto;background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+    nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:#fff;border-bottom:1px solid #D8D2C7;position:sticky;top:64px;z-index:4}
+    nav a{flex:none;text-decoration:none;color:var(--green);border:1.5px solid var(--green);border-radius:999px;padding:4px 12px;font-weight:700;font-size:15px}
+    main{max-width:860px;margin:0 auto;padding:16px}
+    .rule{background:#fff;border-left:6px solid var(--gold);padding:14px 18px;margin:8px 0 18px;font-size:16px}
+    .rule b{color:var(--green)}
+    .card{scroll-margin-top:124px;background:#fff;border-radius:8px;margin:0 0 22px;overflow:hidden;box-shadow:0 2px 0 #D8D2C7}
+    .card h2{margin:0;background:var(--green);color:#fff;padding:12px 18px;font:900 26px "Noto Sans SC";display:flex;align-items:baseline;gap:12px}
+    .card h2 span{font:700 15px "Playfair Display";color:var(--gold)}
+    .card h2 em{font-style:normal;font-size:14px;font-weight:500;color:#C9C2B4;margin-left:auto}
+    .sec{padding:12px 18px 6px}
+    .sec h3{margin:0 0 6px;font-size:15px;letter-spacing:.1em;color:var(--muted)}
+    ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+    ol.steps li{counter-increment:s;display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid #EEE9E1}
+    ol.steps li::before{content:counter(s);width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;font:700 16px/30px "Playfair Display";text-align:center}
+    ol.steps b{display:block;font-size:18px}
+    ol.steps small{display:block;color:var(--muted);font-size:15px}
+    .std{font:700 18px "Noto Sans SC",sans-serif;color:var(--green);background:#F1EBDD;border-radius:6px;padding:3px 10px;white-space:nowrap;align-self:center}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid #EEE9E1}
+    .two > div{padding:12px 18px}
+    .two ul{margin:0;padding:0;list-style:none}
+    .two li{padding:4px 0 4px 28px;position:relative;font-size:16px}
+    .no li::before{content:"✕";position:absolute;left:0;color:var(--no);font-weight:900}
+    .chk li::before{content:"☐";position:absolute;left:0;color:var(--ok);font-weight:900;font-size:18px;line-height:1.3}
+    .no{background:#FBF1EF}
+    .no h3{color:var(--no)!important}
+    .chk h3{color:var(--ok)!important}
+    .photo{padding:10px 18px 14px;background:#F6F3EC;font-size:15px;border-top:1px solid #EEE9E1}
+    .photo b{color:var(--green)}
+    .sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 18px 16px;font-size:14px;color:var(--muted)}
+    .sign div{border-bottom:1px solid #999;padding-top:22px}
+    footer{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 40px}
+    @media (max-width:640px){
+      body{font-size:16px}
+      ol.steps li{grid-template-columns:32px 1fr}
+      .std{grid-column:2;justify-self:start}
+      .two{grid-template-columns:1fr}
+      .card h2 em{display:none}
+    }
+    @media print{
+      body{background:#fff;font-size:13px}
+      header button,nav,.rule{display:none}
+      header{position:static;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      main{max-width:none;padding:0}
+      .card{break-after:page;box-shadow:none;border:1px solid #bbb}
+      .card h2,.std,.no,.photo,ol.steps li::before{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      ol.steps b{font-size:15px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/favicon.svg" alt="">
+    <div><strong>HOUZY HOME</strong><small data-t="sub">精工施工交底卡 · 工人版</small></div>
+    <button type="button" id="lang">EN</button>
+    <button type="button" onclick="print()" data-t="print">打印 / 存 PDF</button>
+  </header>
+  <nav id="nav"></nav>
+  <main>
+    <div class="rule" id="rule"></div>
+    <div id="cards"></div>
+  </main>
+  <footer data-t="foot">HOUZY HOME SDN. BHD. · 合屋整装 · 内部施工标准，请勿外传</footer>
+
+  <script>
+  /* Each trade: steps [action, detail, standard], forbidden, self-check (tool + how), photos required. */
+  const SOP=[
+    {t:'开工验房与保护',who:'项目经理 / 杂工',
+     steps:[['验墙地','靠尺、水平仪量墙面垂直、地面平整，误差处标记','2m 靠尺'],['验门窗','开关顺畅、合缝，玻璃有无划痕',''],['窗边淋水','窗外淋水，看窗边、外墙、厨卫顶面有无渗漏',''],['验电箱','总开关带漏电保护；强弱电箱间距','>1.1m'],['做保护','电梯厅、入户门套、门槛、门把手、门窗贴膜、燃气表、下水口全部包好','6 处'],['下水口封堵','所有下水口加盖封死，防止碎渣掉入','']],
+     no:['没验房就开工','下水口不封','保护膜破了不补'],
+     chk:['验房问题写清楚并拍照','6 处保护全部到位','业主/经理确认后开工'],
+     photo:'原有墙地、门窗、电箱、渗漏点；6 处保护完成照。'},
+    {t:'砌墙',who:'泥水工',
+     steps:[['放样弹线','先弹线，后砌墙',''],['卫生间墙根植筋','在楼板上植筋做反坎','间距 200mm'],['支模浇反坎','用防水混凝土浇反坎','高 18–20cm'],['砖浇水','红砖提前浇水，吸饱水再砌',''],['砌筑','错缝砌，灰缝均匀饱满',''],['新旧墙拉结','新墙植筋连住旧墙，防下沉',''],['顶砖斜砌','最上一皮斜砌，塞紧不留空',''],['门洞过梁','用成品预制过梁',''],['交界挂网','新旧墙交接处挂网后再抹灰',''],['浇水养护','砌完浇水养护','']],
+     no:['干砖直接砌','顶部平砌留缝','新旧墙交界不挂网直接抹灰','卫生间墙不做反坎'],
+     chk:['靠尺量垂直、平整','反坎高度用尺量','拉结筋、挂网拍照后才抹灰'],
+     photo:'弹线；植筋；反坎模板与浇筑；拉结筋；顶砖斜砌；挂网。'},
+    {t:'墙面归方找平',who:'泥水工',
+     steps:[['墙面清理','洒水清理浮灰、残留物；老墙检查原砂浆层有无空鼓、松动',''],['刷界面剂','滚刷界面剂（墙固）',''],['挂网','挂镀锌钢丝网，用螺丝固定','镀锌'],['激光打点','以整面墙最高点为基准打垂直线',''],['做灰饼','按控制线做灰饼，作为找平基准',''],['抹灰','按灰饼抹灰找平','']],
+     no:['浮灰没清就抹灰','基层太干不湿润（会空鼓）','不做灰饼凭手感抹'],
+     chk:['抹灰前敲击查空鼓','激光复核垂直、方正'],
+     photo:'界面剂；挂网；灰饼；抹灰完成。'},
+    {t:'水电',who:'水电工',
+     steps:[['定位弹线','按图纸定开关插座位置',''],['开槽','横平竖直；承重墙、梁、柱不开深槽',''],['布管','线管之间留缝，让砂浆包住，防空鼓','间距 20mm'],['转弯','大弧度弯，不准 90° 直角','大弧度'],['管卡固定','转弯、分线盒、底盒处必须加管卡；其他间距','100mm 内 / ≤800mm'],['强弱电交叉','交叉处用锡箔纸屏蔽',''],['底盒','底盒之间间距；线管进底盒加锁扣','15mm'],['接线','用接线端子，不用胶布；线头加压线帽，底盒加盖',''],['水管固定','管卡间距','60cm'],['热水管','包保温棉，接头处锡纸包好',''],['打压测试','加压到 0.6MPa，保压 30 分钟','0.6MPa · 30 分钟'],['通电测试','每一路通电测试','']],
+     no:['90° 急弯','电线不穿管直埋','接线用胶布缠','线管挤在一起不留缝','打压不到时间就收工'],
+     chk:['压力表 30 分钟不掉压','每一路通电','管卡间距卷尺抽查','全部走管拍照后才封槽'],
+     photo:'走管全景（每面墙、地面、顶面）；打压表读数（开始和 30 分钟后）；底盒排列。'},
+    {t:'管道隔音',who:'水电工 / 杂工',
+     steps:[['量周长','卷尺绕下水管一圈量周长',''],['裁阻尼片','宽 = 周长；弯头裁扇形',''],['贴阻尼片','从顶部开始纵向贴，刮板从中间往两边压实','重叠 3–5cm'],['裁隔音棉','宽 = 包好阻尼片后的周长 + 重叠量；弯头多留 5cm','+10cm'],['包隔音棉','从顶部开始缠绕，边压边贴',''],['弯头处理','分块贴合，抚平褶皱','']],
+     no:['拉伸阻尼片','用力拉扯隔音棉','有气泡、褶皱不处理','只包隔音棉不贴阻尼片'],
+     chk:['阻尼片无气泡、无褶皱','隔音棉完全盖住、接缝重叠'],
+     photo:'阻尼片完成；隔音棉完成（含弯头）。'},
+    {t:'防水',who:'泥水工 / 防水工',
+     steps:[['基层处理','清扫浮灰、砂石，铲除砂浆块；油污清洗；基层可湿润但不能有明水',''],['成品保护','门窗、管道、地漏、开关盒全部包好',''],['阴阳角抹 R 角','水泥砂浆抹圆弧，无棱角','R50mm'],['管根抹圆','堵漏宝填实，抹圆','R50mm'],['地漏附加层','地漏周边先做一层','上 50 · 外 200mm'],['喷界面剂','喷雾器 45° 均匀喷，不漏喷；现配现用 3 小时内用完','0.2–0.3MPa'],['第一遍','横向刷；界面剂干了才刷','0.5–0.8mm'],['第二遍','第一遍完全干后竖向刷','0.8–1.0mm'],['总厚度','两遍合计','≥1.5mm'],['闭水试验','封堵地漏，注水做水位标记，24h 不降再延长到 48h','水深 ≥20mm · 48h'],['做保护层','闭水合格后做保护层','']],
+     no:['墙角、管根不做 R 角','一遍就完','第一遍没干就刷第二遍','雨天、基层潮湿时施工','在防水层上走动、堆材料','不做闭水'],
+     chk:['防水高度用尺量','楼下对应位置检查有无渗漏','闭水水位标记拍照'],
+     photo:'R 角；地漏附加层；两遍防水；防水高度（带卷尺）；闭水开始和 48 小时后水位。',
+     extra:'防水高度：卫生间 地面做满，墙面 1.8m，门口外延 0.5m，门两侧墙外 0.3m · 厨房 墙面 0.3m，台盆位 1.2m · 阳台 墙面 0.3m'},
+    {t:'贴砖',who:'泥水工',
+     steps:[['选胶','按墙面、砖的规格选合格瓷砖胶，查生产日期、保质期',''],['基层处理','清净灰尘、油污、脱模剂；小锤敲查空鼓，空鼓松动处凿掉补平',''],['弹控制线','水平线、垂直线；垂直误差','≤1mm'],['排版','出纸质排版图；不出现小于 1/3 的窄条砖','≥1/3 砖'],['挑砖','剔除缺角、裂纹、色差大的砖',''],['砖背处理','低吸水率砖刷背胶、不泡水；岩板背面撕膜清干净',''],['墙面上胶','齿形刮刀横向刮','横齿'],['砖背上胶','先薄刮满一层，再竖向刮齿','竖齿 1–2mm'],['地面上胶','齿形刮刀；一次刮 1–2 平方','齿深 ≥10mm'],['铺贴','橡皮锤从中间往四周敲实；十字卡控制缝宽','缝 2–3mm'],['伸缩缝','门窗洞口周边留缝','1–2mm'],['切割打磨','切口打磨去毛刺','']],
+     no:['凭经验目测排版','吸水率 <3% 的砖泡水','砖背点几坨水泥就贴','挤出的胶不及时清','刚贴好就踩'],
+     chk:['每块砖敲击查空鼓','靠尺、水平仪查平整和相邻高低差','地面泼水看排水方向'],
+     photo:'控制线；排版图；墙面和砖背齿痕；完成面（带靠尺）。'},
+    {t:'吊顶',who:'木工',
+     steps:[['弹线','激光弹标高线',''],['吊杆','按间距装吊杆',''],['主龙骨 / 副龙骨','逐层固定，清理龙骨槽内碎屑',''],['调平','水平仪查平整度','≤3mm/2m'],['查垂直','线坠查垂直度','≤5mm/2m'],['查牢固','用力晃动，无松动',''],['排版切割','整板优先、错缝拼接；切割时正面朝下',''],['错缝封板','相邻板缝错开，不落在同一根龙骨','≥300mm'],['切口倒角','需对接的切口纸面倒角','45° · 5–10mm'],['开孔','灯孔、风口先用模板画轮廓再开','']],
+     no:['板缝对成一条直线','接缝落在同一根龙骨','切口不倒角直接嵌缝','潮湿切口未干就安装'],
+     chk:['水平仪复核平整度','晃动检查牢固','灯孔、风口位置对图纸'],
+     photo:'龙骨（封板前全景）；平整度检测；封板错缝。'},
+    {t:'油漆',who:'油漆工',
+     steps:[['查基层','基层含水率','≤10%'],['基层修补','开裂、起皮、空鼓先修补；石膏板钉眼做防锈',''],['贴网格布','管线槽、新旧墙交界处贴网格布','宽 50mm'],['石膏找平','',''],['腻子','两遍，每遍干透','2 遍'],['打磨','打磨平整，侧光检查',''],['底漆','',''],['面漆','兑水比例；滚涂两遍，接槎不堆积','兑水 ≤30% · 2 遍'],['最后一遍','门套、踢脚线装完后再刷','']],
+     no:['墙没干透就刷','一遍腻子一遍漆','面漆兑水过多','门窗、地面不保护'],
+     chk:['直尺查阴阳角平直、方正','侧光检查无波纹、无砂眼、无流坠','阳光下无色差'],
+     photo:'网格布；腻子完成；面漆完成（侧光）。'},
+    {t:'安装与交付',who:'安装工 / 项目经理',
+     steps:[['柜体安装','水平尺校平，门缝统一调整',''],['台面','水平尺校平',''],['洁具五金','安装牢固，试水无渗漏',''],['打胶收口','台面、洁具与墙面交接处打防霉胶',''],['灯具开关','逐个通电试用',''],['全屋清洁','',''],['业主验收','和业主逐项检查，问题当场记录，签字','']],
+     no:['台面边不打胶','柜门缝大小不一','没清洁就交付'],
+     chk:['每个水龙头、开关试用','问题清单有处理人和日期','业主签字'],
+     photo:'柜体水平；打胶收口；交付全屋照；业主签字验收单。'}
+  ];
+
+  /* English version: same order and structure as SOP above. */
+  const SOP_EN=[
+    {t:'Site Check & Protection',who:'Project manager / General worker',
+     steps:[['Check walls & floor','Use 2m straightedge and level to check wall plumb and floor flatness; mark faults','2m straightedge'],['Check doors & windows','Open/close smoothly, gaps close tight, glass not scratched',''],['Water test at windows','Spray water outside windows; check window edges, outer wall, wet-area ceilings for leaks',''],['Check DB box','Main switch has earth-leakage protection; distance between power and data boxes','>1.1m'],['Protect','Cover lift lobby, entrance door frame, threshold, door handles, window film, gas meter, drains','6 areas'],['Seal drains','Cap and seal every drain so debris cannot fall in','']],
+     no:['Starting work without site check','Leaving drains open','Not repairing torn protection'],
+     chk:['Site problems written down with photos','All 6 protection areas done','Owner/manager approves before start'],
+     photo:'Existing walls, floor, doors, windows, DB box, leak points; 6 protection areas done.'},
+    {t:'Bricklaying',who:'Mason',
+     steps:[['Set out lines','Snap lines first, then lay bricks',''],['Rebar at bathroom wall base','Drill and fix rebar into slab for the kerb','200mm spacing'],['Cast kerb','Formwork and waterproof concrete kerb','18–20cm high'],['Wet bricks','Soak red bricks until fully wet before laying',''],['Lay bricks','Staggered joints, even and full mortar',''],['Tie new to old wall','Rebar ties new wall to old wall, prevents settling',''],['Top course angled','Lay top course at an angle, packed tight, no gap',''],['Door lintel','Use precast lintel',''],['Mesh at joints','Fix mesh where new meets old wall, then plaster',''],['Cure','Water the wall after laying','']],
+     no:['Laying dry bricks','Flat top course leaving a gap','Plastering new/old joint without mesh','Bathroom wall without kerb'],
+     chk:['Straightedge for plumb and flatness','Measure kerb height with tape','Photo of ties and mesh before plastering'],
+     photo:'Lines; rebar; kerb formwork and pour; wall ties; angled top course; mesh.'},
+    {t:'Wall Squaring & Levelling',who:'Mason',
+     steps:[['Clean wall','Wet and remove dust and residue; on old walls tap-test for hollow or loose plaster',''],['Bonding agent','Roll on bonding agent',''],['Fix mesh','Galvanised wire mesh fixed with screws','Galvanised'],['Laser points','Use the highest point of the wall as datum for plumb line',''],['Screed dots','Make plaster dots along control lines as level guides',''],['Plaster','Plaster level to the dots','']],
+     no:['Plastering over dust','Dry base not wetted (causes hollows)','Plastering by feel without dots'],
+     chk:['Tap-test for hollows before plastering','Laser re-check plumb and square'],
+     photo:'Bonding agent; mesh; screed dots; finished plaster.'},
+    {t:'Plumbing & Electrical',who:'Plumber / Electrician',
+     steps:[['Mark positions','Mark switch and socket positions per drawing',''],['Cut chases','Straight and level; no deep chases in load-bearing walls, beams, columns',''],['Lay conduits','Leave gap between conduits so mortar fills around, no hollows','20mm gap'],['Bends','Wide sweep bends, no 90° sharp bends','Wide sweep'],['Clips','Clips required at bends, junction boxes and back boxes; elsewhere spacing','within 100mm / ≤800mm'],['Power/data crossing','Wrap crossing point with foil shielding',''],['Back boxes','Gap between back boxes; lock nut where conduit enters box','15mm'],['Connections','Use terminal connectors, no tape; cap wire ends; cover back boxes',''],['Fix water pipes','Clip spacing','60cm'],['Hot water pipe','Insulate; wrap joints in foil',''],['Pressure test','Pressurise to 0.6MPa, hold 30 minutes','0.6MPa · 30 min'],['Power test','Test every circuit','']],
+     no:['90° sharp bends','Wires buried without conduit','Joining wires with tape','Conduits packed with no gap','Stopping pressure test early'],
+     chk:['Gauge holds 30 min without drop','Every circuit powered','Spot-check clip spacing with tape','Photo all conduits before closing chases'],
+     photo:'Full conduit view (every wall, floor, ceiling); gauge reading at start and after 30 min; back box layout.'},
+    {t:'Pipe Soundproofing',who:'Plumber / General worker',
+     steps:[['Measure','Wrap tape round the drain pipe to measure circumference',''],['Cut damping sheet','Width = circumference; fan shape for elbows',''],['Apply damping sheet','Start from top, lengthwise; press with scraper from centre outwards','3–5cm overlap'],['Cut acoustic wrap','Width = circumference after damping sheet + overlap; elbows +5cm','+10cm'],['Apply acoustic wrap','Start from top, wind around, press as you go',''],['Elbows','Fit in pieces, smooth out wrinkles','']],
+     no:['Stretching the damping sheet','Pulling the wrap hard','Leaving bubbles or wrinkles','Acoustic wrap without damping sheet'],
+     chk:['Damping sheet without bubbles or wrinkles','Wrap fully covers, joints overlap'],
+     photo:'Damping sheet done; acoustic wrap done (including elbows).'},
+    {t:'Waterproofing',who:'Mason / Waterproofer',
+     steps:[['Prepare base','Sweep dust and grit, chip off mortar lumps, clean oil; base may be damp but no standing water',''],['Protect','Cover doors, windows, pipes, floor traps, switch boxes',''],['Round corners','Cement mortar cove at all inside/outside corners, no sharp edges','R50mm'],['Round pipe bases','Fill with plugging compound and round off','R50mm'],['Floor trap extra layer','Extra layer around floor trap first','50 up · 200mm out'],['Spray primer','Sprayer at 45°, even, no gaps; mix fresh, use within 3 hours','0.2–0.3MPa'],['1st coat','Brush horizontally, only after primer is dry','0.5–0.8mm'],['2nd coat','After 1st coat fully dry, brush vertically','0.8–1.0mm'],['Total thickness','Both coats together','≥1.5mm'],['Flood test','Plug trap, fill water and mark level; 24h no drop, then extend to 48h','≥20mm deep · 48h'],['Protective screed','After flood test passes','']],
+     no:['No rounded corners or pipe bases','Only one coat','2nd coat before 1st is dry','Working in rain or on wet base','Walking or stacking material on membrane','Skipping flood test'],
+     chk:['Measure waterproof height with tape','Check unit below for leaks','Photo of water level mark'],
+     photo:'Rounded corners; floor trap extra layer; both coats; waterproof height (with tape); water level at start and after 48 hours.',
+     extra:'Waterproof height: Bathroom full floor, walls 1.8m, 0.5m beyond doorway, 0.3m on wall each side of door · Kitchen walls 0.3m, sink area 1.2m · Balcony walls 0.3m'},
+    {t:'Tiling',who:'Mason',
+     steps:[['Choose adhesive','Approved tile adhesive for the wall and tile type; check manufacture and expiry date',''],['Prepare base','Remove dust, oil, release agent; tap-test with hammer, chip out and patch hollow areas',''],['Control lines','Level and plumb lines; plumb tolerance','≤1mm'],['Layout','Paper layout plan; no strips narrower than 1/3 tile','≥1/3 tile'],['Sort tiles','Reject chipped, cracked or off-colour tiles',''],['Tile back','Low-absorption tiles: back-coat, do not soak; slabs: peel film and clean back',''],['Adhesive on wall','Notched trowel, horizontal','Horizontal notch'],['Adhesive on tile','Skim a thin full coat, then comb vertically','Vertical 1–2mm'],['Adhesive on floor','Notched trowel; 1–2 m² at a time','Notch ≥10mm'],['Lay','Rubber mallet from centre outwards; spacers for joint width','2–3mm joint'],['Movement joint','Leave gap around door and window openings','1–2mm'],['Cut & grind','Grind cut edges smooth','']],
+     no:['Layout by eye','Soaking tiles with absorption <3%','A few blobs of cement on the back','Not cleaning squeezed-out adhesive at once','Walking on fresh tiles'],
+     chk:['Tap every tile for hollows','Straightedge and level for flatness and lippage','Pour water on floor to check fall'],
+     photo:'Control lines; layout plan; trowel marks on wall and tile back; finished surface (with straightedge).'},
+    {t:'Ceiling',who:'Carpenter',
+     steps:[['Mark lines','Laser the ceiling level line',''],['Hangers','Install hangers at set spacing',''],['Main / cross channels','Fix layer by layer; clear debris from channels',''],['Level','Check flatness with level','≤3mm/2m'],['Plumb','Check with plumb line','≤5mm/2m'],['Firmness','Shake hard, nothing loose',''],['Plan & cut','Full boards first, staggered; cut face down',''],['Staggered boards','Adjacent board joints offset, never on the same channel','≥300mm'],['Bevel cut edges','Bevel paper edge on cut joints','45° · 5–10mm'],['Cut-outs','Draw light and vent holes with template before cutting','']],
+     no:['Board joints in one straight line','Joints on the same channel','Filling cut edges without bevel','Installing with damp cut edges'],
+     chk:['Re-check flatness with level','Shake test for firmness','Light and vent positions match drawing'],
+     photo:'Channels (full view before boarding); flatness check; staggered boards.'},
+    {t:'Painting',who:'Painter',
+     steps:[['Check base','Base moisture content','≤10%'],['Repair base','Fix cracks, peeling, hollows first; anti-rust on board screw holes',''],['Mesh tape','Mesh tape on chases and new/old wall joints','50mm wide'],['Gypsum levelling','',''],['Skim coat','Two coats, each fully dry','2 coats'],['Sand','Sand smooth, check with side light',''],['Primer','',''],['Top coat','Water ratio; roll 2 coats, no build-up at overlaps','≤30% water · 2 coats'],['Final coat','After door frames and skirting are installed','']],
+     no:['Painting before wall is dry','One skim coat and one paint coat only','Too much water in top coat','Not protecting doors, windows, floor'],
+     chk:['Straightedge for corners straight and square','Side light: no ripples, pinholes or runs','No colour difference in daylight'],
+     photo:'Mesh tape; skim coat done; top coat done (side light).'},
+    {t:'Installation & Handover',who:'Installer / Project manager',
+     steps:[['Cabinets','Level with spirit level, even door gaps',''],['Countertop','Level with spirit level',''],['Sanitary & fittings','Fixed firm, water test with no leaks',''],['Sealant','Anti-mould sealant where countertop and sanitary ware meet wall',''],['Lights & switches','Power on and test each one',''],['Full clean','',''],['Owner inspection','Check item by item with owner, record issues on the spot, sign','']],
+     no:['No sealant at countertop edge','Uneven cabinet door gaps','Handover without cleaning'],
+     chk:['Test every tap and switch','Issue list has owner and date','Owner signs'],
+     photo:'Cabinet level; sealant finish; whole-home handover photos; signed owner inspection sheet.'}
+  ];
+  const UI={
+    zh:{title:'HOUZY HOME 精工施工交底卡（工人版）',sub:'精工施工交底卡 · 工人版',print:'打印 / 存 PDF',btn:'EN',foot:'HOUZY HOME SDN. BHD. · 合屋整装 · 内部施工标准，请勿外传',
+        rule:'<b>三条铁规：</b>① 按顺序做，上一步没验收不准做下一步；② 数字要用工具量，不靠眼看；③ 每一步做完按"拍照"要求拍照发群，封墙、封地前的照片一张不能少。',
+        steps:'步骤和标准',extra:'记住：',no:'✕ 不准做',chk:'☐ 做完自检',photo:'📷 必须拍照：',s1:'施工人：',s2:'自检日期：',s3:'经理验收：'},
+    en:{title:'HOUZY HOME Site Work Cards (Worker Version)',sub:'Site Work Cards · Worker Version',print:'Print / Save PDF',btn:'中文',foot:'HOUZY HOME SDN. BHD. · Internal work standard, do not share',
+        rule:'<b>Three rules:</b> ① Work in order — do not start the next step until the last one is checked; ② Measure numbers with tools, not by eye; ③ After each step take the photos listed and send to the group — no photo may be missing before walls or floors are closed.',
+        steps:'Steps & standards',extra:'Remember: ',no:'✕ Do NOT',chk:'☐ Self-check',photo:'📷 Photos required: ',s1:'Worker:',s2:'Check date:',s3:'Manager approval:'}
+  };
+  let lang='zh';
+  try{const site=localStorage.getItem('houzy-lang');lang=localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en')}catch(e){}
+  function render(){
+    const u=UI[lang], data=lang==='en'?SOP_EN:SOP;
+    document.documentElement.lang=lang==='en'?'en':'zh-CN';
+    document.title=u.title;
+    document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=u[el.dataset.t]});
+    document.getElementById('lang').textContent=u.btn;
+    document.getElementById('rule').innerHTML=u.rule;
+    document.getElementById('nav').innerHTML=data.map((s,i)=>`<a href="#sop${i+1}">${i+1} ${s.t}</a>`).join('');
+    document.getElementById('cards').innerHTML=data.map((s,i)=>`
+    <section class="card" id="sop${i+1}">
+      <h2><span>${String(i+1).padStart(2,'0')}</span>${s.t}<em>${s.who}</em></h2>
+      <div class="sec"><h3>${u.steps}</h3><ol class="steps">${s.steps.map(([a,d,std])=>`<li><div><b>${a}</b>${d?`<small>${d}</small>`:''}</div>${std?`<span class="std">${std}</span>`:'<span></span>'}</li>`).join('')}</ol></div>
+      ${s.extra?`<div class="photo"><b>${u.extra}</b>${s.extra}</div>`:''}
+      <div class="two"><div class="no"><h3>${u.no}</h3><ul>${s.no.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="chk"><h3>${u.chk}</h3><ul>${s.chk.map(x=>`<li>${x}</li>`).join('')}</ul></div></div>
+      <div class="photo"><b>${u.photo}</b>${s.photo}</div>
+      <div class="sign"><div>${u.s1}</div><div>${u.s2}</div><div>${u.s3}</div></div>
+    </section>`).join('');
+  }
+  document.getElementById('lang').onclick=()=>{lang=lang==='zh'?'en':'zh';try{localStorage.setItem('houzy-partner-language',lang)}catch(e){}render()};
+  render();
+  </script>
+</body>
+</html>
