@@ -1,0 +1,16 @@
+/* Shared v7 base for the inner pages (collections, craft, partner).
+   One background at a time, following Johor Bahru time of day (set by /site-time.js). */
+:root{
+  --sans:"Outfit","Noto Sans SC",system-ui,sans-serif; --serif:"Noto Serif SC",serif;
+  --bg:#ECEEE8; --tile:#E1E4DC; --ink:#1B1E1B; --soft:#5F645E; --rule:rgba(27,30,27,.14);
+}
+[data-time="afternoon"]{--bg:#F4F0E6; --tile:#E9E3D6; --ink:#1C1C1A; --soft:#69655C; --rule:rgba(28,28,26,.14)}
+[data-time="evening"]{--bg:#E9D9C0; --tile:#DFCBAD; --ink:#2A2116; --soft:#634F37; --rule:rgba(42,33,22,.16)}
+[data-time="night"]{--bg:#181712; --tile:#22201A; --ink:#E8E2D4; --soft:#A29C8F; --rule:rgba(232,226,212,.14)}
+body{background:var(--bg)!important;color:var(--ink)!important;font-family:var(--sans)!important;font-weight:300;letter-spacing:.06em;transition:background-color 1.4s ease,color 1.4s ease}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink)}
+.brand img{width:26px!important;height:26px!important;border-radius:4px}
+.brand strong{display:block;font:300 17px/1 var(--sans)!important;letter-spacing:.32em!important;color:var(--ink)}
+.brand small{display:none!important}
+:focus-visible{outline:1px solid var(--ink)!important;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){body{transition:none}}

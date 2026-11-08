@@ -7,15 +7,15 @@
   <link rel="icon" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root{
       --night:#12301F; --line:#2A4A38;
-      --paper:#F5F2ED; --ink:#1A1A1A; --muted:#7D776D; --green:#1A3A2A;
+      --paper:var(--bg); --muted:var(--soft); --green:#1A3A2A;
       --copper:#A8874F; --copper2:#C8A96E; --gold-l:#E0C992; --bad:#B9493B;
       --brick:#A9553E; --power:#E07A2B; --low:#8466B8; --hot:#C8483C; --cold:#3C78C2;
-      --membrane:#D9713A; --tile:#F4F1EA; --gyp:#F7F5F0; --wood:#9C7150;
-      --serif:"Noto Serif SC",serif; --mono:"Noto Sans SC",sans-serif; --num:"Playfair Display",serif;
+      --membrane:#D9713A; --gyp:#F7F5F0; --wood:#9C7150;
+      --serif:"Noto Serif SC",serif; --mono:"Outfit","Noto Sans SC",sans-serif; --num:"Outfit",sans-serif;
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
@@ -151,7 +151,64 @@
     @media (prefers-reduced-motion:reduce){
       *,*::before,*::after{transition:none!important;animation:none!important}
     }
+
+    /* ---- v7 site style: colours follow the time of day (/site.css). Detail drawings stay on a light sheet. ---- */
+    .plate{--tile:#F4F1EA}
+    .bar{background:var(--bg);color:var(--ink);border-bottom:1px solid var(--rule);backdrop-filter:none;-webkit-backdrop-filter:none;padding-top:20px;padding-bottom:20px;transition:background-color 1.4s ease}
+    .bar .back{color:var(--ink);font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+    .lang{border:0;color:var(--soft);font:400 12px var(--sans);letter-spacing:.14em;padding:3px 6px;border-radius:0}
+    .lang:hover,.bar .back:hover{opacity:.55}
+    .kicker,html[lang="zh-CN"] .kicker{font:400 12px var(--sans);font-style:normal;letter-spacing:.2em;text-transform:uppercase;color:var(--soft)}
+    .hero-in{padding-top:80px!important}
+    .hero h1{font:400 clamp(30px,3.4vw,52px)/1.45 var(--serif);letter-spacing:.06em}
+    html[lang="en"] .hero h1{font-size:clamp(24px,2.5vw,36px)}
+    .hero h1 em{color:var(--soft)}
+    .hero p,.hint,.meter{color:var(--soft)}
+    .hint i{background:linear-gradient(var(--ink),transparent)}
+    #iso .lbl{fill:var(--ink);font-weight:400}
+    #iso .sub{fill:var(--soft)}
+    #iso .n{fill:var(--soft);font-family:var(--sans);font-weight:300}
+    #iso [stroke="#E0C992"]{stroke:var(--soft)}
+    #iso circle[fill="#E0C992"]{fill:var(--ink)}
+    #iso ellipse{opacity:.12}
+    .statement,.chapters,.end{background:transparent;color:var(--ink)}
+    .statement,.end{border-top:1px solid var(--rule)}
+    .statement p{font:400 clamp(22px,2.6vw,36px)/1.75 var(--serif);letter-spacing:.06em}
+    .statement p span{color:var(--soft)}
+    .facts{border-top-color:var(--rule)}
+    .facts b{font:300 clamp(36px,4vw,56px)/1 var(--sans);color:var(--ink)}
+    .facts b small{font-family:var(--sans)}
+    .facts span,.why,.nums span,.pts small{color:var(--soft)}
+    .spine a{color:var(--soft)}.spine a.cur{color:var(--ink)}.spine a.cur::before{background:var(--ink)}
+    .ch{border-top-color:var(--rule)}
+    .no{color:var(--soft);font-family:var(--sans);font-weight:400}
+    .no b{font:300 clamp(56px,6vw,90px)/.9 var(--sans);-webkit-text-stroke:1px var(--soft)}
+    .ch h2{font:400 clamp(24px,2.4vw,34px)/1.5 var(--serif);letter-spacing:.08em}
+    .why{font-size:15px}
+    .nums{background:var(--rule);border-color:var(--rule)}
+    .nums div{background:var(--tile)}
+    .nums b{font:300 clamp(20px,1.9vw,26px)/1.1 var(--sans);color:var(--ink)}
+    .flow li{background:transparent;border-color:var(--rule)}
+    .flow li::before{color:var(--soft);font-family:var(--sans)}
+    .vs{border-color:var(--rule);border-radius:0}
+    .vs h4{font-family:var(--sans);font-weight:400}
+    .vs .bad{background:var(--tile);color:var(--soft)}
+    .vs .good{background:var(--ink);color:var(--bg)}
+    .vs .good h4{color:var(--bg)}
+    .checks li,.pts li{border-bottom-color:var(--rule)}
+    .ptsh{color:var(--soft);font-family:var(--sans);font-weight:400}
+    .pts li i{background:var(--ink);color:var(--bg);font-family:var(--sans);font-weight:400}
+    .pts b{font-weight:400}
+    .pts li.hot{background:var(--tile)}
+    .plate{border-color:var(--rule);border-radius:0;box-shadow:none}
+    .end h2{font:400 clamp(26px,3vw,42px)/1.5 var(--serif);letter-spacing:.06em}
+    .end p{color:var(--soft)}
+    .cta{background:var(--ink);color:var(--bg);border:1px solid var(--ink);border-radius:0;font:400 12px var(--sans);letter-spacing:.18em;text-transform:uppercase;padding:15px 24px}
+    .cta:hover{background:transparent;color:var(--ink)}
+    .foot{color:var(--soft);border-top:1px solid var(--rule);font-family:var(--sans);font-weight:300}
   </style>
+  <link rel="stylesheet" href="/site.css">
+  <script src="/site-time.js"></script>
     <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
     <script>
       // 在 Google Ads 建好「WhatsApp Click」转化后，把 AW- 编号和转化标签填在这里；留空就不加载任何跟踪代码
