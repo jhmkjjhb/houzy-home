@@ -220,6 +220,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
   .mbar a.k{background:var(--ink);color:var(--bg)}
   .mnav{display:block;position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;padding:calc(var(--hd) + 8px) var(--pad) 40px;transform:translateX(100%);visibility:hidden;transition:transform .5s cubic-bezier(.2,.7,.2,1),visibility 0s .5s}
   .mnav.open{transform:none;visibility:visible;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+  .mnav .mportal{display:block;margin:0 0 26px;padding:14px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);font:400 17px/1 var(--serif);letter-spacing:.16em}
   .mnav .x{position:absolute;top:10px;right:6px;width:44px;height:44px;font-size:26px;font-weight:300}
   .mnav section{margin-bottom:26px}.mnav .h{display:block;margin-bottom:10px}
   .mnav li{font-size:13px;line-height:2.4}.mnav li::before{content:"•";margin-right:8px}
@@ -426,7 +427,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
   <p class="copy soft"><span data-i18n="footer_copy">© 2026 HOUZY HOME SDN. BHD. All rights reserved.</span></p>
 </footer>
 
-<nav class="mnav" id="mnav" aria-label="Menu"><button class="x" id="mclose" type="button" aria-label="Close">×</button><div id="mnavBody"></div><div class="mlang s"><button type="button" onclick="setLanguage('en')">EN</button><button type="button" onclick="setLanguage('zh-CN')">简</button><button type="button" onclick="setLanguage('zh-TW')">繁</button><button type="button" onclick="setLanguage('ms')">BM</button><button type="button" onclick="setLanguage('th')">ไทย</button></div></nav>
+<nav class="mnav" id="mnav" aria-label="Menu"><button class="x" id="mclose" type="button" aria-label="Close">×</button><a class="mportal" href="/portal/login.html" data-i18n="nav_portal">Customer Portal</a><div id="mnavBody"></div><div class="mlang s"><button type="button" onclick="setLanguage('en')">EN</button><button type="button" onclick="setLanguage('zh-CN')">简</button><button type="button" onclick="setLanguage('zh-TW')">繁</button><button type="button" onclick="setLanguage('ms')">BM</button><button type="button" onclick="setLanguage('th')">ไทย</button></div></nav>
 <div class="mbar s" id="mbar"><a href="https://wa.me/60105898786" target="_blank" rel="noopener">WhatsApp</a><a class="k" href="#contact" data-i18n="nav_book">Book</a></div>
 
     <!-- i18n -->

@@ -1,7 +1,7 @@
 // HOUZY HOME Service Worker
 // 版本号由 .githooks/pre-commit 自动注入(git 短 hash + 时间戳)
 // 改了此文件后请确保 hook 已启用:bash scripts/setup-pwa.sh
-const CACHE_VERSION = '3cac39b-20261109154756';
+const CACHE_VERSION = '8f20d0f-20261109155236';
 const CACHE_NAME = 'houzy-' + CACHE_VERSION;
 
 // 安装时预缓存的基础资源(可选,首次安装就缓存)
