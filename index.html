@@ -154,6 +154,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 #careers .careers-actions a{background:var(--ink)!important;color:var(--bg)!important;border:1px solid var(--ink)!important}
 #careers .careers-actions a+a{background:transparent!important;color:var(--ink)!important}
 #careers .careers-heading{font-family:var(--serif)!important;font-weight:400!important;font-size:28px!important;letter-spacing:.12em}
+.careers-fold>summary{position:relative;list-style:none;cursor:pointer;padding-right:44px}.careers-fold>summary::-webkit-details-marker{display:none}
+.careers-fold>summary:after{content:'+';position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:28px;font-weight:300;line-height:1}.careers-fold[open]>summary:after{content:'−'}
+.careers-fold:not([open]) .careers-lead{margin-bottom:0}.careers-fold>summary:focus-visible{outline:3px solid #9b6b1c;outline-offset:4px}
 
 .ft{display:grid;grid-template-columns:var(--side) 1fr 1fr 1fr;gap:40px;padding:80px var(--pad) calc(50px + env(safe-area-inset-bottom));border-top:1px solid var(--rule);margin-top:40px}
 .ft .s{display:block;margin-bottom:14px}
@@ -334,9 +337,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 
     <section id="careers" aria-labelledby="careers-heading">
       <div class="careers-wrap">
+        <!-- Careers stays folded to its title; the footer link and #careers open it. -->
+        <details class="careers-fold" id="careersFold">
+        <summary>
         <p class="careers-eyebrow">GROW WITH HOUZY HOME · 与合屋一起成长</p>
         <h2 class="careers-heading" id="careers-heading">企业招聘 <span lang="en">/ Careers</span></h2>
         <p class="careers-lead">店长 &amp; 店员招聘 <span lang="en">/ Store Manager &amp; Store Associate</span></p>
+        </summary>
         <div class="careers-layout">
           <div>
             <div class="careers-facts"><span>柔佛新山 / Johor Bahru</span><span>全职 / Full-time</span><span>2–3 名 / Openings</span><span>底薪＋提成 / Base + Commission</span></div>
@@ -366,6 +373,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
           </div>
           <a class="careers-poster" href="images/careers/houzy-careers.jpg" target="_blank" rel="noopener" aria-label="查看完整招聘海报 / View full recruitment poster"><img src="images/careers/houzy-careers.jpg" width="1368" height="1824" loading="lazy" alt="HOUZY HOME 店长及店员招聘海报：新山全职2至3名，底薪加提成，岗位培训及晋升机会。"><span>查看完整招聘海报 / View full poster ↗</span></a>
         </div>
+        </details>
       </div>
     </section>
 
@@ -879,32 +887,45 @@ function applyTime() {
    Storefront API public token: read-only product data, made for web pages.
    Tiles are skipped because their catalogue photos are plain swatches. On any failure the strip stays hidden. */
 const SHOP = { domain: 'houzy-home-solutions.myshopify.com', store: 'https://houzyhomestore.com', token: 'ddd93d5304c21b3e1edd2b166671ae25', version: '2025-01' };
-let shopItems = [];
+let shopItems = [], shopLang = 'en';
+/* Product names come from the shop in the visitor's language; a name with no translation in Shopify stays English. */
+const SHOP_LANG = { 'zh-CN':'ZH_CN', 'zh-TW':'ZH_TW', ms:'MS', th:'TH' }, shopNames = {};
+const shopQuery = (q, lang) => fetch(`https://${SHOP.domain}/api/${SHOP.version}/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.token }, body: JSON.stringify({ query: (lang ? `query @inContext(language: ${lang})` : '') + q }) }).then(r => r.json());
+async function loadShopNames(lang) {
+  const code = SHOP_LANG[lang];
+  if (!code || !shopItems.length || shopNames[lang]) return;
+  try {
+    const j = await shopQuery(`{nodes(ids:${JSON.stringify(shopItems.map(p => p.id))}){... on Product{id title}}}`, code);
+    shopNames[lang] = Object.fromEntries((j.data?.nodes || []).filter(Boolean).map(n => [n.id, n.title]));
+    if (shopLang === lang) renderShop();
+  } catch (e) { /* keep the English names */ }
+}
 function renderShop() {
   if (!shopItems.length) return;
   const fmt = p => { const a = Number(p.amount); return (p.currencyCode === 'MYR' ? 'RM ' : p.currencyCode + ' ') + a.toLocaleString('en-MY', { minimumFractionDigits: a % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+  const names = shopNames[shopLang] || {};
   $('goods').innerHTML = shopItems.map(p => {
+    const title = names[p.id] || p.title;
     const r = p.priceRange, ranged = Number(r.maxVariantPrice.amount) > Number(r.minVariantPrice.amount);
     const price = ranged ? tr('h7_from').replace('{p}', fmt(r.minVariantPrice)) : fmt(r.minVariantPrice);
-    return `<a class="good" href="${esc(p.onlineStoreUrl || SHOP.store + '/products/' + p.handle)}" target="_blank" rel="noopener"><div class="ph"><img src="${esc(p.featuredImage.url)}" alt="${esc(p.featuredImage.altText || p.title)}" loading="lazy"></div><div class="t">${esc(p.title)}</div><div class="p">${price}</div></a>`;
+    return `<a class="good" href="${esc(p.onlineStoreUrl || SHOP.store + '/products/' + p.handle)}" target="_blank" rel="noopener"><div class="ph"><img src="${esc(p.featuredImage.url)}" alt="${esc(p.featuredImage.altText || title)}" loading="lazy"></div><div class="t">${esc(title)}</div><div class="p">${price}</div></a>`;
   }).join('');
 }
 (async () => {
   try {
-    const q = '{products(first:100,sortKey:BEST_SELLING){nodes{title handle productType availableForSale onlineStoreUrl featuredImage{url(transform:{maxWidth:600,maxHeight:600,crop:CENTER}) altText} priceRange{minVariantPrice{amount currencyCode} maxVariantPrice{amount}}}}}';
-    const r = await fetch(`https://${SHOP.domain}/api/${SHOP.version}/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOP.token }, body: JSON.stringify({ query: q }) });
-    const j = await r.json();
+    const q = '{products(first:100,sortKey:BEST_SELLING){nodes{id title handle productType availableForSale onlineStoreUrl featuredImage{url(transform:{maxWidth:600,maxHeight:600,crop:CENTER}) altText} priceRange{minVariantPrice{amount currencyCode} maxVariantPrice{amount}}}}}';
+    const j = await shopQuery(q, 'EN'); // without a language Shopify follows the browser's, which can mismatch the site language
     const list = (j.data?.products?.nodes || []).filter(p => p.availableForSale && p.featuredImage && !/tile|瓷砖/i.test((p.productType || '') + ' ' + p.title));
     if (list.length < 4) return;
     for (let i = list.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [list[i], list[k]] = [list[k], list[i]]; }
-    shopItems = list.slice(0, 4); renderShop(); $('shop').classList.remove('off');
+    shopItems = list.slice(0, 4); renderShop(); $('shop').classList.remove('off'); loadShopNames(shopLang);
   } catch (e) { /* leave the strip hidden */ }
 })();
 
 /* Re-render the dynamic text when the language changes. */
 const baseSetLanguage = setLanguage;
-setLanguage = function (lang) { baseSetLanguage(lang); applyTime(); renderShop(); };
+setLanguage = function (lang) { baseSetLanguage(lang); applyTime(); shopLang = lang; renderShop(); loadShopNames(lang); };
 
 /* ---------- Phone: menu reuses the side column; quiet bottom bar after the first picture ---------- */
 $('mnavBody').innerHTML = $('side').innerHTML;
@@ -914,6 +935,11 @@ mnav.addEventListener('click', e => { if (e.target.closest('a') || e.target.clos
 addEventListener('keydown', e => { if (e.key === 'Escape') setM(false); });
 const bar = $('mbar'), hero = $('hero'), contact = $('contact');
 addEventListener('scroll', () => bar.classList.toggle('show', hero.getBoundingClientRect().bottom < 0 && contact.getBoundingClientRect().top > innerHeight * .6), { passive: true });
+
+/* Careers is folded; opening the page at #careers or using the footer link unfolds it. */
+const openCareers = () => { if (location.hash === '#careers') $('careersFold').open = true; };
+addEventListener('hashchange', openCareers); openCareers();
+document.querySelectorAll('a[href="#careers"]').forEach(a => a.addEventListener('click', () => { $('careersFold').open = true; }));
 
 /* Apply the saved language now that the new strings exist (also renders time-of-day text). */
 setLanguage(localStorage.getItem('houzy-lang') || 'en'); setInterval(applyTime, 30000);
