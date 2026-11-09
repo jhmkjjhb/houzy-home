@@ -305,8 +305,10 @@
     }
     function select(id,updateHash){
       current=STYLES.find(s=>s.id===id)||STYLES[0];
-      const v=current.theme,st=document.body.style;
-      st.setProperty('--c-bg',v.bg);st.setProperty('--c-ink',v.ink);st.setProperty('--c-soft',v.soft);st.setProperty('--c-accent',v.accent);st.setProperty('--c-deep',v.deep);st.setProperty('--c-on-deep',v.onDeep);
+      // The page opens in the site's time-of-day colours; once a visitor picks a style, the page takes that style's colours.
+      if(updateHash){const v=current.theme,st=document.body.style;
+        st.setProperty('--bg',v.bg);st.setProperty('--ink',v.ink);st.setProperty('--soft',v.soft);
+        st.setProperty('--tile',`color-mix(in srgb,${v.bg} 90%,${v.ink})`);st.setProperty('--rule',`color-mix(in srgb,${v.ink} 14%,transparent)`);}
       document.querySelectorAll('.c-name').forEach(b=>{const on=b.dataset.style===current.id;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;if(on&&updateHash)b.scrollIntoView({block:'nearest',inline:'center'})});
       $('panel').setAttribute('aria-labelledby','tab-'+current.id);
       swapRoom(dailyHero(current));render();
@@ -346,7 +348,7 @@
     window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(STYLES.some(s=>s.id===id))select(id,false)});
 
     buildNames();
-    select(location.hash.slice(1),false);
+    select(location.hash.slice(1)||STYLES[Math.floor(Math.random()*STYLES.length)].id,false);
     try{const site=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
   </script>
 </body>
