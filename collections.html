@@ -351,6 +351,7 @@
     select(location.hash.slice(1)||STYLES[Math.floor(Math.random()*STYLES.length)].id,false);
     try{const site=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
   </script>
+<script src="/site-chrome.js" defer></script>
 <script src="/mascot.js" defer></script>
 </body>
 </html>

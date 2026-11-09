@@ -38,6 +38,7 @@
     try{const siteLanguage=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(siteLanguage&&siteLanguage.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
     document.getElementById('partner-form').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;const status=document.getElementById('form-status');if(!form.reportValidity()){status.textContent=copy[language].error;return}status.textContent='';const data=new FormData(form);const t=copy[language];const selected=form.elements.type.selectedOptions[0].textContent;const business=form.elements.business.selectedOptions[0].textContent;const lines=[t.messageIntro,`${t.labelName}: ${data.get('name')}`,`${t.labelPhone}: ${data.get('phone')}`,`${t.labelCompany}: ${data.get('company')||'—'}`,`${t.labelCity}: ${data.get('city')}`,`${t.labelType}: ${selected}`,`${t.labelBusiness}: ${business}`,`${t.labelMessage}: ${data.get('message')||'—'}`];const link=document.createElement('a');link.href='https://wa.me/60105898786?text='+encodeURIComponent(lines.join('\n'));link.target='_blank';link.rel='noopener noreferrer';link.click()});
   </script>
+<script src="/site-chrome.js" defer></script>
 <script src="/mascot.js" defer></script>
 </body>
 </html>
