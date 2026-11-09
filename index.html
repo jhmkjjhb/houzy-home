@@ -143,6 +143,34 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 .stats div{padding-top:18px}
 .stats b{display:block;font:300 28px/1 var(--sans);font-weight:300}
 .stats span{display:block;margin-top:8px;font-size:12px;color:var(--soft)}
+.sea{--sp:#f4f1e9;--sg:#245943;--sk:#153927;--sa:#c8a96e;margin:64px 0 0;padding:clamp(20px,3.2vw,44px);background:var(--sp);color:var(--sk);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:clamp(20px,3vw,44px);align-items:center}
+.sea-top{grid-column:1/-1;display:flex;justify-content:space-between;gap:16px;font-size:10.5px;letter-spacing:.24em;color:#62695f;padding-bottom:12px;border-bottom:1px solid rgba(21,57,39,.18)}
+.sea-en{margin:8px 0 0;font-size:11px;font-weight:600;letter-spacing:.2em}.sea-sub span{display:block;margin-top:3px;font-size:10.5px;font-weight:600;letter-spacing:.12em}
+.sea-list b i{margin-left:8px;font:600 10.5px var(--sans);letter-spacing:.08em;color:#526a58;font-style:normal}.sea-list em small{display:block;font-size:9px;font-weight:700;letter-spacing:.04em}.sea-list em{text-align:center;line-height:1.25}
+.sea-lb small{display:block;margin-top:.3cqw;font:600 1.5cqw var(--sans);letter-spacing:.12em;color:#667166}
+.sea-foot{grid-column:1/-1;margin:0;padding-top:14px;border-top:1px solid rgba(21,57,39,.25);font:400 clamp(16px,1.5vw,20px) var(--serif);letter-spacing:.1em}.sea-foot span{display:block;margin-top:4px;font:600 10.5px var(--sans);letter-spacing:.1em}
+.sea-eb{margin:0;font-size:11px;letter-spacing:.24em;color:var(--sg)}
+.sea-h{margin:12px 0 0;font:400 clamp(24px,2.4vw,34px)/1.35 var(--serif);letter-spacing:.08em;word-break:keep-all}
+.sea-sub{margin:10px 0 0;font-size:13px;color:#566056}
+.sea-list{list-style:none;margin:22px 0 0;padding:0}
+.sea-list li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:12px 0;border-top:1px solid rgba(21,57,39,.18)}
+.sea-list .no{font:13px var(--serif);color:var(--sg);padding-top:2px}
+.sea-list b{display:block;font:400 17px/1.3 var(--serif);letter-spacing:.06em}
+.sea-list small{display:block;margin-top:3px;font-size:11.5px;color:#566056}.sea-list .nw{white-space:nowrap}
+.sea-list em{font-style:normal;font-size:11px;letter-spacing:.06em;padding:4px 8px;border:1px solid var(--sa);background:rgba(200,169,110,.16);white-space:nowrap}
+.sea-list li.a em{background:var(--sk);border-color:var(--sk);color:var(--sa)}
+.sea-map{position:relative;container-type:inline-size}.sea-map img,.sea-map svg{display:block;width:100%;height:auto}.sea-map svg{position:absolute;inset:0;height:100%;overflow:visible}
+.sea path.r{fill:none;stroke:var(--sg);stroke-width:2.4;stroke-linecap:round;opacity:.88;stroke-dasharray:1;stroke-dashoffset:1}.sea path.r.a{stroke:var(--sa);stroke-width:3.5}
+.sea .src{fill:var(--sk);stroke:var(--sp);stroke-width:3}
+.sea .ring{fill:none;stroke:rgba(200,169,110,.55);stroke-width:5}.sea .ring.a{stroke:var(--sa)}
+.sea .n{transform-box:fill-box;transform-origin:center}
+.sea-lb{position:absolute;font:400 2.45cqw/1.2 var(--serif);letter-spacing:.06em;white-space:nowrap;color:var(--sk)}
+.sea path.r{transition:stroke-dashoffset 1.2s ease-in-out calc(var(--d)*1s)}
+.sea .n,.sea-lb,.sea-list li{opacity:0;transition:opacity .6s ease calc(var(--d)*1s + 1s),transform .6s ease calc(var(--d)*1s + 1s)}
+.sea .n{transform:scale(.4)}.sea-list li{transform:translateX(-12px)}
+.sea.go path.r{stroke-dashoffset:0}.sea.go .n,.sea.go .sea-lb,.sea.go .sea-list li{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.sea *{transition:none!important}}
+@media(max-width:899px){.sea{grid-template-columns:1fr}.sea-top{order:-2}.sea-map{order:-1}.sea-lb{display:none}}
 .ct{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
 .ct>div{background:var(--tile);padding:30px 26px;transition:background-color 1.4s ease}
 .ct p{margin-bottom:14px}
@@ -322,6 +350,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         <div><p data-i18n="about_p1"></p><p data-i18n="about_p2"></p><p data-i18n="about_p3"></p>
           <div class="stats"><div><b>20</b><span data-i18n="about_stat1"></span></div><div><b>3</b><span data-i18n="about_stat2"></span></div><div><b>2023</b><span data-i18n="about_stat3"></span></div></div></div>
       </div>
+      <!-- Southeast Asia network: drawn live, lines run from Foshan when the block scrolls into view.
+           Statuses and city areas confirmed by the owner 2026-11-09. -->
+      <figure class="sea" id="sea">
+        <div class="sea-top"><span>HOUZY HOME · REGIONAL VISION</span><span>SOUTHEAST ASIA · 2026</span></div>
+        <div class="sea-txt"><p class="sea-eb">从中国材料源头，走向东南亚</p><h3 class="sea-h">一处起点<br>多城相连</h3><p class="sea-en">ONE ORIGIN · FOUR COUNTRIES</p><p class="sea-sub">佛山材料供应链 · 东南亚家居服务布局示意<span>FOSHAN MATERIALS · SOUTHEAST ASIA NETWORK</span></p>
+          <ol class="sea-list"><li class="a" style="--d:0.6"><span class="no">01</span><span><b>泰国<i>THAILAND</i></b><small>曼谷 Bangkok<span class="nw">（Bang Na 区）</span></small></span><em>现有展厅<small>SHOWROOM</small></em></li><li class="v" style="--d:1.6"><span class="no">02</span><span><b>缅甸<i>MYANMAR</i></b><small>仰光 Yangon</small></span><em>正在装修<small>RENOVATING</small></em></li><li class="v" style="--d:2.6"><span class="no">03</span><span><b>越南<i>VIETNAM</i></b><small>胡志明市 Ho Chi Minh City<span class="nw">（Thảo Điền 区）</span></small></span><em>正在装修<small>RENOVATING</small></em></li><li class="a" style="--d:3.6"><span class="no">04</span><span><b>马来西亚<i>MALAYSIA</i></b><small>新山 Johor Bahru</small></span><em>现有展厅<small>SHOWROOM</small></em></li></ol></div>
+        <div class="sea-map"><img src="images/home/sea-map.svg" alt="" width="1100" height="720" loading="lazy"><svg viewBox="0 0 1100 720" aria-hidden="true"><path class="r a" pathLength="1" style="--d:0.6" d="M717 126C600 220 340 220 212 344"/><path class="r" pathLength="1" style="--d:1.6" d="M717 126C505 145 232 152 32 270"/><path class="r" pathLength="1" style="--d:2.6" d="M717 126C660 252 535 310 458 411"/><path class="r a" pathLength="1" style="--d:3.6" d="M717 126C710 345 470 488 338 627"/><circle class="src" cx="717" cy="126" r="7"/><g class="n" style="--d:0.6"><rect class="ring a" x="192" y="324" width="40" height="40" rx="10"/><image href="/favicon.svg" x="197" y="329" width="30" height="30"/></g><g class="n" style="--d:1.6"><rect class="ring" x="12" y="250" width="40" height="40" rx="10"/><image href="/favicon.svg" x="17" y="255" width="30" height="30"/></g><g class="n" style="--d:2.6"><rect class="ring" x="438" y="391" width="40" height="40" rx="10"/><image href="/favicon.svg" x="443" y="396" width="30" height="30"/></g><g class="n" style="--d:3.6"><rect class="ring a" x="318" y="607" width="40" height="40" rx="10"/><image href="/favicon.svg" x="323" y="612" width="30" height="30"/></g></svg><span class="sea-lb" style="left:5.27%;top:50.00%;--d:0.6">泰国<small>THAILAND · EXISTING SHOWROOM</small></span><span class="sea-lb" style="left:5.27%;top:39.72%;--d:1.6">缅甸<small>MYANMAR · UNDER RENOVATION</small></span><span class="sea-lb" style="left:43.82%;top:58.06%;--d:2.6">越南<small>VIETNAM · UNDER RENOVATION</small></span><span class="sea-lb" style="left:34.09%;top:84.72%;--d:3.6">新山 · Mount Austin<small>MALAYSIA · EXISTING SHOWROOM</small></span><span class="sea-lb src-lb" style="left:67.73%;top:12.08%;--d:0">佛山<small>FOSHAN · MATERIAL SOURCE</small></span></div>
+        <figcaption class="sea-foot">立足新山 · 联结东南亚<span>ROOTED IN JOHOR BAHRU · CONNECTED ACROSS SOUTHEAST ASIA</span></figcaption>
+      </figure>
     </section>
 
     <!-- Contact -->
@@ -448,7 +485,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         about_p1:'A home is felt in the everyday moments: a kitchen that makes mornings easier, storage that gives everyone room, and a place you look forward to returning to. Those moments start with choices you can understand and make for yourself.',
         about_p2:'HOUZY HOME began in Johor Bahru in 2023, drawing on 20 years of whole-home project experience from a China-based company whose team has worked across Guangzhou, Shenzhen and Hong Kong.',
         about_p3:'At our showroom, you can touch materials, compare options and talk through your budget before deciding. We bring together Foshan factory sourcing and materials suited to each project, then guide the work from design and construction to handover and aftercare.',
-        about_stat1:'Years of experience', about_stat2:'Guangzhou · Shenzhen · Hong Kong', about_stat3:'Southeast Asia chapter',
+        about_stat1:'Years of experience', about_stat2:'Guangzhou · Shenzhen · Hong Kong', about_stat3:'Southeast Asia chapter', sea_eyebrow:'From China\'s material source to Southeast Asia',
         about_quote:'“Give life room to imagine.”',
         about_reason:'— The idea behind HOUZY HOME', partner_cta:'Explore partnership ↗', partner_link:'Partner with HOUZY',
         contact_label:'CONTACT US', contact_h2:'Book a Visit', contact_h2_en:'Book a Visit',
@@ -937,6 +974,11 @@ mnav.addEventListener('click', e => { if (e.target.closest('a') || e.target.clos
 addEventListener('keydown', e => { if (e.key === 'Escape') setM(false); });
 const bar = $('mbar'), hero = $('hero'), contact = $('contact');
 addEventListener('scroll', () => bar.classList.toggle('show', hero.getBoundingClientRect().bottom < 0 && contact.getBoundingClientRect().top > innerHeight * .6), { passive: true });
+
+/* Sea network: draw the routes once, the first time the block is on screen (straight to the end state with reduced motion). */
+{ const sea = $('sea'), go = () => sea.classList.add('go');
+  if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) go();
+  else { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { go(); io.disconnect(); } }, { threshold: .3 }); io.observe(sea); } }
 
 /* Careers is folded; opening the page at #careers or using the footer link unfolds it. */
 const openCareers = () => { if (location.hash === '#careers') $('careersFold').open = true; };
