@@ -905,8 +905,10 @@ function renderShop() {
   const fmt = p => { const a = Number(p.amount); return (p.currencyCode === 'MYR' ? 'RM ' : p.currencyCode + ' ') + a.toLocaleString('en-MY', { minimumFractionDigits: a % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
   const names = shopNames[shopLang] || {};
+  // Some shop titles carry HTML codes such as &mdash;; turn them into the real characters before showing.
+  const plain = s => { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; };
   $('goods').innerHTML = shopItems.map(p => {
-    const title = names[p.id] || p.title;
+    const title = plain(names[p.id] || p.title);
     const r = p.priceRange, ranged = Number(r.maxVariantPrice.amount) > Number(r.minVariantPrice.amount);
     const price = ranged ? tr('h7_from').replace('{p}', fmt(r.minVariantPrice)) : fmt(r.minVariantPrice);
     return `<a class="good" href="${esc(p.onlineStoreUrl || SHOP.store + '/products/' + p.handle)}" target="_blank" rel="noopener"><div class="ph"><img src="${esc(p.featuredImage.url)}" alt="${esc(p.featuredImage.altText || title)}" loading="lazy"></div><div class="t">${esc(title)}</div><div class="p">${price}</div></a>`;
