@@ -127,14 +127,24 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 .btn:hover,.btn.k{background:var(--ink);color:var(--bg)}
 .btn.k:hover{background:transparent;color:var(--ink)}
 .pk{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
-.pk article{background:var(--tile);padding:30px 26px 30px;transition:background-color 1.4s ease}
+.pk article{background:var(--tile);padding:30px 26px 30px;transition:background-color 1.4s ease;display:flex;flex-direction:column}
 .pk h3{font:400 16px/1.5 var(--serif);letter-spacing:.2em;margin:10px 0 20px}
 .pk .price{font:300 30px/1 var(--sans);letter-spacing:.04em}
 .pk .trad{font-size:12px;color:var(--soft);text-decoration:line-through;margin-top:8px}
 .pk ul{margin:22px 0 26px;border-top:1px solid var(--rule)}
 .pk li{padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.pkg-expand{margin:0 0 18px;border-bottom:1px solid var(--rule)}
+.pkg-expand summary{cursor:pointer;list-style:none;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;letter-spacing:.12em}
+.pkg-expand summary::-webkit-details-marker{display:none}
+.pkg-expand summary::after{content:'+';font-size:20px;line-height:1}
+.pkg-expand[open] summary::after{content:'−'}
+.pkg-expand summary:hover{text-decoration:underline;text-underline-offset:4px}
+.pkg-expand p{font-size:12px;line-height:1.8;letter-spacing:.04em;margin:0 0 12px}
+.pkg-expand .pkg-check{border-top:1px solid var(--rule);padding-top:12px;color:var(--soft)}
+.pk article>.btn{margin-top:auto}
 .campaign{margin-top:22px}
-.campaign a{border-bottom:1px solid var(--rule);padding-bottom:3px}
+.campaign a{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border:1px solid var(--rule);text-decoration:none;transition:background-color .2s}
+.campaign a:hover{background:var(--tile)}
 .ab{display:grid;grid-template-columns:1fr 1fr;gap:40px 60px}
 .ab .lead{font:400 21px/1.8 var(--serif);letter-spacing:.12em}
 .ab p+p{margin-top:16px}
@@ -337,9 +347,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
     <section class="block" id="packages" aria-labelledby="pkg-h">
       <div class="bh"><h2 class="h" id="pkg-h" data-i18n="pkg_h2">Renovation Packages</h2><p class="soft" data-i18n="pkg_p">Transparent pricing, what you see is what you get</p></div>
       <div class="pk">
-        <article><p class="s soft" data-i18n="pkg1_area">For 80m²</p><h3 data-i18n="pkg1_name">Standard Package</h3><p class="price">RM 29,999</p><p class="trad" data-i18n="pkg1_trad"></p><ul><li data-i18n="pkg1_l1"></li><li data-i18n="pkg1_l2"></li><li data-i18n="pkg1_l3"></li><li data-i18n="pkg1_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Standard%20Package" target="_blank" rel="noopener" data-i18n="pkg1_cta">Enquire</a></article>
-        <article><p class="s soft"><span data-i18n="pkg2_area">For 120m²</span> · <span data-i18n="pkg_popular">Most Popular</span></p><h3 data-i18n="pkg2_name">Premium Package</h3><p class="price">RM 42,999</p><p class="trad" data-i18n="pkg2_trad"></p><ul><li data-i18n="pkg2_l1"></li><li data-i18n="pkg2_l2"></li><li data-i18n="pkg2_l3"></li><li data-i18n="pkg2_l4"></li></ul><a class="btn k" href="https://wa.me/60105898786?text=Premium%20Package" target="_blank" rel="noopener" data-i18n="pkg2_cta">Book Now</a></article>
-        <article><p class="s soft" data-i18n="pkg3_area">For 150m²</p><h3 data-i18n="pkg3_name">Luxury Package</h3><p class="price">RM 59,999</p><p class="trad" data-i18n="pkg3_trad"></p><ul><li data-i18n="pkg3_l1"></li><li data-i18n="pkg3_l2"></li><li data-i18n="pkg3_l3"></li><li data-i18n="pkg3_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Luxury%20Package" target="_blank" rel="noopener" data-i18n="pkg3_cta">Enquire</a></article>
+        <article><p class="s soft" data-i18n="pkg1_area">For 80m²</p><h3 data-i18n="pkg1_name">Standard Package</h3><p class="price">RM 29,999</p><p class="trad" data-i18n="pkg1_trad"></p><ul><li data-i18n="pkg1_l1"></li><li data-i18n="pkg1_l2"></li><li data-i18n="pkg1_l3"></li><li data-i18n="pkg1_l4"></li></ul><details class="pkg-expand"><summary data-i18n="pkg_detail_toggle">View package scope</summary><p data-i18n="pkg1_detail">The 80m² figure is a home-size guide. The published list specifies a 3m kitchen cabinet and one bathroom set; tile area and individual components need an itemised quotation.</p><p class="pkg-check" data-i18n="pkg_detail_check">Confirm tile size and area, cabinet material and worktop, bathroom fittings, installation, demolition, electrical and plumbing work, delivery, tax, variations and warranty in the written quotation.</p></details><a class="btn" href="https://wa.me/60105898786?text=Hello%2C%20please%20send%20me%20an%20itemised%20quote%20for%20the%20Standard%20Package%20RM29999.%20Please%20confirm%20the%20included%20work%20and%20materials." target="_blank" rel="noopener" data-i18n="pkg1_cta">Enquire</a></article>
+        <article><p class="s soft"><span data-i18n="pkg2_area">For 120m²</span> · <span data-i18n="pkg_popular">Most Popular</span></p><h3 data-i18n="pkg2_name">Premium Package</h3><p class="price">RM 42,999</p><p class="trad" data-i18n="pkg2_trad"></p><ul><li data-i18n="pkg2_l1"></li><li data-i18n="pkg2_l2"></li><li data-i18n="pkg2_l3"></li><li data-i18n="pkg2_l4"></li></ul><details class="pkg-expand"><summary data-i18n="pkg_detail_toggle">View package scope</summary><p data-i18n="pkg2_detail">The 120m² figure is a home-size guide. The published list specifies floor and wall tiles, a kitchen cabinet, two bathroom sets and a hardware set; actual areas, cabinet length and components need an itemised quotation.</p><p class="pkg-check" data-i18n="pkg_detail_check">Confirm tile size and area, cabinet material and worktop, bathroom fittings, installation, demolition, electrical and plumbing work, delivery, tax, variations and warranty in the written quotation.</p></details><a class="btn k" href="https://wa.me/60105898786?text=Hello%2C%20please%20send%20me%20an%20itemised%20quote%20for%20the%20Premium%20Package%20RM42999.%20Please%20confirm%20the%20included%20work%20and%20materials." target="_blank" rel="noopener" data-i18n="pkg2_cta">Book Now</a></article>
+        <article><p class="s soft" data-i18n="pkg3_area">For 150m²</p><h3 data-i18n="pkg3_name">Luxury Package</h3><p class="price">RM 59,999</p><p class="trad" data-i18n="pkg3_trad"></p><ul><li data-i18n="pkg3_l1"></li><li data-i18n="pkg3_l2"></li><li data-i18n="pkg3_l3"></li><li data-i18n="pkg3_l4"></li></ul><details class="pkg-expand"><summary data-i18n="pkg_detail_toggle">View package scope</summary><p data-i18n="pkg3_detail">The 150m² figure is a home-size guide. The published list mentions upgraded tiles and kitchen, two bathroom sets and upgraded hardware; the upgrade models and full coverage boundary need an itemised quotation.</p><p class="pkg-check" data-i18n="pkg_detail_check">Confirm tile size and area, cabinet material and worktop, bathroom fittings, installation, demolition, electrical and plumbing work, delivery, tax, variations and warranty in the written quotation.</p></details><a class="btn" href="https://wa.me/60105898786?text=Hello%2C%20please%20send%20me%20an%20itemised%20quote%20for%20the%20Luxury%20Package%20RM59999.%20Please%20confirm%20the%20included%20work%20and%20materials." target="_blank" rel="noopener" data-i18n="pkg3_cta">Enquire</a></article>
       </div>
       <p class="soft s campaign"><a href="/campaign/renewal-2026.html#calculator"><span data-i18n="campaign_title">Ready for a new home? Save 8% this season.</span> <span data-i18n="campaign_cta">See how much you save</span> →</a></p>
     </section>
@@ -788,6 +798,44 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
       th: {campaign_date:'โรงงานวัสดุฝอซาน · ข้อเสนอฤดูกาลนี้',campaign_title:'บ้านใหม่ในฝัน? ดูส่วนลด 8%',campaign_description:'โรงงานวัสดุจริง พร้อมงานออกแบบและก่อสร้างในที่เดียว สำหรับงานที่ร่วมรายการ',campaign_offer:'งานที่ร่วมรายการ',campaign_cta:'คำนวณส่วนลด'}
     };
     Object.keys(campaignTranslations).forEach(lang => Object.assign(i18n[lang], campaignTranslations[lang]));
+    const packageDetailTranslations = {
+      en: {
+        pkg_detail_toggle:'View package scope',
+        pkg1_detail:'The 80m² figure is a home-size guide. The published list specifies a 3m kitchen cabinet and one bathroom set; tile area and individual components need an itemised quotation.',
+        pkg2_detail:'The 120m² figure is a home-size guide. The published list specifies floor and wall tiles, a kitchen cabinet, two bathroom sets and a hardware set; actual areas, cabinet length and components need an itemised quotation.',
+        pkg3_detail:'The 150m² figure is a home-size guide. The published list mentions upgraded tiles and kitchen, two bathroom sets and upgraded hardware; the upgrade models and full coverage boundary need an itemised quotation.',
+        pkg_detail_check:'Confirm tile size and area, cabinet material and worktop, bathroom fittings, installation, demolition, electrical and plumbing work, delivery, tax, variations and warranty in the written quotation.'
+      },
+      'zh-CN': {
+        pkg_detail_toggle:'查看套餐范围',
+        pkg1_detail:'80m² 是参考户型面积。公开配置列有 3 米厨房橱柜和 1 套卫浴；瓷砖实际铺贴面积及各组件需以分项报价列明。',
+        pkg2_detail:'120m² 是参考户型面积。公开配置列有地墙瓷砖、厨房橱柜、2 套卫浴和五金；实际铺贴面积、橱柜长度及组件需以分项报价列明。',
+        pkg3_detail:'150m² 是参考户型面积。公开配置列有升级瓷砖与厨房、2 套卫浴和升级五金；升级型号与“全覆盖”的具体范围需以分项报价列明。',
+        pkg_detail_check:'签约前请在书面报价核对：瓷砖规格和面积、柜体材质与台面、卫浴配件、安装、拆除、水电、运输、税费、增项计价及质保。'
+      },
+      'zh-TW': {
+        pkg_detail_toggle:'查看套餐範圍',
+        pkg1_detail:'80m² 是參考戶型面積。公開配置列有 3 米廚房櫥櫃和 1 套衛浴；瓷磚實際鋪貼面積及各組件需以分項報價列明。',
+        pkg2_detail:'120m² 是參考戶型面積。公開配置列有地牆瓷磚、廚房櫥櫃、2 套衛浴和五金；實際鋪貼面積、櫥櫃長度及組件需以分項報價列明。',
+        pkg3_detail:'150m² 是參考戶型面積。公開配置列有升級瓷磚與廚房、2 套衛浴和升級五金；升級型號與「全覆蓋」的具體範圍需以分項報價列明。',
+        pkg_detail_check:'簽約前請在書面報價核對：瓷磚規格和面積、櫃體材質與檯面、衛浴配件、安裝、拆除、水電、運輸、稅費、增項計價及質保。'
+      },
+      ms: {
+        pkg_detail_toggle:'Lihat skop pakej',
+        pkg1_detail:'80m² ialah panduan saiz rumah. Senarai yang diterbitkan menyebut kabinet dapur 3m dan satu set bilik mandi; keluasan jubin dan komponen perlu dinyatakan dalam sebut harga terperinci.',
+        pkg2_detail:'120m² ialah panduan saiz rumah. Senarai menyebut jubin lantai dan dinding, kabinet dapur, dua set bilik mandi dan perkakasan; keluasan, panjang kabinet dan komponen perlu dinyatakan dalam sebut harga.',
+        pkg3_detail:'150m² ialah panduan saiz rumah. Senarai menyebut jubin dan dapur yang dinaik taraf, dua set bilik mandi dan perkakasan tambahan; model serta had liputan perlu dinyatakan dalam sebut harga.',
+        pkg_detail_check:'Sahkan saiz dan keluasan jubin, bahan kabinet dan permukaan kerja, kelengkapan bilik mandi, pemasangan, kerja meroboh, elektrik dan paip, penghantaran, cukai, perubahan kerja dan waranti dalam sebut harga bertulis.'
+      },
+      th: {
+        pkg_detail_toggle:'ดูขอบเขตแพ็กเกจ',
+        pkg1_detail:'80 ตร.ม. เป็นขนาดบ้านอ้างอิง รายการที่เผยแพร่ระบุตู้ครัว 3 เมตรและชุดห้องน้ำ 1 ชุด พื้นที่ปูกระเบื้องและส่วนประกอบต้องระบุในใบเสนอราคาแยกรายการ',
+        pkg2_detail:'120 ตร.ม. เป็นขนาดบ้านอ้างอิง รายการระบุกระเบื้องพื้นและผนัง ตู้ครัว ชุดห้องน้ำ 2 ชุดและอุปกรณ์ พื้นที่จริง ความยาวตู้และส่วนประกอบต้องระบุในใบเสนอราคา',
+        pkg3_detail:'150 ตร.ม. เป็นขนาดบ้านอ้างอิง รายการระบุกระเบื้องและครัวที่อัปเกรด ชุดห้องน้ำ 2 ชุดและอุปกรณ์เพิ่มเติม รุ่นที่อัปเกรดและขอบเขตงานต้องระบุในใบเสนอราคา',
+        pkg_detail_check:'ตรวจสอบขนาดและพื้นที่กระเบื้อง วัสดุตู้และท็อป อุปกรณ์ห้องน้ำ การติดตั้ง งานรื้อถอน ไฟฟ้าและประปา การขนส่ง ภาษี งานเปลี่ยนแปลงและการรับประกันในใบเสนอราคาเป็นลายลักษณ์อักษร'
+      }
+    };
+    Object.keys(packageDetailTranslations).forEach(lang => Object.assign(i18n[lang], packageDetailTranslations[lang]));
 
     const LANG_LABELS = { en:'EN', 'zh-CN':'简', 'zh-TW':'繁', ms:'BM', th:'ไทย' };
 

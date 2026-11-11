@@ -24,8 +24,9 @@
 
   var css = '.hz-m{position:fixed;z-index:40;display:flex;align-items:flex-end;gap:10px;color:var(--ink,#1b1e1b);font-family:var(--sans,system-ui,sans-serif);transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .4s ease;opacity:0}' +
     '.hz-m.in{opacity:1;transform:none!important}' +
+    '.hz-m.in.quiet{opacity:0;pointer-events:none}' +
     '.hz-m svg{width:64px;height:auto;flex:none;display:block}' +
-    '.hz-m .hz-w{position:relative;margin-bottom:22px}.hz-m .hz-b{display:block;padding:12px 30px 12px 14px;background:var(--bg,#eceee8);border:1px solid #b08d57;font-size:13px;line-height:1.55;letter-spacing:.04em;text-decoration:none;color:inherit;max-width:210px}' +
+    '.hz-m .hz-w{position:relative;margin-bottom:22px}.hz-m .hz-b{display:block;padding:12px 30px 12px 14px;background:var(--bg,#eceee8);border:1px solid #b08d57;font-size:13px;line-height:1.55;letter-spacing:.04em;text-decoration:none;color:inherit;max-width:210px;cursor:pointer}' +
     '.hz-m .hz-b b{display:block;font-weight:400}.hz-m .hz-b span{display:block;margin-top:2px;text-decoration:underline;text-underline-offset:3px;opacity:.75}' +
     '.hz-m .hz-x{position:absolute;top:2px;right:2px;width:26px;height:26px;padding:0;border:0;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer}' +
     '.hz-m a:focus-visible,.hz-m button:focus-visible{outline:2px solid currentColor;outline-offset:3px}' +
@@ -64,6 +65,13 @@
       setTimeout(function () { box.remove(); }, 700);
     });
     document.body.appendChild(box);
+    var packages = document.getElementById('packages');
+    if (packages && 'IntersectionObserver' in window) {
+      var packageObserver = new IntersectionObserver(function (entries) {
+        box.classList.toggle('quiet', entries[0].isIntersecting && window.matchMedia('(max-width:899px)').matches);
+      });
+      packageObserver.observe(packages);
+    }
     requestAnimationFrame(function () { requestAnimationFrame(function () { box.classList.add('in'); }); });
   }
   setTimeout(build, DELAY);
