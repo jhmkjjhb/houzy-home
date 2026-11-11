@@ -9,10 +9,11 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Sans+Thai:wght@300;400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/partner.css">
   <link rel="stylesheet" href="/collections.css">
   <link rel="stylesheet" href="/site.css">
+  <script src="/site-lang.js"></script>
   <script src="/site-time.js"></script>
     <!-- Google Ads：统计从广告进来的客户点击 WhatsApp 咨询。只算门店号码，招聘号码不算 -->
     <script>
@@ -50,7 +51,7 @@
     </script>
 </head>
 <body class="c-page">
-  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/" data-key="navHome">返回首页</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></nav></div>
+  <div class="top"><nav class="nav wrap" aria-label="Main navigation"><a class="brand" href="/"><img src="/favicon.svg" alt=""><span><strong>HOUZY HOME</strong><small>HOME SOLUTIONS</small></span></a><div class="nav-right"><a href="/" data-key="navHome">返回首页</a><div class="lang"></div></div></nav></div>
   <main>
     <div class="wrap c-intro">
       <h1 data-key="heroTitle">六种家的样子，<br>从用料开始看懂</h1>
@@ -129,60 +130,60 @@
     const FILMS = window.HOUZY_FILMS;
     const T = '/images/tiles/full/', S = '/images/styles/';
     const ROOM = {
-      living:{zh:'客厅',en:'Living room'}, dining:{zh:'餐厅',en:'Dining'}, kitchen:{zh:'厨房',en:'Kitchen'},
-      space:{zh:'空间',en:'Space'}, bed:{zh:'卧室',en:'Bedroom'}, other:{zh:'细节',en:'Details'}, all:{zh:'全部',en:'All'}, bath:{zh:'卫浴',en:'Bathroom'}
+      living:{zh:'客厅',en:'Living room','zh-TW':"客廳",ms:"Ruang tamu",th:"ห้องนั่งเล่น"}, dining:{zh:'餐厅',en:'Dining','zh-TW':"餐廳",ms:"Ruang makan",th:"ห้องทานอาหาร"}, kitchen:{zh:'厨房',en:'Kitchen','zh-TW':"廚房",ms:"Dapur",th:"ห้องครัว"},
+      space:{zh:'空间',en:'Space','zh-TW':"空間",ms:"Ruang",th:"พื้นที่"}, bed:{zh:'卧室',en:'Bedroom','zh-TW':"臥室",ms:"Bilik tidur",th:"ห้องนอน"}, other:{zh:'细节',en:'Details','zh-TW':"細節",ms:"Butiran",th:"รายละเอียด"}, all:{zh:'全部',en:'All','zh-TW':"全部",ms:"Semua",th:"ทั้งหมด"}, bath:{zh:'卫浴',en:'Bathroom','zh-TW':"衛浴",ms:"Bilik mandi",th:"ห้องน้ำ"}
     };
     /* Replace a style's photos, materials or wording here. The page rebuilds itself from this list.
        designer: real people only, with their consent. Leave null and no credit is shown.
        Format: { name:'Full Name', title:{zh:'职位',en:'Title'}, years:8, signature:'/images/designers/name.png' }; years and signature are optional. */
     const STYLES = [
-      { designer:null, id:'hening', name:'Hening', zh:'静白', meaning:{zh:'马来语“宁静”',en:'Malay for stillness'},
+      { designer:null, id:'hening', name:'Hening', zh:'静白', meaning:{zh:'马来语“宁静”',en:'Malay for stillness','zh-TW':"馬來語“寧靜”",ms:"Maksudnya: tenang",th:"ภาษามลายู แปลว่า ความสงบ"},
         theme:{bg:'#eeeeea',ink:'#272a28',soft:'#55594f',accent:'#655f50',deep:'#383b37',onDeep:'#f3f3ef'},
-        summary:{zh:'柜子藏起杂物，墙和地连成一片。东西少了，屋子就安静下来。',en:'Cabinets take the clutter, walls and floors run together. With less in view, the home goes quiet.'},
-        fit:{zh:'中小户型，或收纳需求大、又不想看见杂物的家庭。',en:'Smaller homes, or families with a lot to store and no wish to see it.'},
-        material:{zh:'浅灰微水泥感地砖、哑光白柜门、白墙、细线灯带。',en:'Pale grey cement-look tile, matt white doors, white walls, slim light lines.'},
+        summary:{zh:'柜子藏起杂物，墙和地连成一片。东西少了，屋子就安静下来。',en:'Cabinets take the clutter, walls and floors run together. With less in view, the home goes quiet.','zh-TW':"櫃子藏起雜物，牆和地連成一片。東西少了，屋子就安靜下來。",ms:"Kabinet menyimpan barang bersepah, dinding dan lantai menyatu. Bila kurang yang kelihatan, rumah menjadi tenang.",th:"ตู้เก็บของรกไว้ข้างใน ผนังและพื้นต่อเนื่องเป็นผืนเดียว เมื่อมีของให้เห็นน้อยลง บ้านก็สงบลง"},
+        fit:{zh:'中小户型，或收纳需求大、又不想看见杂物的家庭。',en:'Smaller homes, or families with a lot to store and no wish to see it.','zh-TW':"中小戶型，或收納需求大、又不想看見雜物的家庭。",ms:"Rumah bersaiz kecil, atau keluarga yang banyak barang untuk disimpan tetapi tidak mahu ia kelihatan.",th:"บ้านขนาดเล็ก หรือครอบครัวที่มีของต้องเก็บเยอะแต่ไม่อยากให้เห็น"},
+        material:{zh:'浅灰微水泥感地砖、哑光白柜门、白墙、细线灯带。',en:'Pale grey cement-look tile, matt white doors, white walls, slim light lines.','zh-TW':"淺灰微水泥感地磚、啞光白櫃門、白牆、細線燈帶。",ms:"Jubin rupa simen kelabu cerah, pintu kabinet putih matte, dinding putih, jalur lampu halus.",th:"กระเบื้องลายปูนสีเทาอ่อน บานตู้สีขาวด้าน ผนังสีขาว ไฟเส้นบาง"},
         hero:S+'eNHZC6dEi0Y.jpg',
-        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'浅灰地砖',en:'Pale grey tile'},{color:'#f2f1ec',zh:'哑光白柜门',en:'Matt white door'},{color:'#d9d7cf',zh:'暖白墙漆',en:'Warm white paint'},{color:'#a9a79d',zh:'灰色台面',en:'Grey worktop'}],
+        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'浅灰地砖',en:'Pale grey tile','zh-TW':"淺灰地磚",ms:"Jubin kelabu cerah",th:"กระเบื้องเทาอ่อน"},{color:'#f2f1ec',zh:'哑光白柜门',en:'Matt white door','zh-TW':"啞光白櫃門",ms:"Pintu putih matte",th:"บานตู้ขาวด้าน"},{color:'#d9d7cf',zh:'暖白墙漆',en:'Warm white paint','zh-TW':"暖白牆漆",ms:"Cat putih hangat",th:"สีทาผนังขาวอุ่น"},{color:'#a9a79d',zh:'灰色台面',en:'Grey worktop','zh-TW':"灰色檯面",ms:"Permukaan kerja kelabu",th:"ท็อปเคาน์เตอร์สีเทา"}],
         shots:[[S+'IJrfWHWvh5Y.jpg','space'],[S+'gijwI4X-7ig.jpg','kitchen'],[S+'EZ_WwY2vS-Y.jpg','bed'],[S+'fDqcKdxvNkI.jpg','space'],[S+'Cmq9Sy5PW18.jpg','living']] },
-      { designer:null, id:'kayu', name:'Kayu', zh:'原木', meaning:{zh:'马来语“木”',en:'Malay for wood'},
+      { designer:null, id:'kayu', name:'Kayu', zh:'原木', meaning:{zh:'马来语“木”',en:'Malay for wood','zh-TW':"馬來語“木”",ms:"Maksudnya: kayu",th:"ภาษามลายู แปลว่า ไม้"},
         theme:{bg:'#ecdfcb',ink:'#35261a',soft:'#5d4632',accent:'#7a4c1f',deep:'#4a3220',onDeep:'#f8f0e2'},
-        summary:{zh:'大面积的木色和米色，白天晒得暖，晚上灯一开更暖。',en:'Generous timber and beige. Warm in daylight, warmer when the lamps come on.'},
-        fit:{zh:'有孩子或长辈的家庭，想要耐看、住久了也不腻的家。',en:'Homes with children or grandparents, and anyone after a look that stays easy to live with.'},
-        material:{zh:'米色柔光砖、橡木色柜门、藤木餐椅、奶油色墙漆。',en:'Beige soft-sheen tile, oak-tone doors, cane and timber chairs, cream paint.'},
+        summary:{zh:'大面积的木色和米色，白天晒得暖，晚上灯一开更暖。',en:'Generous timber and beige. Warm in daylight, warmer when the lamps come on.','zh-TW':"大面積的木色和米色，白天曬得暖，晚上燈一開更暖。",ms:"Banyak kayu dan warna kuning air. Hangat pada waktu siang, lebih hangat bila lampu dinyalakan.",th:"ไม้และสีเบจเต็มพื้นที่ อบอุ่นในเวลากลางวัน และอบอุ่นยิ่งขึ้นเมื่อเปิดไฟ"},
+        fit:{zh:'有孩子或长辈的家庭，想要耐看、住久了也不腻的家。',en:'Homes with children or grandparents, and anyone after a look that stays easy to live with.','zh-TW':"有孩子或長輩的家庭，想要耐看、住久了也不膩的家。",ms:"Rumah yang ada kanak-kanak atau datuk nenek, dan sesiapa yang mahukan rupa yang selesa didiami untuk jangka panjang.",th:"บ้านที่มีเด็กหรือผู้สูงอายุ และทุกคนที่อยากได้บ้านที่ดูไม่เบื่อแม้อยู่ไปนาน"},
+        material:{zh:'米色柔光砖、橡木色柜门、藤木餐椅、奶油色墙漆。',en:'Beige soft-sheen tile, oak-tone doors, cane and timber chairs, cream paint.','zh-TW':"米色柔光磚、橡木色櫃門、藤木餐椅、奶油色牆漆。",ms:"Jubin kilauan lembut kuning air, pintu warna oak, kerusi rotan dan kayu, cat krim.",th:"กระเบื้องผิวเงาอ่อนสีเบจ บานตู้สีไม้โอ๊ก เก้าอี้หวายและไม้ สีทาผนังครีม"},
         hero:S+'OihXclRy8n0.jpg',
-        chips:[{tile:T+'V1FC126021Y-1.webp',zh:'米色柔光砖',en:'Beige soft tile'},{color:'#b98d5e',zh:'橡木色柜门',en:'Oak-tone door'},{color:'#e7d8bf',zh:'奶油色墙漆',en:'Cream paint'},{color:'#8c6a45',zh:'胡桃木色层板',en:'Walnut-tone shelf'}],
+        chips:[{tile:T+'V1FC126021Y-1.webp',zh:'米色柔光砖',en:'Beige soft tile','zh-TW':"米色柔光磚",ms:"Jubin lembut kuning air",th:"กระเบื้องเบจผิวนุ่ม"},{color:'#b98d5e',zh:'橡木色柜门',en:'Oak-tone door','zh-TW':"橡木色櫃門",ms:"Pintu warna oak",th:"บานตู้สีโอ๊ก"},{color:'#e7d8bf',zh:'奶油色墙漆',en:'Cream paint','zh-TW':"奶油色牆漆",ms:"Cat krim",th:"สีทาผนังครีม"},{color:'#8c6a45',zh:'胡桃木色层板',en:'Walnut-tone shelf','zh-TW':"胡桃木色層板",ms:"Rak warna walnut",th:"ชั้นวางสีวอลนัท"}],
         shots:[[S+'77JACslA8G0.jpg','living'],[S+'4ORa79MZypI.jpg','kitchen'],[S+'DsH3VOZanYA.jpg','dining'],[S+'RqO6kwm4tZY.jpg','living'],[S+'NRLYAOmqd_c.jpg','other']] },
-      { designer:null, id:'krim', name:'Krim', zh:'奶油', meaning:{zh:'马来语“奶油”',en:'Malay for cream'},
+      { designer:null, id:'krim', name:'Krim', zh:'奶油', meaning:{zh:'马来语“奶油”',en:'Malay for cream','zh-TW':"馬來語“奶油”",ms:"Maksudnya: krim",th:"ภาษามลายู แปลว่า ครีม"},
         theme:{bg:'#f4ecdd',ink:'#3a2f25',soft:'#65553f',accent:'#775630',deep:'#5c4633',onDeep:'#fbf5e9'},
-        summary:{zh:'圆角、柔光和奶咖色，整个屋子像裹了一层奶油。看着软，住着也放松。',en:'Rounded edges, soft light and milky coffee tones. The whole home feels gentle, and easy to relax in.'},
-        fit:{zh:'新婚或有小孩的家庭，喜欢柔和、干净的感觉，中小户型也不显压迫。',en:'Young couples and families with small children who like a soft, clean look. Smaller homes stay open and light.'},
-        material:{zh:'奶油色柔光砖、奶咖色墙漆、圆角柜门、浅色布艺。本地天气潮湿，布料建议选防潮易清洁的。',en:'Cream soft-sheen tile, milky coffee paint, rounded cabinet doors, pale fabrics. In this humid climate, choose fabrics that resist damp and clean easily.'},
+        summary:{zh:'圆角、柔光和奶咖色，整个屋子像裹了一层奶油。看着软，住着也放松。',en:'Rounded edges, soft light and milky coffee tones. The whole home feels gentle, and easy to relax in.','zh-TW':"圓角、柔光和奶咖色，整個屋子像裹了一層奶油。看著軟，住著也放鬆。",ms:"Bucu bulat, cahaya lembut dan rona kopi susu. Seluruh rumah terasa lembut dan mudah untuk berehat.",th:"ขอบมน แสงนุ่ม และโทนสีกาแฟนม ทั้งบ้านให้ความรู้สึกอ่อนโยนและผ่อนคลาย"},
+        fit:{zh:'新婚或有小孩的家庭，喜欢柔和、干净的感觉，中小户型也不显压迫。',en:'Young couples and families with small children who like a soft, clean look. Smaller homes stay open and light.','zh-TW':"新婚或有小孩的家庭，喜歡柔和、乾淨的感覺，中小戶型也不顯壓迫。",ms:"Pasangan muda dan keluarga dengan anak kecil yang suka rupa lembut dan bersih. Rumah kecil tetap terasa lapang dan terang.",th:"คู่แต่งงานใหม่และครอบครัวที่มีลูกเล็ก ที่ชอบลุคนุ่มนวลและสะอาดตา บ้านขนาดเล็กก็ยังดูโปร่งและสว่าง"},
+        material:{zh:'奶油色柔光砖、奶咖色墙漆、圆角柜门、浅色布艺。本地天气潮湿，布料建议选防潮易清洁的。',en:'Cream soft-sheen tile, milky coffee paint, rounded cabinet doors, pale fabrics. In this humid climate, choose fabrics that resist damp and clean easily.','zh-TW':"奶油色柔光磚、奶咖色牆漆、圓角櫃門、淺色布藝。本地天氣潮溼，布料建議選防潮易清潔的。",ms:"Jubin kilauan lembut krim, cat kopi susu, pintu kabinet bucu bulat, fabrik warna cerah. Dalam cuaca lembap di sini, pilih fabrik yang tahan lembap dan mudah dibersihkan.",th:"กระเบื้องผิวเงาอ่อนสีครีม สีทาผนังกาแฟนม บานตู้ขอบมน ผ้าสีอ่อน อากาศที่นี่ชื้น ควรเลือกผ้าที่ทนความชื้นและทำความสะอาดง่าย"},
         hero:S+'SZ-DsEZxzlg.jpg',
-        chips:[{tile:T+'V1RS15702Y-1.webp',zh:'奶油色柔光砖',en:'Cream soft tile'},{color:'#d8c5a8',zh:'奶咖色墙漆',en:'Milky coffee paint'},{color:'#efe3cf',zh:'圆角柜门',en:'Rounded door'},{color:'#e3d6c3',zh:'浅色布艺',en:'Pale fabric'}],
+        chips:[{tile:T+'V1RS15702Y-1.webp',zh:'奶油色柔光砖',en:'Cream soft tile','zh-TW':"奶油色柔光磚",ms:"Jubin lembut krim",th:"กระเบื้องครีมผิวนุ่ม"},{color:'#d8c5a8',zh:'奶咖色墙漆',en:'Milky coffee paint','zh-TW':"奶咖色牆漆",ms:"Cat kopi susu",th:"สีกาแฟนม"},{color:'#efe3cf',zh:'圆角柜门',en:'Rounded door','zh-TW':"圓角櫃門",ms:"Pintu bucu bulat",th:"บานตู้ขอบมน"},{color:'#e3d6c3',zh:'浅色布艺',en:'Pale fabric','zh-TW':"淺色布藝",ms:"Fabrik cerah",th:"ผ้าสีอ่อน"}],
         shots:[[S+'4UJdTZdwh8o.jpg','living'],[S+'c0JoR_-2x3E.jpg','living'],[S+'O5Ueow319AM.jpg','bed'],[S+'7y0DGa1vlXQ.jpg','kitchen'],[S+'lZfBkUqknEI.jpg','space']] },
-      { designer:null, id:'senja', name:'Senja', zh:'暮金', meaning:{zh:'马来语“黄昏”',en:'Malay for dusk'},
+      { designer:null, id:'senja', name:'Senja', zh:'暮金', meaning:{zh:'马来语“黄昏”',en:'Malay for dusk','zh-TW':"馬來語“黃昏”",ms:"Maksudnya: senja",th:"ภาษามลายู แปลว่า ยามเย็น"},
         theme:{bg:'#2a211b',ink:'#f2e8da',soft:'#d4c5b0',accent:'#d6ae6c',deep:'#14100c',onDeep:'#f6ecdd'},
-        summary:{zh:'深色木、细金属线和低处的灯光。适合晚上回到家才慢慢亮起来的屋子。',en:'Dark timber, fine metal lines and low light, for a home that comes alive after dark.'},
-        fit:{zh:'常在家招待朋友、餐厨区比较大的家庭。',en:'Homes that host often and have a generous kitchen and dining area.'},
-        material:{zh:'深胡桃木饰面、古铜色金属线条、暖色岩板、隐藏灯带。',en:'Dark walnut veneer, bronze metal trims, warm sintered stone, hidden light lines.'},
+        summary:{zh:'深色木、细金属线和低处的灯光。适合晚上回到家才慢慢亮起来的屋子。',en:'Dark timber, fine metal lines and low light, for a home that comes alive after dark.','zh-TW':"深色木、細金屬線和低處的燈光。適合晚上回到家才慢慢亮起來的屋子。",ms:"Kayu gelap, garisan logam halus dan cahaya rendah, untuk rumah yang lebih bernyawa selepas gelap.",th:"ไม้สีเข้ม เส้นโลหะบาง และแสงไฟระดับต่ำ สำหรับบ้านที่มีชีวิตชีวาขึ้นเมื่อพลบค่ำ"},
+        fit:{zh:'常在家招待朋友、餐厨区比较大的家庭。',en:'Homes that host often and have a generous kitchen and dining area.','zh-TW':"常在家招待朋友、餐廚區比較大的家庭。",ms:"Rumah yang kerap menerima tetamu dan mempunyai ruang dapur serta makan yang luas.",th:"บ้านที่รับแขกบ่อย และมีพื้นที่ครัวและโต๊ะอาหารกว้างขวาง"},
+        material:{zh:'深胡桃木饰面、古铜色金属线条、暖色岩板、隐藏灯带。',en:'Dark walnut veneer, bronze metal trims, warm sintered stone, hidden light lines.','zh-TW':"深胡桃木飾面、古銅色金屬線條、暖色巖板、隱藏燈帶。",ms:"Venir walnut gelap, kemasan logam gangsa, batu sinter rona hangat, jalur lampu tersembunyi.",th:"วีเนียร์วอลนัทเข้ม คิ้วโลหะสีบรอนซ์ หินซินเทอร์โทนอุ่น ไฟเส้นซ่อน"},
         hero:S+'XRFrXFoA3wQ.jpg',
-        chips:[{color:'#3f2c20',zh:'深胡桃木饰面',en:'Dark walnut'},{color:'#a7824a',zh:'古铜色线条',en:'Bronze trim'},{tile:T+'V1RS12601Y-1.webp',zh:'暖色岩板',en:'Warm stone'},{color:'#e4cfae',zh:'暖光色温',en:'Warm light'}],
+        chips:[{color:'#3f2c20',zh:'深胡桃木饰面',en:'Dark walnut','zh-TW':"深胡桃木飾面",ms:"Walnut gelap",th:"วอลนัทเข้ม"},{color:'#a7824a',zh:'古铜色线条',en:'Bronze trim','zh-TW':"古銅色線條",ms:"Kemasan gangsa",th:"คิ้วบรอนซ์"},{tile:T+'V1RS12601Y-1.webp',zh:'暖色岩板',en:'Warm stone','zh-TW':"暖色巖板",ms:"Batu rona hangat",th:"หินโทนอุ่น"},{color:'#e4cfae',zh:'暖光色温',en:'Warm light','zh-TW':"暖光色溫",ms:"Cahaya hangat",th:"แสงโทนอุ่น"}],
         shots:[[S+'vz9IbCAXHKQ.jpg','bed'],[S+'iUjIiP0sMTs.jpg','kitchen'],[S+'jt-Pld5EU2s.jpg','dining'],[S+'s9U9wTy1pmw.jpg','space'],[S+'_0d1WKtONVA.jpg','other']] },
-      { designer:null, id:'serambi', name:'Serambi', zh:'廊下', meaning:{zh:'马来语“外廊”',en:'Malay for veranda'},
+      { designer:null, id:'serambi', name:'Serambi', zh:'廊下', meaning:{zh:'马来语“外廊”',en:'Malay for veranda','zh-TW':"馬來語“外廊”",ms:"Maksudnya: beranda",th:"ภาษามลายู แปลว่า ระเบียง"},
         theme:{bg:'#e1e7d9',ink:'#17382b',soft:'#3e5a4c',accent:'#6f5121',deep:'#17382b',onDeep:'#f4f1e6'},
-        summary:{zh:'本地老屋外廊的那份凉意：拱形、藤编和植物的绿，让室内外不再分得那么开。',en:'The cool of a Malaysian veranda: arches, woven rattan and planted green, with less of a line between indoors and out.'},
-        fit:{zh:'有大窗或阳台的家，喜欢植物和自然通风的家庭。',en:'Homes with big windows or a balcony, and families who like plants and moving air.'},
-        material:{zh:'暖米色大板砖、藤编面板、灰绿墙漆、浅色木饰面。',en:'Warm beige large-format tile, rattan panels, grey-green paint, pale timber veneer.'},
+        summary:{zh:'本地老屋外廊的那份凉意：拱形、藤编和植物的绿，让室内外不再分得那么开。',en:'The cool of a Malaysian veranda: arches, woven rattan and planted green, with less of a line between indoors and out.','zh-TW':"本地老屋外廊的那份涼意：拱形、藤編和植物的綠，讓室內外不再分得那麼開。",ms:"Kesejukan beranda rumah Malaysia: gerbang, anyaman rotan dan hijau tumbuhan, dengan sempadan dalam dan luar rumah yang semakin kabur.",th:"ความเย็นสบายของระเบียงบ้านมาเลเซีย ซุ้มโค้ง หวายสาน และสีเขียวของต้นไม้ ทำให้ภายในและภายนอกบ้านแทบไม่แยกจากกัน"},
+        fit:{zh:'有大窗或阳台的家，喜欢植物和自然通风的家庭。',en:'Homes with big windows or a balcony, and families who like plants and moving air.','zh-TW':"有大窗或陽臺的家，喜歡植物和自然通風的家庭。",ms:"Rumah dengan tingkap besar atau balkoni, dan keluarga yang suka tumbuhan serta pengudaraan semula jadi.",th:"บ้านที่มีหน้าต่างบานใหญ่หรือระเบียง และครอบครัวที่ชอบต้นไม้และลมธรรมชาติ"},
+        material:{zh:'暖米色大板砖、藤编面板、灰绿墙漆、浅色木饰面。',en:'Warm beige large-format tile, rattan panels, grey-green paint, pale timber veneer.','zh-TW':"暖米色大板磚、藤編面板、灰綠牆漆、淺色木飾面。",ms:"Jubin format besar kuning air hangat, panel rotan, cat hijau kelabu, venir kayu cerah.",th:"กระเบื้องแผ่นใหญ่สีเบจอุ่น แผงหวาย สีทาผนังเขียวเทา วีเนียร์ไม้สีอ่อน"},
         hero:S+'DY7wJD6Ly2s.jpg',
-        chips:[{tile:T+'VIRS12602Y-1.webp',zh:'米色大板砖',en:'Beige tile'},{kind:'rattan',zh:'藤编面板',en:'Rattan panel'},{color:'#8a9a84',zh:'灰绿墙漆',en:'Grey-green paint'},{color:'#c4a47c',zh:'浅色木饰面',en:'Pale veneer'}],
+        chips:[{tile:T+'VIRS12602Y-1.webp',zh:'米色大板砖',en:'Beige tile','zh-TW':"米色大板磚",ms:"Jubin kuning air",th:"กระเบื้องเบจ"},{kind:'rattan',zh:'藤编面板',en:'Rattan panel','zh-TW':"藤編面板",ms:"Panel rotan",th:"แผงหวาย"},{color:'#8a9a84',zh:'灰绿墙漆',en:'Grey-green paint','zh-TW':"灰綠牆漆",ms:"Cat hijau kelabu",th:"สีเขียวเทา"},{color:'#c4a47c',zh:'浅色木饰面',en:'Pale veneer','zh-TW':"淺色木飾面",ms:"Venir cerah",th:"วีเนียร์สีอ่อน"}],
         shots:[[S+'ncP6nMaUCPs.jpg','living'],[S+'RAXD1BlJmSs.jpg','bed'],[S+'NtmheMV9n_Q.jpg','space'],[S+'VSCwUAzNTvA.jpg','bath'],[S+'CEa_RRJBTAU.jpg','living']] },
-      { designer:null, id:'batu', name:'Batu', zh:'石墨', meaning:{zh:'马来语“石”',en:'Malay for stone'},
+      { designer:null, id:'batu', name:'Batu', zh:'石墨', meaning:{zh:'马来语“石”',en:'Malay for stone','zh-TW':"馬來語“石”",ms:"Maksudnya: batu",th:"ภาษามลายู แปลว่า หิน"},
         theme:{bg:'#2d3234',ink:'#eef0ef',soft:'#c9cfd0',accent:'#c3cdcf',deep:'#14181a',onDeep:'#eef0ef'},
-        summary:{zh:'石材、黑钢和水泥色，线条硬朗，耐看也耐用。',en:'Stone, black steel and cement tones. Hard lines that wear well.'},
-        fit:{zh:'喜欢利落线条，下厨频繁，希望台面和柜门耐用的家庭。',en:'People who like clean lines, cook a lot and want hard-wearing worktops and doors.'},
-        material:{zh:'灰色水泥感大板、黑色柜门、石材台面、黑钢线条。',en:'Grey cement-look slabs, black doors, stone worktops, black steel trims.'},
+        summary:{zh:'石材、黑钢和水泥色，线条硬朗，耐看也耐用。',en:'Stone, black steel and cement tones. Hard lines that wear well.','zh-TW':"石材、黑鋼和水泥色，線條硬朗，耐看也耐用。",ms:"Batu, keluli hitam dan rona simen. Garisan tegas yang tahan lama.",th:"หิน เหล็กดำ และโทนปูน เส้นสายแข็งแรงที่ทนทาน"},
+        fit:{zh:'喜欢利落线条，下厨频繁，希望台面和柜门耐用的家庭。',en:'People who like clean lines, cook a lot and want hard-wearing worktops and doors.','zh-TW':"喜歡利落線條，下廚頻繁，希望檯面和櫃門耐用的家庭。",ms:"Mereka yang suka garisan kemas, kerap memasak dan mahukan permukaan kerja serta pintu yang tahan lasak.",th:"คนที่ชอบเส้นสายเรียบคม ทำอาหารบ่อย และต้องการท็อปเคาน์เตอร์และบานตู้ที่ทนทาน"},
+        material:{zh:'灰色水泥感大板、黑色柜门、石材台面、黑钢线条。',en:'Grey cement-look slabs, black doors, stone worktops, black steel trims.','zh-TW':"灰色水泥感大板、黑色櫃門、石材檯面、黑鋼線條。",ms:"Papak rupa simen kelabu, pintu hitam, permukaan kerja batu, kemasan keluli hitam.",th:"แผ่นใหญ่ลายปูนสีเทา บานตู้สีดำ ท็อปหิน คิ้วเหล็กดำ"},
         hero:S+'s95oB2n9jng.jpg',
-        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'水泥感大板',en:'Cement-look slab'},{color:'#1e2224',zh:'黑色柜门',en:'Black door'},{color:'#6c7172',zh:'石材台面',en:'Stone worktop'},{color:'#34383a',zh:'黑钢线条',en:'Black steel'}],
+        chips:[{tile:T+'V1FC126023Y-1.webp',zh:'水泥感大板',en:'Cement-look slab','zh-TW':"水泥感大板",ms:"Papak rupa simen",th:"แผ่นลายปูน"},{color:'#1e2224',zh:'黑色柜门',en:'Black door','zh-TW':"黑色櫃門",ms:"Pintu hitam",th:"บานตู้ดำ"},{color:'#6c7172',zh:'石材台面',en:'Stone worktop','zh-TW':"石材檯面",ms:"Permukaan kerja batu",th:"ท็อปหิน"},{color:'#34383a',zh:'黑钢线条',en:'Black steel','zh-TW':"黑鋼線條",ms:"Keluli hitam",th:"เหล็กดำ"}],
         shots:[[S+'j6MCxix3o2c.jpg','kitchen'],[S+'f7fZg21B3ms.jpg','bed'],[S+'RKi6pLKBayg.jpg','kitchen'],[S+'euzt9ipzSWA.jpg','dining'],[S+'n_w2qXLkmns.jpg','space']] }
     ];
     /* Licensed stock photos. Sources are listed in images/styles/CREDITS.md. Add new ones there too. */
@@ -195,6 +196,10 @@
       en:{title:'Style collections | HOUZY HOME',navHome:'Home',heroTitle:'Six ways to live,<br>read through their materials',heroLead:'Every style comes with a material board. See the space, see what it is made of, and tell us which one you like.',boardTitle:'Material board for this style',boardNote:'Screen colours are a guide. Store samples are the reference.',factFit:'Who it suits',factMaterial:'Main materials',factBudget:'How the budget works',budgetText:'Priced by area and materials. Send us your floor plan for a first estimate.',closeText:'Send your floor plan and favourite style on WhatsApp. Our Johor Bahru store will reply.',backSite:'Back to site',close:'Close',ideasTitle:'More cream style ideas',ideasNote:'Photos are a style reference. Visit the HOUZY showroom to see the real thing.',ideaLabel:'Inspiration',designedBy:'Designer',years:n=>`${n} years in practice`,ask:n=>`Ask about ${n}`,gallery:n=>`Inside ${n}`,count:n=>`${n} photos`,closeTitle:n=>`Like ${n}? Tell us about your home`,msg:n=>`Hi, I saw the ${n} style on your website and would like to know more.`}
     };
     Object.assign(copy.zh,{filmKicker:'SPACE FILMS · 空间影像',filmTitle:'从一张图，走进一个空间。',filmLead:'看光线、材料和动线如何一起构成生活场景。点开影片，找到你想带回家的感觉。',filmPlay:'播放影片'});
+    /* Added languages: zh-TW is converted from the Simplified text; ms and th are translations. */
+    copy["zh-TW"]={"title":"風格系列 | HOUZY HOME","navHome":"返回首頁","heroTitle":"六種家的樣子，<br>從用料開始看懂","heroLead":"每種風格都配一塊材料板。先看空間，再看它用了什麼，喜歡哪一種就發給我們。","boardTitle":"這個風格的材料板","boardNote":"屏幕顏色僅供參考，實際以門店樣品為準。","factFit":"適合的家","factMaterial":"主要用料","factBudget":"預算怎麼算","budgetText":"按面積和用料報價。發戶型圖給我們，先估一個範圍。","closeText":"把戶型圖和喜歡的風格發到 WhatsApp，新山門店會和你對接。","backSite":"返回官網","close":"關閉","ideasTitle":"更多奶油風靈感","ideasNote":"圖片為風格參考，實物歡迎到 HOUZY 樣品間看看。","ideaLabel":"靈感參考","designedBy":"設計師","years":n=>`從業 ${n} 年`,"ask":n=>`諮詢 ${n} 風格`,"gallery":n=>`${n} 的空間`,"count":n=>`${n} 張`,"closeTitle":n=>`喜歡 ${n}？聊聊你的家`,"msg":n=>`你好，我在官網看到 ${n} 風格，想了解一下。`,"filmKicker":"SPACE FILMS · 空間影像","filmTitle":"從一張圖，走進一個空間。","filmLead":"看光線、材料和動線如何一起構成生活場景。點開影片，找到你想帶回家的感覺。","filmPlay":"播放影片"};
+    copy["ms"]={"title":"Koleksi gaya | HOUZY HOME","navHome":"Utama","heroTitle":"Enam cara untuk hidup,<br>difahami melalui bahannya","heroLead":"Setiap gaya disertakan papan bahan. Lihat ruangnya, lihat bahan yang digunakan, dan beritahu kami yang mana anda suka.","boardTitle":"Papan bahan untuk gaya ini","boardNote":"Warna di skrin hanya panduan. Sampel di kedai ialah rujukan sebenar.","factFit":"Sesuai untuk","factMaterial":"Bahan utama","factBudget":"Cara bajet dikira","budgetText":"Harga mengikut keluasan dan bahan. Hantar pelan lantai anda untuk anggaran awal.","closeText":"Hantar pelan lantai dan gaya kegemaran anda melalui WhatsApp. Kedai kami di Johor Bahru akan membalas.","backSite":"Kembali ke laman utama","close":"Tutup","ideasTitle":"Lebih banyak idea gaya krim","ideasNote":"Foto ialah rujukan gaya. Lawati bilik pameran HOUZY untuk melihat yang sebenar.","ideaLabel":"Inspirasi","designedBy":"Pereka","years":n=>`${n} tahun pengalaman`,"ask":n=>`Tanya tentang ${n}`,"gallery":n=>`Di dalam ${n}`,"count":n=>`${n} foto`,"closeTitle":n=>`Suka ${n}? Ceritakan tentang rumah anda`,"msg":n=>`Hai, saya nampak gaya ${n} di laman web anda dan ingin tahu lebih lanjut.`,"filmKicker":"SPACE FILMS","filmTitle":"Melangkah masuk ke ruang.","filmLead":"Lihat bagaimana cahaya, bahan dan pergerakan membentuk sebuah bilik. Buka filem dan cari suasana yang anda mahukan di rumah.","filmPlay":"Main filem"};
+    copy["th"]={"title":"คอลเลกชันสไตล์ | HOUZY HOME","navHome":"หน้าแรก","heroTitle":"บ้านหกแบบ<br>เข้าใจได้จากวัสดุ","heroLead":"ทุกสไตล์มาพร้อมบอร์ดวัสดุ ดูพื้นที่ ดูว่าใช้วัสดุอะไร แล้วบอกเราว่าคุณชอบแบบไหน","boardTitle":"บอร์ดวัสดุของสไตล์นี้","boardNote":"สีบนหน้าจอใช้เป็นแนวทางเท่านั้น อ้างอิงตามตัวอย่างจริงที่ร้าน","factFit":"เหมาะกับบ้านแบบไหน","factMaterial":"วัสดุหลัก","factBudget":"คิดงบประมาณอย่างไร","budgetText":"คิดราคาตามพื้นที่และวัสดุ ส่งแปลนบ้านมาให้เรา เพื่อประเมินช่วงราคาเบื้องต้น","closeText":"ส่งแปลนบ้านและสไตล์ที่ชอบมาทาง WhatsApp ร้านของเราที่ยะโฮร์บาห์รูจะติดต่อกลับ","backSite":"กลับสู่เว็บไซต์","close":"ปิด","ideasTitle":"ไอเดียสไตล์ครีมเพิ่มเติม","ideasNote":"รูปภาพใช้เป็นแนวทางสไตล์ แวะมาดูของจริงได้ที่โชว์รูม HOUZY","ideaLabel":"แรงบันดาลใจ","designedBy":"นักออกแบบ","years":n=>`ประสบการณ์ ${n} ปี`,"ask":n=>`สอบถามสไตล์ ${n}`,"gallery":n=>`ภายใน ${n}`,"count":n=>`${n} ภาพ`,"closeTitle":n=>`ชอบ ${n} ไหม? เล่าเรื่องบ้านของคุณให้เราฟัง`,"msg":n=>`สวัสดีครับ/ค่ะ ฉันเห็นสไตล์ ${n} บนเว็บไซต์ และอยากทราบข้อมูลเพิ่มเติม`,"filmKicker":"SPACE FILMS","filmTitle":"ก้าวเข้าไปในพื้นที่","filmLead":"ดูว่าแสง วัสดุ และการใช้งานสร้างห้องขึ้นมาอย่างไร เปิดดูวิดีโอแล้วค้นหาความรู้สึกที่อยากได้ในบ้านของคุณ","filmPlay":"เล่นวิดีโอ"};
     Object.assign(copy.en,{filmKicker:'SPACE FILMS',filmTitle:'Step inside the space.',filmLead:'See how light, materials and movement shape a room. Open a film and find the feeling you want at home.',filmPlay:'Play film'});
     const $ = id => document.getElementById(id);
     let language = 'zh', current = STYLES[0], boxIndex = 0, boxList = [], boxLabel = '', ideaRoom = 'all';
@@ -241,20 +246,20 @@
       $('film-list').replaceChildren(...FILMS.map(f=>{
         const fig=document.createElement('figure');fig.className='c-film';
         const button=document.createElement('button');button.type='button';button.className='c-film-open';
-        button.setAttribute('aria-label',`${t.filmPlay}: ${f.name[language]}`);
+        button.setAttribute('aria-label',`${t.filmPlay}: ${(f.name[language]||f.name.en)}`);
         button.addEventListener('click',()=>openFilm(f));
         const poster=document.createElement('img');poster.src=f.file+'.jpg';poster.alt='';poster.loading='lazy';poster.width=1280;poster.height=720;
         const play=document.createElement('span');play.className='c-film-play';play.textContent=t.filmPlay;
         button.append(poster,play);
         const caption=document.createElement('figcaption');caption.className='c-film-caption';
-        const name=document.createElement('h3');name.textContent=f.name[language];
+        const name=document.createElement('h3');name.textContent=(f.name[language]||f.name.en);
         const meta=document.createElement('span');meta.className='c-film-meta';meta.textContent=[f.area,f.duration].filter(Boolean).join(' · ');
         caption.append(name,meta);fig.append(button,caption);return fig;
       }));
     }
     function openFilm(f){
       const video=$('film-video');video.poster=f.file+'.jpg';video.src=f.file+'.mp4';
-      $('film-box-title').textContent=[f.name[language],f.area].filter(Boolean).join(' · ');
+      $('film-box-title').textContent=[(f.name[language]||f.name.en),f.area].filter(Boolean).join(' · ');
       $('film-box').showModal();video.play().catch(()=>{});
     }
     function closeFilm(){
@@ -285,7 +290,7 @@
       const label=document.createElement('span');label.className='c-designer-label';label.textContent=t.designedBy;box.append(label);
       if(d.signature){const img=document.createElement('img');img.src=d.signature;img.alt=d.name;box.append(img);}
       const name=document.createElement('strong');name.textContent=d.name;box.append(name);
-      const role=[d.title[language],d.years?t.years(d.years):''].filter(Boolean).join(' · ');
+      const role=[(d.title[language]||d.title.en),d.years?t.years(d.years):''].filter(Boolean).join(' · ');
       const line=document.createElement('span');line.className='c-designer-role';line.textContent=role;box.append(line);
     }
     function swapRoom(src){
@@ -323,10 +328,8 @@
     function stepBox(d){boxIndex=(boxIndex+d+boxList.length)%boxList.length;showBox();}
     function setLanguage(next){
       if(!copy[next])return;language=next;
-      document.documentElement.lang=next==='zh'?'zh-CN':'en';document.title=copy[next].title;
+      document.documentElement.lang=next==='zh'?'zh-CN':next;document.title=copy[next].title;
       document.querySelectorAll('[data-key]').forEach(el=>{const v=copy[next][el.dataset.key];if(v!==undefined)el.innerHTML=v});
-      document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===next)));
-      try{localStorage.setItem('houzy-partner-language',next)}catch(e){}
       render();
       renderFilms();
     }
@@ -344,12 +347,12 @@
     $('film-box-close').addEventListener('click',()=>$('film-box').close());
     $('film-box').addEventListener('close',closeFilm);
     $('film-box').addEventListener('click',e=>{if(e.target===$('film-box'))$('film-box').close()});
-    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLanguage(b.dataset.lang)));
     window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(STYLES.some(s=>s.id===id))select(id,false)});
 
     buildNames();
     select(location.hash.slice(1)||STYLES[Math.floor(Math.random()*STYLES.length)].id,false);
-    try{const site=localStorage.getItem('houzy-lang');setLanguage(localStorage.getItem('houzy-partner-language')||(site&&site.startsWith('zh')?'zh':'en'))}catch(e){setLanguage('en')}
+    window.houzySetLang=code=>setLanguage(code==='zh-CN'?'zh':code);
+    houzySetLang(houzyLang());
   </script>
 <script src="/site-chrome.js" defer></script>
 <script src="/mascot.js" defer></script>

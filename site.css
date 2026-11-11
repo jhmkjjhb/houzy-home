@@ -1,7 +1,7 @@
 /* Shared v7 base for the inner pages (collections, craft, partner).
    One background at a time, following Johor Bahru time of day (set by /site-time.js). */
 :root{
-  --sans:"Outfit","Noto Sans SC",system-ui,sans-serif; --serif:"Noto Serif SC",serif;
+  --sans:"Outfit","Noto Sans SC","Noto Sans Thai",system-ui,sans-serif; --serif:"Noto Serif SC","Noto Sans Thai",serif;
   --bg:#ECEEE8; --tile:#E1E4DC; --ink:#1B1E1B; --soft:#5F645E; --rule:rgba(27,30,27,.14);
 }
 [data-time="afternoon"]{--bg:#F4F0E6; --tile:#E9E3D6; --ink:#1C1C1A; --soft:#69655C; --rule:rgba(28,28,26,.14)}
@@ -20,6 +20,12 @@ body{background:var(--bg)!important;color:var(--ink)!important;font-family:var(-
 .hz-nav{display:flex;align-items:center;gap:28px}
 .hz-nav a{color:var(--ink);text-decoration:none;font-size:12px;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
 .hz-nav a:hover,.hz-ft a:hover,.hz-menu a:hover{opacity:.55}
+.hz-lang{position:relative}
+.hz-lang-btn{border:0;background:none;color:var(--ink);font:300 12px var(--sans);letter-spacing:.14em;padding:6px 4px;cursor:pointer;white-space:nowrap}
+.hz-lang-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:70;min-width:160px;padding:6px 0;background:var(--bg);border:1px solid var(--rule);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.hz-lang-menu button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:300 13px var(--sans);letter-spacing:.08em;padding:9px 16px;cursor:pointer}
+.hz-lang-menu button:hover{background:var(--tile,rgba(0,0,0,.04))}
+.hz-lang-menu button[aria-current=true]{text-decoration:underline;text-underline-offset:5px}
 .hz-burger{display:none;width:44px;height:44px;position:relative;padding:0;border:0;background:none;cursor:pointer}
 .hz-burger::before,.hz-burger::after{content:"";position:absolute;left:11px;right:11px;height:1px;background:var(--ink);top:18px}
 .hz-burger::after{top:26px}
