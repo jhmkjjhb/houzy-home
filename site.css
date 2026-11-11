@@ -26,6 +26,8 @@ body{background:var(--bg)!important;color:var(--ink)!important;font-family:var(-
 .hz-lang-menu button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:300 13px var(--sans);letter-spacing:.08em;padding:9px 16px;cursor:pointer}
 .hz-lang-menu button:hover{background:var(--tile,rgba(0,0,0,.04))}
 .hz-lang-menu button[aria-current=true]{text-decoration:underline;text-underline-offset:5px}
+.hz-back{display:inline-block;margin:0 0 18px;padding:6px 0;color:var(--soft);text-decoration:none;font:300 13px var(--sans);letter-spacing:.12em}
+.hz-back:hover{color:var(--ink)}
 .hz-burger{display:none;width:44px;height:44px;position:relative;padding:0;border:0;background:none;cursor:pointer}
 .hz-burger::before,.hz-burger::after{content:"";position:absolute;left:11px;right:11px;height:1px;background:var(--ink);top:18px}
 .hz-burger::after{top:26px}

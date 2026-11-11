@@ -4,23 +4,23 @@
 (function () {
   var WA = 'https://wa.me/60105898786';
   var T = {
-    'zh-CN': { shop: '商城', portal: '客户中心', book: '预约', menu: '菜单', close: '关闭', styles: '风格系列', craft: '精工工艺',
+    'zh-CN': { home: '返回首页', shop: '商城', portal: '客户中心', book: '预约', menu: '菜单', close: '关闭', styles: '风格系列', craft: '精工工艺',
           packages: '整装套餐', store: '线上商城', story: '品牌故事', more: '更多', follow: '关注', contact: '联系',
           hours: '每天 10:00 – 19:30', careers: '企业招聘', partner: '合作伙伴', brand: '品牌手册', staff: '员工入口',
           copy: '© 2026 HOUZY HOME SDN. BHD. · 中国合屋整装控股广州有限公司 版权所有' },
-    en: { shop: 'Shop', portal: 'Customer Portal', book: 'Book', menu: 'Menu', close: 'Close', styles: 'Styles', craft: 'Craftsmanship',
+    en: { home: 'Back to home', shop: 'Shop', portal: 'Customer Portal', book: 'Book', menu: 'Menu', close: 'Close', styles: 'Styles', craft: 'Craftsmanship',
           packages: 'Renovation Packages', store: 'Online Shop', story: 'Our Story', more: 'More', follow: 'Follow', contact: 'Contact',
           hours: 'Daily 10:00 – 19:30', careers: 'Careers', partner: 'Partner with HOUZY', brand: 'Brand & Identity', staff: 'Staff',
           copy: '© 2026 HOUZY HOME SDN. BHD. · 中国合屋整装控股广州有限公司 All rights reserved.' },
-    'zh-TW': { shop: '商城', portal: '客戶中心', book: '預約', menu: '選單', close: '關閉', styles: '風格系列', craft: '精工工藝',
+    'zh-TW': { home: '返回首頁', shop: '商城', portal: '客戶中心', book: '預約', menu: '選單', close: '關閉', styles: '風格系列', craft: '精工工藝',
           packages: '整裝套餐', store: '線上商城', story: '品牌故事', more: '更多', follow: '關注', contact: '聯絡',
           hours: '每天 10:00 – 19:30', careers: '企業招聘', partner: '合作夥伴', brand: '品牌手冊', staff: '員工入口',
           copy: '© 2026 HOUZY HOME SDN. BHD. · 中国合屋整装控股广州有限公司 版權所有', lang: '語言' },
-    ms: { shop: 'Kedai', portal: 'Portal Pelanggan', book: 'Tempah', menu: 'Menu', close: 'Tutup', styles: 'Gaya', craft: 'Ketukangan',
+    ms: { home: 'Kembali ke laman utama', shop: 'Kedai', portal: 'Portal Pelanggan', book: 'Tempah', menu: 'Menu', close: 'Tutup', styles: 'Gaya', craft: 'Ketukangan',
           packages: 'Pakej Renovasi', store: 'Kedai Dalam Talian', story: 'Kisah Kami', more: 'Lagi', follow: 'Ikuti', contact: 'Hubungi',
           hours: 'Setiap hari 10:00 – 19:30', careers: 'Kerjaya', partner: 'Jadi rakan HOUZY', brand: 'Jenama & Visual', staff: 'Staf',
           copy: '© 2026 HOUZY HOME SDN. BHD. · 中国合屋整装控股广州有限公司 Hak cipta terpelihara.', lang: 'Bahasa' },
-    th: { shop: 'ร้านค้า', portal: 'พอร์ทัลลูกค้า', book: 'จอง', menu: 'เมนู', close: 'ปิด', styles: 'สไตล์', craft: 'งานฝีมือ',
+    th: { home: 'กลับหน้าแรก', shop: 'ร้านค้า', portal: 'พอร์ทัลลูกค้า', book: 'จอง', menu: 'เมนู', close: 'ปิด', styles: 'สไตล์', craft: 'งานฝีมือ',
           packages: 'แพ็กเกจรีโนเวท', store: 'ร้านค้าออนไลน์', story: 'เรื่องราวของเรา', more: 'เพิ่มเติม', follow: 'ติดตาม', contact: 'ติดต่อ',
           hours: 'ทุกวัน 10:00 – 19:30', careers: 'ร่วมงานกับเรา', partner: 'ร่วมงานกับ HOUZY', brand: 'แบรนด์ & ภาพ', staff: 'พนักงาน',
           copy: '© 2026 HOUZY HOME SDN. BHD. · 中国合屋整装控股广州有限公司 สงวนลิขสิทธิ์', lang: 'ภาษา' }
@@ -57,6 +57,15 @@
   burger.type = 'button'; burger.className = 'hz-burger'; burger.setAttribute('aria-controls', 'hzMenu'); burger.setAttribute('aria-expanded', 'false');
   right.appendChild(burger);
   document.documentElement.classList.add('hz-chrome');
+
+  // "Back to home" above the page's first heading, so visitors who arrive on an inner page see the way out.
+  var first = document.querySelector('[data-t="kicker"], .hero-copy .eyebrow, .c-intro h1');
+  if (first) {
+    var back = document.createElement('a');
+    back.className = 'hz-back'; back.href = '/';
+    back.innerHTML = '← ' + k('home');
+    first.parentNode.insertBefore(back, first);
+  }
 
   // Phone menu, same order as the homepage menu with Customer Portal first.
   var menu = document.createElement('nav');

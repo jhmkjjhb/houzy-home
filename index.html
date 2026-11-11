@@ -130,7 +130,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 .pk article{background:var(--tile);padding:30px 26px 30px;transition:background-color 1.4s ease}
 .pk h3{font:400 16px/1.5 var(--serif);letter-spacing:.2em;margin:10px 0 20px}
 .pk .price{font:300 30px/1 var(--sans);letter-spacing:.04em}
-.pk .trad{font-size:12px;color:var(--soft);text-decoration:line-through;margin-top:8px}
+.pk .price.q{font-size:20px;line-height:1.35}
 .pk ul{margin:22px 0 26px;border-top:1px solid var(--rule)}
 .pk li{padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px}
 .campaign{margin-top:22px}
@@ -296,7 +296,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
     <section><a class="h" href="/craft.html" data-i18n="nav_craft">Craftsmanship</a>
       <ul><li><a href="/craft.html" data-i18n="h7_c1">10 build stages</a></li><li><a href="/craft.html" data-i18n="h7_c2">43 checkpoints</a></li></ul></section>
     <section><a class="h" href="#packages" data-i18n="pkg_h2">Renovation Packages</a>
-      <ul><li><a href="#packages"><span data-i18n="pkg1_name">Standard</span> · RM 29,999</a></li><li><a href="#packages"><span data-i18n="pkg2_name">Premium</span> · RM 42,999</a></li><li><a href="#packages"><span data-i18n="pkg3_name">Luxury</span> · RM 59,999</a></li></ul>
+      <ul><li><a href="#packages"><span data-i18n="pkg1_name">Standard</span></a></li><li><a href="#packages"><span data-i18n="pkg2_name">Premium</span></a></li><li><a href="#packages"><span data-i18n="pkg3_name">Luxury</span></a></li></ul>
       <a class="note" href="/campaign/renewal-2026.html#calculator" data-i18n="campaign_title">Ready for a new home? Save 8% this season.</a></section>
     <section><a class="h" href="#shop" data-i18n="h7_shop_h">Online Shop</a>
       <ul><li><a href="https://houzyhomestore.com" target="_blank" rel="noopener" data-i18n="h7_all_plain">All products</a></li></ul></section>
@@ -321,7 +321,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 
     <a class="tile t4 photo-tile" href="/collections.html"><img src="images/home/c3-600.webp" srcset="images/home/c3-600.webp 600w, images/home/c3-900.webp 900w" sizes="(max-width:899px) 50vw, 20vw" alt="" loading="lazy"><span class="lab"><span data-i18n="nav_styles">Styles</span><small data-i18n="h7_s_styles">6 collections</small></span></a>
     <a class="tile t4 craft" href="/craft.html"><svg id="iso" viewBox="-185 -300 480 580" aria-hidden="true"></svg><span class="lab"><span data-i18n="nav_craft">Craftsmanship</span><small data-i18n="h7_b2">10 build stages · 43 checkpoints</small></span><span class="hint s" data-i18n="h7_hint">Take it apart →</span></a>
-    <a class="tile t4 photo-tile" href="#packages"><img src="images/home/t-kitchen-700.webp" alt="" loading="lazy"><span class="lab"><span data-i18n="pkg_h2">Renovation Packages</span><small data-i18n="h7_s_pkg">From RM 29,999</small></span></a>
+    <a class="tile t4 photo-tile" href="#packages"><img src="images/home/t-kitchen-700.webp" alt="" loading="lazy"><span class="lab"><span data-i18n="pkg_h2">Renovation Packages</span><small data-i18n="h7_s_pkg">Priced by area</small></span></a>
     <a class="tile t4 photo-tile" href="#about"><img src="images/home/t-living-700.webp" alt="" loading="lazy"><span class="lab"><span data-i18n="about_label">Our Story</span><small data-i18n="h7_s_about">Since 2023</small></span></a>
 
     <section class="shop off" id="shop" aria-labelledby="shop-h">
@@ -337,9 +337,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
     <section class="block" id="packages" aria-labelledby="pkg-h">
       <div class="bh"><h2 class="h" id="pkg-h" data-i18n="pkg_h2">Renovation Packages</h2><p class="soft" data-i18n="pkg_p">Transparent pricing, what you see is what you get</p></div>
       <div class="pk">
-        <article><p class="s soft" data-i18n="pkg1_area">For 80m²</p><h3 data-i18n="pkg1_name">Standard Package</h3><p class="price">RM 29,999</p><p class="trad" data-i18n="pkg1_trad"></p><ul><li data-i18n="pkg1_l1"></li><li data-i18n="pkg1_l2"></li><li data-i18n="pkg1_l3"></li><li data-i18n="pkg1_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Standard%20Package" target="_blank" rel="noopener" data-i18n="pkg1_cta">Enquire</a></article>
-        <article><p class="s soft"><span data-i18n="pkg2_area">For 120m²</span> · <span data-i18n="pkg_popular">Most Popular</span></p><h3 data-i18n="pkg2_name">Premium Package</h3><p class="price">RM 42,999</p><p class="trad" data-i18n="pkg2_trad"></p><ul><li data-i18n="pkg2_l1"></li><li data-i18n="pkg2_l2"></li><li data-i18n="pkg2_l3"></li><li data-i18n="pkg2_l4"></li></ul><a class="btn k" href="https://wa.me/60105898786?text=Premium%20Package" target="_blank" rel="noopener" data-i18n="pkg2_cta">Book Now</a></article>
-        <article><p class="s soft" data-i18n="pkg3_area">For 150m²</p><h3 data-i18n="pkg3_name">Luxury Package</h3><p class="price">RM 59,999</p><p class="trad" data-i18n="pkg3_trad"></p><ul><li data-i18n="pkg3_l1"></li><li data-i18n="pkg3_l2"></li><li data-i18n="pkg3_l3"></li><li data-i18n="pkg3_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Luxury%20Package" target="_blank" rel="noopener" data-i18n="pkg3_cta">Enquire</a></article>
+        <article><p class="s soft" data-i18n="pkg1_area">For 80m²</p><h3 data-i18n="pkg1_name">Standard Package</h3><p class="price q" data-i18n="pkg_quote">Priced by area &amp; style</p><ul><li data-i18n="pkg1_l1"></li><li data-i18n="pkg1_l2"></li><li data-i18n="pkg1_l3"></li><li data-i18n="pkg1_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Hi%2C%20I%20would%20like%20a%20free%20estimate%20for%20the%20Standard%20Package.%20I%20will%20send%20my%20floor%20plan." target="_blank" rel="noopener" data-i18n="pkg_est">Get a free estimate</a></article>
+        <article><p class="s soft"><span data-i18n="pkg2_area">For 120m²</span> · <span data-i18n="pkg_popular">Most Popular</span></p><h3 data-i18n="pkg2_name">Premium Package</h3><p class="price q" data-i18n="pkg_quote">Priced by area &amp; style</p><ul><li data-i18n="pkg2_l1"></li><li data-i18n="pkg2_l2"></li><li data-i18n="pkg2_l3"></li><li data-i18n="pkg2_l4"></li></ul><a class="btn k" href="https://wa.me/60105898786?text=Hi%2C%20I%20would%20like%20a%20free%20estimate%20for%20the%20Premium%20Package.%20I%20will%20send%20my%20floor%20plan." target="_blank" rel="noopener" data-i18n="pkg_est">Get a free estimate</a></article>
+        <article><p class="s soft" data-i18n="pkg3_area">For 150m²</p><h3 data-i18n="pkg3_name">Luxury Package</h3><p class="price q" data-i18n="pkg_quote">Priced by area &amp; style</p><ul><li data-i18n="pkg3_l1"></li><li data-i18n="pkg3_l2"></li><li data-i18n="pkg3_l3"></li><li data-i18n="pkg3_l4"></li></ul><a class="btn" href="https://wa.me/60105898786?text=Hi%2C%20I%20would%20like%20a%20free%20estimate%20for%20the%20Luxury%20Package.%20I%20will%20send%20my%20floor%20plan." target="_blank" rel="noopener" data-i18n="pkg_est">Get a free estimate</a></article>
       </div>
       <p class="soft s campaign"><a href="/campaign/renewal-2026.html#calculator"><span data-i18n="campaign_title">Ready for a new home? Save 8% this season.</span> <span data-i18n="campaign_cta">See how much you save</span> →</a></p>
     </section>
@@ -470,13 +470,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         pkg_p:'Transparent pricing, what you see is what you get', pkg_popular:'Most Popular',
         pkg1_name:'Standard Package', pkg1_name_en:'Standard Package', pkg1_area:'For 80m²',
         pkg1_l1:'Full House Tiles', pkg1_l2:'3m Kitchen Cabinet', pkg1_l3:'1 Bathroom Set', pkg1_l4:'Hardware & Accessories',
-        pkg1_trad:'Traditional ≈ RM 35,000–50,000', pkg1_cta:'Enquire',
+        pkg1_cta:'Enquire',
         pkg2_name:'Premium Package', pkg2_name_en:'Premium Package', pkg2_area:'For 120m²',
         pkg2_l1:'Floor & Wall Tiles', pkg2_l2:'Kitchen Cabinet', pkg2_l3:'2 Bathroom Sets', pkg2_l4:'Full Hardware Set',
-        pkg2_trad:'Traditional ≈ RM 55,000–80,000', pkg2_cta:'Book Now',
+        pkg2_cta:'Book Now',
         pkg3_name:'Luxury Package', pkg3_name_en:'Luxury Package', pkg3_area:'For 150m²',
         pkg3_l1:'Upgraded Tiles & Kitchen', pkg3_l2:'2 Bathroom Sets', pkg3_l3:'Premium Hardware', pkg3_l4:'Full Coverage',
-        pkg3_trad:'Traditional ≈ RM 80,000–120,000', pkg3_cta:'Enquire',
+        pkg3_cta:'Enquire',
         shop_label:'ONLINE STORE', shop_h2:'Shop Online', shop_h2_en:'Shop Online',
         shop_p:'Premium materials delivered to your door',
         shop_f1_h:'Authentic Products', shop_f1_sub:'Authentic Products', shop_f1_p:'Brand direct supply, guaranteed authentic',
@@ -535,13 +535,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         pkg_p:'报价清楚，项目明细一目了然', pkg_popular:'最受欢迎',
         pkg1_name:'标准套餐', pkg1_name_en:'Standard Package', pkg1_area:'适用80m²',
         pkg1_l1:'全屋瓷砖', pkg1_l2:'厨房橱柜 3米', pkg1_l3:'卫浴套装 × 1', pkg1_l4:'五金辅材',
-        pkg1_trad:'传统 ≈ RM 35,000–50,000', pkg1_cta:'咨询详情',
+        pkg1_cta:'咨询详情',
         pkg2_name:'品质套餐', pkg2_name_en:'Premium Package', pkg2_area:'适用120m²',
         pkg2_l1:'全屋瓷砖（地+墙）', pkg2_l2:'厨房橱柜', pkg2_l3:'卫浴套装 × 2', pkg2_l4:'五金/辅材全套',
-        pkg2_trad:'传统 ≈ RM 55,000–80,000', pkg2_cta:'立即预约',
+        pkg2_cta:'立即预约',
         pkg3_name:'奢华套餐', pkg3_name_en:'Luxury Package', pkg3_area:'适用150m²',
         pkg3_l1:'升级瓷砖+整体厨房', pkg3_l2:'卫浴套装 × 2', pkg3_l3:'五金辅材+升级配件', pkg3_l4:'扩大面积全覆盖',
-        pkg3_trad:'传统 ≈ RM 80,000–120,000', pkg3_cta:'咨询详情',
+        pkg3_cta:'咨询详情',
         shop_label:'线上商城', shop_h2:'线上商城', shop_h2_en:'Shop Online',
         shop_p:'足不出户，精选建材直达您家',
         shop_f1_h:'正品保障', shop_f1_sub:'正品保障', shop_f1_p:'品牌直供，假一赔十',
@@ -600,13 +600,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         pkg_p:'報價清楚，項目明細一目了然', pkg_popular:'最受歡迎',
         pkg1_name:'標準套餐', pkg1_name_en:'Standard Package', pkg1_area:'適用80m²',
         pkg1_l1:'全屋瓷磚', pkg1_l2:'廚房櫥櫃 3米', pkg1_l3:'衛浴套裝 × 1', pkg1_l4:'五金輔材',
-        pkg1_trad:'傳統 ≈ RM 35,000–50,000', pkg1_cta:'諮詢詳情',
+        pkg1_cta:'諮詢詳情',
         pkg2_name:'品質套餐', pkg2_name_en:'Premium Package', pkg2_area:'適用120m²',
         pkg2_l1:'全屋瓷磚（地+牆）', pkg2_l2:'廚房櫥櫃', pkg2_l3:'衛浴套裝 × 2', pkg2_l4:'五金/輔材全套',
-        pkg2_trad:'傳統 ≈ RM 55,000–80,000', pkg2_cta:'立即預約',
+        pkg2_cta:'立即預約',
         pkg3_name:'奢華套餐', pkg3_name_en:'Luxury Package', pkg3_area:'適用150m²',
         pkg3_l1:'升級瓷磚+整體廚房', pkg3_l2:'衛浴套裝 × 2', pkg3_l3:'五金輔材+升級配件', pkg3_l4:'擴大面積全覆蓋',
-        pkg3_trad:'傳統 ≈ RM 80,000–120,000', pkg3_cta:'諮詢詳情',
+        pkg3_cta:'諮詢詳情',
         shop_label:'線上商城', shop_h2:'線上商城', shop_h2_en:'Shop Online',
         shop_p:'足不出戶，精選建材直達您家',
         shop_f1_h:'正品保障', shop_f1_sub:'正品保障', shop_f1_p:'品牌直供，假一賠十',
@@ -665,13 +665,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         pkg_p:'Harga telus, apa yang anda lihat itulah yang anda dapat', pkg_popular:'Paling Popular',
         pkg1_name:'Pakej Standard', pkg1_name_en:'Standard Package', pkg1_area:'Untuk 80m²',
         pkg1_l1:'Jubin Seluruh Rumah', pkg1_l2:'Kabinet Dapur 3m', pkg1_l3:'Set Bilik Mandi × 1', pkg1_l4:'Perkakasan & Aksesori',
-        pkg1_trad:'Tradisional ≈ RM 35,000–50,000', pkg1_cta:'Tanya Lanjut',
+        pkg1_cta:'Tanya Lanjut',
         pkg2_name:'Pakej Premium', pkg2_name_en:'Premium Package', pkg2_area:'Untuk 120m²',
         pkg2_l1:'Jubin Lantai & Dinding', pkg2_l2:'Kabinet Dapur', pkg2_l3:'Set Bilik Mandi × 2', pkg2_l4:'Set Perkakasan Penuh',
-        pkg2_trad:'Tradisional ≈ RM 55,000–80,000', pkg2_cta:'Tempah Sekarang',
+        pkg2_cta:'Tempah Sekarang',
         pkg3_name:'Pakej Mewah', pkg3_name_en:'Luxury Package', pkg3_area:'Untuk 150m²',
         pkg3_l1:'Jubin & Dapur Naik Taraf', pkg3_l2:'Set Bilik Mandi × 2', pkg3_l3:'Perkakasan Premium', pkg3_l4:'Liputan Penuh',
-        pkg3_trad:'Tradisional ≈ RM 80,000–120,000', pkg3_cta:'Tanya Lanjut',
+        pkg3_cta:'Tanya Lanjut',
         shop_label:'KEDAI DALAM TALIAN', shop_h2:'Beli Dalam Talian', shop_h2_en:'Shop Online',
         shop_p:'Bahan premium dihantar terus ke pintu anda',
         shop_f1_h:'Produk Tulen', shop_f1_sub:'Produk Tulen', shop_f1_p:'Bekalan terus dari jenama, dijamin tulen',
@@ -730,13 +730,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
         pkg_p:'ราคาโปร่งใส สิ่งที่คุณเห็นคือสิ่งที่คุณได้รับ', pkg_popular:'ยอดนิยมที่สุด',
         pkg1_name:'แพ็กเกจมาตรฐาน', pkg1_name_en:'Standard Package', pkg1_area:'สำหรับ 80m²',
         pkg1_l1:'กระเบื้องทั้งบ้าน', pkg1_l2:'ตู้ครัว 3 เมตร', pkg1_l3:'ชุดห้องน้ำ × 1', pkg1_l4:'อุปกรณ์และอุปกรณ์เสริม',
-        pkg1_trad:'แบบดั้งเดิม ≈ RM 35,000–50,000', pkg1_cta:'สอบถาม',
+        pkg1_cta:'สอบถาม',
         pkg2_name:'แพ็กเกจพรีเมียม', pkg2_name_en:'Premium Package', pkg2_area:'สำหรับ 120m²',
         pkg2_l1:'กระเบื้องพื้นและผนัง', pkg2_l2:'ตู้ครัว', pkg2_l3:'ชุดห้องน้ำ × 2', pkg2_l4:'ชุดอุปกรณ์ครบครัน',
-        pkg2_trad:'แบบดั้งเดิม ≈ RM 55,000–80,000', pkg2_cta:'จองเลย',
+        pkg2_cta:'จองเลย',
         pkg3_name:'แพ็กเกจหรูหรา', pkg3_name_en:'Luxury Package', pkg3_area:'สำหรับ 150m²',
         pkg3_l1:'กระเบื้องและครัวอัปเกรด', pkg3_l2:'ชุดห้องน้ำ × 2', pkg3_l3:'อุปกรณ์พรีเมียม', pkg3_l4:'ครอบคลุมพื้นที่เต็มรูปแบบ',
-        pkg3_trad:'แบบดั้งเดิม ≈ RM 80,000–120,000', pkg3_cta:'สอบถาม',
+        pkg3_cta:'สอบถาม',
         shop_label:'ร้านค้าออนไลน์', shop_h2:'ช้อปออนไลน์', shop_h2_en:'Shop Online',
         shop_p:'วัสดุพรีเมียมจัดส่งถึงประตูบ้านคุณ',
         shop_f1_h:'สินค้าแท้', shop_f1_sub:'สินค้าแท้', shop_f1_p:'จำหน่ายโดยตรงจากแบรนด์ รับประกันของแท้',
@@ -837,48 +837,48 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;letter
 <script>
 /* New homepage strings (5 languages), merged into the existing i18n table. */
 const homeV7Translations = {
-  en:{h7_h1:'A home worth living in, beyond the render',h7_tag_sub:'HOUZY HOME · One-stop home renovation, Johor Bahru',
+  en:{pkg_quote:'Priced by area & style',pkg_est:'Get a free estimate',h7_h1:'A home worth living in, beyond the render',h7_tag_sub:'HOUZY HOME · One-stop home renovation, Johor Bahru',
       h7_morning:'Morning — it starts with a kitchen that just works',h7_afternoon:'Afternoon — a place for everyone at home',h7_evening:'After work — the light you want to hurry home to',h7_night:'Late at night — time for the home to grow quiet',
       h7_open:'Showroom open · until 7:30 pm',h7_before:'Showroom opens at 10:00 am',h7_closed:'Showroom closed · opens 10:00 am tomorrow',
       h7_lead:'Design, materials and build —<br>one team, all the way home.',h7_b1:'Materials direct from our Foshan factory',h7_b2:'10 build stages · 43 checkpoints',h7_b3:'20 years of full-home renovation',
       h7_p:'Visit our Mount Austin showroom: touch the materials, compare designs and talk budget before you decide.',
-      h7_s_styles:'6 collections',h7_s_pkg:'From RM 29,999',h7_s_about:'Since 2023',h7_s_visit:'Come and touch the materials for your home',h7_s_shop:'Shop online',h7_partner:'Partners',h7_hint:'Take it apart →',
+      h7_s_styles:'6 collections',h7_s_pkg:'Priced by area',h7_s_about:'Since 2023',h7_s_visit:'Come and touch the materials for your home',h7_s_shop:'Shop online',h7_partner:'Partners',h7_hint:'Take it apart →',
       h7_shop_h:'Online Shop',h7_all:'All products →',h7_all_plain:'All products',h7_c1:'10 build stages',h7_c2:'43 checkpoints',h7_a1:'2023 · Started in Johor Bahru',
       h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
       h7_f_showroom:'Showroom',h7_f_follow:'Follow',h7_f_contact:'Contact',h7_f_more:'More',h7_hours:'Daily 10:00 – 19:30',h7_from:'From {p}'},
-  'zh-CN':{h7_h1:'家，不该只活在效果图里',h7_tag_sub:'HOUZY HOME · 新山一站式家居整装',
+  'zh-CN':{pkg_quote:'按面积与风格报价',pkg_est:'发户型图免费估价',h7_h1:'家，不该只活在效果图里',h7_tag_sub:'HOUZY HOME · 新山一站式家居整装',
       h7_morning:'早晨，从一个顺手好用的厨房开始',h7_afternoon:'午后，让家里每个人都有自己的位置',h7_evening:'下班了，总有一盏想早点回去的灯',h7_night:'夜深了，家该安静下来',
       h7_open:'展厅营业中 · 至 19:30',h7_before:'展厅 10:00 开门',h7_closed:'展厅已打烊 · 明早 10:00',
       h7_lead:'设计、选材到施工，<br>一个团队陪你住进去。',h7_b1:'佛山工厂直供材料',h7_b2:'10 道工序 · 43 个验收点',h7_b3:'20 年全案整装经验',
       h7_p:'走进 Mount Austin 展厅，先摸材料、比方案、谈预算，再决定家的样子。',
-      h7_s_styles:'6 个风格系列',h7_s_pkg:'RM 29,999 起',h7_s_about:'2023 年起',h7_s_visit:'来展厅，摸一摸你家的材料',h7_s_shop:'在线选购',h7_partner:'合作伙伴',h7_hint:'拆开看看 →',
+      h7_s_styles:'6 个风格系列',h7_s_pkg:'按面积报价',h7_s_about:'2023 年起',h7_s_visit:'来展厅，摸一摸你家的材料',h7_s_shop:'在线选购',h7_partner:'合作伙伴',h7_hint:'拆开看看 →',
       h7_shop_h:'线上商城',h7_all:'全部商品 →',h7_all_plain:'全部商品',h7_c1:'10 道工序',h7_c2:'43 个验收自检点',h7_a1:'2023 · 新山起步',
       h7_hening:'静白',h7_kayu:'原木',h7_krim:'奶油',h7_senja:'暮金',h7_serambi:'廊下',h7_batu:'石墨',
       h7_f_showroom:'展厅',h7_f_follow:'关注',h7_f_contact:'联系',h7_f_more:'更多',h7_hours:'每天 10:00 – 19:30',h7_from:'{p} 起'},
-  'zh-TW':{h7_h1:'家，不該只活在效果圖裡',h7_tag_sub:'HOUZY HOME · 新山一站式家居整裝',
+  'zh-TW':{pkg_quote:'按面積與風格報價',pkg_est:'發戶型圖免費估價',h7_h1:'家，不該只活在效果圖裡',h7_tag_sub:'HOUZY HOME · 新山一站式家居整裝',
       h7_morning:'早晨，從一個順手好用的廚房開始',h7_afternoon:'午後，讓家裡每個人都有自己的位置',h7_evening:'下班了，總有一盞想早點回去的燈',h7_night:'夜深了，家該安靜下來',
       h7_open:'展廳營業中 · 至 19:30',h7_before:'展廳 10:00 開門',h7_closed:'展廳已打烊 · 明早 10:00',
       h7_lead:'設計、選材到施工，<br>一個團隊陪你住進去。',h7_b1:'佛山工廠直供材料',h7_b2:'10 道工序 · 43 個驗收點',h7_b3:'20 年全案整裝經驗',
       h7_p:'走進 Mount Austin 展廳，先摸材料、比方案、談預算，再決定家的樣子。',
-      h7_s_styles:'6 個風格系列',h7_s_pkg:'RM 29,999 起',h7_s_about:'2023 年起',h7_s_visit:'來展廳，摸一摸你家的材料',h7_s_shop:'線上選購',h7_partner:'合作夥伴',h7_hint:'拆開看看 →',
+      h7_s_styles:'6 個風格系列',h7_s_pkg:'按面積報價',h7_s_about:'2023 年起',h7_s_visit:'來展廳，摸一摸你家的材料',h7_s_shop:'線上選購',h7_partner:'合作夥伴',h7_hint:'拆開看看 →',
       h7_shop_h:'線上商城',h7_all:'全部商品 →',h7_all_plain:'全部商品',h7_c1:'10 道工序',h7_c2:'43 個驗收自檢點',h7_a1:'2023 · 新山起步',
       h7_hening:'靜白',h7_kayu:'原木',h7_krim:'奶油',h7_senja:'暮金',h7_serambi:'廊下',h7_batu:'石墨',
       h7_f_showroom:'展廳',h7_f_follow:'關注',h7_f_contact:'聯絡',h7_f_more:'更多',h7_hours:'每天 10:00 – 19:30',h7_from:'{p} 起'},
-  ms:{h7_h1:'Rumah untuk didiami, bukan sekadar render',h7_tag_sub:'HOUZY HOME · Ubah suai rumah sehenti, Johor Bahru',
+  ms:{pkg_quote:'Harga ikut keluasan & gaya',pkg_est:'Dapatkan anggaran percuma',h7_h1:'Rumah untuk didiami, bukan sekadar render',h7_tag_sub:'HOUZY HOME · Ubah suai rumah sehenti, Johor Bahru',
       h7_morning:'Pagi — bermula dengan dapur yang mudah digunakan',h7_afternoon:'Petang — ruang untuk setiap ahli keluarga',h7_evening:'Selepas kerja — lampu yang membuat anda mahu cepat pulang',h7_night:'Lewat malam — masa untuk rumah menjadi tenang',
       h7_open:'Bilik pameran dibuka · hingga 7:30 mlm',h7_before:'Bilik pameran dibuka 10:00 pagi',h7_closed:'Bilik pameran ditutup · dibuka 10:00 pagi esok',
       h7_lead:'Reka bentuk, bahan dan pembinaan —<br>satu pasukan hingga anda berpindah masuk.',h7_b1:'Bahan terus dari kilang Foshan kami',h7_b2:'10 peringkat kerja · 43 titik semakan',h7_b3:'20 tahun pengalaman ubah suai penuh',
       h7_p:'Kunjungi bilik pameran Mount Austin: sentuh bahan, banding reka bentuk dan bincang bajet sebelum membuat keputusan.',
-      h7_s_styles:'6 koleksi',h7_s_pkg:'Dari RM 29,999',h7_s_about:'Sejak 2023',h7_s_visit:'Datang dan sentuh bahan untuk rumah anda',h7_s_shop:'Beli dalam talian',h7_partner:'Rakan Kongsi',h7_hint:'Lihat lapisannya →',
+      h7_s_styles:'6 koleksi',h7_s_pkg:'Harga ikut keluasan',h7_s_about:'Sejak 2023',h7_s_visit:'Datang dan sentuh bahan untuk rumah anda',h7_s_shop:'Beli dalam talian',h7_partner:'Rakan Kongsi',h7_hint:'Lihat lapisannya →',
       h7_shop_h:'Kedai Dalam Talian',h7_all:'Semua produk →',h7_all_plain:'Semua produk',h7_c1:'10 peringkat kerja',h7_c2:'43 titik semakan',h7_a1:'2023 · Bermula di Johor Bahru',
       h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
       h7_f_showroom:'Bilik Pameran',h7_f_follow:'Ikuti',h7_f_contact:'Hubungi',h7_f_more:'Lagi',h7_hours:'Setiap hari 10:00 – 19:30',h7_from:'Dari {p}'},
-  th:{h7_h1:'บ้านที่อยู่ได้จริง ไม่ใช่แค่ภาพเรนเดอร์',h7_tag_sub:'HOUZY HOME · รีโนเวทบ้านครบวงจร ยะโฮร์บาห์รู',
+  th:{pkg_quote:'ราคาตามพื้นที่และสไตล์',pkg_est:'ขอประเมินราคาฟรี',h7_h1:'บ้านที่อยู่ได้จริง ไม่ใช่แค่ภาพเรนเดอร์',h7_tag_sub:'HOUZY HOME · รีโนเวทบ้านครบวงจร ยะโฮร์บาห์รู',
       h7_morning:'ยามเช้า เริ่มจากครัวที่ใช้งานง่าย',h7_afternoon:'ยามบ่าย ให้ทุกคนในบ้านมีมุมของตัวเอง',h7_evening:'เลิกงานแล้ว มีไฟดวงหนึ่งที่อยากรีบกลับไปหา',h7_night:'ดึกแล้ว ถึงเวลาที่บ้านจะเงียบสงบ',
       h7_open:'โชว์รูมเปิดอยู่ · ถึง 19:30 น.',h7_before:'โชว์รูมเปิด 10:00 น.',h7_closed:'โชว์รูมปิดแล้ว · เปิดพรุ่งนี้ 10:00 น.',
       h7_lead:'ออกแบบ เลือกวัสดุ จนถึงก่อสร้าง<br>ทีมเดียวดูแลจนคุณย้ายเข้าอยู่',h7_b1:'วัสดุส่งตรงจากโรงงานฝอซาน',h7_b2:'10 ขั้นตอน · 43 จุดตรวจรับ',h7_b3:'ประสบการณ์รีโนเวททั้งหลัง 20 ปี',
       h7_p:'แวะโชว์รูม Mount Austin สัมผัสวัสดุ เปรียบเทียบแบบ และคุยงบประมาณก่อนตัดสินใจ',
-      h7_s_styles:'6 คอลเลกชัน',h7_s_pkg:'เริ่มต้น RM 29,999',h7_s_about:'ตั้งแต่ปี 2023',h7_s_visit:'มาสัมผัสวัสดุสำหรับบ้านของคุณ',h7_s_shop:'ช้อปออนไลน์',h7_partner:'พาร์ทเนอร์',h7_hint:'ดูแต่ละชั้น →',
+      h7_s_styles:'6 คอลเลกชัน',h7_s_pkg:'ราคาตามพื้นที่',h7_s_about:'ตั้งแต่ปี 2023',h7_s_visit:'มาสัมผัสวัสดุสำหรับบ้านของคุณ',h7_s_shop:'ช้อปออนไลน์',h7_partner:'พาร์ทเนอร์',h7_hint:'ดูแต่ละชั้น →',
       h7_shop_h:'ร้านค้าออนไลน์',h7_all:'สินค้าทั้งหมด →',h7_all_plain:'สินค้าทั้งหมด',h7_c1:'10 ขั้นตอนงาน',h7_c2:'43 จุดตรวจรับ',h7_a1:'2023 · เริ่มต้นที่ยะโฮร์บาห์รู',
       h7_hening:'',h7_kayu:'',h7_krim:'',h7_senja:'',h7_serambi:'',h7_batu:'',
       h7_f_showroom:'โชว์รูม',h7_f_follow:'ติดตาม',h7_f_contact:'ติดต่อ',h7_f_more:'เพิ่มเติม',h7_hours:'ทุกวัน 10:00 – 19:30',h7_from:'เริ่มต้น {p}'}
