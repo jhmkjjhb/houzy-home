@@ -29,7 +29,11 @@
 .c-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:0;padding:0;list-style:none}
 .c-chip i{display:block;aspect-ratio:1;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(20,40,30,.14);animation:c-chip-in .45s ease backwards;animation-delay:calc(var(--i)*55ms)}
 .c-chip span{display:block;margin-top:7px;font-size:11.5px;line-height:1.35}
+.c-chip a{display:block;color:inherit;text-decoration:none}
+.c-chip a:hover span{text-decoration:underline;text-underline-offset:3px}
+.c-chip a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 .c-chip[data-kind=tile] i{background-size:320%}
+.c-chip[data-kind=plank] i{background-size:900%}
 .c-chip[data-kind=rattan] i{background-color:#b98f58;background-image:repeating-linear-gradient(45deg,rgba(70,44,16,.42) 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,rgba(255,236,200,.34) 0 2px,transparent 2px 7px)}
 .c-board small{display:block;margin-top:11px;color:var(--soft);font-size:11px;line-height:1.5}
 /* Credit for a real designer. Hidden until a style names one. */
