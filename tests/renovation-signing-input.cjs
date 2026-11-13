@@ -13,7 +13,7 @@ const vm=require('node:vm');
   if(name==='renovation_customer_addition_sign_view'){reads++;return {data:{status:'pending',terms:{},terms_hash:'hash'}};}
   submits++;return new Promise(resolve=>resolveSubmit=resolve);
  }};
- const sandbox={URLSearchParams,location:{search:'?addition=11111111-1111-1111-1111-111111111111&sign=22222222-2222-2222-2222-222222222222',reload(){}},document:{getElementById:id=>elements[id]},RenoFinanceView:{esc:s=>String(s??''),money:()=>''},confirm:()=>true};
+ const sandbox={URLSearchParams,location:{search:'?addition=11111111-1111-1111-1111-111111111111&sign=22222222-2222-2222-2222-222222222222',reload(){}},document:{getElementById:id=>elements[id]},RenoFinanceView:{esc:s=>String(s??''),money:()=>'',planChange:()=>''},confirm:()=>true};
  sandbox.window={addEventListener(){}};
  vm.runInNewContext(fs.readFileSync('portal/renovation/addition-signing.js','utf8'),sandbox);
  const signing=sandbox.window.RenoAdditionSigning;
