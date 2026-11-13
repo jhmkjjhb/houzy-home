@@ -1,6 +1,6 @@
 'use strict';
 window.RenoAdditionSigning=(()=>{
- let sb,token,dirty=false,busy=false,view=null,strokes=[],canvas,ctx,refreshing=false;
+ let sb,token,dirty=false,busy=false,view=null,strokes=[],canvas,ctx,refreshing=false,last4='';
  const E=s=>RenoFinanceView.esc(s),M=n=>RenoFinanceView.money(n);
  const params=new URLSearchParams(location.search),addition=params.get('addition'),sign=params.get('sign');
  const uuid=s=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s||'');
@@ -16,8 +16,13 @@ window.RenoAdditionSigning=(()=>{
  async function loadSigning(){
   if(busy)return;
   if(!uuid(addition)||!uuid(sign))return;
-  const el=document.getElementById('addition-signing');el.hidden=false;el.textContent='正在读取待签新增单…';
-  try{const {data,error}=await (token?sb.rpc('renovation_customer_addition_sign_view',{p_token:token,p_addition:addition,p_sign_token:sign}):sb.rpc('renovation_signing_link_view',{p_addition:addition,p_sign_token:sign}));if(error||!data)throw new Error('签署链接无效或已撤销，请联系门店重新提供。');view=data;strokes=data.signature_strokes||[];dirty=false;
+  const el=document.getElementById('addition-signing');el.hidden=false;
+  // Signing-only link: nothing is shown until the owner's phone last 4 digits pass.
+  if(!token&&!last4)return RenoFinanceView.phoneGate(el,'新增项目确认单',v=>{last4=v;loadSigning();});
+  el.textContent='正在读取待签新增单…';
+  try{const {data,error}=await (token?sb.rpc('renovation_customer_addition_sign_view',{p_token:token,p_addition:addition,p_sign_token:sign}):sb.rpc('renovation_signing_link_open',{p_addition:addition,p_sign_token:sign,p_last4:last4}));if(error||!data)throw new Error('签署链接无效或已撤销，请联系门店重新提供。');
+   if(['wrong_phone','locked','no_phone'].includes(data.status)){last4='';return RenoFinanceView.phoneGate(el,'新增项目确认单',v=>{last4=v;loadSigning();},data);}
+   view=data;strokes=data.signature_strokes||[];dirty=false;
    el.innerHTML='<h2>新增项目确认单</h2>'+terms(data.terms)+(data.status==='voided'?'<p>此新增单已撤销，不能签署。</p>':data.status==='signed'?`<p style="color:#15803d">已签署 · ${E(data.signer_name)} · ${E(new Date(data.signed_at).toLocaleString('zh-CN'))}</p><canvas data-signature style="width:100%;height:180px;display:block;border:1px solid #dce2df;border-radius:8px;background:white"></canvas><p class="muted" style="overflow-wrap:anywhere">签署凭据：${E(data.signature_hash)}</p><button type="button" data-print class="secondary">打印／保存已签确认单</button>`:`<label>签署姓名<input data-name maxlength="100" autocomplete="name" placeholder="填写您的姓名"></label><p>请在下方手写签名：</p><canvas data-signature aria-label="新增单手写签名" style="width:100%;height:180px;display:block;border:1px solid #b2bcb6;border-radius:8px;background:white;touch-action:none"></canvas><div class="actions"><button type="button" data-clear class="secondary">清除重签</button><button type="button" data-reload class="secondary">重新核对最新内容</button></div><label class="check"><input type="checkbox" data-consent>我已核对以上工项／材料、数量、单价、金额及付款节点，同意此新增单并以电子签名确认。</label><button type="button" data-submit>电子签名确认新增单</button><p data-feedback role="status" aria-live="polite"></p>`);
    canvas=el.querySelector('[data-signature]');if(canvas){ctx=canvas.getContext('2d');paint();}
    if(data.status==='signed'){
@@ -39,7 +44,7 @@ window.RenoAdditionSigning=(()=>{
     if(!name||!accepted||strokes.reduce((n,s)=>n+s.length,0)<8){feedback.textContent='请填写姓名、完整手写签名，并勾选确认。';return;}
     busy=true;el.querySelectorAll('button,input').forEach(b=>b.disabled=true);feedback.textContent='正在提交签署，请稍候…';
     const signArgs={p_addition:addition,p_sign_token:sign,p_terms_hash:view.terms_hash,p_name:name,p_strokes:strokes,p_accept:true};
-    try{const {data,error}=await (token?sb.rpc('renovation_customer_sign_addition',{p_token:token,...signArgs}):sb.rpc('renovation_signing_link_sign',signArgs));if(error||!data?.ok)throw new Error(error?.message||'签署暂未成功，请重试或联系门店。');dirty=false;location.reload();}
+    try{if(!token)await sb.rpc('renovation_signing_link_open',{p_addition:addition,p_sign_token:sign,p_last4:last4});const {data,error}=await (token?sb.rpc('renovation_customer_sign_addition',{p_token:token,...signArgs}):sb.rpc('renovation_signing_link_sign',{...signArgs,p_last4:last4}));if(error||!data?.ok)throw new Error(error?.message||'签署暂未成功，请重试或联系门店。');dirty=false;if(token)location.reload();else{busy=false;await loadSigning();return;}}
     catch(e){feedback.textContent=e.message;}finally{busy=false;el.querySelectorAll('button,input').forEach(b=>b.disabled=false);}
    };
   }catch(e){el.textContent=e.message;}

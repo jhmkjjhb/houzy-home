@@ -24,5 +24,12 @@ window.RenoFinanceView=(()=>{
   const body=rows.map(r=>{const d=cents(r.after-r.before);return `<tr><td>第 ${esc(r.number)} 期</td><td>${num(r.before)}</td><td><b>${num(r.after)}</b></td><td>${d===0?(r.paid_off?'已付清':'不变'):signed(d)}</td></tr>`;}).join('');
   return `<section class="plan-change" aria-label="签署后的付款计划"><h4>签署后，您的付款计划会这样调整</h4><div class="plan-change-scroll"><table><thead><tr><th>期数</th><th>原应付</th><th>签署后</th><th>变化</th></tr></thead><tbody>${body}<tr class="plan-change-total"><td>合计</td><td>${num(before)}</td><td>${num(after)}</td><td>${signed(diff)}</td></tr></tbody></table></div><p class="muted">金额单位：RM。本次${esc(kind)}合计 ${signed(diff)}。已付清的期数不变；${kind==='增项'?'增加':'减少'}的金额按合同比例分到未付清的各期，各期按整数调整，零头计入最后一期。</p></section>`;
  }
- return {esc,money,percent,methods,summary,plan,customer,planChange};
+ // Owner phone check shown before a signing link reveals any amount. onOk(last4) runs with 4 digits.
+ function phoneGate(el,title,onOk,result){
+  const note=!result?'':result.status==='locked'?'手机号后四位错误次数过多，请 1 小时后再试，或联系门店。':result.status==='no_phone'?'门店还没有登记业主手机号，请联系门店。':`手机号后四位不正确，还可尝试 ${Number(result.remaining)} 次。`;
+  el.innerHTML=`<h2>${esc(title)}</h2><p>为保护业主隐私，请输入业主登记手机号的<b>后四位</b>，验证后显示金额并签署。家人代签请向业主询问。</p><label>手机号后四位<input data-last4 inputmode="numeric" maxlength="4" autocomplete="off" pattern="[0-9]{4}"></label><button type="button" data-verify>验证并查看</button><p data-feedback role="status" aria-live="polite">${esc(note)}</p>`;
+  const input=el.querySelector('[data-last4]'),go=()=>{const v=input.value.trim();if(!/^\d{4}$/.test(v)){el.querySelector('[data-feedback]').textContent='请输入4位数字。';return;}el.querySelector('[data-verify]').disabled=true;onOk(v);};
+  el.querySelector('[data-verify]').onclick=go;input.onkeydown=e=>{if(e.key==='Enter')go();};
+ }
+ return {esc,money,percent,methods,summary,plan,customer,planChange,phoneGate};
 })();
