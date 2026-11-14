@@ -198,6 +198,11 @@
   .ptable tr.chg td { background: var(--yellow-soft); }
   .ptable .rs { border: none; background: none; color: var(--navy); cursor: pointer; font-size: 11px; text-decoration: underline; }
   .scroll-x { overflow-x: auto; }
+  .price-cats { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .price-cats .btn-ghost.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .ptable-scroll { max-height: 70vh; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .ptable-scroll thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+  .ptable-scroll tr.stage-row td { position: sticky; top: 27px; z-index: 1; background: var(--navy-soft); }
 
   .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 10; }
   .bar-in { max-width: 620px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
@@ -1211,6 +1216,7 @@
   });
   if(!P.globalServices) P.globalServices=Object.fromEntries(GLOBAL_SERVICES.map(c=>[c,true]));
   P.rooms.forEach(r=>{if(!r.workVersion){r.work=Object.fromEntries(workCodes(r).map(c=>[c,true]));r.workQty=r.workQty||{};r.workVersion=1;r.workLegacy=true;}});
+  let priceStage = 'all';
   let step = 1, choosing = firstVisit || (!P.houseType && !P.rooms.length);
   chosenHouse = P.houseType || '';
   chosenLayout = P.layoutId || '';
@@ -2137,9 +2143,10 @@
         ${s.pay.map((x, n) => `<div class="grid2" style="margin-bottom:8px">${fld(`第${n + 1}期`, '', `data-pay="${n}" data-f="name"`, x.name)}${fld('比例', '%', `data-pay="${n}" data-f="pct"`, x.pct, false, true)}</div>`).join('')}
       </div>
       <div class="card"><h2>基础项目参考价（未上传公司规格表时使用）</h2><p class="hint">这里改价会更新本单基础项目；主材、辅材和人工均可修改。上传公司规格价目表后，统一按上方规格表匹配，缺价项目需补齐，不使用参考价兜底。</p>
-      <div class="scroll-x"><table class="ptable"><thead><tr><th>项目 / 工艺做法</th><th>单位</th><th>主材</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>`;
-    STAGES.forEach(st => {
-      h += `<tr><td colspan="7" style="font-weight:700;color:var(--navy);padding-top:10px">${st.no}. ${st.name}</td></tr>`;
+      <div class="price-cats">${[{id:'all',name:'全部'},...STAGES].map(st=>`<button class="btn-ghost ${priceStage===st.id?'on':''}" data-price-stage="${st.id}">${st.no?st.no+'. ':''}${st.name}</button>`).join('')}</div>
+      <div class="ptable-scroll"><table class="ptable"><thead><tr><th>项目 / 工艺做法</th><th>单位</th><th>主材</th><th>辅材</th><th>人工</th><th>损耗%</th><th></th></tr></thead><tbody>`;
+    STAGES.filter(st => priceStage === 'all' || st.id === priceStage).forEach(st => {
+      h += `<tr class="stage-row"><td colspan="7" style="font-weight:700;color:var(--navy);padding-top:10px">${st.no}. ${st.name}</td></tr>`;
       Object.keys(PRICE).filter(c => PRICE[c].stage === st.id).forEach(c => {
         if(PAINT.isManaged()&&PAINT.isPainting(c))return;
         const p = price(c), chg = priceChanged(c);
@@ -2272,6 +2279,7 @@
     const t = e.target.closest('button, [data-exp]');
     if (!t) return;
     const ds = t.dataset;
+    if(ds.priceStage!==undefined){priceStage=ds.priceStage;render();const box=document.querySelector('.ptable-scroll');if(box)box.scrollTop=0;return;}
     if(t.hasAttribute('data-catalog-template')){download(catalogCsv(templateRows(ds.catalogTemplate==='current')),ds.catalogTemplate==='current'?'本单规格价格模板.csv':'公司全部项目价格模板.csv');return;}
     if(t.hasAttribute('data-catalog-export')){download(catalogCsv(activeCatalog()),'公司已录规格价格.csv');return;}
     if(t.hasAttribute('data-catalog-apply')){if(catalogPreview)applyCatalog(catalogPreview);render();return;}
