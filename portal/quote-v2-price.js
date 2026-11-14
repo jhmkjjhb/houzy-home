@@ -111,6 +111,9 @@
   Object.assign(root.QV2_PRICE.desk, { unit: '项' });
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
+  // 选材价差：键为「类别.选项.值」，内容为各项目在标准价上的加减（RM/单位）。公司核定后在这里登记。
+  // 例：'tile.floorSize.600×1200 mm': { floor_tile: { mat: 2, lab: 0.5 } }
+  root.QV2_OPTION_PRICES = {};
   root.QV2_STAGES = [{"id":"prep","no":1,"name":"拆改与现场保护"},{"id":"mep","no":2,"name":"水电隐蔽"},{"id":"wp","no":3,"name":"防水"},{"id":"tile","no":4,"name":"泥水瓷砖 / 地面"},{"id":"ceil","no":5,"name":"天花墙面"},{"id":"custom","no":6,"name":"定制柜与门窗"},{"id":"equip","no":7,"name":"设备安装与收尾"},{"id":"outdoor","no":8,"name":"户外与外围工程"},{"id":"soft","no":9,"name":"软装"}];
-  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES };
+  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES };
 })(typeof window !== "undefined" ? window : globalThis);

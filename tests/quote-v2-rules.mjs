@@ -14,7 +14,13 @@ ok('数据完整：每个工程包用到的项目都在价目表里', () => {
   for (const [code, pk] of Object.entries(Q.PACKS)) {
     const r = { ...Q.newRoom('living', 1, 1), windows: [{ w: 4, h: 5 }], doors: 1 };
     const g = Q.geo(r, {});
-    pk.lines(r, g, Q.packValues(r, code, g), { ceil_flat: true }).forEach(([c]) => assert.ok(Q.PRICE[c], `${code} → ${c} 不在价目表`));
+    pk.lines(r, g, Q.packValues(r, code, g), { ceiling: true }, (c2, k2) => Q.stdOf(Q.SPEC_CATS[c2].keys[k2], r)).forEach(([c]) => assert.ok(Q.PRICE[c], `${code} → ${c} 不在价目表`));
+  }
+  for (const [cat, c] of Object.entries(Q.SPEC_CATS)) for (const [k, key] of Object.entries(c.keys)) for (const val of key.opts) {
+    for (const code of ['floor', 'wall_finish', 'ceiling', 'wardrobe', 'cabinets', 'bath_tile']) {
+      const r = { ...Q.newRoom('living', 1, 1) }, g = Q.geo(r, {});
+      Q.PACKS[code].lines(r, g, Q.packValues(r, code, g), {}, (c2, k2) => (c2 === cat && k2 === k ? val : Q.stdOf(Q.SPEC_CATS[c2].keys[k2], r))).forEach(([c3]) => assert.ok(Q.PRICE[c3], `${cat}.${k}=${val} → ${c3} 不在价目表`));
+    }
   }
   for (const [t, d] of Object.entries(Q.ROOMS)) d.packs.forEach(c => assert.ok(Q.PACKS[c], `${t} 缺工程包 ${c}`));
 });
@@ -36,34 +42,37 @@ ok('窗帘、窗台石按每樘窗宽合计；换窗按每樘 宽×高 合计', 
   assert.equal(qty(L, 'window_sill', r.id), 7);
   assert.equal(qty(L, 'window_new', r.id), 32);
   assert.equal(qty(L, 'curtain_box', r.id), 0, '没做吊顶就没有窗帘盒');
-  r.packs.push('ceil_flat');
+  r.packs.push('ceiling');
   assert.equal(qty(Q.buildLines(project([r])), 'curtain_box', r.id), 7, '有吊顶 → 窗帘盒 = 窗宽');
 });
 
 ok('窗户面积从墙面扣除（刷漆不算窗）', () => {
-  const a = { ...Q.newRoom('bedroom', 1, 1), L: 10, W: 10, H: 9, doors: 1, measured: true, packs: ['paint'] };
+  const a = { ...Q.newRoom('bedroom', 1, 1), L: 10, W: 10, H: 9, doors: 1, measured: true, packs: ['wall_finish'] };
   const b = { ...a, id: 'b', windows: [{ w: 4, h: 5 }] };
   assert.equal(qty(Q.buildLines(project([a])), 'paint_wall') - qty(Q.buildLines(project([b])), 'paint_wall'), 20);
 });
 
-ok('地面只能二选一：选木地板就不会再有地砖', () => {
-  // 互斥由界面保证；规则层保证两个包各自独立、不会互相带出
-  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['laminate'] };
-  const L = Q.buildLines(project([r]));
+ok('范围只选「地面翻新」；材料在选材层定：瓷砖和地板只会出现一种', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r]);
+  let L = Q.buildLines(p);
+  assert.equal(qty(L, 'floor_tile'), 110, '没定材料先按标准档（瓷砖）估价');
+  assert.deepEqual(find(L, 'floor_tile')[0].tbd, ['tile'], '标记为暂定');
+  p.plans = [{ id: 'A', name: '方案 A', specs: { tile: { material: 'SPC 石塑地板' } }, roomSpecs: {} }];
+  L = Q.buildLines(p);
   assert.equal(qty(L, 'floor_tile'), 0);
   assert.equal(qty(L, 'laminate'), 110);
-  assert.equal(Q.PACKS.laminate.pick, Q.PACKS.floor_tile.pick);
 });
 
 ok('有工程才加开工放线/成品保护/清运/开荒；空报价是 0', () => {
   assert.equal(Q.buildLines(project([Q.newRoom('living', 1, 1)])).length, 0);
-  const L = Q.buildLines(project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['paint'] }]));
+  const L = Q.buildLines(project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish'] }]));
   ['setout', 'protect', 'waste_out', 'clean'].forEach(c => assert.equal(find(L, c).length, 1, c));
 });
 
 ok('楼上房间要加搬运费 = 面积 × (楼层 − 1)；楼下不加', () => {
-  const up = { ...Q.newRoom('bedroom', 2, 1), L: 10, W: 10, measured: true, packs: ['paint'] };
-  const down = { ...Q.newRoom('bedroom', 1, 2), L: 10, W: 10, measured: true, packs: ['paint'] };
+  const up = { ...Q.newRoom('bedroom', 2, 1), L: 10, W: 10, measured: true, packs: ['wall_finish'] };
+  const down = { ...Q.newRoom('bedroom', 1, 2), L: 10, W: 10, measured: true, packs: ['wall_finish'] };
   assert.equal(qty(Q.buildLines(project([up, down])), 'carry_up'), 100);
   assert.equal(qty(Q.buildLines(project([down])), 'carry_up'), 0);
 });
@@ -111,7 +120,7 @@ ok('单价 = 主材×(1+损耗) + 辅材 + 人工，与旧版报价器一致', (
 });
 
 ok('付款节点加起来刚好等于总价；管理费 6%', () => {
-  const p = project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['paint', 'floor_tile', 'electric'] }]);
+  const p = project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish', 'floor', 'electric'] }]);
   const L = Q.buildLines(p), T = Q.totals(p, L);
   assert.equal(T.pay.reduce((t, x) => t + x.amt, 0), T.total);
   assert.equal(T.mgmt, Math.round(T.direct * 0.06));
@@ -119,17 +128,17 @@ ok('付款节点加起来刚好等于总价；管理费 6%', () => {
 });
 
 ok('可改实际施工面积：旧地砖只铺一半就只拆一半；地砖改面积，找平和美缝跟着改，踢脚线仍按周长', () => {
-  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['demo_floor', 'floor_tile'] }; // 11×10 = 110
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['demo_floor', 'floor'] }; // 11×10 = 110
   let L = Q.buildLines(project([r]));
   assert.equal(qty(L, 'demo_floor'), 110);
-  r.vals = { demo_floor: { floor: 60 }, floor_tile: { floor: 80 } };
+  r.vals = { demo_floor: { floor: 60 }, floor: { floor: 80 } };
   L = Q.buildLines(project([r]));
   assert.equal(qty(L, 'demo_floor'), 60);
   assert.equal(qty(L, 'floor_tile'), 80);
   assert.equal(qty(L, 'screed'), 80);
   assert.equal(qty(L, 'grout'), 80);
   assert.equal(qty(L, 'skirting'), 42 - 3, '踢脚线按周长减门宽，不跟面积走');
-  r.vals.floor_tile.floor = 200;
+  r.vals.floor.floor = 200;
   assert.ok(Q.checks(project([r]), Q.buildLines(project([r]))).yellow.some(x => x.m.includes('大于房间地面')));
 });
 
@@ -156,8 +165,83 @@ ok('小件定制按项：名称和单价逐项填，没填就拦住', () => {
   assert.ok(Q.checks(p, Q.buildLines(p)).red.some(x => x.m.includes('请至少加一项')));
 });
 
+ok('预估报价：没定的选材只提醒；正式报价：必须全部定好', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r]);
+  const L = Q.buildLines(p);
+  assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('地面与瓷砖')));
+  assert.ok(!Q.checks(p, L, 'estimate').red.some(x => x.m.includes('地面与瓷砖')));
+  assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('地面与瓷砖')));
+  p.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }];
+  assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.length);
+});
+
+ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r], { plans: [{ id: 'A', specs: { tile: { supply: '客户自备砖' } }, roomSpecs: {} }] });
+  const t = Q.PRICE.floor_tile;
+  assert.equal(find(Q.buildLines(p), 'floor_tile')[0].unit, Math.round((t.aux + t.lab) * 100) / 100);
+});
+
+ok('换了非标准选项但公司还没登记价差：标记价差待定，正式报价拦住；登记后按价差加价', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×1200 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }] });
+  let line = find(Q.buildLines(p), 'floor_tile')[0];
+  assert.deepEqual(line.priceTbd, ['地砖尺寸：600×1200 mm']);
+  assert.equal(line.unit, Q.unitPrice('floor_tile'), '价差未定时暂按标准价');
+  assert.ok(Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('价差待公司核定')));
+  Q.OPTION_PRICES['tile.floorSize.600×1200 mm'] = { floor_tile: { mat: 2, lab: 1 } };
+  line = find(Q.buildLines(p), 'floor_tile')[0];
+  assert.equal(line.priceTbd.length, 0);
+  assert.equal(line.unit, Math.round((Q.unitPrice('floor_tile') + 3) * 100) / 100);
+  delete Q.OPTION_PRICES['tile.floorSize.600×1200 mm'];
+});
+
+ok('大板砖（750×1500 以上）自动加大板铺贴加价', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r], { plans: [{ id: 'A', specs: { tile: { floorSize: '900×1800 mm' } }, roomSpecs: {} }] });
+  assert.equal(qty(Q.buildLines(p), 'big_tile_extra'), 110);
+});
+
+ok('逐间设置优先于全屋统一：客厅瓷砖、卧室木地板', () => {
+  const a = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['floor'] }, b = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([a, b], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖' } }, roomSpecs: { [b.id]: { tile: { material: '强化复合木地板' } } } }] });
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'floor_tile', a.id), 280);
+  assert.equal(qty(L, 'laminate', b.id), 110);
+  assert.equal(qty(L, 'floor_tile', b.id), 0);
+});
+
+ok('卫生间、厨房天花默认防潮石膏板，其他房间普通石膏板；叠级吊顶自动带灯槽灯带', () => {
+  const b = bath({ packs: ['bath_ceil'] }), l = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['ceiling'] };
+  const p = project([b, l]);
+  assert.equal(Q.specOf(p, b, 'ceiling', 'board').v, '防潮石膏板');
+  assert.equal(Q.specOf(p, l, 'ceiling', 'board').v, '普通石膏板');
+  p.plans = [{ id: 'A', specs: { ceiling: { style: '叠级+灯槽' } }, roomSpecs: {} }];
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'ceiling_step', l.id), 68);
+  assert.equal(qty(L, 'led_strip', l.id), 68);
+});
+
+ok('同一范围两套方案：方案之间只差选材，范围和数量相同', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor', 'wall_finish'] };
+  const p = project([r], { plans: [{ id: 'A', specs: { tile: { supply: '包工包料' } }, roomSpecs: {} }, { id: 'B', specs: { tile: { supply: '客户自备砖' } }, roomSpecs: {} }] });
+  const A = Q.buildLines(p, 'A'), B = Q.buildLines(p, 'B');
+  assert.deepEqual(A.map(l => [l.code, l.qty]), B.map(l => [l.code, l.qty]));
+  assert.ok(Q.totals(p, A).total > Q.totals(p, B).total);
+});
+
+ok('旧草稿迁移：地砖/木地板/吊顶/刷漆卡片转成新的范围卡片和选材', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['laminate', 'ceil_feature', 'paint'], vals: { laminate: { floor: 90 } } };
+  const p = Q.migrate(project([r]));
+  assert.deepEqual([...r.packs].sort(), ['ceiling', 'floor', 'wall_finish']);
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'laminate'), 90);
+  assert.equal(qty(L, 'ceiling_step'), 42);
+});
+
 ok('设计费只算有施工的室内房间：没动的卧室不收设计费', () => {
-  const live = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['paint'] };
+  const live = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish'] };
   const idle = Q.newRoom('bedroom', 1, 1);
   const p = project([live, idle]);
   assert.equal(Q.totals(p, Q.buildLines(p)).design, 280 * 8);

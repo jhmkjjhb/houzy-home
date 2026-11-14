@@ -40,7 +40,7 @@
   .top .sum { text-align: right; }
   .top .sum small { display: block; font-size: 11px; color: var(--ink-dim); }
   .top .sum b { font-size: 20px; color: var(--accent); }
-  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
   .tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 10px; padding: 8px 4px; font-weight: 600; font-size: 13px; position: relative; }
   .tab.on { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .tab .dot { position: absolute; top: -6px; right: -4px; background: var(--red); color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 6px; }
@@ -78,7 +78,7 @@
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
   .rchip.bad { border-color: var(--red); }
   .dims { display: grid; grid-template-columns: 1fr 200px; gap: 14px; align-items: start; }
-  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(4, 1fr); } .tab { font-size: 12px; } }
+  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } .tab { font-size: 11.5px; padding: 8px 2px; } }
   .row { display: flex; flex-wrap: wrap; gap: 10px 14px; }
   .fld { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-dim); }
   .stp { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface); }
@@ -167,12 +167,14 @@
   let roomId = P.rooms[0]?.id || null;
   let confirmReset = false;
 
-  function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true }; }
-  function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return { ...blank(), ...x }; } catch (e) {} return blank(); }
+  function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true, plans: [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }], planId: 'A', quoteMode: 'estimate' }; }
+  function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return Q.migrate({ ...blank(), ...x }); } catch (e) {} return blank(); }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
   const room = id => P.rooms.find(r => r.id === id);
 
-  function compute() { const lines = Q.buildLines(P); return { lines, T: Q.totals(P, lines), K: Q.checks(P, lines) }; }
+  function compute() { const lines = Q.buildLines(P); return { lines, T: Q.totals(P, lines), K: Q.checks(P, lines, P.quoteMode || 'estimate') }; }
+  const plan = () => Q.activePlan(P);
+  let specCat = null; const openSpecRooms = new Set();
   const roomTotal = (lines, id) => lines.filter(l => l.roomId === id).reduce((t, l) => t + l.total, 0);
   const badRooms = K => new Set(K.red.map(x => x.go));
 
@@ -232,12 +234,14 @@
   }
   function packCard(r, c, g, C) {
     const pk = PACKS[c], on = r.packs.includes(c);
-    const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.from === pk.label) : [];
+    const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.pack === c) : [];
+    const cats = [...new Set(myLines.flatMap(l => Q.specKeysFor(l.code, l.pack).map(([cat]) => cat)))];
+    const specLine = cats.map(cat => { const open = myLines.some(l => l.tbd.includes(cat)); return `<button type="button" class="chip" style="border-style:solid;${open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${cat}">${Q.SPEC_CATS[cat].icon} ${Q.SPEC_CATS[cat].label}：${open ? '未定，按标准档估价' : '已定'} ›</button>`; }).join('');
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
-      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
+      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
 
   // ---------- ③ 全屋 ----------
@@ -256,11 +260,63 @@
     return h;
   }
 
-  // ---------- ④ 检查与报价单 ----------
+  // ---------- ④ 做法与选材 ----------
+  function planBar() {
+    const ps = Q.plans(P);
+    return `<div class="adds noprint" style="margin:0 0 10px">${ps.map(p => `<button class="rchip ${p.id === plan().id ? 'on' : ''}" style="min-width:auto" data-plan="${p.id}">${esc(p.name || '方案 ' + p.id)}</button>`).join('')}<button class="chip" data-copyplan>+ 复制成新方案</button>${ps.length > 1 ? `<button class="chip" data-delplan>删除当前方案</button>` : ''}</div>`;
+  }
+  function keysUsed(lines, cat) {
+    const used = new Set();
+    lines.forEach(l => Q.specKeysFor(l.code, l.pack).forEach(([c, k]) => { if (c === cat) used.add(k); }));
+    return Object.keys(Q.SPEC_CATS[cat].keys).filter(k => used.has(k));
+  }
+  function optDelta(cat, k, val, roomIdOrNull, base) {
+    const clone = JSON.parse(JSON.stringify(P)), pl = Q.activePlan(clone);
+    if (roomIdOrNull) (((pl.roomSpecs[roomIdOrNull] = pl.roomSpecs[roomIdOrNull] || {})[cat] = pl.roomSpecs[roomIdOrNull][cat] || {}))[k] = val;
+    else { (pl.specs[cat] = pl.specs[cat] || {})[k] = val; }
+    const L = Q.buildLines(clone), key = Q.SPEC_CATS[cat].keys[k];
+    if (L.some(l => (!roomIdOrNull || l.roomId === roomIdOrNull) && l.priceTbd.includes(`${key.label}：${val}`))) return '<span class="desc" style="color:var(--yellow)">价差待定</span>';
+    const d = Q.totals(clone, L).total - base;
+    return `<span class="desc mono" style="color:${d > 0 ? 'var(--accent)' : d < 0 ? 'var(--ok)' : 'var(--ink-dim)'}">${d === 0 ? '不加价' : (d > 0 ? '+' : '−') + rm(Math.abs(d)).replace('RM ', 'RM ')}</span>`;
+  }
+  function optRow(cat, k, room, C) {
+    const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, room, cat, k), std = Q.stdOf(key, room);
+    const roomAttr = room ? `data-spec-room="${room.id}"` : '';
+    const own = room && cur.own;
+    return `<div style="padding:8px 0;border-bottom:1px dashed var(--line)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><b style="font-size:13px">${key.label}</b>${cur.decided ? '' : `<span class="desc" style="color:var(--yellow)">未定 · 按标准档「${esc(cur.v)}」估价</span>`}${own ? `<button class="chip" data-spec-follow="${room.id}" data-spec-cat="${cat}" data-spec-k="${k}">跟随全屋</button>` : ''}</div>
+      <div class="adds" style="margin:0">${key.opts.map(o => `<button class="pack ${cur.decided && cur.v === o ? 'on' : ''}" style="width:auto;padding:7px 10px" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}" ${roomAttr}><span style="font-weight:600">${esc(o)}</span>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${optDelta(cat, k, o, room ? room.id : null, C.T.total)}</button>`).join('')}</div></div>`;
+  }
+  function viewSpec(C) {
+    const cats = Object.keys(Q.SPEC_CATS), status = Object.fromEntries(cats.map(c => [c, Q.specStatus(P, C.lines, c)]));
+    const used = cats.filter(c => status[c].rooms.length);
+    if (!specCat || !used.includes(specCat)) specCat = used[0] || null;
+    let h = `<h2>④ 做法与选材</h2><p class="hint">范围定好后在这里定材料和工艺。全屋统一选一次，个别房间要不一样再「单独设置」。没定的按「标准档」估价，按钮下面是换成这个选项后总价的变化。</p>${planBar()}`;
+    if (!used.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
+    h += `<div class="adds" style="margin:0 0 12px">${used.map(c => { const st = status[c]; return `<button class="rchip ${c === specCat ? 'on' : ''}" style="min-width:auto" data-speccat="${c}">${Q.SPEC_CATS[c].icon} ${Q.SPEC_CATS[c].label}<small style="color:${st.open.length ? 'var(--yellow)' : 'var(--ok)'}">${st.open.length ? st.open.length + ' 个空间未定' : '✓ 已定'}</small></button>`; }).join('')}</div>`;
+    const cat = specCat, st = status[cat], keys = keysUsed(C.lines, cat);
+    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b>全屋统一 · ${Q.SPEC_CATS[cat].label}</b>${st.open.length ? `<button class="btn okb" data-spec-std="${cat}">其余都按标准档确认</button>` : ''}</div>${keys.map(k => optRow(cat, k, null, C)).join('')}</div>`;
+    h += `<h3 style="font-size:13px;margin:16px 0 6px">用到「${Q.SPEC_CATS[cat].label}」的空间</h3>`;
+    h += st.rooms.map(id => {
+      const r = room(id); if (!r) return '';
+      const rk = keys.filter(k => C.lines.some(l => l.roomId === id && Q.specKeysFor(l.code, l.pack).some(([c, kk]) => c === cat && kk === k)));
+      const open = st.open.includes(id), anyOwn = rk.some(k => Q.specOf(P, r, cat, k).own), isOpen = openSpecRooms.has(id + ':' + cat);
+      return `<div class="card" style="padding:10px 12px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>${ROOMS[r.type].icon}</span><b>${esc(Q.roomLabel(r, P))}</b><span class="desc">${rk.map(k => esc(Q.specOf(P, r, cat, k).v)).join(' · ')}</span>${anyOwn ? '<span class="desc" style="color:var(--navy)">单独设置</span>' : ''}<span class="desc" style="color:${open ? 'var(--yellow)' : 'var(--ok)'}">${open ? '未定' : '✓'}</span><button class="chip" style="margin-left:auto" data-spec-open="${id}:${cat}">${isOpen ? '收起' : '单独设置'}</button></div>${isOpen ? rk.map(k => optRow(cat, k, r, C)).join('') : ''}</div>`;
+    }).join('');
+    return h;
+  }
+
+  // ---------- ⑤ 检查与报价单 ----------
   function viewQuote(C) {
     const { lines, T, K } = C;
-    let h = `<h2>④ 检查</h2><div class="noprint">`;
-    if (!K.red.length && !K.yellow.length) h += `<div class="ok">✓ 全部检查通过，可以出报价单</div>`;
+    const mode = P.quoteMode || 'estimate';
+    let h = `<h2>⑤ 报价单</h2>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
+    const ps = Q.plans(P);
+    if (ps.length > 1) {
+      const rows = ps.map(p => { const L = Q.buildLines(P, p.id), T2 = Q.totals(P, L); return { p, total: T2.total, open: L.filter(l => l.tbd.length).length }; });
+      h += `<div class="card noprint"><b>方案对比</b><table class="q" style="margin-top:6px"><thead><tr><th>方案</th><th class="r">总价</th><th class="r">与${esc(rows[0].p.name)}相差</th><th class="r">暂定项</th></tr></thead><tbody>${rows.map(x => `<tr><td>${esc(x.p.name)}${x.p.id === plan().id ? ' <span class="desc">（当前）</span>' : ''}</td><td class="r mono">${rm(x.total)}</td><td class="r mono">${x === rows[0] ? '—' : (x.total >= rows[0].total ? '+' : '−') + rm(Math.abs(x.total - rows[0].total))}</td><td class="r mono">${x.open}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    h += `<h3 style="font-size:13px;margin:10px 0 6px">检查</h3><div class="noprint">`;
+    if (!K.red.length && !K.yellow.length) h += `<div class="ok">✓ 全部检查通过，可以出${mode === 'formal' ? '正式' : '预估'}报价单</div>`;
     h += K.red.map(x => `<button class="issue r" data-go="${x.go}"><b>必须处理</b><span>${esc(x.m)}</span></button>`).join('');
     h += K.yellow.map(x => `<button class="issue y" data-go="${x.go}"><b>请确认</b><span>${esc(x.m)}</span></button>`).join('');
     h += `</div>`;
@@ -268,13 +324,14 @@
     if (unpriced.length) h += `<div class="card noprint" id="price"><b>待核定单价（本单先填，公司价目表补好后自动带出）</b>${unpriced.map(c => `<div class="priceRow"><span>${esc(PRICE[c].name)}</span>${field('综合单价', 'RM/' + PRICE[c].unit, stepper(`data-price="${c}"`, P.prices[c]?.lab ?? 0, 10))}</div>`).join('')}</div>`;
     h += `<h2>费用构成</h2><div class="bar">${T.byStage.map((s, i) => `<span title="${s.name}" style="width:${(s.total / Math.max(1, T.direct)) * 100}%;background:${STAGE_COLORS[(s.no - 1) % 9]}"></span>`).join('')}</div>
       <div class="legend">${T.byStage.map(s => `<span><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${s.name} <span class="mono">${rm(s.total)}</span></span>`).join('')}</div>`;
-    h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">报价单</h2><button class="btn pri noprint" data-print ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `还有 ${K.red.length} 项要处理` : '打印 / 存 PDF'}</button></div>
+    h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${mode === 'formal' ? '正式报价单' : '预估报价单'} · ${esc(plan().name || '')}</h2><button class="btn pri noprint" data-print ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `还有 ${K.red.length} 项要处理` : '打印 / 存 PDF'}</button></div>
+      ${mode === 'estimate' && lines.some(l => l.tbd.length) ? '<p class="hint" style="color:var(--yellow)">标「暂定」的项目材料还没定，暂按标准档估价，定好后金额可能变化。</p>' : ''}
       <p class="hint">客户：${esc(P.info.name) || '（未填）'} · ${HOUSES[P.houseType]?.label || ''} · 施工面积 ${nf(T.floorSum)} 平方尺</p>
       <div class="scroll-x"><table class="q"><thead><tr><th>项目</th><th>空间</th><th class="r">数量</th><th class="r">单价</th><th class="r">金额</th></tr></thead><tbody>`;
     STAGES.forEach(st => {
       const ls = lines.filter(l => l.stage === st.id); if (!ls.length) return;
       h += `<tr class="st"><td colspan="4">${st.no}. ${st.name}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += ls.map(l => `<tr><td>${esc(l.name)}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('');
+      h += ls.map(l => `<tr><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('');
     });
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
       <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>
@@ -292,13 +349,13 @@
   function render() {
     const C = compute(); save();
     document.getElementById('grand').textContent = rm(C.T.total);
-    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['quote', '④ 报价单']];
+    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     const a = document.activeElement, app = document.getElementById('app');
     let sel = null, top = null, caret = null;
     if (a && app.contains(a) && a.tagName === 'INPUT') { sel = 'input' + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join(''); top = a.getBoundingClientRect().top; try { caret = a.selectionStart; } catch (e) {} }
     const y = window.scrollY;
-    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : viewQuote(C);
+    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : tab === 'spec' ? viewSpec(C) : viewQuote(C);
     window.scrollTo(0, y);
     if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
     document.querySelector('[data-info="name"]').value = P.info.name || '';
@@ -347,13 +404,43 @@
       else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; }
       render(); return;
     }
+    if (ds.gospec) { tab = 'spec'; specCat = ds.gospec; render(); window.scrollTo(0, 0); return; }
+    if (ds.speccat) { specCat = ds.speccat; render(); return; }
+    if (ds.specV !== undefined) {
+      const pl = plan(), cat = ds.specCat, k = ds.specK;
+      if (ds.specRoom) (((pl.roomSpecs[ds.specRoom] = pl.roomSpecs[ds.specRoom] || {})[cat] = pl.roomSpecs[ds.specRoom][cat] || {}))[k] = ds.specV;
+      else (pl.specs[cat] = pl.specs[cat] || {})[k] = ds.specV;
+      render(); return;
+    }
+    if (ds.specFollow) { const o = plan().roomSpecs[ds.specFollow]?.[ds.specCat]; if (o) delete o[ds.specK]; render(); return; }
+    if (ds.specOpen) { openSpecRooms.has(ds.specOpen) ? openSpecRooms.delete(ds.specOpen) : openSpecRooms.add(ds.specOpen); render(); return; }
+    if (ds.specStd) {
+      const cat = ds.specStd, pl = plan(), C = compute(), keys = Q.SPEC_CATS[cat].keys;
+      Q.specStatus(P, C.lines, cat).open.forEach(id => {
+        const r = room(id);
+        Object.entries(keys).forEach(([k, key]) => {
+          if (Q.specOf(P, r, cat, k).decided) return;
+          if (typeof key.std === 'function') (((pl.roomSpecs[id] = pl.roomSpecs[id] || {})[cat] = pl.roomSpecs[id][cat] || {}))[k] = Q.stdOf(key, r);
+          else (pl.specs[cat] = pl.specs[cat] || {})[k] = key.std;
+        });
+      });
+      render(); return;
+    }
+    if (ds.plan) { P.planId = ds.plan; render(); return; }
+    if (b.hasAttribute('data-copyplan')) {
+      const ps = Q.plans(P), cur = plan(), id = String.fromCharCode(65 + ps.length);
+      ps.push({ id, name: '方案 ' + id, specs: JSON.parse(JSON.stringify(cur.specs || {})), roomSpecs: JSON.parse(JSON.stringify(cur.roomSpecs || {})) });
+      P.planId = id; render(); return;
+    }
+    if (b.hasAttribute('data-delplan')) { const ps = Q.plans(P); if (ps.length > 1) { P.plans = ps.filter(p => p.id !== plan().id); P.planId = P.plans[0].id; } render(); return; }
+    if (ds.mode) { P.quoteMode = ds.mode; render(); return; }
     if (ds.hitem) { const q = P.house[ds.hitem] = P.house[ds.hitem] || {}; q.on = !q.on; render(); return; }
     if (ds.stp) {
       const inp = b.parentElement.querySelector('input'), step = parseFloat(ds.stp);
       const v = Math.max(0, r2(num(inp.value) + step)); inp.value = v; setValue(inp, v); render(); return;
     }
     if (ds.go) {
-      if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
+      if (ds.go.startsWith('spec:')) { tab = 'spec'; specCat = ds.go.slice(5); } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }
