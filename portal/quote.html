@@ -295,6 +295,8 @@
     struct:      { stage: 'prep', name: '承重墙开洞加固', unit: '处', mat: 400, aux: 100, lab: 800, needs: ['engineer'],
                    warn: '涉及结构安全，必须有结构工程师签字才能动工',
                    desc: '按结构工程师图纸施工，加钢梁或钢筋混凝土加固，工程师现场验收' },
+    reno_permit: { stage: 'prep', name: '改建申请（市政局 Majlis 装修/改建准证）', unit: '项', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '准备图纸及文件，向地方市政局申请装修/改建准证；准证批准前不动工相关项目' },
     engineer:    { stage: 'prep', name: '结构工程师审图签字', unit: '项', mat: 0, aux: 0, lab: 1500, forced: true,
                    desc: '持证结构工程师出具加固方案、签字盖章，并到现场验收' },
     bath_drop:   { stage: 'prep', name: '卫生间降板/二次排水处理', unit: '平方尺', mat: 5, aux: 3, lab: 12, forced: true,
@@ -429,6 +431,19 @@
                    desc: '室外防水摄像头，网线/电源线穿管，接入录像主机，手机可远程查看（示范规格）' },
     doorbell:    { stage: 'mep', name: '可视门铃/对讲', unit: '套', mat: 350, aux: 30, lab: 80,
                    desc: '门口机+室内机，布线穿管，调试通话及开锁' },
+    // 以下 unpriced 项目：价格待公司核定，未填写单价前报价单不能通过检查
+    three_phase: { stage: 'mep', name: '单相电改三相电（含 TNB 申请）', unit: '项', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '持牌电工出图并向 TNB 申请改三相供电，更换三相电表箱及主开关，各回路按三相平衡分配；以 TNB 批准为准' },
+    main_pipe:   { stage: 'mep', name: '进户主水管更换（水表至屋内）', unit: '延尺', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '拆除旧镀锌管，由水表后更换为 PPR/PVC 主水管并接入屋内总阀，完工后打压测试' },
+    water_filter:{ stage: 'mep', name: '全屋净水器（户外总过滤器）', unit: '套', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '主水管入户处安装总过滤器（型号客户选定），含旁通阀及冲洗排水，接驳后检查无渗漏' },
+    sewer:       { stage: 'mep', name: '排污管/化粪池接驳', unit: '项', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '卫生间移位或扩建时新做排污管，按坡度接入原有排污井或化粪池，完工后通水测试' },
+    garden_light:{ stage: 'mep', name: '户外灯/庭院灯点位', unit: '个点位', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '户外防水线管及防水接线盒，独立开关或定时控制，灯具款式另选' },
+    downpipe:    { stage: 'mep', name: '雨水管（落水管）更换', unit: '延尺', mat: 0, aux: 0, lab: 0, unpriced: true,
+                   desc: '拆除旧落水管，更换 PVC/铝合金落水管及固定卡，接入户外排水沟' },
     big_tile_extra: { stage: 'tile', name: '大板砖/岩板铺贴加价', unit: '平方尺', mat: 0, aux: 0.5, lab: 2.0,
                    desc: '900×1800 及以上大板：需吸盘搬运、背涂、找平系统，铺贴人工另加' },
     laundry_cab: { stage: 'custom', name: '洗衣柜（洗衣机上方/旁边）', unit: '延尺', mat: 55, aux: 8, lab: 15,
@@ -929,6 +944,8 @@
     { id: 'mainDoor', q: '要换大门吗？', inputs: [{ k: 'count', label: '大门数量', unit: '樘', def: () => 1 }] },
     { id: 'cctv', q: '要装监控（CCTV）吗？', inputs: [{ k: 'count', label: '摄像头数量', unit: '个', def: () => 4 }] },
     { id: 'doorbell', q: '要装可视门铃/对讲吗？' },
+    { id: 'renoPermit', q: '需要向市政局申请改建/装修准证吗？', why: '拆墙、改门窗位置、改外观等改建工程，开工前需市政局批准' },
+    { id: 'waterFilter', q: '要装全屋净水器（户外总过滤器）吗？' },
     { id: 'porch', q: '要做门廊/车库地坪吗？', why: '有地房屋（排屋/独立屋）才会问', when: () => ans('condo').v === false,
       inputs: [{ k: 'area', label: '门廊/车库面积', unit: '平方尺', def: () => 0 }, { k: 'drain', label: '排水沟长度（不做填 0）', unit: '尺', def: () => 0, optional: true }] },
     { id: 'extension', q: '要做厨房/后院扩建吗？', why: '必须先向市政局（Majlis）申请图纸批准，系统会自动加上申请费', when: () => ans('condo').v === false,
@@ -941,6 +958,14 @@
     { id: 'roof', q: '屋顶有漏水要修吗？', when: () => ans('condo').v === false,
       inputs: [{ k: 'count', label: '漏点处数', unit: '处', def: () => 1 }] },
     { id: 'pump', q: '要装水泵/水箱吗？', why: '水压低或楼上出水小时需要', when: () => ans('condo').v === false },
+    { id: 'threePhase', q: '要把单相电改成三相电吗？', why: '空调 3 台以上或用电量大时常需要，须向 TNB 申请', when: () => ans('condo').v === false },
+    { id: 'mainPipe', q: '要更换进户主水管吗？', why: '老房子旧镀锌管易生锈、水压低', when: () => ans('condo').v === false,
+      inputs: [{ k: 'len', label: '主水管长度', unit: '尺', def: () => 0 }] },
+    { id: 'sewer', q: '要新做排污管/接驳化粪池吗？', why: '卫生间移位或扩建时需要', when: () => ans('condo').v === false },
+    { id: 'gardenLight', q: '要做户外灯/庭院灯吗？', when: () => ans('condo').v === false,
+      inputs: [{ k: 'count', label: '灯位数量', unit: '个', def: () => 2 }] },
+    { id: 'downpipe', q: '要更换雨水管（落水管）吗？', when: () => ans('condo').v === false,
+      inputs: [{ k: 'len', label: '雨水管总长度', unit: '尺', def: () => 0 }] },
     { id: 'extPaint', q: '要刷外墙吗？', why: '有地房屋才会问。外墙面积 = 外墙周长 × 高度', when: () => ans('condo').v === false,
       inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 0 }] },
     { id: 'stairs', q: '现有楼梯需要更改／翻新吗？', why: '多层住宅有楼梯不等于需要施工。不需要则保留现状、不计楼梯装修费用；需要才选择材料及做法。', when: () => levels() > 1,
@@ -1478,6 +1503,8 @@
     if (yes('mainDoor')) add(ALL, 'main_door', an('mainDoor', 'count'), '必答问题填写');
     if (yes('cctv')) add(ALL, 'cctv', an('cctv', 'count'), '必答问题填写');
     if (yes('doorbell')) add(ALL, 'doorbell', 1, '必答问题填写');
+    if (yes('renoPermit')) add(ALL, 'reno_permit', 1, '必答问题填写');
+    if (yes('waterFilter')) add(ALL, 'water_filter', 1, '必答问题填写');
     if (ans('condo').v === false) {
       if (yes('extension')) { add(ALL, 'extension', an('extension', 'area'), '必答问题填写'); add(ALL, 'ext_permit', 1, '扩建必须先申请批准'); }
       if (yes('awning')) add(ALL, 'awning', an('awning', 'area'), '必答问题填写');
@@ -1485,6 +1512,11 @@
       if (yes('autogate')) add(ALL, 'autogate', 1, '必答问题填写');
       if (yes('roof')) add(ALL, 'roof_fix', an('roof', 'count'), '必答问题填写');
       if (yes('pump')) add(ALL, 'water_pump', 1, '必答问题填写');
+      if (yes('threePhase')) add(ALL, 'three_phase', 1, '必答问题填写');
+      if (yes('mainPipe')) add(ALL, 'main_pipe', an('mainPipe', 'len'), '必答问题填写');
+      if (yes('sewer')) add(ALL, 'sewer', 1, '必答问题填写');
+      if (yes('gardenLight')) add(ALL, 'garden_light', an('gardenLight', 'count'), '必答问题填写');
+      if (yes('downpipe')) add(ALL, 'downpipe', an('downpipe', 'len'), '必答问题填写');
       if (yes('porch')) add(ALL, 'drain_ch', an('porch', 'drain'), '必答问题填写');
       if (yes('porch')) add(ALL, 'porch_tile', an('porch', 'area'), '必答问题填写');
       if (yes('extPaint')) add(ALL, 'ext_paint', an('extPaint', 'area'), '必答问题填写');
@@ -1720,6 +1752,7 @@
   function checks(C) {
     const red = [], yellow = [];
     const paintIssues=PAINT.issues(C.rows);paintIssues.red.forEach(m=>red.push({m,go:2}));paintIssues.yellow.forEach(m=>yellow.push({m,go:2}));
+    C.rows.filter(r=>r.on&&PRICE[r.code]?.unpriced&&!r.catalogMatch&&!r.catalogPending&&!(r.uPrice>0)).forEach(r=>red.push({m:`「${r.name}」单价待公司核定，请在价目表填写价格`,go:5}));
     C.rows.filter(r=>r.on&&r.catalogPending).forEach(r=>red.push({m:`「${r.roomName} · ${r.name}」${r.catalogReason}，请在价目表补齐`,go:5}));
     if(!houseDef(P.houseType)) red.push({m:'请先选择住宅类型',go:1});
     P.rooms.filter(r => r.planImported && !r.surveyConfirmed).forEach(r => red.push({m: `「${roomLabel(r)}」图纸尺寸待现场复尺确认`,go:1}));
