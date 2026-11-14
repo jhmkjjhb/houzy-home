@@ -133,6 +133,29 @@ ok('可改实际施工面积：旧地砖只铺一半就只拆一半；地砖改�
   assert.ok(Q.checks(project([r]), Q.buildLines(project([r]))).yellow.some(x => x.m.includes('大于房间地面')));
 });
 
+ok('定制柜按正面面积 = 宽 × 高；单价未定前拦住出单', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wardrobe'], vals: { wardrobe: { w: 9, h: 8 } } };
+  const p = project([r]); const L = Q.buildLines(p);
+  assert.equal(Q.PRICE.wardrobe.unit, '平方尺');
+  assert.equal(qty(L, 'wardrobe'), 72);
+  assert.ok(Q.checks(p, L).red.some(x => x.m.includes('衣柜定制')));
+  p.prices = { wardrobe: { lab: 60 } };
+  assert.equal(find(Q.buildLines(p), 'wardrobe')[0].total, 72 * 60);
+});
+
+ok('小件定制按项：名称和单价逐项填，没填就拦住', () => {
+  const r = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['custom_item'], items: [{ name: '换鞋凳', qty: 2, price: 350 }, { name: '', qty: 1, price: 0 }] };
+  const p = project([r]); const L = Q.buildLines(p);
+  const bench = L.find(l => l.name === '换鞋凳');
+  assert.equal(bench.total, 700);
+  const red = Q.checks(p, L).red.map(x => x.m);
+  assert.ok(red.some(m => m.includes('第 2 项请填写名称')));
+  assert.ok(red.some(m => m.includes('请填写单价')));
+  assert.ok(!red.some(m => m.includes('单价待公司核定')), '小件不走公司价目表');
+  r.items = [];
+  assert.ok(Q.checks(p, Q.buildLines(p)).red.some(x => x.m.includes('请至少加一项')));
+});
+
 ok('设计费只算有施工的室内房间：没动的卧室不收设计费', () => {
   const live = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['paint'] };
   const idle = Q.newRoom('bedroom', 1, 1);

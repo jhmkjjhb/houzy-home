@@ -41,10 +41,16 @@
     porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] }
   };
 
+  // 每个室内空间都可以加「其他定制小件」
+  Object.values(ROOMS).forEach(t => { if (!t.outdoor) t.packs.push('custom_item'); });
+
   // ---------- 工程包：一个按钮 = 一组必然一起做的项目 ----------
   // group 决定卡片分组；pick 同组只能选一个（例如地面只能选瓷砖或木地板）；
   // inputs 是这个工程唯一需要员工确认的数字，全部有默认值，不留空格。
   const GROUPS = [['demo', '拆旧'], ['floor', '地面'], ['wall', '墙面'], ['ceil', '天花'], ['mep', '水电'], ['wet', '防水与瓷砖'], ['fix', '洁具设备'], ['cab', '定制柜'], ['open', '门窗窗帘'], ['out', '户外']];
+  const cabSqft = (label, icon, code, w, h) => ({ g: 'cab', label, icon,
+    inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }],
+    lines: (r, g, v) => [[code, r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`]] });
   const PACKS = {
     demo_floor:     { g: 'demo', area: ['floor'], label: '拆旧地砖', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, `地面 ${g.L}×${g.W}`]] },
     demo_skin:      { g: 'demo', area: ['wall'], label: '铲旧墙皮', icon: '🧽', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
@@ -91,14 +97,16 @@
     cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️',
                       inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => r2(g.L) }],
                       lines: (r, g, v) => [['cab_low', v.low, '地柜长度'], ['counter', v.low, '= 地柜长度'], ['cab_up', v.up, '吊柜长度'], ['sink', 1, '厨房必配'], ['hood', 1, '烟机灶具安装']] },
-    wardrobe:       { g: 'cab', label: '衣柜', icon: '🚪', inputs: [{ k: 'len', label: '衣柜长度', unit: '尺', def: (r, g) => r2(Math.min(g.L, g.W) - 2) }], lines: (r, g, v) => [['wardrobe', v.len, '衣柜长度']] },
-    tv_cab:         { g: 'cab', label: '电视柜', icon: '📺', inputs: [{ k: 'len', label: '电视柜长度', unit: '尺', def: () => 8 }], lines: (r, g, v) => [['tv_cab', v.len, '电视柜长度']] },
-    shoe_cab:       { g: 'cab', label: '鞋柜', icon: '👟', inputs: [{ k: 'len', label: '鞋柜长度', unit: '尺', def: () => 4 }], lines: (r, g, v) => [['shoe_cab', v.len, '鞋柜长度']] },
-    sideboard:      { g: 'cab', label: '餐边柜', icon: '🍶', inputs: [{ k: 'len', label: '餐边柜长度', unit: '尺', def: () => 6 }], lines: (r, g, v) => [['sideboard', v.len, '餐边柜长度']] },
-    headboard:      { g: 'cab', label: '床头背景', icon: '🖼️', inputs: [{ k: 'len', label: '背景墙宽', unit: '尺', def: () => 8 }], lines: (r, g, v) => [['headboard', v.len, '背景墙宽']] },
-    bookcase:       { g: 'cab', label: '书柜/储物柜', icon: '📚', inputs: [{ k: 'len', label: '柜长度', unit: '尺', def: () => 6 }], lines: (r, g, v) => [['bookcase', v.len, '柜长度']] },
-    desk:           { g: 'cab', label: '书桌', icon: '🖥️', inputs: [{ k: 'len', label: '书桌长度', unit: '尺', def: () => 4 }], lines: (r, g, v) => [['desk', v.len, '书桌长度']] },
-    laundry_cab:    { g: 'cab', label: '洗衣柜', icon: '🗄️', inputs: [{ k: 'len', label: '洗衣柜长度', unit: '尺', def: () => 4 }], lines: (r, g, v) => [['laundry_cab', v.len, '洗衣柜长度']] },
+    // 定制柜按正面面积 = 宽 × 高（平方尺）
+    wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8),
+    tv_cab:         cabSqft('电视柜/背景墙', '📺', 'tv_cab', () => 8, () => 3),
+    shoe_cab:       cabSqft('鞋柜', '👟', 'shoe_cab', () => 4, () => 4),
+    sideboard:      cabSqft('餐边柜', '🍶', 'sideboard', () => 6, () => 3),
+    headboard:      cabSqft('床头背景', '🖼️', 'headboard', () => 8, () => 4),
+    bookcase:       cabSqft('书柜/储物柜', '📚', 'bookcase', () => 6, () => 7),
+    laundry_cab:    cabSqft('洗衣柜', '🗄️', 'laundry_cab', () => 4, () => 3),
+    desk:           { g: 'cab', label: '书桌', icon: '🖥️', inputs: [{ k: 'n', label: '数量', unit: '项', def: () => 1 }], lines: (r, g, v) => [['desk', v.n, '按项']] },
+    custom_item:    { g: 'cab', label: '其他定制小件（按项）', icon: '🪑', items: true, lines: r => (r.items || []).map(it => ['custom_item', num(it.qty), '按项', it]) },
 
     door:           { g: 'open', label: '换门', icon: '🚪', needDoors: true, lines: (r, g) => [['door', g.doors, '= 房间门数']] },
     window_new:     { g: 'open', label: '换窗', icon: '🪟', needWindows: true, lines: (r, g) => [['window_new', g.winA, '各樘窗 宽×高 合计']] },
@@ -175,11 +183,11 @@
 
   function buildLines(project) {
     const lines = [];
-    const push = (room, code, qty, formula, from) => {
+    const push = (room, code, qty, formula, from, item) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
-      const unit = unitPrice(code, project.prices);
-      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, name: P[code].name, unitName: P[code].unit, stage: P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), unpriced: !!P[code].unpriced && !(unit > 0) });
+      const unit = item ? r2(num(item.price)) : unitPrice(code, project.prices);
+      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: P[code].unit, stage: P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on);
     if (anyWork) { push(null, 'setout', 1, '每单必做', '全屋'); push(null, 'protect', 1, '每单必做', '全屋'); }
@@ -190,7 +198,7 @@
         const pk = PACKS[code]; if (!pk) return;
         const v = packValues(room, code, g), g2 = { ...g };
         (pk.area || []).forEach(k => { g2[k] = v[k]; });
-        pk.lines(room, g2, v, picked).forEach(([c, q, f]) => push(room, c, q, f, pk.label));
+        pk.lines(room, g2, v, picked).forEach(([c, q, f, it]) => push(room, c, q, f, pk.label, it));
       });
     });
     const hs = project.house || {};
@@ -243,6 +251,16 @@
         const pk = PACKS[c]; if (!pk) return;
         (pk.area || []).forEach(k => { const v = packValues(room, c, g)[k]; if (v > g[k] + 0.01) yellow.push({ m: `「${label}」${pk.label}面积 ${r2(v)} 大于房间${k === 'wall' ? '墙面' : '地面'} ${g[k]}，请确认`, go: room.id }); });
         if (pk.needWindows && !(g.wins.length)) red.push({ m: `「${label}」选了${pk.label}，请先加窗户尺寸`, go: room.id });
+        if (pk.items) {
+          const items = room.items || [];
+          if (!items.length) red.push({ m: `「${label}」选了定制小件，请至少加一项`, go: room.id });
+          items.forEach((it, i) => {
+            const nm = String(it.name || '').trim() || `第 ${i + 1} 项`;
+            if (!String(it.name || '').trim()) red.push({ m: `「${label}」定制小件第 ${i + 1} 项请填写名称`, go: room.id });
+            if (!(num(it.qty) > 0)) red.push({ m: `「${label}」定制小件「${nm}」数量要大于 0`, go: room.id });
+            if (!(num(it.price) > 0)) red.push({ m: `「${label}」定制小件「${nm}」请填写单价`, go: room.id });
+          });
+        }
         if (pk.needDoors && !(g.doors > 0)) red.push({ m: `「${label}」选了换门，但门数是 0`, go: room.id });
         const v = packValues(room, c, g);
         inputsOf(c).forEach(i => { if (!(v[i.k] > 0)) red.push({ m: `「${label}」${pk.label}：${i.label}要大于 0`, go: room.id }); });
@@ -251,7 +269,7 @@
       if (ROOMS[room.type] && room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });
     });
     const seen = {};
-    lines.filter(l => l.unpriced).forEach(l => { if (!seen[l.code]) { seen[l.code] = 1; red.push({ m: `「${l.name}」单价待公司核定，请到价格页填写`, go: 'price' }); } });
+    lines.filter(l => l.unpriced && !l.custom).forEach(l => { if (!seen[l.code]) { seen[l.code] = 1; red.push({ m: `「${l.name}」单价待公司核定，请到价格页填写`, go: 'price' }); } });
     return { red, yellow };
   }
 

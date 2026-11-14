@@ -107,7 +107,9 @@
   .pack.on .h .rm2 { color: var(--accent); font-weight: 700; }
   .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
   .pack.on .tick { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
-  .pkbody { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .pkbody { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+  .pkbody .lines, .pkbody .chip { flex-basis: 100%; }
+  .item { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
   .lines { font-size: 11.5px; color: var(--ink-dim); line-height: 1.6; }
   .subtotal { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 700; }
 
@@ -232,8 +234,9 @@
     const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.from === pk.label) : [];
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
-    return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? rm(sub) : ''}</span></button>
-      ${on ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
+    return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+      ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
+      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
   }
 
   // ---------- ③ 全屋 ----------
@@ -306,6 +309,7 @@
     if (ds.rf) { r[ds.rf] = v; if (ds.rf === 'L' || ds.rf === 'W') r.measured = true; }
     else if (ds.win !== undefined) { r.windows[+ds.win][ds.wk] = v; }
     else if (ds.pv) { r.vals = r.vals || {}; (r.vals[ds.pv] = r.vals[ds.pv] || {})[ds.pk] = v; }
+    else if (ds.item !== undefined) { r.items[+ds.item][ds.ik] = v; }
     else if (ds.hv) { (P.house[ds.hv] = P.house[ds.hv] || {})[ds.hk] = v; }
     else if (ds.price !== undefined) { P.prices[ds.price] = { mat: 0, aux: 0, waste: 0, lab: v }; }
     else if (el.hasAttribute('data-discount')) P.discount = v;
@@ -314,9 +318,10 @@
     const t = e.target;
     if (t.dataset.info) { P.info[t.dataset.info] = t.value; save(); return; }
     if (t.dataset.rname) { room(t.dataset.rname).name = t.value; save(); return; }
+    if (t.dataset.ik === 'name') { room(roomId).items[+t.dataset.item].name = t.value; save(); return; }
     if (t.closest('.stp')) { setValue(t, t.value); const C = compute(); save(); document.getElementById('grand').textContent = rm(C.T.total); }
   });
-  document.addEventListener('change', e => { if (e.target.closest('.stp') || e.target.dataset.rname) render(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
+  document.addEventListener('change', e => { if (e.target.closest('.stp') || e.target.dataset.rname || e.target.dataset.ik === 'name') render(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const ds = b.dataset;
@@ -331,12 +336,14 @@
     if (ds.delroom) { P.rooms = P.rooms.filter(r => r.id !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
     if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
     if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
+    if (b.hasAttribute('data-additem')) { const r = room(roomId); (r.items = r.items || []).push({ name: '', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ik="name"]'); ins[ins.length - 1]?.focus(); return; }
+    if (ds.delitem !== undefined) { room(roomId).items.splice(+ds.delitem, 1); render(); return; }
     if (ds.resetpv) { const r = room(roomId); if (r.vals?.[ds.resetpv]) delete r.vals[ds.resetpv][ds.pk]; render(); return; }
     if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
     if (ds.pack) {
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
       if (r.packs.includes(c)) r.packs = r.packs.filter(x => x !== c);
-      else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); }
+      else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; }
       render(); return;
     }
     if (ds.hitem) { const q = P.house[ds.hitem] = P.house[ds.hitem] || {}; q.on = !q.on; render(); return; }

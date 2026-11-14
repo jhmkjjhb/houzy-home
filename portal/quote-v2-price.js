@@ -106,6 +106,11 @@
     "curtain":{"stage":"soft","name":"窗帘（含轨道/罗马杆安装）","unit":"延尺","mat":40,"aux":5,"lab":15,"waste":0,"desc":"布帘+纱帘双层，面料客户选定，按窗宽 2 倍打褶"},
     "decor":{"stage":"soft","name":"基础软装配饰包（靠垫/花艺/摆件）","unit":"项","mat":800,"aux":0,"lab":0,"waste":0,"desc":"按设计风格搭配基础软装配饰"}};
   root.QV2_PRICE.desk = {"stage":"custom","name":"定制书桌／工作台","unit":"延尺","mat":0,"aux":0,"lab":0,"waste":0,"unpriced":true,"desc":"按客户确认的材质、尺寸、承重及走线要求制作"};
+  // 新版：定制柜按正面面积（宽×高，平方尺）计价，单价待公司核定；橱柜地柜/吊柜和台面仍按延尺
+  ['wardrobe', 'tv_cab', 'shoe_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard'].forEach(c => Object.assign(root.QV2_PRICE[c], { unit: '平方尺', mat: 0, aux: 0, lab: 0, unpriced: true }));
+  Object.assign(root.QV2_PRICE.desk, { unit: '项' });
+  // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
+  root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
   root.QV2_STAGES = [{"id":"prep","no":1,"name":"拆改与现场保护"},{"id":"mep","no":2,"name":"水电隐蔽"},{"id":"wp","no":3,"name":"防水"},{"id":"tile","no":4,"name":"泥水瓷砖 / 地面"},{"id":"ceil","no":5,"name":"天花墙面"},{"id":"custom","no":6,"name":"定制柜与门窗"},{"id":"equip","no":7,"name":"设备安装与收尾"},{"id":"outdoor","no":8,"name":"户外与外围工程"},{"id":"soft","no":9,"name":"软装"}];
   if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES };
 })(typeof window !== "undefined" ? window : globalThis);
