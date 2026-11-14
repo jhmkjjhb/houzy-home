@@ -46,20 +46,20 @@
   // inputs 是这个工程唯一需要员工确认的数字，全部有默认值，不留空格。
   const GROUPS = [['demo', '拆旧'], ['floor', '地面'], ['wall', '墙面'], ['ceil', '天花'], ['mep', '水电'], ['wet', '防水与瓷砖'], ['fix', '洁具设备'], ['cab', '定制柜'], ['open', '门窗窗帘'], ['out', '户外']];
   const PACKS = {
-    demo_floor:     { g: 'demo', label: '拆旧地砖', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, `地面 ${g.L}×${g.W}`]] },
-    demo_skin:      { g: 'demo', label: '铲旧墙皮', icon: '🧽', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
-    demo_wall_tile: { g: 'demo', label: '拆旧墙砖', icon: '⛏️', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
-    bath_demo:      { g: 'demo', label: '拆旧（地砖+墙砖+洁具）', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, '地面'], ['demo_skin', g.wall, '墙面'], ['demo_piece', 3, '旧马桶/面盆/花洒']] },
+    demo_floor:     { g: 'demo', area: ['floor'], label: '拆旧地砖', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, `地面 ${g.L}×${g.W}`]] },
+    demo_skin:      { g: 'demo', area: ['wall'], label: '铲旧墙皮', icon: '🧽', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
+    demo_wall_tile: { g: 'demo', area: ['wall'], label: '拆旧墙砖', icon: '⛏️', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
+    bath_demo:      { g: 'demo', area: ['floor', 'wall'], label: '拆旧（地砖+墙砖+洁具）', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, '地面'], ['demo_skin', g.wall, '墙面'], ['demo_piece', 3, '旧马桶/面盆/花洒']] },
 
-    floor_tile:     { g: 'floor', pick: 'floor', label: '铺地砖', icon: '🟫', lines: (r, g) => [['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['skirting', g.skirt, '周长 − 门宽']] },
-    laminate:       { g: 'floor', pick: 'floor', label: '铺木地板/SPC', icon: '🪵', lines: (r, g) => [['laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
+    floor_tile:     { g: 'floor', area: ['floor'], pick: 'floor', label: '铺地砖', icon: '🟫', lines: (r, g) => [['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['skirting', g.skirt, '周长 − 门宽']] },
+    laminate:       { g: 'floor', area: ['floor'], pick: 'floor', label: '铺木地板/SPC', icon: '🪵', lines: (r, g) => [['laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
 
-    paint:          { g: 'wall', label: '墙面批灰刷漆', icon: '🖌️', lines: (r, g) => [['skim', g.wall, '墙面'], ['paint_wall', g.wall, '墙面']] },
+    paint:          { g: 'wall', area: ['wall'], label: '墙面批灰刷漆', icon: '🖌️', lines: (r, g) => [['skim', g.wall, '墙面'], ['paint_wall', g.wall, '墙面']] },
 
-    ceil_flat:      { g: 'ceil', pick: 'ceil', label: '平顶吊顶', icon: '⬜', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积']] },
-    ceil_feature:   { g: 'ceil', pick: 'ceil', label: '造型吊顶+灯槽', icon: '✨', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积'], ['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长']] },
+    ceil_flat:      { g: 'ceil', area: ['floor'], pick: 'ceil', label: '平顶吊顶', icon: '⬜', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积']] },
+    ceil_feature:   { g: 'ceil', area: ['floor'], pick: 'ceil', label: '造型吊顶+灯槽', icon: '✨', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积'], ['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长']] },
     cornice:        { g: 'ceil', label: '石膏线', icon: '〰️', lines: (r, g) => [['cornice', g.perim, '= 周长']] },
-    bath_ceil:      { g: 'ceil', label: '防潮天花', icon: '⬜', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积']] },
+    bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积']] },
 
     electric:       { g: 'mep', label: '插座开关+灯位', icon: '💡',
                       inputs: [{ k: 'pts', label: '插座/开关', unit: '个', def: (r, g) => ceil(g.floor / 30) + 2 }, { k: 'lights', label: '灯位', unit: '个', def: (r, g) => ceil(g.floor / 50) + 1 }],
@@ -76,13 +76,13 @@
                       lines: (r, g, v) => [['water_pt', v.n, '水点位']] },
     heater:         { g: 'fix', label: '热水器', icon: '♨️', lines: () => [['heater', 1, '每个卫生间 1 台'], ['circuit', 1, '热水器专用回路']] },
 
-    kitchen_tile:   { g: 'wet', label: '地砖+操作区墙砖+防水', icon: '🧱', inputs: [{ k: 'back', label: '操作区墙砖长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }],
+    kitchen_tile:   { g: 'wet', area: ['floor'], label: '地砖+操作区墙砖+防水', icon: '🧱', inputs: [{ k: 'back', label: '操作区墙砖长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }],
                       lines: (r, g, v) => [['wp', g.floor, '厨房地面'], ['flood_test', 1, '做防水就要闭水'], ['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['wall_tile', r2(v.back * 2.5), `操作区 ${v.back}×2.5 尺高`], ['grout', r2(g.floor + v.back * 2.5), '地砖+墙砖'], ['drain', 1, '厨房地漏']] },
-    bath_tile:      { g: 'wet', label: '防水+地砖+满墙砖', icon: '🧱',
+    bath_tile:      { g: 'wet', area: ['floor', 'wall'], label: '防水+地砖+满墙砖', icon: '🧱',
                       lines: (r, g) => [['wp', r2(g.floor + g.perim + 36), '地面 + 周长×上翻1尺 + 淋浴区墙 6×6'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['wall_tile', g.wall, '满墙'], ['grout', r2(g.floor + g.wall), '地砖+墙砖'], ['drain', 2, '淋浴区 + 干区'], ['threshold', g.doors, '每个门口一条挡水']] },
-    wet_tile:       { g: 'wet', label: '防水+地砖', icon: '🧱',
+    wet_tile:       { g: 'wet', area: ['floor'], label: '防水+地砖', icon: '🧱',
                       lines: (r, g) => [['wp', g.floor, '地面'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['drain', 1, '地漏']] },
-    bath_move:      { g: 'wet', label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
+    bath_move:      { g: 'wet', area: ['floor'], label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
 
     sanitary:       { g: 'fix', label: '洁具（马桶+花洒+淋浴隔断）', icon: '🚽', lines: () => [['toilet', 1, ''], ['shower', 1, ''], ['screen', 1, ''], ['exhaust', 1, '卫生间必配'], ['bath_acc', 1, '毛巾架/纸巾架/挂钩']] },
     vanity:         { g: 'fix', label: '浴室柜+镜子', icon: '🪞', lines: () => [['vanity', 1, ''], ['mirror', 1, '']] },
@@ -106,7 +106,7 @@
     sill:           { g: 'open', label: '窗台石', icon: '▭', needWindows: true, lines: (r, g) => [['window_sill', g.winW, '各樘窗宽合计']] },
     balc_seal:      { g: 'open', label: '封阳台', icon: '🪟', lines: (r, g) => [['balc_seal', g.L, '= 阳台长度']] },
 
-    porch_tile:     { g: 'out', label: '防滑地砖', icon: '🟫', lines: (r, g) => [['screed', g.floor, '地面找平'], ['porch_tile', g.floor, '地面']] },
+    porch_tile:     { g: 'out', area: ['floor'], label: '防滑地砖', icon: '🟫', lines: (r, g) => [['screed', g.floor, '地面找平'], ['porch_tile', g.floor, '地面']] },
     drain_ch:       { g: 'out', label: '排水沟', icon: '〰️', inputs: [{ k: 'len', label: '排水沟长度', unit: '尺', def: (r, g) => g.W }], lines: (r, g, v) => [['drain_ch', v.len, '排水沟长度']] },
     awning:         { g: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '雨棚面积']] },
     garden_light:   { g: 'out', label: '户外灯', icon: '💡', inputs: [{ k: 'n', label: '灯位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['garden_light', v.n, '灯位']] }
@@ -147,9 +147,18 @@
     const skirt = r2(Math.max(0, perim - doors * 3));
     return { L, W, H, doors, floor, perim, wall, skirt, winW, winA, wins };
   }
+  // 按面积算的工程：默认 = 房间面积，可改成实际施工面积（例如旧地砖只铺了一半）
+  const AREA_INPUT = {
+    floor: { k: 'floor', unit: '平方尺', def: (r, g) => g.floor },
+    wall: { k: 'wall', label: '墙面面积', unit: '平方尺', def: (r, g) => g.wall }
+  };
+  function inputsOf(code) {
+    const pk = PACKS[code], a = pk.area || [];
+    return [...a.map(k => ({ ...AREA_INPUT[k], label: k === 'floor' ? (a.length > 1 ? '地面面积' : '施工面积') : AREA_INPUT[k].label, area: true })), ...(pk.inputs || [])];
+  }
   function packValues(room, code, g) {
-    const pk = PACKS[code], saved = (room.vals && room.vals[code]) || {}, v = {};
-    (pk.inputs || []).forEach(i => { v[i.k] = saved[i.k] !== undefined && saved[i.k] !== '' ? num(saved[i.k]) : i.def(room, g); });
+    const saved = (room.vals && room.vals[code]) || {}, v = {};
+    inputsOf(code).forEach(i => { v[i.k] = saved[i.k] !== undefined && saved[i.k] !== '' ? num(saved[i.k]) : i.def(room, g); });
     return v;
   }
   function houseValues(q, item) {
@@ -179,7 +188,9 @@
       (room.packs || []).forEach(c => { picked[c] = true; });
       (room.packs || []).forEach(code => {
         const pk = PACKS[code]; if (!pk) return;
-        pk.lines(room, g, packValues(room, code, g), picked).forEach(([c, q, f]) => push(room, c, q, f, pk.label));
+        const v = packValues(room, code, g), g2 = { ...g };
+        (pk.area || []).forEach(k => { g2[k] = v[k]; });
+        pk.lines(room, g2, v, picked).forEach(([c, q, f]) => push(room, c, q, f, pk.label));
       });
     });
     const hs = project.house || {};
@@ -230,10 +241,11 @@
       (room.windows || []).forEach((x, i) => { if (!(num(x.w) > 0 && num(x.h) > 0)) red.push({ m: `「${label}」第 ${i + 1} 樘窗请填写宽和高`, go: room.id }); });
       packs.forEach(c => {
         const pk = PACKS[c]; if (!pk) return;
+        (pk.area || []).forEach(k => { const v = packValues(room, c, g)[k]; if (v > g[k] + 0.01) yellow.push({ m: `「${label}」${pk.label}面积 ${r2(v)} 大于房间${k === 'wall' ? '墙面' : '地面'} ${g[k]}，请确认`, go: room.id }); });
         if (pk.needWindows && !(g.wins.length)) red.push({ m: `「${label}」选了${pk.label}，请先加窗户尺寸`, go: room.id });
         if (pk.needDoors && !(g.doors > 0)) red.push({ m: `「${label}」选了换门，但门数是 0`, go: room.id });
         const v = packValues(room, c, g);
-        (pk.inputs || []).forEach(i => { if (!(v[i.k] > 0)) red.push({ m: `「${label}」${pk.label}：${i.label}要大于 0`, go: room.id }); });
+        inputsOf(c).forEach(i => { if (!(v[i.k] > 0)) red.push({ m: `「${label}」${pk.label}：${i.label}要大于 0`, go: room.id }); });
       });
       if (packs.includes('ceil_feature') && !packs.includes('electric')) yellow.push({ m: `「${label}」做了灯槽，但没选插座开关+灯位`, go: room.id });
       if (ROOMS[room.type] && room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });
@@ -255,7 +267,7 @@
     return out;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, SETTINGS, PRICE: P, STAGES, geo, packValues, houseValues, unitPrice, buildLines, totals, checks, newRoom, presetRooms, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, SETTINGS, PRICE: P, STAGES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, newRoom, presetRooms, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

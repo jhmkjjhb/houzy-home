@@ -118,6 +118,21 @@ ok('付款节点加起来刚好等于总价；管理费 6%', () => {
   assert.equal(T.design, Math.round(280 * 8));
 });
 
+ok('可改实际施工面积：旧地砖只铺一半就只拆一半；地砖改面积，找平和美缝跟着改，踢脚线仍按周长', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['demo_floor', 'floor_tile'] }; // 11×10 = 110
+  let L = Q.buildLines(project([r]));
+  assert.equal(qty(L, 'demo_floor'), 110);
+  r.vals = { demo_floor: { floor: 60 }, floor_tile: { floor: 80 } };
+  L = Q.buildLines(project([r]));
+  assert.equal(qty(L, 'demo_floor'), 60);
+  assert.equal(qty(L, 'floor_tile'), 80);
+  assert.equal(qty(L, 'screed'), 80);
+  assert.equal(qty(L, 'grout'), 80);
+  assert.equal(qty(L, 'skirting'), 42 - 3, '踢脚线按周长减门宽，不跟面积走');
+  r.vals.floor_tile.floor = 200;
+  assert.ok(Q.checks(project([r]), Q.buildLines(project([r]))).yellow.some(x => x.m.includes('大于房间地面')));
+});
+
 ok('设计费只算有施工的室内房间：没动的卧室不收设计费', () => {
   const live = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['paint'] };
   const idle = Q.newRoom('bedroom', 1, 1);

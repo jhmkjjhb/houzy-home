@@ -233,7 +233,7 @@
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? rm(sub) : ''}</span></button>
-      ${on ? `<div class="pkbody">${(pk.inputs || []).map(i => field(i.label, i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
+      ${on ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
   }
 
   // ---------- ③ 全屋 ----------
@@ -331,6 +331,7 @@
     if (ds.delroom) { P.rooms = P.rooms.filter(r => r.id !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
     if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
     if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
+    if (ds.resetpv) { const r = room(roomId); if (r.vals?.[ds.resetpv]) delete r.vals[ds.resetpv][ds.pk]; render(); return; }
     if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
     if (ds.pack) {
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
