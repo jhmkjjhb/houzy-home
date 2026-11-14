@@ -2230,15 +2230,22 @@
     document.querySelector('.wrap').classList.toggle('wide', step === 4 && !choosing);
     // 记住光标在哪个输入框，重画后放回去（否则员工点下一个框会"跳掉"）
     const a = document.activeElement;
-    let focusSel = null, caret = null;
+    let focusSel = null, caret = null, anchorTop = null;
+    const scrollY0 = window.scrollY;
     if (a && main.contains(a) && a.matches('input, select')) {
       focusSel = a.tagName.toLowerCase() + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join('');
       try { caret = a.selectionStart; } catch (e) { caret = null; }
+      anchorTop = a.getBoundingClientRect().top;
     }
     main.innerHTML = choosing ? renderChooser() : step === 1 ? renderStep1() : step === 2 ? renderStep2() : step === 3 ? renderStep3(C) : step === 4 ? renderStep4(C, K) : renderStep5();
+    // 重画后让正在填的框留在原来的屏幕位置，页面不跳
+    window.scrollTo(0, scrollY0);
     if (focusSel) {
       const el = main.querySelector(focusSel);
-      if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { /* select 没有光标 */ } }
+      if (el) {
+        el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) { /* select 没有光标 */ }
+        if (anchorTop != null) { const d = el.getBoundingClientRect().top - anchorTop; if (Math.abs(d) > 1) window.scrollBy(0, d); }
+      }
     }
     refresh(C, K);
   }
