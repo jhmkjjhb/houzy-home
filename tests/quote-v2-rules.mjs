@@ -169,9 +169,9 @@ ok('预估报价：没定的选材只提醒；正式报价：必须全部定好'
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);
   const L = Q.buildLines(p);
-  assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('地面与瓷砖')));
-  assert.ok(!Q.checks(p, L, 'estimate').red.some(x => x.m.includes('地面与瓷砖')));
-  assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('地面与瓷砖')));
+  assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('地面还没定选材')));
+  assert.ok(!Q.checks(p, L, 'estimate').red.some(x => x.m.includes('地面还没定选材')));
+  assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('地面还没定选材')));
   p.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }];
   assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.length);
 });
@@ -258,6 +258,31 @@ ok('手动增项：自己填的名称、单位、阶段、单价进报价单；�
   const red = Q.checks(p, Q.buildLines(p)).red.map(r => r.m);
   assert.ok(red.some(m => m.includes('第 2 项请填写名称')));
   assert.ok(red.some(m => m.includes('请填写单价')));
+});
+
+ok('选材按「房间·位置」定：同一房间两个柜子可以用不同门板', () => {
+  const r = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['tv_cab', 'shoe_cab'] };
+  const p = project([r], { plans: [{ id: 'A', specs: {}, roomSpecs: { [r.id]: { '@tv_cab': { cabinet: { door: '烤漆' } }, '@shoe_cab': { cabinet: { door: 'PET' } } } } }] });
+  const L = Q.buildLines(p);
+  assert.ok(find(L, 'tv_cab')[0].spec.includes('烤漆'));
+  assert.ok(find(L, 'shoe_cab')[0].spec.includes('PET'));
+});
+
+ok('位置清单只列真正用到的选项：地面选木地板就不再问地砖尺寸；卫生间墙砖和地砖表面分开', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r]);
+  let pl = Q.placesOf(p, r, Q.buildLines(p))[0];
+  assert.equal(pl.label, '地面');
+  assert.deepEqual(pl.keys[0], ['tile', 'material'], '先选材料');
+  assert.ok(pl.keys.some(([, k]) => k === 'floorSize'));
+  p.plans = [{ id: 'A', specs: {}, roomSpecs: { [r.id]: { '@floor': { tile: { material: 'SPC 石塑地板' } } } } }];
+  pl = Q.placesOf(p, r, Q.buildLines(p))[0];
+  assert.ok(!pl.keys.some(([, k]) => k === 'floorSize'));
+  assert.ok(pl.keys.some(([, k]) => k === 'woodGrade'));
+  const b = bath({ packs: ['bath_tile'] }), pb = project([b]);
+  const keys = Q.placesOf(pb, b, Q.buildLines(pb))[0].keys.map(([, k]) => k);
+  assert.ok(keys.includes('finish') && keys.includes('wallFinish'));
+  assert.equal(Q.specOf(pb, b, 'tile', 'finish', null, 'bath_tile').v, '防滑', '卫生间地砖默认防滑');
 });
 
 ok('设计费只算有施工的室内房间：没动的卧室不收设计费', () => {

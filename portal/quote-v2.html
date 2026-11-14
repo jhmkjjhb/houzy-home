@@ -106,6 +106,8 @@
   .pack.wide { grid-column: 1 / -1; }
   .pack.on { border-color: var(--navy); background: var(--navy-soft); }
   .pack.on .h .rm2 { color: var(--accent); font-weight: 700; }
+  .pack.opt { width: auto; padding: 8px 12px; min-width: 110px; }
+  .pack.opt .tick { vertical-align: -3px; }
   .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
   .pack.on .tick { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .pkbody { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
@@ -151,8 +153,8 @@
 </div>
 <div class="wrap" id="app"></div>
 
-<script src="quote-v2-price.js?v=20261114"></script>
-<script src="quote-v2-rules.js?v=20261114"></script>
+<script src="quote-v2-price.js?v=20261115a"></script>
+<script src="quote-v2-rules.js?v=20261115a"></script>
 <script>
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
@@ -174,7 +176,7 @@
 
   function compute() { const lines = Q.buildLines(P); return { lines, T: Q.totals(P, lines), K: Q.checks(P, lines, P.quoteMode || 'estimate') }; }
   const plan = () => Q.activePlan(P);
-  let specCat = null; const openSpecRooms = new Set();
+
   const roomTotal = (lines, id) => lines.filter(l => l.roomId === id).reduce((t, l) => t + l.total, 0);
   const badRooms = K => new Set(K.red.map(x => x.go));
 
@@ -235,8 +237,8 @@
   function packCard(r, c, g, C) {
     const pk = PACKS[c], on = r.packs.includes(c);
     const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.pack === c) : [];
-    const cats = [...new Set(myLines.flatMap(l => Q.specKeysFor(l.code, l.pack).map(([cat]) => cat)))];
-    const specLine = cats.map(cat => { const open = myLines.some(l => l.tbd.includes(cat)); return `<button type="button" class="chip" style="border-style:solid;${open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${cat}">${Q.SPEC_CATS[cat].icon} ${Q.SPEC_CATS[cat].label}：${open ? '未定，按标准档估价' : '已定'} ›</button>`; }).join('');
+    const place = on ? Q.placesOf(P, r, C.lines).find(x => x.pack === c) : null;
+    const specLine = place ? `<button type="button" class="chip" style="border-style:solid;${place.open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${c}">选材：${place.open ? '未定（按标准档估价）' : esc(myLines[0]?.spec || '已定')} ›</button>` : '';
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
@@ -273,43 +275,38 @@
     const ps = Q.plans(P);
     return `<div class="adds noprint" style="margin:0 0 10px">${ps.map(p => `<button class="rchip ${p.id === plan().id ? 'on' : ''}" style="min-width:auto" data-plan="${p.id}">${esc(p.name || '方案 ' + p.id)}</button>`).join('')}<button class="chip" data-copyplan>+ 复制成新方案</button>${ps.length > 1 ? `<button class="chip" data-delplan>删除当前方案</button>` : ''}</div>`;
   }
-  function keysUsed(lines, cat) {
-    const used = new Set();
-    lines.forEach(l => Q.specKeysFor(l.code, l.pack).forEach(([c, k]) => { if (c === cat) used.add(k); }));
-    return Object.keys(Q.SPEC_CATS[cat].keys).filter(k => used.has(k));
-  }
-  function optDelta(cat, k, val, roomIdOrNull, base) {
-    const clone = JSON.parse(JSON.stringify(P)), pl = Q.activePlan(clone);
-    if (roomIdOrNull) (((pl.roomSpecs[roomIdOrNull] = pl.roomSpecs[roomIdOrNull] || {})[cat] = pl.roomSpecs[roomIdOrNull][cat] || {}))[k] = val;
-    else { (pl.specs[cat] = pl.specs[cat] || {})[k] = val; }
+  const placeSet = (pl, roomId, pack, cat, k, v) => { (((pl.roomSpecs[roomId] = pl.roomSpecs[roomId] || {})['@' + pack] = pl.roomSpecs[roomId]['@' + pack] || {})[cat] = pl.roomSpecs[roomId]['@' + pack][cat] || {})[k] = v; };
+  function optDelta(r, pack, cat, k, val, base) {
+    const clone = JSON.parse(JSON.stringify(P));
+    placeSet(Q.activePlan(clone), r.id, pack, cat, k, val);
     const L = Q.buildLines(clone), key = Q.SPEC_CATS[cat].keys[k];
-    if (L.some(l => (!roomIdOrNull || l.roomId === roomIdOrNull) && l.priceTbd.includes(`${key.label}：${val}`))) return '<span class="desc" style="color:var(--yellow)">价差待定</span>';
+    if (L.some(l => l.roomId === r.id && l.pack === pack && l.priceTbd.includes(`${key.label}：${val}`))) return '<span class="desc" style="color:var(--yellow)">价差待定</span>';
     const d = Q.totals(clone, L).total - base;
-    return `<span class="desc mono" style="color:${d > 0 ? 'var(--accent)' : d < 0 ? 'var(--ok)' : 'var(--ink-dim)'}">${d === 0 ? '不加价' : (d > 0 ? '+' : '−') + rm(Math.abs(d)).replace('RM ', 'RM ')}</span>`;
+    return `<span class="desc mono" style="color:${d > 0 ? 'var(--accent)' : d < 0 ? 'var(--ok)' : 'var(--ink-dim)'}">${d === 0 ? '不加价' : (d > 0 ? '+' : '−') + rm(Math.abs(d))}</span>`;
   }
-  function optRow(cat, k, room, C) {
-    const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, room, cat, k), std = Q.stdOf(key, room);
-    const roomAttr = room ? `data-spec-room="${room.id}"` : '';
-    const own = room && cur.own;
-    return `<div style="padding:8px 0;border-bottom:1px dashed var(--line)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><b style="font-size:13px">${key.label}</b>${cur.decided ? '' : `<span class="desc" style="color:var(--yellow)">未定 · 按标准档「${esc(cur.v)}」估价</span>`}${own ? `<button class="chip" data-spec-follow="${room.id}" data-spec-cat="${cat}" data-spec-k="${k}">跟随全屋</button>` : ''}</div>
-      <div class="adds" style="margin:0">${key.opts.map(o => `<button class="pack ${cur.decided && cur.v === o ? 'on' : ''}" style="width:auto;padding:7px 10px" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}" ${roomAttr}><span style="font-weight:600">${esc(o)}</span>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${optDelta(cat, k, o, room ? room.id : null, C.T.total)}</button>`).join('')}</div></div>`;
+  function placeCard(r, place, C) {
+    const pk = PACKS[place.pack], ls = C.lines.filter(l => l.roomId === r.id && l.pack === place.pack);
+    const main = ls.find(l => l.spec) || ls[0], same = P.rooms.filter(x => x.id !== r.id && (x.packs || []).includes(place.pack));
+    let h = `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px">${pk.icon}</span><b style="font-size:15px">${esc(place.label)}</b><span class="desc">${main ? `${esc(main.name)} ${nf(main.qty)} ${main.unitName}` : ''}</span><span class="desc" style="margin-left:auto;font-weight:600;color:${place.open ? 'var(--yellow)' : 'var(--ok)'}">${place.open ? '未定 · 暂按标准档估价' : '✓ 已定'}</span></div>`;
+    place.keys.forEach(([cat, k]) => {
+      const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, r, cat, k, null, place.pack), std = Q.stdOf(key, r);
+      h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}</div><div class="adds" style="margin:0">${key.opts.map(o => `<button class="pack opt ${cur.decided && cur.v === o ? 'on' : ''}" data-place="${place.pack}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${cur.decided && cur.v === o ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${optDelta(r, place.pack, cat, k, o, C.T.total)}</button>`).join('')}</div></div>`;
+    });
+    h += `<div class="adds" style="margin-top:10px">${place.open ? `<button class="btn okb" data-place-std="${place.pack}">没想好，先按标准档</button>` : ''}${same.length && !place.open ? `<button class="btn" data-place-copy="${place.pack}">同款用到其他 ${same.length} 个空间的「${esc(place.label)}」</button>` : ''}</div></div>`;
+    return h;
   }
+  let specRoomId = null;
   function viewSpec(C) {
-    const cats = Object.keys(Q.SPEC_CATS), status = Object.fromEntries(cats.map(c => [c, Q.specStatus(P, C.lines, c)]));
-    const used = cats.filter(c => status[c].rooms.length);
-    if (!specCat || !used.includes(specCat)) specCat = used[0] || null;
-    let h = `<h2>④ 做法与选材</h2><p class="hint">范围定好后在这里定材料和工艺。全屋统一选一次，个别房间要不一样再「单独设置」。没定的按「标准档」估价，按钮下面是换成这个选项后总价的变化。</p>${planBar()}`;
-    if (!used.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
-    h += `<div class="adds" style="margin:0 0 12px">${used.map(c => { const st = status[c]; return `<button class="rchip ${c === specCat ? 'on' : ''}" style="min-width:auto" data-speccat="${c}">${Q.SPEC_CATS[c].icon} ${Q.SPEC_CATS[c].label}<small style="color:${st.open.length ? 'var(--yellow)' : 'var(--ok)'}">${st.open.length ? st.open.length + ' 个空间未定' : '✓ 已定'}</small></button>`; }).join('')}</div>`;
-    const cat = specCat, st = status[cat], keys = keysUsed(C.lines, cat);
-    h += `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><b>全屋统一 · ${Q.SPEC_CATS[cat].label}</b>${st.open.length ? `<button class="btn okb" data-spec-std="${cat}">其余都按标准档确认</button>` : ''}</div>${keys.map(k => optRow(cat, k, null, C)).join('')}</div>`;
-    h += `<h3 style="font-size:13px;margin:16px 0 6px">用到「${Q.SPEC_CATS[cat].label}」的空间</h3>`;
-    h += st.rooms.map(id => {
-      const r = room(id); if (!r) return '';
-      const rk = keys.filter(k => C.lines.some(l => l.roomId === id && Q.specKeysFor(l.code, l.pack).some(([c, kk]) => c === cat && kk === k)));
-      const open = st.open.includes(id), anyOwn = rk.some(k => Q.specOf(P, r, cat, k).own), isOpen = openSpecRooms.has(id + ':' + cat);
-      return `<div class="card" style="padding:10px 12px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>${ROOMS[r.type].icon}</span><b>${esc(Q.roomLabel(r, P))}</b><span class="desc">${rk.map(k => esc(Q.specOf(P, r, cat, k).v)).join(' · ')}</span>${anyOwn ? '<span class="desc" style="color:var(--navy)">单独设置</span>' : ''}<span class="desc" style="color:${open ? 'var(--yellow)' : 'var(--ok)'}">${open ? '未定' : '✓'}</span><button class="chip" style="margin-left:auto" data-spec-open="${id}:${cat}">${isOpen ? '收起' : '单独设置'}</button></div>${isOpen ? rk.map(k => optRow(cat, k, r, C)).join('') : ''}</div>`;
-    }).join('');
+    let h = `<h2>④ 选材</h2><p class="hint">一个房间一个房间看：每个要做的位置（地面、墙面、天花、柜子……）选材料和做法。选项下面是换成它以后总价的变化。没想好的先按标准档估价，以后随时回来改。</p>${planBar()}`;
+    const rooms = P.rooms.map(r => ({ r, places: Q.placesOf(P, r, C.lines) })).filter(x => x.places.length);
+    if (!rooms.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
+    if (!rooms.some(x => x.r.id === specRoomId)) specRoomId = (rooms.find(x => x.places.some(p => p.open)) || rooms[0]).r.id;
+    h += `<div class="roombar noprint">${rooms.map(({ r, places }) => { const open = places.filter(p => p.open).length; return `<button class="rchip ${r.id === specRoomId ? 'on' : ''}" data-specroom="${r.id}">${ROOMS[r.type].icon} ${esc(Q.roomLabel(r, P))}<small style="color:${open ? 'var(--yellow)' : 'var(--ok)'}">${open ? open + ' 处未定' : '✓ 已定'}</small></button>`; }).join('')}</div>`;
+    const cur = rooms.find(x => x.r.id === specRoomId);
+    h += `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin:6px 0 10px"><h2 style="margin:0">${ROOMS[cur.r.type].icon} ${esc(Q.roomLabel(cur.r, P))}</h2>${cur.places.some(p => p.open) ? `<button class="btn okb" data-room-std>这间其余都按标准档</button>` : ''}</div>`;
+    h += cur.places.map(pl => placeCard(cur.r, pl, C)).join('');
+    const idx = rooms.indexOf(cur), next = rooms[idx + 1];
+    if (next) h += `<div style="text-align:right;margin-top:6px"><button class="btn pri" data-specroom="${next.r.id}">下一个：${esc(Q.roomLabel(next.r, P))} →</button></div>`;
     return h;
   }
 
@@ -416,26 +413,21 @@
       else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; }
       render(); return;
     }
-    if (ds.gospec) { tab = 'spec'; specCat = ds.gospec; render(); window.scrollTo(0, 0); return; }
-    if (ds.speccat) { specCat = ds.speccat; render(); return; }
-    if (ds.specV !== undefined) {
-      const pl = plan(), cat = ds.specCat, k = ds.specK;
-      if (ds.specRoom) (((pl.roomSpecs[ds.specRoom] = pl.roomSpecs[ds.specRoom] || {})[cat] = pl.roomSpecs[ds.specRoom][cat] || {}))[k] = ds.specV;
-      else (pl.specs[cat] = pl.specs[cat] || {})[k] = ds.specV;
+    if (ds.gospec) { tab = 'spec'; specRoomId = roomId; render(); window.scrollTo(0, 0); return; }
+    if (ds.specroom) { specRoomId = ds.specroom; render(); window.scrollTo(0, 0); return; }
+    if (ds.place && ds.specV !== undefined) { placeSet(plan(), specRoomId, ds.place, ds.specCat, ds.specK, ds.specV); render(); return; }
+    if (ds.placeStd || b.hasAttribute('data-room-std')) {
+      const r = room(specRoomId), C = compute();
+      Q.placesOf(P, r, C.lines).filter(pl => !ds.placeStd || pl.pack === ds.placeStd).forEach(pl => pl.keys.forEach(([cat, k]) => {
+        const cur = Q.specOf(P, r, cat, k, null, pl.pack);
+        if (!cur.decided) placeSet(plan(), r.id, pl.pack, cat, k, cur.v);
+      }));
       render(); return;
     }
-    if (ds.specFollow) { const o = plan().roomSpecs[ds.specFollow]?.[ds.specCat]; if (o) delete o[ds.specK]; render(); return; }
-    if (ds.specOpen) { openSpecRooms.has(ds.specOpen) ? openSpecRooms.delete(ds.specOpen) : openSpecRooms.add(ds.specOpen); render(); return; }
-    if (ds.specStd) {
-      const cat = ds.specStd, pl = plan(), C = compute(), keys = Q.SPEC_CATS[cat].keys;
-      Q.specStatus(P, C.lines, cat).open.forEach(id => {
-        const r = room(id);
-        Object.entries(keys).forEach(([k, key]) => {
-          if (Q.specOf(P, r, cat, k).decided) return;
-          if (typeof key.std === 'function') (((pl.roomSpecs[id] = pl.roomSpecs[id] || {})[cat] = pl.roomSpecs[id][cat] || {}))[k] = Q.stdOf(key, r);
-          else (pl.specs[cat] = pl.specs[cat] || {})[k] = key.std;
-        });
-      });
+    if (ds.placeCopy) {
+      const r = room(specRoomId), pack = ds.placeCopy, C = compute();
+      const pl = Q.placesOf(P, r, C.lines).find(x => x.pack === pack);
+      P.rooms.filter(x => x.id !== r.id && (x.packs || []).includes(pack)).forEach(x => pl.keys.forEach(([cat, k]) => placeSet(plan(), x.id, pack, cat, k, Q.specOf(P, r, cat, k, null, pack).v)));
       render(); return;
     }
     if (ds.plan) { P.planId = ds.plan; render(); return; }
@@ -453,7 +445,7 @@
     }
     if (ds.go) {
       if (ds.go === 'all') { tab = 'all'; render(); return; }
-      if (ds.go.startsWith('spec:')) { tab = 'spec'; specCat = ds.go.slice(5); } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
+      if (ds.go.startsWith('spec:')) { tab = 'spec'; specRoomId = ds.go.slice(5); } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }

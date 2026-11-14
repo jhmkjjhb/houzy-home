@@ -58,7 +58,8 @@
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
       floorSize: { label: '地砖尺寸', opts: ['600×600 mm', '300×600 mm', '600×1200 mm', '800×800 mm', '750×1500 mm', '900×1800 mm', '1200×1200 mm'], std: '600×600 mm', codes: ['floor_tile', 'porch_tile'] },
       wallSize:  { label: '墙砖尺寸', opts: ['300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm'], std: '300×600 mm', codes: ['wall_tile'] },
-      finish:    { label: '瓷砖表面', opts: ['哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: TILE_CODES, noPrice: true },
+      finish:    { label: '地砖表面', opts: ['哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: ['floor_tile', 'porch_tile'], noPrice: true },
+      wallFinish:{ label: '墙砖表面', opts: ['哑光', '柔光', '亮光'], std: '亮光', codes: ['wall_tile'], noPrice: true },
       supply:    { label: '瓷砖供应', opts: ['包工包料', '客户自备砖'], std: '包工包料', codes: TILE_CODES, mod: { '客户自备砖': { matZero: true } } },
       woodGrade: { label: '地板档次', opts: ['标准 5 mm', '加厚 8 mm', '多层实木复合'], std: '标准 5 mm', codes: ['laminate'] }
     } },
@@ -201,11 +202,13 @@
     const ps = plans(project), id = planId || project.planId;
     return ps.find(p => p.id === id) || ps[0];
   }
-  // 取一个房间某项选材：逐间设置 > 全屋统一 > 标准档；decided = 是否已明确选定
-  function specOf(project, room, cat, k, planId) {
+  // 取某个房间某个位置的选材：位置（例如客厅·地面）> 房间 > 全屋 > 标准档；decided = 是否已明确选定
+  function specOf(project, room, cat, k, planId, pack) {
     const pl = activePlan(project, planId), key = SPEC_CATS[cat].keys[k];
+    const place = room && pack && pl.roomSpecs?.[room.id]?.['@' + pack]?.[cat]?.[k];
     const own = room && pl.roomSpecs?.[room.id]?.[cat]?.[k];
     const all = pl.specs?.[cat]?.[k];
+    if (place !== undefined) return { v: place, decided: true, own: true };
     if (own !== undefined) return { v: own, decided: true, own: true };
     if (all !== undefined) return { v: all, decided: true, own: false };
     return { v: stdOf(key, room), decided: false, own: false };
@@ -257,7 +260,7 @@
     let mat = num(p.mat) * (1 + num(p.waste) / 100), aux = num(p.aux), lab = num(p.lab);
     const spec = [], tbdKeys = [], priceTbd = [];
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
-      const s = specOf(project, room, cat, k, planId);
+      const s = specOf(project, room, cat, k, planId, pack);
       spec.push(s.v);
       if (!s.decided) tbdKeys.push(cat);
       if (key.noPrice || s.v === stdOf(key, room)) return;
@@ -287,9 +290,9 @@
     project.rooms.forEach(room => {
       const g = geo(room, project), picked = {};
       (room.packs || []).forEach(c => { picked[c] = true; });
-      const sp = (cat, k) => specOf(project, room, cat, k, planId).v;
       (room.packs || []).forEach(code => {
         const pk = PACKS[code]; if (!pk) return;
+        const sp = (cat, k) => specOf(project, room, cat, k, planId, code).v;
         const v = packValues(room, code, g), g2 = { ...g };
         (pk.area || []).forEach(k => { g2[k] = v[k]; });
         pk.lines(room, g2, v, picked, sp).forEach(([c, q, f, it]) => push(room, c, q, f, pk.label, code, it));
@@ -328,6 +331,22 @@
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     return { direct, design, mgmt, discount, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+  }
+
+  // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
+  function placesOf(project, room, lines) {
+    const order = [];
+    Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
+    return (room.packs || []).map(pack => {
+      const ls = lines.filter(l => l.roomId === room.id && l.pack === pack);
+      const set = new Set();
+      ls.forEach(l => specKeysFor(l.code, l.pack).forEach(([cat, k]) => set.add(cat + '.' + k)));
+      const keys = order.filter(x => set.has(x)).map(x => x.split('.'));
+      // 材料决定其他选项：地面先选材料，墙面先选做法，天花先选造型
+      if (pack === 'floor' && !keys.some(([c, k]) => c === 'tile' && k === 'material')) keys.unshift(['tile', 'material']);
+      return { pack, label: PLACE_LABEL[pack] || PACKS[pack].label, keys, open: ls.some(l => l.tbd.length) };
+    }).filter(x => x.keys.length);
   }
 
   // 选材的完成情况：哪些房间用到这一类、还有几处没定
@@ -377,9 +396,9 @@
     const seen = {};
     lines.filter(l => l.unpriced && !l.custom).forEach(l => { if (!seen[l.code]) { seen[l.code] = 1; red.push({ m: `「${l.name}」单价待公司核定，请填写价格`, go: 'price' }); } });
     // 选材：预估时提醒，正式报价时必须定好
-    Object.entries(SPEC_CATS).forEach(([cat, c]) => {
-      const st = specStatus(project, lines, cat);
-      if (st.open.length) (mode === 'formal' ? red : yellow).push({ m: `「${c.label}」还有 ${st.open.length} 个空间没定选材，${mode === 'formal' ? '正式报价前要定好' : '暂按标准档估价'}`, go: 'spec:' + cat });
+    project.rooms.forEach(room => {
+      const open = placesOf(project, room, lines).filter(x => x.open).map(x => x.label);
+      if (open.length) (mode === 'formal' ? red : yellow).push({ m: `「${roomLabel(room, project)}」${open.join('、')}还没定选材，${mode === 'formal' ? '正式报价前要定好' : '暂按标准档估价'}`, go: 'spec:' + room.id });
     });
     const tbdPrice = {};
     lines.forEach(l => l.priceTbd.forEach(x => { tbdPrice[x] = 1; }));
@@ -412,7 +431,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, plans, activePlan, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
