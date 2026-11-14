@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>新版报价器 · HOUZY</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F6F3; --surface: #FFFFFF; --line: #DEDAD1;
+    --ink: #1C1B19; --ink-dim: #6B6860;
+    --navy: #17324F; --navy-soft: #E7EDF3; --on-navy: #FFFFFF;
+    --accent: #C4501C; --ok: #2F6B4F; --ok-soft: #E3F0E8; --off: #B8B3A7;
+    --red: #B42318; --red-soft: #FDECEA; --yellow: #8A5A00; --yellow-soft: #FFF4D6;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16151A; --surface: #1E1D23; --line: #34333A; --ink: #EDEBE6; --ink-dim: #9A968D;
+      --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A; --accent: #E37A46; --ok: #5FA382; --ok-soft: #1D2E25; --off: #4A4840;
+      --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; }
+  input { font: inherit; color: var(--ink); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 120px; }
+
+  /* 顶部：总价永远看得到 */
+  .top { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .top .in { max-width: 1080px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .top h1 { font-size: 16px; margin: 0; }
+  .top h1 small { display: block; font-size: 11px; color: var(--ink-dim); font-weight: 500; }
+  .top .cust { flex: 1; min-width: 140px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--surface); }
+  .top .sum { text-align: right; }
+  .top .sum small { display: block; font-size: 11px; color: var(--ink-dim); }
+  .top .sum b { font-size: 20px; color: var(--accent); }
+  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 10px; padding: 8px 4px; font-weight: 600; font-size: 13px; position: relative; }
+  .tab.on { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+  .tab .dot { position: absolute; top: -6px; right: -4px; background: var(--red); color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 6px; }
+
+  h2 { font-size: 17px; margin: 22px 0 6px; }
+  .hint { color: var(--ink-dim); font-size: 12.5px; margin: 0 0 12px; line-height: 1.5; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+
+  /* ① 房屋类型 */
+  .houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .house { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; text-align: left; }
+  .house b { display: block; font-size: 15px; }
+  .house span { font-size: 12px; color: var(--ink-dim); }
+  .house.on { border-color: var(--navy); background: var(--navy-soft); }
+
+  /* 可视化平面：房间块大小按面积 */
+  .floor { margin-top: 14px; }
+  .floor h3 { font-size: 13px; color: var(--ink-dim); margin: 0 0 6px; font-weight: 600; }
+  .plan { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface); }
+  .rm { min-width: 104px; min-height: 84px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--bg); padding: 8px; text-align: left; display: flex; flex-direction: column; justify-content: space-between; color: var(--ink); }
+  .rm .ic { font-size: 20px; }
+  .rm .nm { font-weight: 700; font-size: 13px; }
+  .rm .dm { font-size: 11px; color: var(--ink-dim); }
+  .rm .am { font-size: 12px; color: var(--accent); font-weight: 600; }
+  .rm.work { background: var(--navy-soft); border-color: var(--navy); }
+  .rm.bad { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+  .adds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { border: 1px dashed var(--line); background: transparent; border-radius: 16px; padding: 5px 10px; color: var(--ink-dim); font-size: 12.5px; }
+  .chip:hover { border-color: var(--navy); color: var(--navy); }
+
+  /* ② 房间 */
+  .roombar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; }
+  .rchip { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; text-align: left; min-width: 96px; }
+  .rchip small { display: block; font-size: 11px; color: var(--ink-dim); }
+  .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
+  .rchip.bad { border-color: var(--red); }
+  .dims { display: grid; grid-template-columns: 1fr 200px; gap: 14px; align-items: start; }
+  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(4, 1fr); } .tab { font-size: 12px; } }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+  .fld { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-dim); }
+  .stp { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface); }
+  .stp button { border: none; background: var(--navy-soft); color: var(--navy); width: 34px; font-size: 18px; font-weight: 700; }
+  .stp input { width: 64px; border: none; text-align: center; padding: 8px 2px; background: transparent; font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 600; }
+  .stp input:focus { outline: 2px solid var(--navy); outline-offset: -2px; }
+  .unit { font-size: 11px; color: var(--ink-dim); }
+  .wins { margin-top: 10px; }
+  .win { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .win .no { font-weight: 700; color: var(--ink-dim); width: 54px; font-size: 12px; }
+  .x { border: none; background: transparent; color: var(--ink-dim); font-size: 16px; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 8px 12px; color: var(--ink); }
+  .btn.pri { background: var(--navy); border-color: var(--navy); color: var(--on-navy); font-weight: 600; }
+  .btn.okb { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .btn.warn { border-color: var(--red); color: var(--red); }
+  .sketch { max-width: 220px; margin: 0 auto; width: 100%; }
+  .sketch svg { width: 100%; height: auto; display: block; }
+  .grp { margin-top: 16px; }
+  .grp h3 { font-size: 12px; letter-spacing: .04em; color: var(--ink-dim); margin: 0 0 6px; font-weight: 700; }
+  .packs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; align-items: start; }
+  .pack { border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; text-align: left; color: var(--ink); display: block; width: 100%; }
+  .pack .h { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .pack .h .ic { font-size: 18px; }
+  .pack .h .rm2 { margin-left: auto; font-size: 12px; color: var(--ink-dim); font-weight: 500; }
+  .pack.on { border-color: var(--navy); background: var(--navy-soft); }
+  .pack.on .h .rm2 { color: var(--accent); font-weight: 700; }
+  .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
+  .pack.on .tick { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+  .pkbody { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .lines { font-size: 11.5px; color: var(--ink-dim); line-height: 1.6; }
+  .subtotal { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-weight: 700; }
+
+  /* ④ 检查与报价单 */
+  .issue { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; margin-bottom: 6px; font-size: 13px; width: 100%; text-align: left; border: none; color: var(--ink); }
+  .issue.r { background: var(--red-soft); } .issue.r b { color: var(--red); }
+  .issue.y { background: var(--yellow-soft); } .issue.y b { color: var(--yellow); }
+  .ok { background: var(--ok-soft); color: var(--ok); padding: 10px 12px; border-radius: 9px; font-weight: 600; }
+  .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 8px 0 6px; background: var(--line); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-dim); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
+  table.q { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.q th { text-align: left; font-size: 11px; color: var(--ink-dim); border-bottom: 1px solid var(--line); padding: 6px 4px; }
+  table.q td { border-bottom: 1px dashed var(--line); padding: 6px 4px; vertical-align: top; }
+  table.q td.r, table.q th.r { text-align: right; }
+  table.q tr.st td { font-weight: 700; color: var(--navy); border-bottom: 1px solid var(--line); padding-top: 12px; }
+  .desc { font-size: 11px; color: var(--ink-dim); }
+  .scroll-x { overflow-x: auto; }
+  .totals div { display: flex; justify-content: space-between; padding: 4px 0; }
+  .totals .grand { font-size: 18px; font-weight: 700; border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 8px; }
+  .priceRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .priceRow span { flex: 1; min-width: 160px; }
+  @media print {
+    .top, .tabs, .noprint { display: none !important; }
+    body { background: #fff; color: #000; }
+    .card { border: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="in">
+    <h1>新版报价器<small>试用版 · 价格沿用公司价目表</small></h1>
+    <input class="cust" data-info="name" placeholder="客户姓名">
+    <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div>
+<div class="wrap" id="app"></div>
+
+<script src="quote-v2-price.js?v=20261114"></script>
+<script src="quote-v2-rules.js?v=20261114"></script>
+<script>
+(function () {
+  const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
+  const STORE = 'houzy-quote-v2';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rm = n => 'RM ' + Math.round(n).toLocaleString('en-MY');
+  const nf = n => (Math.round(num(n) * 100) / 100).toLocaleString('en-MY', { maximumFractionDigits: 2 });
+  const STAGE_COLORS = ['#7A8B99', '#2F6FA3', '#3E8E7E', '#C4501C', '#B28A2E', '#6B4FA0', '#2F6B4F', '#8A5A3C', '#A0496B'];
+
+  let P = load();
+  let tab = P.houseType ? 'room' : 'house';
+  let roomId = P.rooms[0]?.id || null;
+  let confirmReset = false;
+
+  function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true }; }
+  function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return { ...blank(), ...x }; } catch (e) {} return blank(); }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
+  const room = id => P.rooms.find(r => r.id === id);
+
+  function compute() { const lines = Q.buildLines(P); return { lines, T: Q.totals(P, lines), K: Q.checks(P, lines) }; }
+  const roomTotal = (lines, id) => lines.filter(l => l.roomId === id).reduce((t, l) => t + l.total, 0);
+  const badRooms = K => new Set(K.red.map(x => x.go));
+
+  // ---------- 小部件 ----------
+  const stepper = (attrs, value, step = 1) => `<span class="stp"><button type="button" data-stp="-${step}" ${attrs}>−</button><input inputmode="decimal" value="${esc(value)}" ${attrs}><button type="button" data-stp="+${step}" ${attrs}>+</button></span>`;
+  const field = (label, unit, inner) => `<label class="fld">${label}<span>${inner} <span class="unit">${unit || ''}</span></span></label>`;
+
+  // ---------- ① 户型 ----------
+  function viewHouse(C) {
+    const bad = badRooms(C.K);
+    let h = `<h2>① 选房屋类型</h2><p class="hint">选好后自动排出常见房间，按实际情况增删。点任何一个房间就进入该房间。</p><div class="houses">`;
+    h += Object.entries(HOUSES).map(([k, x]) => `<button class="house ${P.houseType === k ? 'on' : ''}" data-house="${k}"><b>${x.label}</b><span>${x.en}${x.landed ? ' · 有地' : ''}</span></button>`).join('') + '</div>';
+    if (!P.houseType) return h;
+    const levels = Math.max(HOUSES[P.houseType].levels, ...P.rooms.map(r => r.level || 1));
+    h += `<h2>平面示意 <span class="hint" style="font-weight:400">· 方块大小按面积 · 蓝色 = 已选工程 · 红框 = 有待处理</span></h2>`;
+    for (let lv = 1; lv <= levels; lv++) {
+      const rs = P.rooms.filter(r => (r.level || 1) === lv);
+      h += `<div class="floor"><h3>${levels > 1 ? (lv === 1 ? '底层 Ground Floor' : lv + ' 楼') : '户内'}</h3><div class="plan">${rs.map(r => {
+        const g = Q.geo(r, P), t = roomTotal(C.lines, r.id);
+        return `<button class="rm ${r.packs.length ? 'work' : ''} ${bad.has(r.id) ? 'bad' : ''}" style="flex:${Math.max(1, g.floor)} 1 ${Math.max(104, Math.sqrt(Math.max(g.floor, 1)) * 11)}px" data-goroom="${r.id}"><span class="ic">${ROOMS[r.type].icon}</span><span><span class="nm">${esc(r.name)}</span><br><span class="dm mono">${nf(g.L)}×${nf(g.W)} 尺 · ${nf(g.floor)} 平方尺</span></span><span class="am mono">${t ? rm(t) : ''}</span></button>`;
+      }).join('') || '<span class="hint" style="margin:8px">这一层还没有房间</span>'}</div>
+      <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !t.outdoor || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${t.icon} ${t.label}</button>`).join('')}</div></div>`;
+    }
+    h += `<div class="adds noprint" style="margin-top:14px"><button class="btn" data-addlevel>+ 加一层</button></div>`;
+    return h;
+  }
+
+  // ---------- ② 房间 ----------
+  function sketch(r) {
+    const g = Q.geo(r, P); if (!(g.L > 0 && g.W > 0)) return '';
+    const s = 160 / Math.max(g.L, g.W), w = g.L * s, hh = g.W * s, x0 = 40 + (160 - w) / 2, y0 = 14;
+    return `<svg viewBox="0 0 220 ${hh + 40}" role="img" aria-label="房间示意"><rect x="${x0}" y="${y0}" width="${w}" height="${hh}" fill="var(--navy-soft)" stroke="var(--navy)" stroke-width="2" rx="2"/>
+      <text x="${x0 + w / 2}" y="${y0 - 3}" text-anchor="middle" font-size="10" fill="var(--ink-dim)">长 ${nf(g.L)} 尺</text>
+      <text x="${x0 - 4}" y="${y0 + hh / 2}" text-anchor="end" font-size="10" fill="var(--ink-dim)" dominant-baseline="middle">宽 ${nf(g.W)}</text>
+      <text x="${x0 + w / 2}" y="${y0 + hh / 2}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--navy)" dominant-baseline="middle">${nf(g.floor)} 平方尺</text>
+      <text x="${x0 + w / 2}" y="${y0 + hh + 16}" text-anchor="middle" font-size="10" fill="var(--ink-dim)">${ROOMS[r.type].outdoor ? '户外' : `墙面 ${nf(g.wall)} · 周长 ${nf(g.perim)}`}</text></svg>`;
+  }
+  function viewRoom(C) {
+    if (!P.rooms.length) return `<h2>② 房间</h2><p class="hint">先在「① 户型」选房屋类型。</p>`;
+    if (!room(roomId)) roomId = P.rooms[0].id;
+    const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
+    let h = `<div class="roombar noprint">${P.rooms.map(x => `<button class="rchip ${x.id === roomId ? 'on' : ''} ${bad.has(x.id) ? 'bad' : ''}" data-goroom="${x.id}">${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}<small class="mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '未选工程'}</small></button>`).join('')}</div>`;
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}"><button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
+      <div class="dims" style="margin-top:12px"><div>
+        <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
+        ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
+        <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
+      </div><div class="sketch">${sketch(r)}</div></div></div>`;
+    h += `<h2>这间要做什么</h2><p class="hint">点卡片选择，再点一次取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
+    const avail = T.packs.filter(c => PACKS[c]);
+    GROUPS.forEach(([gid, gname]) => {
+      const codes = avail.filter(c => PACKS[c].g === gid); if (!codes.length) return;
+      h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(c => packCard(r, c, g, C)).join('')}</div></div>`;
+    });
+    h += `<div class="subtotal"><span>${esc(r.name)} 小计</span><span class="mono" style="color:var(--accent)">${rm(roomTotal(C.lines, r.id))}</span></div>`;
+    return h;
+  }
+  function packCard(r, c, g, C) {
+    const pk = PACKS[c], on = r.packs.includes(c);
+    const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.from === pk.label) : [];
+    const sub = myLines.reduce((t, l) => t + l.total, 0);
+    const v = Q.packValues(r, c, g);
+    return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? rm(sub) : ''}</span></button>
+      ${on ? `<div class="pkbody">${(pk.inputs || []).map(i => field(i.label, i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
+  }
+
+  // ---------- ③ 全屋 ----------
+  function viewHouseItems(C) {
+    const landed = HOUSES[P.houseType]?.landed;
+    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p><div class="packs">`;
+    h += HOUSE_ITEMS.filter(it => !it.landed || landed).map(it => {
+      const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
+      const sub = on ? C.lines.filter(l => l.from === it.label).reduce((t, l) => t + l.total, 0) : 0;
+      return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${it.icon}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent)">${on ? rm(sub) : ''}</span></button>
+        ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], 1))).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
+    }).join('');
+    h += `</div><h2>收费</h2><div class="card"><div class="row">
+      <label class="fld"><span><input type="checkbox" data-design ${P.design !== false ? 'checked' : ''}> 收设计费（RM ${C.T.settings.designRate}/平方尺 × 有施工的室内面积 ${nf(C.T.floorSum)}）</span></label>
+      ${field('优惠金额', 'RM', stepper(`data-discount`, P.discount || 0, 100))}</div><p class="hint" style="margin-top:8px">管理费按工程直接费 × ${C.T.settings.mgmtRate}% 自动计算。</p></div>`;
+    return h;
+  }
+
+  // ---------- ④ 检查与报价单 ----------
+  function viewQuote(C) {
+    const { lines, T, K } = C;
+    let h = `<h2>④ 检查</h2><div class="noprint">`;
+    if (!K.red.length && !K.yellow.length) h += `<div class="ok">✓ 全部检查通过，可以出报价单</div>`;
+    h += K.red.map(x => `<button class="issue r" data-go="${x.go}"><b>必须处理</b><span>${esc(x.m)}</span></button>`).join('');
+    h += K.yellow.map(x => `<button class="issue y" data-go="${x.go}"><b>请确认</b><span>${esc(x.m)}</span></button>`).join('');
+    h += `</div>`;
+    const unpriced = [...new Set(lines.filter(l => PRICE[l.code].unpriced).map(l => l.code))];
+    if (unpriced.length) h += `<div class="card noprint" id="price"><b>待核定单价（本单先填，公司价目表补好后自动带出）</b>${unpriced.map(c => `<div class="priceRow"><span>${esc(PRICE[c].name)}</span>${field('综合单价', 'RM/' + PRICE[c].unit, stepper(`data-price="${c}"`, P.prices[c]?.lab ?? 0, 10))}</div>`).join('')}</div>`;
+    h += `<h2>费用构成</h2><div class="bar">${T.byStage.map((s, i) => `<span title="${s.name}" style="width:${(s.total / Math.max(1, T.direct)) * 100}%;background:${STAGE_COLORS[(s.no - 1) % 9]}"></span>`).join('')}</div>
+      <div class="legend">${T.byStage.map(s => `<span><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${s.name} <span class="mono">${rm(s.total)}</span></span>`).join('')}</div>`;
+    h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">报价单</h2><button class="btn pri noprint" data-print ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `还有 ${K.red.length} 项要处理` : '打印 / 存 PDF'}</button></div>
+      <p class="hint">客户：${esc(P.info.name) || '（未填）'} · ${HOUSES[P.houseType]?.label || ''} · 施工面积 ${nf(T.floorSum)} 平方尺</p>
+      <div class="scroll-x"><table class="q"><thead><tr><th>项目</th><th>空间</th><th class="r">数量</th><th class="r">单价</th><th class="r">金额</th></tr></thead><tbody>`;
+    STAGES.forEach(st => {
+      const ls = lines.filter(l => l.stage === st.id); if (!ls.length) return;
+      h += `<tr class="st"><td colspan="4">${st.no}. ${st.name}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
+      h += ls.map(l => `<tr><td>${esc(l.name)}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('');
+    });
+    h += `</tbody></table></div><div class="totals" style="margin-top:12px">
+      <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>
+      ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
+      <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>
+      ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}
+      ${T.sst ? `<div><span>SST</span><span class="mono">${rm(T.sst)}</span></div>` : ''}
+      <div class="grand"><span>合计</span><span class="mono">${rm(T.total)}</span></div></div>
+      <h3 style="font-size:13px;margin:16px 0 6px">付款节点</h3><div class="totals">${T.pay.map(p => `<div><span>${p.name}（${p.pct}%）</span><span class="mono">${rm(p.amt)}</span></div>`).join('')}</div></div>
+      <div class="noprint" style="margin-top:20px"><button class="btn warn" data-reset>${confirmReset ? '再点一次确认清空' : '新建报价（清空当前）'}</button></div>`;
+    return h;
+  }
+
+  // ---------- 渲染（重画后让正在填的框留在原位，页面不跳） ----------
+  function render() {
+    const C = compute(); save();
+    document.getElementById('grand').textContent = rm(C.T.total);
+    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['quote', '④ 报价单']];
+    document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
+    const a = document.activeElement, app = document.getElementById('app');
+    let sel = null, top = null, caret = null;
+    if (a && app.contains(a) && a.tagName === 'INPUT') { sel = 'input' + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join(''); top = a.getBoundingClientRect().top; try { caret = a.selectionStart; } catch (e) {} }
+    const y = window.scrollY;
+    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : viewQuote(C);
+    window.scrollTo(0, y);
+    if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
+    document.querySelector('[data-info="name"]').value = P.info.name || '';
+  }
+
+  // ---------- 写入状态 ----------
+  function setValue(el, v) {
+    const r = room(roomId), ds = el.dataset;
+    if (ds.rf) { r[ds.rf] = v; if (ds.rf === 'L' || ds.rf === 'W') r.measured = true; }
+    else if (ds.win !== undefined) { r.windows[+ds.win][ds.wk] = v; }
+    else if (ds.pv) { r.vals = r.vals || {}; (r.vals[ds.pv] = r.vals[ds.pv] || {})[ds.pk] = v; }
+    else if (ds.hv) { (P.house[ds.hv] = P.house[ds.hv] || {})[ds.hk] = v; }
+    else if (ds.price !== undefined) { P.prices[ds.price] = { mat: 0, aux: 0, waste: 0, lab: v }; }
+    else if (el.hasAttribute('data-discount')) P.discount = v;
+  }
+  document.addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset.info) { P.info[t.dataset.info] = t.value; save(); return; }
+    if (t.dataset.rname) { room(t.dataset.rname).name = t.value; save(); return; }
+    if (t.closest('.stp')) { setValue(t, t.value); const C = compute(); save(); document.getElementById('grand').textContent = rm(C.T.total); }
+  });
+  document.addEventListener('change', e => { if (e.target.closest('.stp') || e.target.dataset.rname) render(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const ds = b.dataset;
+    if (ds.tab) { tab = ds.tab; confirmReset = false; render(); window.scrollTo(0, 0); return; }
+    if (ds.house) {
+      if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; if (!keep) P.rooms = Q.presetRooms(ds.house); }
+      roomId = P.rooms[0]?.id; render(); return;
+    }
+    if (ds.goroom) { roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
+    if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
+    if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
+    if (ds.delroom) { P.rooms = P.rooms.filter(r => r.id !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
+    if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
+    if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
+    if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
+    if (ds.pack) {
+      const r = room(roomId), c = ds.pack, pk = PACKS[c];
+      if (r.packs.includes(c)) r.packs = r.packs.filter(x => x !== c);
+      else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); }
+      render(); return;
+    }
+    if (ds.hitem) { const q = P.house[ds.hitem] = P.house[ds.hitem] || {}; q.on = !q.on; render(); return; }
+    if (ds.stp) {
+      const inp = b.parentElement.querySelector('input'), step = parseFloat(ds.stp);
+      const v = Math.max(0, r2(num(inp.value) + step)); inp.value = v; setValue(inp, v); render(); return;
+    }
+    if (ds.go) {
+      if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
+      render(); window.scrollTo(0, 0); return;
+    }
+    if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }
+    if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
+  });
+  render();
+  window.__qv2 = { get: () => P, compute };
+})();
+</script>
+</body>
+</html>
