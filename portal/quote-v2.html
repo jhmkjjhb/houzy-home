@@ -246,14 +246,22 @@
 
   // ---------- ③ 全屋 ----------
   function viewHouseItems(C) {
-    const landed = HOUSES[P.houseType]?.landed;
-    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p><div class="packs">`;
-    h += HOUSE_ITEMS.filter(it => !it.landed || landed).map(it => {
-      const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
-      const sub = on ? C.lines.filter(l => l.from === it.label).reduce((t, l) => t + l.total, 0) : 0;
-      return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${it.icon}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent)">${on ? rm(sub) : ''}</span></button>
-        ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], 1))).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
-    }).join('');
+    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p>`;
+    Q.HOUSE_GROUPS.forEach(([gid, gname]) => {
+      h += `<div class="grp"><h3>${gname}</h3><div class="packs">` + HOUSE_ITEMS.filter(it => it.grp === gid).map(it => {
+        const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
+        const my = on ? C.lines.filter(l => l.from === it.label) : [], sub = my.reduce((t, l) => t + l.total, 0);
+        return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${it.icon}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap">${on ? (my.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+          ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], i.unit === '平方尺' ? 10 : 1))).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
+      }).join('') + `</div></div>`;
+    });
+    const ex = P.extras || [];
+    h += `<div class="grp"><h3>手动增项</h3><p class="hint">上面没有的项目（例如屋顶翻新、外墙防水、特殊加建），自己填名称、单位、数量和单价。</p>${ex.map((x, i) => `<div class="card" style="padding:10px 12px"><div class="item" style="border:none;padding:0">
+        <label class="fld">名称<input class="cust" style="min-width:180px" data-extra="${i}" data-ek="name" value="${esc(x.name)}" placeholder="例如：屋顶瓦片翻新"></label>
+        <label class="fld">单位<select class="cust" data-extra="${i}" data-ek="unit">${Q.EXTRA_UNITS.map(u => `<option ${x.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+        <label class="fld">归属阶段<select class="cust" data-extra="${i}" data-ek="stage">${STAGES.map(st => `<option value="${st.id}" ${x.stage === st.id ? 'selected' : ''}>${st.no}. ${st.name}</option>`).join('')}</select></label>
+        ${field('数量', esc(x.unit || '项'), stepper(`data-extra="${i}" data-ek="qty"`, x.qty ?? 1, 1))}${field('单价', 'RM/' + esc(x.unit || '项'), stepper(`data-extra="${i}" data-ek="price"`, x.price ?? 0, 50))}
+        <span class="mono" style="margin-left:auto;color:var(--accent);font-weight:700">${rm(num(x.qty) * num(x.price))}</span><button class="x" data-delextra="${i}" title="删除">✕</button></div></div>`).join('')}<button class="btn" data-addextra>+ 手动增项</button></div>`;
     h += `</div><h2>收费</h2><div class="card"><div class="row">
       <label class="fld"><span><input type="checkbox" data-design ${P.design !== false ? 'checked' : ''}> 收设计费（RM ${C.T.settings.designRate}/平方尺 × 有施工的室内面积 ${nf(C.T.floorSum)}）</span></label>
       ${field('优惠金额', 'RM', stepper(`data-discount`, P.discount || 0, 100))}</div><p class="hint" style="margin-top:8px">管理费按工程直接费 × ${C.T.settings.mgmtRate}% 自动计算。</p></div>`;
@@ -368,6 +376,7 @@
     else if (ds.win !== undefined) { r.windows[+ds.win][ds.wk] = v; }
     else if (ds.pv) { r.vals = r.vals || {}; (r.vals[ds.pv] = r.vals[ds.pv] || {})[ds.pk] = v; }
     else if (ds.item !== undefined) { r.items[+ds.item][ds.ik] = v; }
+    else if (ds.extra !== undefined) { P.extras[+ds.extra][ds.ek] = v; }
     else if (ds.hv) { (P.house[ds.hv] = P.house[ds.hv] || {})[ds.hk] = v; }
     else if (ds.price !== undefined) { P.prices[ds.price] = { mat: 0, aux: 0, waste: 0, lab: v }; }
     else if (el.hasAttribute('data-discount')) P.discount = v;
@@ -376,10 +385,11 @@
     const t = e.target;
     if (t.dataset.info) { P.info[t.dataset.info] = t.value; save(); return; }
     if (t.dataset.rname) { room(t.dataset.rname).name = t.value; save(); return; }
+    if (t.dataset.ek === 'name') { P.extras[+t.dataset.extra].name = t.value; save(); return; }
     if (t.dataset.ik === 'name') { room(roomId).items[+t.dataset.item].name = t.value; save(); return; }
     if (t.closest('.stp')) { setValue(t, t.value); const C = compute(); save(); document.getElementById('grand').textContent = rm(C.T.total); }
   });
-  document.addEventListener('change', e => { if (e.target.closest('.stp') || e.target.dataset.rname || e.target.dataset.ik === 'name') render(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
+  document.addEventListener('change', e => { const ds = e.target.dataset; if (ds.extra !== undefined && (ds.ek === 'unit' || ds.ek === 'stage')) { P.extras[+ds.extra][ds.ek] = e.target.value; render(); return; } if (e.target.closest('.stp') || ds.rname || ds.ik === 'name' || ds.ek === 'name') render(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const ds = b.dataset;
@@ -395,6 +405,8 @@
     if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
     if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
     if (b.hasAttribute('data-additem')) { const r = room(roomId); (r.items = r.items || []).push({ name: '', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ik="name"]'); ins[ins.length - 1]?.focus(); return; }
+    if (b.hasAttribute('data-addextra')) { (P.extras = P.extras || []).push({ name: '', unit: '项', stage: 'outdoor', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ek="name"]'); ins[ins.length - 1]?.focus(); return; }
+    if (ds.delextra !== undefined) { P.extras.splice(+ds.delextra, 1); render(); return; }
     if (ds.delitem !== undefined) { room(roomId).items.splice(+ds.delitem, 1); render(); return; }
     if (ds.resetpv) { const r = room(roomId); if (r.vals?.[ds.resetpv]) delete r.vals[ds.resetpv][ds.pk]; render(); return; }
     if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
@@ -440,6 +452,7 @@
       const v = Math.max(0, r2(num(inp.value) + step)); inp.value = v; setValue(inp, v); render(); return;
     }
     if (ds.go) {
+      if (ds.go === 'all') { tab = 'all'; render(); return; }
       if (ds.go.startsWith('spec:')) { tab = 'spec'; specCat = ds.go.slice(5); } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
       render(); window.scrollTo(0, 0); return;
     }

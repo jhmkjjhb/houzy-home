@@ -240,6 +240,26 @@ ok('旧草稿迁移：地砖/木地板/吊顶/刷漆卡片转成新的范围卡�
   assert.equal(qty(L, 'ceiling_step'), 42);
 });
 
+ok('加建一定带扩建图纸及市政局申请', () => {
+  const p = project([], { house: { extension: { on: true, area: 150 } } });
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'extension'), 150);
+  assert.equal(qty(L, 'ext_permit'), 1);
+});
+
+ok('手动增项：自己填的名称、单位、阶段、单价进报价单；没填完拦住', () => {
+  const p = project([], { extras: [{ name: '屋顶瓦片翻新', unit: '平方尺', stage: 'outdoor', qty: 800, price: 12 }] });
+  const L = Q.buildLines(p), x = L.find(l => l.name === '屋顶瓦片翻新');
+  assert.equal(x.total, 9600);
+  assert.equal(x.unitName, '平方尺');
+  assert.equal(x.stage, 'outdoor');
+  assert.equal(find(L, 'setout').length, 1, '只有手动增项也算开工');
+  p.extras.push({ name: '', unit: '项', stage: 'outdoor', qty: 1, price: 0 });
+  const red = Q.checks(p, Q.buildLines(p)).red.map(r => r.m);
+  assert.ok(red.some(m => m.includes('第 2 项请填写名称')));
+  assert.ok(red.some(m => m.includes('请填写单价')));
+});
+
 ok('设计费只算有施工的室内房间：没动的卧室不收设计费', () => {
   const live = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish'] };
   const idle = Q.newRoom('bedroom', 1, 1);
