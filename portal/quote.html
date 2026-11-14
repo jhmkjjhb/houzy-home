@@ -771,12 +771,19 @@
   }
   function fitPick(r, code) {
     const st=r?.fitout?.[code]; if(!st?.on) return '';
-    const dimensions=[['length','长'],['height','高'],['depth','深']].filter(([k])=>num(st[k])>0).map(([k,l])=>`${l}${st[k]}尺`).join('×');
+    const dimensions=code==='window_new'&&winUsesRoom(r,st)?winSizes(r).map((x,i)=>`第${i+1}樘 宽${num(x.w)}×高${num(x.h)}尺`).join('、'):[['length','长'],['height','高'],['depth','深']].filter(([k])=>num(st[k])>0).map(([k,l])=>`${l}${st[k]}尺`).join('×');
     return [dimensions,...fitKeys(code).filter(k=>st[k]).map(k=>`${FIT_SPEC[k][0]}：${st[k]}`)].filter(Boolean).join('；');
   }
+  // 逐樘窗尺寸：填了窗数量就按每樘宽×高；没填数量的旧报价沿用「窗户总宽」
+  function winSizes(r) { const n=Math.max(0,Math.floor(num(r.windowCount))); return Array.from({length:n},(_,i)=>r.windowSizes?.[i]||{}); }
+  function winByEach(r) { return winSizes(r).length>0; }
+  function winComplete(r) { return winByEach(r) && winSizes(r).every(x=>num(x.w)>0&&num(x.h)>0); }
+  function roomWinWidth(r) { return winByEach(r) ? round2(winSizes(r).reduce((t,x)=>t+num(x.w),0)) : num(r.win); }
+  function roomWinArea(r) { return round2(winSizes(r).reduce((t,x)=>t+num(x.w)*num(x.h),0)); }
+  function winUsesRoom(r,st) { return winByEach(r) && !st?.manualSize; }
   function fitQty(r,code) {
     const st=r.fitout?.[code]||{};
-    if(code==='window_new') return num(st.length)*num(st.height)*num(st.qty);
+    if(code==='window_new') return winUsesRoom(r,st) ? roomWinArea(r) : num(st.length)*num(st.height)*num(st.qty);
     if(['door','vanity','cab_basket'].includes(code)) return num(st.qty);
     return num(st.length);
   }
@@ -785,7 +792,7 @@
     return `<details class="pickbox room-panel" data-room-panel="${esc(r.id)}:fitout" ${openRoomPanels.has(r.id+':fitout')?'open':''}><summary>全屋定制及门窗<span class="panel-action"></span></summary><div class="panel-body"><p class="hint">客户需要才勾选；未勾选不计入报价。门窗数量用于记录现状，下面勾选才报价新装／更换。</p>${codes.map(code=>{
       const st=r.fitout?.[code]||{},on=fitSelected(r,code),unit=PRICE[code].unit;
       const input=(key,label)=>fld(label,'尺',`data-fit-room="${r.id}" data-fit-code="${code}" data-f="${key}"`,st[key]??'',false,true);
-      return `<div style="border-top:1px solid var(--line);padding:10px 0"><label><input type="checkbox" data-fit-toggle="${r.id}" data-fit-code="${code}" ${on?'checked':''}> 需要做${FITOUT[code][0]}</label>${on?`<div class="grid3" style="margin-top:10px">${['door','vanity','cab_basket'].includes(code)?fld('数量',unit,`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}${input('length',code==='window_new'?'单樘窗宽':'长度／门宽')}${input('height','高度')}${['door','window_new','cab_basket'].includes(code)?'':input('depth','深度')}${code==='window_new'?fld('同规格窗数量','樘',`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}${fitKeys(code).map(k=>`<div class="fld"><label>${FIT_SPEC[k][0]}<select data-fit-room="${r.id}" data-fit-code="${code}" data-f="${k}"><option value="">待客户选定</option>${FIT_SPEC[k][1].map(v=>`<option value="${esc(v)}" ${st[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label></div>`).join('')}</div><div class="note" data-item-price="${r.id}:${code}"></div><p class="hint">材质及配置自动匹配价目表；未匹配的规格需由公司补充价格。</p>`:''}</div>`;
+      return `<div style="border-top:1px solid var(--line);padding:10px 0"><label><input type="checkbox" data-fit-toggle="${r.id}" data-fit-code="${code}" ${on?'checked':''}> 需要做${FITOUT[code][0]}</label>${on?`<div class="grid3" style="margin-top:10px">${['door','vanity','cab_basket'].includes(code)?fld('数量',unit,`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}${code==='window_new'&&winUsesRoom(r,st)?`<div class="note" style="grid-column:1/-1">按上面 ${winSizes(r).length} 樘窗的尺寸计算：共 ${nf2(roomWinArea(r))} 平方尺</div>`:`${input('length',code==='window_new'?'单樘窗宽':'长度／门宽')}${input('height','高度')}${['door','window_new','cab_basket'].includes(code)?'':input('depth','深度')}${code==='window_new'?fld('同规格窗数量','樘',`data-fit-room="${r.id}" data-fit-code="${code}" data-f="qty"`,st.qty??'',false,true):''}`}${code==='window_new'&&winByEach(r)?`<label style="grid-column:1/-1"><input type="checkbox" data-win-manual="${r.id}" ${st.manualSize?'checked':''}> 只换部分窗户，手动填尺寸</label>`:''}${fitKeys(code).map(k=>`<div class="fld"><label>${FIT_SPEC[k][0]}<select data-fit-room="${r.id}" data-fit-code="${code}" data-f="${k}"><option value="">待客户选定</option>${FIT_SPEC[k][1].map(v=>`<option value="${esc(v)}" ${st[k]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label></div>`).join('')}</div><div class="note" data-item-price="${r.id}:${code}"></div><p class="hint">材质及配置自动匹配价目表；未匹配的规格需由公司补充价格。</p>`:''}</div>`;
     }).join('')}${invalidFitout(r).map(code=>`<div class="note warn">原报价的「${FITOUT[code][0]}」不适用于当前空间，已暂停计价。<label><input type="checkbox" data-fit-toggle="${r.id}" data-fit-code="${code}" checked> 取消此项，或更正空间类型</label></div>`).join('')}</div></details>`;
   }
 
@@ -1646,10 +1653,10 @@
 
       if (P.legacyWholeOpenings && yes('doors') && !fitSelected(r,'door') && t !== 'balcony') add(r, 'door', g.doors, '房间填写的室内门数');
       if (yes('curtain')) {
-        add(r, 'curtain', num(r.win), '房间填写的窗户总宽');
-        if (r.ceiling === 'flat' || r.ceiling === 'feature') add(r, 'curtain_box', num(r.win), '有吊顶又做窗帘 → 窗帘盒 = 窗宽');
+        add(r, 'curtain', roomWinWidth(r), winByEach(r)?'各樘窗宽合计':'房间填写的窗户总宽');
+        if (r.ceiling === 'flat' || r.ceiling === 'feature') add(r, 'curtain_box', roomWinWidth(r), '有吊顶又做窗帘 → 窗帘盒 = 窗宽');
       }
-      if (t !== 'bath' && t !== 'balcony') add(r, 'window_sill', num(r.win), '= 窗户总宽');
+      if (t !== 'bath' && t !== 'balcony') add(r, 'window_sill', roomWinWidth(r), '= 窗户总宽');
     });
 
     P.rooms.forEach(r=>{
@@ -1663,7 +1670,7 @@
           if(['demo_floor','demo_ceiling','floor_tile','laminate','porch_tile','screed','slope','wp','plaster_ceiling','paint_ceiling','awning'].includes(code))qty=g.floor;
           else if(['demo_skin','wall_tile','skim','paint_wall','wallpaper','art_paint'].includes(code))qty=g.wall;
           else if(['skirting','ceiling_step','led_strip','cornice'].includes(code))qty=g.perim;
-          else if(['window_sill','curtain','curtain_box','balc_seal'].includes(code))qty=num(r.win);
+          else if(['window_sill','curtain','curtain_box','balc_seal'].includes(code))qty=roomWinWidth(r);
           else if(['wire','panel'].includes(code))qty=num(r.pts);
           else if(code==='light')qty=num(r.lights);
           else if(['fan_point','ceiling_fan'].includes(code))qty=num(r.fan);
@@ -1753,6 +1760,7 @@
     const red = [], yellow = [];
     const paintIssues=PAINT.issues(C.rows);paintIssues.red.forEach(m=>red.push({m,go:2}));paintIssues.yellow.forEach(m=>yellow.push({m,go:2}));
     C.rows.filter(r=>r.on&&PRICE[r.code]?.unpriced&&!r.catalogMatch&&!r.catalogPending&&!(r.uPrice>0)).forEach(r=>red.push({m:`「${r.name}」单价待公司核定，请在价目表填写价格`,go:5}));
+    P.rooms.forEach(r=>winSizes(r).forEach((x,i)=>{if(!(num(x.w)>0&&num(x.h)>0))red.push({m:`「${roomLabel(r)}」第${i+1}樘窗请填写宽和高`,go:1});}));
     C.rows.filter(r=>r.on&&r.catalogPending).forEach(r=>red.push({m:`「${r.roomName} · ${r.name}」${r.catalogReason}，请在价目表补齐`,go:5}));
     if(!houseDef(P.houseType)) red.push({m:'请先选择住宅类型',go:1});
     P.rooms.filter(r => r.planImported && !r.surveyConfirmed).forEach(r => red.push({m: `「${roomLabel(r)}」图纸尺寸待现场复尺确认`,go:1}));
@@ -1777,7 +1785,7 @@
       const st=r.fitout[code],name=`「${roomLabel(r)}」${FITOUT[code][0]}`;
       if(!(fitQty(r,code)>0)) red.push({m:`${name}已勾选，请填写有效尺寸／数量`,go:1});
       if(!fitKeys(code).every(k=>st[k])) red.push({m:`${name}请补齐材质、规格及专业配置`,go:1});
-      if(code!=='cab_basket' && (!(num(st.height)>0) || !(num(st.length)>0))) red.push({m:`${name}请确认宽度及高度`,go:1});
+      if(code!=='cab_basket' && !(code==='window_new'&&winUsesRoom(r,st)) && (!(num(st.height)>0) || !(num(st.length)>0))) red.push({m:`${name}请确认宽度及高度`,go:1});
       if(code==='window_new' && P.legacyWholeOpenings && yes('windows')) red.push({m:`${name}已逐空间选择，请关闭全屋更换窗户项，避免重复报价`,go:2});
       if(!['door','window_new','cab_basket'].includes(code) && !(num(st.depth)>0)) red.push({m:`${name}请填写深度`,go:1});
       const line=C.rows.find(x=>x.roomId===r.id && x.code===code);
@@ -1910,7 +1918,8 @@
         </div>
         ${segs.map(f => `<div class="segrow"><span>${F[f].label}</span><div class="seg">${F[f].opts.map(([v, l]) =>
           `<button class="${r[f] === v ? 'active' : ''}" data-room-seg="${r.id}" data-f="${f}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}
-        <div class="grid3">${fld('现有门洞／门数量','樘',`data-room="${r.id}" data-f="doors"`,r.doors??'',false,true)}${fld('现有窗数量','樘',`data-room="${r.id}" data-f="windowCount"`,r.windowCount??'',false,true)}${fld('现有窗户总宽','尺',`data-room="${r.id}" data-f="win"`,r.win??'',false,true)}</div>
+        <div class="grid3">${fld('现有门洞／门数量','樘',`data-room="${r.id}" data-f="doors"`,r.doors??'',false,true)}${fld('现有窗数量','樘',`data-room="${r.id}" data-f="windowCount"`,r.windowCount??'',false,true)}${winByEach(r)?'':fld('现有窗户总宽（未逐樘填写时）','尺',`data-room="${r.id}" data-f="win"`,r.win??'',false,true)}</div>
+        ${winByEach(r)?`<div class="grid3">${winSizes(r).map((x,i)=>fld(`第${i+1}樘窗 宽`,'尺',`data-win-room="${r.id}" data-win-i="${i}" data-f="w"`,x.w??'',!(num(x.w)>0),true)+fld(`第${i+1}樘窗 高`,'尺',`data-win-room="${r.id}" data-win-i="${i}" data-f="h"`,x.h??'',!(num(x.h)>0),true)+'<div></div>').join('')}</div><p class="hint">窗户总宽 ${nf2(roomWinWidth(r))} 尺 · 总面积 ${nf2(roomWinArea(r))} 平方尺（自动计算，用于窗帘、窗帘盒、窗台石及换窗）</p>`:''}
         ${roomBase(r)==='kitchen' ? fld('厨房操作区墙砖铺贴长度','尺',`data-room="${r.id}" data-f="backsplashLength"`,r.backsplashLength ?? r.cabLow ?? '',false,true) : ''}
         ${workHtml(r)}
         ${fitoutHtml(r)}
@@ -2381,6 +2390,8 @@
     else if(ds.catalogField){catalogDraft[ds.catalogField]=v;if(ds.catalogField==='code'){catalogDraft.unit=PRICE[v].unit;catalogDraft.materialUnit=PRICE[v].unit;}}
     else if(ds.tileRoom){const r=P.rooms.find(r=>r.id===ds.tileRoom);if(r){r.tileConfig=r.tileConfig||{};const c=r.tileConfig[ds.tileCode]=r.tileConfig[ds.tileCode]||{areaMode:'auto',areaUnit:'ft2',rateUnit:'ft2',waste:0};c[ds.f]=v;if(r.planImported)r.planReviewed=false;}}
     else if(ds.workQty){const r=P.rooms.find(r=>r.id===ds.workQty);if(r){r.workQty=r.workQty||{};r.workQty[ds.workCode]=v;if(r.planImported)r.planReviewed=false;}}
+    else if(ds.winManual) {const r=P.rooms.find(r=>r.id===ds.winManual);if(r){r.fitout=r.fitout||{};const st=r.fitout.window_new=r.fitout.window_new||{};st.manualSize=t.checked;}}
+    else if(ds.winRoom) {const r=P.rooms.find(r=>r.id===ds.winRoom);if(r){r.windowSizes=r.windowSizes||[];const x=r.windowSizes[+ds.winI]=r.windowSizes[+ds.winI]||{};x[ds.f]=v;if(r.planImported)r.planReviewed=false;}}
     else if(ds.fitRoom) {const r=P.rooms.find(r=>r.id===ds.fitRoom);if(r){r.fitout=r.fitout||{};const st=r.fitout[ds.fitCode]=r.fitout[ds.fitCode]||{};st[ds.f]=v;if(r.planImported)r.planReviewed=false;}}
     else if (ds.info) P.info[ds.info] = v;
     else if (t.hasAttribute('data-spa')) P.spaArea = v;
