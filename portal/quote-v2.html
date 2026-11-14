@@ -102,7 +102,8 @@
   .pack { border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; text-align: left; color: var(--ink); display: block; width: 100%; }
   .pack .h { display: flex; gap: 8px; align-items: center; font-weight: 600; }
   .pack .h .ic { font-size: 18px; }
-  .pack .h .rm2 { margin-left: auto; font-size: 12px; color: var(--ink-dim); font-weight: 500; }
+  .pack .h .rm2 { margin-left: auto; font-size: 12px; color: var(--ink-dim); font-weight: 500; white-space: nowrap; }
+  .pack.wide { grid-column: 1 / -1; }
   .pack.on { border-color: var(--navy); background: var(--navy-soft); }
   .pack.on .h .rm2 { color: var(--accent); font-weight: 700; }
   .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
@@ -234,7 +235,7 @@
     const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.from === pk.label) : [];
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
-    return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+    return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
       ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div></div>` : ''}</div>`;
   }
