@@ -369,7 +369,8 @@ ok('卫生间 1 选了防水地砖，一键沿用到卫生间 2：数量按各�
   const lv = { ...Q.newRoom('living', 1, 1), packs: [] };
   const p = project([b1, b2, lv]);
   p.plans = [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: { [b1.id]: { '@bath_tile': { tile: { floorSize: '300×600 mm' } } } } }]; p.planId = 'A';
-  assert.deepEqual(Q.roomsFor(p, b1.id, 'bath_tile').map(r => r.id), [b2.id], '客厅不能做卫生间防水，不列出');
+  // 避免漏项：全屋其他房间都列出，但一般不做这项的（客厅做卫生间防水）排在最后，页面标「一般不做」
+  assert.deepEqual(Q.roomsFor(p, b1.id, 'bath_tile').map(r => r.id), [b2.id, lv.id], '同类卫生间在前，客厅也列出但排最后');
   Q.copyPack(p, b1.id, b2.id, 'bath_tile', true); Q.copyPack(p, b1.id, b2.id, 'bath_water', true);
   const L = Q.buildLines(p);
   assert.equal(L.find(l => l.roomId === b2.id && l.code === 'floor_tile').qty, 35, '面积按卫生间 2 自己的 7×5，不复制卫生间 1 手改的 30');
@@ -396,7 +397,8 @@ ok('主人房、卧室、书房算同类；客厅和餐厅算同类，沿用时�
   const p = project(Q.presetRooms('semi'));
   const m = p.rooms.find(r => r.type === 'master'), lv = p.rooms.find(r => r.type === 'living');
   const t = Q.roomsFor(p, m.id, 'wardrobe').map(r => r.type);
-  assert.ok(t.every(x => ['bedroom', 'study'].includes(x)) || t.indexOf('bedroom') === 0, '衣柜沿用先列卧室');
+  assert.equal(t[0], 'bedroom', '衣柜沿用先列卧室');
+  assert.equal(t.length, p.rooms.length - 1, '全屋其他房间都列出，不漏');
   assert.equal(Q.roomsFor(p, lv.id, 'wall_finish')[0].type, 'dining', '客厅刷墙先问餐厅');
   assert.equal(Q.kinLabel('master'), '卧室');
 });
@@ -422,6 +424,13 @@ ok('楼梯：踏步、扶手、楼梯灯都能报', () => {
   const r = { ...Q.newRoom('stairs', 1, 1), measured: true, packs: ['stair_tile', 'stair_rail', 'stair_light'] };
   const L = Q.buildLines(project([r]));
   assert.equal(qty(L, 'stair_tread'), 18); assert.equal(qty(L, 'stair_rail'), 15); assert.equal(qty(L, 'stair_light'), 2);
+});
+
+ok('客厅可以选神龛：按正面宽×高的平方尺计，单价待公司核定（不乱填价）', () => {
+  assert.ok(Q.ROOMS.living.packs.includes('altar'), '客厅有神龛选项');
+  const lv = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['altar'], vals: { altar: { w: 4, h: 7 } } };
+  const l = Q.buildLines(project([lv])).find(x => x.code === 'altar_cab');
+  assert.ok(l && l.qty === 28, '4 × 7 = 28 平方尺');
 });
 
 ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {

@@ -121,6 +121,8 @@
   .rchip { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; text-align: left; min-width: 96px; }
   .rchip small { display: block; font-size: 11px; color: var(--ink-dim); }
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
+  .rchip.na:not(.on) { border-style: dashed; color: var(--ink-dim); }
+  .rchip small { font-size: 10.5px; color: var(--ink-dim); }
   .rchip.bad { border-color: var(--red); }
   .exttag { display: inline-block; font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 0 5px; vertical-align: 1px; }
   .extchip { border-style: solid; }
@@ -634,7 +636,8 @@
         <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
       </div><div class="sketch">${sketch(r)}</div></div></div>`;
     h += `<h2>这间要做什么</h2><p class="hint">点卡片选择，再点一次取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
-    const avail = T.packs.filter(c => PACKS[c]);
+    // 这类房间常用的工项 + 从别的房间带过来的其他工项（也要显示，才能看到和取消）
+    const avail = [...new Set([...T.packs, ...r.packs])].filter(c => PACKS[c]);
     GROUPS.forEach(([gid, gname]) => {
       const codes = avail.filter(c => PACKS[c].g === gid); if (!codes.length) return;
       h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(c => packCard(r, c, g, C).replace(/<\/div>$/, () => syncBar(r, c) + '</div>')).join('')}</div></div>`;
@@ -650,9 +653,10 @@
     const on = r.packs.includes(c), others = Q.roomsFor(P, r.id, c);
     if (!others.length) return '';
     const k = Q.kinOf(r.type), same = others.filter(x => Q.kinOf(x.type) === k), diff = others.filter(x => Q.kinOf(x.type) !== k);
-    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}</button>`; };
-    const todo = others.filter(x => (x.packs || []).includes(c) !== on);
-    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">下面是全屋能做这项的 ${others.length} 个空间${(() => { const skip = P.rooms.length - 1 - others.length; return skip > 0 ? `（另外 ${skip} 个如卫生间、楼梯、户外，不适用这项，没列出）` : '（全屋都列出来了）'; })()}。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
+    const fits = x => ROOMS[x.type].packs.includes(c);
+    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>`; };
+    const todo = others.filter(x => (x.packs || []).includes(c) !== on && (!on || ROOMS[x.type].packs.includes(c)));
+    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">全屋其他 ${others.length} 个空间都在下面，避免漏项；标「一般不做」的是这类房间通常不做这项，需要也可以点上。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
       <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
       <div class="adds" style="margin:8px 0 0">${todo.length ? `<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-all>${on ? '全部也做' : '全部也取消'}（${todo.length} 间）</button>` : ''}${todo.some(x => Q.kinOf(x.type) === k) && todo.length !== todo.filter(x => Q.kinOf(x.type) === k).length ? `<button type="button" class="btn" data-sync-same>只${Q.kinLabel(r.type)}（${todo.filter(x => Q.kinOf(x.type) === k).length} 间）</button>` : ''}<button type="button" class="btn" data-sync-close>只这间</button></div></div>`;
   }

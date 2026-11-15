@@ -87,7 +87,7 @@
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
   const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new'];
   const ROOMS = {
-    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab'] },
+    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar'] },
     dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard'] },
     master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard'] },
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk'] },
@@ -112,7 +112,7 @@
   // noPrice = 只影响做法说明或项目组成，不另外加价；mod = 已知的计价变化（如客户自备砖不收主材）。
   // 其他非标准选项的价差在 quote-v2-price.js 的 OPTION_PRICES 里登记，没登记的显示「价差待定」。
   const TILE_CODES = ['floor_tile', 'wall_tile', 'porch_tile'];
-  const CAB_CODES = ['wardrobe', 'tv_cab', 'shoe_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard', 'cab_low', 'cab_up'];
+  const CAB_CODES = ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard', 'cab_low', 'cab_up'];
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
@@ -208,6 +208,7 @@
     cab_basket:     { g: 'cab', label: '橱柜拉篮', icon: '🧺', inputs: [{ k: 'n', label: '拉篮', unit: '套', def: () => 2 }], lines: (r, g, v) => [['cab_basket', v.n, '拉篮套数']] },
     wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8),
     tv_cab:         cabSqft('电视柜/背景墙', '📺', 'tv_cab', () => 8, () => 3),
+    altar:          cabSqft('神龛/神台柜', '🗄️', 'altar_cab', () => 4, () => 7),
     shoe_cab:       cabSqft('鞋柜', '👟', 'shoe_cab', () => 4, () => 4),
     sideboard:      cabSqft('餐边柜', '🍶', 'sideboard', () => 6, () => 3),
     headboard:      cabSqft('床头背景', '🖼️', 'headboard', () => 8, () => 4),
@@ -496,14 +497,15 @@
   const kinLabel = type => KIN_LABEL[kinOf(type)] || ROOMS[type].label;
   function roomsFor(project, fromId, code) {
     const from = project.rooms.find(r => r.id === fromId), k = kinOf(from.type);
-    return project.rooms.filter(r => r.id !== fromId && ROOMS[r.type].packs.includes(code))
-      .sort((a, b) => (kinOf(b.type) === k) - (kinOf(a.type) === k));
+    // 全屋其他房间都列出（避免漏项）：同类在前，这类房间一般做这项的其次，一般不做的放最后
+    const rank = r => (kinOf(r.type) === k ? 0 : 2) + (ROOMS[r.type].packs.includes(code) ? 0 : 4);
+    return project.rooms.filter(r => r.id !== fromId).sort((a, b) => rank(a) - rank(b));
   }
   // 把一个工项的开/关、非面积类的数字（点位数、台数…）、这个位置的选材，从一间复制到另一间。
   // 面积类数字不复制：每间按自己的尺寸算。
   function copyPack(project, fromId, toId, code, on) {
     const from = project.rooms.find(r => r.id === fromId), to = project.rooms.find(r => r.id === toId), pk = PACKS[code];
-    if (!from || !to || !pk || !ROOMS[to.type].packs.includes(code)) return false;
+    if (!from || !to || !pk) return false;
     to.packs = to.packs || [];
     if (!on) { to.packs = to.packs.filter(x => x !== code); return true; }
     if (pk.pick) to.packs = to.packs.filter(x => PACKS[x].pick !== pk.pick);
@@ -526,7 +528,8 @@
     toIds.forEach(id => {
       const to = project.rooms.find(r => r.id === id); if (!to || id === fromId) return;
       to.packs = [];
-      (from.packs || []).forEach(c => { if (!copyPack(project, fromId, id, c, true)) (skipped[id] = skipped[id] || []).push(c); });
+      // 整间复制只搬这类房间做得了的；单项沿用（copyPack）由员工自己点，可以加到任何房间
+      (from.packs || []).forEach(c => { if (!ROOMS[to.type].packs.includes(c) || !copyPack(project, fromId, id, c, true)) (skipped[id] = skipped[id] || []).push(c); });
     });
     return skipped;
   }
