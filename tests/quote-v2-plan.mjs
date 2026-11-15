@@ -26,4 +26,10 @@ ok(R.dims('Bedroom 3 x 4') === null, '没有单位不当尺寸');
 ok(R.dims("MASTER 12'6\" x 10'").L === 12.5 && R.dims("12' x 14'").W === 14, '英尺英寸写法');
 ok(R.dims('12t x 14ft').L === 12, '第一个单位识别坏了按第二个算');
 ok(res.rooms.find(r => r.type === 'master').name === 'MASTER BEDROOM', '房间名不带尺寸 ' + res.rooms.find(r => r.type === 'master').name);
+// 本地图纸最常见：尺寸写在房间名正下方一行；两间房挨着时各取自己最近的那一行
+const two = R.parse([L(1, 'MASTER BEDROOM', 0.2, 0.79), L(1, '12ft x 14ft', 0.17, 0.756), L(1, 'BEDROOM 2', 0.58, 0.79), L(1, '3600 x 3000', 0.58, 0.76), L(1, 'KITCHEN', 0.9, 0.2)]);
+ok(two.rooms.find(r => r.type === 'master').L === 12 && two.rooms.find(r => r.type === 'master').W === 14, '下一行的尺寸归给主卧');
+ok(two.rooms.find(r => r.name === 'BEDROOM 2').L === 11.8, '不写单位的 3600 x 3000 当毫米');
+ok(two.rooms.find(r => r.type === 'kitchen').L === null, '离得远的尺寸不乱借');
+ok(R.dims('Bedroom 12 x 10') === null, '小数字不写单位不当尺寸（可能是编号）');
 console.log(`PASS: ${n} plan recognition checks`);

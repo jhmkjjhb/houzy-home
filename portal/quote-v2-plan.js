@@ -25,7 +25,11 @@
     // 例：3600mm x 3000mm、12ft × 10ft、3.6 x 3.0 m（单位写在最后也算）。
     // 第一个单位被识别坏了（如 12ft 读成 12t）时，按第二个单位算
     const m = text.match(/(\d+(?:\.\d+)?)\s*(mm|cm|m|ft|feet|尺|英尺|米|毫米|[a-z]{1,3})?\s*[x×X]\s*(\d+(?:\.\d+)?)\s*(mm|cm|m|ft|feet|尺|英尺|米|毫米)(?![A-Za-z])/i);
-    if (!m) return null;
+    if (!m) {
+      // 本地图纸常只写毫米数字不写单位：3600 x 3000（两个数都 ≥ 1000 才当毫米）
+      const n = text.match(/(?<![\d.])(\d{4,5})\s*[x×X]\s*(\d{4,5})(?![\d.])/);
+      return n ? { L: Math.round(n[1] / 304.8 * 10) / 10, W: Math.round(n[2] / 304.8 * 10) / 10 } : null;
+    }
     const u2 = m[4].toLowerCase();
     let u1 = (m[2] || m[4]).toLowerCase();
     if (!(u1 in UNIT)) u1 = u2;
@@ -34,7 +38,7 @@
   }
 
   function parse(lines) {
-    const ignored = new Set(), rooms = [];
+    const ignored = new Set(), rooms = [], used = new Set();
     [...new Set(lines.map(x => x.page))].forEach(page => {
       const text = lines.filter(x => x.page === page).map(x => x.text).join('\n');
       const isPlan = /\b(?:ground|first|second|third|\d+(?:st|nd|rd|th))\s+floor\s+plan\b|平面图/i.test(text);
@@ -42,7 +46,7 @@
     });
     lines.forEach(line => {
       if (ignored.has(line.page)) return;
-      const text = String(line.text || '').trim();
+      let text = String(line.text || '').trim();
       if (!text || text.length > 100) return;
       const pageLines = lines.filter(x => x.page === line.page);
       // 房间编号常被识别成下一行单独的数字（例如 "Bath" 下面一个 "4"），就近拼回去
@@ -59,7 +63,14 @@
       const titles = [];
       pageLines.forEach(x => { const t = String(x.text).trim(); FLOORS.forEach(([v, re]) => { if (re.test(t)) titles.push([v, t]); }); if (t === '底层平面图' || t === '首层平面图') titles.push([1, t]); });
       const levels = [...new Set(titles.map(x => x[0]))];
-      const d = dims(text);
+      let d = dims(text);
+      // 尺寸常写在房间名正下方（或正上方）的另一行：找最近的、本身不是房间名的尺寸行
+      if (!d) {
+        const cand = pageLines.filter(x => x !== line && dims(String(x.text)) && !LABELS.some(([, re]) => bounded(re).test(String(x.text))))
+          .map(x => ({ x, dy: Math.abs((x.y || 0) - (line.y || 0)), dx: Math.abs((x.x || 0) - (line.x || 0)) }))
+          .filter(c => c.dy <= 0.07 && c.dx <= 0.12).sort((a, b) => (a.dy + a.dx) - (b.dy + b.dx))[0];
+        if (cand && !used.has(cand.x)) { used.add(cand.x); d = dims(String(cand.x.text)); text = text + ' / ' + String(cand.x.text).trim(); }
+      }
       // 名称里去掉尺寸部分（尺寸已单独读出）
       if (d) label = label.replace(/\s*\d+(?:\.\d+)?\s*\S{0,6}\s*[x×X]\s*\d.*$/, '').trim() || label;
       let name = fixed && !/\d/.test(label) ? fixed : label;
@@ -71,7 +82,7 @@
     // 同一页重复的未编号标签加序号，核对时才分得清
     const seen = {};
     rooms.forEach(r => { if (!r.name.includes('图纸未编号')) return; const k = r.page + r.type; seen[k] = (seen[k] || 0) + 1; r.name = r.name.replace('（图纸未编号）', `（图纸未编号·第 ${seen[k]} 个）`); });
-    return { rooms, ignoredPages: [...ignored].sort(), warnings: [...[...ignored].sort().map(p => `第 ${p} 页是立面/剖面图，不生成房间。`), '只识别文字标签和同一行明确写出的「长×宽+单位」，不识别墙线、比例尺、门窗。'] };
+    return { rooms, ignoredPages: [...ignored].sort(), warnings: [...[...ignored].sort().map(p => `第 ${p} 页是立面/剖面图，不生成房间。`), '只识别文字标签和旁边写出的「长×宽」（同一行或紧挨着的上下一行），不识别墙线、比例尺、门窗。'] };
   }
 
   const api = { parse, dims, LABELS };
