@@ -78,6 +78,7 @@
     }
     for (let lv = 2; lv <= levels; lv++) add('family', lv, levels > 2 ? `${lv}楼家庭厅` : '家庭厅', S.family);
     if (levels > 1) add('stairs', 1, '楼梯', S.stairs);
+    if (landed && spec.ext) add('extension', 1, '后院加建', [S.yard[0], Math.max(8, S.yard[1])]);
     const one = out.filter(r => r.type === 'bath' && /卫生间 \d/.test(r.name));
     if (one.length === 1) one[0].name = '公共卫生间';
     return out.map((r, i) => [r, i]).sort((a, b) => (a[0].level || 1) - (b[0].level || 1) || a[1] - b[1]).map(x => x[0]);
@@ -100,6 +101,8 @@
     corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] },
+    // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
+    extension: { label: '加建空间', icon: '🏗️', L: 20, W: 10, doors: 1, ext: true, landed: true, packs: ['floor', 'wet_tile', 'wall_finish', 'ceiling', 'ceil_paint', 'electric', 'kitchen_water', 'aircon', 'fan', 'window_new', 'fly_screen', 'door', 'cabinets', 'sill'] },
     porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] }
   };
   Object.values(ROOMS).forEach(t => { if (!t.outdoor) t.packs.push('custom_item'); });
@@ -250,7 +253,7 @@
     { k: 'main_door', grp: 'secure', label: '换大门', icon: '🚪', lines: () => [['main_door', 1, '']] },
     { k: 'grille', grp: 'secure', label: '防盗铁花', icon: '🔒', inputs: [{ k: 'area', label: '面积', unit: '平方尺', def: () => 40 }], lines: v => [['grille', v.area, '铁花面积']] },
     { k: 'autogate', landed: true, grp: 'secure', label: '自动大门', icon: '🚧', lines: () => [['autogate', 1, '']] },
-    { k: 'extension', landed: true, grp: 'out', label: '加建/扩建（地基+砌墙+屋顶）', icon: '🏗️', why: '会自动加上扩建图纸及市政局申请', inputs: [{ k: 'area', label: '加建面积', unit: '平方尺', def: () => 100 }], lines: v => [['extension', v.area, '加建面积'], ['ext_permit', 1, '加建必须先申请批准']] },
+    { k: 'extension', landed: true, grp: 'out', label: '加建/扩建（地基+砌墙+屋顶）', icon: '🏗️', why: '会自动加上扩建图纸及市政局申请；已经按房间加了「加建空间」的不要在这里重复', inputs: [{ k: 'area', label: '加建面积', unit: '平方尺', def: () => 100 }], lines: v => [['extension', v.area, '加建面积']] },
     { k: 'awning', landed: true, grp: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: () => 200 }], lines: v => [['awning', v.area, '雨棚面积']] },
     { k: 'roof_fix', landed: true, grp: 'out', label: '屋顶补漏', icon: '🏠', inputs: [{ k: 'n', label: '漏点', unit: '处', def: () => 1 }], lines: v => [['roof_fix', v.n, '漏点处数']] },
     { k: 'ext_paint', landed: true, grp: 'out', label: '外墙油漆', icon: '🎨', inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 1500 }], lines: v => [['ext_paint', v.area, '外墙面积']] },
@@ -369,9 +372,12 @@
         pk.lines(room, g2, v, picked, sp).forEach(([c, q, f, it]) => push(room, c, q, f, pk.label, code, it));
       });
     });
+    // 加建：标了「加建」的房间按地面面积加结构；整单只申请一次准证
+    project.rooms.forEach(room => { if (room.ext) push(room, 'extension', geo(room, project).floor, '加建面积 = 这间地面面积', '加建结构'); });
     const hs = project.house || {};
     HOUSE_ITEMS.forEach(item => { const q = hs[item.k]; if (q && q.on) item.lines(houseValues(q, item)).forEach(([c, qty, f]) => push(null, c, qty, f, item.label)); });
     // 人工增加项：挂在某个房间（roomId）或全屋
+    if (project.rooms.some(r => r.ext) || (hs.extension && hs.extension.on)) push(null, 'ext_permit', 1, '有加建就要先申请批准（整单一次）', '加建');
     (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
     const indoor = project.rooms.filter(r => !ROOMS[r.type].outdoor);
     const worked = indoor.filter(r => (r.packs || []).length);
@@ -461,6 +467,7 @@
       if (room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });
     });
     ['awning', 'drain_ch'].forEach(k => { if (project.house?.[k]?.on && project.rooms.some(r => (r.packs || []).includes(k))) red.push({ m: `「${PACKS[k].label}」在车廊/前院和全屋项目都选了，会重复收费，请去掉一个`, go: 'all' }); });
+    if (project.house?.extension?.on && project.rooms.some(r => r.ext)) yellow.push({ m: '全屋项目选了「加建/扩建」，房间里也有加建空间，确认面积没有重复算', go: 'all' });
     (project.extras || []).forEach((x, i) => {
       const nm = String(x.name || '').trim() || `第 ${i + 1} 项`;
       if (!String(x.name || '').trim()) red.push({ m: `人工增加项第 ${i + 1} 项请填写名称`, go: x.roomId || 'all' });
@@ -526,7 +533,7 @@
 
   function newRoom(type, level, n) {
     const t = ROOMS[type];
-    return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, windows: [], packs: [], vals: {}, measured: false };
+    return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, windows: [], packs: [], vals: {}, measured: false, ...(t.ext ? { ext: true } : {}) };
   }
   function presetRooms(houseType) {
     const l = layoutsFor(houseType).find(x => x.id === DEFAULT_LAYOUT[houseType]) || layoutsFor(houseType)[0];

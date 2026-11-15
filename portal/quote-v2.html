@@ -14,7 +14,7 @@
     --ink: #1C1B19; --ink-dim: #6B6860;
     --navy: #17324F; --navy-soft: #E7EDF3; --on-navy: #FFFFFF;
     --accent: #C4501C; --ok: #2F6B4F; --ok-soft: #E3F0E8; --off: #B8B3A7;
-    --ok-line: #B5D6C2;
+    --ok-line: #B5D6C2; --accent-soft: #FBEAE1;
     --red: #B42318; --red-soft: #FDECEA; --yellow: #8A5A00; --yellow-soft: #FFF4D6;
     color-scheme: light;
   }
@@ -22,7 +22,7 @@
     :root:not([data-theme="light"]) {
       --bg: #16151A; --surface: #1E1D23; --line: #34333A; --ink: #EDEBE6; --ink-dim: #9A968D;
       --navy: #9FC0E0; --navy-soft: #202B36; --on-navy: #16151A; --accent: #E37A46; --ok: #5FA382; --ok-soft: #1D2E25; --off: #4A4840;
-      --ok-line: #355A45;
+      --ok-line: #355A45; --accent-soft: #3A2419;
       --red: #F08A80; --red-soft: #3A1F1E; --yellow: #E8C06A; --yellow-soft: #33291A; color-scheme: dark;
     }
   }
@@ -110,6 +110,10 @@
   .rchip small { display: block; font-size: 11px; color: var(--ink-dim); }
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
   .rchip.bad { border-color: var(--red); }
+  .exttag { display: inline-block; font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 0 5px; vertical-align: 1px; }
+  .extchip { border-style: solid; }
+  .extchip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .extchip.on svg.ic { color: var(--accent); }
   .rchip.done { background: var(--ok-soft); border-color: var(--ok-line); color: var(--ok); }
   .rchip.done svg.ic, .rchip.cart svg.ic { color: var(--ok); }
   .rchip.done.on { border-color: var(--ok); }
@@ -269,7 +273,7 @@
 <script src="quote-v2-price.js?v=20261115c"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115g"></script>
+<script src="quote-v2-rules.js?v=20261115k"></script>
 <script src="quote-v2-plan.js?v=20261115h"></script>
 <script>
 (function () {
@@ -366,7 +370,7 @@
     const stp = (k, label, min, max) => `<span class="fld" style="display:inline-flex;align-items:center;gap:6px">${label}<span class="stp"><button type="button" data-lay="${k}" data-d="-1" ${L[k] <= min ? 'disabled' : ''}>−</button><b class="mono" style="min-width:28px;text-align:center">${L[k]}</b><button type="button" data-lay="${k}" data-d="1" ${L[k] >= max ? 'disabled' : ''}>+</button></span></span>`;
     return `<div class="card"><b>户型</b> <span class="hint">选最接近的，再加减卧室、卫生间、楼层；尺寸是常见估算，现场要复尺</span>
       <div class="adds" style="margin:8px 0">${Q.layoutsFor(P.houseType).map(x => `<button class="rchip ${L.id === x.id && L.beds === x.beds && L.baths === x.baths && L.levels === x.levels ? 'on' : ''}" style="min-width:auto" data-layout="${x.id}">${esc(x.label)}</button>`).join('')}</div>
-      <div class="row">${stp('beds', '卧室', 0, 8)}${stp('baths', '卫生间', 1, 8)}${stp('levels', '楼层', 1, 4)}</div>
+      <div class="row">${stp('beds', '卧室', 0, 8)}${stp('baths', '卫生间', 1, 8)}${stp('levels', '楼层', 1, 4)}${HOUSES[P.houseType].landed ? `<button type="button" class="chip extchip ${L.ext ? 'on' : ''}" style="align-self:flex-end" data-lay-ext>${L.ext ? ic('check') + ' ' : '＋ '}后院加建</button>` : ''}</div>
       <p class="hint" style="margin:8px 0">会排出 ${preview.length} 个空间：${preview.map(r => esc(r.name)).join('、')}</p>
       <button class="btn ${layoutConfirm ? 'warn' : 'pri'}" data-layapply>${layoutConfirm ? `再点一次确认：替换现在的 ${P.rooms.length} 个空间（已选的工程会清掉）` : work ? '按这个户型重新排房间…' : '按这个户型排房间'}</button></div>`;
   }
@@ -505,9 +509,9 @@
       const rs = P.rooms.filter(r => (r.level || 1) === lv);
       h += `<div class="floor"><h3>${levels > 1 ? (lv === 1 ? '底层 Ground Floor' : lv + ' 楼') : '户内'}</h3><div class="plan">${rs.map(r => {
         const g = Q.geo(r, P), t = roomTotal(C.lines, r.id);
-        return `<button class="rm ${r.packs.length ? 'work' : ''} ${r.done ? 'done' : ''} ${bad.has(r.id) ? 'bad' : ''}" style="flex:${Math.max(1, g.floor)} 1 ${Math.max(104, Math.sqrt(Math.max(g.floor, 1)) * 11)}px" data-goroom="${r.id}"><span class="ic">${ic(ROOMS[r.type].icon)}</span><span><span class="nm">${esc(r.name)}</span><br><span class="dm mono">${nf(g.L)}×${nf(g.W)} 尺 · ${nf(g.floor)} 平方尺</span></span><span class="am mono">${t ? rm(t) : ''}</span></button>`;
+        return `<button class="rm ${r.packs.length ? 'work' : ''} ${r.done ? 'done' : ''} ${bad.has(r.id) ? 'bad' : ''}" style="flex:${Math.max(1, g.floor)} 1 ${Math.max(104, Math.sqrt(Math.max(g.floor, 1)) * 11)}px" data-goroom="${r.id}"><span class="ic">${ic(ROOMS[r.type].icon)}</span><span><span class="nm">${esc(r.name)}</span>${r.ext ? ' <span class="exttag">加建</span>' : ''}<br><span class="dm mono">${nf(g.L)}×${nf(g.W)} 尺 · ${nf(g.floor)} 平方尺</span></span><span class="am mono">${t ? rm(t) : ''}</span></button>`;
       }).join('') || '<span class="hint" style="margin:8px">这一层还没有房间</span>'}</div>
-      <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !t.outdoor || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${ic(t.icon)} ${t.label}</button>`).join('')}</div></div>`;
+      <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !(t.outdoor || t.landed) || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${ic(t.icon)} ${t.label}</button>`).join('')}</div></div>`;
     }
     h += `<div class="adds noprint" style="margin-top:14px"><button class="btn" data-addlevel>+ 加一层</button></div>`;
     return h;
@@ -527,10 +531,10 @@
   const cartOpen = {};
   function roomBar(list, curId, attr, sub, isDone, key, doneWord) {
     const act = list.filter(x => !isDone(x) || x.id === curId), done = list.filter(x => isDone(x) && x.id !== curId);
-    const chip = (x, d) => `<button class="rchip ${x.id === curId ? 'on' : ''} ${d ? 'done' : ''} ${sub(x).bad ? 'bad' : ''}" ${attr}="${x.id}">${ic(d ? 'check' : ROOMS[x.type].icon)} ${esc(Q.roomLabel(x, P))}<small${sub(x).color ? ` style="color:${sub(x).color}"` : ''}>${sub(x).t}</small></button>`;
+    const chip = (x, d) => `<button class="rchip ${x.id === curId ? 'on' : ''} ${d ? 'done' : ''} ${sub(x).bad ? 'bad' : ''}" ${attr}="${x.id}">${ic(d ? 'check' : ROOMS[x.type].icon)} ${esc(Q.roomLabel(x, P))}${x.ext ? ' <span class="exttag">加建</span>' : ''}<small${sub(x).color ? ` style="color:${sub(x).color}"` : ''}>${sub(x).t}</small></button>`;
     const nDone = list.filter(isDone).length;
     return `<div class="roombar noprint">${act.map(x => chip(x, isDone(x))).join('')}
-      ${nDone ? `<button class="rchip cart ${cartOpen[key] ? 'open' : ''}" data-cart="${key}">${ic('check')} ${doneWord} ${nDone}/${list.length}<small>${done.length ? (cartOpen[key] ? '收起' : '点开查看') : '全部' + doneWord}</small></button>` : ''}
+      ${nDone ? `<button class="rchip cart ${cartOpen[key] ? 'open' : ''}" data-cart="${key}">${ic('check')} ${doneWord} ${nDone}/${list.length}<small>${done.length ? (cartOpen[key] ? '收起' : '点开查看') : '就是当前这间'}</small></button>` : ''}
       ${cartOpen[key] ? done.map(x => chip(x, true)).join('') : ''}</div>`;
   }
   // 下一间没完成的房间（按排列顺序，从当前往后找，找不到再从头找）
@@ -542,7 +546,8 @@
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     let h = roomBar(P.rooms, roomId, 'data-goroom', x => ({ t: roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : (x.done ? '不做' : '未选工程'), bad: bad.has(x.id) }), x => !!x.done, 'room', '已完成');
     h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
-      <div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>${copyPanel(r)}${roomPics(r)}
+      ${HOUSES[P.houseType]?.landed && !T.outdoor ? `<div class="donebar"><button class="chip extchip ${r.ext ? 'on' : ''}" data-ext>${r.ext ? ic('check') + ' ' : ''}这间是加建部分（新建地基、墙、屋顶，按 ${nf(g.floor)} 平方尺算）</button>${r.ext ? `<span class="hint">结构 ${rm(C.lines.filter(l => l.roomId === r.id && l.code === 'extension').reduce((t, l) => t + l.total, 0))}，整单会加一次市政局申请</span>` : ''}</div>` : ''}
+      <div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>${copyPanel(r)}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -964,6 +969,8 @@
       P.rooms = recog.mode === 'replace' ? made : recog.mode === 'level' ? [...P.rooms.filter(r => !lvs.has(r.level || 1)), ...made] : [...P.rooms, ...made];
       roomId = made[0].id; recog = null; render(); return;
     }
+    if (b.hasAttribute('data-ext')) { const r = room(roomId); r.ext = !r.ext; render(); return; }
+    if (b.hasAttribute('data-lay-ext')) { const L = layoutOf(); L.ext = !L.ext; P.layout = L; layoutConfirm = false; render(); return; }
     if (ds.cart) { cartOpen[ds.cart] = !cartOpen[ds.cart]; render(); return; }
     if (b.hasAttribute('data-done')) { const r = room(roomId); r.done = true; const nx = nextOpen(r.id, x => !!x.done); if (nx) { roomId = nx.id; syncPrompt = null; copyOpen = false; } render(); window.scrollTo(0, 0); return; }
     if (b.hasAttribute('data-undone')) { room(roomId).done = false; render(); return; }

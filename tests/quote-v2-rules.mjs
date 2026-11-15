@@ -424,4 +424,20 @@ ok('楼梯：踏步、扶手、楼梯灯都能报', () => {
   assert.equal(qty(L, 'stair_tread'), 18); assert.equal(qty(L, 'stair_rail'), 15); assert.equal(qty(L, 'stair_light'), 2);
 });
 
+ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {
+  const k = { ...Q.newRoom('kitchen', 1, 1), L: 12, W: 10, ext: true, measured: true, packs: ['wet_tile'] };
+  const e = { ...Q.newRoom('extension', 1, 1), measured: true };
+  assert.ok(e.ext, '「加建空间」默认就是加建');
+  const p = project([k, e]); const L = Q.buildLines(p);
+  assert.equal(L.filter(l => l.code === 'extension' && l.roomId === k.id)[0].qty, 120);
+  assert.equal(L.filter(l => l.code === 'extension' && l.roomId === e.id)[0].qty, 200);
+  assert.equal(qty(L, 'ext_permit'), 1, '准证整单一次');
+  p.house = { extension: { on: true, area: 100 } };
+  assert.equal(qty(Q.buildLines(p), 'ext_permit'), 1, '全屋也选了加建，准证还是一次');
+  assert.ok(Q.checks(p, Q.buildLines(p)).yellow.some(x => x.m.includes('加建')), '提醒确认面积没重复');
+  const rs = Q.layoutRooms('terrace', { beds: 4, baths: 3, levels: 2, ext: true });
+  assert.ok(rs.some(r => r.type === 'extension' && r.name === '后院加建' && r.ext), '户型可带后院加建');
+  assert.ok(!Q.layoutRooms('condo', { beds: 3, baths: 2, levels: 1, ext: true }).some(r => r.ext), '公寓不能加建');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
