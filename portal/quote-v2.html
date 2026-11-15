@@ -633,7 +633,7 @@
       ${doneBar(r, bad)}${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
-        ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
+        ${T.outdoor ? '' : winEditor(r)}
         <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
       </div><div class="sketch">${sketch(r)}</div></div></div>`;
     h += `<h2>这间要做什么</h2><p class="hint">点卡片选择，再点一次取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
@@ -648,6 +648,10 @@
     // 选完工项通常停在页面底部，这里再放一个「完成」按钮，不用滚回顶部
     h += doneBar(r, bad);
     return h;
+  }
+  // 窗户尺寸：房间尺寸区和窗帘/窗台石/换窗卡片里都能填，是同一份数据
+  function winEditor(r, inCard) {
+    return `<div class="wins"${inCard ? ' style="margin:6px 0"' : ''}><div class="fld">${inCard ? '这间的窗户（和上面房间尺寸里的是同一份）' : '窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）'}</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin${inCard ? '="card"' : ''}>+ 加一樘窗</button></div>`;
   }
   function doneBar(r, bad) {
     return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>`;
@@ -682,7 +686,7 @@
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
-      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
+      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${pk.needWindows ? winEditor(r, true) : ''}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || (pk.needWindows ? '上面加窗户、填宽和高后自动算' : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
 
   // ---------- 人工增加项：价目表没有或不确定的项目，可挂在房间或全屋 ----------
@@ -1151,7 +1155,12 @@
     if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
     if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
     if (ds.delroom) { delete IMG.rooms[ds.delroom]; saveImg(); P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
-    if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
+    if (b.hasAttribute('data-addwin')) {
+      const r = room(roomId); r.windows = r.windows || []; r.windows.push({ w: '', h: '' }); render();
+      // 在卡片里点的就聚焦卡片里的新输入框，不跳回页面上方
+      const ins = [...document.querySelectorAll(`input[data-win="${r.windows.length - 1}"][data-wk="w"]`)];
+      (ds.addwin === 'card' ? ins[ins.length - 1] : ins[0])?.focus(); return;
+    }
     if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
     if (b.hasAttribute('data-additem')) { const r = room(roomId); (r.items = r.items || []).push({ name: '', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ik="name"]'); ins[ins.length - 1]?.focus(); return; }
     if (b.hasAttribute('data-addextra')) { const rid = ds.addextra || ''; (P.extras = P.extras || []).push({ ...(rid ? { roomId: rid } : {}), name: '', unit: '项', stage: rid ? 'custom' : 'outdoor', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ek="name"]'); ins[ins.length - 1]?.focus(); return; }
