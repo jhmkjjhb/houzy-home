@@ -629,7 +629,7 @@
     h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}${P.rooms.some(x => x.id !== r.id && (x.level || 1) === (r.level || 1)) ? '<button class="btn" data-mergeopen>合并…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
       ${mergeOpen === r.id ? `<div class="sync" style="margin-top:12px"><b>把哪一间并进「${esc(r.name)}」？</b><span class="hint">同一个空间被拆开时用（例如客厅、餐厅、干厨房之间没有墙）。面积相加，两间选的工程都保留，另一间会删掉。</span><div class="adds">${P.rooms.filter(x => x.id !== r.id && (x.level || 1) === (r.level || 1)).map(x => `<button class="chip" data-mergein="${x.id}">${esc(x.name)}</button>`).join('')}<button class="chip" data-mergeopen>取消</button></div></div>` : ''}
       ${HOUSES[P.houseType]?.landed && !T.outdoor ? `<div class="donebar"><button class="chip extchip ${r.ext ? 'on' : ''}" data-ext>${r.ext ? ic('check') + ' ' : ''}这间是加建部分（新建地基、墙、屋顶，按 ${nf(g.floor)} 平方尺算）</button>${r.ext ? `<span class="hint">结构 ${rm(C.lines.filter(l => l.roomId === r.id && l.code === 'extension').reduce((t, l) => t + l.total, 0))}，整单会加一次市政局申请</span>` : ''}</div>` : ''}
-      <div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
+      ${doneBar(r, bad)}${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -644,7 +644,12 @@
     });
     h += `<h3 style="margin:16px 0 4px">不确定 / 价目表没有的项目</h3><p class="hint">点「＋ 人工增加项」自己填名称、数量、单价，会算进这间的小计。</p>${extrasEditor(r.id)}`;
     h += `<div class="subtotal"><span>${esc(r.name)} 小计</span><span class="mono" style="color:var(--accent)">${rm(roomTotal(C.lines, r.id))}</span></div>`;
+    // 选完工项通常停在页面底部，这里再放一个「完成」按钮，不用滚回顶部
+    h += doneBar(r, bad);
     return h;
+  }
+  function doneBar(r, bad) {
+    return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>`;
   }
   // 沿用到其他空间：点了某个工项后，问其他能做这项的房间要不要一样（同类房间排前面）
   let syncPrompt = null, copyOpen = false, copyMsg = null;
