@@ -123,6 +123,8 @@
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
   .rchip.na:not(.on) { border-style: dashed; color: var(--ink-dim); }
   .rchip small { font-size: 10.5px; color: var(--ink-dim); }
+  .rchip .cbx { display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1.5px solid var(--off); border-radius: 4px; font-size: 11px; vertical-align: -3px; background: #fff; }
+  .rchip.on .cbx { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .rchip.bad { border-color: var(--red); }
   .exttag { display: inline-block; font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 0 5px; vertical-align: 1px; }
   .extchip { border-style: solid; }
@@ -667,12 +669,12 @@
     if (!others.length) return '';
     const k = Q.kinOf(r.type), same = others.filter(x => Q.kinOf(x.type) === k), diff = others.filter(x => Q.kinOf(x.type) !== k);
     const fits = x => ROOMS[x.type].packs.includes(c);
-    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>${has && PACKS[c].needWindows && !(x.windows || []).some(w => num(w.w) > 0 && num(w.h) > 0) && !(syncPrompt.wins || []).includes(x.id) ? `<button type="button" class="chip" style="border-color:var(--red);color:var(--red)" data-syncwin="${x.id}">填 ${esc(x.name)} 的窗户</button>` : ''}`; };
+    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}"><span class="cbx">${has ? '✓' : ''}</span> ${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>${has && PACKS[c].needWindows && !(x.windows || []).some(w => num(w.w) > 0 && num(w.h) > 0) && !(syncPrompt.wins || []).includes(x.id) ? `<button type="button" class="chip" style="border-color:var(--red);color:var(--red)" data-syncwin="${x.id}">填 ${esc(x.name)} 的窗户</button>` : ''}`; };
     const todo = others.filter(x => (x.packs || []).includes(c) !== on && (!on || ROOMS[x.type].packs.includes(c)));
-    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">全屋其他 ${others.length} 个空间都在下面，避免漏项；标「一般不做」的是这类房间通常不做这项，需要也可以点上。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
+    return `<div class="sync"><b>${on ? '其他空间也做这项吗？勾选要做的房间' : '其他空间也取消这项吗？'}</b><span class="hint">全屋其他 ${others.length} 个空间都在下面，避免漏项；标「一般不做」的是这类房间通常不做这项，需要也可以点上。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
       <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
       ${PACKS[c].needWindows ? (syncPrompt.wins || []).map(id => room(id)).filter(t => t && (t.packs || []).includes(c)).map(t => `<div style="background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px">${winEditor(t, 'sync')}</div>`).join('') : ''}
-      <div class="adds" style="margin:8px 0 0">${todo.length ? `<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-all>${on ? '全部也做' : '全部也取消'}（${todo.length} 间）</button>` : ''}${todo.some(x => Q.kinOf(x.type) === k) && todo.length !== todo.filter(x => Q.kinOf(x.type) === k).length ? `<button type="button" class="btn" data-sync-same>只${Q.kinLabel(r.type)}（${todo.filter(x => Q.kinOf(x.type) === k).length} 间）</button>` : ''}<button type="button" class="btn" data-sync-close>只这间</button></div></div>`;
+      <div class="adds" style="margin:8px 0 0">${!on && todo.length ? `<button type="button" class="btn" data-sync-all>全部也取消（${todo.length} 间）</button>` : ''}<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-close>${on ? '选好了，收起' : '只这间'}</button></div></div>`;
   }
   function copyPanel(r) {
     if (!copyOpen) return copyMsg ? `<div class="ok" style="margin-top:10px">${esc(copyMsg)}</div>` : '';
