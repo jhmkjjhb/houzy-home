@@ -333,7 +333,8 @@
       }
       return out;
     }
-    if (!/^image\//.test(file.type)) throw new Error('只支持图片（JPG/PNG）或 PDF');
+    if (/heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) throw new Error('这是苹果 HEIC 格式，浏览器打不开。请在手机/电脑上导出为 JPG 再上传');
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name)) throw new Error('只支持图片（JPG/PNG）或 PDF');
     const url = URL.createObjectURL(file);
     try {
       const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('这张图片打不开，请换一张')); i.src = url; });
@@ -344,7 +345,8 @@
     imgBusy = true; imgMsg = null; render();
     const before = JSON.stringify(IMG);
     try {
-      const imgs = await fileToImages(file, kind === 'plan' ? 1800 : 1400);
+      const imgs = await Promise.race([fileToImages(file, kind === 'plan' ? 1800 : 1400),
+        new Promise((_, no) => setTimeout(() => no(new Error('处理超过 40 秒没完成（可能网络慢或文件太大），请再试一次，或截图后上传图片')), 40000))]);
       if (kind === 'plan') {
         // PDF 多页：第 1 页给选中的楼层，后面几页依次给上面的楼层
         imgs.forEach((x, i) => { IMG.drawings = IMG.drawings.filter(d => d.level !== lv + i); IMG.drawings.push({ level: lv + i, ...x }); });
@@ -466,7 +468,7 @@
     for (let lv = 1; lv <= levels; lv++) {
       const d = drawingOf(lv);
       h += `<div class="drawing">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图</div>`}
-        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} 自动识别房间</button>` : ''}</div></div>`;
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><button class="chip" style="border-style:solid" data-pick="plan:${lv}">${d ? '换一张' : '上传'}</button>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} 自动识别房间</button>` : ''}</div></div>`;
     }
     h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
     return h;
@@ -475,7 +477,7 @@
     const d = drawingOf(r.level || 1), ps = IMG.rooms[r.id] || [];
     return `<div class="roompics">${d ? `<button class="thumb sm" data-view="plan:${r.level || 1}" title="看平面图"><img src="${d.img}" alt="平面图"><span>平面图</span></button>` : ''}
       ${ps.map((x, i) => `<span class="thumb sm"><button style="all:unset;cursor:zoom-in" data-view="room:${r.id}:${i}"><img src="${x.img}" alt="${esc(r.name)}照片 ${i + 1}"></button><button class="x" data-delphoto="${r.id}:${i}" title="删除">✕</button></span>`).join('')}
-      ${ps.length < ROOM_PHOTO_MAX ? `<label class="thumb sm add">＋<span>手绘图/照片</span><input type="file" accept="image/*,.pdf" data-upphoto="${r.id}" hidden ${imgBusy ? 'disabled' : ''}></label>` : ''}</div>${imgMsg && !imgMsg.ok ? `<div class="issue r" style="margin-top:6px"><b>没上传</b><span>${esc(imgMsg.m)}</span></div>` : ''}`;
+      ${ps.length < ROOM_PHOTO_MAX ? `<button class="thumb sm add" data-pick="photo:${r.id}">＋<span>手绘图/照片</span></button>` : ''}</div>${imgMsg && !imgMsg.ok ? `<div class="issue r" style="margin-top:6px"><b>没上传</b><span>${esc(imgMsg.m)}</span></div>` : ''}`;
   }
   function viewerHtml() {
     if (!viewer) return '';
@@ -900,8 +902,22 @@
     const f = e.target.files && e.target.files[0], ds = e.target.dataset;
     if (ds.rc !== undefined && recog) { const r = recog.rooms[+ds.rc]; r[ds.rk] = ds.rk === 'on' ? e.target.checked : ds.rk === 'level' ? +e.target.value : e.target.value; render(); return; }
     if (ds.rmode && recog) { recog.mode = ds.rmode; render(); return; }
-    if (f && ds.upplan) { lastFiles[+ds.upplan] = f; addImages('plan', f, +ds.upplan); }
-    else if (f && ds.upphoto) addImages('photo', f, 0, ds.upphoto);
+  });
+  // 上传用一个固定的文件框（不跟着页面重画），选图期间页面刷新也不会丢
+  const picker = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*,.pdf,application/pdf' });
+  picker.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0';
+  document.body.appendChild(picker);
+  let pickFor = null;
+  picker.addEventListener('change', () => {
+    const f = picker.files[0], t = pickFor; picker.value = ''; pickFor = null;
+    if (!f || !t) return;
+    const [kind, id] = t.split(':');
+    if (kind === 'plan') { lastFiles[+id] = f; addImages('plan', f, +id); } else addImages('photo', f, 0, id);
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]'); if (!b) return;
+    if (imgBusy) { imgMsg = { ok: false, m: '上一张还在处理，请稍等几秒再点' }; render(); return; }
+    pickFor = b.dataset.pick; picker.click();
   });
   // 点图片外面的黑色区域也能关掉大图
   document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('viewer')) { viewer = null; render(); } });
