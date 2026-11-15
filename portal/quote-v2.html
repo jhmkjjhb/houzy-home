@@ -669,11 +669,17 @@
     if (!others.length) return '';
     const k = Q.kinOf(r.type), same = others.filter(x => Q.kinOf(x.type) === k), diff = others.filter(x => Q.kinOf(x.type) !== k);
     const fits = x => ROOMS[x.type].packs.includes(c);
-    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}"><span class="cbx">${has ? '✓' : ''}</span> ${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>${has && PACKS[c].needWindows && !(x.windows || []).some(w => num(w.w) > 0 && num(w.h) > 0) && !(syncPrompt.wins || []).includes(x.id) ? `<button type="button" class="chip" style="border-color:var(--red);color:var(--red)" data-syncwin="${x.id}">填 ${esc(x.name)} 的窗户</button>` : ''}`; };
+    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}"><span class="cbx">${has ? '✓' : ''}</span> ${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>`; };
     const todo = others.filter(x => (x.packs || []).includes(c) !== on && (!on || ROOMS[x.type].packs.includes(c)));
     return `<div class="sync"><b>${on ? '其他空间也做这项吗？勾选要做的房间' : '其他空间也取消这项吗？'}</b><span class="hint">全屋其他 ${others.length} 个空间都在下面，避免漏项；标「一般不做」的是这类房间通常不做这项，需要也可以点上。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
       <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
-      ${PACKS[c].needWindows ? (syncPrompt.wins || []).map(id => room(id)).filter(t => t && (t.packs || []).includes(c)).map(t => `<div style="background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px">${winEditor(t, 'sync')}</div>`).join('') : ''}
+      ${PACKS[c].needWindows && on ? (() => {
+        // 做这项的所有房间的窗户都列在这里（本间在最前），填好的、没填的一眼看清，避免漏填
+        const list = [r, ...others.filter(x => (x.packs || []).includes(c))];
+        const okWin = t => (t.windows || []).length && t.windows.every(w => num(w.w) > 0 && num(w.h) > 0);
+        const miss = list.filter(t => !okWin(t)).length;
+        return `<div style="margin-top:10px"><b style="font-size:13px">做「${esc(PACKS[c].label)}」的房间窗户：共 ${list.length} 间，${miss ? `<span style="color:var(--red)">还有 ${miss} 间没填完</span>` : '<span style="color:var(--ok)">都填好了</span>'}</b></div>` + list.map(t => `<div style="background:var(--card,#fff);border:1px solid ${okWin(t) ? 'var(--ok-line)' : 'var(--red)'};border-radius:10px;padding:8px 10px;margin-top:8px"><div class="hint" style="margin:0 0 2px;color:${okWin(t) ? 'var(--ok)' : 'var(--red)'}">${t.id === r.id ? '本间 · ' : ''}${okWin(t) ? `✓ 已填 ${t.windows.length} 樘` : '还没填完'}</div>${winEditor(t, 'sync')}</div>`).join('');
+      })() : ''}
       <div class="adds" style="margin:8px 0 0">${!on && todo.length ? `<button type="button" class="btn" data-sync-all>全部也取消（${todo.length} 间）</button>` : ''}<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-close>${on ? '选好了，收起' : '只这间'}</button></div></div>`;
   }
   function copyPanel(r) {
