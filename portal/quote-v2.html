@@ -651,7 +651,7 @@
   }
   // 窗户尺寸：房间尺寸区和窗帘/窗台石/换窗卡片里都能填，是同一份数据
   function winEditor(r, inCard) {
-    return `<div class="wins"${inCard ? ' style="margin:6px 0"' : ''}><div class="fld">${inCard ? '这间的窗户（和上面房间尺寸里的是同一份）' : '窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）'}</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin${inCard ? '="card"' : ''}>+ 加一樘窗</button></div>`;
+    return `<div class="wins"${inCard ? ' style="margin:6px 0"' : ''}><div class="fld">${inCard ? `「${esc(Q.roomLabel(r, P))}」的窗户（和上面房间尺寸里的是同一份）` : `「${esc(Q.roomLabel(r, P))}」的窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）`}</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span><label class="fld" style="margin:0">位置<input class="cust" style="width:110px" data-win="${i}" data-wk="at" value="${esc(w.at || '')}" placeholder="如：客厅前窗"></label>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin${inCard ? '="card"' : ''}>+ 加一樘窗</button></div>`;
   }
   function doneBar(r, bad) {
     return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>`;
@@ -664,7 +664,7 @@
     if (!others.length) return '';
     const k = Q.kinOf(r.type), same = others.filter(x => Q.kinOf(x.type) === k), diff = others.filter(x => Q.kinOf(x.type) !== k);
     const fits = x => ROOMS[x.type].packs.includes(c);
-    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}</button>`; };
+    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''} ${fits(x) ? '' : 'na'}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}${fits(x) ? '' : ' <small>一般不做</small>'}${has && PACKS[c].needWindows && !(x.windows || []).length ? ' <small style="color:var(--red)">要去那间填窗户</small>' : ''}</button>`; };
     const todo = others.filter(x => (x.packs || []).includes(c) !== on && (!on || ROOMS[x.type].packs.includes(c)));
     return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">全屋其他 ${others.length} 个空间都在下面，避免漏项；标「一般不做」的是这类房间通常不做这项，需要也可以点上。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
       <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
@@ -1070,6 +1070,7 @@
     if (t.dataset.info) { P.info[t.dataset.info] = t.value; save(); return; }
     if (t.dataset.rname) { room(t.dataset.rname).name = t.value; save(); return; }
     if (t.dataset.ek === 'name') { P.extras[+t.dataset.extra].name = t.value; save(); return; }
+    if (t.dataset.wk === 'at') { room(roomId).windows[+t.dataset.win].at = t.value; save(); return; }
     if (t.dataset.ik === 'name') { room(roomId).items[+t.dataset.item].name = t.value; save(); return; }
     if (t.closest('.stp')) { setValue(t, t.value); const C = compute(); save(); document.getElementById('grand').textContent = rm(C.T.total); }
   });
@@ -1171,7 +1172,7 @@
     if (ds.pack) {
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
       // 已选的卡片：点名字是去填数量/尺寸，只有点左边的 ✓ 才是取消
-      const focusCard = () => { const card = document.querySelector(`[data-pack="${c}"]`)?.closest('.pack'); const ins = card ? [...card.querySelectorAll('input')] : []; const inp = ins.find(x => x.value === '') || ins[0]; if (inp) { inp.scrollIntoView({ block: 'center' }); inp.focus(); } };
+      const focusCard = () => { const card = document.querySelector(`[data-pack="${c}"]`)?.closest('.pack'); const ins = card ? [...card.querySelectorAll('input:not([data-wk="at"])')] : []; const inp = ins.find(x => x.value === '') || ins[0]; if (inp) { inp.scrollIntoView({ block: 'center' }); inp.focus(); } };
       const needWin = () => { if (pk.needWindows && !(r.windows || []).length) { r.windows = [{ w: '', h: '' }]; return true; } return false; };
       if (r.packs.includes(c)) {
         if (!e.target.closest('.tick')) { if (needWin()) render(); focusCard(); return; }
