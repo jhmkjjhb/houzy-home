@@ -356,7 +356,7 @@
       if (add) { mat += num(add.mat); aux += num(add.aux); lab += num(add.lab); }
       else priceTbd.push(`${key.label}：${s.v}`);
     });
-    return { unit: r2(mat + aux + lab), spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd };
+    return { unit: r2(mat + aux + lab), lab: r2(lab), spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd };
   }
   const roomLabel = (room, project) => (levelsOf(project) > 1 ? `${room.level || 1}楼 · ` : '') + room.name;
   const levelsOf = project => Math.max(1, ...project.rooms.map(r => r.level || 1));
@@ -366,13 +366,14 @@
     const push = (room, code, qty, formula, from, pack, item) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
-      let unit, spec = '', tbd = [], priceTbd = [];
+      let unit, lab = 0, spec = '', tbd = [], priceTbd = [];
       if (item) unit = r2(num(item.price));
-      else ({ unit, spec, tbd, priceTbd } = pricedLine(project, room, code, pack, planId));
+      else ({ unit, lab, spec, tbd, priceTbd } = pricedLine(project, room, code, pack, planId));
       lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), spec, tbd, priceTbd, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
       // 赠送：这间这一项照常列出、写明原价，但不收钱
       const last = lines[lines.length - 1];
-      if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.giftValue = last.total; last.total = 0; }
+      // 送产品不送人工：材料+辅料（含损耗）免收，人工安装照收
+      if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.labUnit = lab; last.total = Math.round(qty * lab); last.giftValue = Math.round(qty * unit) - last.total; }
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
     if (anyWork) { push(null, 'setout', 1, '每单必做', '全屋'); push(null, 'protect', 1, '每单必做', '全屋'); }

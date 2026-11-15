@@ -291,7 +291,7 @@
 <script src="quote-v2-price.js?v=20261115r"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115r"></script>
+<script src="quote-v2-rules.js?v=20261115s"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -706,7 +706,7 @@
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && (pk.items || pk.wide) ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick" ${on ? 'title="点这个勾取消这项"' : ''}>${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
-      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${kindOf(pk) ? openEditor(r, 'card', kindOf(pk)) : ''}<div class="lines">${myLines.map(l => `<span style="white-space:nowrap">${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName} <button type="button" class="giftb ${l.gift ? 'on' : ''}" data-gift="${l.code}" title="${l.gift ? '取消赠送' : '这一项送给客户，不收钱'}">${l.gift ? '✓ 赠送' : '赠送'}</button></span>`).join(' · ') || (kindOf(pk) ? `上面加${OPEN[kindOf(pk)].name}、填宽和高后自动算` : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
+      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${kindOf(pk) ? openEditor(r, 'card', kindOf(pk)) : ''}<div class="lines">${myLines.map(l => `<span style="white-space:nowrap">${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName} <button type="button" class="giftb ${l.gift ? 'on' : ''}" data-gift="${l.code}" title="${l.gift ? '取消赠送' : '产品送给客户，人工安装照收'}">${l.gift ? '✓ 送产品' : '送产品'}</button></span>`).join(' · ') || (kindOf(pk) ? `上面加${OPEN[kindOf(pk)].name}、填宽和高后自动算` : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
 
   // ---------- 人工增加项：价目表没有或不确定的项目，可挂在房间或全屋 ----------
@@ -808,13 +808,13 @@
     STAGES.forEach(st => {
       const ls = lines.filter(l => l.stage === st.id); if (!ls.length) return;
       h += `<tr class="st"><td colspan="4">${st.no}. ${st.name}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += ls.map(l => `<tr><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${l.gift ? `<b style="color:var(--ok)">赠送</b><div class="desc" style="text-decoration:line-through">${rm(l.giftValue)}</div>` : rm(l.total)}</td></tr>`).join('');
+      h += ls.map(l => `<tr><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
       <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>
       ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
       <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>
-      ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送项目（已含在上面，不收费）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
+      ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送产品（材料免收，人工安装照收）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
       ${T.sst ? `<div><span>SST</span><span class="mono">${rm(T.sst)}</span></div>` : ''}
       <div class="grand"><span>合计</span><span class="mono">${rm(T.total)}</span></div></div>
       <h3 style="font-size:13px;margin:16px 0 6px">付款节点</h3><div class="totals">${T.pay.map(p => `<div><span>${p.name}（${p.pct}%）</span><span class="mono">${rm(p.amt)}</span></div>`).join('')}</div></div>
