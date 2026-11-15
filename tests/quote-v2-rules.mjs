@@ -392,4 +392,13 @@ ok('整间复制：同类房间整套照搬，不同类房间只搬做得了的'
   assert.deepEqual(skipped[k.id].sort(), ['floor', 'wardrobe'], '厨房做不了的要告诉员工');
 });
 
+ok('主人房、卧室、书房算同类；客厅和餐厅算同类，沿用时排在前面', () => {
+  const p = project(Q.presetRooms('semi'));
+  const m = p.rooms.find(r => r.type === 'master'), lv = p.rooms.find(r => r.type === 'living');
+  const t = Q.roomsFor(p, m.id, 'wardrobe').map(r => r.type);
+  assert.ok(t.every(x => ['bedroom', 'study'].includes(x)) || t.indexOf('bedroom') === 0, '衣柜沿用先列卧室');
+  assert.equal(Q.roomsFor(p, lv.id, 'wall_finish')[0].type, 'dining', '客厅刷墙先问餐厅');
+  assert.equal(Q.kinLabel('master'), '卧室');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

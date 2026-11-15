@@ -421,10 +421,15 @@
 
   // ---------- 沿用到其他空间：复制，不是联动；复制后每间仍可单独改 ----------
   // 哪些房间也能做这个工项（同类房间排前面）
+  // 同类空间：卧室类（主人房/卧室/书房）、客餐厅、湿区（洗衣区/阳台）
+  const KIN = { master: 'bed', bedroom: 'bed', study: 'bed', living: 'hall', dining: 'hall', laundry: 'wetx', balcony: 'wetx' };
+  const KIN_LABEL = { bed: '卧室', hall: '客餐厅', wetx: '洗衣区/阳台' };
+  const kinOf = type => KIN[type] || type;
+  const kinLabel = type => KIN_LABEL[kinOf(type)] || ROOMS[type].label;
   function roomsFor(project, fromId, code) {
-    const from = project.rooms.find(r => r.id === fromId);
+    const from = project.rooms.find(r => r.id === fromId), k = kinOf(from.type);
     return project.rooms.filter(r => r.id !== fromId && ROOMS[r.type].packs.includes(code))
-      .sort((a, b) => (b.type === from.type) - (a.type === from.type));
+      .sort((a, b) => (kinOf(b.type) === k) - (kinOf(a.type) === k));
   }
   // 把一个工项的开/关、非面积类的数字（点位数、台数…）、这个位置的选材，从一间复制到另一间。
   // 面积类数字不复制：每间按自己的尺寸算。
@@ -483,7 +488,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, roomsFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, roomsFor, kinOf, kinLabel, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
