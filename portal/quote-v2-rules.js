@@ -310,7 +310,8 @@
     });
     const hs = project.house || {};
     HOUSE_ITEMS.forEach(item => { const q = hs[item.k]; if (q && q.on) item.lines(houseValues(q, item)).forEach(([c, qty, f]) => push(null, c, qty, f, item.label)); });
-    (project.extras || []).forEach(x => push(null, 'custom_item', x.qty, '手动增项', '手动增项', 'extra', x));
+    // 人工增加项：挂在某个房间（roomId）或全屋
+    (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
     const indoor = project.rooms.filter(r => !ROOMS[r.type].outdoor);
     const worked = indoor.filter(r => (r.packs || []).length);
     const waterPts = lines.filter(l => l.code === 'water_pt').reduce((t, l) => t + l.qty, 0);
@@ -401,9 +402,9 @@
     ['awning', 'drain_ch'].forEach(k => { if (project.house?.[k]?.on && project.rooms.some(r => (r.packs || []).includes(k))) red.push({ m: `「${PACKS[k].label}」在车廊/前院和全屋项目都选了，会重复收费，请去掉一个`, go: 'all' }); });
     (project.extras || []).forEach((x, i) => {
       const nm = String(x.name || '').trim() || `第 ${i + 1} 项`;
-      if (!String(x.name || '').trim()) red.push({ m: `手动增项第 ${i + 1} 项请填写名称`, go: 'all' });
-      if (!(num(x.qty) > 0)) red.push({ m: `手动增项「${nm}」数量要大于 0`, go: 'all' });
-      if (!(num(x.price) > 0)) red.push({ m: `手动增项「${nm}」请填写单价`, go: 'all' });
+      if (!String(x.name || '').trim()) red.push({ m: `人工增加项第 ${i + 1} 项请填写名称`, go: x.roomId || 'all' });
+      if (!(num(x.qty) > 0)) red.push({ m: `人工增加项「${nm}」数量要大于 0`, go: x.roomId || 'all' });
+      if (!(num(x.price) > 0)) red.push({ m: `人工增加项「${nm}」请填写单价`, go: x.roomId || 'all' });
     });
     const seen = {};
     lines.filter(l => l.unpriced && !l.custom).forEach(l => { if (!seen[l.code]) { seen[l.code] = 1; (mode === 'formal' ? red : yellow).push({ m: `「${l.name}」单价待公司核定，${mode === 'formal' ? '请填写价格' : '暂未计入总价'}`, go: 'price' }); } });

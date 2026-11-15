@@ -352,4 +352,15 @@ ok('公寓不显示有地房屋的外部项目', () => {
   ['sewer', 'autogate', 'roof_fix', 'fence'].forEach(k => assert.ok(Q.HOUSE_ITEMS.find(i => i.k === k).landed, k));
   ['db_box', 'cctv', 'wall_demo'].forEach(k => assert.ok(!Q.HOUSE_ITEMS.find(i => i.k === k).landed, k));
 });
+ok('人工增加项挂在房间：算进这间小计；不挂房间就算全屋', () => {
+  const r = { ...Q.newRoom('living', 1, 1), measured: true, packs: [] };
+  const p = project([r], { extras: [{ roomId: r.id, name: '墙面裂缝修补', unit: '项', stage: 'custom', qty: 2, price: 300 }, { name: '屋顶检查', unit: '项', stage: 'outdoor', qty: 1, price: 500 }] });
+  const L = Q.buildLines(p).filter(l => l.code === 'custom_item');
+  assert.equal(L.find(l => l.name === '墙面裂缝修补').roomId, r.id);
+  assert.equal(L.find(l => l.name === '墙面裂缝修补').total, 600);
+  assert.equal(L.find(l => l.name === '屋顶检查').roomId, null);
+  const bad = project([r], { extras: [{ roomId: r.id, name: '', qty: 1, price: 0 }] });
+  assert.ok(Q.checks(bad, Q.buildLines(bad)).red.some(x => x.go === r.id && x.m.includes('人工增加项')), '没填完要提醒，并能点回这个房间');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
