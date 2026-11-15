@@ -1,6 +1,7 @@
 // 报价器「AI 识别平面图」：员工上传的平面图（每层一张 JPEG）交给 Claude 看图，返回房间清单（名称、类型、楼层、长宽尺）。
 // 只给已登录、在职的员工用（每次调用要花 API 费用）。结果只是建议，页面上必须员工逐项核对后才加入报价。
-// 部署：supabase secrets set ANTHROPIC_API_KEY=...；supabase functions deploy quote-plan-ai
+// 模型：设了 DEEPSEEK_API_KEY 就用 DeepSeek（deepseek-flash，能看图）；否则用 ANTHROPIC_API_KEY 走 Claude。
+// 部署：supabase secrets set DEEPSEEK_API_KEY=...；supabase functions deploy quote-plan-ai --no-verify-jwt
 import Anthropic from 'npm:@anthropic-ai/sdk';
 
 const origins = new Set(['https://houzyhome.com', 'https://www.houzyhome.com', 'http://localhost:8799', 'http://127.0.0.1:8799']);
@@ -58,8 +59,8 @@ Deno.serve(async (req: Request) => {
     .then(r => r.ok ? r.json() : 0).catch(() => 0);
   if (!(Number(lv) >= 1)) return reply(403, { error: '只有在职员工可以使用 AI 识别，请重新登录' });
 
-  const key = env('ANTHROPIC_API_KEY');
-  if (!key) return reply(503, { error: 'AI 识别还没开通：请在 Supabase 设置 ANTHROPIC_API_KEY' });
+  const dsKey = env('DEEPSEEK_API_KEY'), key = env('ANTHROPIC_API_KEY');
+  if (!dsKey && !key) return reply(503, { error: 'AI 识别还没开通：请在 Supabase 设置 DEEPSEEK_API_KEY' });
 
   const body = await req.json().catch(() => null);
   const images = Array.isArray(body?.images) ? body.images : [];
@@ -74,6 +75,8 @@ Deno.serve(async (req: Request) => {
   }
   const house = String(body?.house || '').slice(0, 40);
   content.push({ type: 'text', text: `房屋类型：${house || '未选'}。请列出所有空间。` });
+
+  if (dsKey) return reply(...await deepseek(dsKey, content));
 
   try {
     const client = new Anthropic({ apiKey: key, timeout: 140_000, maxRetries: 1 });
@@ -99,3 +102,41 @@ Deno.serve(async (req: Request) => {
     return reply(500, { error: 'AI 返回的结果读不懂，请再试一次' });
   }
 });
+
+// DeepSeek：OpenAI 兼容的 chat/completions，图片用 image_url（data URL），要求只回 JSON
+const JSON_SHAPE = `只输出一个 JSON 对象，不要任何其他文字，格式：{"rooms":[{"name":"","type":"","level":1,"length_ft":null,"width_ft":null,"size_source":"图上标注|按比例估算|读不出","note":""}],"notes":""}。type 只能是：${TYPES.join('、')}。`;
+async function deepseek(apiKey: string, content: any[]): Promise<[number, unknown]> {
+  const parts = content.map(c => c.type === 'image'
+    ? { type: 'image_url', image_url: { url: `data:${c.source.media_type};base64,${c.source.data}` } }
+    : { type: 'text', text: c.text });
+  let r: Response;
+  try {
+    r = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST', signal: AbortSignal.timeout(140_000),
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-flash', stream: false, max_tokens: 16000,
+        thinking: { type: 'enabled' }, reasoning_effort: 'high',
+        response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: SYSTEM + '\n' + JSON_SHAPE }, { role: 'user', content: parts }]
+      })
+    });
+  } catch (_) { return [504, { error: 'AI 识别超时，请一层一层分开识别' }]; }
+  if (r.status === 401) return [503, { error: 'DeepSeek API Key 不对，请检查 Supabase 里的 DEEPSEEK_API_KEY' }];
+  if (r.status === 402) return [503, { error: 'DeepSeek 账户余额不足，请充值' }];
+  if (r.status === 429) return [429, { error: 'AI 服务繁忙，请一分钟后再试' }];
+  if (!r.ok) return [502, { error: 'AI 服务出错，请稍后再试' }];
+  const j = await r.json().catch(() => null), ch = j?.choices?.[0];
+  if (ch?.finish_reason === 'length') return [422, { error: '图太复杂，请一层一层分开识别' }];
+  let out: any;
+  try { out = JSON.parse(String(ch?.message?.content || '').replace(/^```(?:json)?\s*|\s*```$/g, '')); } catch (_) { return [500, { error: 'AI 返回的结果读不懂，请再试一次' }]; }
+  // 按约定整理字段，类型不认识的丢掉，尺寸不是正数的当作读不出
+  const num = (v: unknown) => (typeof v === 'number' && v > 0 && v < 500) ? Math.round(v * 10) / 10 : null;
+  const rooms = (Array.isArray(out?.rooms) ? out.rooms : []).filter((x: any) => TYPES.includes(x?.type)).map((x: any) => ({
+    name: String(x.name || '').slice(0, 60), type: x.type, level: Math.max(1, Math.min(6, Math.round(Number(x.level) || 1))),
+    length_ft: num(x.length_ft), width_ft: num(x.width_ft),
+    size_source: ['图上标注', '按比例估算', '读不出'].includes(x.size_source) ? x.size_source : (num(x.length_ft) ? '按比例估算' : '读不出'),
+    note: String(x.note || '').slice(0, 200)
+  }));
+  return [200, { rooms, notes: String(out?.notes || '').slice(0, 400), engine: 'AI 看图（DeepSeek）', usage: { input: j?.usage?.prompt_tokens, output: j?.usage?.completion_tokens } }];
+}
