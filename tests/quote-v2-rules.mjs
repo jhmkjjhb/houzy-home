@@ -452,6 +452,19 @@ ok('橱柜功能五金：每种按数量计，0 就不出现在报价单；旧�
   assert.ok(!L.some(l => l.code === 'hw_spice'), '新增的五金默认 0，不会悄悄加进原来的报价');
 });
 
+ok('赠送：这间这一项照常列在报价单（写原价），但不算钱；衣柜可以加功能配件', () => {
+  Q.PRICE.hw_rice = { ...Q.PRICE.hw_rice, mat: 150, aux: 0, lab: 0, waste: 0 }; delete Q.PRICE.hw_rice.unpriced;
+  const k = { ...Q.newRoom('kitchen', 1, 1), measured: true, packs: ['cab_basket'], vals: { cab_basket: { n: 1, rice: 1 } }, gift: { hw_rice: true } };
+  const L = Q.buildLines(project([k])), rice = L.find(l => l.code === 'hw_rice');
+  assert.ok(rice.gift && rice.total === 0 && rice.giftValue === 150, '米箱赠送：原价 150，不收');
+  assert.equal(Q.totals(project([k]), L).gift, 150);
+  const m = { ...Q.newRoom('master', 1, 1), measured: true, packs: ['wardrobe'], vals: { wardrobe: { w: 8, h: 8, pants: 2, mirror: 1 } } };
+  const W = Q.buildLines(project([m]));
+  assert.equal(W.find(l => l.code === 'whw_pants').qty, 2); assert.equal(W.find(l => l.code === 'whw_mirror').qty, 1);
+  assert.ok(!W.some(l => l.code === 'whw_safe'), '没填的配件不出现');
+  Object.assign(Q.PRICE.hw_rice, { mat: 0, unpriced: true });
+});
+
 ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {
   const k = { ...Q.newRoom('kitchen', 1, 1), L: 12, W: 10, ext: true, measured: true, packs: ['wet_tile'] };
   const e = { ...Q.newRoom('extension', 1, 1), measured: true };

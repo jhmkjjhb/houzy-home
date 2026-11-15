@@ -155,9 +155,12 @@
   const HW = [['n', '碗碟拉篮（地柜抽拉）', '套', 'cab_basket', 1], ['spice', '调味拉篮（窄柜）', '套', 'hw_spice', 0], ['corner', '转角拉篮（小怪物/飞碟）', '套', 'hw_corner', 0],
     ['tall', '高身柜拉篮（储物高柜）', '套', 'hw_tall', 0], ['lift', '吊柜升降拉篮', '套', 'hw_lift', 0], ['rack', '吊柜碗碟沥水架', '套', 'hw_rack', 0],
     ['bin', '水槽柜垃圾桶拉出', '套', 'hw_bin', 0], ['cutlery', '抽屉刀叉餐具分隔盘', '个', 'hw_cutlery', 0], ['rice', '米箱', '个', 'hw_rice', 0], ['flap', '吊柜上翻门支撑（气撑/上翻器）', '套', 'hw_flap', 0]];
-  const cabSqft = (label, icon, code, w, h) => ({ g: 'cab', label, icon,
-    inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }],
-    lines: (r, g, v, picked, sp) => [[code, r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.w, '柜内灯带 = 柜宽']] : [])] });
+  const cabSqft = (label, icon, code, w, h, hw) => ({ g: 'cab', label, icon, ...(hw ? { wide: true } : {}),
+    inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }, ...(hw || []).map(([k, l, u, , d]) => ({ k, label: l, unit: u, def: () => d }))],
+    lines: (r, g, v, picked, sp) => [[code, r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.w, '柜内灯带 = 柜宽']] : []), ...(hw || []).map(([k, l, , c]) => [c, num(v[k]), l])] });
+  // 衣柜功能配件：每种填数量，0 = 不要（挂衣杆、层板、普通抽屉已含在衣柜单价里）
+  const WHW = [['pants', '抽拉裤架', '个', 'whw_pants', 0], ['basket', '抽拉衣物拉篮', '个', 'whw_basket', 0], ['lift', '下拉升降衣架', '个', 'whw_lift', 0],
+    ['mirror', '柜内旋转/推拉镜', '个', 'whw_mirror', 0], ['jewel', '首饰/领带格抽屉', '个', 'whw_jewel', 0], ['shoe', '抽拉鞋架', '个', 'whw_shoe', 0], ['safe', '保险箱位（含加固）', '个', 'whw_safe', 0]];
   const tileExtra = (sp, area) => (BIG_TILE.includes(sp('tile', 'floorSize')) ? [['big_tile_extra', area, '大板砖铺贴加价']] : []);
   const PACKS = {
     demo_floor:     { g: 'demo', area: ['floor'], label: '拆旧地砖', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, '拆除面积']] },
@@ -212,7 +215,7 @@
     // 橱柜功能五金：每种填数量，0 = 不要；碗碟拉篮沿用原「拉篮」编号和数量
     cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d })),
                       lines: (r, g, v) => HW.map(([k, label, , code]) => [code, num(v[k]), label]) },
-    wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8),
+    wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8, WHW),
     tv_cab:         cabSqft('电视柜/背景墙', '📺', 'tv_cab', () => 8, () => 3),
     altar:          cabSqft('神龛/神台柜', '🗄️', 'altar_cab', () => 4, () => 7),
     shoe_cab:       cabSqft('鞋柜', '👟', 'shoe_cab', () => 4, () => 4),
@@ -367,6 +370,9 @@
       if (item) unit = r2(num(item.price));
       else ({ unit, spec, tbd, priceTbd } = pricedLine(project, room, code, pack, planId));
       lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), spec, tbd, priceTbd, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
+      // 赠送：这间这一项照常列出、写明原价，但不收钱
+      const last = lines[lines.length - 1];
+      if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.giftValue = last.total; last.total = 0; }
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
     if (anyWork) { push(null, 'setout', 1, '每单必做', '全屋'); push(null, 'protect', 1, '每单必做', '全屋'); }
@@ -419,7 +425,8 @@
     const byStage = STAGES.map(st => ({ ...st, total: lines.filter(l => l.stage === st.id).reduce((t, l) => t + l.total, 0) })).filter(x => x.total > 0);
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
-    return { direct, design, mgmt, discount, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+    const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
+    return { direct, design, mgmt, discount, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
