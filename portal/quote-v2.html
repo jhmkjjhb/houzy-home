@@ -504,8 +504,8 @@
       <p class="hint">${R.warnings.map(esc).join(' ')}</p>
       ${P.rooms.length ? (() => { const lvs = [...new Set(R.rooms.filter(r => r.on).map(r => r.level))], same = P.rooms.filter(r => lvs.includes(r.level || 1)), work = same.filter(r => r.packs.length).length;
         const lvN = lvs.map(levelName).join('、'), others = P.rooms.length - same.length;
-        return `<p class="hint" style="margin:10px 0 4px;color:var(--ink)"><b>报价里现在已经有 ${P.rooms.length} 个空间</b>（选户型时自动排的，其中${lvN} ${same.length} 个）。识别出来的空间要怎么放进去？</p>
-        <div class="adds">${[['level', `用识别结果换掉${lvN}原来的 ${same.length} 个（推荐）`, `${lvN}以识别为准；${others ? `其他楼层的 ${others} 个不动` : '其他不变'}${work ? `。注意：其中 ${work} 间已经选了工程，会一起清掉` : ''}`], ['append', '原来的都留着，识别的加在后面', '房间可能会重复，要自己删'], ['replace', `全部清空，只留识别的`, `全屋原来的 ${P.rooms.length} 个都删掉`]].map(([k, l, d]) => `<label class="rchip" style="min-width:auto;flex-direction:column;align-items:flex-start;gap:2px"><span><input type="radio" name="rmode" data-rmode="${k}" ${R.mode === k ? 'checked' : ''}> ${l}</span><small class="hint" style="margin:0 0 0 22px">${d}</small></label>`).join('')}</div>`; })() : ''}
+        // 识别到的楼层直接替换那几层原来的空间（模板），其他楼层不动；只有已选了工程的房间才特别提醒
+        return `<p class="hint" style="margin:10px 0 4px;color:var(--ink)">点下面按钮后，<b>${lvN}</b>原来的 ${same.length} 个空间会换成识别结果${others ? `；其他楼层的 ${others} 个不动` : ''}。</p>${work ? `<div class="issue y"><b>注意</b><span>${lvN}有 ${work} 间已经选了工程，替换后要重新选。</span></div>` : ''}`; })() : ''}
       <button class="btn pri" data-recogapply style="margin-top:8px">加入报价（${R.rooms.filter(r => r.on).length} 个空间）</button></div>`;
     return h;
   }
