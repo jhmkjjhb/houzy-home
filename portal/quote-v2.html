@@ -442,11 +442,50 @@
     } catch (e) { recog.step = e.message || '识别失败'; recog.err = true; }
     recog.busy = false; render();
   }
+  // ---------- AI 看图识别（云端，要员工登录；每次调用有 API 费用） ----------
+  const SB_URL = 'https://csabbxiijzghooppayae.supabase.co', SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+  let sbP = null;
+  function sbClient() {
+    if (sbP) return sbP;
+    sbP = new Promise((ok, no) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js';
+      sc.onload = () => ok(window.supabase.createClient(SB_URL, SB_KEY));
+      sc.onerror = () => { sbP = null; no(new Error('登录组件加载失败，请检查网络')); };
+      document.head.appendChild(sc);
+    });
+    return sbP;
+  }
+  async function aiRecognize(lv) {
+    // 有几层图就一起发，AI 一次看全屋；最多 4 层
+    const ds = IMG.drawings.filter(d => d.img).slice(0, 4);
+    recog = { level: lv, all: ds.length > 1, busy: true, step: `AI 正在看 ${ds.length} 张平面图，大约要 30–90 秒…`, rooms: [], warnings: [], mode: 'level' }; render();
+    try {
+      const sb = await sbClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { recog.login = true; throw new Error('AI 识别要先登录员工账号（每次识别有费用，只给员工用）。登录后回到这页再点一次。'); }
+      const { data, error } = await sb.functions.invoke('quote-plan-ai', { body: { images: ds.map(d => ({ level: d.level, data: d.img })), house: P.houseType ? HOUSES[P.houseType].label : '' } });
+      if (error) {
+        let m = 'AI 识别失败，请稍后再试';
+        try { m = (await error.context.json()).error || m; } catch (e) {}
+        if (/登录/.test(m)) recog.login = true;
+        throw new Error(m);
+      }
+      const known = new Set(Object.keys(ROOMS));
+      recog.rooms = (data.rooms || []).filter(r => known.has(r.type)).map((r, i) => ({
+        type: r.type, name: r.name, L: r.length_ft, W: r.width_ft, level: Math.max(1, Math.min(4, r.level || lv)), page: i, on: true,
+        evidence: r.size_source + (r.note ? '：' + r.note : '')
+      }));
+      recog.warnings = [data.notes || '', 'AI 识别结果仅供参考，尺寸请到现场复尺。'].filter(Boolean); recog.engine = data.engine;
+      recog.step = recog.rooms.length ? `AI 识别到 ${recog.rooms.length} 个空间。请逐项核对，确认后才会加入报价。` : 'AI 没找到房间，请换一张更清楚的平面图。';
+    } catch (e) { recog.step = e.message || 'AI 识别失败'; recog.err = true; }
+    recog.busy = false; render();
+  }
   function recogCard() {
     if (!recog) return '';
     const R = recog, lvMax = Math.max(4, ...P.rooms.map(r => r.level || 1));
-    let h = `<div class="card" id="recog"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b>识别结果 · ${esc(levelName(R.level))}平面图</b><button class="chip" data-recogclose>关闭</button></div>
-      <p class="hint" style="${R.err ? 'color:var(--red)' : ''}">${esc(R.step)}</p>`;
+    let h = `<div class="card" id="recog"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b>识别结果 · ${R.all ? '全部楼层' : esc(levelName(R.level)) + '平面图'}</b><button class="chip" data-recogclose>关闭</button></div>
+      <p class="hint" style="${R.err ? 'color:var(--red)' : ''}">${esc(R.step)}</p>${R.login ? '<a class="btn pri" href="login.html?next=quote-v2.html" target="_blank" rel="noopener">登录员工账号</a>' : ''}`;
     if (R.busy || !R.rooms.length) return h + '</div>';
     h += `<div class="scroll-x"><table class="q recogT"><thead><tr><th></th><th>名称</th><th>类型</th><th>楼层</th><th class="r">长</th><th class="r">宽</th><th>图上文字</th></tr></thead><tbody>${R.rooms.map((r, i) => `<tr class="${r.on ? '' : 'off'}">
       <td><input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
@@ -469,7 +508,7 @@
     for (let lv = 1; lv <= levels; lv++) {
       const d = drawingOf(lv);
       h += `<div class="drawing" data-drop="plan:${lv}">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图<br>可把文件拖到这里</div>`}
-        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><button class="chip" style="border-style:solid" data-pick="plan:${lv}">${d ? '换一张' : '上传'}</button>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} 自动识别房间</button>` : ''}</div></div>`;
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><button class="chip" style="border-style:solid" data-pick="plan:${lv}">${d ? '换一张' : '上传'}</button>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip on" data-airecog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} AI 识别房间</button><button class="chip" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>只读文字（免费）</button>` : ''}</div></div>`;
     }
     h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
     return h;
@@ -1002,6 +1041,7 @@
       P.layout = layoutOf(); P.rooms = Q.layoutRooms(P.houseType, P.layout); roomId = P.rooms[0]?.id; layoutConfirm = false; render(); return;
     }
     if (ds.recog) { recognize(+ds.recog); return; }
+    if (ds.airecog) { aiRecognize(+ds.airecog); return; }
     if (b.hasAttribute('data-recogclose')) { recog = null; render(); return; }
     if (b.hasAttribute('data-recogapply')) {
       const pick = recog.rooms.filter(r => r.on && String(r.name).trim()); if (!pick.length) return;
