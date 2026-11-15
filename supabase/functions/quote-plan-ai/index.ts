@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
   try {
     const client = new Anthropic({ apiKey: key, timeout: 140_000, maxRetries: 1 });
     const res = await client.beta.messages.create({
-      model: 'claude-opus-5-5',
+      model: env('CLAUDE_PLAN_MODEL') || 'claude-opus-5-5', // 想省钱可设 claude-haiku-5-5
       max_tokens: 16000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
