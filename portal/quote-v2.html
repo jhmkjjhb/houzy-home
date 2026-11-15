@@ -72,6 +72,25 @@
   .adds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip { border: 1px dashed var(--line); background: transparent; border-radius: 16px; padding: 5px 10px; color: var(--ink-dim); font-size: 12.5px; }
   .chip:hover { border-color: var(--navy); color: var(--navy); }
+  .drawings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
+  .thumb { display: block; width: 100%; aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); padding: 0; cursor: zoom-in; position: relative; }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; display: block; }
+  .thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--ink-dim); font-size: 13px; border-style: dashed; cursor: default; }
+  .roompics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .thumb.sm { width: 96px; flex: none; font-size: 11px; }
+  .thumb.sm > span, .thumb.sm span:not(.x) { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.55); color: #fff; text-align: center; padding: 2px 0; }
+  .thumb.sm .x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; line-height: 22px; padding: 0; }
+  .thumb.add { display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--navy); border-style: dashed; cursor: pointer; }
+  .viewer { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.88); display: flex; flex-direction: column; }
+  .viewer .vbar { display: flex; gap: 8px; align-items: center; padding: 10px 16px; color: #fff; }
+  .viewer .vbar span { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .viewer .vbody { flex: 1; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 0 12px 16px; }
+  .viewer .vbody img { max-width: 100%; max-height: 100%; background: #fff; border-radius: 6px; }
+  .viewer .vbody img.z { max-width: none; max-height: none; width: 220%; }
+  .demoPlans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+  .demoPlans figure { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .demoPlans img { width: 100%; display: block; }
+  .demoPlans figcaption { font-size: 12px; color: #555; text-align: center; margin-top: 4px; }
   .sync { flex-basis: 100%; background: var(--navy-soft); border-radius: 10px; padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
   .sync b { color: var(--navy); font-size: 13px; }
   .chip.on { border-style: solid; border-color: var(--navy); background: var(--navy); color: var(--on-navy); }
@@ -226,6 +245,7 @@
 </div>
 <div class="wrap" id="app"></div>
 <div id="demo" hidden></div>
+<div id="viewer"></div>
 
 <script src="quote-v2-price.js?v=20261115c"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
@@ -247,6 +267,97 @@
   function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true, plans: [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }], planId: 'A', quoteMode: 'estimate' }; }
   function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return Q.migrate({ ...blank(), ...x }); } catch (e) {} return blank(); }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
+
+  // ---------- 平面图与房间照片：单独存，不放进报价数据（算价时会反复复制报价数据） ----------
+  const IMG_STORE = 'houzy-quote-v2-images', ROOM_PHOTO_MAX = 2;
+  let IMG = (() => { try { const x = JSON.parse(localStorage.getItem(IMG_STORE) || 'null'); if (x && Array.isArray(x.drawings)) return { rooms: {}, ...x }; } catch (e) {} return { drawings: [], rooms: {} }; })();
+  let imgMsg = null, imgBusy = false, viewer = null;
+  function saveImg() {
+    try { localStorage.setItem(IMG_STORE, JSON.stringify(IMG)); return true; }
+    catch (e) { return false; }
+  }
+  // 把图片或 PDF 第一页（或指定页）压缩成 JPEG：长边最多 1800 像素
+  let pdfLib = null;
+  function loadPdfLib() {
+    if (pdfLib) return pdfLib;
+    pdfLib = new Promise((ok, no) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; ok(window.pdfjsLib); };
+      sc.onerror = () => { pdfLib = null; no(new Error('PDF 工具加载失败，请检查网络，或把 PDF 截图后上传图片')); };
+      document.head.appendChild(sc);
+    });
+    return pdfLib;
+  }
+  function shrink(source, w, h, max) {
+    const k = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(source, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.82);
+  }
+  async function fileToImages(file, max) {
+    if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)) {
+      const lib = await loadPdfLib(), doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise, out = [];
+      for (let i = 1; i <= Math.min(doc.numPages, 4); i++) {
+        const pg = await doc.getPage(i), vp0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: Math.min(3, max / Math.max(vp0.width, vp0.height)) });
+        const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+        await pg.render({ canvasContext: c.getContext('2d'), viewport: vp, background: '#fff' }).promise;
+        out.push({ img: shrink(c, c.width, c.height, max), name: `${file.name} 第 ${i} 页` });
+      }
+      return out;
+    }
+    if (!/^image\//.test(file.type)) throw new Error('只支持图片（JPG/PNG）或 PDF');
+    const url = URL.createObjectURL(file);
+    try {
+      const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('这张图片打不开，请换一张')); i.src = url; });
+      return [{ img: shrink(im, im.naturalWidth, im.naturalHeight, max), name: file.name }];
+    } finally { URL.revokeObjectURL(url); }
+  }
+  async function addImages(kind, file, lv, rid) {
+    imgBusy = true; imgMsg = null; render();
+    const before = JSON.stringify(IMG);
+    try {
+      const imgs = await fileToImages(file, kind === 'plan' ? 1800 : 1400);
+      if (kind === 'plan') {
+        // PDF 多页：第 1 页给选中的楼层，后面几页依次给上面的楼层
+        imgs.forEach((x, i) => { IMG.drawings = IMG.drawings.filter(d => d.level !== lv + i); IMG.drawings.push({ level: lv + i, ...x }); });
+        IMG.drawings.sort((a, b) => a.level - b.level);
+        if (imgs.length > 1) imgMsg = { ok: true, m: `PDF 有 ${imgs.length} 页，已按顺序放到 ${imgs.map((x, i) => levelName(lv + i)).join('、')}；放错了可以删掉重传。` };
+      } else {
+        const list = IMG.rooms[rid] = IMG.rooms[rid] || [];
+        if (list.length >= ROOM_PHOTO_MAX) throw new Error(`每个房间最多 ${ROOM_PHOTO_MAX} 张，请先删掉一张`);
+        list.push(imgs[0]);
+      }
+      if (!saveImg()) { IMG = JSON.parse(before); throw new Error('浏览器存储满了，存不下这张图。请先删掉一些旧图片，或者以后改成云端保存'); }
+    } catch (e) { imgMsg = { ok: false, m: e.message || '上传失败' }; }
+    imgBusy = false; render();
+  }
+  const levelName = lv => (P.houseType && HOUSES[P.houseType].levels > 1 || P.rooms.some(r => (r.level || 1) > 1)) ? (lv === 1 ? '底层' : lv + ' 楼') : '户内';
+  const drawingOf = lv => IMG.drawings.find(d => d.level === lv);
+  function planCard() {
+    const levels = Math.max(HOUSES[P.houseType]?.levels || 1, ...P.rooms.map(r => r.level || 1));
+    let h = `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b>平面图</b><span class="hint">图片或 PDF；PDF 多页会按顺序放到各楼层。照着图加房间、填尺寸。</span></div><div class="drawings">`;
+    for (let lv = 1; lv <= levels; lv++) {
+      const d = drawingOf(lv);
+      h += `<div class="drawing">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图</div>`}
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button>` : ''}</div></div>`;
+    }
+    h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
+    return h;
+  }
+  function roomPics(r) {
+    const d = drawingOf(r.level || 1), ps = IMG.rooms[r.id] || [];
+    return `<div class="roompics">${d ? `<button class="thumb sm" data-view="plan:${r.level || 1}" title="看平面图"><img src="${d.img}" alt="平面图"><span>平面图</span></button>` : ''}
+      ${ps.map((x, i) => `<span class="thumb sm"><button style="all:unset;cursor:zoom-in" data-view="room:${r.id}:${i}"><img src="${x.img}" alt="${esc(r.name)}照片 ${i + 1}"></button><button class="x" data-delphoto="${r.id}:${i}" title="删除">✕</button></span>`).join('')}
+      ${ps.length < ROOM_PHOTO_MAX ? `<label class="thumb sm add">＋<span>手绘图/照片</span><input type="file" accept="image/*,.pdf" data-upphoto="${r.id}" hidden ${imgBusy ? 'disabled' : ''}></label>` : ''}</div>${imgMsg && !imgMsg.ok ? `<div class="issue r" style="margin-top:6px"><b>没上传</b><span>${esc(imgMsg.m)}</span></div>` : ''}`;
+  }
+  function viewerHtml() {
+    if (!viewer) return '';
+    const [kind, a, b] = viewer.split(':');
+    const x = kind === 'plan' ? drawingOf(+a) : (IMG.rooms[a] || [])[+b];
+    if (!x) return '';
+    return `<div class="viewer" data-viewclose><div class="vbar"><span>${esc(x.name || '')}</span><button class="btn" data-viewzoom>放大 / 缩小</button><button class="btn" data-viewclose>✕ 关闭</button></div><div class="vbody"><img src="${x.img}" class="${viewer.endsWith('|z') ? 'z' : ''}" alt=""></div></div>`;
+  }
   const room = id => P.rooms.find(r => r.id === id);
 
   function compute() { const lines = Q.buildLines(P); return { lines, T: Q.totals(P, lines), K: Q.checks(P, lines, P.quoteMode || 'estimate') }; }
@@ -266,6 +377,7 @@
     h += Object.entries(HOUSES).map(([k, x]) => `<button class="house ${P.houseType === k ? 'on' : ''}" data-house="${k}"><b>${x.label}</b><span>${x.en}${x.landed ? ' · 有地' : ''}</span></button>`).join('') + '</div>';
     if (!P.houseType) return h;
     const levels = Math.max(HOUSES[P.houseType].levels, ...P.rooms.map(r => r.level || 1));
+    h += planCard();
     h += `<h2>平面示意 <span class="hint" style="font-weight:400">· 方块大小按面积 · 蓝色 = 已选工程 · 红框 = 有待处理</span></h2>`;
     for (let lv = 1; lv <= levels; lv++) {
       const rs = P.rooms.filter(r => (r.level || 1) === lv);
@@ -294,7 +406,7 @@
     if (!room(roomId)) roomId = P.rooms[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     let h = `<div class="roombar noprint">${P.rooms.map(x => `<button class="rchip ${x.id === roomId ? 'on' : ''} ${bad.has(x.id) ? 'bad' : ''}" data-goroom="${x.id}">${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}<small class="mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '未选工程'}</small></button>`).join('')}</div>`;
-    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>${copyPanel(r)}
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>${copyPanel(r)}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -460,6 +572,7 @@
     document.getElementById('grand').textContent = rm(C.T.total);
     const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['book', '⚙<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
+    document.getElementById('viewer').innerHTML = viewerHtml();
     const dm = document.getElementById('demo');
     document.body.classList.toggle('demo-on', demoOn); dm.hidden = !demoOn;
     if (demoOn) { const y0 = window.scrollY; dm.innerHTML = viewDemo(C); demoShown = demoIdx; window.scrollTo(0, y0); const el = document.getElementById('dTotal'); if (el) countTo(el, C.T.total); return; }
@@ -516,7 +629,8 @@
         <p class="hint">${esc(HOUSES[P.houseType]?.label || '')} · ${esc(pl.name || '')} · ${(P.quoteMode || 'estimate') === 'formal' ? '正式报价' : '预估报价'}</p>
         <div style="margin:26px 0 6px" class="hint">装修总价</div><div class="big mono" data-count="${T.total}">${rm(T.total)}</div>
         <div class="facts"><div><b>${P.rooms.filter(r => C.lines.some(l => l.roomId === r.id)).length}</b><span>个空间施工</span></div><div><b class="mono">${nf(T.floorSum)}</b><span>平方尺施工面积</span></div><div><b class="mono">${T.floorSum ? rm(T.total / T.floorSum) : '—'}</b><span>每平方尺</span></div><div><b>${T.pay.length}</b><span>期付款</span></div></div>
-        ${C.lines.some(l => l.tbd.length) ? '<p class="hint">部分材料还没定，暂按标准档估价，定好后金额会更新。</p>' : ''}`;
+        ${C.lines.some(l => l.tbd.length) ? '<p class="hint">部分材料还没定，暂按标准档估价，定好后金额会更新。</p>' : ''}
+        ${IMG.drawings.length ? `<div class="demoPlans">${IMG.drawings.map(d => `<figure><img src="${d.img}" alt="${esc(levelName(d.level))}平面图"><figcaption>${esc(levelName(d.level))}</figcaption></figure>`).join('')}</div>` : ''}`;
       if (sl.k === 'cost') return `<div class="kick">钱花在哪里</div><h1>费用构成</h1><div class="donutWrap">${donut(T)}<div class="dleg">${T.byStage.map(s => `<div><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${esc(s.name)}<span class="mono">${rm(s.total)}</span></div>`).join('')}
         ${T.design ? `<div><i style="background:var(--off)"></i>设计费<span class="mono">${rm(T.design)}</span></div>` : ''}${T.mgmt ? `<div><i style="background:var(--off)"></i>工程管理费<span class="mono">${rm(T.mgmt)}</span></div>` : ''}${T.discount ? `<div><i style="background:var(--ok)"></i>优惠<span class="mono">−${rm(T.discount)}</span></div>` : ''}</div></div>`;
       if (sl.k === 'room') return demoRoom(sl.r, C);
@@ -541,6 +655,7 @@
     requestAnimationFrame(step);
   }
   document.addEventListener('keydown', e => {
+    if (viewer && e.key === 'Escape') { viewer = null; render(); return; }
     if (!demoOn || e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight') { demoIdx++; render(); window.scrollTo(0, 0); }
     else if (e.key === 'ArrowLeft' && demoIdx > 0) { demoIdx--; render(); window.scrollTo(0, 0); }
@@ -640,6 +755,13 @@
     setTimeout(() => location.reload(), 800);
   }
   document.addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0], ds = e.target.dataset;
+    if (f && ds.upplan) addImages('plan', f, +ds.upplan);
+    else if (f && ds.upphoto) addImages('photo', f, 0, ds.upphoto);
+  });
+  // 点图片外面的黑色区域也能关掉大图
+  document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('viewer')) { viewer = null; render(); } });
+  document.addEventListener('change', e => {
     if (!e.target.hasAttribute('data-bookfile')) return;
     const f = e.target.files[0]; if (!f) return;
     const B = window.QV2_BOOK, rd = new FileReader();
@@ -688,6 +810,11 @@
     if (ds.bookf) { bookFilter = ds.bookf; render(); return; }
     if (ds.book === 'dl') { const csv = window.QV2_BOOK.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = '新版报价器价目表.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (ds.book === 'clear') { if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '再点一次确认删除'; return; } window.QV2_BOOK.clear(); location.reload(); return; }
+    if (ds.view) { viewer = ds.view; render(); return; }
+    if (b.hasAttribute('data-viewzoom')) { viewer = viewer.endsWith('|z') ? viewer.slice(0, -2) : viewer + '|z'; render(); return; }
+    if (b.hasAttribute('data-viewclose')) { viewer = null; render(); return; }
+    if (ds.delplanImg) { IMG.drawings = IMG.drawings.filter(d => d.level !== +ds.delplanImg); saveImg(); imgMsg = null; render(); return; }
+    if (ds.delphoto) { const [rid, i] = ds.delphoto.split(':'); (IMG.rooms[rid] || []).splice(+i, 1); saveImg(); imgMsg = null; render(); return; }
     if (ds.demo) {
       if (ds.demo === 'open') { demoOn = true; demoIdx = 0; demoShown = null; window.scrollTo(0, 0); }
       else if (ds.demo === 'close') demoOn = false;
@@ -704,7 +831,7 @@
     if (ds.goroom) { syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
     if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
     if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
-    if (ds.delroom) { P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
+    if (ds.delroom) { delete IMG.rooms[ds.delroom]; saveImg(); P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
     if (b.hasAttribute('data-addwin')) { room(roomId).windows.push({ w: '', h: '' }); render(); const ins = document.querySelectorAll('[data-wk="w"]'); ins[ins.length - 1]?.focus(); return; }
     if (ds.delwin !== undefined) { room(roomId).windows.splice(+ds.delwin, 1); render(); return; }
     if (b.hasAttribute('data-additem')) { const r = room(roomId); (r.items = r.items || []).push({ name: '', qty: 1, price: 0 }); render(); const ins = document.querySelectorAll('[data-ik="name"]'); ins[ins.length - 1]?.focus(); return; }
@@ -773,7 +900,7 @@
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }
-    if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
+    if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); IMG = { drawings: [], rooms: {} }; saveImg(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
   });
   render();
   window.__qv2 = { get: () => P, compute };
