@@ -636,7 +636,7 @@
         ${T.outdoor ? '' : winEditor(r)}
         <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
       </div><div class="sketch">${sketch(r)}</div></div></div>`;
-    h += `<h2>这间要做什么</h2><p class="hint">点卡片选择，再点一次取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
+    h += `<h2>这间要做什么</h2><p class="hint">点卡片选择；已选的卡片点名字会跳到要填的数字，点左边的 ✓ 才是取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
     // 这类房间常用的工项 + 从别的房间带过来的其他工项（也要显示，才能看到和取消）
     const avail = [...new Set([...T.packs, ...r.packs])].filter(c => PACKS[c]);
     GROUPS.forEach(([gid, gname]) => {
@@ -684,7 +684,7 @@
     const specLine = place ? `<button type="button" class="chip" style="border-style:solid;${place.open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${c}">选材：${place.open ? '未定（按标准档估价）' : esc(myLines[0]?.spec || '已定')} ›</button>` : '';
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
-    return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+    return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick" ${on ? 'title="点这个勾取消这项"' : ''}>${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
       ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${pk.needWindows ? winEditor(r, true) : ''}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || (pk.needWindows ? '上面加窗户、填宽和高后自动算' : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
@@ -1170,10 +1170,16 @@
     if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
     if (ds.pack) {
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
-      if (r.packs.includes(c)) r.packs = r.packs.filter(x => x !== c);
-      else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; }
+      // 已选的卡片：点名字是去填数量/尺寸，只有点左边的 ✓ 才是取消
+      const focusCard = () => { const card = document.querySelector(`[data-pack="${c}"]`)?.closest('.pack'); const ins = card ? [...card.querySelectorAll('input')] : []; const inp = ins.find(x => x.value === '') || ins[0]; if (inp) { inp.scrollIntoView({ block: 'center' }); inp.focus(); } };
+      const needWin = () => { if (pk.needWindows && !(r.windows || []).length) { r.windows = [{ w: '', h: '' }]; return true; } return false; };
+      if (r.packs.includes(c)) {
+        if (!e.target.closest('.tick')) { if (needWin()) render(); focusCard(); return; }
+        r.packs = r.packs.filter(x => x !== c);
+      } else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; needWin(); }
+      const turnedOn = r.packs.includes(c);
       syncPrompt = Q.roomsFor(P, r.id, c).length ? { from: r.id, pack: c } : null; copyMsg = null;
-      render(); return;
+      render(); if (turnedOn && pk.needWindows) focusCard(); return;
     }
     if (ds.syncTo || b.hasAttribute('data-sync-all') || b.hasAttribute('data-sync-same')) {
       const r = room(roomId), c = syncPrompt.pack, on = r.packs.includes(c);
