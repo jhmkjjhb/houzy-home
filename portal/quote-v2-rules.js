@@ -419,6 +419,45 @@
     return { red, yellow };
   }
 
+  // ---------- 沿用到其他空间：复制，不是联动；复制后每间仍可单独改 ----------
+  // 哪些房间也能做这个工项（同类房间排前面）
+  function roomsFor(project, fromId, code) {
+    const from = project.rooms.find(r => r.id === fromId);
+    return project.rooms.filter(r => r.id !== fromId && ROOMS[r.type].packs.includes(code))
+      .sort((a, b) => (b.type === from.type) - (a.type === from.type));
+  }
+  // 把一个工项的开/关、非面积类的数字（点位数、台数…）、这个位置的选材，从一间复制到另一间。
+  // 面积类数字不复制：每间按自己的尺寸算。
+  function copyPack(project, fromId, toId, code, on) {
+    const from = project.rooms.find(r => r.id === fromId), to = project.rooms.find(r => r.id === toId), pk = PACKS[code];
+    if (!from || !to || !pk || !ROOMS[to.type].packs.includes(code)) return false;
+    to.packs = to.packs || [];
+    if (!on) { to.packs = to.packs.filter(x => x !== code); return true; }
+    if (pk.pick) to.packs = to.packs.filter(x => PACKS[x].pick !== pk.pick);
+    if (!to.packs.includes(code)) to.packs.push(code);
+    const sv = from.vals && from.vals[code];
+    if (sv) {
+      const keep = {}; (pk.inputs || []).forEach(i => { if (sv[i.k] !== undefined && sv[i.k] !== '') keep[i.k] = sv[i.k]; });
+      if (Object.keys(keep).length) { to.vals = to.vals || {}; to.vals[code] = { ...(to.vals[code] || {}), ...keep }; }
+    }
+    if (pk.items) to.items = JSON.parse(JSON.stringify(from.items || []));
+    plans(project).forEach(pl => {
+      const src = pl.roomSpecs && pl.roomSpecs[fromId] && pl.roomSpecs[fromId]['@' + code];
+      if (src) ((pl.roomSpecs[toId] = pl.roomSpecs[toId] || {}))['@' + code] = JSON.parse(JSON.stringify(src));
+    });
+    return true;
+  }
+  // 整间复制：目标房间的工项换成来源房间的（目标房间做不了的跳过），返回跳过的工项
+  function copyRoom(project, fromId, toIds) {
+    const from = project.rooms.find(r => r.id === fromId), skipped = {};
+    toIds.forEach(id => {
+      const to = project.rooms.find(r => r.id === id); if (!to || id === fromId) return;
+      to.packs = [];
+      (from.packs || []).forEach(c => { if (!copyPack(project, fromId, id, c, true)) (skipped[id] = skipped[id] || []).push(c); });
+    });
+    return skipped;
+  }
+
   function newRoom(type, level, n) {
     const t = ROOMS[type];
     return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, windows: [], packs: [], vals: {}, measured: false };
@@ -444,7 +483,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, roomsFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

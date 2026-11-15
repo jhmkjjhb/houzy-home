@@ -72,6 +72,8 @@
   .adds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip { border: 1px dashed var(--line); background: transparent; border-radius: 16px; padding: 5px 10px; color: var(--ink-dim); font-size: 12.5px; }
   .chip:hover { border-color: var(--navy); color: var(--navy); }
+  .sync { flex-basis: 100%; background: var(--navy-soft); border-radius: 10px; padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
+  .sync b { color: var(--navy); font-size: 13px; }
   .chip.on { border-style: solid; border-color: var(--navy); background: var(--navy); color: var(--on-navy); }
 
   /* ② 房间 */
@@ -227,7 +229,7 @@
 
 <script src="quote-v2-price.js?v=20261115c"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115d"></script>
+<script src="quote-v2-rules.js?v=20261115e"></script>
 <script>
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
@@ -292,7 +294,7 @@
     if (!room(roomId)) roomId = P.rooms[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     let h = `<div class="roombar noprint">${P.rooms.map(x => `<button class="rchip ${x.id === roomId ? 'on' : ''} ${bad.has(x.id) ? 'bad' : ''}" data-goroom="${x.id}">${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}<small class="mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '未选工程'}</small></button>`).join('')}</div>`;
-    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}"><button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>${copyPanel(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -302,11 +304,31 @@
     const avail = T.packs.filter(c => PACKS[c]);
     GROUPS.forEach(([gid, gname]) => {
       const codes = avail.filter(c => PACKS[c].g === gid); if (!codes.length) return;
-      h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(c => packCard(r, c, g, C)).join('')}</div></div>`;
+      h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(c => packCard(r, c, g, C).replace(/<\/div>$/, () => syncBar(r, c) + '</div>')).join('')}</div></div>`;
     });
     h += `<h3 style="margin:16px 0 4px">不确定 / 价目表没有的项目</h3><p class="hint">点「＋ 人工增加项」自己填名称、数量、单价，会算进这间的小计。</p>${extrasEditor(r.id)}`;
     h += `<div class="subtotal"><span>${esc(r.name)} 小计</span><span class="mono" style="color:var(--accent)">${rm(roomTotal(C.lines, r.id))}</span></div>`;
     return h;
+  }
+  // 沿用到其他空间：点了某个工项后，问其他能做这项的房间要不要一样（同类房间排前面）
+  let syncPrompt = null, copyOpen = false, copyMsg = null;
+  function syncBar(r, c) {
+    if (!syncPrompt || syncPrompt.from !== r.id || syncPrompt.pack !== c) return '';
+    const on = r.packs.includes(c), others = Q.roomsFor(P, r.id, c);
+    if (!others.length) return '';
+    const same = others.filter(x => x.type === r.type), diff = others.filter(x => x.type !== r.type);
+    const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}</button>`; };
+    const todo = others.filter(x => (x.packs || []).includes(c) !== on);
+    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
+      <div class="adds" style="margin:6px 0 0">${same.map(chip).join('')}${diff.length ? `<span class="hint" style="align-self:center">其他：</span>${diff.map(chip).join('')}` : ''}</div>
+      <div class="adds" style="margin:8px 0 0">${todo.length ? `<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-all>${on ? '全部也做' : '全部也取消'}（${todo.length} 间）</button>` : ''}${same.length && todo.some(x => x.type === r.type) && todo.length !== todo.filter(x => x.type === r.type).length ? `<button type="button" class="btn" data-sync-same>只同类的 ${todo.filter(x => x.type === r.type).length} 间</button>` : ''}<button type="button" class="btn" data-sync-close>只这间</button></div></div>`;
+  }
+  function copyPanel(r) {
+    if (!copyOpen) return copyMsg ? `<div class="ok" style="margin-top:10px">${esc(copyMsg)}</div>` : '';
+    const others = P.rooms.filter(x => x.id !== r.id).sort((a, b) => (b.type === r.type) - (a.type === r.type));
+    return `<div class="sync" style="margin-top:12px"><b>把「${esc(r.name)}」的全部工项和选材复制到：</b><span class="hint">勾选的房间原来选的工项会被换掉；数量按各自尺寸算；复制后每间还能单独改。</span>
+      <div class="adds" style="margin:8px 0 0">${others.map(x => `<label class="rchip" style="min-width:auto;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-copyto="${x.id}" ${x.type === r.type ? 'checked' : ''}>${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}${(x.packs || []).length ? ` <small>已有 ${x.packs.length} 项</small>` : ''}</label>`).join('')}</div>
+      <div class="adds" style="margin:8px 0 0"><button class="btn pri" data-copydo>复制</button><button class="btn" data-copyclose>取消</button></div></div>`;
   }
   function packCard(r, c, g, C) {
     const pk = PACKS[c], on = r.packs.includes(c);
@@ -679,7 +701,7 @@
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
     }
-    if (ds.goroom) { roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
+    if (ds.goroom) { syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
     if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
     if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
     if (ds.delroom) { P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
@@ -695,6 +717,24 @@
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
       if (r.packs.includes(c)) r.packs = r.packs.filter(x => x !== c);
       else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; }
+      syncPrompt = Q.roomsFor(P, r.id, c).length ? { from: r.id, pack: c } : null; copyMsg = null;
+      render(); return;
+    }
+    if (ds.syncTo || b.hasAttribute('data-sync-all') || b.hasAttribute('data-sync-same')) {
+      const r = room(roomId), c = syncPrompt.pack, on = r.packs.includes(c);
+      if (ds.syncTo) { const t = room(ds.syncTo); Q.copyPack(P, r.id, t.id, c, !(t.packs || []).includes(c)); }
+      else Q.roomsFor(P, r.id, c).filter(x => !b.hasAttribute('data-sync-same') || x.type === r.type).forEach(x => Q.copyPack(P, r.id, x.id, c, on));
+      render(); return;
+    }
+    if (b.hasAttribute('data-sync-close')) { syncPrompt = null; render(); return; }
+    if (b.hasAttribute('data-copyopen')) { copyOpen = true; copyMsg = null; syncPrompt = null; render(); return; }
+    if (b.hasAttribute('data-copyclose')) { copyOpen = false; render(); return; }
+    if (b.hasAttribute('data-copydo')) {
+      const r = room(roomId), ids = [...document.querySelectorAll('[data-copyto]:checked')].map(x => x.dataset.copyto);
+      if (!ids.length) return;
+      const skipped = Q.copyRoom(P, r.id, ids);
+      const sk = Object.entries(skipped).map(([id, cs]) => `${room(id).name} 做不了：${cs.map(c => PACKS[c].label).join('、')}`);
+      copyOpen = false; copyMsg = `已复制到 ${ids.map(id => room(id).name).join('、')}。` + (sk.length ? ' ' + sk.join('；') + '。' : '');
       render(); return;
     }
     if (ds.gospec) { tab = 'spec'; specRoomId = roomId; render(); window.scrollTo(0, 0); return; }

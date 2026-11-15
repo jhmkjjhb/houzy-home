@@ -363,4 +363,33 @@ ok('人工增加项挂在房间：算进这间小计；不挂房间就算全屋'
   assert.ok(Q.checks(bad, Q.buildLines(bad)).red.some(x => x.go === r.id && x.m.includes('人工增加项')), '没填完要提醒，并能点回这个房间');
 });
 
+ok('卫生间 1 选了防水地砖，一键沿用到卫生间 2：数量按各自尺寸算，选材跟着带过去，之后可单独改', () => {
+  const b1 = { ...Q.newRoom('bath', 1, 1), L: 8, W: 5, measured: true, packs: ['bath_tile', 'bath_water'], vals: { bath_water: { n: 6 }, bath_tile: { floor: 30 } } };
+  const b2 = { ...Q.newRoom('bath', 1, 2), L: 7, W: 5, measured: true, packs: [] };
+  const lv = { ...Q.newRoom('living', 1, 1), packs: [] };
+  const p = project([b1, b2, lv]);
+  p.plans = [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: { [b1.id]: { '@bath_tile': { tile: { floorSize: '300×600 mm' } } } } }]; p.planId = 'A';
+  assert.deepEqual(Q.roomsFor(p, b1.id, 'bath_tile').map(r => r.id), [b2.id], '客厅不能做卫生间防水，不列出');
+  Q.copyPack(p, b1.id, b2.id, 'bath_tile', true); Q.copyPack(p, b1.id, b2.id, 'bath_water', true);
+  const L = Q.buildLines(p);
+  assert.equal(L.find(l => l.roomId === b2.id && l.code === 'floor_tile').qty, 35, '面积按卫生间 2 自己的 7×5，不复制卫生间 1 手改的 30');
+  assert.equal(L.find(l => l.roomId === b2.id && l.code === 'water_pt').qty, 6, '点位数这类数字跟着复制');
+  assert.equal(Q.specOf(p, b2, 'tile', 'floorSize', null, 'bath_tile').v, '300×600 mm', '选材跟着复制');
+  Q.activePlan(p).roomSpecs[b2.id]['@bath_tile'].tile.floorSize = '600×600 mm';
+  assert.equal(Q.specOf(p, b1, 'tile', 'floorSize', null, 'bath_tile').v, '300×600 mm', '改卫生间 2 不影响卫生间 1（是复制不是联动）');
+  Q.copyPack(p, b1.id, b2.id, 'bath_water', false);
+  assert.ok(!b2.packs.includes('bath_water'), '取消也能一起取消');
+});
+
+ok('整间复制：同类房间整套照搬，不同类房间只搬做得了的', () => {
+  const m = { ...Q.newRoom('master', 1, 1), measured: true, packs: ['floor', 'wall_finish', 'ceiling', 'wardrobe'] };
+  const b = { ...Q.newRoom('bedroom', 1, 1), packs: ['fan'] };
+  const k = { ...Q.newRoom('kitchen', 1, 1), packs: [] };
+  const p = project([m, b, k]);
+  const skipped = Q.copyRoom(p, m.id, [b.id, k.id]);
+  assert.deepEqual(b.packs.sort(), ['ceiling', 'floor', 'wall_finish', 'wardrobe'], '目标原来的工项被换掉');
+  assert.deepEqual(k.packs.sort(), ['ceiling', 'wall_finish']);
+  assert.deepEqual(skipped[k.id].sort(), ['floor', 'wardrobe'], '厨房做不了的要告诉员工');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
