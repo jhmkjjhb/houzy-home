@@ -159,9 +159,9 @@
 </div>
 <div class="wrap" id="app"></div>
 
-<script src="quote-v2-price.js?v=20261115a"></script>
+<script src="quote-v2-price.js?v=20261115c"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115a"></script>
+<script src="quote-v2-rules.js?v=20261115c"></script>
 <script>
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
@@ -255,9 +255,12 @@
 
   // ---------- ③ 全屋 ----------
   function viewHouseItems(C) {
-    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p>`;
+    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、公寓物业申请、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p>`;
+    const landed = !!(HOUSES[P.houseType] && HOUSES[P.houseType].landed);
     Q.HOUSE_GROUPS.forEach(([gid, gname]) => {
-      h += `<div class="grp"><h3>${gname}</h3><div class="packs">` + HOUSE_ITEMS.filter(it => it.grp === gid).map(it => {
+      const items = HOUSE_ITEMS.filter(it => it.grp === gid && (!it.landed || landed || P.house[it.k]?.on));
+      if (!items.length) return;
+      h += `<div class="grp"><h3>${gname}</h3><div class="packs">` + items.map(it => {
         const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
         const my = on ? C.lines.filter(l => l.from === it.label) : [], sub = my.reduce((t, l) => t + l.total, 0);
         return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${it.icon}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap">${on ? (my.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>

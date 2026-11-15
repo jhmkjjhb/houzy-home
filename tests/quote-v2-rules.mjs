@@ -92,10 +92,12 @@ ok('员工改过的数字优先，没改用默认值（不会出现空格）', (
   assert.equal(qty(L, 'circuit'), 3, '每台空调一条专用回路');
 });
 
-ok('没确认尺寸、窗户没填完、选了窗帘却没窗 → 都不能出报价单', () => {
+ok('没确认尺寸：正式报价拦住，预估只提醒；窗户没填完、选了窗帘却没窗 → 都不能出报价单', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), packs: ['curtain'] };
-  let K = Q.checks(project([r]), Q.buildLines(project([r])));
+  let K = Q.checks(project([r]), Q.buildLines(project([r])), 'formal');
   assert.ok(K.red.some(x => x.m.includes('尺寸还是默认值')));
+  K = Q.checks(project([r]), Q.buildLines(project([r])), 'estimate');
+  assert.ok(!K.red.some(x => x.m.includes('尺寸还是默认值')) && K.yellow.some(x => x.m.includes('尺寸还是默认值')), '预估不该被默认尺寸拦住');
   assert.ok(K.red.some(x => x.m.includes('请先加窗户尺寸')));
   r.measured = true; r.windows = [{ w: 4, h: '' }];
   K = Q.checks(project([r]), Q.buildLines(project([r])));
@@ -107,7 +109,8 @@ ok('没确认尺寸、窗户没填完、选了窗帘却没窗 → 都不能出�
 
 ok('价格待核定的项目：没填价格就拦住，本单填了就放行', () => {
   const p = project([], { house: { three_phase: { on: true } } });
-  assert.ok(Q.checks(p, Q.buildLines(p)).red.some(x => x.m.includes('单价待公司核定')));
+  assert.ok(Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('单价待公司核定')));
+  assert.ok(Q.checks(p, Q.buildLines(p), 'estimate').yellow.some(x => x.m.includes('暂未计入总价')), '预估时提醒但不拦');
   p.prices = { three_phase: { lab: 2500 } };
   const L = Q.buildLines(p);
   assert.equal(find(L, 'three_phase')[0].total, 2500);
@@ -147,7 +150,7 @@ ok('定制柜按正面面积 = 宽 × 高；单价未定前拦住出单', () => 
   const p = project([r]); const L = Q.buildLines(p);
   assert.equal(Q.PRICE.wardrobe.unit, '平方尺');
   assert.equal(qty(L, 'wardrobe'), 72);
-  assert.ok(Q.checks(p, L).red.some(x => x.m.includes('衣柜定制')));
+  assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('衣柜定制')));
   p.prices = { wardrobe: { lab: 60 } };
   assert.equal(find(Q.buildLines(p), 'wardrobe')[0].total, 72 * 60);
 });
@@ -297,4 +300,56 @@ ok('同样的输入永远算出同样的结果', () => {
   assert.deepEqual(Q.buildLines(p), Q.buildLines(JSON.parse(JSON.stringify(p))));
 });
 
+
+ok('厨房贴了操作区墙砖，那部分墙不再批灰刷漆（不重复收费）', () => {
+  const r = { ...Q.newRoom('kitchen', 1, 1), measured: true, packs: ['wall_finish'] };
+  const plain = qty(Q.buildLines(project([r])), 'paint_wall');
+  r.packs = ['wall_finish', 'kitchen_tile']; r.vals = { kitchen_tile: { back: 10 } };
+  const L = Q.buildLines(project([r]));
+  assert.equal(qty(L, 'wall_tile'), 25);
+  assert.equal(plain - qty(L, 'paint_wall'), 25);
+  assert.equal(plain - qty(L, 'skim'), 25);
+});
+
+ok('拆旧墙砖按「铲除旧墙砖」收，不再按铲墙皮的价', () => {
+  const r = { ...Q.newRoom('bath', 1, 1), measured: true, packs: ['bath_demo'] };
+  const L = Q.buildLines(project([r]));
+  assert.ok(qty(L, 'demo_wall_tile') > 0 && qty(L, 'demo_skin') === 0);
+});
+
+ok('砸墙渣土每 100 平方尺 1 车', () => {
+  const p = project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['electric'] }], { house: { wall_demo: { on: true, area: 250 } } });
+  assert.equal(qty(Q.buildLines(p), 'waste_out'), 1 + 3);
+});
+
+ok('公寓自动加物业装修申请，有地房屋不加', () => {
+  const rooms = [{ ...Q.newRoom('living', 1, 1), packs: ['electric'] }];
+  assert.equal(qty(Q.buildLines(project(rooms, { houseType: 'condo' })), 'permit'), 1);
+  assert.equal(qty(Q.buildLines(project(rooms, { houseType: 'terrace' })), 'permit'), 0);
+});
+
+ok('补上的漏项：吊扇含安装、换门换窗带拆旧、只刷天花、纱窗', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, doors: 1, windows: [{ w: 4, h: 5 }], packs: ['fan', 'door', 'window_new', 'ceil_paint', 'fly_screen'] };
+  const L = Q.buildLines(project([r]));
+  assert.equal(qty(L, 'ceiling_fan'), 1);
+  assert.equal(qty(L, 'demo_piece'), 2, '1 扇旧门 + 1 樘旧窗');
+  assert.equal(qty(L, 'paint_ceiling'), 110);
+  assert.equal(qty(L, 'fly_screen'), 20);
+});
+
+ok('吊顶和只刷天花同时选 → 拦住（吊顶已含天花油漆）', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['ceiling', 'ceil_paint'] };
+  assert.ok(Q.checks(project([r]), Q.buildLines(project([r]))).red.some(x => x.m.includes('天花重刷')));
+});
+
+ok('雨棚在车廊和全屋都选 → 重复收费，拦住', () => {
+  const r = { ...Q.newRoom('porch', 1, 1), measured: true, packs: ['awning'] };
+  const p = project([r], { house: { awning: { on: true } } });
+  assert.ok(Q.checks(p, Q.buildLines(p)).red.some(x => x.m.includes('重复收费')));
+});
+
+ok('公寓不显示有地房屋的外部项目', () => {
+  ['sewer', 'autogate', 'roof_fix', 'fence'].forEach(k => assert.ok(Q.HOUSE_ITEMS.find(i => i.k === k).landed, k));
+  ['db_box', 'cctv', 'wall_demo'].forEach(k => assert.ok(!Q.HOUSE_ITEMS.find(i => i.k === k).landed, k));
+});
 console.log(`PASS: ${n} quote-v2 rule checks`);

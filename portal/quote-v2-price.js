@@ -7,6 +7,7 @@
     "demo_floor":{"stage":"prep","name":"铲除旧地砖（含旧找平层）","unit":"平方尺","mat":0,"aux":0,"lab":1.5,"waste":0,"desc":"电镐铲除至结构层，清理基层，渣土装袋"},
     "demo_ceiling":{"stage":"prep","name":"拆除旧天花","unit":"平方尺","mat":0,"aux":0,"lab":1.2,"waste":0,"desc":"拆除旧吊顶板及龙骨，检查原有电线，渣土装袋"},
     "demo_skin":{"stage":"prep","name":"铲除旧墙面批灰/油漆","unit":"平方尺","mat":0,"aux":0,"lab":0.6,"waste":0,"desc":"铲除起皮、空鼓、发霉的旧批灰层至基层，便于重新批灰"},
+    "demo_wall_tile":{"stage":"prep","name":"铲除旧墙砖（含粘结层）","unit":"平方尺","mat":0,"aux":0,"lab":1.5,"waste":0,"desc":"电镐铲除旧墙砖及粘结层至基层，渣土装袋；参考价同铲旧地砖，待公司核定"},
     "demo_wall":{"stage":"prep","name":"砸墙/拆隔断墙","unit":"平方尺","mat":0,"aux":0,"lab":1.8,"waste":0,"desc":"按放线位置切割后拆除，断口修整，不得损伤相邻墙体及楼板"},
     "build_wall":{"stage":"prep","name":"新砌隔断墙（双面批荡）","unit":"平方尺","mat":3,"aux":0.5,"lab":2.5,"waste":5,"desc":"砖墙砌筑，每隔约 2 尺加拉结筋并与原墙植筋连接，双面水泥砂浆批荡"},
     "door_open":{"stage":"prep","name":"门洞改造（封旧门洞/开新门洞）","unit":"个","mat":30,"aux":10,"lab":60,"waste":0,"desc":"开洞处加过梁；封洞处砌砖并与原墙拉结，双面批荡"},
