@@ -40,7 +40,9 @@
   .top .sum { text-align: right; }
   .top .sum small { display: block; font-size: 11px; color: var(--ink-dim); }
   .top .sum b { font-size: 20px; color: var(--accent); }
-  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 6px; }
+  .tab[data-tab="book"] { padding: 8px 10px; font-size: 15px !important; }
+  .card > h2:first-child { margin-top: 0; }
   .tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 10px; padding: 8px 4px; font-weight: 600; font-size: 13px; position: relative; }
   .tab.on { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .tab .dot { position: absolute; top: -6px; right: -4px; background: var(--red); color: #fff; border-radius: 10px; font-size: 10px; padding: 1px 6px; }
@@ -78,7 +80,7 @@
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
   .rchip.bad { border-color: var(--red); }
   .dims { display: grid; grid-template-columns: 1fr 200px; gap: 14px; align-items: start; }
-  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } .tab { font-size: 11.5px; padding: 8px 2px; } }
+  @media (max-width: 640px) { .dims { grid-template-columns: 1fr; } .tab { font-size: 11.5px; padding: 8px 2px; } .tab .tl { display: none; } }
   .row { display: flex; flex-wrap: wrap; gap: 10px 14px; }
   .fld { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-dim); }
   .stp { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface); }
@@ -94,6 +96,9 @@
   .btn.pri { background: var(--navy); border-color: var(--navy); color: var(--on-navy); font-weight: 600; }
   .btn.okb { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 600; }
   .btn.warn { border-color: var(--red); color: var(--red); }
+  .bookStat { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0; }
+  .bookStat div { flex: 1; min-width: 140px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .bookStat b { font-size: 22px; display: block; }
   .sketch { max-width: 220px; margin: 0 auto; width: 100%; }
   .sketch svg { width: 100%; height: auto; display: block; }
   .grp { margin-top: 16px; }
@@ -120,6 +125,7 @@
   .issue { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; margin-bottom: 6px; font-size: 13px; width: 100%; text-align: left; border: none; color: var(--ink); }
   .issue.r { background: var(--red-soft); } .issue.r b { color: var(--red); }
   .issue.y { background: var(--yellow-soft); } .issue.y b { color: var(--yellow); }
+  .issue.g { background: var(--ok-soft); } .issue.g b { color: var(--ok); }
   .ok { background: var(--ok-soft); color: var(--ok); padding: 10px 12px; border-radius: 9px; font-weight: 600; }
   .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 8px 0 6px; background: var(--line); }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-dim); }
@@ -154,6 +160,7 @@
 <div class="wrap" id="app"></div>
 
 <script src="quote-v2-price.js?v=20261115a"></script>
+<script src="quote-v2-pricebook.js?v=20261115b"></script>
 <script src="quote-v2-rules.js?v=20261115a"></script>
 <script>
 (function () {
@@ -354,17 +361,56 @@
   function render() {
     const C = compute(); save();
     document.getElementById('grand').textContent = rm(C.T.total);
-    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单']];
+    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['book', '⚙<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     const a = document.activeElement, app = document.getElementById('app');
     let sel = null, top = null, caret = null;
     if (a && app.contains(a) && a.tagName === 'INPUT') { sel = 'input' + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join(''); top = a.getBoundingClientRect().top; try { caret = a.selectionStart; } catch (e) {} }
     const y = window.scrollY;
-    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : tab === 'spec' ? viewSpec(C) : viewQuote(C);
+    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : tab === 'spec' ? viewSpec(C) : tab === 'book' ? viewBook() : viewQuote(C);
     window.scrollTo(0, y);
     if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
     document.querySelector('[data-info="name"]').value = P.info.name || '';
   }
+
+  // ---------- 公司价目表 ----------
+  let bookMsg = null;
+  function viewBook() {
+    const B = window.QV2_BOOK, info = window.QV2_BOOK_INFO;
+    const rows = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).slice(1);
+    const itemsLeft = rows.filter(r => r[0] === '项目单价' && r[4] === '').length;
+    const optAll = rows.filter(r => r[0] === '选材价差'), optLeft = optAll.filter(r => r[4] === '' && r[5] === '' && r[6] === '').length;
+    let h = `<div class="card"><h2>公司价目表</h2>
+      <p class="hint">所有报价单的单价和选材价差都从这里来。改价格的方法：下载模板 → 用 Excel 填好 → 上传。</p>
+      <div class="bookStat"><div><b class="mono">${itemsLeft}</b><span>个项目还没有单价</span></div><div><b class="mono">${optLeft}</b><span>/ ${optAll.length} 个选材价差还没填</span></div></div>
+      ${info ? `<p class="hint">已上传：${esc(info.file)} · ${esc(info.at)} · ${info.items} 个单价、${info.options} 个价差</p>` : '<p class="hint">还没上传过，现在用的是系统自带的参考价。</p>'}
+      <div class="row"><button class="btn pri" data-book="dl">下载价格模板</button>
+      <label class="btn">上传填好的价格<input type="file" accept=".csv,text/csv" data-bookfile hidden></label>
+      ${info ? '<button class="btn warn" data-book="clear">删掉已上传的价格</button>' : ''}</div>
+      ${bookMsg ? `<div class="issue ${bookMsg.ok ? 'g' : 'r'}"><b>${bookMsg.ok ? '已上传' : '没上传'}</b><span>${bookMsg.lines.map(esc).join('<br>')}</span></div>` : ''}</div>
+      <div class="card"><b>怎么填</b><ul class="hint">
+      <li>「项目单价」：材料、辅料、人工都是卖给客户的价格（每个单位），损耗% 只加在材料上。</li>
+      <li>「选材价差」：客户选了这个选项，每个单位比标准档多收多少，便宜的填负数。</li>
+      <li>空着 = 还没定，报价单会提示「单价待核定 / 价差待定」；填 0 = 不加价。</li>
+      <li>不要改「类型」和「编号」两列。只填售价，不要填成本。</li>
+      <li>价格只存在这台电脑的浏览器里，其他员工的电脑要各自上传一次。</li></ul></div>`;
+    return h;
+  }
+  document.addEventListener('change', e => {
+    if (!e.target.hasAttribute('data-bookfile')) return;
+    const f = e.target.files[0]; if (!f) return;
+    const B = window.QV2_BOOK, rd = new FileReader();
+    rd.onload = () => {
+      // 只按系统自带价目表校验编号，避免旧上传影响
+      const res = B.read(rd.result, PRICE);
+      const ni = Object.keys(res.items).length, no = Object.values(res.options).reduce((s, o) => s + Object.keys(o).length, 0);
+      if (res.errors.length || !(ni + no)) { bookMsg = { ok: false, lines: res.errors.length ? res.errors.slice(0, 8) : ['表里没有填任何价格'] }; render(); return; }
+      const at = new Date().toLocaleString('zh-CN', { hour12: false });
+      if (!B.save({ items: res.items, options: res.options, info: { file: f.name, at, items: ni, options: no } })) { bookMsg = { ok: false, lines: ['浏览器不让保存（可能是无痕模式）'] }; render(); return; }
+      location.reload();
+    };
+    rd.readAsText(f, 'utf-8');
+  });
 
   // ---------- 写入状态 ----------
   function setValue(el, v) {
@@ -390,6 +436,8 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const ds = b.dataset;
+    if (ds.book === 'dl') { const csv = window.QV2_BOOK.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = '新版报价器价目表.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
+    if (ds.book === 'clear') { if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '再点一次确认删除'; return; } window.QV2_BOOK.clear(); location.reload(); return; }
     if (ds.tab) { tab = ds.tab; confirmReset = false; render(); window.scrollTo(0, 0); return; }
     if (ds.house) {
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; if (!keep) P.rooms = Q.presetRooms(ds.house); }
