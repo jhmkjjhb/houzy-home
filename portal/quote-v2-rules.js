@@ -156,7 +156,7 @@
     ['tall', '高身柜拉篮（储物高柜）', '套', 'hw_tall', 0], ['lift', '吊柜升降拉篮', '套', 'hw_lift', 0], ['rack', '吊柜碗碟沥水架', '套', 'hw_rack', 0],
     ['bin', '水槽柜垃圾桶拉出', '套', 'hw_bin', 0], ['cutlery', '抽屉刀叉餐具分隔盘', '个', 'hw_cutlery', 0], ['rice', '米箱', '个', 'hw_rice', 0], ['flap', '吊柜上翻门支撑（气撑/上翻器）', '套', 'hw_flap', 0]];
   const cabSqft = (label, icon, code, w, h, hw) => ({ g: 'cab', label, icon, ...(hw ? { wide: true } : {}),
-    inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }, ...(hw || []).map(([k, l, u, , d]) => ({ k, label: l, unit: u, def: () => d }))],
+    inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }, ...(hw || []).map(([k, l, u, , d]) => ({ k, label: l, unit: u, def: () => d, opt: true }))],
     lines: (r, g, v, picked, sp) => [[code, r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.w, '柜内灯带 = 柜宽']] : []), ...(hw || []).map(([k, l, , c]) => [c, num(v[k]), l])] });
   // 衣柜功能配件：每种填数量，0 = 不要（挂衣杆、层板、普通抽屉已含在衣柜单价里）
   const WHW = [['pants', '抽拉裤架', '个', 'whw_pants', 0], ['basket', '抽拉衣物拉篮', '个', 'whw_basket', 0], ['lift', '下拉升降衣架', '个', 'whw_lift', 0],
@@ -213,7 +213,7 @@
                       inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => r2(g.L) }],
                       lines: (r, g, v, picked, sp) => [['cab_low', v.low, '地柜长度'], ['counter', v.low, '= 地柜长度'], ['cab_up', v.up, '吊柜长度'], ['sink', 1, '厨房必配'], ['hood', 1, '烟机灶具安装'], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.up, '吊柜底灯带 = 吊柜长度']] : [])] },
     // 橱柜功能五金：每种填数量，0 = 不要；碗碟拉篮沿用原「拉篮」编号和数量
-    cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d })),
+    cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d, opt: true })),
                       lines: (r, g, v) => HW.map(([k, label, , code]) => [code, num(v[k]), label]) },
     wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8, WHW),
     tv_cab:         cabSqft('电视柜/背景墙', '📺', 'tv_cab', () => 8, () => 3),
@@ -479,7 +479,8 @@
         }
         if (pk.needDoors && !(g.doors > 0)) red.push({ m: `「${label}」选了换门，但门数是 0`, go: room.id });
         const v = packValues(room, c, g);
-        inputsOf(c).forEach(i => { if (!(v[i.k] > 0)) red.push({ m: `「${label}」${pk.label}：${i.label}要大于 0`, go: room.id }); });
+        // 可选配件（功能五金、衣柜配件）填 0 就是不要，不算错
+        inputsOf(c).forEach(i => { if (!i.opt && !(v[i.k] > 0)) red.push({ m: `「${label}」${pk.label}：${i.label}要大于 0`, go: room.id }); });
       });
       if (packs.includes('ceiling') && packs.includes('ceil_paint')) red.push({ m: `「${label}」同时选了「天花吊顶」和「天花重刷」，吊顶已含天花油漆，请去掉一个`, go: room.id });
       if (room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });

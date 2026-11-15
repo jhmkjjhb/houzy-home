@@ -466,6 +466,12 @@ ok('送产品不送人工：赠送的项目材料免收、人工安装照收，�
   Object.assign(Q.PRICE.hw_rice, { mat: 0, aux: 0, lab: 0, unpriced: true });
 });
 
+ok('功能五金只选需要的几种：其他填 0 不算错，不挡住「这间完成」', () => {
+  const k = { ...Q.newRoom('kitchen', 1, 1), measured: true, packs: ['cab_basket'], vals: { cab_basket: { n: 2 } } };
+  const K = Q.checks(project([k]), Q.buildLines(project([k])), 'estimate');
+  assert.ok(!K.red.some(x => /功能五金/.test(x.m)), K.red.map(x => x.m).join('；'));
+});
+
 ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {
   const k = { ...Q.newRoom('kitchen', 1, 1), L: 12, W: 10, ext: true, measured: true, packs: ['wet_tile'] };
   const e = { ...Q.newRoom('extension', 1, 1), measured: true };

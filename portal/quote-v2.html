@@ -89,6 +89,9 @@
   .sync .rchip { max-width: 100%; white-space: normal; text-align: left; }
   /* 问「其他空间也做吗」时，这张工项卡占满一整行，房间按钮横着排，不挤成一条 */
   .pack:has(.sync) { grid-column: 1 / -1; }
+  /* 已选的卡片高矮不一：按列往下排，不留大空白 */
+  .packs.chosen { display: block; columns: 230px; column-gap: 10px; }
+  .packs.chosen > .pack { break-inside: avoid; margin-bottom: 10px; width: 100%; }
   .giftb { border: 1px dashed var(--line); background: transparent; border-radius: 10px; font-size: 11px; padding: 0 6px; color: var(--ink-dim); cursor: pointer; }
   .giftb.on { border: 1px solid var(--ok); color: var(--ok); background: var(--ok-soft); }
   .pmaps { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
@@ -291,7 +294,7 @@
 <script src="quote-v2-price.js?v=20261115r"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115s"></script>
+<script src="quote-v2-rules.js?v=20261115t"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -642,9 +645,14 @@
     h += `<h2>这间要做什么</h2><p class="hint">点卡片选择；已选的卡片点名字会跳到要填的数字，点左边的 ✓ 才是取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
     // 这类房间常用的工项 + 从别的房间带过来的其他工项（也要显示，才能看到和取消）
     const avail = [...new Set([...T.packs, ...r.packs])].filter(c => PACKS[c]);
+    // 已选的项目放上面，没选的放下面，不混在一起
+    const card = c => packCard(r, c, g, C).replace(/<\/div>$/, () => syncBar(r, c) + '</div>');
+    const chosen = GROUPS.flatMap(([gid]) => avail.filter(c => PACKS[c].g === gid && r.packs.includes(c)));
+    h += `<div class="grp"><h3 style="color:var(--navy)">已选 ${chosen.length} 项</h3>${chosen.length ? `<div class="packs chosen">${chosen.filter(c => !(PACKS[c].wide || PACKS[c].items) && !(syncPrompt && syncPrompt.from === r.id && syncPrompt.pack === c)).map(card).join('')}</div>${chosen.filter(c => PACKS[c].wide || PACKS[c].items || (syncPrompt && syncPrompt.from === r.id && syncPrompt.pack === c)).map(c => `<div class="packs" style="margin-top:10px">${card(c)}</div>`).join('')}` : '<p class="hint">还没选，从下面点要做的项目。</p>'}</div>`;
+    h += `<h3 style="margin:18px 0 4px;padding-top:12px;border-top:1px dashed var(--line)">还可以加的项目</h3>`;
     GROUPS.forEach(([gid, gname]) => {
-      const codes = avail.filter(c => PACKS[c].g === gid); if (!codes.length) return;
-      h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(c => packCard(r, c, g, C).replace(/<\/div>$/, () => syncBar(r, c) + '</div>')).join('')}</div></div>`;
+      const codes = avail.filter(c => PACKS[c].g === gid && !r.packs.includes(c)); if (!codes.length) return;
+      h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(card).join('')}</div></div>`;
     });
     h += `<h3 style="margin:16px 0 4px">不确定 / 价目表没有的项目</h3><p class="hint">点「＋ 人工增加项」自己填名称、数量、单价，会算进这间的小计。</p>${extrasEditor(r.id)}`;
     h += `<div class="subtotal"><span>${esc(r.name)} 小计</span><span class="mono" style="color:var(--accent)">${rm(roomTotal(C.lines, r.id))}</span></div>`;
@@ -706,7 +714,7 @@
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && (pk.items || pk.wide) ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick" ${on ? 'title="点这个勾取消这项"' : ''}>${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
-      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${kindOf(pk) ? openEditor(r, 'card', kindOf(pk)) : ''}<div class="lines">${myLines.map(l => `<span style="white-space:nowrap">${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName} <button type="button" class="giftb ${l.gift ? 'on' : ''}" data-gift="${l.code}" title="${l.gift ? '取消赠送' : '产品送给客户，人工安装照收'}">${l.gift ? '✓ 送产品' : '送产品'}</button></span>`).join(' · ') || (kindOf(pk) ? `上面加${OPEN[kindOf(pk)].name}、填宽和高后自动算` : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
+      ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}${kindOf(pk) ? openEditor(r, 'card', kindOf(pk)) : ''}<div class="lines">${myLines.map(l => `<span style="white-space:nowrap">${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}${l.gift || (PRICE[l.code] && ['custom', 'equip', 'soft'].includes(PRICE[l.code].stage)) ? ` <button type="button" class="giftb ${l.gift ? 'on' : ''}" data-gift="${l.code}" title="${l.gift ? '取消赠送' : '产品送给客户，人工安装照收'}">${l.gift ? '✓ 送产品' : '送产品'}</button>` : ''}</span>`).join(' · ') || (kindOf(pk) ? `上面加${OPEN[kindOf(pk)].name}、填宽和高后自动算` : '数量为 0，请先补尺寸')}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
 
   // ---------- 人工增加项：价目表没有或不确定的项目，可挂在房间或全屋 ----------
@@ -1209,7 +1217,10 @@
       } else { if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick); r.packs.push(c); if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }]; needWin(); }
       const turnedOn = r.packs.includes(c);
       syncPrompt = Q.roomsFor(P, r.id, c).length ? { from: r.id, pack: c } : null; copyMsg = null;
-      render(); if (turnedOn && kindOf(pk)) focusCard(); return;
+      render();
+      // 选上后卡片移到「已选」里，滚过去，免得找不到
+      if (turnedOn && kindOf(pk)) focusCard(); else if (turnedOn) document.querySelector(`[data-pack="${c}"]`)?.closest('.pack')?.scrollIntoView({ block: 'center' });
+      return;
     }
     if (ds.syncTo || b.hasAttribute('data-sync-all') || b.hasAttribute('data-sync-same')) {
       const r = room(roomId), c = syncPrompt.pack, on = r.packs.includes(c);
