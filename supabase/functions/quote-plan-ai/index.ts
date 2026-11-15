@@ -15,7 +15,7 @@ const SCHEMA = {
     rooms: {
       type: 'array', items: {
         type: 'object', additionalProperties: false,
-        required: ['name', 'type', 'level', 'length_ft', 'width_ft', 'size_source', 'note'],
+        required: ['name', 'type', 'level', 'length_ft', 'width_ft', 'size_source', 'note', 'box'],
         properties: {
           name: { type: 'string' },
           type: { type: 'string', enum: TYPES },
@@ -23,7 +23,8 @@ const SCHEMA = {
           length_ft: { anyOf: [{ type: 'number' }, { type: 'null' }] },
           width_ft: { anyOf: [{ type: 'number' }, { type: 'null' }] },
           size_source: { type: 'string', enum: ['图上标注', '按比例估算', '读不出'] },
-          note: { type: 'string' }
+          note: { type: 'string' },
+          box: { anyOf: [{ type: 'array', items: { type: 'number' } }, { type: 'null' }] }
         }
       }
     },
@@ -38,6 +39,8 @@ const SYSTEM = `你是马来西亚柔佛新山一家装修公司的报价助理�
 - name 用图上的原文（如 "BEDROOM 2"、"WET KITCHEN"）；图上没名字就用中文类型名。
 - 尺寸一律换算成英尺（ft），保留 1 位小数。本地图纸常用毫米（如 3600 x 3000 = 11.8 x 9.8 ft），也有写英尺英寸的。length_ft 填较长的一边。
 - 图上标了这间的尺寸就用标注值，size_source=图上标注；没标但图上有比例尺或整体总尺寸可推算，就估算，size_source=按比例估算；推不出就填 null，size_source=读不出。绝不编造。
+- 没有墙隔开的开放空间算一间（例如客厅、餐厅、干厨房连在一起时，合成一间，name 写「客厅 + 餐厅 + 干厨房」，type 用 living，长宽按整个开放空间），在 note 里说明包含哪几块。只有被墙或门隔开的才分开列。
+- box 是这间在它那张图上的位置 [左, 上, 右, 下]，都用 0–1 的比例（相对整张图片的宽和高），用于在图上框出房间；看不出就填 null。
 - 立面图、剖面图、屋顶图、位置图不列房间，在 notes 里说明。
 - notes 用简体中文，一两句话，说明看不清或需要员工到现场复尺的地方。`;
 
@@ -104,7 +107,7 @@ Deno.serve(async (req: Request) => {
 });
 
 // DeepSeek：OpenAI 兼容的 chat/completions，图片用 image_url（data URL），要求只回 JSON
-const JSON_SHAPE = `只输出一个 JSON 对象，不要任何其他文字，格式：{"rooms":[{"name":"","type":"","level":1,"length_ft":null,"width_ft":null,"size_source":"图上标注|按比例估算|读不出","note":""}],"notes":""}。type 只能是：${TYPES.join('、')}。`;
+const JSON_SHAPE = `只输出一个 JSON 对象，不要任何其他文字，格式：{"rooms":[{"name":"","type":"","level":1,"length_ft":null,"width_ft":null,"size_source":"图上标注|按比例估算|读不出","note":"","box":[0.1,0.2,0.4,0.5]}],"notes":""}。type 只能是：${TYPES.join('、')}。`;
 async function deepseek(apiKey: string, content: any[]): Promise<[number, unknown]> {
   const parts = content.map(c => c.type === 'image'
     ? { type: 'image_url', image_url: { url: `data:${c.source.media_type};base64,${c.source.data}` } }
@@ -136,7 +139,8 @@ async function deepseek(apiKey: string, content: any[]): Promise<[number, unknow
     name: String(x.name || '').slice(0, 60), type: x.type, level: Math.max(1, Math.min(6, Math.round(Number(x.level) || 1))),
     length_ft: num(x.length_ft), width_ft: num(x.width_ft),
     size_source: ['图上标注', '按比例估算', '读不出'].includes(x.size_source) ? x.size_source : (num(x.length_ft) ? '按比例估算' : '读不出'),
-    note: String(x.note || '').slice(0, 200)
+    note: String(x.note || '').slice(0, 200),
+    box: Array.isArray(x.box) && x.box.length === 4 && x.box.every((v: unknown) => typeof v === 'number' && v >= 0 && v <= 1) && x.box[2] > x.box[0] && x.box[3] > x.box[1] ? x.box : null
   }));
   return [200, { rooms, notes: String(out?.notes || '').slice(0, 400), engine: 'AI 看图（DeepSeek）', usage: { input: j?.usage?.prompt_tokens, output: j?.usage?.completion_tokens } }];
 }

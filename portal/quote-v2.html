@@ -86,6 +86,14 @@
   .thumb.sm .x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; line-height: 22px; padding: 0; }
   .thumb.add { display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--navy); border-style: dashed; cursor: pointer; }
   .thumb.add span { font-size: 11px; line-height: 1.3; }
+  .pmaps { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+  .pmap { position: relative; margin-top: 12px; width: 280px; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .pmap img { display: block; width: 100%; }
+  .pbox { position: absolute; border: 1.5px solid rgba(30, 58, 95, .45); background: rgba(30, 58, 95, .06); border-radius: 3px; padding: 0; cursor: pointer; overflow: hidden; }
+  .pbox span { position: absolute; left: 2px; top: 1px; font-size: 10px; line-height: 1.1; color: #1E3A5F; background: rgba(255,255,255,.85); padding: 0 3px; border-radius: 2px; max-width: calc(100% - 4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pbox:hover { background: rgba(30, 58, 95, .14); }
+  .pbox.cur { border: 2.5px solid #D9632B; background: rgba(217, 99, 43, .25); }
+  .pbox.cur span { color: #fff; background: #D9632B; }
   .dropping { outline: 2px dashed var(--navy); outline-offset: 3px; border-radius: 10px; background: var(--accent-soft); }
   .thumb.add { aspect-ratio: auto; height: 72px; padding-bottom: 18px; }
   .viewer { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.88); display: flex; flex-direction: column; }
@@ -379,7 +387,7 @@
   }
 
   // ---------- 平面图识别（沿用旧版逻辑）：本机识别服务优先，没有就用浏览器里的文字识别 ----------
-  let recog = null; // { level, busy, step, rooms:[...], warnings, mode, engine }
+  let recog = null, mergeOpen = null; // { level, busy, step, rooms:[...], warnings, mode, engine }
   const lastFiles = {}; // 本次上传的原文件（只在内存里），识别时用更清楚的版本
   let tessLib = null;
   function loadTess() {
@@ -475,12 +483,27 @@
     } catch (e) { recog.step = e.message || 'AI 识别失败'; recog.err = true; }
     recog.busy = false; render();
   }
+  // 房间在平面图上的位置：[左, 上, 右, 下]，都是 0–1 的比例（相对那层平面图的宽高）
+  const okBox = b => Array.isArray(b) && b.length === 4 && b.every(v => typeof v === 'number' && v >= 0 && v <= 1) && b[2] > b[0] && b[3] > b[1] ? b.map(v => Math.round(v * 1000) / 1000) : null;
+  const unionBox = (a, b) => a && b ? [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])] : (a || b || null);
+  // 两间合成一间：保留第一间的长，宽按两间面积之和反算
+  function mergeSize(a, b) {
+    const aL = num(a.L) || ROOMS[a.type].L, aW = num(a.W) || ROOMS[a.type].W, bL = num(b.L) || ROOMS[b.type].L, bW = num(b.W) || ROOMS[b.type].W;
+    return { L: aL, W: Math.round((aL * aW + bL * bW) / aL * 10) / 10 };
+  }
+  // 平面图上标出各房间：cur 是当前这间（深色），点框可跳到那间
+  function planMap(lv, list, curId, attr) {
+    const d = drawingOf(lv), on = list.filter(x => x.box && (x.level || 1) === lv);
+    if (!d || !on.length) return '';
+    return `<div class="pmap"><img src="${d.img}" alt="${esc(levelName(lv))}平面图">${on.map(x => { const [a, b, c, e] = x.box;
+      return `<button class="pbox ${x.id === curId ? 'cur' : ''}" ${attr}="${x.id}" style="left:${a * 100}%;top:${b * 100}%;width:${(c - a) * 100}%;height:${(e - b) * 100}%" title="${esc(x.name)}"><span>${esc(x.tag || x.name)}</span></button>`; }).join('')}</div>`;
+  }
   // AI 返回的格式（云端函数或手动粘贴都一样）→ 核对表
   function fillRecog(data, lv) {
     const known = new Set(Object.keys(ROOMS));
     recog.rooms = (data.rooms || []).filter(r => known.has(r.type)).map((r, i) => ({
       type: r.type, name: r.name, L: r.length_ft, W: r.width_ft, level: Math.max(1, Math.min(4, r.level || lv)), page: i, on: true,
-      evidence: (r.size_source || '') + (r.note ? '：' + r.note : '')
+      evidence: (r.size_source || '') + (r.note ? '：' + r.note : ''), box: okBox(r.box)
     }));
     recog.warnings = [data.notes || '', 'AI 识别结果仅供参考，尺寸请到现场复尺。'].filter(Boolean); recog.engine = data.engine || 'AI';
     recog.all = new Set(recog.rooms.map(r => r.level)).size > 1;
@@ -494,13 +517,14 @@
     if (R.paste) return h + `<textarea id="pastebox" rows="6" style="width:100%;font:12px ui-monospace,monospace" placeholder='{"rooms":[…],"notes":"…"}'></textarea><button class="btn pri" data-pasteok style="margin-top:8px">读入</button></div>`;
     if (R.busy || !R.rooms.length) return h + '</div>';
     h += `<div class="scroll-x"><table class="q recogT"><thead><tr><th></th><th>名称</th><th>类型</th><th>楼层</th><th class="r">长</th><th class="r">宽</th><th>图上文字</th></tr></thead><tbody>${R.rooms.map((r, i) => `<tr class="${r.on ? '' : 'off'}">
-      <td><input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
+      <td id="rc${i}"><b class="hint">${i + 1}</b> <input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
       <td><input class="cust" data-rc="${i}" data-rk="name" value="${esc(r.name)}"></td>
       <td><select class="cust" data-rc="${i}" data-rk="type">${Object.entries(ROOMS).map(([k, t]) => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${t.label}</option>`).join('')}</select></td>
       <td><select class="cust" data-rc="${i}" data-rk="level">${Array.from({ length: lvMax }, (_, j) => `<option value="${j + 1}" ${r.level === j + 1 ? 'selected' : ''}>${j + 1} 楼</option>`).join('')}</select></td>
       <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="L" value="${r.L ?? ''}" placeholder="${ROOMS[r.type].L}"></td>
       <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="W" value="${r.W ?? ''}" placeholder="${ROOMS[r.type].W}"></td>
-      <td class="desc">${esc(r.evidence)}${r.L == null ? '<br>没读到尺寸，先用默认' : ''}</td></tr>`).join('')}</tbody></table></div>
+      <td class="desc">${esc(r.evidence)}${r.L == null ? '<br>没读到尺寸，先用默认' : ''}${i && R.rooms[i - 1].level === r.level ? `<br><button class="chip" data-rmerge="${i}">↑ 和上一行合成一间</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+      <div class="pmaps">${[...new Set(R.rooms.map(r => r.level))].sort().map(lv => planMap(lv, R.rooms.map((r, i) => ({ ...r, id: 'rc' + i, tag: String(i + 1) })), null, 'data-rcfocus')).join('')}</div>
       <p class="hint">${R.warnings.map(esc).join(' ')}</p>
       ${P.rooms.length ? (() => { const lvs = [...new Set(R.rooms.filter(r => r.on).map(r => r.level))], same = P.rooms.filter(r => lvs.includes(r.level || 1)), work = same.filter(r => r.packs.length).length;
         const lvN = lvs.map(levelName).join('、'), others = P.rooms.length - same.length;
@@ -523,7 +547,7 @@
   }
   function roomPics(r) {
     const d = drawingOf(r.level || 1), ps = IMG.rooms[r.id] || [];
-    return `<div class="roompics" data-drop="photo:${r.id}">${d ? `<button class="thumb sm" data-view="plan:${r.level || 1}" title="看平面图"><img src="${d.img}" alt="平面图"><span>平面图</span></button>` : ''}
+    return `<div class="roompics" data-drop="photo:${r.id}">${d && !r.box ? `<button class="thumb sm" data-view="plan:${r.level || 1}" title="看平面图"><img src="${d.img}" alt="平面图"><span>平面图</span></button>` : ''}
       ${ps.map((x, i) => `<span class="thumb sm"><button style="all:unset;cursor:zoom-in" data-view="room:${r.id}:${i}"><img src="${x.img}" alt="${esc(r.name)}照片 ${i + 1}"></button><button class="x" data-delphoto="${r.id}:${i}" title="删除">✕</button></span>`).join('')}
       ${ps.length < ROOM_PHOTO_MAX ? `<button class="thumb sm add" data-pick="photo:${r.id}">＋<span>手绘图/照片<br>可拖进来</span></button>` : ''}</div>${imgMsg && !imgMsg.ok ? `<div class="issue r" style="margin-top:6px"><b>没上传</b><span>${esc(imgMsg.m)}</span></div>` : ''}`;
   }
@@ -595,9 +619,10 @@
     if (!room(roomId)) roomId = P.rooms[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     let h = roomBar(P.rooms, roomId, 'data-goroom', x => ({ t: roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : (x.done ? '不做' : '未选工程'), bad: bad.has(x.id) }), x => !!x.done, 'room', '已完成');
-    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}${P.rooms.some(x => x.id !== r.id && (x.level || 1) === (r.level || 1)) ? '<button class="btn" data-mergeopen>合并…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
+      ${mergeOpen === r.id ? `<div class="sync" style="margin-top:12px"><b>把哪一间并进「${esc(r.name)}」？</b><span class="hint">同一个空间被拆开时用（例如客厅、餐厅、干厨房之间没有墙）。面积相加，两间选的工程都保留，另一间会删掉。</span><div class="adds">${P.rooms.filter(x => x.id !== r.id && (x.level || 1) === (r.level || 1)).map(x => `<button class="chip" data-mergein="${x.id}">${esc(x.name)}</button>`).join('')}<button class="chip" data-mergeopen>取消</button></div></div>` : ''}
       ${HOUSES[P.houseType]?.landed && !T.outdoor ? `<div class="donebar"><button class="chip extchip ${r.ext ? 'on' : ''}" data-ext>${r.ext ? ic('check') + ' ' : ''}这间是加建部分（新建地基、墙、屋顶，按 ${nf(g.floor)} 平方尺算）</button>${r.ext ? `<span class="hint">结构 ${rm(C.lines.filter(l => l.roomId === r.id && l.code === 'extension').reduce((t, l) => t + l.total, 0))}，整单会加一次市政局申请</span>` : ''}</div>` : ''}
-      <div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>${copyPanel(r)}${roomPics(r)}
+      <div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<span class="hint" style="color:var(--red)">这间还有红色提醒要处理，处理完才能点完成</span>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : ''}</button>`}</div>${copyPanel(r)}${planMap(r.level || 1, P.rooms, r.id, 'data-goroom')}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -1050,6 +1075,25 @@
     }
     if (ds.recog) { recognize(+ds.recog); return; }
     if (ds.airecog) { aiRecognize(+ds.airecog); return; }
+    if (ds.rmerge) {
+      const i = +ds.rmerge, a = recog.rooms[i - 1], b = recog.rooms[i];
+      recog.rooms[i - 1] = { ...a, ...mergeSize(a, b), name: a.name + ' + ' + b.name, box: unionBox(a.box, b.box), evidence: '合并：' + [a.evidence, b.evidence].filter(Boolean).join('；'), on: a.on || b.on };
+      recog.rooms.splice(i, 1); render(); return;
+    }
+    if (ds.rcfocus) { const el = document.getElementById(ds.rcfocus); el && el.scrollIntoView({ block: 'center' }); return; }
+    if (b.hasAttribute('data-mergeopen')) { mergeOpen = mergeOpen === roomId ? null : roomId; render(); return; }
+    if (ds.mergein) {
+      const r = room(roomId), o = room(ds.mergein); if (!r || !o) return;
+      Object.assign(r, mergeSize(r, o));
+      r.name = r.name + ' + ' + o.name; r.box = unionBox(r.box, o.box); r.done = false;
+      o.packs.forEach(k => { if (!r.packs.includes(k)) { r.packs.push(k); if (o.vals && o.vals[k]) (r.vals = r.vals || {})[k] = o.vals[k]; } });
+      r.windows = [...(r.windows || []), ...(o.windows || [])]; r.doors = (num(r.doors) || 0) + (num(o.doors) || 0);
+      if (o.items) r.items = [...(r.items || []), ...o.items];
+      r.ext = r.ext || o.ext || undefined; if (!r.ext) delete r.ext;
+      if (IMG.rooms[o.id]) { IMG.rooms[r.id] = [...(IMG.rooms[r.id] || []), ...IMG.rooms[o.id]].slice(0, ROOM_PHOTO_MAX); delete IMG.rooms[o.id]; saveImg(); }
+      (P.extras || []).forEach(x => { if (x.roomId === o.id) x.roomId = r.id; });
+      P.rooms = P.rooms.filter(x => x.id !== o.id); mergeOpen = null; render(); return;
+    }
     if (ds.pasterecog) { recog = { level: +ds.pasterecog, paste: true, rooms: [], warnings: [], mode: 'level', step: '把识别结果（JSON）粘贴到下面，点「读入」。' }; render(); return; }
     if (b.hasAttribute('data-pasteok')) {
       const lv = recog.level; let data;
@@ -1059,7 +1103,7 @@
     if (b.hasAttribute('data-recogclose')) { recog = null; render(); return; }
     if (b.hasAttribute('data-recogapply')) {
       const pick = recog.rooms.filter(r => r.on && String(r.name).trim()); if (!pick.length) return;
-      const made = pick.map(r => { const x = Q.newRoom(r.type, r.level, 1); x.name = String(r.name).trim(); if (num(r.L) > 0) x.L = num(r.L); if (num(r.W) > 0) x.W = num(r.W); return x; });
+      const made = pick.map(r => { const x = Q.newRoom(r.type, r.level, 1); x.name = String(r.name).trim(); if (num(r.L) > 0) x.L = num(r.L); if (num(r.W) > 0) x.W = num(r.W); if (r.box) x.box = r.box; return x; });
       const lvs = new Set(pick.map(r => r.level));
       P.rooms = recog.mode === 'replace' ? made : recog.mode === 'level' ? [...P.rooms.filter(r => !lvs.has(r.level || 1)), ...made] : [...P.rooms, ...made];
       roomId = made[0].id; recog = null; render(); return;
