@@ -95,6 +95,9 @@
   .demoPlans figcaption { font-size: 12px; color: #555; text-align: center; margin-top: 4px; }
   .sync { flex-basis: 100%; background: var(--navy-soft); border-radius: 10px; padding: 10px 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
   .sync b { color: var(--navy); font-size: 13px; }
+  svg.ic { width: 1.15em; height: 1.15em; flex: none; display: inline-block; vertical-align: -0.2em; color: var(--navy); }
+  .btn svg.ic, .tab svg.ic, .chip svg.ic { color: currentColor; }
+  .pack.on svg.ic, .rm.work svg.ic { color: var(--navy); }
   .chip.on { border-style: solid; border-color: var(--navy); background: var(--navy); color: var(--on-navy); }
 
   /* ② 房间 */
@@ -240,7 +243,7 @@
   <div class="in">
     <h1>新版报价器<small>试用版 · 价格沿用公司价目表</small></h1>
     <input class="cust" data-info="name" placeholder="客户姓名">
-    <button class="btn pri demoBtn" data-demo="open">▶ 演示给客户</button>
+    <button class="btn pri demoBtn" data-demo="open"><span id="playIc"></span> 演示给客户</button>
     <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
   </div>
   <div class="tabs" id="tabs"></div>
@@ -250,6 +253,7 @@
 <div id="viewer"></div>
 
 <script src="quote-v2-price.js?v=20261115c"></script>
+<script src="quote-v2-icons.js?v=20261115i"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
 <script src="quote-v2-rules.js?v=20261115g"></script>
 <script src="quote-v2-plan.js?v=20261115h"></script>
@@ -257,6 +261,8 @@
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
   const STORE = 'houzy-quote-v2';
+  const ic = (code, cls) => window.QV2_ICON(code, cls);
+  document.getElementById('playIc').outerHTML = ic('play');
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rm = n => 'RM ' + Math.round(n).toLocaleString('en-MY');
   const nf = n => (Math.round(num(n) * 100) / 100).toLocaleString('en-MY', { maximumFractionDigits: 2 });
@@ -424,7 +430,7 @@
     h += `<div class="scroll-x"><table class="q recogT"><thead><tr><th></th><th>名称</th><th>类型</th><th>楼层</th><th class="r">长</th><th class="r">宽</th><th>图上文字</th></tr></thead><tbody>${R.rooms.map((r, i) => `<tr class="${r.on ? '' : 'off'}">
       <td><input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
       <td><input class="cust" data-rc="${i}" data-rk="name" value="${esc(r.name)}"></td>
-      <td><select class="cust" data-rc="${i}" data-rk="type">${Object.entries(ROOMS).map(([k, t]) => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${t.icon} ${t.label}</option>`).join('')}</select></td>
+      <td><select class="cust" data-rc="${i}" data-rk="type">${Object.entries(ROOMS).map(([k, t]) => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${t.label}</option>`).join('')}</select></td>
       <td><select class="cust" data-rc="${i}" data-rk="level">${Array.from({ length: lvMax }, (_, j) => `<option value="${j + 1}" ${r.level === j + 1 ? 'selected' : ''}>${j + 1} 楼</option>`).join('')}</select></td>
       <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="L" value="${r.L ?? ''}" placeholder="${ROOMS[r.type].L}"></td>
       <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="W" value="${r.W ?? ''}" placeholder="${ROOMS[r.type].W}"></td>
@@ -442,7 +448,7 @@
     for (let lv = 1; lv <= levels; lv++) {
       const d = drawingOf(lv);
       h += `<div class="drawing">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图</div>`}
-        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>🔍 自动识别房间</button>` : ''}</div></div>`;
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} 自动识别房间</button>` : ''}</div></div>`;
     }
     h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
     return h;
@@ -485,9 +491,9 @@
       const rs = P.rooms.filter(r => (r.level || 1) === lv);
       h += `<div class="floor"><h3>${levels > 1 ? (lv === 1 ? '底层 Ground Floor' : lv + ' 楼') : '户内'}</h3><div class="plan">${rs.map(r => {
         const g = Q.geo(r, P), t = roomTotal(C.lines, r.id);
-        return `<button class="rm ${r.packs.length ? 'work' : ''} ${bad.has(r.id) ? 'bad' : ''}" style="flex:${Math.max(1, g.floor)} 1 ${Math.max(104, Math.sqrt(Math.max(g.floor, 1)) * 11)}px" data-goroom="${r.id}"><span class="ic">${ROOMS[r.type].icon}</span><span><span class="nm">${esc(r.name)}</span><br><span class="dm mono">${nf(g.L)}×${nf(g.W)} 尺 · ${nf(g.floor)} 平方尺</span></span><span class="am mono">${t ? rm(t) : ''}</span></button>`;
+        return `<button class="rm ${r.packs.length ? 'work' : ''} ${bad.has(r.id) ? 'bad' : ''}" style="flex:${Math.max(1, g.floor)} 1 ${Math.max(104, Math.sqrt(Math.max(g.floor, 1)) * 11)}px" data-goroom="${r.id}"><span class="ic">${ic(ROOMS[r.type].icon)}</span><span><span class="nm">${esc(r.name)}</span><br><span class="dm mono">${nf(g.L)}×${nf(g.W)} 尺 · ${nf(g.floor)} 平方尺</span></span><span class="am mono">${t ? rm(t) : ''}</span></button>`;
       }).join('') || '<span class="hint" style="margin:8px">这一层还没有房间</span>'}</div>
-      <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !t.outdoor || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${t.icon} ${t.label}</button>`).join('')}</div></div>`;
+      <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !t.outdoor || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${ic(t.icon)} ${t.label}</button>`).join('')}</div></div>`;
     }
     h += `<div class="adds noprint" style="margin-top:14px"><button class="btn" data-addlevel>+ 加一层</button></div>`;
     return h;
@@ -507,8 +513,8 @@
     if (!P.rooms.length) return `<h2>② 房间</h2><p class="hint">先在「① 户型」选房屋类型。</p>`;
     if (!room(roomId)) roomId = P.rooms[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
-    let h = `<div class="roombar noprint">${P.rooms.map(x => `<button class="rchip ${x.id === roomId ? 'on' : ''} ${bad.has(x.id) ? 'bad' : ''}" data-goroom="${x.id}">${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}<small class="mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '未选工程'}</small></button>`).join('')}</div>`;
-    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${T.icon}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>${copyPanel(r)}${roomPics(r)}
+    let h = `<div class="roombar noprint">${P.rooms.map(x => `<button class="rchip ${x.id === roomId ? 'on' : ''} ${bad.has(x.id) ? 'bad' : ''}" data-goroom="${x.id}">${ic(ROOMS[x.type].icon)} ${esc(Q.roomLabel(x, P))}<small class="mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '未选工程'}</small></button>`).join('')}</div>`;
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>${copyPanel(r)}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
         ${T.outdoor ? '' : `<div class="wins"><div class="fld">窗户（每樘填宽和高，窗帘、窗台石、换窗都按这里算）</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span>${field('宽', '尺', stepper(`data-win="${i}" data-wk="w"`, w.w ?? '', 0.5))}${field('高', '尺', stepper(`data-win="${i}" data-wk="h"`, w.h ?? '', 0.5))}<button class="x" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-addwin>+ 加一樘窗</button></div>`}
@@ -541,7 +547,7 @@
     if (!copyOpen) return copyMsg ? `<div class="ok" style="margin-top:10px">${esc(copyMsg)}</div>` : '';
     const others = P.rooms.filter(x => x.id !== r.id).sort((a, b) => (Q.kinOf(b.type) === Q.kinOf(r.type)) - (Q.kinOf(a.type) === Q.kinOf(r.type)));
     return `<div class="sync" style="margin-top:12px"><b>把「${esc(r.name)}」的全部工项和选材复制到：</b><span class="hint">勾选的房间原来选的工项会被换掉；数量按各自尺寸算；复制后每间还能单独改。</span>
-      <div class="adds" style="margin:8px 0 0">${others.map(x => `<label class="rchip" style="min-width:auto;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-copyto="${x.id}" ${Q.kinOf(x.type) === Q.kinOf(r.type) ? 'checked' : ''}>${ROOMS[x.type].icon} ${esc(Q.roomLabel(x, P))}${(x.packs || []).length ? ` <small>已有 ${x.packs.length} 项</small>` : ''}</label>`).join('')}</div>
+      <div class="adds" style="margin:8px 0 0">${others.map(x => `<label class="rchip" style="min-width:auto;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-copyto="${x.id}" ${Q.kinOf(x.type) === Q.kinOf(r.type) ? 'checked' : ''}>${ic(ROOMS[x.type].icon)} ${esc(Q.roomLabel(x, P))}${(x.packs || []).length ? ` <small>已有 ${x.packs.length} 项</small>` : ''}</label>`).join('')}</div>
       <div class="adds" style="margin:8px 0 0"><button class="btn pri" data-copydo>复制</button><button class="btn" data-copyclose>取消</button></div></div>`;
   }
   function packCard(r, c, g, C) {
@@ -551,7 +557,7 @@
     const specLine = place ? `<button type="button" class="chip" style="border-style:solid;${place.open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${c}">选材：${place.open ? '未定（按标准档估价）' : esc(myLines[0]?.spec || '已定')} ›</button>` : '';
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
-    return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${pk.icon}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+    return `<div class="pack ${on ? 'on' : ''} ${on && pk.items ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick">${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
       ${on && pk.items ? `<div class="pkbody">${(r.items || []).map((it, i) => `<div class="item"><label class="fld">名称<input class="cust" style="min-width:120px" data-item="${i}" data-ik="name" value="${esc(it.name)}" placeholder="例如：换鞋凳"></label>${field('数量', '项', stepper(`data-item="${i}" data-ik="qty"`, it.qty ?? 1, 1))}${field('单价', 'RM/项', stepper(`data-item="${i}" data-ik="price"`, it.price ?? 0, 50))}<button class="x" data-delitem="${i}" title="删除">✕</button></div>`).join('')}<button class="chip" data-additem>+ 加一项</button><div class="lines">不能按面积算的小件（凳子、桌子、层板等），逐项填名称和单价</div></div>` : ''}
       ${on && !pk.items ? `<div class="pkbody">${Q.inputsOf(c).map(i => field(i.label + (i.area && num(v[i.k]) !== g[i.k] ? ` <span class="desc">（房间 ${nf(g[i.k])}，<button type="button" class="x" style="font-size:11px;text-decoration:underline;padding:0" data-resetpv="${c}" data-pk="${i.k}">恢复</button>）</span>` : ''), i.unit, stepper(`data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.area ? 5 : 1))).join('')}<div class="lines">${myLines.map(l => `${esc(l.name)} <b class="mono">${nf(l.qty)}</b> ${l.unitName}`).join(' · ') || '数量为 0，请先补尺寸'}</div>${specLine ? `<div class="adds" style="margin:0;flex-basis:100%">${specLine}</div>` : ''}</div>` : (!on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : '')}</div>`;
   }
@@ -576,7 +582,7 @@
       h += `<div class="grp"><h3>${gname}</h3><div class="packs">` + items.map(it => {
         const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
         const my = on ? C.lines.filter(l => l.from === it.label) : [], sub = my.reduce((t, l) => t + l.total, 0);
-        return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${it.icon}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap">${on ? (my.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
+        return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${ic(it.icon)}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap">${on ? (my.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
           ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], i.unit === '平方尺' ? 10 : 1))).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
       }).join('') + `</div></div>`;
     });
@@ -604,7 +610,7 @@
   function placeCard(r, place, C) {
     const pk = PACKS[place.pack], ls = C.lines.filter(l => l.roomId === r.id && l.pack === place.pack);
     const main = ls.find(l => l.spec) || ls[0], same = P.rooms.filter(x => x.id !== r.id && (x.packs || []).includes(place.pack));
-    let h = `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px">${pk.icon}</span><b style="font-size:15px">${esc(place.label)}</b><span class="desc">${main ? `${esc(main.name)} ${nf(main.qty)} ${main.unitName}` : ''}</span><span class="desc" style="margin-left:auto;font-weight:600;color:${place.open ? 'var(--yellow)' : 'var(--ok)'}">${place.open ? '未定 · 暂按标准档估价' : '✓ 已定'}</span></div>`;
+    let h = `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px">${ic(pk.icon)}</span><b style="font-size:15px">${esc(place.label)}</b><span class="desc">${main ? `${esc(main.name)} ${nf(main.qty)} ${main.unitName}` : ''}</span><span class="desc" style="margin-left:auto;font-weight:600;color:${place.open ? 'var(--yellow)' : 'var(--ok)'}">${place.open ? '未定 · 暂按标准档估价' : '✓ 已定'}</span></div>`;
     place.keys.forEach(([cat, k]) => {
       const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, r, cat, k, null, place.pack), std = Q.stdOf(key, r);
       h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}</div><div class="adds" style="margin:0">${key.opts.map(o => `<button class="pack opt ${cur.decided && cur.v === o ? 'on' : ''}" data-place="${place.pack}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${cur.decided && cur.v === o ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${optDelta(r, place.pack, cat, k, o, C.T.total)}</button>`).join('')}</div></div>`;
@@ -618,9 +624,9 @@
     const rooms = P.rooms.map(r => ({ r, places: Q.placesOf(P, r, C.lines) })).filter(x => x.places.length);
     if (!rooms.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
     if (!rooms.some(x => x.r.id === specRoomId)) specRoomId = (rooms.find(x => x.places.some(p => p.open)) || rooms[0]).r.id;
-    h += `<div class="roombar noprint">${rooms.map(({ r, places }) => { const open = places.filter(p => p.open).length; return `<button class="rchip ${r.id === specRoomId ? 'on' : ''}" data-specroom="${r.id}">${ROOMS[r.type].icon} ${esc(Q.roomLabel(r, P))}<small style="color:${open ? 'var(--yellow)' : 'var(--ok)'}">${open ? open + ' 处未定' : '✓ 已定'}</small></button>`; }).join('')}</div>`;
+    h += `<div class="roombar noprint">${rooms.map(({ r, places }) => { const open = places.filter(p => p.open).length; return `<button class="rchip ${r.id === specRoomId ? 'on' : ''}" data-specroom="${r.id}">${ic(ROOMS[r.type].icon)} ${esc(Q.roomLabel(r, P))}<small style="color:${open ? 'var(--yellow)' : 'var(--ok)'}">${open ? open + ' 处未定' : '✓ 已定'}</small></button>`; }).join('')}</div>`;
     const cur = rooms.find(x => x.r.id === specRoomId);
-    h += `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin:6px 0 10px"><h2 style="margin:0">${ROOMS[cur.r.type].icon} ${esc(Q.roomLabel(cur.r, P))}</h2>${cur.places.some(p => p.open) ? `<button class="btn okb" data-room-std>这间其余都按标准档</button>` : ''}</div>`;
+    h += `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin:6px 0 10px"><h2 style="margin:0">${ic(ROOMS[cur.r.type].icon)} ${esc(Q.roomLabel(cur.r, P))}</h2>${cur.places.some(p => p.open) ? `<button class="btn okb" data-room-std>这间其余都按标准档</button>` : ''}</div>`;
     h += cur.places.map(pl => placeCard(cur.r, pl, C)).join('');
     const idx = rooms.indexOf(cur), next = rooms[idx + 1];
     if (next) h += `<div style="text-align:right;margin-top:6px"><button class="btn pri" data-specroom="${next.r.id}">下一个：${esc(Q.roomLabel(next.r, P))} →</button></div>`;
@@ -672,7 +678,7 @@
   function render() {
     const C = compute(); save();
     document.getElementById('grand').textContent = rm(C.T.total);
-    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['book', '⚙<span class="tl"> 价目表</span>']];
+    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     document.getElementById('viewer').innerHTML = viewerHtml();
     const dm = document.getElementById('demo');
@@ -708,13 +714,13 @@
   function demoRoom(r, C) {
     const ls = C.lines.filter(l => l.roomId === r.id), works = [...new Set(ls.map(l => l.from))];
     const g = Q.geo(r, P), sub = ls.reduce((t, l) => t + l.total, 0);
-    let h = `<div class="kick">施工空间</div><h1>${ROOMS[r.type].icon} ${esc(Q.roomLabel(r, P))}</h1>
+    let h = `<div class="kick">施工空间</div><h1>${ic(ROOMS[r.type].icon)} ${esc(Q.roomLabel(r, P))}</h1>
       <div class="facts"><div><b class="mono">${rm(sub)}</b><span>这间的费用</span></div><div><b class="mono">${nf(g.floor)}</b><span>平方尺（${nf(g.L)} × ${nf(g.W)} 尺）</span></div><div><b>${works.length}</b><span>项工程</span></div></div>
       <div class="works">${works.map(w => `<span>${esc(w)}</span>`).join('')}</div>`;
     const places = Q.placesOf(P, r, C.lines);
     if (places.length) h += `<h3 style="margin:0 0 10px">材料与做法 <span class="hint" style="font-weight:400">· 点选项可当场换，总价马上更新</span></h3>`;
     places.forEach(pl => {
-      h += `<div class="dplace"><h3>${PACKS[pl.pack].icon} ${esc(pl.label)}</h3>`;
+      h += `<div class="dplace"><h3>${ic(PACKS[pl.pack].icon)} ${esc(pl.label)}</h3>`;
       pl.keys.forEach(([cat, k]) => {
         const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, r, cat, k, null, pl.pack);
         h += `<div class="hint" style="margin:6px 0 2px">${esc(key.label)}${cur.decided ? '' : ' · 暂按标准档'}</div><div class="dopt">${key.opts.map(o => `<button class="${cur.v === o ? 'on' : ''}" data-room="${r.id}" data-place="${pl.pack}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><b>${cur.v === o ? '✓ ' : ''}${esc(o)}</b>${cur.v === o ? '<span class="desc">当前</span>' : optDelta(r, pl.pack, cat, k, o, C.T.total)}</button>`).join('')}</div>`;
@@ -736,7 +742,7 @@
       if (sl.k === 'cost') return `<div class="kick">钱花在哪里</div><h1>费用构成</h1><div class="donutWrap">${donut(T)}<div class="dleg">${T.byStage.map(s => `<div><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${esc(s.name)}<span class="mono">${rm(s.total)}</span></div>`).join('')}
         ${T.design ? `<div><i style="background:var(--off)"></i>设计费<span class="mono">${rm(T.design)}</span></div>` : ''}${T.mgmt ? `<div><i style="background:var(--off)"></i>工程管理费<span class="mono">${rm(T.mgmt)}</span></div>` : ''}${T.discount ? `<div><i style="background:var(--ok)"></i>优惠<span class="mono">−${rm(T.discount)}</span></div>` : ''}</div></div>`;
       if (sl.k === 'room') return demoRoom(sl.r, C);
-      if (sl.k === 'whole') { const ls = C.lines.filter(l => !l.roomId), ws = [...new Set(ls.map(l => l.from))]; return `<div class="kick">全屋</div><h1>🏠 全屋项目</h1><div class="facts"><div><b class="mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</b><span>全屋项目费用</span></div></div><div class="works">${ws.map(w => `<span>${esc(w === '自动' || w === '全屋' ? '' : w)}</span>`).filter(x => x !== '<span></span>').join('')}</div><table class="q"><tbody>${ls.map(l => `<tr><td>${esc(l.name)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('')}</tbody></table>`; }
+      if (sl.k === 'whole') { const ls = C.lines.filter(l => !l.roomId), ws = [...new Set(ls.map(l => l.from))]; return `<div class="kick">全屋</div><h1>${ic('home')} 全屋项目</h1><div class="facts"><div><b class="mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</b><span>全屋项目费用</span></div></div><div class="works">${ws.map(w => `<span>${esc(w === '自动' || w === '全屋' ? '' : w)}</span>`).filter(x => x !== '<span></span>').join('')}</div><table class="q"><tbody>${ls.map(l => `<tr><td>${esc(l.name)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('')}</tbody></table>`; }
       if (sl.k === 'cmp') { const ps = Q.plans(P).map(p => { const L = Q.buildLines(P, p.id); return { p, t: Q.totals(P, L).total }; }); return `<div class="kick">方案对比</div><h1>选哪一套？</h1><div class="cmp">${ps.map(x => `<div class="${x.p.id === pl.id ? 'on' : ''}"><div class="hint">${esc(x.p.name)}</div><div class="big mono" style="font-size:32px">${rm(x.t)}</div>${x.p.id !== ps[0].p.id ? `<div class="mono" style="color:${x.t > ps[0].t ? 'var(--accent)' : 'var(--ok)'}">${x.t >= ps[0].t ? '+' : '−'}${rm(Math.abs(x.t - ps[0].t))}</div>` : '<div class="hint">基准</div>'}<button class="btn ${x.p.id === pl.id ? 'pri' : ''}" style="margin-top:10px" data-plan="${x.p.id}">${x.p.id === pl.id ? '正在看这套' : '看这套'}</button></div>`).join('')}</div>`; }
       return `<div class="kick">付款与说明</div><h1>付款安排</h1><table class="q"><tbody>${T.pay.map((x, i) => `<tr><td>第 ${i + 1} 期 · ${esc(x.name)}</td><td class="r">${x.pct}%</td><td class="r mono">${rm(x.amt)}</td></tr>`).join('')}<tr><td><b>合计</b></td><td></td><td class="r mono"><b>${rm(T.total)}</b></td></tr></tbody></table>
         <h3 style="margin-top:22px">不包含</h3><ul class="exl hint">${EXCLUDE.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
