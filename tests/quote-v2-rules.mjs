@@ -401,4 +401,27 @@ ok('主人房、卧室、书房算同类；客厅和餐厅算同类，沿用时�
   assert.equal(Q.kinLabel('master'), '卧室');
 });
 
+ok('户型模板：卧室/卫生间/楼层数照选的生成；默认尺寸不低于 UBBL 第 42 条最低面积', () => {
+  for (const h of Object.keys(Q.HOUSES)) for (const l of Q.layoutsFor(h)) for (const d of [0, 1]) {
+    const spec = { ...l, beds: l.beds + d, baths: l.baths + d };
+    const rs = Q.layoutRooms(h, spec), beds = rs.filter(r => ['master', 'bedroom'].includes(r.type));
+    assert.equal(beds.length, spec.beds, h + l.id + ' 卧室数');
+    assert.equal(rs.filter(r => r.type === 'bath').length, spec.baths, h + l.id + ' 卫生间数');
+    assert.equal(Math.max(...rs.map(r => r.level || 1)), spec.levels, h + l.id + ' 楼层数');
+    const area = r => r.L * r.W;
+    const others = beds.filter(r => r.type === 'bedroom').sort((a, b) => area(b) - area(a));
+    if (beds.length) assert.ok(area(beds.find(r => r.type === 'master')) >= 118, h + ' 主人房 ≥ 11㎡');
+    if (others[0]) assert.ok(area(others[0]) >= 100, h + ' 第二间房 ≥ 9.3㎡');
+    others.forEach(r => assert.ok(area(r) >= 70, h + ' 其他卧室 ≥ 6.5㎡'));
+    rs.filter(r => r.type === 'kitchen').forEach(r => assert.ok(area(r) >= 48 && Math.min(r.L, r.W) >= 4.9, h + ' 厨房 ≥ 4.5㎡、宽 ≥ 1.5 米'));
+    if (spec.levels > 1) assert.ok(rs.some(r => r.type === 'stairs'), '多层要有楼梯');
+  }
+});
+
+ok('楼梯：踏步、扶手、楼梯灯都能报', () => {
+  const r = { ...Q.newRoom('stairs', 1, 1), measured: true, packs: ['stair_tile', 'stair_rail', 'stair_light'] };
+  const L = Q.buildLines(project([r]));
+  assert.equal(qty(L, 'stair_tread'), 18); assert.equal(qty(L, 'stair_rail'), 15); assert.equal(qty(L, 'stair_light'), 2);
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

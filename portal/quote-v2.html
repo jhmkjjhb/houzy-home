@@ -72,7 +72,9 @@
   .adds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip { border: 1px dashed var(--line); background: transparent; border-radius: 16px; padding: 5px 10px; color: var(--ink-dim); font-size: 12.5px; }
   .chip:hover { border-color: var(--navy); color: var(--navy); }
-  .drawings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
+  .recogT input.cust, .recogT select.cust { min-width: 0; width: 100%; padding: 5px 6px; }
+  .recogT td { vertical-align: middle; } .recogT tr.off td { opacity: .45; } .recogT td:nth-child(2) { min-width: 120px; }
+  .drawings { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 340px)); gap: 12px; margin-top: 10px; }
   .thumb { display: block; width: 100%; aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); padding: 0; cursor: zoom-in; position: relative; }
   .thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; display: block; }
   .thumb.empty { display: flex; align-items: center; justify-content: center; color: var(--ink-dim); font-size: 13px; border-style: dashed; cursor: default; }
@@ -249,7 +251,8 @@
 
 <script src="quote-v2-price.js?v=20261115c"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115f"></script>
+<script src="quote-v2-rules.js?v=20261115g"></script>
+<script src="quote-v2-plan.js?v=20261115h"></script>
 <script>
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
@@ -334,13 +337,112 @@
   }
   const levelName = lv => (P.houseType && HOUSES[P.houseType].levels > 1 || P.rooms.some(r => (r.level || 1) > 1)) ? (lv === 1 ? '底层' : lv + ' 楼') : '户内';
   const drawingOf = lv => IMG.drawings.find(d => d.level === lv);
+  // ---------- 户型：选标准户型自动排房间，卧室/卫生间/楼层可加减 ----------
+  let layoutConfirm = false;
+  const layoutOf = () => P.layout || { ...(Q.layoutsFor(P.houseType).find(x => x.id === Q.DEFAULT_LAYOUT[P.houseType]) || Q.layoutsFor(P.houseType)[0]) };
+  function layoutCard() {
+    const L = layoutOf(), work = P.rooms.some(r => r.packs.length);
+    const preview = Q.layoutRooms(P.houseType, L);
+    const stp = (k, label, min, max) => `<span class="fld" style="display:inline-flex;align-items:center;gap:6px">${label}<span class="stp"><button type="button" data-lay="${k}" data-d="-1" ${L[k] <= min ? 'disabled' : ''}>−</button><b class="mono" style="min-width:28px;text-align:center">${L[k]}</b><button type="button" data-lay="${k}" data-d="1" ${L[k] >= max ? 'disabled' : ''}>+</button></span></span>`;
+    return `<div class="card"><b>户型</b> <span class="hint">选最接近的，再加减卧室、卫生间、楼层；尺寸是常见估算，现场要复尺</span>
+      <div class="adds" style="margin:8px 0">${Q.layoutsFor(P.houseType).map(x => `<button class="rchip ${L.id === x.id && L.beds === x.beds && L.baths === x.baths && L.levels === x.levels ? 'on' : ''}" style="min-width:auto" data-layout="${x.id}">${esc(x.label)}</button>`).join('')}</div>
+      <div class="row">${stp('beds', '卧室', 0, 8)}${stp('baths', '卫生间', 1, 8)}${stp('levels', '楼层', 1, 4)}</div>
+      <p class="hint" style="margin:8px 0">会排出 ${preview.length} 个空间：${preview.map(r => esc(r.name)).join('、')}</p>
+      <button class="btn ${layoutConfirm ? 'warn' : 'pri'}" data-layapply>${layoutConfirm ? `再点一次确认：替换现在的 ${P.rooms.length} 个空间（已选的工程会清掉）` : work ? '按这个户型重新排房间…' : '按这个户型排房间'}</button></div>`;
+  }
+
+  // ---------- 平面图识别（沿用旧版逻辑）：本机识别服务优先，没有就用浏览器里的文字识别 ----------
+  let recog = null; // { level, busy, step, rooms:[...], warnings, mode, engine }
+  const lastFiles = {}; // 本次上传的原文件（只在内存里），识别时用更清楚的版本
+  let tessLib = null;
+  function loadTess() {
+    if (tessLib) return tessLib;
+    tessLib = new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; sc.onload = () => ok(window.Tesseract); sc.onerror = () => { tessLib = null; no(new Error('文字识别工具加载失败，请检查网络')); }; document.head.appendChild(sc); });
+    return tessLib;
+  }
+  async function ocrLocal(file) {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 100000);
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const res = await fetch('http://127.0.0.1:8766/ocr', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Plan-Type': ext === 'jpeg' ? 'jpg' : ext }, body: file, signal: ctl.signal });
+      const data = await res.json(); if (!res.ok) throw new Error(data.error || '识别失败');
+      return { lines: data.lines, engine: '本机文字识别（Mac）' };
+    } finally { clearTimeout(t); }
+  }
+  async function ocrBrowser(images, firstPage) {
+    const T = await loadTess(); recog.step = '第一次使用要下载识别字库（约 10MB），请稍等…'; render();
+    const worker = await T.createWorker('eng', 1, { logger: m => { if (m.status === 'recognizing text' && recog) { recog.step = `正在识别第 ${recog.pg} 页… ${Math.round(m.progress * 100)}%`; render(); } } });
+    const lines = [];
+    try {
+      for (let i = 0; i < images.length; i++) {
+        recog.pg = i + 1;
+        const im = await new Promise((ok, no) => { const x = new Image(); x.onload = () => ok(x); x.onerror = () => no(new Error('图片打不开')); x.src = images[i]; });
+        const { data } = await worker.recognize(im);
+        // 一行里隔得很远的字属于不同房间：按字间距拆开；只有尺寸的一行并到正上方的房间名后面
+        const segs = [];
+        (data.lines || []).forEach(l => {
+          const ws = (l.words || []).filter(w => w.text.trim()).sort((a, b) => a.bbox.x0 - b.bbox.x0), hgt = Math.max(8, l.bbox.y1 - l.bbox.y0);
+          let cur = null;
+          ws.forEach(w => { if (!cur || w.bbox.x0 - cur.x1 > hgt * 1.5) { cur = { ws: [], x0: w.bbox.x0, x1: w.bbox.x1, y0: w.bbox.y0, y1: w.bbox.y1 }; segs.push(cur); } cur.ws.push(w.text.trim()); cur.x1 = Math.max(cur.x1, w.bbox.x1); cur.y0 = Math.min(cur.y0, w.bbox.y0); cur.y1 = Math.max(cur.y1, w.bbox.y1); });
+        });
+        segs.forEach(sg => { sg.text = sg.ws.join(' '); });
+        segs.forEach(sg => {
+          if (!/^\s*\d+(?:\.\d+)?\s*[a-z尺米]*\s*[x×X]\s*\d+(?:\.\d+)?\s*[a-z尺米]+\s*$/i.test(sg.text)) return;
+          const h = sg.y1 - sg.y0, up = segs.filter(o => o !== sg && !o.dimOf && o.y1 <= sg.y0 + h * 0.3 && sg.y0 - o.y1 < h * 1.6 && o.x0 < sg.x1 && o.x1 > sg.x0).sort((a, b) => b.y1 - a.y1)[0];
+          if (up) { up.text += ' ' + sg.text; sg.dimOf = up; }
+        });
+        segs.filter(sg => !sg.dimOf).forEach(sg => lines.push({ page: firstPage + i, text: sg.text, x: (sg.x0 + sg.x1) / 2 / im.naturalWidth, y: (sg.y0 + sg.y1) / 2 / im.naturalHeight }));
+      }
+    } finally { await worker.terminate(); }
+    return { lines, engine: '浏览器文字识别' };
+  }
+  async function recognize(lv) {
+    recog = { level: lv, busy: true, step: '准备中…', rooms: [], warnings: [], mode: 'level' }; render();
+    try {
+      const file = lastFiles[lv], d = drawingOf(lv);
+      let out = null;
+      if (file) { try { recog.step = '正在用本机识别服务…'; render(); out = await ocrLocal(file); } catch (e) { out = null; } }
+      if (!out) {
+        const imgs = file ? (await fileToImages(file, 3000)).map(x => x.img) : [d.img];
+        out = await ocrBrowser(file ? imgs : [d.img], 1);
+      }
+      // 本机服务的页码从 1 开始：第 1 页对应上传时选的楼层；浏览器只识别一张图时按该楼层
+      const res = window.QV2_PLAN.parse(out.lines);
+      const known = new Set(Object.keys(ROOMS));
+      recog.rooms = res.rooms.filter(r => known.has(r.type)).map(r => ({ ...r, level: r.level || Math.min(4, lv + (r.page - 1)), on: true }));
+      recog.warnings = res.warnings; recog.engine = out.engine;
+      recog.step = recog.rooms.length ? `识别到 ${recog.rooms.length} 个空间（${out.engine}）。请逐项核对，确认后才会加入报价。` : `没找到房间标签（${out.engine}）。图纸文字太小或是手写时识别不了，可以用上面的「户型」直接排房间。`;
+    } catch (e) { recog.step = e.message || '识别失败'; recog.err = true; }
+    recog.busy = false; render();
+  }
+  function recogCard() {
+    if (!recog) return '';
+    const R = recog, lvMax = Math.max(4, ...P.rooms.map(r => r.level || 1));
+    let h = `<div class="card" id="recog"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b>识别结果 · ${esc(levelName(R.level))}平面图</b><button class="chip" data-recogclose>关闭</button></div>
+      <p class="hint" style="${R.err ? 'color:var(--red)' : ''}">${esc(R.step)}</p>`;
+    if (R.busy || !R.rooms.length) return h + '</div>';
+    h += `<div class="scroll-x"><table class="q recogT"><thead><tr><th></th><th>名称</th><th>类型</th><th>楼层</th><th class="r">长</th><th class="r">宽</th><th>图上文字</th></tr></thead><tbody>${R.rooms.map((r, i) => `<tr class="${r.on ? '' : 'off'}">
+      <td><input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
+      <td><input class="cust" data-rc="${i}" data-rk="name" value="${esc(r.name)}"></td>
+      <td><select class="cust" data-rc="${i}" data-rk="type">${Object.entries(ROOMS).map(([k, t]) => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${t.icon} ${t.label}</option>`).join('')}</select></td>
+      <td><select class="cust" data-rc="${i}" data-rk="level">${Array.from({ length: lvMax }, (_, j) => `<option value="${j + 1}" ${r.level === j + 1 ? 'selected' : ''}>${j + 1} 楼</option>`).join('')}</select></td>
+      <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="L" value="${r.L ?? ''}" placeholder="${ROOMS[r.type].L}"></td>
+      <td class="r"><input class="cust bkin" inputmode="decimal" data-rc="${i}" data-rk="W" value="${r.W ?? ''}" placeholder="${ROOMS[r.type].W}"></td>
+      <td class="desc">${esc(r.evidence)}${r.L == null ? '<br>没读到尺寸，先用默认' : ''}</td></tr>`).join('')}</tbody></table></div>
+      <p class="hint">${R.warnings.map(esc).join(' ')}</p>
+      ${P.rooms.length ? (() => { const lvs = [...new Set(R.rooms.filter(r => r.on).map(r => r.level))], same = P.rooms.filter(r => lvs.includes(r.level || 1)), work = same.filter(r => r.packs.length).length;
+        return `<div class="adds">${[['level', `替换${lvs.map(levelName).join('、')}现有的 ${same.length} 个空间${work ? `（其中 ${work} 间已选工程，会清掉）` : ''}`], ['append', '追加，不动现有房间'], ['replace', `替换全屋 ${P.rooms.length} 个空间`]].map(([k, l]) => `<label class="rchip" style="min-width:auto"><input type="radio" name="rmode" data-rmode="${k}" ${R.mode === k ? 'checked' : ''}> ${l}</label>`).join('')}</div>`; })() : ''}
+      <button class="btn pri" data-recogapply style="margin-top:8px">加入报价（${R.rooms.filter(r => r.on).length} 个空间）</button></div>`;
+    return h;
+  }
+
   function planCard() {
     const levels = Math.max(HOUSES[P.houseType]?.levels || 1, ...P.rooms.map(r => r.level || 1));
     let h = `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><b>平面图</b><span class="hint">图片或 PDF；PDF 多页会按顺序放到各楼层。照着图加房间、填尺寸。</span></div><div class="drawings">`;
     for (let lv = 1; lv <= levels; lv++) {
       const d = drawingOf(lv);
       h += `<div class="drawing">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图</div>`}
-        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button>` : ''}</div></div>`;
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><label class="chip" style="border-style:solid">${d ? '换一张' : '上传'}<input type="file" accept="image/*,.pdf" data-upplan="${lv}" hidden ${imgBusy ? 'disabled' : ''}></label>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip" style="border-style:solid;border-color:var(--navy);color:var(--navy)" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>🔍 自动识别房间</button>` : ''}</div></div>`;
     }
     h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
     return h;
@@ -377,7 +479,7 @@
     h += Object.entries(HOUSES).map(([k, x]) => `<button class="house ${P.houseType === k ? 'on' : ''}" data-house="${k}"><b>${x.label}</b><span>${x.en}${x.landed ? ' · 有地' : ''}</span></button>`).join('') + '</div>';
     if (!P.houseType) return h;
     const levels = Math.max(HOUSES[P.houseType].levels, ...P.rooms.map(r => r.level || 1));
-    h += planCard();
+    h += layoutCard() + planCard() + recogCard();
     h += `<h2>平面示意 <span class="hint" style="font-weight:400">· 方块大小按面积 · 蓝色 = 已选工程 · 红框 = 有待处理</span></h2>`;
     for (let lv = 1; lv <= levels; lv++) {
       const rs = P.rooms.filter(r => (r.level || 1) === lv);
@@ -756,7 +858,9 @@
   }
   document.addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], ds = e.target.dataset;
-    if (f && ds.upplan) addImages('plan', f, +ds.upplan);
+    if (ds.rc !== undefined && recog) { const r = recog.rooms[+ds.rc]; r[ds.rk] = ds.rk === 'on' ? e.target.checked : ds.rk === 'level' ? +e.target.value : e.target.value; render(); return; }
+    if (ds.rmode && recog) { recog.mode = ds.rmode; render(); return; }
+    if (f && ds.upplan) { lastFiles[+ds.upplan] = f; addImages('plan', f, +ds.upplan); }
     else if (f && ds.upphoto) addImages('photo', f, 0, ds.upphoto);
   });
   // 点图片外面的黑色区域也能关掉大图
@@ -810,6 +914,21 @@
     if (ds.bookf) { bookFilter = ds.bookf; render(); return; }
     if (ds.book === 'dl') { const csv = window.QV2_BOOK.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = '新版报价器价目表.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (ds.book === 'clear') { if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '再点一次确认删除'; return; } window.QV2_BOOK.clear(); location.reload(); return; }
+    if (ds.layout) { P.layout = { ...Q.layoutsFor(P.houseType).find(x => x.id === ds.layout) }; layoutConfirm = false; render(); return; }
+    if (ds.lay) { const L = layoutOf(), lim = { beds: [0, 8], baths: [1, 8], levels: [1, 4] }[ds.lay]; L[ds.lay] = Math.min(lim[1], Math.max(lim[0], L[ds.lay] + +ds.d)); P.layout = L; layoutConfirm = false; render(); return; }
+    if (b.hasAttribute('data-layapply')) {
+      if (P.rooms.some(r => r.packs.length) && !layoutConfirm) { layoutConfirm = true; render(); return; }
+      P.layout = layoutOf(); P.rooms = Q.layoutRooms(P.houseType, P.layout); roomId = P.rooms[0]?.id; layoutConfirm = false; render(); return;
+    }
+    if (ds.recog) { recognize(+ds.recog); return; }
+    if (b.hasAttribute('data-recogclose')) { recog = null; render(); return; }
+    if (b.hasAttribute('data-recogapply')) {
+      const pick = recog.rooms.filter(r => r.on && String(r.name).trim()); if (!pick.length) return;
+      const made = pick.map(r => { const x = Q.newRoom(r.type, r.level, 1); x.name = String(r.name).trim(); if (num(r.L) > 0) x.L = num(r.L); if (num(r.W) > 0) x.W = num(r.W); return x; });
+      const lvs = new Set(pick.map(r => r.level));
+      P.rooms = recog.mode === 'replace' ? made : recog.mode === 'level' ? [...P.rooms.filter(r => !lvs.has(r.level || 1)), ...made] : [...P.rooms, ...made];
+      roomId = made[0].id; recog = null; render(); return;
+    }
     if (ds.view) { viewer = ds.view; render(); return; }
     if (b.hasAttribute('data-viewzoom')) { viewer = viewer.endsWith('|z') ? viewer.slice(0, -2) : viewer + '|z'; render(); return; }
     if (b.hasAttribute('data-viewclose')) { viewer = null; render(); return; }
@@ -825,7 +944,7 @@
     if (ds.demogo !== undefined) { demoIdx = +ds.demogo; window.scrollTo(0, 0); render(); return; }
     if (ds.tab) { tab = ds.tab; confirmReset = false; render(); window.scrollTo(0, 0); return; }
     if (ds.house) {
-      if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; if (!keep) P.rooms = Q.presetRooms(ds.house); }
+      if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; P.layout = null; layoutConfirm = false; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
     }
     if (ds.goroom) { syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }

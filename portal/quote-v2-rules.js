@@ -22,14 +22,66 @@
     bungalow:  { label: '独立式', en: 'Bungalow', landed: true, levels: 2 },
     townhouse: { label: '联排分层', en: 'Townhouse', landed: false, levels: 1 }
   };
-  const PRESETS = {
-    condo:     [[1, ['living', 'dining', 'kitchen', 'master', 'bedroom', 'bedroom', 'bath', 'bath', 'laundry']]],
-    apartment: [[1, ['living', 'kitchen', 'master', 'bedroom', 'bedroom', 'bath', 'laundry']]],
-    townhouse: [[1, ['living', 'dining', 'kitchen', 'master', 'bedroom', 'bedroom', 'bath', 'bath', 'balcony']]],
-    terrace:   [[1, ['porch', 'living', 'dining', 'kitchen', 'bath']], [2, ['master', 'bedroom', 'bedroom', 'bath', 'bath']]],
-    semi:      [[1, ['porch', 'living', 'dining', 'kitchen', 'bedroom', 'bath', 'laundry']], [2, ['master', 'bedroom', 'bedroom', 'study', 'bath', 'bath']]],
-    bungalow:  [[1, ['porch', 'living', 'dining', 'kitchen', 'bedroom', 'bath', 'laundry']], [2, ['master', 'bedroom', 'bedroom', 'bedroom', 'bath', 'bath', 'balcony']]]
+
+  // ---------- 户型模板：选户型 → 自动排房间，卧室/卫生间/楼层数可加减 ----------
+  // 默认尺寸（尺）按新山常见户型估，都高于 UBBL 第 42 条最低要求（第一间房 ≥ 11㎡≈118 平方尺，第二间 ≥ 9.3㎡≈100，其余 ≥ 6.5㎡≈70，厨房 ≥ 4.5㎡且宽 ≥ 1.5 米）。
+  // 双层排屋常见 20–22 × 70 尺、4 房 3 卫。都是估算，现场要复尺。
+  const SIZES = {
+    apt:      { living: [16, 12], dining: [10, 10], kitchen: [10, 7], master: [13, 11], beds: [[11, 10], [10, 9], [10, 9], [10, 9]], mbath: [8, 5], bath: [7, 5], laundry: [7, 5], balcony: [10, 4], family: [12, 10], stairs: [10, 4] },
+    terrace:  { porch: [20, 18], living: [18, 14], dining: [14, 12], kitchen: [12, 10], wet: [12, 8], master: [16, 13], beds: [[12, 11], [11, 10], [11, 10], [10, 10]], mbath: [8, 6], bath: [7, 5], yard: [20, 8], family: [14, 12], stairs: [12, 4] },
+    semi:     { porch: [24, 20], living: [22, 16], dining: [16, 12], kitchen: [14, 10], wet: [12, 10], master: [18, 15], beds: [[14, 12], [13, 11], [12, 11], [12, 11]], mbath: [9, 6], bath: [8, 5], yard: [30, 10], family: [16, 14], stairs: [13, 4] },
+    bungalow: { porch: [30, 20], living: [26, 18], dining: [18, 14], kitchen: [16, 12], wet: [14, 10], master: [20, 16], beds: [[15, 13], [14, 12], [14, 12], [13, 12]], mbath: [10, 7], bath: [8, 6], yard: [40, 15], family: [18, 16], stairs: [14, 5] }
   };
+  const sizeClass = h => ({ terrace: 'terrace', semi: 'semi', bungalow: 'bungalow' }[h] || 'apt');
+  const LAYOUTS = {
+    strata: [
+      { id: 'studio', label: 'Studio 开放式', beds: 0, baths: 1, levels: 1 },
+      { id: '1b1b', label: '1 房 1 卫', beds: 1, baths: 1, levels: 1 },
+      { id: '2b2b', label: '2 房 2 卫', beds: 2, baths: 2, levels: 1 },
+      { id: '3b2b', label: '3 房 2 卫', beds: 3, baths: 2, levels: 1 },
+      { id: '4b3b', label: '4 房 3 卫', beds: 4, baths: 3, levels: 1 },
+      { id: 'duplex', label: '复式 Duplex 3 房 3 卫', beds: 3, baths: 3, levels: 2 }
+    ],
+    landed: [
+      { id: 'single', label: '单层 3 房 2 卫', beds: 3, baths: 2, levels: 1 },
+      { id: 'double', label: '双层 4 房 3 卫', beds: 4, baths: 3, levels: 2 },
+      { id: 'double5', label: '双层 5 房 4 卫', beds: 5, baths: 4, levels: 2 },
+      { id: 'triple', label: '三层 5 房 4 卫', beds: 5, baths: 4, levels: 3 }
+    ]
+  };
+  const layoutsFor = h => (HOUSES[h] && HOUSES[h].landed ? LAYOUTS.landed : LAYOUTS.strata);
+  const DEFAULT_LAYOUT = { condo: '3b2b', apartment: '3b2b', townhouse: '3b2b', terrace: 'double', semi: 'double5', bungalow: 'double5' };
+  // 按户型生成房间：公共区在底层；多层时主人房和大部分卧室在楼上，楼下留 1 间客房 + 1 间卫生间
+  function layoutRooms(h, spec) {
+    const S = SIZES[sizeClass(h)], landed = !!(HOUSES[h] && HOUSES[h].landed);
+    const beds = Math.max(0, Math.round(num(spec.beds))), baths = Math.max(0, Math.round(num(spec.baths))), levels = Math.min(4, Math.max(1, Math.round(num(spec.levels) || 1)));
+    const out = [], count = {};
+    const add = (type, lv, name, size) => { count[type] = (count[type] || 0) + 1; const r = newRoom(type, lv, 1); r.name = name; if (size) { r.L = size[0]; r.W = size[1]; } out.push(r); return r; };
+    if (landed && h !== 'townhouse') add('porch', 1, '车廊', S.porch);
+    add('living', 1, beds === 0 ? '开放起居/睡眠区' : '客厅', S.living);
+    if (beds > 0) add('dining', 1, '餐厅', S.dining);
+    if (landed) { add('kitchen', 1, '干厨房', S.kitchen); add('kitchen', 1, '湿厨房', S.wet); }
+    else add('kitchen', 1, beds === 0 ? '开放式厨房' : '厨房', S.kitchen);
+    if (landed) add('yard', 1, '后院', S.yard); else add('laundry', 1, '洗衣区', S.laundry);
+    if (!landed && beds > 0) add('balcony', 1, '阳台', S.balcony);
+    // 卧室：多层时楼下 1 间客房（3 房以上），其余从 2 楼往上排，每层最多 3 间
+    const bedLv = [];
+    for (let i = 0; i < beds; i++) bedLv.push(levels === 1 ? 1 : (i === beds - 1 && beds >= 3 ? 1 : Math.min(levels, 2 + Math.floor(i / 3))));
+    for (let i = 0; i < beds; i++) {
+      if (i === 0) add('master', bedLv[0], '主人房', S.master);
+      else add('bedroom', bedLv[i], bedLv[i] === 1 && levels > 1 ? '客房' : `卧室 ${i + 1}`, S.beds[Math.min(i - 1, S.beds.length - 1)]);
+    }
+    // 卫生间：第 1 间是主卧卫生间，放在主人房那层；其余的楼下 1 间、其他放楼上
+    for (let i = 0; i < baths; i++) {
+      if (i === 0 && beds > 0 && baths > 1) add('bath', bedLv[0], '主卧卫生间', S.mbath);
+      else { const lv = levels === 1 ? 1 : (out.some(r => r.type === 'bath' && (r.level || 1) === 1) ? Math.min(levels, 2) : 1); add('bath', lv, `卫生间 ${(count.bath || 0) + 1 - (beds > 0 && baths > 1 ? 1 : 0)}`, S.bath); }
+    }
+    for (let lv = 2; lv <= levels; lv++) add('family', lv, levels > 2 ? `${lv}楼家庭厅` : '家庭厅', S.family);
+    if (levels > 1) add('stairs', 1, '楼梯', S.stairs);
+    const one = out.filter(r => r.type === 'bath' && /卫生间 \d/.test(r.name));
+    if (one.length === 1) one[0].name = '公共卫生间';
+    return out.map((r, i) => [r, i]).sort((a, b) => (a[0].level || 1) - (b[0].level || 1) || a[1] - b[1]).map(x => x[0]);
+  }
 
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
   const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new'];
@@ -43,6 +95,11 @@
     bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
     balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal'] },
+    family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
+    store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
+    stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_light', 'wall_finish', 'scaffold'] },
+    yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] },
     porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] }
   };
   Object.values(ROOMS).forEach(t => { if (!t.outdoor) t.packs.push('custom_item'); });
@@ -163,6 +220,10 @@
     sill:           { g: 'open', label: '窗台石', icon: '▭', needWindows: true, lines: (r, g) => [['window_sill', g.winW, '各樘窗宽合计']] },
     balc_seal:      { g: 'open', label: '封阳台', icon: '🪟', lines: (r, g) => [['balc_seal', g.L, '= 阳台长度']] },
 
+    stair_tile:     { g: 'floor', label: '楼梯踏步砖', icon: '🪜', inputs: [{ k: 'n', label: '踏步', unit: '级', def: () => 18 }], lines: (r, g, v) => [['stair_tread', v.n, '踏步级数']] },
+    stair_rail:     { g: 'open', label: '楼梯扶手/栏杆', icon: '🪜', inputs: [{ k: 'len', label: '扶手长度', unit: '尺', def: (r, g) => r2(g.L + 3) }], lines: (r, g, v) => [['stair_rail', v.len, '扶手长度']] },
+    stair_light:    { g: 'mep', label: '楼梯灯（上下双控）', icon: '💡', inputs: [{ k: 'n', label: '灯', unit: '套', def: () => 2 }], lines: (r, g, v) => [['stair_light', v.n, '套数']] },
+    scaffold:       { g: 'demo', label: '挑空/高处脚手架', icon: '🏗️', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: (r, g, v) => [['scaffold', v.n, '处数']] },
     porch_tile:     { g: 'out', area: ['floor'], label: '防滑地砖', icon: '🟫', lines: (r, g, v, picked, sp) => [['screed', g.floor, '地面找平'], ['porch_tile', g.floor, '地面'], ...tileExtra(sp, g.floor)] },
     drain_ch:       { g: 'out', label: '排水沟', icon: '〰️', inputs: [{ k: 'len', label: '排水沟长度', unit: '尺', def: (r, g) => g.W }], lines: (r, g, v) => [['drain_ch', v.len, '排水沟长度']] },
     awning:         { g: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '雨棚面积']] },
@@ -468,10 +529,8 @@
     return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, windows: [], packs: [], vals: {}, measured: false };
   }
   function presetRooms(houseType) {
-    const out = [], count = {};
-    (PRESETS[houseType] || []).forEach(([lv, types]) => types.forEach(t => { count[t] = (count[t] || 0) + 1; out.push(newRoom(t, lv, count[t])); }));
-    out.forEach(r => { if (count[r.type] === 1) r.name = ROOMS[r.type].label; });
-    return out;
+    const l = layoutsFor(houseType).find(x => x.id === DEFAULT_LAYOUT[houseType]) || layoutsFor(houseType)[0];
+    return layoutRooms(houseType, l);
   }
   // 旧草稿迁移：原来「地砖/木地板」「平顶/造型吊顶」「刷漆」是范围卡片，现在材料移到选材
   function migrate(project) {
@@ -488,7 +547,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, roomsFor, kinOf, kinLabel, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -4,6 +4,8 @@ from pathlib import Path
 import json, re, subprocess, tempfile, threading, os
 ROOT = Path(__file__).resolve().parents[1]
 BIN = Path(tempfile.gettempdir()) / 'houzy-plan-ocr'
+# 旧版报价器（本服务自带）和新版报价器（本机预览 8799 / 线上官网）都可以调用；只监听本机 127.0.0.1
+ORIGINS = ('null', 'http://127.0.0.1:8766', 'http://localhost:8766', 'http://127.0.0.1:8799', 'http://localhost:8799', 'https://houzyhome.com', 'https://www.houzyhome.com')
 LOCK = threading.Lock()
 LABELS = [
  ('dryKitchen',r'dry\s*kitchen|干厨'),('wetKitchen',r'wet\s*kitchen|湿厨'),
@@ -83,7 +85,7 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw):super().__init__(*a,directory=str(ROOT),**kw)
     def end_headers(self):
         origin=self.headers.get('Origin','')
-        if origin in ('null','http://127.0.0.1:8766','http://localhost:8766'):
+        if origin in ORIGINS:
             self.send_header('Access-Control-Allow-Origin',origin)
         self.send_header('Cache-Control','no-store')
         super().end_headers()
@@ -97,8 +99,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204);self.send_header('Access-Control-Allow-Methods','POST, OPTIONS');self.send_header('Access-Control-Allow-Headers','Content-Type, X-Plan-Type');self.end_headers()
     def do_POST(self):
-        if self.path!='/analyze':return self.reply(404,{'error':'Not found'})
-        if self.headers.get('Origin','') not in ('','null','http://127.0.0.1:8766','http://localhost:8766'):return self.reply(403,{'error':'Origin not allowed'})
+        # /analyze = 旧版：返回整理好的房间；/ocr = 新版：只返回文字行，由页面按同样规则整理
+        if self.path not in ('/analyze','/ocr'):return self.reply(404,{'error':'Not found'})
+        if self.headers.get('Origin','') not in ('',)+ORIGINS:return self.reply(403,{'error':'Origin not allowed'})
         try:size=int(self.headers.get('Content-Length','0'))
         except ValueError:return self.reply(400,{'error':'无效文件长度'})
         if not 0<size<=20*1024*1024:return self.reply(413,{'error':'请选择不超过 20 MB 的文件'})
@@ -110,7 +113,8 @@ class Handler(SimpleHTTPRequestHandler):
                 p=Path(tmp)/('plan.'+ext);p.write_bytes(self.rfile.read(size))
                 proc=subprocess.run([str(BIN),str(p)],capture_output=True,text=True,timeout=100)
                 if proc.returncode:raise ValueError('无法识别此文件。PDF 最多 12 页，请检查文件是否损坏或加密。')
-                self.reply(200,parse(json.loads(proc.stdout)))
+                lines=json.loads(proc.stdout)
+                self.reply(200,{'lines':lines,'engine':'本机文字识别'} if self.path=='/ocr' else parse(lines))
         except subprocess.TimeoutExpired:self.reply(408,{'error':'识别超时，请拆分 PDF 或缩小图片后重试。'})
         except Exception as exc:self.reply(422,{'error':str(exc)})
         finally:LOCK.release()
