@@ -471,21 +471,27 @@
         if (/登录/.test(m)) recog.login = true;
         throw new Error(m);
       }
-      const known = new Set(Object.keys(ROOMS));
-      recog.rooms = (data.rooms || []).filter(r => known.has(r.type)).map((r, i) => ({
-        type: r.type, name: r.name, L: r.length_ft, W: r.width_ft, level: Math.max(1, Math.min(4, r.level || lv)), page: i, on: true,
-        evidence: r.size_source + (r.note ? '：' + r.note : '')
-      }));
-      recog.warnings = [data.notes || '', 'AI 识别结果仅供参考，尺寸请到现场复尺。'].filter(Boolean); recog.engine = data.engine;
-      recog.step = recog.rooms.length ? `AI 识别到 ${recog.rooms.length} 个空间。请逐项核对，确认后才会加入报价。` : 'AI 没找到房间，请换一张更清楚的平面图。';
+      fillRecog(data, lv);
     } catch (e) { recog.step = e.message || 'AI 识别失败'; recog.err = true; }
     recog.busy = false; render();
+  }
+  // AI 返回的格式（云端函数或手动粘贴都一样）→ 核对表
+  function fillRecog(data, lv) {
+    const known = new Set(Object.keys(ROOMS));
+    recog.rooms = (data.rooms || []).filter(r => known.has(r.type)).map((r, i) => ({
+      type: r.type, name: r.name, L: r.length_ft, W: r.width_ft, level: Math.max(1, Math.min(4, r.level || lv)), page: i, on: true,
+      evidence: (r.size_source || '') + (r.note ? '：' + r.note : '')
+    }));
+    recog.warnings = [data.notes || '', 'AI 识别结果仅供参考，尺寸请到现场复尺。'].filter(Boolean); recog.engine = data.engine || 'AI';
+    recog.all = new Set(recog.rooms.map(r => r.level)).size > 1;
+    recog.step = recog.rooms.length ? `识别到 ${recog.rooms.length} 个空间。请逐项核对，确认后才会加入报价。` : '没找到房间。';
   }
   function recogCard() {
     if (!recog) return '';
     const R = recog, lvMax = Math.max(4, ...P.rooms.map(r => r.level || 1));
     let h = `<div class="card" id="recog"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b>识别结果 · ${R.all ? '全部楼层' : esc(levelName(R.level)) + '平面图'}</b><button class="chip" data-recogclose>关闭</button></div>
       <p class="hint" style="${R.err ? 'color:var(--red)' : ''}">${esc(R.step)}</p>${R.login ? '<a class="btn pri" href="login.html?next=quote-v2.html" target="_blank" rel="noopener">登录员工账号</a>' : ''}`;
+    if (R.paste) return h + `<textarea id="pastebox" rows="6" style="width:100%;font:12px ui-monospace,monospace" placeholder='{"rooms":[…],"notes":"…"}'></textarea><button class="btn pri" data-pasteok style="margin-top:8px">读入</button></div>`;
     if (R.busy || !R.rooms.length) return h + '</div>';
     h += `<div class="scroll-x"><table class="q recogT"><thead><tr><th></th><th>名称</th><th>类型</th><th>楼层</th><th class="r">长</th><th class="r">宽</th><th>图上文字</th></tr></thead><tbody>${R.rooms.map((r, i) => `<tr class="${r.on ? '' : 'off'}">
       <td><input type="checkbox" data-rc="${i}" data-rk="on" ${r.on ? 'checked' : ''} aria-label="加入"></td>
@@ -508,7 +514,7 @@
     for (let lv = 1; lv <= levels; lv++) {
       const d = drawingOf(lv);
       h += `<div class="drawing" data-drop="plan:${lv}">${d ? `<button class="thumb" data-view="plan:${lv}"><img src="${d.img}" alt="${esc(levelName(lv))}平面图"></button>` : `<div class="thumb empty">还没有${esc(levelName(lv))}平面图<br>可把文件拖到这里</div>`}
-        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><button class="chip" style="border-style:solid" data-pick="plan:${lv}">${d ? '换一张' : '上传'}</button>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip on" data-airecog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} AI 识别房间</button><button class="chip" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>只读文字（免费）</button>` : ''}</div></div>`;
+        <div class="adds" style="margin:6px 0 0"><b style="align-self:center">${esc(levelName(lv))}</b><button class="chip" style="border-style:solid" data-pick="plan:${lv}">${d ? '换一张' : '上传'}</button>${d ? `<button class="chip" data-delplan-img="${lv}">删除</button><button class="chip on" data-airecog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>${ic('search')} AI 识别房间</button><button class="chip" data-recog="${lv}" ${recog && recog.busy ? 'disabled' : ''}>只读文字（免费）</button><button class="chip" data-pasterecog="${lv}">粘贴识别结果</button>` : ''}</div></div>`;
     }
     h += `</div>${imgBusy ? '<p class="hint">正在处理图片…</p>' : ''}${imgMsg ? `<div class="issue ${imgMsg.ok ? 'g' : 'r'}" style="margin-top:8px"><b>${imgMsg.ok ? '好了' : '没上传'}</b><span>${esc(imgMsg.m)}</span></div>` : ''}</div>`;
     return h;
@@ -1042,6 +1048,12 @@
     }
     if (ds.recog) { recognize(+ds.recog); return; }
     if (ds.airecog) { aiRecognize(+ds.airecog); return; }
+    if (ds.pasterecog) { recog = { level: +ds.pasterecog, paste: true, rooms: [], warnings: [], mode: 'level', step: '把识别结果（JSON）粘贴到下面，点「读入」。' }; render(); return; }
+    if (b.hasAttribute('data-pasteok')) {
+      const lv = recog.level; let data;
+      try { data = JSON.parse(document.getElementById('pastebox').value); } catch (e) { recog.step = '格式不对，读不懂：请整段原样粘贴'; recog.err = true; render(); return; }
+      recog = { level: lv, rooms: [], warnings: [], mode: 'level' }; fillRecog(data, lv); render(); return;
+    }
     if (b.hasAttribute('data-recogclose')) { recog = null; render(); return; }
     if (b.hasAttribute('data-recogapply')) {
       const pick = recog.rooms.filter(r => r.on && String(r.name).trim()); if (!pick.length) return;
