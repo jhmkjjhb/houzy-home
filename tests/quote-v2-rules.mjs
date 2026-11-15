@@ -443,6 +443,15 @@ ok('门和窗一样逐樘记录：换门按樘数计，墙面扣掉每樘门的�
   assert.equal(old.rooms[0].doorList.length, 2, '旧数据门数 2 → 两樘默认门');
 });
 
+ok('橱柜功能五金：每种按数量计，0 就不出现在报价单；旧报价里的「拉篮 3 套」照样算碗碟拉篮', () => {
+  const k = { ...Q.newRoom('kitchen', 1, 1), measured: true, packs: ['cab_basket'], vals: { cab_basket: { n: 3, corner: 1, rice: 0 } } };
+  const L = Q.buildLines(project([k]));
+  assert.equal(L.find(l => l.code === 'cab_basket').qty, 3, '旧数据的拉篮数量保留');
+  assert.equal(L.find(l => l.code === 'hw_corner').qty, 1);
+  assert.ok(!L.some(l => l.code === 'hw_rice'), '填 0 的不出现');
+  assert.ok(!L.some(l => l.code === 'hw_spice'), '新增的五金默认 0，不会悄悄加进原来的报价');
+});
+
 ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {
   const k = { ...Q.newRoom('kitchen', 1, 1), L: 12, W: 10, ext: true, measured: true, packs: ['wet_tile'] };
   const e = { ...Q.newRoom('extension', 1, 1), measured: true };

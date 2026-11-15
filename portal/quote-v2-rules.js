@@ -151,6 +151,10 @@
   // lines(room, geo, values, picked, sp)：sp(类别, 选项) 取当前选材，用于「材料不同、项目也不同」的情况。
   const GROUPS = [['demo', '拆旧'], ['floor', '地面'], ['wall', '墙面'], ['ceil', '天花'], ['mep', '水电'], ['wet', '防水与瓷砖'], ['fix', '洁具设备'], ['cab', '定制柜'], ['open', '门窗窗帘'], ['out', '户外']];
   const BIG_TILE = ['750×1500 mm', '900×1800 mm', '1200×1200 mm'];
+  // [输入键, 名称, 单位, 价目编号, 默认数量]
+  const HW = [['n', '碗碟拉篮（地柜抽拉）', '套', 'cab_basket', 1], ['spice', '调味拉篮（窄柜）', '套', 'hw_spice', 0], ['corner', '转角拉篮（小怪物/飞碟）', '套', 'hw_corner', 0],
+    ['tall', '高身柜拉篮（储物高柜）', '套', 'hw_tall', 0], ['lift', '吊柜升降拉篮', '套', 'hw_lift', 0], ['rack', '吊柜碗碟沥水架', '套', 'hw_rack', 0],
+    ['bin', '水槽柜垃圾桶拉出', '套', 'hw_bin', 0], ['cutlery', '抽屉刀叉餐具分隔盘', '个', 'hw_cutlery', 0], ['rice', '米箱', '个', 'hw_rice', 0], ['flap', '吊柜上翻门支撑（气撑/上翻器）', '套', 'hw_flap', 0]];
   const cabSqft = (label, icon, code, w, h) => ({ g: 'cab', label, icon,
     inputs: [{ k: 'w', label: '宽', unit: '尺', def: w }, { k: 'h', label: '高', unit: '尺', def: h }],
     lines: (r, g, v, picked, sp) => [[code, r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.w, '柜内灯带 = 柜宽']] : [])] });
@@ -205,7 +209,9 @@
     cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️',
                       inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => r2(g.L) }],
                       lines: (r, g, v, picked, sp) => [['cab_low', v.low, '地柜长度'], ['counter', v.low, '= 地柜长度'], ['cab_up', v.up, '吊柜长度'], ['sink', 1, '厨房必配'], ['hood', 1, '烟机灶具安装'], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.up, '吊柜底灯带 = 吊柜长度']] : [])] },
-    cab_basket:     { g: 'cab', label: '橱柜拉篮', icon: '🧺', inputs: [{ k: 'n', label: '拉篮', unit: '套', def: () => 2 }], lines: (r, g, v) => [['cab_basket', v.n, '拉篮套数']] },
+    // 橱柜功能五金：每种填数量，0 = 不要；碗碟拉篮沿用原「拉篮」编号和数量
+    cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d })),
+                      lines: (r, g, v) => HW.map(([k, label, , code]) => [code, num(v[k]), label]) },
     wardrobe:       cabSqft('衣柜', '🚪', 'wardrobe', (r, g) => r2(Math.min(g.L, g.W) - 2), () => 8),
     tv_cab:         cabSqft('电视柜/背景墙', '📺', 'tv_cab', () => 8, () => 3),
     altar:          cabSqft('神龛/神台柜', '🗄️', 'altar_cab', () => 4, () => 7),

@@ -87,7 +87,7 @@
     "sideboard":{"stage":"custom","name":"餐边柜","unit":"延尺","mat":60,"aux":8,"lab":15,"waste":0,"desc":"上下柜或到顶柜，中段可做开放台面放电器"},
     "headboard":{"stage":"custom","name":"床头背景墙","unit":"延尺","mat":45,"aux":8,"lab":15,"waste":0,"desc":"按设计图做软包/木饰面/灯槽造型，预留床头插座开关"},
     "bookcase":{"stage":"custom","name":"书柜/储物柜","unit":"延尺","mat":55,"aux":8,"lab":15,"waste":0,"desc":"到顶柜体，层板可调，门板款式客户选定"},
-    "cab_basket":{"stage":"custom","name":"橱柜拉篮五金","unit":"套","mat":180,"aux":0,"lab":20,"waste":0,"desc":"不锈钢调味拉篮/碗碟拉篮，阻尼滑轨"},
+    "cab_basket":{"stage":"custom","name":"碗碟拉篮（地柜抽拉）","unit":"套","mat":180,"aux":0,"lab":20,"waste":0,"desc":"不锈钢碗碟拉篮，阻尼滑轨"},
     "main_door":{"stage":"custom","name":"大门更换（含门框、锁）","unit":"樘","mat":1200,"aux":100,"lab":200,"waste":0,"desc":"防盗/实木大门，含门框、门锁、门吸，门框与墙体打胶"},
     "window_new":{"stage":"custom","name":"铝合金窗更换","unit":"平方尺","mat":25,"aux":3,"lab":6,"waste":0,"desc":"拆旧窗后安装铝合金窗框+玻璃（规格客户选定），外框打胶防水"},
     "fly_screen":{"stage":"custom","name":"纱窗","unit":"平方尺","mat":6,"aux":1,"lab":2,"waste":0,"desc":"隐形/推拉纱窗，配合窗户尺寸定做"},
@@ -108,6 +108,13 @@
     "decor":{"stage":"soft","name":"基础软装配饰包（靠垫/花艺/摆件）","unit":"项","mat":800,"aux":0,"lab":0,"waste":0,"desc":"按设计风格搭配基础软装配饰"}};
   root.QV2_PRICE.desk = {"stage":"custom","name":"定制书桌／工作台","unit":"延尺","mat":0,"aux":0,"lab":0,"waste":0,"unpriced":true,"desc":"按客户确认的材质、尺寸、承重及走线要求制作"};
   // 新版：定制柜按正面面积（宽×高，平方尺）计价，单价待公司核定；橱柜地柜/吊柜和台面仍按延尺
+  // 橱柜功能五金：单价待公司按品牌（如 Higold/Blum/国产）核定
+  [['hw_spice', '调味拉篮（窄柜）', '套', '150–200mm 窄柜不锈钢调味拉篮，阻尼滑轨'], ['hw_corner', '转角拉篮（小怪物/飞碟）', '套', '转角地柜联动拉篮，充分利用转角空间'],
+   ['hw_tall', '高身柜拉篮（储物高柜）', '套', '高柜多层联动拉篮'], ['hw_lift', '吊柜升降拉篮', '套', '吊柜内下拉式升降拉篮，方便够取'], ['hw_rack', '吊柜碗碟沥水架', '套', '吊柜内不锈钢碗碟沥水架，带接水盘'],
+   ['hw_bin', '水槽柜垃圾桶拉出', '套', '水槽下拉出式分类垃圾桶'], ['hw_cutlery', '抽屉刀叉餐具分隔盘', '个', '按抽屉宽度配置'], ['hw_rice', '米箱', '个', '嵌入式米箱（出米口/抽拉式）'],
+   ['hw_flap', '吊柜上翻门支撑（气撑/上翻器）', '套', '吊柜上翻门气撑或上翻器，含安装']].forEach(([code, name, unit, desc]) => {
+    root.QV2_PRICE[code] = { stage: 'custom', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
+  });
   root.QV2_PRICE.altar_cab = {"stage":"custom","name":"神龛/神台柜定制","unit":"平方尺","mat":0,"aux":0,"lab":0,"waste":0,"desc":"按客户确认的款式和尺寸定做（神台、地主位、下柜抽屉/柜门），神台灯要预留电源插座"};
   ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard'].forEach(c => Object.assign(root.QV2_PRICE[c], { unit: '平方尺', mat: 0, aux: 0, lab: 0, unpriced: true }));
   Object.assign(root.QV2_PRICE.desk, { unit: '项' });
