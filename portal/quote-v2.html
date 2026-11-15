@@ -635,7 +635,6 @@
       ${doneBar(r, bad)}${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}${T.outdoor ? '' : field('门', '樘', stepper(`data-rf="doors"`, r.doors, 1))}</div>
-        ${T.outdoor ? '' : winEditor(r)}
         <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
       </div><div class="sketch">${sketch(r)}</div></div></div>`;
     h += `<h2>这间要做什么</h2><p class="hint">点卡片选择；已选的卡片点名字会跳到要填的数字，点左边的 ✓ 才是取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
@@ -655,7 +654,7 @@
   // 窗户尺寸：房间尺寸区、窗帘/窗台石/换窗卡片、沿用到别的房间时，都能填；每樘窗都绑定它所在的房间（data-wroom）
   function winEditor(r, mode) {
     const A = (i, k) => `data-wroom="${r.id}" data-win="${i}" data-wk="${k}"`;
-    const title = mode === 'sync' ? `「${esc(Q.roomLabel(r, P))}」有几樘窗？每樘填宽和高` : `「${esc(Q.roomLabel(r, P))}」的窗户${mode === 'card' ? '（和上面房间尺寸里的是同一份）' : '（每樘填宽和高，窗帘、窗台石、换窗都按这里算）'}`;
+    const title = mode === 'sync' ? `「${esc(Q.roomLabel(r, P))}」有几樘窗？每樘填宽和高` : `「${esc(Q.roomLabel(r, P))}」的窗户${mode === 'card' ? '（窗帘、窗台石、纱窗、换窗共用，填一次就行）' : ''}`;
     return `<div class="wins"${mode ? ' style="margin:6px 0"' : ''}><div class="fld">${title}</div>${(r.windows || []).map((w, i) => `<div class="win"><span class="no">第 ${i + 1} 樘</span><label class="fld" style="margin:0">位置<input class="cust" style="width:110px" ${A(i, 'at')} value="${esc(w.at || '')}" placeholder="如：客厅前窗"></label>${field('宽', '尺', stepper(A(i, 'w'), w.w ?? '', 0.5))}${field('高', '尺', stepper(A(i, 'h'), w.h ?? '', 0.5))}<button class="x" data-wroom="${r.id}" data-delwin="${i}" title="删除这樘窗">✕</button></div>`).join('')}<button class="chip" data-wroom="${r.id}" data-addwin${mode ? `="${mode}"` : ''}>+ 加一樘窗</button></div>`;
   }
   function doneBar(r, bad) {
