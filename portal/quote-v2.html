@@ -86,6 +86,9 @@
   .thumb.sm .x { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; line-height: 22px; padding: 0; }
   .thumb.add { display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--navy); border-style: dashed; cursor: pointer; }
   .thumb.add span { font-size: 11px; line-height: 1.3; }
+  .sync .rchip { max-width: 100%; white-space: normal; text-align: left; }
+  /* 问「其他空间也做吗」时，这张工项卡占满一整行，房间按钮横着排，不挤成一条 */
+  .pack:has(.sync) { grid-column: 1 / -1; }
   .pmaps { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
   .pmap { position: relative; margin-top: 8px; width: 240px; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
   .pmap img { display: block; width: 100%; }
@@ -649,8 +652,8 @@
     const k = Q.kinOf(r.type), same = others.filter(x => Q.kinOf(x.type) === k), diff = others.filter(x => Q.kinOf(x.type) !== k);
     const chip = x => { const has = (x.packs || []).includes(c); return `<button type="button" class="rchip ${has ? 'on' : ''}" style="min-width:auto" data-sync-to="${x.id}">${has ? '✓ ' : ''}${esc(Q.roomLabel(x, P))}</button>`; };
     const todo = others.filter(x => (x.packs || []).includes(c) !== on);
-    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
-      <div class="adds" style="margin:6px 0 0">${same.map(chip).join('')}${diff.length ? `<span class="hint" style="align-self:center">其他：</span>${diff.map(chip).join('')}` : ''}</div>
+    return `<div class="sync"><b>${on ? '其他空间也做这项吗？' : '其他空间也取消这项吗？'}</b><span class="hint">下面是全屋能做这项的 ${others.length} 个空间${(() => { const skip = P.rooms.length - 1 - others.length; return skip > 0 ? `（另外 ${skip} 个如卫生间、楼梯、户外，不适用这项，没列出）` : '（全屋都列出来了）'; })()}。点房间切换；数量按各自尺寸算，${on ? '选材和点位数一起带过去，' : ''}之后每间还能单独改</span>
+      <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
       <div class="adds" style="margin:8px 0 0">${todo.length ? `<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-all>${on ? '全部也做' : '全部也取消'}（${todo.length} 间）</button>` : ''}${todo.some(x => Q.kinOf(x.type) === k) && todo.length !== todo.filter(x => Q.kinOf(x.type) === k).length ? `<button type="button" class="btn" data-sync-same>只${Q.kinLabel(r.type)}（${todo.filter(x => Q.kinOf(x.type) === k).length} 间）</button>` : ''}<button type="button" class="btn" data-sync-close>只这间</button></div></div>`;
   }
   function copyPanel(r) {
