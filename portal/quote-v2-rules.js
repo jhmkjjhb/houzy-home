@@ -290,12 +290,15 @@
 
   // ---------- 计算 ----------
   function geo(room, house) {
-    const L = num(room.L), W = num(room.W), H = num(room.H) || num(house && house.H) || 9, doors = Math.max(0, Math.round(num(room.doors)));
+    // 门：新版逐樘记录（doorList，每樘 位置/宽/高），旧数据只有门数（doors）
+    const dl = Array.isArray(room.doorList) ? room.doorList : null;
+    const L = num(room.L), W = num(room.W), H = num(room.H) || num(house && house.H) || 9, doors = dl ? dl.length : Math.max(0, Math.round(num(room.doors)));
+    const doorA = dl ? r2(dl.reduce((t, x) => t + ((num(x.w) * num(x.h)) || 21), 0)) : doors * 21, doorW = dl ? r2(dl.reduce((t, x) => t + (num(x.w) || 3), 0)) : doors * 3;
     const wins = (room.windows || []).map(x => ({ w: num(x.w), h: num(x.h) }));
     const winW = r2(wins.reduce((t, x) => t + x.w, 0)), winA = r2(wins.reduce((t, x) => t + x.w * x.h, 0));
     const floor = r2(L * W), perim = r2(2 * (L + W));
-    const wall = r2(Math.max(0, perim * H - doors * 21 - winA));
-    const skirt = r2(Math.max(0, perim - doors * 3));
+    const wall = r2(Math.max(0, perim * H - doorA - winA));
+    const skirt = r2(Math.max(0, perim - doorW));
     return { L, W, H, doors, floor, perim, wall, skirt, winW, winA, wins };
   }
   const AREA_INPUT = {
@@ -536,7 +539,7 @@
 
   function newRoom(type, level, n) {
     const t = ROOMS[type];
-    return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, windows: [], packs: [], vals: {}, measured: false, ...(t.ext ? { ext: true } : {}) };
+    return { id: 'r' + Math.random().toString(36).slice(2, 9), type, level: level || 1, name: t.label + (n > 1 ? ' ' + n : ''), L: t.L, W: t.W, doors: t.doors, doorList: Array.from({ length: t.doors || 0 }, () => ({ w: 3, h: 7 })), windows: [], packs: [], vals: {}, measured: false, ...(t.ext ? { ext: true } : {}) };
   }
   function presetRooms(houseType) {
     const l = layoutsFor(houseType).find(x => x.id === DEFAULT_LAYOUT[houseType]) || layoutsFor(houseType)[0];
@@ -546,6 +549,8 @@
   function migrate(project) {
     const pl = plans(project)[0];
     project.rooms.forEach(r => {
+      // 门数 → 逐樘门（默认 3×7 尺）
+      if (!Array.isArray(r.doorList)) r.doorList = Array.from({ length: Math.max(0, Math.round(num(r.doors))) }, () => ({ w: 3, h: 7 }));
       const set = (cat, k, v) => { ((pl.roomSpecs[r.id] = pl.roomSpecs[r.id] || {})[cat] = pl.roomSpecs[r.id][cat] || {})[k] = v; };
       const has = c => (r.packs || []).includes(c), swap = (from, to) => { r.packs = r.packs.filter(x => x !== from); if (!r.packs.includes(to)) r.packs.push(to); if (r.vals?.[from]) { r.vals[to] = r.vals[from]; delete r.vals[from]; } };
       if (has('laminate')) { swap('laminate', 'floor'); set('tile', 'material', 'SPC 石塑地板'); }

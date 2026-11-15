@@ -433,6 +433,16 @@ ok('客厅可以选神龛：按正面宽×高的平方尺计，单价待公司�
   assert.ok(l && l.qty === 28, '4 × 7 = 28 平方尺');
 });
 
+ok('门和窗一样逐樘记录：换门按樘数计，墙面扣掉每樘门的实际面积；旧数据只有门数时自动变成默认 3×7 尺的门', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), L: 10, W: 10, H: 9, measured: true, doorList: [{ at: '房门', w: 3, h: 7 }, { at: '阳台门', w: 6, h: 7 }], packs: ['door'] };
+  const g = Q.geo(r, {});
+  assert.equal(g.doors, 2);
+  assert.equal(g.wall, 40 * 9 - 21 - 42, '墙面 = 周长×层高 − 两樘门面积');
+  assert.equal(Q.buildLines(project([r])).find(l => l.code === 'door').qty, 2, '换门 2 樘');
+  const old = Q.migrate(project([{ ...Q.newRoom('bedroom', 1, 1), doors: 2, doorList: undefined }]));
+  assert.equal(old.rooms[0].doorList.length, 2, '旧数据门数 2 → 两樘默认门');
+});
+
 ok('加建：标了加建的房间按地面面积加结构；整单只申请一次准证；全屋和房间都选了要提醒重复', () => {
   const k = { ...Q.newRoom('kitchen', 1, 1), L: 12, W: 10, ext: true, measured: true, packs: ['wet_tile'] };
   const e = { ...Q.newRoom('extension', 1, 1), measured: true };
