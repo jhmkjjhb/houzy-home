@@ -503,7 +503,9 @@
       <td class="desc">${esc(r.evidence)}${r.L == null ? '<br>没读到尺寸，先用默认' : ''}</td></tr>`).join('')}</tbody></table></div>
       <p class="hint">${R.warnings.map(esc).join(' ')}</p>
       ${P.rooms.length ? (() => { const lvs = [...new Set(R.rooms.filter(r => r.on).map(r => r.level))], same = P.rooms.filter(r => lvs.includes(r.level || 1)), work = same.filter(r => r.packs.length).length;
-        return `<div class="adds">${[['level', `替换${lvs.map(levelName).join('、')}现有的 ${same.length} 个空间${work ? `（其中 ${work} 间已选工程，会清掉）` : ''}`], ['append', '追加，不动现有房间'], ['replace', `替换全屋 ${P.rooms.length} 个空间`]].map(([k, l]) => `<label class="rchip" style="min-width:auto"><input type="radio" name="rmode" data-rmode="${k}" ${R.mode === k ? 'checked' : ''}> ${l}</label>`).join('')}</div>`; })() : ''}
+        const lvN = lvs.map(levelName).join('、'), others = P.rooms.length - same.length;
+        return `<p class="hint" style="margin:10px 0 4px;color:var(--ink)"><b>报价里现在已经有 ${P.rooms.length} 个空间</b>（选户型时自动排的，其中${lvN} ${same.length} 个）。识别出来的空间要怎么放进去？</p>
+        <div class="adds">${[['level', `用识别结果换掉${lvN}原来的 ${same.length} 个（推荐）`, `${lvN}以识别为准；${others ? `其他楼层的 ${others} 个不动` : '其他不变'}${work ? `。注意：其中 ${work} 间已经选了工程，会一起清掉` : ''}`], ['append', '原来的都留着，识别的加在后面', '房间可能会重复，要自己删'], ['replace', `全部清空，只留识别的`, `全屋原来的 ${P.rooms.length} 个都删掉`]].map(([k, l, d]) => `<label class="rchip" style="min-width:auto;flex-direction:column;align-items:flex-start;gap:2px"><span><input type="radio" name="rmode" data-rmode="${k}" ${R.mode === k ? 'checked' : ''}> ${l}</span><small class="hint" style="margin:0 0 0 22px">${d}</small></label>`).join('')}</div>`; })() : ''}
       <button class="btn pri" data-recogapply style="margin-top:8px">加入报价（${R.rooms.filter(r => r.on).length} 个空间）</button></div>`;
     return h;
   }
