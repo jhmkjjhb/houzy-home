@@ -176,7 +176,7 @@ ok('预估报价：没定的选材只提醒；正式报价：必须全部定好'
   assert.ok(!Q.checks(p, L, 'estimate').red.some(x => x.m.includes('地面还没定选材')));
   assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('地面还没定选材')));
   p.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }];
-  assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.length);
+  assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('选材')), '选材都定了就不再挡');
 });
 
 ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
@@ -681,6 +681,14 @@ ok('软装按房间选、数量 0 = 不要；管理费和不可预见费只按�
   assert.ok(T.soft >= 3000, '沙发按填的价算进软装');
   assert.equal(T.mgmt, Math.round((T.direct - T.soft) * 0.06), '软装不收管理费');
   assert.equal(T.cont, Math.round((T.direct - T.soft) * 0.05));
+});
+
+ok('成品保护按施工房间地面面积（平方尺）算，室外和没施工的房间不算', () => {
+  const a = { ...Q.newRoom('bedroom', 1, 1), L: 12, W: 10, measured: true, packs: ['wall_finish'] };
+  const b = { ...Q.newRoom('bedroom', 1, 2), L: 10, W: 10, measured: true, packs: [] };
+  const c = { ...Q.newRoom('porch', 1, 1), measured: true, packs: ['porch_tile'] };
+  const L = Q.buildLines(project([a, b, c])), pr = L.find(l => l.code === 'protect');
+  assert.equal(pr.qty, 120); assert.equal(pr.unitName, '平方尺');
 });
 
 console.log(`PASS: ${n} quote-v2 rule checks`);

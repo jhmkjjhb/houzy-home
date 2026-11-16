@@ -510,7 +510,8 @@
       const mq = (project.feeQty || {})[code];
       if (mq !== undefined && mq !== '') push(null, code, num(mq), `手动填写（自动算 ${r2(qty)}）`, from); else push(null, code, qty, f, from);
     };
-    if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', 1, '每单必做', '全屋'); }
+    // 成品保护按施工房间地面面积算（平方尺）
+    if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', Math.max(1, r2(project.rooms.filter(r => !ROOMS[r.type].outdoor && (r.packs || []).length).reduce((t, r) => t + geo(r, project).floor, 0))), '施工房间地面面积合计', '全屋'); }
     if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) auto('permit', 1, '公寓有管理处，装修要先申请', '全屋');
     project.rooms.forEach(room => {
       const g = geo(room, project), picked = {};

@@ -1,7 +1,7 @@
 // 新版报价器参考价：由 portal/quote.html 的 PRICE / STAGES 生成，价格改动请两边同步（旧版下线后只保留这里）。
 (function(root){
   root.QV2_PRICE = {"setout":{"stage":"prep","name":"开工放线定位","unit":"项","mat":0,"aux":0,"lab":150,"waste":0,"desc":"按设计图现场弹出墙体、门洞、柜体、水电点位位置线，与客户现场确认后开工"},
-    "protect":{"stage":"prep","name":"成品及公共区域保护（地面/电梯/走廊）","unit":"项","mat":250,"aux":50,"lab":200,"waste":0,"desc":"室内地面铺保护膜+夹板，门框、窗框、电梯、走廊贴保护，完工后撤除"},
+    "protect":{"stage":"prep","name":"成品及公共区域保护（地面/电梯/走廊）","unit":"平方尺","mat":0,"aux":0,"lab":0,"waste":0,"unpriced":true,"desc":"室内地面铺保护膜+夹板，门框、窗框、电梯、走廊贴保护，完工后撤除"},
     "permit":{"stage":"prep","name":"物业装修申请代办","unit":"项","mat":0,"aux":0,"lab":150,"waste":0,"desc":"代办管理处装修申请及工人出入证；装修押金由客户直接交物业，不含在本报价内，完工后物业退还"},
     "demo_piece":{"stage":"prep","name":"拆除旧柜/旧洁具/旧门窗","unit":"件","mat":0,"aux":0,"lab":35,"waste":0,"desc":"人工拆除，可回收件交还客户，其余随建筑垃圾清运"},
     "demo_floor":{"stage":"prep","name":"铲除旧地砖（含旧找平层）","unit":"平方尺","mat":0,"aux":0,"lab":1.5,"waste":0,"desc":"电镐铲除至结构层，清理基层，渣土装袋"},
