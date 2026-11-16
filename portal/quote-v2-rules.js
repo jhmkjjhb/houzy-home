@@ -95,7 +95,7 @@
     kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
     bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
-    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal'] },
+    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
     corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
@@ -523,6 +523,8 @@
   }
 
   // 检查：red = 不处理不能出报价单；yellow = 提醒确认。mode: 'estimate' 预估 / 'formal' 正式
+  // 阳台各家开口不同（栏杆、推拉门、实墙几面），按墙面面积算的项目要员工现场量好填实际面积，不能用默认四面墙
+  const wallUnconfirmed = room => (ROOMS[room.type].confirmWall ? (room.packs || []).filter(c => PACKS[c] && (PACKS[c].area || []).includes('wall') && !(room.vals && room.vals[c] && room.vals[c].wall !== undefined && room.vals[c].wall !== '')) : []);
   function checks(project, lines, mode) {
     const red = [], yellow = [];
     if (!project.houseType) red.push({ m: '还没选房屋类型', go: 'house' });
@@ -532,6 +534,7 @@
       if (!(g.L > 0 && g.W > 0)) red.push({ m: `「${label}」请填写长和宽`, go: room.id });
       else if (!room.measured && packs.length) (mode === 'formal' ? red : yellow).push({ m: `「${label}」尺寸还是默认值，${mode === 'formal' ? '请现场量好后点「尺寸已确认」' : '预估先按默认尺寸算'}`, go: room.id });
       (room.windows || []).forEach((x, i) => { if (!(num(x.w) > 0 && num(x.h) > 0)) red.push({ m: `「${label}」第 ${i + 1} 樘窗请填写宽和高`, go: room.id }); });
+      wallUnconfirmed(room).forEach(c => red.push({ m: `「${label}」${PACKS[c].label}：阳台墙面要现场确认，请填实际面积（现在按四面墙算 ${g.wall} 平方尺，实际通常只有 2–3 面实墙，还要扣推拉门）`, go: room.id }));
       packs.forEach(c => {
         const pk = PACKS[c]; if (!pk) return;
         (pk.area || []).forEach(k => { const v = packValues(room, c, g)[k]; if (v > g[k] + 0.01) yellow.push({ m: `「${label}」${pk.label}面积 ${r2(v)} 大于房间${k === 'wall' ? '墙面' : '地面'} ${g[k]}，请确认`, go: room.id }); });
@@ -677,7 +680,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

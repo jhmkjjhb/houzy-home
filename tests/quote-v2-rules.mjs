@@ -595,4 +595,15 @@ ok('楼梯：踏步做法、栏杆做法、踏步灯按选的出项目；没改�
   assert.ok(L.find(l => l.code === 'stair_wood').unpriced, '实木踏板等公司定价，不按 0 算');
 });
 
+ok('阳台按墙面算的项目要现场确认墙面面积，填了才放行；其他房间不受影响', () => {
+  const b = { ...Q.newRoom('balcony', 1, 1), L: 18, W: 10.5, measured: true, packs: ['wall_finish'] };
+  const bed = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wall_finish'] };
+  const p = project([b, bed]);
+  const red = () => Q.checks(p, Q.buildLines(p), 'estimate').red.map(x => x.m).filter(m => m.includes('墙面要现场确认'));
+  assert.equal(red().length, 1, '阳台没确认墙面就挡着，卧室不用');
+  b.vals = { wall_finish: { wall: 295 } };
+  assert.equal(red().length, 0);
+  assert.equal(Q.buildLines(p).find(l => l.roomId === b.id && l.code === 'paint_wall').qty, 295, '按员工填的实际面积算');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
