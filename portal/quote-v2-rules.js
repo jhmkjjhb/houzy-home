@@ -508,11 +508,36 @@
 
   // ---------- 沿用到其他空间：复制，不是联动；复制后每间仍可单独改 ----------
   // 哪些房间也能做这个工项（同类房间排前面）
-  // 同类空间：卧室类（主人房/卧室/书房）、客餐厅、湿区（洗衣区/阳台）
-  const KIN = { master: 'bed', bedroom: 'bed', study: 'bed', living: 'hall', dining: 'hall', laundry: 'wetx', balcony: 'wetx' };
-  const KIN_LABEL = { bed: '卧室', hall: '客餐厅', wetx: '洗衣区/阳台' };
-  const kinOf = type => KIN[type] || type;
-  const kinLabel = type => KIN_LABEL[kinOf(type)] || ROOMS[type].label;
+  // 空间分组：先分室内/室外，再按做法相近的类型分。按类型一起选做法、同类房间排前面，都用这一套。
+  // 洗衣房、楼梯做法和别的差别大，各自单独一组；阳台按室外做（防滑砖、排水）。
+  const SPACE_GROUPS = [
+    { id: 'bed', label: '卧室', icon: '🛏️', types: ['master', 'bedroom', 'study'] },
+    { id: 'bath', label: '卫浴', icon: '🚿', types: ['bath'] },
+    { id: 'kitchen', label: '厨房', icon: '🍳', types: ['kitchen'] },
+    { id: 'laundry', label: '洗衣房', icon: '🧺', types: ['laundry'] },
+    { id: 'hall', label: '公共区', icon: '🛋️', types: ['living', 'dining', 'family', 'corridor', 'store', 'extension'] },
+    { id: 'stairs', label: '楼梯', icon: '🪜', types: ['stairs'] },
+    { id: 'out', label: '室外', icon: '🌳', out: true, types: ['yard', 'porch', 'balcony'] }
+  ];
+  const kinOf = type => (SPACE_GROUPS.find(x => x.types.includes(type)) || { id: type }).id;
+  const kinLabel = type => (SPACE_GROUPS.find(x => x.id === kinOf(type)) || { label: ROOMS[type].label }).label;
+  // 房间按分组顺序排（室内在前、室外在后），同组内按楼层
+  const groupIdx = type => { const i = SPACE_GROUPS.findIndex(x => x.types.includes(type)); return i < 0 ? SPACE_GROUPS.length : i; };
+  const sortRooms = rooms => rooms.map((r, i) => [r, i]).sort((a, b) => groupIdx(a[0].type) - groupIdx(b[0].type) || (a[0].level || 1) - (b[0].level || 1) || a[1] - b[1]).map(x => x[0]);
+  // 一组房间一起开/关一个工项：只加到这类房间做得了的；数量各按自己尺寸算
+  function setPackFor(project, ids, code, on) {
+    const pk = PACKS[code]; let n = 0;
+    ids.forEach(id => {
+      const r = project.rooms.find(x => x.id === id); if (!r || !pk) return;
+      r.packs = r.packs || [];
+      if (!on) { if (r.packs.includes(code)) { r.packs = r.packs.filter(x => x !== code); n++; } return; }
+      if (r.packs.includes(code) || !ROOMS[r.type].packs.includes(code)) return;
+      if (pk.pick) r.packs = r.packs.filter(x => PACKS[x].pick !== pk.pick);
+      r.packs.push(code); n++;
+      if (pk.items && !(r.items || []).length) r.items = [{ name: '', qty: 1, price: 0 }];
+    });
+    return n;
+  }
   function roomsFor(project, fromId, code) {
     const from = project.rooms.find(r => r.id === fromId), k = kinOf(from.type);
     // 全屋其他房间都列出（避免漏项）：同类在前，这类房间一般做这项的其次，一般不做的放最后
@@ -577,7 +602,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, SPACE_GROUPS, sortRooms, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

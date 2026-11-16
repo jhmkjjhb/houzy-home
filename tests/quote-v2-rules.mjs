@@ -488,4 +488,28 @@ ok('加建：标了加建的房间按地面面积加结构；整单只申请一�
   assert.ok(!Q.layoutRooms('condo', { beds: 3, baths: 2, levels: 1, ext: true }).some(r => r.ext), '公寓不能加建');
 });
 
+ok('空间分组：室内在前室外在后；洗衣房、楼梯单独一组；阳台算室外', () => {
+  assert.equal(Q.kinOf('laundry'), 'laundry'); assert.equal(Q.kinOf('stairs'), 'stairs');
+  assert.notEqual(Q.kinOf('laundry'), Q.kinOf('kitchen'), '洗衣房不跟厨房一组');
+  assert.equal(Q.kinOf('balcony'), Q.kinOf('porch'), '阳台按室外做');
+  assert.ok(Q.SPACE_GROUPS.find(g => g.id === Q.kinOf('yard')).out);
+  const typed = new Set(Q.SPACE_GROUPS.flatMap(g => g.types));
+  Object.keys(Q.ROOMS).forEach(t => assert.ok(typed.has(t), t + ' 要归到某一组，不然按类型做时会漏'));
+  const p = project(Q.presetRooms('semi')), order = Q.sortRooms(p.rooms).map(r => Q.SPACE_GROUPS.find(g => g.types.includes(r.type)).out ? 1 : 0);
+  assert.deepEqual(order, [...order].sort(), '室外房间排在所有室内房间后面');
+});
+
+ok('按类型一起选：只加到这类房间做得了的，数量各按自己尺寸算；再点一次全部取消', () => {
+  const p = project(Q.presetRooms('semi'));
+  const baths = p.rooms.filter(r => r.type === 'bath'); baths[0].L = 10; baths[0].W = 6;
+  assert.ok(baths.length >= 2);
+  assert.equal(Q.setPackFor(p, baths.map(r => r.id), 'bath_tile', true), baths.length);
+  const L = Q.buildLines(p), q = r => L.filter(l => l.roomId === r.id && l.pack === 'bath_tile' && l.code === 'floor_tile').reduce((t, l) => t + l.qty, 0);
+  assert.notEqual(q(baths[0]), q(baths[1]), '大卫生间地砖数量应比小的多，不能一刀切');
+  const bed = p.rooms.find(r => r.type === 'bedroom');
+  assert.equal(Q.setPackFor(p, [bed.id], 'bath_tile', true), 0, '卧室不会被加上卫生间瓷砖');
+  Q.setPackFor(p, baths.map(r => r.id), 'bath_tile', false);
+  assert.ok(baths.every(r => !r.packs.includes('bath_tile')));
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

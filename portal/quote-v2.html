@@ -123,6 +123,10 @@
 
   /* ② 房间 */
   .roombar { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; }
+  .rgrp { flex: none; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 6px 10px; border: 1.5px dashed var(--navy); border-radius: 12px; background: transparent; color: var(--navy); font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .rgrp small { font-weight: 400; color: var(--ink-dim); }
+  .rgrp.on { background: var(--navy); color: #fff; border-style: solid; } .rgrp.on small { color: #fff; }
+  .rgrp.out { border-color: var(--ok); color: var(--ok); } .rgrp.out.on { background: var(--ok); color: #fff; }
   .rchip { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 10px; text-align: left; min-width: 96px; }
   .rchip small { display: block; font-size: 11px; color: var(--ink-dim); }
   .rchip.on { border-color: var(--navy); background: var(--navy-soft); }
@@ -294,7 +298,7 @@
 <script src="quote-v2-price.js?v=20261115r"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261115t"></script>
+<script src="quote-v2-rules.js?v=20261116a"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -618,23 +622,70 @@
   }
   // 房间栏像购物车：完成的房间收进「已完成」，选择栏只留没做完的；当前这间总是显示
   const cartOpen = {};
-  function roomBar(list, curId, attr, sub, isDone, key, doneWord) {
+  // grp = true：按空间分组排，每组前面一个组名按钮（点了进「这一组一起选做法」）
+  let groupId = null; const groupOff = new Set();
+  function roomBar(list, curId, attr, sub, isDone, key, doneWord, grp) {
+    if (grp) list = Q.sortRooms(list);
     const act = list.filter(x => !isDone(x) || x.id === curId), done = list.filter(x => isDone(x) && x.id !== curId);
     const chip = (x, d) => `<button class="rchip ${x.id === curId ? 'on' : ''} ${d ? 'done' : ''} ${sub(x).bad ? 'bad' : ''}" ${attr}="${x.id}">${ic(d ? 'check' : ROOMS[x.type].icon)} ${esc(Q.roomLabel(x, P))}${x.ext ? ' <span class="exttag">加建</span>' : ''}<small${sub(x).color ? ` style="color:${sub(x).color}"` : ''}>${sub(x).t}</small></button>`;
     const nDone = list.filter(isDone).length;
-    return `<div class="roombar noprint">${act.map(x => chip(x, isDone(x))).join('')}
+    let last = null;
+    const head = x => { const gid = Q.kinOf(x.type); if (!grp || gid === last) return ''; last = gid; const G = Q.SPACE_GROUPS.find(g => g.id === gid), n = list.filter(y => Q.kinOf(y.type) === gid).length; return G ? `<button class="rgrp ${groupId === gid ? 'on' : ''} ${G.out ? 'out' : ''}" data-gogroup="${gid}" title="这一组一起选做法">${esc(G.label)}<small>${n} 间${n > 1 ? ' · 一起选' : ''}</small></button>` : ''; };
+    return `<div class="roombar noprint">${act.map(x => head(x) + chip(x, isDone(x))).join('')}
       ${nDone ? `<button class="rchip cart ${cartOpen[key] ? 'open' : ''}" data-cart="${key}">${ic('check')} ${doneWord} ${nDone}/${list.length}<small>${done.length ? (cartOpen[key] ? '收起' : '点开查看') : '就是当前这间'}</small></button>` : ''}
       ${cartOpen[key] ? done.map(x => chip(x, true)).join('') : ''}</div>`;
   }
   // 下一间没完成的房间（按排列顺序，从当前往后找，找不到再从头找）
-  const nextOpen = (cur, isDone) => { const i = P.rooms.findIndex(r => r.id === cur); return [...P.rooms.slice(i + 1), ...P.rooms.slice(0, i)].find(r => !isDone(r)); };
+  const nextOpen = (cur, isDone) => { const rs = Q.sortRooms(P.rooms), i = rs.findIndex(r => r.id === cur); return [...rs.slice(i + 1), ...rs.slice(0, i)].find(r => !isDone(r)); };
 
+  const roomSub = (C, bad) => x => ({ t: roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : (x.done ? '不做' : '未选工程'), bad: bad.has(x.id) });
+  // 按类型一起选：同一组（如全部卫生间）选一次做法和选材，加到勾选的房间；数量各按自己尺寸算
+  function viewGroup(C) {
+    const G = Q.SPACE_GROUPS.find(x => x.id === groupId), rs = Q.sortRooms(P.rooms).filter(r => Q.kinOf(r.type) === groupId), bad = badRooms(C.K);
+    if (!G || !rs.length) { groupId = null; return viewRoom(C); }
+    const sel = rs.filter(r => !groupOff.has(r.id));
+    let h = roomBar(P.rooms, null, 'data-goroom', roomSub(C, bad), x => !!x.done, 'room', '已完成', true);
+    h += `<div class="card"><h2 style="margin:0 0 4px">${ic(G.icon)} ${G.out ? '' : '室内 · '}${esc(G.label)}：${rs.length} 间一起选做法</h2><p class="hint">在这里选一次，下面勾选的房间都会加上。数量按每间自己的尺寸算；点位数、台数这类数字，以及窗和门，到单间里再改。选完点最下面「逐间检查」看每间有什么不一样。</p>
+      <div class="adds" style="margin:8px 0 0">${rs.map(x => `<button type="button" class="rchip ${groupOff.has(x.id) ? '' : 'on'}" style="min-width:auto" data-gsel="${x.id}"><span class="cbx">${groupOff.has(x.id) ? '' : '✓'}</span> ${esc(Q.roomLabel(x, P))}<small>${nf(Q.geo(x, P).floor)} 平方尺${(x.packs || []).length ? ` · 已有 ${x.packs.length} 项` : ''}</small></button>`).join('')}</div></div>`;
+    if (!sel.length) return h + '<p class="hint">上面至少勾一间。</p>';
+    const avail = [...new Set([...sel.flatMap(x => ROOMS[x.type].packs), ...sel.flatMap(x => x.packs || [])])].filter(c => PACKS[c] && !PACKS[c].items);
+    const stat = c => { const fit = sel.filter(x => ROOMS[x.type].packs.includes(c)), have = sel.filter(x => (x.packs || []).includes(c)); return { fit, have, full: have.length > 0 && fit.every(x => have.includes(x)) }; };
+    const gcard = c => {
+      const pk = PACKS[c], s = stat(c), on = s.have.length > 0;
+      const tot = C.lines.filter(l => l.pack === c && s.have.some(x => x.id === l.roomId)).reduce((t, l) => t + l.total, 0);
+      return `<div class="pack ${on ? 'on' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-gpack="${c}"><span class="tick">${s.full ? '✓' : on ? '–' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? `${s.have.length}/${Math.max(s.fit.length, s.have.length)} 间 · ${rm(tot)}` : ''}</span></button>${on && !s.full ? `<div class="desc" style="margin:4px 0 0 26px">只有 ${s.have.map(x => esc(x.name)).join('、')} 选了，点一下全部加上</div>` : !on && pk.hint ? `<div class="desc" style="margin:4px 0 0 26px">${pk.hint}</div>` : ''}</div>`;
+    };
+    const chosen = GROUPS.flatMap(([gid]) => avail.filter(c => PACKS[c].g === gid && stat(c).have.length));
+    h += `<h2>这组要做什么</h2><p class="hint">点卡片：勾选的房间全部加上；已经全部有的再点一下就全部取消。「–」表示只有部分房间选了。</p>`;
+    h += `<div class="grp"><h3 style="color:var(--navy)">已选 ${chosen.length} 项</h3>${chosen.length ? `<div class="packs chosen">${chosen.map(gcard).join('')}</div>` : '<p class="hint">还没选，从下面点要做的项目。</p>'}</div>`;
+    // 要窗/门的项目：把这些房间的窗、门列出来当场填
+    chosen.filter(c => kindOf(PACKS[c])).forEach(c => { h += openList(stat(c).have, kindOf(PACKS[c]), PACKS[c].label, null); });
+    h += `<h3 style="margin:18px 0 4px;padding-top:12px;border-top:1px dashed var(--line)">还可以加的项目</h3>`;
+    GROUPS.forEach(([gid, gname]) => { const codes = avail.filter(c => PACKS[c].g === gid && !stat(c).have.length); if (codes.length) h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(gcard).join('')}</div></div>`; });
+    // 选材：这组一起定；各间选得不一样时显示「各间不同」，点一个就统一
+    const mats = chosen.map(c => { const s = stat(c), r0 = s.have[0], pl = Q.placesOf(P, r0, C.lines).find(x => x.pack === c); return pl ? { c, s, pl } : null; }).filter(Boolean);
+    if (mats.length) {
+      h += `<h2>这组一起选材</h2><p class="hint">点一个选项，这组选了这项的房间都用它。没想好的可以先不点，按标准档估价。</p>`;
+      mats.forEach(({ c, s, pl }) => {
+        h += `<div class="card"><b style="font-size:15px">${ic(PACKS[c].icon)} ${esc(pl.label)}</b> <span class="desc">${s.have.length} 间</span>`;
+        pl.keys.forEach(([cat, k]) => {
+          const key = Q.SPEC_CATS[cat].keys[k], cur = s.have.map(x => Q.specOf(P, x, cat, k, null, c)), same = cur.every(v => v.v === cur[0].v && v.decided === cur[0].decided), std = Q.stdOf(key, s.have[0]);
+          h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}${same ? (cur[0].decided ? '' : ' <span class="desc">· 未定，暂按标准档</span>') : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div><div class="adds" style="margin:0">${key.opts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-gplace="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}</button>`; }).join('')}</div></div>`;
+        });
+        h += '</div>';
+      });
+    }
+    h += `<div class="donebar"><button class="btn pri" data-goroom="${sel[0].id}">逐间检查：从「${esc(Q.roomLabel(sel[0], P))}」开始 →</button><span class="hint">每间可以单独加减，不影响同组其他房间</span></div>`;
+    return h;
+  }
   function viewRoom(C) {
     if (!P.rooms.length) return `<h2>② 房间</h2><p class="hint">先在「① 户型」选房屋类型。</p>`;
-    if (!room(roomId)) roomId = P.rooms[0].id;
+    if (groupId) return viewGroup(C);
+    if (!room(roomId)) roomId = Q.sortRooms(P.rooms)[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
-    let h = roomBar(P.rooms, roomId, 'data-goroom', x => ({ t: roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : (x.done ? '不做' : '未选工程'), bad: bad.has(x.id) }), x => !!x.done, 'room', '已完成');
-    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}${P.rooms.some(x => x.id !== r.id && (x.level || 1) === (r.level || 1)) ? '<button class="btn" data-mergeopen>合并…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
+    const kin = Q.kinOf(r.type), G = Q.SPACE_GROUPS.find(x => x.id === kin), nKin = P.rooms.filter(x => Q.kinOf(x.type) === kin).length;
+    let h = roomBar(P.rooms, roomId, 'data-goroom', roomSub(C, bad), x => !!x.done, 'room', '已完成', true);
+    h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${G && nKin > 1 ? `<button class="btn" data-gogroup="${kin}">和其他${esc(G.label)}一起选（${nKin} 间）</button>` : ''}${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}${P.rooms.some(x => x.id !== r.id && (x.level || 1) === (r.level || 1)) ? '<button class="btn" data-mergeopen>合并…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
       ${mergeOpen === r.id ? `<div class="sync" style="margin-top:12px"><b>把哪一间并进「${esc(r.name)}」？</b><span class="hint">同一个空间被拆开时用（例如客厅、餐厅、干厨房之间没有墙）。面积相加，两间选的工程都保留，另一间会删掉。</span><div class="adds">${P.rooms.filter(x => x.id !== r.id && (x.level || 1) === (r.level || 1)).map(x => `<button class="chip" data-mergein="${x.id}">${esc(x.name)}</button>`).join('')}<button class="chip" data-mergeopen>取消</button></div></div>` : ''}
       ${HOUSES[P.houseType]?.landed && !T.outdoor ? `<div class="donebar"><button class="chip extchip ${r.ext ? 'on' : ''}" data-ext>${r.ext ? ic('check') + ' ' : ''}这间是加建部分（新建地基、墙、屋顶，按 ${nf(g.floor)} 平方尺算）</button>${r.ext ? `<span class="hint">结构 ${rm(C.lines.filter(l => l.roomId === r.id && l.code === 'extension').reduce((t, l) => t + l.total, 0))}，整单会加一次市政局申请</span>` : ''}</div>` : ''}
       ${doneBar(r, bad)}${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
@@ -692,11 +743,14 @@
       <div class="adds" style="margin:6px 0 0">${same.length ? `<span class="hint" style="align-self:center;flex-basis:100%">同类（${esc(Q.kinLabel(r.type))}）：</span>${same.map(chip).join('')}` : ''}${diff.length ? `<span class="hint" style="align-self:center;flex-basis:100%">${same.length ? '其他类型：' : ''}</span>${diff.map(chip).join('')}` : ''}</div>
       ${kindOf(PACKS[c]) && on ? (() => {
         // 做这项的所有房间的窗/门都列在这里（本间在最前），填好的、没填的一眼看清，避免漏填
-        const kind = kindOf(PACKS[c]), nm = OPEN[kind].name, list = [r, ...others.filter(x => (x.packs || []).includes(c))];
-        const miss = list.filter(t => !okOpen(t, kind)).length;
-        return `<div style="margin-top:10px"><b style="font-size:13px">做「${esc(PACKS[c].label)}」的房间${nm}：共 ${list.length} 间，${miss ? `<span style="color:var(--red)">还有 ${miss} 间没填完</span>` : '<span style="color:var(--ok)">都填好了</span>'}</b></div>` + list.map(t => `<div style="background:var(--card,#fff);border:1px solid ${okOpen(t, kind) ? 'var(--ok-line)' : 'var(--red)'};border-radius:10px;padding:8px 10px;margin-top:8px"><div class="hint" style="margin:0 0 2px;color:${okOpen(t, kind) ? 'var(--ok)' : 'var(--red)'}">${t.id === r.id ? '本间 · ' : ''}${okOpen(t, kind) ? `✓ 已填 ${t[OPEN[kind].list].length} 樘` : '还没填完'}</div>${openEditor(t, 'sync', kind)}</div>`).join('');
+        return openList([r, ...others.filter(x => (x.packs || []).includes(c))], kindOf(PACKS[c]), PACKS[c].label, r.id);
       })() : ''}
       <div class="adds" style="margin:8px 0 0">${!on && todo.length ? `<button type="button" class="btn" data-sync-all>全部也取消（${todo.length} 间）</button>` : ''}<button type="button" class="btn ${on ? 'okb' : ''}" data-sync-close>${on ? '选好了，收起' : '只这间'}</button></div></div>`;
+  }
+  // 做某项的所有房间的窗/门都列出来（curId 那间在最前），填好的、没填的一眼看清，避免漏填
+  function openList(list, kind, label, curId) {
+    const nm = OPEN[kind].name, miss = list.filter(t => !okOpen(t, kind)).length;
+    return `<div style="margin-top:10px"><b style="font-size:13px">做「${esc(label)}」的房间${nm}：共 ${list.length} 间，${miss ? `<span style="color:var(--red)">还有 ${miss} 间没填完</span>` : '<span style="color:var(--ok)">都填好了</span>'}</b></div>` + list.map(t => `<div style="background:var(--card,#fff);border:1px solid ${okOpen(t, kind) ? 'var(--ok-line)' : 'var(--red)'};border-radius:10px;padding:8px 10px;margin-top:8px"><div class="hint" style="margin:0 0 2px;color:${okOpen(t, kind) ? 'var(--ok)' : 'var(--red)'}">${t.id === curId ? '本间 · ' : ''}${okOpen(t, kind) ? `✓ 已填 ${t[OPEN[kind].list].length} 樘` : '还没填完'}</div>${openEditor(t, 'sync', kind)}</div>`).join('');
   }
   function copyPanel(r) {
     if (!copyOpen) return copyMsg ? `<div class="ok" style="margin-top:10px">${esc(copyMsg)}</div>` : '';
@@ -1183,7 +1237,18 @@
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; P.layout = null; layoutConfirm = false; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
     }
-    if (ds.goroom) { syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
+    if (ds.gogroup) { groupId = ds.gogroup; syncPrompt = null; copyOpen = false; copyMsg = null; tab = 'room'; render(); window.scrollTo(0, 0); return; }
+    if (ds.gsel) { groupOff.has(ds.gsel) ? groupOff.delete(ds.gsel) : groupOff.add(ds.gsel); render(); return; }
+    if (ds.gpack) {
+      const c = ds.gpack, ids = Q.sortRooms(P.rooms).filter(r => Q.kinOf(r.type) === groupId && !groupOff.has(r.id)), fit = ids.filter(x => ROOMS[x.type].packs.includes(c)), have = ids.filter(x => (x.packs || []).includes(c));
+      const off = have.length > 0 && fit.every(x => have.includes(x));
+      Q.setPackFor(P, ids.map(x => x.id), c, !off);
+      const kind = kindOf(PACKS[c]);
+      if (!off && kind) ids.filter(t => (t.packs || []).includes(c) && !(t[OPEN[kind].list] || []).length).forEach(t => { t[OPEN[kind].list] = [OPEN[kind].def()]; if (kind === 'door') t.doors = 1; });
+      render(); return;
+    }
+    if (ds.gplace) { Q.sortRooms(P.rooms).filter(r => Q.kinOf(r.type) === groupId && !groupOff.has(r.id) && (r.packs || []).includes(ds.gplace)).forEach(r => placeSet(plan(), r.id, ds.gplace, ds.specCat, ds.specK, ds.specV)); render(); return; }
+    if (ds.goroom) { groupId = null; syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
     if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
     if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
     if (ds.delroom) { delete IMG.rooms[ds.delroom]; saveImg(); P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
