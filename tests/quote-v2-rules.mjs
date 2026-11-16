@@ -189,6 +189,23 @@ ok('主材选品：每个选项都有参考价差（不会出现价差待定）�
   ['main_door', 'grille', 'cctv', 'autogate', 'ext_paint', 'doorbell'].forEach(k => assert.ok(Q.HOUSE_ITEMS.find(h => h.k === k).specs, k + ' 在全屋里有款式可选'));
 });
 
+ok('打砸和建墙记在发生的房间：拆墙、砌墙、隔墙、开封门洞、承重墙；结构工程师整单一次；旧报价全屋勾的照算', () => {
+  ['living', 'master', 'kitchen', 'bath', 'laundry', 'corridor'].forEach(t => assert.ok(Q.ROOMS[t].packs.includes('wall_work') && Q.ROOMS[t].packs.includes('demo_cab'), t));
+  const a = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_work', 'demo_cab'], vals: { wall_work: { demo: 60, brick: 40, dry: 30, open: 1, close: 1, load: 1 }, demo_cab: { n: 3 } } };
+  const b = { ...Q.newRoom('kitchen', 1, 1), measured: true, packs: ['wall_work'], vals: { wall_work: { load: 1 } } };
+  const p = project([a, b]);
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'demo_wall', a.id), 60); assert.equal(qty(L, 'build_wall', a.id), 40); assert.equal(qty(L, 'drywall', a.id), 30);
+  assert.equal(qty(L, 'door_open', a.id), 2, '开 1 + 封 1'); assert.equal(qty(L, 'demo_piece', a.id), 3);
+  assert.equal(qty(L, 'struct'), 2, '两间各动一处承重墙');
+  assert.equal(qty(L, 'engineer'), 1, '结构工程师整单只收一次');
+  const empty = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wall_work'] };
+  assert.equal(Q.buildLines(project([empty])).length, 0, '墙体改造默认全是 0，不会多收');
+  const old = project([], { house: { wall_demo: { on: true, area: 40 }, load_wall: { on: true, n: 1 } } });
+  const OL = Q.buildLines(old);
+  assert.equal(qty(OL, 'demo_wall'), 40, '旧报价全屋拆墙照算'); assert.equal(qty(OL, 'engineer'), 1, '不重复加工程师');
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);

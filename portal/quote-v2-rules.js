@@ -89,20 +89,20 @@
   }
 
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
-  const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
+  const DRY = ['wall_work', 'demo_cab', 'demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
   const ROOMS = {
     living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'soft_panel', 'bar_counter', 'floor_border', 'mosaic', 'culture_stone', 'glass_block', 'bay_window', 'audio_wire'] },
     dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel', 'wine_cab', 'bar_counter', 'floor_border'] },
     master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window', 'audio_wire'] },
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
     study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
-    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'bar_counter', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'ro_filter', 'smart_room'] },
-    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new', 'bathtub', 'slide_door', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'smart_room'] },
-    laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new', 'mop_sink', 'slide_door', 'wall_core'] },
-    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out', 'mop_sink', 'mosaic', 'culture_stone', 'decking'] },
+    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'bar_counter', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'ro_filter', 'smart_room', 'wall_work', 'demo_cab'] },
+    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new', 'bathtub', 'slide_door', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'smart_room', 'wall_work', 'demo_cab'] },
+    laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new', 'mop_sink', 'slide_door', 'wall_core', 'wall_work', 'demo_cab'] },
+    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out', 'mop_sink', 'mosaic', 'culture_stone', 'decking', 'wall_work', 'demo_cab'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'tatami', 'soft_panel', 'floor_border', 'culture_stone', 'audio_wire'] },
-    store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door', 'damp_proof'] },
-    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh', 'smart_room'] },
+    store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door', 'damp_proof', 'wall_work', 'demo_cab'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh', 'smart_room', 'wall_work', 'demo_cab'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out', 'culture_stone', 'decking'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
@@ -328,6 +328,14 @@
     ['mirror', '柜内旋转/推拉镜', '个', 'whw_mirror', 0], ['jewel', '首饰/领带格抽屉', '个', 'whw_jewel', 0], ['shoe', '抽拉鞋架', '个', 'whw_shoe', 0], ['safe', '保险箱位（含加固）', '个', 'whw_safe', 0]];
   const tileExtra = (sp, area) => (BIG_TILE.includes(sp('tile', 'floorSize')) ? [['big_tile_extra', area, '大板砖铺贴加价']] : []);
   const PACKS = {
+    // 房间里的打砸和建墙：拆墙、砌墙、隔墙、门洞、承重墙都记在发生的那一间（只填要做的，0 = 不做）
+    wall_work:      { g: 'demo', label: '墙体改造（拆墙 / 砌墙 / 门洞）', icon: '🔨', wide: true, hint: '只填这间要做的，0 = 不做；动承重墙会自动加结构工程师（整单一次）',
+                      inputs: [{ k: 'demo', label: '拆墙面积', unit: '平方尺', def: () => 0, opt: true }, { k: 'brick', label: '新砌砖墙面积（双面批荡）', unit: '平方尺', def: () => 0, opt: true },
+                               { k: 'dry', label: '轻钢龙骨石膏板隔墙面积', unit: '平方尺', def: () => 0, opt: true }, { k: 'open', label: '开新门洞', unit: '个', def: () => 0, opt: true },
+                               { k: 'close', label: '封旧门洞', unit: '个', def: () => 0, opt: true }, { k: 'load', label: '承重墙开洞加固', unit: '处', def: () => 0, opt: true }],
+                      lines: (r, g, v) => [['demo_wall', v.demo, '拆墙面积（长 × 高）'], ['build_wall', v.brick, '砌墙面积（长 × 高）'], ['drywall', v.dry, '隔墙面积（长 × 高）'],
+                                           ['door_open', r2(num(v.open) + num(v.close)), `开 ${num(v.open)} 个 + 封 ${num(v.close)} 个`], ['struct', v.load, '承重墙开洞处数']] },
+    demo_cab:       { g: 'demo', label: '拆旧柜 / 旧家具', icon: '🗑️', inputs: [{ k: 'n', label: '件数', unit: '件', def: () => 1 }], lines: (r, g, v) => [['demo_piece', v.n, '旧柜子、旧家具件数']] },
     demo_floor:     { g: 'demo', area: ['floor'], label: '拆旧地砖', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, '拆除面积']] },
     demo_skin:      { g: 'demo', area: ['wall'], label: '铲旧墙皮', icon: '🧽', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
     demo_wall_tile: { g: 'demo', area: ['wall'], label: '拆旧墙砖', icon: '⛏️', lines: (r, g) => [['demo_wall_tile', g.wall, '墙砖面积']] },
@@ -503,15 +511,15 @@
   // grp 决定分组显示；landed = 只在有地房屋显示（公寓不显示，已选的仍然显示）
   const HOUSE_GROUPS = [['struct', '结构与申请'], ['mep', '水电'], ['smart', '智能家居系统'], ['secure', '门窗与安防'], ['out', '外部、屋顶与加建'], ['finish', '完工与环保']];
   const HOUSE_ITEMS = [
-    { k: 'drywall', grp: 'struct', label: '轻钢龙骨石膏板隔墙', icon: '🧱', why: '比砌砖墙轻、快，适合公寓和楼上', inputs: [{ k: 'area', label: '隔墙面积', unit: '平方尺', def: () => 80 }], lines: v => [['drywall', v.area, '隔墙面积（长 × 高）']] },
+    { k: 'drywall', legacy: true, grp: 'struct', label: '轻钢龙骨石膏板隔墙', icon: '🧱', why: '比砌砖墙轻、快，适合公寓和楼上', inputs: [{ k: 'area', label: '隔墙面积', unit: '平方尺', def: () => 80 }], lines: v => [['drywall', v.area, '隔墙面积（长 × 高）']] },
     { k: 'smart_hub', grp: 'smart', label: '智能网关 + 全屋场景调试', icon: '📶', why: '智能开关、窗帘、传感器都要接网关；含 App 设置和回家/离家/睡眠等场景编程', lines: () => [['smart_hub', 1, '']] },
     { k: 'smart_lock', grp: 'smart', label: '智能门锁（指纹/密码/App）', icon: '🔐', inputs: [{ k: 'n', label: '把数', unit: '把', def: () => 1 }], lines: v => [['smart_lock', v.n, '把数']] },
     { k: 'db_move', grp: 'mep', label: '配电箱移位', icon: '🔌', why: '配电箱换位置：拆装、延长主线、重新接回路', lines: () => [['db_move', 1, '']] },
     { k: 'lv_box', grp: 'mep', label: '弱电箱（网络/电视/监控集中箱）', icon: '📡', lines: () => [['lv_box', 1, '']] },
     { k: 'hot_insul', grp: 'mep', label: '热水管保温', icon: '♨️', inputs: [{ k: 'len', label: '热水管长度', unit: '尺', def: () => 40 }], lines: v => [['hot_insul', v.len, '热水管长度']] },
     { k: 'formaldehyde', grp: 'finish', label: '除甲醛 / 空气治理', icon: '🌬️', why: '完工后喷涂治理并检测，适合有小孩、新做大量定制柜的家庭', inputs: [{ k: 'area', label: '室内面积', unit: '平方尺', def: () => 1200 }], lines: v => [['formaldehyde', v.area, '室内面积']] },
-    { k: 'wall_demo', grp: 'struct', label: '拆墙/开门洞', icon: '🔨', inputs: [{ k: 'area', label: '拆墙面积', unit: '平方尺', def: () => 40 }], lines: v => [['demo_wall', v.area, '拆墙面积']] },
-    { k: 'load_wall', grp: 'struct', label: '动承重墙', icon: '🏗️', why: '必须结构工程师签字', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: v => [['struct', v.n, '处数'], ['engineer', 1, '动承重墙必须有']] },
+    { k: 'wall_demo', legacy: true, grp: 'struct', label: '拆墙/开门洞', icon: '🔨', inputs: [{ k: 'area', label: '拆墙面积', unit: '平方尺', def: () => 40 }], lines: v => [['demo_wall', v.area, '拆墙面积']] },
+    { k: 'load_wall', legacy: true, grp: 'struct', label: '动承重墙', icon: '🏗️', why: '必须结构工程师签字', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: v => [['struct', v.n, '处数'], ['engineer', 1, '动承重墙必须有']] },
     { k: 'reno_permit', grp: 'struct', label: '改建申请（市政局准证）', icon: '📄', lines: () => [['reno_permit', 1, '']] },
     { k: 'db_box', grp: 'mep', label: '换配电箱', icon: '🔌', lines: () => [['db_box', 1, '']] },
     { k: 'three_phase', grp: 'mep', label: '单相改三相电', icon: '⚡', lines: () => [['three_phase', 1, '']] },
@@ -687,7 +695,6 @@
       // 送产品不送人工：材料+辅料（含损耗）免收，人工安装照收
       if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.labUnit = lab; last.total = Math.round(qty * lab); last.giftValue = total - last.total; }
     };
-    const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
     // 自动收的杂项：在「③ 全屋 → 收费」里逐项列出，员工可以对某单免收（project.waive）
     // 数量可手动改（project.feeQty），单价可手动改（project.prices，和价目表改价同一处）
     const auto = (code, qty, f, from) => {
@@ -696,8 +703,6 @@
       if (mq !== undefined && mq !== '') push(null, code, num(mq), `手动填写（自动算 ${r2(qty)}）`, from); else push(null, code, qty, f, from);
     };
     // 成品保护按施工房间地面面积算（平方尺）
-    if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', Math.max(1, r2(project.rooms.filter(r => !ROOMS[r.type].outdoor && (r.packs || []).length).reduce((t, r) => t + geo(r, project).floor, 0))), '施工房间地面面积合计', '全屋'); }
-    if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) auto('permit', 1, '公寓有管理处，装修要先申请', '全屋');
     project.rooms.forEach(room => {
       const g = geo(room, project), picked = {};
       (room.packs || []).forEach(c => { picked[c] = true; });
@@ -719,11 +724,19 @@
     project.rooms.forEach(room => { if (room.ext) push(room, 'extension', geo(room, project).floor, '加建面积 = 这间地面面积', '加建结构'); });
     const hs = project.house || {};
     HOUSE_ITEMS.forEach(item => { const q = hs[item.k]; if (q && q.on) item.lines(houseValues(q, item)).forEach(([c, qty, f]) => push(null, c, qty, f, item.label)); });
+    if (lines.some(l => l.code === 'struct') && !lines.some(l => l.code === 'engineer')) push(null, 'engineer', 1, '动承重墙必须有（整单一次）', '结构');
     // 人工增加项：挂在某个房间（roomId）或全屋
     if (project.rooms.some(r => r.ext) || (hs.extension && hs.extension.on)) push(null, 'ext_permit', 1, '有加建就要先申请批准（整单一次）', '加建');
     (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
+    // 有工程 = 真的算出了要收钱的项目（勾了但数量全是 0 的不算），开工放线、成品保护、清运、开荒才跟着加
+    const workedIds = new Set(lines.filter(l => l.roomId && l.qty > 0).map(l => l.roomId));
+    const anyWork = lines.length > 0;
     const indoor = project.rooms.filter(r => !ROOMS[r.type].outdoor);
-    const worked = indoor.filter(r => (r.packs || []).length);
+    const worked = indoor.filter(r => workedIds.has(r.id));
+    // 成品保护按施工房间地面面积算（平方尺）
+    if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', Math.max(1, r2(worked.reduce((t, r) => t + geo(r, project).floor, 0))), '施工房间地面面积合计', '全屋'); }
+    if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) auto('permit', 1, '公寓有管理处，装修要先申请', '全屋');
+
     const waterPts = lines.filter(l => l.code === 'water_pt').reduce((t, l) => t + l.qty, 0);
     if (waterPts > 0) auto('pipe_test', 1, `全屋 ${waterPts} 个水点位，封槽前必须打压`, '自动');
     const upQty = worked.filter(r => (r.level || 1) > 1).reduce((t, r) => t + geo(r, project).floor * ((r.level || 1) - 1), 0);
