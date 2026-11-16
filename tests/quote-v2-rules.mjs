@@ -628,4 +628,15 @@ ok('车廊上的棚叫车棚：旧报价的「雨棚」迁移成车棚，面积�
   assert.ok(Q.checks(p, Q.buildLines(p), 'estimate').red.some(x => x.m.includes('重复收费')));
 });
 
+ok('自动杂项可对某单免收；不可预见费按直接费百分比加进总价', () => {
+  const r = { ...Q.newRoom('bedroom', 2, 1), measured: true, packs: ['wall_finish'] };
+  const p = project([r]); p.houseType = 'condo';
+  const has = c => Q.buildLines(p).some(l => l.code === c);
+  ['setout', 'protect', 'permit', 'carry_up', 'waste_out', 'clean'].forEach(c => assert.ok(has(c), c + ' 自动加上'));
+  p.waive = { protect: true }; assert.ok(!has('protect'), '免收后不再算'); assert.ok(has('setout'));
+  const L = Q.buildLines(p), t0 = Q.totals(p, L);
+  p.settings = { contRate: 5 }; const t1 = Q.totals(p, L);
+  assert.equal(t1.cont, Math.round(t0.direct * 0.05)); assert.equal(t1.total - t0.total, t1.cont);
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

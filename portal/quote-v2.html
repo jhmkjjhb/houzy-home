@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116e"></script>
+<script src="quote-v2-price.js?v=20261116f"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116m"></script>
+<script src="quote-v2-rules.js?v=20261116n"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -809,9 +809,17 @@
       }).join('') + `</div></div>`;
     });
     h += `<div class="grp"><h3>人工增加项（全屋）</h3><p class="hint">价目表没有、或者不确定的项目（例如屋顶翻新、外墙防水、特殊加建），自己填名称、单位、数量和单价。房间里的项目请到该房间里加。</p>${extrasEditor('')}</div>`;
-    h += `</div><h2>收费</h2><div class="card"><div class="row">
-      <label class="fld"><span><input type="checkbox" data-design ${P.design !== false ? 'checked' : ''}> 收设计费（RM ${C.T.settings.designRate}/平方尺 × 有施工的室内面积 ${nf(C.T.floorSum)}）</span></label>
-      ${field('优惠金额', 'RM', stepper(`data-discount`, P.discount || 0, 100))}</div><p class="hint" style="margin-top:8px">管理费按工程直接费 × ${C.T.settings.mgmtRate}% 自动计算。</p></div>`;
+    // 收费：自动加的杂项逐项列出（可免收），再列管理费、不可预见费、设计费、SST、优惠
+    const T = C.T, wv = P.waive || {};
+    const feeRow = code => { const ls = C.lines.filter(l => l.code === code && !l.roomId), amt = ls.reduce((t, l) => t + l.total, 0);
+      if (!ls.length && !wv[code]) return '';
+      return `<tr><td>${esc(PRICE[code].name)}<div class="desc">${wv[code] ? '这单免收' : esc(ls.map(l => `${nf(l.qty)} ${l.unitName} · ${l.formula}`).join('；'))}</div></td><td class="r mono">${wv[code] ? '<span style="color:var(--ink-dim)">免收</span>' : rm(amt)}</td><td class="r"><button class="chip" data-waive="${code}">${wv[code] ? '恢复收取' : '这单免收'}</button></td></tr>`; };
+    h += `</div><h2>收费</h2><div class="card"><p class="hint" style="margin:0 0 6px">下面这些按房间和工程量自动加上，不用另外选；某一单不收的，点「这单免收」。</p>
+      <table class="q"><tbody>${Q.AUTO_FEES.map(feeRow).join('') || '<tr><td class="hint">选了施工项目后自动出现</td></tr>'}</tbody></table>
+      <div class="row" style="margin-top:12px">${field(`管理费（工程直接费 × %）= ${rm(T.mgmt)}`, '%', stepper('data-setting="mgmtRate"', T.settings.mgmtRate, 1))}${field(`不可预见费（工程直接费 × %）= ${rm(T.cont)}`, '%', stepper('data-setting="contRate"', T.settings.contRate, 1))}${field(`SST = ${rm(T.sst)}`, '%', stepper('data-setting="sst"', T.settings.sst, 1))}</div>
+      <div class="row" style="margin-top:8px"><label class="fld"><span><input type="checkbox" data-design ${P.design !== false ? 'checked' : ''}> 收设计费（RM ${T.settings.designRate}/平方尺 × 有施工的室内面积 ${nf(T.floorSum)}）= ${rm(T.design)}</span></label>
+      ${field('优惠金额', 'RM', stepper(`data-discount`, P.discount || 0, 100))}</div>
+      <p class="hint" style="margin-top:8px">不含在报价里、要提前告诉客户的：物业装修押金（客户直接交物业，完工退还）、施工期间水电费、白蚁防治 / 大垃圾箱 / 工程保险（需要的话在上面「结构与申请」里选）。</p></div>`;
     allDoneMsg = null;
     h += `<div class="donebar" style="justify-content:flex-end"><button class="btn pri" data-tospec>全屋项目填好了，下一步：选怎么做、用什么材料 →</button></div>`;
     return h;
@@ -923,7 +931,7 @@
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
       <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>
       ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
-      <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>
+      <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>${T.cont ? `<div><span>不可预见费（${T.settings.contRate}%）</span><span class="mono">${rm(T.cont)}</span></div>` : ''}
       ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送产品（材料免收，人工安装照收）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
       ${T.sst ? `<div><span>SST</span><span class="mono">${rm(T.sst)}</span></div>` : ''}
       <div class="grand"><span>合计</span><span class="mono">${rm(T.total)}</span></div></div>
@@ -998,7 +1006,7 @@
         ${C.lines.some(l => l.tbd.length) ? '<p class="hint">部分材料还没定，暂按标准档估价，定好后金额会更新。</p>' : ''}
         ${IMG.drawings.length ? `<div class="demoPlans">${IMG.drawings.map(d => `<figure><img src="${d.img}" alt="${esc(levelName(d.level))}平面图"><figcaption>${esc(levelName(d.level))}</figcaption></figure>`).join('')}</div>` : ''}`;
       if (sl.k === 'cost') return `<div class="kick">钱花在哪里</div><h1>费用构成</h1><div class="donutWrap">${donut(T)}<div class="dleg">${T.byStage.map(s => `<div><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${esc(s.name)}<span class="mono">${rm(s.total)}</span></div>`).join('')}
-        ${T.design ? `<div><i style="background:var(--off)"></i>设计费<span class="mono">${rm(T.design)}</span></div>` : ''}${T.mgmt ? `<div><i style="background:var(--off)"></i>工程管理费<span class="mono">${rm(T.mgmt)}</span></div>` : ''}${T.discount ? `<div><i style="background:var(--ok)"></i>优惠<span class="mono">−${rm(T.discount)}</span></div>` : ''}</div></div>`;
+        ${T.design ? `<div><i style="background:var(--off)"></i>设计费<span class="mono">${rm(T.design)}</span></div>` : ''}${T.mgmt ? `<div><i style="background:var(--off)"></i>工程管理费<span class="mono">${rm(T.mgmt)}</span></div>` : ''}${T.cont ? `<div><i style="background:var(--off)"></i>不可预见费<span class="mono">${rm(T.cont)}</span></div>` : ''}${T.discount ? `<div><i style="background:var(--ok)"></i>优惠<span class="mono">−${rm(T.discount)}</span></div>` : ''}</div></div>`;
       if (sl.k === 'room') return demoRoom(sl.r, C);
       if (sl.k === 'whole') { const ls = C.lines.filter(l => !l.roomId), ws = [...new Set(ls.map(l => l.from))]; return `<div class="kick">全屋</div><h1>${ic('home')} 全屋项目</h1><div class="facts"><div><b class="mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</b><span>全屋项目费用</span></div></div><div class="works">${ws.map(w => `<span>${esc(w === '自动' || w === '全屋' ? '' : w)}</span>`).filter(x => x !== '<span></span>').join('')}</div><table class="q"><tbody>${ls.map(l => `<tr><td>${esc(l.name)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('')}</tbody></table>`; }
       if (sl.k === 'cmp') { const ps = Q.plans(P).map(p => { const L = Q.buildLines(P, p.id); return { p, t: Q.totals(P, L).total }; }); return `<div class="kick">方案对比</div><h1>选哪一套？</h1><div class="cmp">${ps.map(x => `<div class="${x.p.id === pl.id ? 'on' : ''}"><div class="hint">${esc(x.p.name)}</div><div class="big mono" style="font-size:32px">${rm(x.t)}</div>${x.p.id !== ps[0].p.id ? `<div class="mono" style="color:${x.t > ps[0].t ? 'var(--accent)' : 'var(--ok)'}">${x.t >= ps[0].t ? '+' : '−'}${rm(Math.abs(x.t - ps[0].t))}</div>` : '<div class="hint">基准</div>'}<button class="btn ${x.p.id === pl.id ? 'pri' : ''}" style="margin-top:10px" data-plan="${x.p.id}">${x.p.id === pl.id ? '正在看这套' : '看这套'}</button></div>`).join('')}</div>`; }
@@ -1195,6 +1203,7 @@
     else if (ds.hv) { (P.house[ds.hv] = P.house[ds.hv] || {})[ds.hk] = v; }
     else if (ds.price !== undefined) { P.prices[ds.price] = { mat: 0, aux: 0, waste: 0, lab: v }; }
     else if (el.hasAttribute('data-discount')) P.discount = v;
+    else if (ds.setting) { P.settings = P.settings || {}; P.settings[ds.setting] = v; }
   }
   document.addEventListener('input', e => {
     const t = e.target;
@@ -1365,6 +1374,7 @@
       render(); return;
     }
     if (ds.gospec) { tab = 'spec'; specGroup = Q.roomGroup(room(roomId)); render(); window.scrollTo(0, 0); return; }
+    if (ds.waive) { P.waive = P.waive || {}; if (P.waive[ds.waive]) delete P.waive[ds.waive]; else P.waive[ds.waive] = true; render(); return; }
     if (b.hasAttribute('data-toall')) { tab = 'all'; render(); window.scrollTo(0, 0); return; }
     if (b.hasAttribute('data-tospec')) { tab = 'spec'; specGroup = null; render(); window.scrollTo(0, 0); return; }
     if (ds.specgroup) { tab = 'spec'; specGroup = ds.specgroup; render(); window.scrollTo(0, 0); return; }

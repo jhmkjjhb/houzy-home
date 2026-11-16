@@ -354,12 +354,18 @@
     { k: 'ext_paint', landed: true, grp: 'out', label: '外墙油漆', icon: '🎨', inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 1500 }], lines: v => [['ext_paint', v.area, '外墙面积']] },
     { k: 'downpipe', landed: true, grp: 'out', label: '换雨水管', icon: '🌧️', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['downpipe', v.len, '雨水管长度']] },
     { k: 'fence', landed: true, grp: 'out', label: '围墙/栏杆', icon: '🧱', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['fence', v.len, '围墙长度']] },
+    { k: 'termite', landed: true, grp: 'struct', label: '白蚁防治', icon: '🐜', why: '有地房屋拆地面、加建、木作多时建议做', inputs: [{ k: 'area', label: '处理面积', unit: '平方尺', def: () => 1000 }], lines: v => [['termite', v.area, '处理面积']] },
+    { k: 'roro', grp: 'struct', label: '大垃圾箱租用（RORO bin）', icon: '🗑️', why: '大拆大改时代替按车清运；选了会提醒去掉自动的「建筑垃圾清运」', inputs: [{ k: 'n', label: '箱数', unit: '个', def: () => 1 }], lines: v => [['roro_bin', v.n, '箱数']] },
+    { k: 'insurance', grp: 'struct', label: '工程保险（CAR）', icon: '🛡️', why: '工程一切险，客户或物业要求时购买', lines: () => [['car_insurance', 1, '']] },
     { k: 'drain_ch', landed: true, grp: 'out', label: '户外排水沟', icon: '〰️', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['drain_ch', v.len, '排水沟长度']] }
   ];
   // 手动增项：价目表没有的项目，员工自己填名称、单位、数量、单价和归属阶段
   const EXTRA_UNITS = ['项', '平方尺', '延尺', '个', '套', '樘', '处'];
 
-  const SETTINGS = { designRate: 8, mgmtRate: 6, sst: 0, pay: [['签约定金', 30], ['水电隐蔽验收通过', 30], ['泥水瓷砖验收通过', 30], ['竣工验收交付', 10]] };
+  // 自动收的杂项（可对某单免收）
+  const AUTO_FEES = ['setout', 'protect', 'permit', 'pipe_test', 'carry_up', 'waste_out', 'clean'];
+  // contRate = 不可预见费 %（默认 0 不收）
+  const SETTINGS = { designRate: 8, mgmtRate: 6, contRate: 0, sst: 0, pay: [['签约定金', 30], ['水电隐蔽验收通过', 30], ['泥水瓷砖验收通过', 30], ['竣工验收交付', 10]] };
 
   // ---------- 方案（同一范围，多套选材） ----------
   function plans(project) {
@@ -461,8 +467,10 @@
       if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.labUnit = lab; last.total = Math.round(qty * lab); last.giftValue = Math.round(qty * unit) - last.total; }
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
-    if (anyWork) { push(null, 'setout', 1, '每单必做', '全屋'); push(null, 'protect', 1, '每单必做', '全屋'); }
-    if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) push(null, 'permit', 1, '公寓有管理处，装修要先申请', '全屋');
+    // 自动收的杂项：在「③ 全屋 → 收费」里逐项列出，员工可以对某单免收（project.waive）
+    const auto = (code, qty, f, from) => { if (!(project.waive || {})[code]) push(null, code, qty, f, from); };
+    if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', 1, '每单必做', '全屋'); }
+    if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) auto('permit', 1, '公寓有管理处，装修要先申请', '全屋');
     project.rooms.forEach(room => {
       const g = geo(room, project), picked = {};
       (room.packs || []).forEach(c => { picked[c] = true; });
@@ -484,15 +492,15 @@
     const indoor = project.rooms.filter(r => !ROOMS[r.type].outdoor);
     const worked = indoor.filter(r => (r.packs || []).length);
     const waterPts = lines.filter(l => l.code === 'water_pt').reduce((t, l) => t + l.qty, 0);
-    if (waterPts > 0) push(null, 'pipe_test', 1, `全屋 ${waterPts} 个水点位，封槽前必须打压`, '自动');
+    if (waterPts > 0) auto('pipe_test', 1, `全屋 ${waterPts} 个水点位，封槽前必须打压`, '自动');
     const upQty = worked.filter(r => (r.level || 1) > 1).reduce((t, r) => t + geo(r, project).floor * ((r.level || 1) - 1), 0);
-    if (upQty > 0) push(null, 'carry_up', upQty, '楼上施工房间面积 × 楼层', '自动');
+    if (upQty > 0) auto('carry_up', upQty, '楼上施工房间面积 × 楼层', '自动');
     if (anyWork) {
       const sum = cs => lines.filter(l => cs.includes(l.code)).reduce((t, l) => t + l.qty, 0);
       const demoArea = sum(['demo_floor', 'demo_skin', 'demo_wall_tile', 'demo_ceiling']), wallArea = sum(['demo_wall']), pieces = sum(['demo_piece']);
       // 砸墙渣土最重：每 100 平方尺 1 车（同旧版）
-      push(null, 'waste_out', 1 + ceil(demoArea / 400) + ceil(wallArea / 100) + ceil(pieces / 10), `基础 1 车 + 铲除面积 ${r2(demoArea)}÷400 + 砸墙 ${r2(wallArea)}÷100 + 旧件 ${pieces}÷10（进位）`, '自动');
-      push(null, 'clean', worked.reduce((t, r) => t + geo(r, project).floor, 0), '施工房间地面面积合计', '自动');
+      auto('waste_out', 1 + ceil(demoArea / 400) + ceil(wallArea / 100) + ceil(pieces / 10), `基础 1 车 + 铲除面积 ${r2(demoArea)}÷400 + 砸墙 ${r2(wallArea)}÷100 + 旧件 ${pieces}÷10（进位）`, '自动');
+      auto('clean', worked.reduce((t, r) => t + geo(r, project).floor, 0), '施工房间地面面积合计', '自动');
     }
     return lines;
   }
@@ -503,8 +511,8 @@
     // 设计费只按「有施工的室内房间」面积算：只做客厅就不收全屋设计费
     const floorSum = project.rooms.filter(r => !ROOMS[r.type].outdoor && (r.packs || []).length).reduce((t, r) => t + geo(r, project).floor, 0);
     const design = project.design === false ? 0 : Math.round(floorSum * num(s.designRate));
-    const mgmt = Math.round(direct * num(s.mgmtRate) / 100);
-    const before = direct + design + mgmt;
+    const mgmt = Math.round(direct * num(s.mgmtRate) / 100), cont = Math.round(direct * num(s.contRate) / 100);
+    const before = direct + design + mgmt + cont;
     const discount = Math.min(Math.round(num(project.discount)), before);
     const sst = Math.round((before - discount) * num(s.sst) / 100);
     const total = before - discount + sst;
@@ -512,7 +520,7 @@
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
-    return { direct, design, mgmt, discount, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+    return { direct, design, mgmt, cont, discount, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
@@ -573,6 +581,7 @@
       if (packs.includes('ceiling') && packs.includes('ceil_paint')) red.push({ m: `「${label}」同时选了「天花吊顶」和「天花重刷」，吊顶已含天花油漆，请去掉一个`, go: room.id });
       if (room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });
     });
+    if (project.house?.roro?.on && lines.some(l => l.code === 'waste_out')) yellow.push({ m: '租了大垃圾箱，又按车清运建筑垃圾，确认是否要在「收费」里免收「建筑垃圾清运」', go: 'all' });
     ['awning', 'drain_ch'].forEach(k => { if (project.house?.[k]?.on && project.rooms.some(r => (r.packs || []).includes(k) || (k === 'awning' && (r.packs || []).includes('carport')))) red.push({ m: `「${PACKS[k].label}」在车廊/前院和全屋项目都选了，会重复收费，请去掉一个`, go: 'all' }); });
     if (project.house?.extension?.on && project.rooms.some(r => r.ext)) yellow.push({ m: '全屋项目选了「加建/扩建」，房间里也有加建空间，确认面积没有重复算', go: 'all' });
     (project.extras || []).forEach((x, i) => {
@@ -697,7 +706,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
