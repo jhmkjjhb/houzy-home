@@ -99,7 +99,7 @@
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
     corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
-    stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_light', 'wall_finish', 'scaffold'] },
+    stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
     extension: { label: '加建空间', icon: '🏗️', L: 20, W: 10, doors: 1, ext: true, landed: true, packs: ['floor', 'wet_tile', 'wall_finish', 'ceiling', 'ceil_paint', 'electric', 'kitchen_water', 'aircon', 'fan', 'window_new', 'fly_screen', 'door', 'cabinets', 'sill'] },
@@ -116,6 +116,8 @@
   const SCREEN_CODES = ['screen', 'screen_l', 'screen_diamond', 'curtain_rod', 'shower_tray'];
   // scope: true = 做法（拆多少、防水多高、隔断形式、成品还是定制），在「② 房间」逐间定，默认标准做法，不算「未定」；
   // 其余是材料和选品，在「④ 选材」按空间类型统一选，某间可单独不同。
+  const RAIL_CODES = { '不锈钢立柱 + 木扶手': 'stair_rail', '钢化玻璃栏板 + 木扶手': 'rail_glass', '铁艺栏杆': 'rail_iron', '实木栏杆': 'rail_wood', '黑色方管栏杆（现代简约）': 'rail_black', '铝合金栏杆': 'rail_alu' };
+  const STAIR_CODES = ['stair_tread', 'stair_wood', 'stair_stone', 'stair_paint'];
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
@@ -155,6 +157,16 @@
     wet: { label: '防水与墙砖', icon: '💧', keys: {
       wpHeight: { scope: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp'], packs: ['bath_tile'], noPrice: true },
       wallTile: { scope: true, label: '墙砖铺到', opts: ['满墙到顶', '到吊顶下（约 8 尺）', '半墙 4 尺（上面刷漆）'], std: '满墙到顶', codes: ['wall_tile'], packs: ['bath_tile'], noPrice: true }
+    } },
+    stairs: { label: '楼梯', icon: '🪜', keys: {
+      finish:    { scope: true, label: '踏步做法', opts: ['瓷砖踏步', '实木踏板', '石材踏步', '原踏步打磨油漆'], std: '瓷砖踏步', codes: STAIR_CODES, noPrice: true },
+      rail:      { scope: true, label: '扶手栏杆做法', opts: Object.keys(RAIL_CODES), std: '不锈钢立柱 + 木扶手', codes: Object.values(RAIL_CODES), noPrice: true },
+      stepLight: { scope: true, label: '踏步灯做法', opts: ['嵌墙踏步灯', '踏步下 LED 灯带', '人体感应踏步灯'], std: '嵌墙踏步灯', codes: ['stair_steplight', 'stair_steplight_sensor', 'led_strip'], packs: ['stair_step_light'], noPrice: true },
+      wood:      { label: '木种', opts: ['菠萝格（Merbau）', '柚木', '橡木', '实木复合'], std: '菠萝格（Merbau）', codes: ['stair_wood', 'stair_wood_land'] },
+      stone:     { label: '石材', opts: ['花岗岩', '大理石', '水磨石'], std: '花岗岩', codes: ['stair_stone', 'stair_stone_land'] },
+      paint:     { label: '踏步油漆', opts: ['木器清漆', '地坪漆', '彩色水泥漆'], std: '木器清漆', codes: ['stair_paint', 'stair_paint_area'] },
+      nosing:    { label: '防滑处理', opts: ['铝合金防滑条', '开防滑槽', '不做'], std: '铝合金防滑条', codes: ['stair_tread', 'stair_stone'] },
+      railColor: { label: '栏杆颜色', opts: ['黑色', '白色', '木色', '不锈钢本色', '香槟金'], std: '黑色', codes: Object.values(RAIL_CODES), noPrice: true }
     } },
     shower: { label: '淋浴区', icon: '🚿', keys: {
       base:  { scope: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
@@ -278,8 +290,20 @@
     sill:           { g: 'open', label: '窗台石', icon: '▭', needWindows: true, lines: (r, g) => [['window_sill', g.winW, '各樘窗宽合计']] },
     balc_seal:      { g: 'open', label: '封阳台', icon: '🪟', lines: (r, g) => [['balc_seal', g.L, '= 阳台长度']] },
 
-    stair_tile:     { g: 'floor', label: '楼梯踏步砖', icon: '🪜', inputs: [{ k: 'n', label: '踏步', unit: '级', def: () => 18 }], lines: (r, g, v) => [['stair_tread', v.n, '踏步级数']] },
-    stair_rail:     { g: 'open', label: '楼梯扶手/栏杆', icon: '🪜', inputs: [{ k: 'len', label: '扶手长度', unit: '尺', def: (r, g) => r2(g.L + 3) }], lines: (r, g, v) => [['stair_rail', v.len, '扶手长度']] },
+    // 楼梯踏步：做法（瓷砖 / 实木踏板 / 石材 / 原踏步油漆）在房间里定，材料（木种、石材、防滑）到「④ 选材」
+    stair_tile:     { g: 'floor', label: '楼梯踏步', icon: '🪜', perRoom: true,
+                      inputs: [{ k: 'n', label: '踏步', unit: '级', def: () => 18 }, { k: 'w', label: '楼梯宽', unit: '尺', def: () => 3.5 }, { k: 'land', label: '休息平台', unit: '平方尺', def: () => 0, opt: true }],
+                      lines: (r, g, v, picked, sp) => { const f = sp('stairs', 'finish'), c = { '实木踏板': 'stair_wood', '石材踏步': 'stair_stone', '原踏步打磨油漆': 'stair_paint' }[f] || 'stair_tread';
+                        return [[c, v.n, `${f}，${v.n} 级 × 宽 ${v.w} 尺`], ...(num(v.land) > 0 ? [[c === 'stair_tread' ? 'floor_tile' : c === 'stair_paint' ? 'stair_paint_area' : c + '_land', v.land, '休息平台']] : [])]; } },
+    stair_rail:     { g: 'open', label: '楼梯扶手/栏杆', icon: '🪜', perRoom: true,
+                      inputs: [{ k: 'len', label: '扶手长度', unit: '尺', def: (r, g) => r2(g.L + 3) }, { k: 'top', label: '楼上走廊护栏', unit: '尺', def: () => 0, opt: true }],
+                      lines: (r, g, v, picked, sp) => { const t = sp('stairs', 'rail'), c = RAIL_CODES[t] || 'stair_rail';
+                        return [[c, v.len, `${t}，楼梯段`], [c, v.top, `${t}，楼上走廊护栏`]]; } },
+    // 踏步灯：要不要做是一个单独项目；做的话选嵌墙灯 / 踏步下灯带 / 感应灯
+    stair_step_light: { g: 'mep', label: '踏步灯', icon: '💡', perRoom: true,
+                      inputs: [{ k: 'n', label: '踏步灯', unit: '个', def: () => 6 }],
+                      lines: (r, g, v, picked, sp) => { const t = sp('stairs', 'stepLight'), sv = (r.vals && r.vals.stair_tile) || {}, steps = num(sv.n) || 18, w = num(sv.w) || 3.5;
+                        return t === '踏步下 LED 灯带' ? [['led_strip', r2(steps * w), `每级踏步下 × 楼梯宽（${steps} 级 × ${w} 尺）`]] : [[t === '人体感应踏步灯' ? 'stair_steplight_sensor' : 'stair_steplight', v.n, t]]; } },
     stair_light:    { g: 'mep', label: '楼梯灯（上下双控）', icon: '💡', inputs: [{ k: 'n', label: '灯', unit: '套', def: () => 2 }], lines: (r, g, v) => [['stair_light', v.n, '套数']] },
     scaffold:       { g: 'demo', label: '挑空/高处脚手架', icon: '🏗️', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: (r, g, v) => [['scaffold', v.n, '处数']] },
     porch_tile:     { g: 'out', area: ['floor'], label: '防滑地砖', icon: '🟫', lines: (r, g, v, picked, sp) => [['screed', g.floor, '地面找平'], ['porch_tile', g.floor, '地面'], ...tileExtra(sp, g.floor)] },
@@ -476,7 +500,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));

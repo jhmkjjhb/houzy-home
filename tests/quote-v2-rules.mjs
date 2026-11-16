@@ -581,4 +581,18 @@ ok('做法（scope）在房间里定，默认标准做法，不算「未定」�
   assert.ok(Object.values(Q.SPEC_CATS).every(c => Object.values(c.keys).every(k => !k.per)), '旧的 per 标记已全部换成 scope');
 });
 
+ok('楼梯：踏步做法、栏杆做法、踏步灯按选的出项目；没改的按瓷砖踏步 + 不锈钢立柱木扶手', () => {
+  const r = { ...Q.newRoom('stairs', 1, 1), packs: ['stair_tile', 'stair_rail', 'stair_step_light'], vals: { stair_tile: { n: 16, w: 4, land: 20 }, stair_rail: { len: 15, top: 10 } } };
+  const p = project([r]); let L = Q.buildLines(p);
+  const codes = () => L.map(l => l.code);
+  assert.ok(codes().includes('stair_tread') && codes().includes('floor_tile') && codes().includes('stair_steplight'));
+  assert.equal(L.filter(l => l.code === 'stair_rail').reduce((t, l) => t + l.qty, 0), 25, '楼梯段 + 楼上护栏都算');
+  Q.activePlan(p).roomSpecs[r.id] = { '@stair_tile': { stairs: { finish: '实木踏板' } }, '@stair_rail': { stairs: { rail: '钢化玻璃栏板 + 木扶手' } }, '@stair_step_light': { stairs: { stepLight: '踏步下 LED 灯带' } } };
+  L = Q.buildLines(p);
+  assert.ok(codes().includes('stair_wood') && codes().includes('stair_wood_land') && !codes().includes('stair_tread'), '实木踏板不再算瓷砖');
+  assert.ok(codes().includes('rail_glass') && !codes().includes('stair_rail'));
+  assert.equal(L.find(l => l.code === 'led_strip').qty, 64, '灯带 = 16 级 × 4 尺');
+  assert.ok(L.find(l => l.code === 'stair_wood').unpriced, '实木踏板等公司定价，不按 0 算');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

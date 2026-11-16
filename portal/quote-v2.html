@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116c"></script>
+<script src="quote-v2-price.js?v=20261116d"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116i"></script>
+<script src="quote-v2-rules.js?v=20261116j"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -771,7 +771,8 @@
     const pk = PACKS[c], on = r.packs.includes(c);
     const myLines = on ? C.lines.filter(l => l.roomId === r.id && l.pack === c) : [];
     const place = on ? Q.placesOf(P, r, C.lines).find(x => x.pack === c) : null;
-    const specLine = place ? `<button type="button" class="chip" style="border-style:solid;${place.open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${c}">选材：${place.open ? '未定（按标准档估价）' : esc(myLines[0]?.spec || '已定')} ›</button>` : '';
+    // 只有做法、没有材料要选的项目（如踏步灯）不显示选材入口
+    const specLine = place && place.keys.some(([cat, k]) => !Q.SPEC_CATS[cat].keys[k].scope) ? `<button type="button" class="chip" style="border-style:solid;${place.open ? 'border-color:var(--yellow);color:var(--yellow)' : 'border-color:var(--ok);color:var(--ok)'}" data-gospec="${c}">选材：${place.open ? '未定（按标准档估价）' : esc(myLines[0]?.spec || '已定')} ›</button>` : '';
     const sub = myLines.reduce((t, l) => t + l.total, 0);
     const v = Q.packValues(r, c, g);
     return `<div class="pack ${on ? 'on' : ''} ${on && (pk.items || pk.wide) ? 'wide' : ''}"><button type="button" class="h" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-pack="${c}"><span class="tick" ${on ? 'title="点这个勾取消这项"' : ''}>${on ? '✓' : ''}</span><span class="ic">${ic(pk.icon)}</span><span>${pk.label}</span><span class="rm2 mono">${on ? (myLines.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>

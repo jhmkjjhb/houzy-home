@@ -126,6 +126,15 @@
   });
   root.QV2_PRICE.niche = { stage: 'tile', name: '淋浴区墙内壁龛', unit: '个', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '开墙槽做壁龛，内部防水后贴砖，阳角收边' };
   root.QV2_PRICE.tile_border = { stage: 'tile', name: '腰线/花砖', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '墙砖中间加一道腰线或花砖，按长度计' };
+  [['stair_wood', '实木楼梯踏板（含踢面）', '级', 'tile', '实木踏板外挂包覆原踏步，含踢面板，打磨上漆'], ['stair_wood_land', '休息平台实木地板', '平方尺', 'tile', '与踏板同木种'],
+   ['stair_stone', '石材楼梯踏步（含踢面）', '级', 'tile', '石材踏步+踢面，前沿倒边'], ['stair_stone_land', '休息平台石材', '平方尺', 'tile', '与踏步同石材'],
+   ['stair_paint', '楼梯踏步打磨油漆', '级', 'ceil', '原踏步打磨、补缝、上漆'], ['stair_paint_area', '休息平台打磨油漆', '平方尺', 'ceil', '与踏步同油漆'],
+   ['rail_glass', '钢化玻璃栏板 + 木扶手', '延尺', 'custom', '10–12 mm 钢化夹胶玻璃，不锈钢夹具'], ['rail_iron', '铁艺栏杆', '延尺', 'custom', '铁艺花式栏杆，防锈底漆+面漆'],
+   ['rail_wood', '实木栏杆 + 扶手', '延尺', 'custom', '实木立柱、栏杆、扶手，上漆'], ['rail_black', '黑色方管栏杆（现代简约）', '延尺', 'custom', '方管焊接，烤漆'],
+   ['rail_alu', '铝合金栏杆', '延尺', 'custom', '铝合金型材，免维护'],
+   ['stair_steplight', '嵌墙踏步灯', '个', 'equip', '墙面预埋底盒，嵌入式 LED 踏步灯'], ['stair_steplight_sensor', '人体感应踏步灯', '个', 'equip', '感应自动亮灭']].forEach(([code, name, unit, stage, desc]) => {
+    root.QV2_PRICE[code] = { stage, name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
+  });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
