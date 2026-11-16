@@ -156,7 +156,7 @@
     cabinet: { label: '定制柜', icon: '🗄️', keys: {
       body:     { label: '柜体板材', opts: ['多层实木板', '防潮颗粒板', '铝合金'], std: '多层实木板', codes: CAB_CODES },
       door:     { label: '门板饰面', opts: ['双饰面', 'PET', '烤漆', '木皮'], std: '双饰面', codes: CAB_CODES },
-      hardware: { label: '五金', opts: ['阻尼铰链+缓冲滑轨', 'Blum', 'Hettich'], std: '阻尼铰链+缓冲滑轨', codes: CAB_CODES },
+      hardware: { label: '五金', opts: ['阻尼铰链+缓冲滑轨', 'Blum', 'Hettich', 'Häfele（海福乐）', 'DTC（东泰）'], std: '阻尼铰链+缓冲滑轨', codes: CAB_CODES },
       light:    { label: '柜内灯', opts: ['不做', '感应灯带'], std: '不做', codes: CAB_CODES },
       counter:  { label: '厨房台面', opts: ['石英石', '岩板', '花岗岩'], std: '石英石', codes: ['counter'] }
     } },
