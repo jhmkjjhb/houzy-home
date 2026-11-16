@@ -206,6 +206,14 @@ ok('打砸和建墙记在发生的房间：拆墙、砌墙、隔墙、开封门�
   assert.equal(qty(OL, 'demo_wall'), 40, '旧报价全屋拆墙照算'); assert.equal(qty(OL, 'engineer'), 1, '不重复加工程师');
 });
 
+ok('三大类：施工工艺算硬装，马桶/门窗/定制柜等算材料，家具窗帘算软装；每个项目都归到一类', () => {
+  assert.equal(Q.clsOf('demo_wall'), 'hard'); assert.equal(Q.clsOf('wp'), 'hard'); assert.equal(Q.clsOf('floor_tile'), 'hard');
+  assert.equal(Q.clsOf('toilet'), 'mat'); assert.equal(Q.clsOf('wardrobe'), 'mat'); assert.equal(Q.clsOf('door'), 'mat');
+  assert.equal(Q.clsOf('sf_sofa'), 'soft'); assert.equal(Q.clsOf('curtain'), 'soft');
+  assert.equal(Q.clsOf('clean'), 'hard', '开荒清洁是服务，不算材料');
+  Object.keys(Q.PRICE).forEach(c => assert.ok(Q.CLS[Q.clsOf(c)], c));
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);

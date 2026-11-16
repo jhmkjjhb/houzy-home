@@ -549,6 +549,10 @@
   const EXTRA_UNITS = ['项', '平方尺', '延尺', '个', '套', '樘', '处'];
 
   // 自动收的杂项（可对某单免收）
+  // 三大类：硬装（施工工艺）、材料（主材 / 定制 / 产品）、软装（家具、窗帘、饰品）
+  const CLS = { hard: '硬装（施工）', mat: '材料（主材 / 定制 / 产品）', soft: '软装' };
+  const SERVICE = ['clean', 'formaldehyde', 'hood', 'ceiling_fan'];
+  const clsOf = code => { const p = P[code]; if (!p) return 'hard'; if (p.stage === 'soft') return 'soft'; if ((p.stage === 'custom' || p.stage === 'equip') && !SERVICE.includes(code)) return 'mat'; return 'hard'; };
   const AUTO_FEES = ['setout', 'protect', 'permit', 'pipe_test', 'carry_up', 'waste_out', 'clean'];
   // contRate = 不可预见费 %（默认 0 不收）
   const SETTINGS = { designRate: 8, mgmtRate: 6, contRate: 0, sst: 0, pay: [['签约定金', 30], ['水电隐蔽验收通过', 30], ['泥水瓷砖验收通过', 30], ['竣工验收交付', 10]] };
@@ -957,7 +961,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

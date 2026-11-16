@@ -303,7 +303,7 @@
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261116tlab"></script>
-<script src="quote-v2-rules.js?v=20261117wall"></script>
+<script src="quote-v2-rules.js?v=20261117cls"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -1013,14 +1013,21 @@
     h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${mode === 'formal' ? '正式报价单' : '预估报价单'} · ${esc(plan().name || '')}</h2><button class="btn pri noprint" data-print ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `还有 ${K.red.length} 项要处理` : '打印 / 存 PDF'}</button></div>
       ${mode === 'estimate' && lines.some(l => l.tbd.length) ? '<p class="hint" style="color:var(--yellow)">标「暂定」的项目材料还没定，暂按标准档估价，定好后金额可能变化。</p>' : ''}
       <p class="hint">客户：${esc(P.info.name) || '（未填）'} · ${HOUSES[P.houseType]?.label || ''} · 施工面积 ${nf(T.floorSum)} 平方尺</p>
+      <div class="adds noprint" style="margin:6px 0;align-items:center"><span class="hint" style="margin:0">报价单排法：</span>${[['stage', '按施工工序'], ['room', '按房间'], ['cls', '按硬装 / 材料 / 软装']].map(([k, l]) => `<button class="chip ${(P.quoteView || 'stage') === k ? 'on' : ''}" data-qview="${k}">${l}</button>`).join('')}</div>
       <div class="scroll-x"><table class="q"><thead><tr><th>项目</th><th>空间</th><th class="r">数量</th><th class="r">单价</th><th class="r">金额</th></tr></thead><tbody>`;
-    STAGES.forEach(st => {
-      const ls = quoteDisplayLines(lines.filter(l => l.stage === st.id)); if (!ls.length) return;
-      h += `<tr class="st"><td colspan="4">${st.no}. ${st.name}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
+    // 报价单排法：按工序 / 按房间 / 按硬装-材料-软装；金额一样，只是分组不同
+    const DL = quoteDisplayLines(lines), qv = P.quoteView || 'stage';
+    const clsLine = l => (l.tilePart === 'material' ? 'mat' : Q.clsOf(l.code));
+    const qGroups = qv === 'room' ? [...Q.sortRooms(P.rooms).map(r => ({ name: Q.roomLabel(r, P), ls: DL.filter(l => l.roomId === r.id) })), { name: '全屋', ls: DL.filter(l => !l.roomId) }]
+      : qv === 'cls' ? Object.entries(Q.CLS).map(([k, name], i) => ({ name: `${i + 1}. ${name}`, ls: DL.filter(l => clsLine(l) === k) }))
+      : STAGES.map(st => ({ name: `${st.no}. ${st.name}`, ls: DL.filter(l => l.stage === st.id) }));
+    qGroups.forEach(({ name, ls }) => {
+      if (!ls.length) return;
+      h += `<tr class="st"><td colspan="4">${esc(name)}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
       h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
-      <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>${T.soft ? `<div class="desc" style="display:flex;justify-content:space-between"><span>其中 硬装 ${rm(T.hard)} · 软装 ${rm(T.soft)}</span><span>管理费只按硬装算</span></div>` : ''}
+      <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>${(() => { const sub = k => DL.filter(l => clsLine(l) === k).reduce((t, l) => t + l.total, 0); return `<div class="desc" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>其中 硬装 ${rm(sub('hard'))} · 材料 ${rm(sub('mat'))} · 软装 ${rm(sub('soft'))}</span>${T.soft ? '<span>管理费不算软装</span>' : ''}</div>`; })()}
       ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
       <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>${T.cont ? `<div><span>不可预见费（${T.settings.contRate}%）</span><span class="mono">${rm(T.cont)}</span></div>` : ''}
       ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送产品（材料免收，人工安装照收）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
@@ -1236,7 +1243,7 @@
   }
   function bookEditor(rows) {
     bkRows = rows;
-    const filters = [['tilepc', '瓷砖统一规格价'], ['unpriced', '只看没核定的（含参考价）'], ['confirmed', '已确认价格'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '有规格的项目']];
+    const filters = [['cls:hard', '硬装（施工）'], ['cls:mat', '材料（主材 / 定制 / 产品）'], ['cls:soft', '软装'], ['tilepc', '瓷砖统一规格价'], ['unpriced', '只看没核定的（含参考价）'], ['confirmed', '已确认价格'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '有规格的项目']];
     const items = rows.filter(r => r[0] === '项目单价'), opts = rows.filter(r => r[0] !== '项目单价');
     const optSet = o => [4, 5, 6].some(i => o[i] !== '');
     const q = bookQ.toLowerCase(), hit = r => !q || (r[2] + r[1]).toLowerCase().includes(q);
@@ -1245,9 +1252,10 @@
     const rowPriced = r => r[0] === '瓷砖片价' ? String(r[4] ?? '').trim() !== '' : r[0] === '项目单价' ? r.slice(4, 7).some(x => String(x ?? '').trim() !== '') : [4,5,6].some(i => String(r[i] ?? '').trim() !== '');
     const showByConfirm = r => bookFilter === 'unpriced' ? !confirms[rowKey(r)] : bookFilter === 'confirmed' ? !!confirms[rowKey(r)] : true;
     const list = [];
-    if (bookFilter === 'tilepc' || bookFilter === 'all' || bookFilter === 'unpriced' || bookFilter === 'confirmed') list.push(...opts.filter(r => r[0] === '瓷砖片价' && !r[1].includes('@') && hit(r) && (bookFilter !== 'unpriced' || !confirms[rowKey(r)])));
+    if (bookFilter === 'tilepc' || bookFilter === 'cls:mat' || bookFilter === 'all' || bookFilter === 'unpriced' || bookFilter === 'confirmed') list.push(...opts.filter(r => r[0] === '瓷砖片价' && !r[1].includes('@') && hit(r) && (bookFilter !== 'unpriced' || !confirms[rowKey(r)])));
     items.forEach(r => {
-      if (!['all', 'opt', 'unpriced', 'confirmed', 'tilepc'].includes(bookFilter) && PRICE[r[1]].stage !== bookFilter) return;
+      if (bookFilter.startsWith('cls:')) { if (Q.clsOf(r[1]) !== bookFilter.slice(4)) return; }
+      else if (!['all', 'opt', 'unpriced', 'confirmed', 'tilepc'].includes(bookFilter) && PRICE[r[1]].stage !== bookFilter) return;
       if (bookFilter === 'tilepc') return;
       let kids = opts.filter(o => bkOptCode(o[1]) === r[1]);
       if (bookFilter === 'opt' && !kids.length) return;
@@ -1667,6 +1675,7 @@
     }
     if (b.hasAttribute('data-delplan')) { const ps = Q.plans(P); if (ps.length > 1) { P.plans = ps.filter(p => p.id !== plan().id); P.planId = P.plans[0].id; } render(); return; }
     if (ds.mode) { P.quoteMode = ds.mode; render(); return; }
+    if (ds.qview) { P.quoteView = ds.qview; render(); return; }
     // 全屋项目的款式（大门、铁花、CCTV 等）：存为方案的全屋选材
     if (ds.hspec) { const [c, k, ...rest] = ds.hspec.split('|'), pl = Q.activePlan(P); ((pl.specs = pl.specs || {})[c] = pl.specs[c] || {})[k] = rest.join('|'); render(); return; }
     if (ds.hitem) { const q = P.house[ds.hitem] = P.house[ds.hitem] || {}; q.on = !q.on; render(); return; }
