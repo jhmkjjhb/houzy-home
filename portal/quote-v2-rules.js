@@ -156,7 +156,7 @@
     cabinet: { label: '定制柜', icon: '🗄️', keys: {
       body:     { label: '柜体板材', opts: ['多层实木板', '防潮颗粒板', '铝合金'], std: '多层实木板', codes: CAB_CODES },
       door:     { label: '门板饰面', opts: ['双饰面', 'PET', '烤漆', '木皮'], std: '双饰面', codes: CAB_CODES },
-      hardware: { label: '五金', opts: ['阻尼铰链+缓冲滑轨', 'Blum', 'Hettich', 'Häfele（海福乐）', 'DTC（东泰）'], std: '阻尼铰链+缓冲滑轨', codes: CAB_CODES },
+      hardware: { label: '五金', opts: ['阻尼铰链+缓冲滑轨', 'Blum', 'Hettich', '悍高（HIGOLD）', 'DTC（东泰）'], std: '阻尼铰链+缓冲滑轨', codes: CAB_CODES },
       light:    { label: '柜内灯', opts: ['不做', '感应灯带'], std: '不做', codes: CAB_CODES },
       counter:  { label: '厨房台面', opts: ['石英石', '岩板', '花岗岩'], std: '石英石', codes: ['counter'] }
     } },
@@ -501,7 +501,13 @@
         const sp = (cat, k) => specOf(project, room, cat, k, planId, code).v;
         const v = packValues(room, code, g), g2 = { ...g };
         (pk.area || []).forEach(k => { g2[k] = v[k]; });
-        pk.lines(room, g2, v, picked, sp).forEach(([c, q, f, it]) => push(room, c, q, f, pk.label, code, it));
+        // 每一行数量都能在「④ 选材」明细里直接改（room.lineQty，键 = 工项:编号:第几次出现）
+        const seen = {};
+        pk.lines(room, g2, v, picked, sp).forEach(([c, q, f, it]) => {
+          const key = `${code}:${c}:${seen[c] = (seen[c] || 0) + 1}`, ov = room.lineQty && room.lineQty[key], n = lines.length;
+          if (ov !== undefined && ov !== '' && !it) push(room, c, num(ov), `手动改（自动算 ${r2(num(q))}）`, pk.label, code, it); else push(room, c, q, f, pk.label, code, it);
+          if (lines.length > n) { lines[n].lq = key; lines[n].lqAuto = r2(num(q)); }
+        });
       });
     });
     // 加建：标了「加建」的房间按地面面积加结构；整单只申请一次准证

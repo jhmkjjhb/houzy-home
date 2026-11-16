@@ -661,4 +661,13 @@ ok('收费里的自动杂项可以手动改数量和单价；清掉手动值就�
   assert.equal(w().qty, autoQty); assert.equal(w().unit, 350);
 });
 
+ok('选材明细里可直接改某一行数量（如地漏 2→3），只改这间这一行；清掉恢复自动', () => {
+  const [a, b] = [Q.newRoom('bath', 1, 1), Q.newRoom('bath', 1, 2)].map(r => ({ ...r, measured: true, packs: ['bath_tile'] }));
+  const p = project([a, b]), d = r => Q.buildLines(p).find(l => l.roomId === r.id && l.code === 'drain');
+  assert.equal(d(a).lq, 'bath_tile:drain:1'); assert.equal(d(a).qty, 2);
+  a.lineQty = { 'bath_tile:drain:1': 3 };
+  assert.equal(d(a).qty, 3); assert.match(d(a).formula, /手动改（自动算 2）/); assert.equal(d(b).qty, 2, '另一间不受影响');
+  delete a.lineQty['bath_tile:drain:1']; assert.equal(d(a).qty, 2);
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

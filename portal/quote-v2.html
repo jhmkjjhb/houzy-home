@@ -298,7 +298,7 @@
 <script src="quote-v2-price.js?v=20261116h"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116q"></script>
+<script src="quote-v2-rules.js?v=20261116r"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -857,7 +857,11 @@
     have.forEach(x => {
       const xs = ls.filter(l => l.roomId === x.id), g = Q.geo(x, P);
       h += `<tr class="st"><td colspan="4">${esc(Q.roomLabel(x, P))} <span class="desc" style="font-weight:400">${nf(g.L)}×${nf(g.W)} 尺 · 地面 ${nf(g.floor)} 平方尺</span></td><td class="r mono">${rm(xs.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += xs.map(l => `<tr><td></td><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}</div>` : ''}</td><td class="r mono">${nf(l.qty)} ${esc(l.unitName)}</td><td class="desc">${esc(l.formula || '')}</td><td class="r mono">${l.unpriced ? '<span style="color:var(--yellow)">待定价</span>' : rm(l.total)}</td></tr>`).join('') || '<tr><td></td><td colspan="4" class="hint">数量为 0，请到「② 房间」补尺寸</td></tr>';
+      // 这间这个项目的尺寸/数量输入（宽、高、台数、点位……）直接在这里改，不用回「② 房间」
+      const ins = Q.inputsOf(c), v = Q.packValues(x, c, g);
+      if (ins.length) h += `<tr><td></td><td colspan="4"><div class="row">${ins.map(i => field(i.label, i.unit, stepper(`data-wroom="${x.id}" data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === '尺' ? 0.5 : i.unit === 'cm' || i.area ? 5 : 1))).join('')}</div></td></tr>`;
+      h += xs.map(l => { const man = (x.lineQty || {})[l.lq] !== undefined && x.lineQty[l.lq] !== '';
+        return `<tr><td></td><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}</div>` : ''}</td><td class="r">${l.lq && !l.custom ? stepper(`data-wroom="${x.id}" data-lq="${l.lq}"`, l.qty, 1) + ` <span class="desc">${esc(l.unitName)}</span>` + (man ? `<div><button class="x" style="font-size:11px;text-decoration:underline" data-wroom="${x.id}" data-lqreset="${l.lq}">恢复自动 ${nf(l.lqAuto)}</button></div>` : '') : `<span class="mono">${nf(l.qty)} ${esc(l.unitName)}</span>`}</td><td class="desc">${esc(l.formula || '')}</td><td class="r mono">${l.unpriced ? '<span style="color:var(--yellow)">待定价</span>' : rm(l.total)}</td></tr>`; }).join('') || '<tr><td></td><td colspan="4" class="hint">数量为 0，在上面补尺寸或数量</td></tr>';
     });
     return h + '</tbody></table></div>';
   }
@@ -1220,6 +1224,7 @@
     else if (ds.hv) { (P.house[ds.hv] = P.house[ds.hv] || {})[ds.hk] = v; }
     else if (ds.price !== undefined) { P.prices[ds.price] = { mat: 0, aux: 0, waste: 0, lab: v }; }
     else if (el.hasAttribute('data-discount')) P.discount = v;
+    else if (ds.lq) { r.lineQty = r.lineQty || {}; r.lineQty[ds.lq] = v; }
     else if (ds.feeqty) { P.feeQty = P.feeQty || {}; P.feeQty[ds.feeqty] = v; }
     else if (ds.setting) { P.settings = P.settings || {}; P.settings[ds.setting] = v; }
   }
@@ -1397,6 +1402,7 @@
     if (b.hasAttribute('data-toall')) { tab = 'all'; render(); window.scrollTo(0, 0); return; }
     if (b.hasAttribute('data-tospec')) { tab = 'spec'; specGroup = null; render(); window.scrollTo(0, 0); return; }
     if (ds.specgroup) { tab = 'spec'; specGroup = ds.specgroup; render(); window.scrollTo(0, 0); return; }
+    if (ds.lqreset) { const r = room(ds.wroom); if (r.lineQty) delete r.lineQty[ds.lqreset]; render(); return; }
     if (ds.sdetail) { specDetail.has(ds.sdetail) ? specDetail.delete(ds.sdetail) : specDetail.add(ds.sdetail); render(); return; }
     if (ds.sone) { specOne.has(ds.sone) ? specOne.delete(ds.sone) : specOne.add(ds.sone); render(); return; }
     if (ds.splace) { P.rooms.filter(r => Q.roomGroup(r) === ds.sg && (r.packs || []).includes(ds.splace)).forEach(r => placeSet(plan(), r.id, ds.splace, ds.specCat, ds.specK, ds.specV)); render(); return; }
