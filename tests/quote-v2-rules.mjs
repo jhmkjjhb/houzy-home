@@ -83,6 +83,20 @@ ok('公司还没定价的项目和规格先按参考价算进总价，但要标�
   assert.ok(l.ref.some(x => x.includes('800×800')), '并标参考价');
 });
 
+ok('岩板背景墙、护墙板：按墙面宽×高计，材料不同价格不同，没公司价时按参考价并提醒', () => {
+  ['living', 'master', 'bedroom', 'dining', 'study'].forEach(t => assert.ok(Q.ROOMS[t].packs.includes('slab_wall') && Q.ROOMS[t].packs.includes('wall_panel'), t));
+  const r = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['slab_wall', 'wall_panel'], vals: { slab_wall: { w: 12, h: 9 }, wall_panel: { w: 10, h: 8 } } };
+  const p = project([r]);
+  let L = Q.buildLines(p);
+  assert.equal(qty(L, 'slab_wall'), 108); assert.equal(qty(L, 'wall_panel'), 80);
+  const std = find(L, 'slab_wall')[0].unit;
+  p.plans = [{ id: 'A', specs: { panel: { slab: '连纹岩板（大板对纹）', board: '竹木纤维集成墙板' } }, roomSpecs: {} }];
+  L = Q.buildLines(p);
+  assert.ok(find(L, 'slab_wall')[0].unit > std, '连纹岩板比普通贵');
+  assert.ok(find(L, 'wall_panel')[0].unit < Q.unitPrice('wall_panel'), '竹木纤维比木饰面便宜');
+  assert.ok(find(L, 'slab_wall')[0].ref.length, '标参考价');
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);

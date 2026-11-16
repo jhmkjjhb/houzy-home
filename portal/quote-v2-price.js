@@ -152,6 +152,9 @@
   });
   // 强化复合木地板：原来和 SPC 共用一个价，先沿用同价，公司按实际改
   root.QV2_PRICE.wood_floor = { ...root.QV2_PRICE.laminate, name: '强化复合木地板铺装', desc: '铺防潮膜，悬浮式安装，四周留 8-10mm 伸缩缝，踢脚线压边；档次在「④ 选材」定' };
+  // 岩板背景墙 / 护墙板：新山市场参考价（含材料、安装），公司核定后在价目表改
+  root.QV2_PRICE.slab_wall = { stage: 'custom', name: '岩板背景墙', unit: '平方尺', mat: 0, aux: 0, lab: 85, waste: 0, ref: true, desc: '岩板按墙面排版切割，专用胶 + 挂件/背板固定，对缝、磨边；预留开关插座孔位' };
+  root.QV2_PRICE.wall_panel = { stage: 'custom', name: '护墙板', unit: '平方尺', mat: 0, aux: 0, lab: 45, waste: 0, ref: true, desc: '墙面找平后打底龙骨/卡扣安装，收口线条，预留开关插座孔位' };
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
@@ -194,6 +197,8 @@
     'canopy.roof.夹胶钢化玻璃': 80, 'canopy.roof.铝合金隔热板（三明治板）': 25, 'canopy.roof.金属浪板（Metal Deck）': -30, 'canopy.roof.铝合金百叶（可调）': 150,
     'canopy.frame.铝合金': 10, 'canopy.frame.不锈钢': 40, 'canopy.wall.铝合金折叠门': 20, 'canopy.wall.固定玻璃 + 部分推拉': 0, 'canopy.wall.无框玻璃': 30,
     'canopy.glass.8 mm 钢化透明': 10, 'canopy.glass.夹胶玻璃': 30, 'canopy.glass.隔热 Low-E 玻璃': 50, 'canopy.glass.茶色/灰色钢化玻璃': 5,
+    'panel.slab.连纹岩板（大板对纹）': 30, 'panel.slab.厚岩板（9-12 mm）': 20,
+    'panel.board.竹木纤维集成墙板': -45, 'panel.board.WPC 木塑墙板': -35, 'panel.board.实木护墙板': 80,
     'soft.grade.经济': -40, 'soft.grade.高档': 80,
     'shower.glass.10 mm 钢化透明': 20, 'shower.glass.8 mm 钢化磨砂': 10, 'shower.glass.8 mm 长虹玻璃': 15, 'shower.frame.哑黑': 10, 'shower.frame.枪灰': 10, 'shower.frame.拉丝金': 20,
     'lighting.grade.防眩筒灯+射灯': 30

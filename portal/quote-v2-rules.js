@@ -91,18 +91,18 @@
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
   const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new'];
   const ROOMS = {
-    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living'] },
-    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining'] },
-    master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed'] },
-    bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed'] },
-    study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study'] },
+    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel'] },
+    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel'] },
+    master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed', 'slab_wall', 'wall_panel'] },
+    bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed', 'slab_wall', 'wall_panel'] },
+    study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study', 'slab_wall', 'wall_panel'] },
     kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
     bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
     balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out'] },
-    family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living'] },
+    family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living', 'slab_wall', 'wall_panel'] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
-    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
@@ -206,6 +206,10 @@
       wall:  { label: '四周围合', opts: ['铝合金推拉窗', '铝合金折叠门', '固定玻璃 + 部分推拉', '无框玻璃'], std: '铝合金推拉窗', codes: ['sunroom_wall'] },
       glass: { label: '围合玻璃', opts: ['6 mm 钢化透明', '8 mm 钢化透明', '夹胶玻璃', '隔热 Low-E 玻璃', '茶色/灰色钢化玻璃'], std: '6 mm 钢化透明', codes: ['sunroom_wall'] },
       color: { label: '框架颜色', opts: ['黑色', '白色', '香槟', '灰色'], std: '黑色', codes: ['awning', 'sunroom_wall'], noPrice: true }
+    } },
+    panel: { label: '岩板 / 护墙板', icon: '🪨', keys: {
+      slab:  { label: '岩板做法', opts: ['普通岩板（6 mm）', '连纹岩板（大板对纹）', '厚岩板（9-12 mm）'], std: '普通岩板（6 mm）', codes: ['slab_wall'] },
+      board: { label: '护墙板材料', opts: ['木饰面（多层板基材）', '竹木纤维集成墙板', 'WPC 木塑墙板', '实木护墙板'], std: '木饰面（多层板基材）', codes: ['wall_panel'] }
     } },
     soft: { label: '软装', icon: '🛋️', keys: {
       grade: { label: '软装档次', opts: ['经济', '中档', '高档'], std: '中档', codes: SOFT_CODES },
@@ -322,6 +326,11 @@
     shoe_cab:       cabSqft('鞋柜', '👟', 'shoe_cab', () => 4, () => 4),
     sideboard:      cabSqft('餐边柜', '🍶', 'sideboard', () => 6, () => 3),
     headboard:      cabSqft('床头背景', '🖼️', 'headboard', () => 8, () => 4),
+    // 墙面造型：岩板背景墙、护墙板，按做的墙面 宽 × 高 计；材料在「④ 选材」定
+    slab_wall:      { g: 'cab', label: '岩板背景墙', icon: '🪨', inputs: [{ k: 'w', label: '宽', unit: '尺', def: () => 10 }, { k: 'h', label: '高', unit: '尺', def: () => 9 }],
+                      lines: (r, g, v) => [['slab_wall', r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`]] },
+    wall_panel:     { g: 'cab', label: '护墙板', icon: '🪵', inputs: [{ k: 'w', label: '宽', unit: '尺', def: () => 10 }, { k: 'h', label: '高', unit: '尺', def: () => 9 }],
+                      lines: (r, g, v) => [['wall_panel', r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`]] },
     bookcase:       cabSqft('书柜/储物柜', '📚', 'bookcase', () => 6, () => 7),
     laundry_cab:    cabSqft('洗衣柜', '🗄️', 'laundry_cab', () => 4, () => 3),
     desk:           { g: 'cab', label: '书桌', icon: '🖥️', inputs: [{ k: 'n', label: '数量', unit: '项', def: () => 1 }], lines: (r, g, v) => [['desk', v.n, '按项']] },
@@ -621,7 +630,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚', soft_living: '客厅软装', soft_dining: '餐厅软装', soft_bed: '卧室软装', soft_study: '书房软装', soft_out: '户外软装' };
+  const PLACE_LABEL = { slab_wall: '岩板背景墙', wall_panel: '护墙板', floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚', soft_living: '客厅软装', soft_dining: '餐厅软装', soft_bed: '卧室软装', soft_study: '书房软装', soft_out: '户外软装' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
