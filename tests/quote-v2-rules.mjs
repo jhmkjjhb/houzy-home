@@ -570,4 +570,15 @@ ok('卫生间拆旧/防水/墙砖每间可不同：拆除范围、防水高度�
   assert.equal(q(a, 'niche'), 2); assert.equal(q(b, 'niche'), 0, '没填壁龛的不出这项');
 });
 
+ok('做法（scope）在房间里定，默认标准做法，不算「未定」；材料没选才算未定', () => {
+  const p = project(Q.presetRooms('semi')), a = p.rooms.find(r => r.type === 'bath');
+  Q.setPackFor(p, [a.id], 'shower_area', true);
+  const L = Q.buildLines(p), sc = L.find(l => l.roomId === a.id && l.code === 'screen');
+  assert.ok(sc.tbd.includes('shower'), '玻璃、五金颜色还没选，算未定');
+  const pl = Q.activePlan(p); pl.roomSpecs[a.id] = { '@shower_area': { shower: { glass: '8 mm 钢化透明', frame: '不锈钢本色' } } };
+  const sc2 = Q.buildLines(p).find(l => l.roomId === a.id && l.code === 'screen');
+  assert.deepEqual(sc2.tbd, [], '材料选好了就算已定；隔断形式、淋浴区地面是做法，没点也按标准做法，不挡着');
+  assert.ok(Object.values(Q.SPEC_CATS).every(c => Object.values(c.keys).every(k => !k.per)), '旧的 per 标记已全部换成 scope');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

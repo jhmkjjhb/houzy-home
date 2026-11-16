@@ -114,6 +114,8 @@
   const TILE_CODES = ['floor_tile', 'wall_tile', 'porch_tile'];
   const CAB_CODES = ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard', 'cab_low', 'cab_up'];
   const SCREEN_CODES = ['screen', 'screen_l', 'screen_diamond', 'curtain_rod', 'shower_tray'];
+  // scope: true = 做法（拆多少、防水多高、隔断形式、成品还是定制），在「② 房间」逐间定，默认标准做法，不算「未定」；
+  // 其余是材料和选品，在「④ 选材」按空间类型统一选，某间可单独不同。
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
@@ -142,23 +144,23 @@
     } },
     // 浴室柜：成品/定制、材质这些可以整组卫生间一起定；尺寸每间单独填
     vanity: { label: '浴室柜', icon: '🪞', keys: {
-      kind:   { per: true, label: '浴室柜类型', opts: ['成品浴室柜', '定制浴室柜'], std: '成品浴室柜', codes: ['vanity', 'vanity_custom'], noPrice: true },
-      body:   { per: true, label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
-      top:    { per: true, label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
-      mirror: { per: true, label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
+      kind:   { scope: true, label: '浴室柜类型', opts: ['成品浴室柜', '定制浴室柜'], std: '成品浴室柜', codes: ['vanity', 'vanity_custom'], noPrice: true },
+      body:   { label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
+      top:    { label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
+      mirror: { label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
     } },
     demo: { label: '拆旧', icon: '⛏️', keys: {
-      scope: { per: true, label: '拆除范围', opts: ['地砖 + 墙砖全拆', '只拆地砖（墙砖保留）', '只拆墙砖（地砖保留）'], std: '地砖 + 墙砖全拆', codes: ['demo_floor', 'demo_wall_tile', 'demo_piece'], packs: ['bath_demo'], noPrice: true }
+      scope: { scope: true, label: '拆除范围', opts: ['地砖 + 墙砖全拆', '只拆地砖（墙砖保留）', '只拆墙砖（地砖保留）'], std: '地砖 + 墙砖全拆', codes: ['demo_floor', 'demo_wall_tile', 'demo_piece'], packs: ['bath_demo'], noPrice: true }
     } },
     wet: { label: '防水与墙砖', icon: '💧', keys: {
-      wpHeight: { per: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp'], packs: ['bath_tile'], noPrice: true },
-      wallTile: { per: true, label: '墙砖铺到', opts: ['满墙到顶', '到吊顶下（约 8 尺）', '半墙 4 尺（上面刷漆）'], std: '满墙到顶', codes: ['wall_tile'], packs: ['bath_tile'], noPrice: true }
+      wpHeight: { scope: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp'], packs: ['bath_tile'], noPrice: true },
+      wallTile: { scope: true, label: '墙砖铺到', opts: ['满墙到顶', '到吊顶下（约 8 尺）', '半墙 4 尺（上面刷漆）'], std: '满墙到顶', codes: ['wall_tile'], packs: ['bath_tile'], noPrice: true }
     } },
     shower: { label: '淋浴区', icon: '🚿', keys: {
-      base:  { per: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
-      type:  { per: true, label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
-      glass: { per: true, label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
-      frame: { per: true, label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
+      base:  { scope: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
+      type:  { scope: true, label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
+      glass: { label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
+      frame: { label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
     } },
     lighting: { label: '灯具', icon: '💡', keys: {
       grade: { label: '灯具档次', opts: ['标准 LED 筒灯/吸顶灯', '防眩筒灯+射灯'], std: '标准 LED 筒灯/吸顶灯', codes: ['light'] },
@@ -391,7 +393,7 @@
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
       const s = specOf(project, room, cat, k, planId, pack);
       spec.push(s.v);
-      if (!s.decided) tbdKeys.push(cat);
+      if (!s.decided && !key.scope) tbdKeys.push(cat);
       if (key.noPrice || s.v === stdOf(key, room)) return;
       const mod = key.mod && key.mod[s.v];
       if (mod && mod.matZero) { mat = 0; return; }
