@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116k"></script>
+<script src="quote-v2-price.js?v=20261116l"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
-<script src="quote-v2-pricebook.js?v=20261116a"></script>
-<script src="quote-v2-rules.js?v=20261116u"></script>
+<script src="quote-v2-pricebook.js?v=20261116b"></script>
+<script src="quote-v2-rules.js?v=20261116v"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -1171,9 +1171,10 @@
         const dv = bookDraft[id] && bookDraft[id][f], v = dv !== undefined ? dv : r[4 + j];
         return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${dv !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" value="${esc(v)}" placeholder="—"></td>`;
       }).join('');
-      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(r[3])}</td>${cells}<td class="r mono bksum" data-l="合计">${bookSum(id, r)}</td></tr>`;
+      const dt = bookDraft[id] && bookDraft[id].tot !== undefined, tv = bkStdTot(id);
+      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(r[3])}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" value="${tv == null ? '' : Math.round(tv * 100) / 100}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
-    return h + `</tbody></table></div><p class="hint">空着 = 还没定。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
+    return h + `</tbody></table></div><p class="hint">空着 = 还没定。工料拆不开的项目，直接在「合计单价」填综合价就行。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
   }
   function bookVal(id, r, f, j) { const d = bookDraft[id] && bookDraft[id][f]; return d !== undefined ? d : r[4 + j]; }
   function bookSum(id, r) {
@@ -1185,17 +1186,24 @@
       return d === 0 ? '和标准规格一样价' : `比标准规格${d > 0 ? '贵' : '便宜'} RM ${nf(Math.abs(d))}`;
     }
     const v = BK_F.map(([f], j) => String(bookVal(id, r, f, j) ?? '').trim());
-    if (v.slice(0, 3).every(x => x === '')) return '待定';
+    if (v.slice(0, 3).every(x => x === '')) return '';
     const n = v.map(x => (x === '' ? 0 : Number(x)));
     if (n.some(x => !Number.isFinite(x))) return '<span style="color:var(--red)">不是数字</span>';
-    const t = n[0] * (1 + n[3] / 100) + n[1] + n[2];
-    return (t < 0 ? '−' : '') + 'RM ' + nf(Math.abs(t));
+    return !n[0] && !n[1] && !n[3] ? '综合价（工料不分）' : '';
   }
   document.addEventListener('input', e => {
     const t = e.target;
     if (t.hasAttribute('data-bookq')) { bookQ = t.value; render(); return; }
     if (t.dataset.bk === undefined) return;
-    (bookDraft[t.dataset.bk] = bookDraft[t.dataset.bk] || {})[t.dataset.bkf] = t.value.trim();
+    const dr = (bookDraft[t.dataset.bk] = bookDraft[t.dataset.bk] || {}), isItem = !!PRICE[t.dataset.bk], tr = t.closest('tr');
+    if (isItem && t.dataset.bkf === 'tot') {
+      // 直接填合计 = 工料合一的综合单价（不拆材料/人工），存进「人工」一栏，其他清空
+      Object.assign(dr, { mat: '', aux: '', lab: t.value.trim(), waste: '', tot: t.value.trim() });
+      BK_F.forEach(([f]) => { const i = tr.querySelector(`input[data-bkf="${f}"]`); i.value = dr[f]; i.classList.add('chg'); });
+    } else {
+      dr[t.dataset.bkf] = t.value.trim();
+      if (isItem) { delete dr.tot; const ti = tr.querySelector('input[data-bkf="tot"]'), tv = bkStdTot(t.dataset.bk); ti.value = tv == null ? '' : Math.round(tv * 100) / 100; }
+    }
     t.classList.add('chg');
     const B = window.QV2_BOOK, row = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).find(r => r[1] === t.dataset.bk);
     t.closest('tr').querySelector('.bksum').innerHTML = bookSum(t.dataset.bk, row);

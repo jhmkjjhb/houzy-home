@@ -144,13 +144,13 @@
   }
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
-      material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
+      material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate', 'wood_floor'], packs: ['floor'], noPrice: true },
       floorSize: { label: '地砖尺寸', opts: ['600×600 mm', '300×600 mm', '600×1200 mm', '800×800 mm', '750×1500 mm', '900×1800 mm', '1200×1200 mm'], std: '600×600 mm', codes: ['floor_tile', 'porch_tile'] },
       wallSize:  { label: '墙砖尺寸', opts: ['300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm'], std: '300×600 mm', codes: ['wall_tile'] },
       finish:    { label: '地砖表面', opts: ['哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: ['floor_tile', 'porch_tile'], noPrice: true },
       wallFinish:{ label: '墙砖表面', opts: ['哑光', '柔光', '亮光'], std: '亮光', codes: ['wall_tile'], noPrice: true },
       supply:    { label: '瓷砖供应', opts: ['包工包料', '客户自备砖'], std: '包工包料', codes: TILE_CODES, mod: { '客户自备砖': { matZero: true } } },
-      woodGrade: { label: '地板档次', opts: ['标准 5 mm', '加厚 8 mm', '多层实木复合'], std: '标准 5 mm', codes: ['laminate'] }
+      woodGrade: { label: '地板档次', opts: ['标准 5 mm', '加厚 8 mm', '多层实木复合'], std: '标准 5 mm', codes: ['wood_floor'] }
     } },
     wall: { label: '墙面', icon: '🖌️', keys: {
       method: { label: '墙面做法', opts: ['乳胶漆', '墙纸', '艺术漆'], std: '乳胶漆', codes: ['paint_wall', 'wallpaper', 'art_paint'], packs: ['wall_finish'], noPrice: true },
@@ -250,7 +250,8 @@
     floor:          { g: 'floor', area: ['floor'], label: '地面翻新', icon: '🟫', hint: '材料在「④ 选材」定',
                       lines: (r, g, v, picked, sp) => sp('tile', 'material') === '瓷砖'
                         ? [['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['skirting', g.skirt, '周长 − 门宽'], ...tileExtra(sp, g.floor)]
-                        : [['laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
+                        // SPC 和强化复合木地板分开定价
+                        : [[sp('tile', 'material') === '强化复合木地板' ? 'wood_floor' : 'laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
     wall_finish:    { g: 'wall', area: ['wall'], label: '墙面翻新', icon: '🖌️', hint: '做法在「④ 选材」定',
                       lines: (r, g, v, picked, sp) => {
                         // 厨房贴了操作区墙砖的部分不再批灰刷漆

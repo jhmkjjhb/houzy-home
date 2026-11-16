@@ -64,6 +64,16 @@ ok('范围只选「地面翻新」；材料在选材层定：瓷砖和地板只�
   assert.equal(qty(L, 'laminate'), 110);
 });
 
+ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r]);
+  p.plans = [{ id: 'A', name: '方案 A', specs: { tile: { material: '强化复合木地板' } }, roomSpecs: {} }];
+  const L = Q.buildLines(p);
+  assert.equal(qty(L, 'laminate'), 0, '选了木地板就不按 SPC 收');
+  assert.equal(qty(L, 'wood_floor'), 110);
+  assert.ok(Q.specKeysFor('wood_floor', 'floor').some(([, k]) => k === 'woodGrade'), '地板档次跟着木地板走');
+});
+
 ok('有工程才加开工放线/成品保护/清运/开荒；空报价是 0', () => {
   assert.equal(Q.buildLines(project([Q.newRoom('living', 1, 1)])).length, 0);
   const L = Q.buildLines(project([{ ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish'] }]));
@@ -211,7 +221,7 @@ ok('逐间设置优先于全屋统一：客厅瓷砖、卧室木地板', () => {
   const p = project([a, b], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖' } }, roomSpecs: { [b.id]: { tile: { material: '强化复合木地板' } } } }] });
   const L = Q.buildLines(p);
   assert.equal(qty(L, 'floor_tile', a.id), 280);
-  assert.equal(qty(L, 'laminate', b.id), 110);
+  assert.equal(qty(L, 'wood_floor', b.id), 110);
   assert.equal(qty(L, 'floor_tile', b.id), 0);
 });
 
@@ -281,7 +291,10 @@ ok('位置清单只列真正用到的选项：地面选木地板就不再问地�
   p.plans = [{ id: 'A', specs: {}, roomSpecs: { [r.id]: { '@floor': { tile: { material: 'SPC 石塑地板' } } } } }];
   pl = Q.placesOf(p, r, Q.buildLines(p))[0];
   assert.ok(!pl.keys.some(([, k]) => k === 'floorSize'));
-  assert.ok(pl.keys.some(([, k]) => k === 'woodGrade'));
+  assert.ok(!pl.keys.some(([, k]) => k === 'woodGrade'), '「地板档次」是木地板的档次，SPC 不问');
+  p.plans = [{ id: 'A', specs: {}, roomSpecs: { [r.id]: { '@floor': { tile: { material: '强化复合木地板' } } } } }];
+  pl = Q.placesOf(p, r, Q.buildLines(p))[0];
+  assert.ok(pl.keys.some(([, k]) => k === 'woodGrade'), '选木地板才问档次');
   const b = bath({ packs: ['bath_tile'] }), pb = project([b]);
   const keys = Q.placesOf(pb, b, Q.buildLines(pb))[0].keys.map(([, k]) => k);
   assert.ok(keys.includes('finish') && keys.includes('wallFinish'));

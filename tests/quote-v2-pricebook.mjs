@@ -50,4 +50,15 @@ ok(B.read('a,b\n1,2', PRICE).errors.length === 1, '表头不对要报错');
   B.apply({ items: { protect: { mat: 0, aux: 0, lab: 0.3, waste: 0, unit: '平方尺' } } }, price, {});
   assert.equal(price.protect.lab, 0.3, '按新单位填的价可以用');
 }
+{
+  // 木地板从 SPC 拆出来之前，公司填的价只在 SPC 上；旧价目表要两边都用上，不能让木地板退回系统参考价
+  const price = { laminate: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 }, wood_floor: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 } };
+  const opt = {};
+  B.apply({ items: { laminate: { mat: 8, aux: 1, lab: 2, waste: 5, unit: '平方尺' } }, options: { 'tile.woodGrade.加厚 8 mm': { laminate: { mat: 2, aux: 0, lab: 0 } } } }, price, opt);
+  assert.equal(price.wood_floor.mat, 8, '木地板沿用旧的 SPC 价');
+  assert.equal(opt['tile.woodGrade.加厚 8 mm'].wood_floor.mat, 2, '地板档次价差归到木地板');
+  const p2 = { laminate: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 }, wood_floor: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 } };
+  B.apply({ items: { laminate: { mat: 8, aux: 1, lab: 2, waste: 5, unit: '平方尺' }, wood_floor: { mat: 12, aux: 1, lab: 2, waste: 5, unit: '平方尺' } } }, p2, {});
+  assert.equal(p2.wood_floor.mat, 12, '木地板单独定过价就用自己的');
+}
 console.log(`PASS: ${n} pricebook checks`);

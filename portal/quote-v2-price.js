@@ -32,7 +32,7 @@
     "screed":{"stage":"tile","name":"地面水泥砂浆找平","unit":"平方尺","mat":0,"aux":1.2,"lab":1.3,"waste":0,"desc":"1:3 水泥砂浆找平，平整度误差 ≤3mm/2m"},
     "floor_tile":{"stage":"tile","name":"地砖铺贴","unit":"平方尺","mat":3.8,"aux":1,"lab":2.3,"waste":8,"desc":"瓷砖按客户选定款式（示范价按 600×600 抛釉砖）；水泥砂浆+瓷砖胶铺贴，十字卡留缝 2mm，空鼓率 ≤5%"},
     "wall_tile":{"stage":"tile","name":"墙砖铺贴","unit":"平方尺","mat":3.8,"aux":1,"lab":2.5,"waste":8,"desc":"墙面拉毛/界面剂处理，瓷砖胶薄贴，阳角 45° 倒角或加收边条"},
-    "laminate":{"stage":"tile","name":"木地板/SPC 地板铺装","unit":"平方尺","mat":5.5,"aux":0.5,"lab":1.5,"waste":5,"desc":"铺防潮膜，悬浮式安装，四周留 8-10mm 伸缩缝，踢脚线压边"},
+    "laminate":{"stage":"tile","name":"SPC 石塑地板铺装","unit":"平方尺","mat":5.5,"aux":0.5,"lab":1.5,"waste":5,"desc":"铺防潮膜，悬浮式安装，四周留 8-10mm 伸缩缝，踢脚线压边"},
     "skirting":{"stage":"tile","name":"踢脚线","unit":"延尺","mat":2,"aux":0.5,"lab":1.5,"waste":5,"desc":"与地面同色系踢脚线，结构胶+钢钉固定，接口 45° 拼接"},
     "grout":{"stage":"tile","name":"瓷砖美缝","unit":"平方尺","mat":0.5,"aux":0.3,"lab":0.7,"waste":0,"desc":"清缝后打环氧美缝剂，颜色客户选定"},
     "threshold":{"stage":"tile","name":"门槛石/挡水条","unit":"条","mat":50,"aux":10,"lab":30,"waste":0,"desc":"人造石门槛石，卫生间门口做挡水坎，防止水外流"},
@@ -150,6 +150,8 @@
    ['sf_umbrella', '遮阳伞', '把'], ['sf_plant', '绿植', '盆']].forEach(([code, name, unit]) => {
     root.QV2_PRICE[code] = { stage: 'soft', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '成品软装，款式按客户确认的风格和档次，含送货安装' };
   });
+  // 强化复合木地板：原来和 SPC 共用一个价，先沿用同价，公司按实际改
+  root.QV2_PRICE.wood_floor = { ...root.QV2_PRICE.laminate, name: '强化复合木地板铺装', desc: '铺防潮膜，悬浮式安装，四周留 8-10mm 伸缩缝，踢脚线压边；档次在「④ 选材」定' };
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };

@@ -81,6 +81,7 @@
 
   // 把价目表合并进价格对象（原地修改，计算规则持有同一个对象）
   const UNIT_CHANGED = { protect: true };
+  const SPLIT_FROM = { wood_floor: 'laminate' };
   function apply(book, price, optPrices) {
     if (!book) return;
     Object.entries(book.items || {}).forEach(([code, v]) => {
@@ -90,7 +91,16 @@
       Object.assign(price[code], { mat: v.mat, aux: v.aux, lab: v.lab, waste: v.waste });
       if (v.mat + v.aux + v.lab > 0) delete price[code].unpriced;
     });
-    Object.entries(book.options || {}).forEach(([k, byCode]) => { optPrices[k] = { ...(optPrices[k] || {}), ...byCode }; });
+    // 后来拆出来的项目：旧价目表里还没有它时，先沿用原来共用的那个价
+    Object.entries(SPLIT_FROM).forEach(([code, from]) => {
+      const v = (book.items || {})[from];
+      if (price[code] && v && !(book.items || {})[code] && v.unit === price[code].unit) Object.assign(price[code], { mat: v.mat, aux: v.aux, lab: v.lab, waste: v.waste });
+    });
+    Object.entries(book.options || {}).forEach(([k, byCode]) => {
+      // 旧的「地板档次」价差登记在 laminate 上，现在归强化复合木地板
+      if (/^tile\.woodGrade\./.test(k) && byCode.laminate && !byCode.wood_floor) byCode = { ...byCode, wood_floor: byCode.laminate };
+      optPrices[k] = { ...(optPrices[k] || {}), ...byCode };
+    });
   }
 
   function load() { try { return JSON.parse(root.localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
