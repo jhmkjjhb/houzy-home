@@ -118,6 +118,19 @@
   // 其余是材料和选品，在「④ 选材」按空间类型统一选，某间可单独不同。
   const RAIL_CODES = { '不锈钢立柱 + 木扶手': 'stair_rail', '钢化玻璃栏板 + 木扶手': 'rail_glass', '铁艺栏杆': 'rail_iron', '实木栏杆': 'rail_wood', '黑色方管栏杆（现代简约）': 'rail_black', '铝合金栏杆': 'rail_alu' };
   const STAIR_CODES = ['stair_tread', 'stair_wood', 'stair_stone', 'stair_paint'];
+  const CEIL_STYLES = ['平顶', '四周 L-box 灯槽（中间不吊）', '叠级+灯槽', '双层回字形叠级', '弧形造型', '木纹格栅', '铝扣板（厨卫）'];
+  // 天花按做法出项目：板面积、叠级/灯槽长度、灯带、刷漆
+  function ceilLines(g, v, style) {
+    const box = r2(g.perim * 2), pel = num(v.pelmet) > 0 ? [['pelmet', v.pelmet, '隐藏式窗帘盒']] : [];
+    if (style === '木纹格栅') return [['ceil_slat', g.floor, '格栅面积'], ...pel];
+    if (style === '铝扣板（厨卫）') return [['ceil_alu', g.floor, '扣板面积'], ...pel];
+    if (style === '四周 L-box 灯槽（中间不吊）') return [['plaster_ceiling', box, '周长 × 2 尺宽 L-box'], ['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长'], ['paint_ceiling', g.floor, '全天花刷漆'], ...pel];
+    const base = [['plaster_ceiling', g.floor, '= 吊顶面积'], ['paint_ceiling', g.floor, '= 吊顶面积']];
+    if (style === '叠级+灯槽') return [...base, ['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长'], ...pel];
+    if (style === '双层回字形叠级') return [...base, ['ceiling_step', r2(g.perim * 2), '两层 = 周长 × 2'], ['led_strip', g.perim, '= 周长'], ...pel];
+    if (style === '弧形造型') return [...base, ['ceil_curve', g.perim, '弧形造型长度'], ['led_strip', g.perim, '= 周长'], ...pel];
+    return [...base, ...pel];
+  }
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
@@ -134,8 +147,11 @@
       base:   { label: '基层处理', opts: ['旧墙局部修补', '新墙满批', '铲除旧漆重做'], std: '旧墙局部修补', codes: ['skim'] }
     } },
     ceiling: { label: '天花', icon: '⬜', keys: {
-      style: { label: '吊顶造型', opts: ['平顶', '叠级+灯槽'], std: '平顶', codes: ['plaster_ceiling'], packs: ['ceiling'], noPrice: true },
-      board: { label: '天花板材', opts: ['普通石膏板', '防潮石膏板', '硅酸钙板'], std: room => (room && ROOMS[room.type].wet ? '防潮石膏板' : '普通石膏板'), codes: ['plaster_ceiling'] }
+      // 天花做法（马来西亚常见）：在「② 房间」逐间定；「平顶」「叠级+灯槽」沿用旧名，旧报价不受影响
+      style: { scope: true, label: '天花做法', opts: CEIL_STYLES, std: '平顶', codes: ['plaster_ceiling', 'ceil_slat', 'ceil_alu'], packs: ['ceiling', 'bath_ceil'], noPrice: true },
+      board: { label: '天花板材', opts: ['普通石膏板', '防潮石膏板', '硅酸钙板'], std: room => (room && ROOMS[room.type].wet ? '防潮石膏板' : '普通石膏板'), codes: ['plaster_ceiling'] },
+      slat:  { label: '格栅材料', opts: ['铝合金木纹格栅', 'WPC 木塑格栅', '实木格栅'], std: '铝合金木纹格栅', codes: ['ceil_slat'] },
+      alu:   { label: '铝扣板规格', opts: ['300×300 mm', '300×600 mm', '条形扣板'], std: '300×300 mm', codes: ['ceil_alu'] }
     } },
     cabinet: { label: '定制柜', icon: '🗄️', keys: {
       body:     { label: '柜体板材', opts: ['多层实木板', '防潮颗粒板', '铝合金'], std: '多层实木板', codes: CAB_CODES },
@@ -226,11 +242,12 @@
                         const tiled = picked.kitchen_tile ? r2(packValues(r, 'kitchen_tile', g).back * 2.5) : 0, a = r2(Math.max(0, g.wall - tiled)), f = tiled ? `墙面 − 操作区墙砖 ${tiled}` : '墙面';
                         return [['skim', a, f], [{ '乳胶漆': 'paint_wall', '墙纸': 'wallpaper', '艺术漆': 'art_paint' }[sp('wall', 'method')], a, f]];
                       } },
-    ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '造型在「④ 选材」定',
-                      lines: (r, g, v, picked, sp) => [['plaster_ceiling', g.floor, '= 吊顶面积'], ['paint_ceiling', g.floor, '= 吊顶面积'], ...(sp('ceiling', 'style') === '叠级+灯槽' ? [['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长']] : [])] },
+    ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '平顶、L-box、叠级、格栅、铝扣板等做法选上后在卡片里定',
+                      inputs: [{ k: 'pelmet', label: '隐藏式窗帘盒', unit: '延尺', def: () => 0, opt: true }],
+                      lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
     ceil_paint:     { g: 'ceil', area: ['floor'], label: '天花重刷（不吊顶）', icon: '🖌️', lines: (r, g) => [['paint_ceiling', g.floor, '天花面积']] },
     cornice:        { g: 'ceil', label: '石膏线', icon: '〰️', lines: (r, g) => [['cornice', g.perim, '= 周长']] },
-    bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g) => [['plaster_ceiling', g.floor, '= 地面面积'], ['paint_ceiling', g.floor, '= 地面面积']] },
+    bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
 
     electric:       { g: 'mep', label: '插座开关+灯位', icon: '💡',
                       inputs: [{ k: 'pts', label: '插座/开关', unit: '个', def: (r, g) => ceil(g.floor / 30) + 2 }, { k: 'lights', label: '灯位', unit: '个', def: (r, g) => ceil(g.floor / 50) + 1 }],

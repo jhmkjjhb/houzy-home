@@ -139,6 +139,10 @@
   [['termite', '白蚁防治（地面/墙脚药剂处理）', '平方尺', '地面及墙脚注药或打孔灌药，出具保用书'], ['roro_bin', '大垃圾箱租用（RORO bin）', '个', '含运送、更换及运往合法垃圾场'], ['car_insurance', '工程保险（Contractor All Risk）', '项', '工程期间第三者责任及工程一切险']].forEach(([code, name, unit, desc]) => {
     root.QV2_PRICE[code] = { stage: 'prep', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
   });
+  [['ceil_slat', '木纹格栅天花', '平方尺', '格栅+龙骨安装，间距按设计'], ['ceil_alu', '铝扣板天花', '平方尺', '轻钢龙骨+铝扣板，防潮易拆，适合厨卫'],
+   ['ceil_curve', '弧形造型天花', '延尺', '按设计做弧形/曲线造型，接缝批平'], ['pelmet', '隐藏式窗帘盒', '延尺', '天花内预留窗帘轨道槽，窗帘轨道另计']].forEach(([code, name, unit, desc]) => {
+    root.QV2_PRICE[code] = { stage: 'ceil', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
+  });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };

@@ -639,4 +639,16 @@ ok('自动杂项可对某单免收；不可预见费按直接费百分比加进�
   assert.equal(t1.cont, Math.round(t0.direct * 0.05)); assert.equal(t1.total - t0.total, t1.cont);
 });
 
+ok('天花做法：L-box 只做一圈、双层叠级两倍长度、格栅/铝扣板不用石膏板；旧的「叠级+灯槽」照旧', () => {
+  const r = { ...Q.newRoom('living', 1, 1), L: 20, W: 15, H: 9, measured: true, packs: ['ceiling'] };
+  const p = project([r]), set = st => { Q.activePlan(p).roomSpecs[r.id] = { '@ceiling': { ceiling: { style: st } } }; return Q.buildLines(p); };
+  const q = (L, c) => L.filter(l => l.code === c).reduce((t, l) => t + l.qty, 0);
+  let L = set('平顶'); assert.equal(q(L, 'plaster_ceiling'), 300); assert.equal(q(L, 'ceiling_step'), 0);
+  L = set('四周 L-box 灯槽（中间不吊）'); assert.equal(q(L, 'plaster_ceiling'), 140, 'L-box 只做周长 70 × 2 尺宽'); assert.equal(q(L, 'paint_ceiling'), 300, '中间原天花也要刷漆');
+  L = set('叠级+灯槽'); assert.equal(q(L, 'ceiling_step'), 70); assert.equal(q(L, 'led_strip'), 70);
+  L = set('双层回字形叠级'); assert.equal(q(L, 'ceiling_step'), 140);
+  L = set('木纹格栅'); assert.equal(q(L, 'ceil_slat'), 300); assert.equal(q(L, 'plaster_ceiling'), 0);
+  r.vals = { ceiling: { pelmet: 12 } }; L = set('平顶'); assert.equal(q(L, 'pelmet'), 12, '窗帘盒按填的长度');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
