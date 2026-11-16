@@ -32,10 +32,9 @@
           if (!price[code]) return;
           const o = (optPrices[`${cat}.${k}.${v}`] || {})[code];
           // 旧面积价差要能在再次保存时保留；新规格只显示独立的 RM/片输入。
-          if (cat === 'tile' && (k === 'floorSize' || k === 'wallSize') && !o) return;
           rows.push([OPT, `${cat}.${k}.${v}@${code}`, `${c.label}·${key.label}：${v} → ${price[code].name}`, price[code].unit,
             o ? o.mat : '', o ? o.aux : '', o ? o.lab : '', '',
-            cat === 'tile' && (k === 'floorSize' || k === 'wallSize') ? '旧面积价差：仅在该规格未填 RM/片时生效' : std ? `比标准「${std}」每${price[code].unit}多/少多少` : '标准档按房间不同（干区/湿区），填比普通做法多/少多少']);
+            cat === 'tile' && (k === 'floorSize' || k === 'wallSize') ? '只填铺贴辅料/人工比标准尺寸多多少；砖材按片价，材料栏不用' : std ? `比标准「${std}」每${price[code].unit}多/少多少` : '标准档按房间不同（干区/湿区），填比普通做法多/少多少']);
         });
       });
     }));

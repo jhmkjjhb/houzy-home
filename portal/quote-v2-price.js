@@ -179,9 +179,8 @@
     Object.assign(p, { mat: 0, aux: 0, lab: v, waste: 0, ref: true }); delete p.unpriced;
   });
   // 选材参考价差：比标准规格贵（+）/便宜（−）百分之几，按当时的标准价算，所以标准价改了会跟着变。公司填了具体价差就用公司的。
+  // 瓷砖尺寸不放参考价差：砖材按片价，大砖铺贴另有「大板铺贴加价」
   root.QV2_OPTION_REF = {
-    'tile.floorSize.300×600 mm': 0, 'tile.floorSize.800×800 mm': 10, 'tile.floorSize.600×1200 mm': 25, 'tile.floorSize.750×1500 mm': 30, 'tile.floorSize.900×1800 mm': 45, 'tile.floorSize.1200×1200 mm': 40,
-    'tile.wallSize.600×600 mm': 5, 'tile.wallSize.600×1200 mm': 25, 'tile.wallSize.750×1500 mm': 35,
     'tile.woodGrade.加厚 8 mm': 20, 'tile.woodGrade.多层实木复合': 80,
     'wall.brand.Dulux': 5, 'wall.brand.Jotun': 10, 'wall.base.新墙满批': 60, 'wall.base.铲除旧漆重做': 100,
     'ceiling.board.普通石膏板': 0, 'ceiling.board.防潮石膏板': 10, 'ceiling.board.硅酸钙板': 25,

@@ -485,7 +485,8 @@
       spec.push(s.v);
       if (!s.decided && !key.scope) tbdKeys.push(cat);
       if (TILE_CODES.includes(code) && cat === 'tile' && (k === 'floorSize' || k === 'wallSize')) {
-        if (variantMode) return;
+        // 砖材只按「尺寸＋表面」片价算；尺寸行只管铺贴：大砖辅料/人工比标准多多少（公司填了才加）
+        if (variantMode) { if (s.v !== stdOf(key, room)) { const add = OPTION_PRICES[`${cat}.${k}.${s.v}`]?.[code]; if (add) { aux += num(add.aux); lab += num(add.lab); } } return; }
         const id = `${cat}.${k}.${s.v}@${code}`, price = TILE_PIECE_PRICES[id];
         const dims = s.v.match(/^(\d+)×(\d+) mm$/);
         if (dims && price !== undefined && Number.isFinite(Number(price))) {

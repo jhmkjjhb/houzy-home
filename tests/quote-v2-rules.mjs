@@ -239,6 +239,18 @@ ok('瓷砖缺规格片价（连参考片价也没有）时待定；旧面积价�
   Q.TILE_PIECE_REF[id] = refKeep;
 });
 
+ok('瓷砖尺寸行只加铺贴辅料/人工，砖材只按片价算，不会重复收材料', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p = project([r], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×1200 mm', finish: '哑光' } }, roomSpecs: {} }] });
+  const before = find(Q.buildLines(p), 'floor_tile')[0];
+  Q.OPTION_PRICES['tile.floorSize.600×1200 mm'] = { floor_tile: { mat: 50, aux: 0.5, lab: 1 } };
+  const after = find(Q.buildLines(p), 'floor_tile')[0];
+  delete Q.OPTION_PRICES['tile.floorSize.600×1200 mm'];
+  assert.equal(after.tile.price, before.tile.price, '砖材片价不变');
+  assert.equal(Math.round((after.layUnit - before.layUnit) * 100) / 100, 1.5, '铺贴每平方尺多 0.5 + 1');
+  assert.equal(after.matUnit, 0, '尺寸行填的材料不计，避免和片价重复');
+});
+
 ok('大板砖（750×1500 以上）自动加大板铺贴加价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r], { plans: [{ id: 'A', specs: { tile: { floorSize: '900×1800 mm' } }, roomSpecs: {} }] });

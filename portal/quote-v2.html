@@ -298,12 +298,12 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116tref"></script>
+<script src="quote-v2-price.js?v=20261116tlab"></script>
 <script src="quote-v2-market-20261116.js?v=1"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
-<script src="quote-v2-pricebook.js?v=20261116keep"></script>
-<script src="quote-v2-rules.js?v=20261116tref"></script>
+<script src="quote-v2-pricebook.js?v=20261116tlab"></script>
+<script src="quote-v2-rules.js?v=20261116tlab"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -1216,18 +1216,21 @@
   function bkOptF(id, r) {
     const code = bkOptCode(id); let base = { mat: '', aux: '', lab: '' };
     if (bkOptSet(r)) { const x = bkStdF(code, false); if (x) { const w = 1 + x.w / 100; base = { mat: R4(x.mat + bkN(r[4]) / w), aux: R4(x.aux + bkN(r[5])), lab: R4(x.lab + bkN(r[6])) }; } }
+    else if (bkTileSize(id)) { const x = bkStdF(code); if (x) base = { mat: '', aux: R4(x.aux), lab: R4(x.lab) }; } // 没填 = 和标准尺寸一样的铺贴价
     else if (bkRefPct(id) !== undefined) { const x = bkStdF(code), k = 1 + bkRefPct(id) / 100; if (x) base = { mat: R4(x.mat * k), aux: R4(x.aux * k), lab: R4(x.lab * k) }; }
     const d = bookDraft[id] || {};
-    return { mat: d.mat ?? base.mat, aux: d.aux ?? base.aux, lab: d.lab ?? base.lab };
+    return { mat: bkTileSize(id) ? '' : d.mat ?? base.mat, aux: d.aux ?? base.aux, lab: d.lab ?? base.lab };
   }
   function bkOptTot(id, r) {
     const f = bkOptF(id, r); if (OF.every(k => String(f[k]).trim() === '')) return null;
     const x = bkStdF(bkOptCode(id)), n = OF.map(k => bkN(f[k]));
     return n.some(v => !Number.isFinite(v)) ? NaN : n[0] * (x ? 1 + x.w / 100 : 1) + n[1] + n[2];
   }
+  // 瓷砖尺寸行：材料按片价，不在这里填
+  const bkTileSize = id => /^tile\.(floorSize|wallSize)\./.test(id) && /@(floor_tile|wall_tile|porch_tile)$/.test(id);
   function bkOptCells(id, r) {
     const f = bkOptF(id, r), x = bkStdF(bkOptCode(id)), d = bookDraft[id] || {}, t = bkOptTot(id, r);
-    return OF.map((k, j) => `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${d[k] !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${k}" data-bku="${esc(r[3])}" value="${esc(bkShow(f[k], r[3]))}" placeholder="—"></td>`).join('')
+    return OF.map((k, j) => k === 'mat' && bkTileSize(id) ? `<td class="r desc" data-l="材料">砖材按片价</td>` : `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${d[k] !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${k}" data-bku="${esc(r[3])}" value="${esc(bkShow(f[k], r[3]))}" placeholder="—"></td>`).join('')
       + `<td class="r desc" data-l="损耗%">${x ? x.w : ''}<br>同标准</td><td class="r" data-l="合计单价"><input class="bkin ${OF.some(k => d[k] !== undefined) ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${t == null || Number.isNaN(t) ? '' : bkShow(t, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td>`;
   }
   function bookEditor(rows) {
@@ -1319,7 +1322,7 @@
       if (!OF.some(k => dr[k] !== undefined)) { const f = bkOptF(t.dataset.bk, bkRow(t.dataset.bk)), x = bkStdF(bkOptCode(t.dataset.bk)) || {}; OF.forEach(k => { dr[k] = String(f[k]).trim() !== '' ? f[k] : (x[k] !== undefined ? R4(x[k]) : ''); }); }
       if (t.dataset.bkf === 'tot') Object.assign(dr, { mat: '', aux: '', lab: val }); // 只填合计 = 工料合一
       else dr[t.dataset.bkf] = val;
-      OF.forEach(k => { const i = tr.querySelector(`input[data-bkf="${k}"]`); if (i !== t) { i.value = bkShow(dr[k], u); i.classList.add('chg'); } });
+      OF.forEach(k => { const i = tr.querySelector(`input[data-bkf="${k}"]`); if (i && i !== t) { i.value = bkShow(dr[k], u); i.classList.add('chg'); } });
       if (t.dataset.bkf !== 'tot') { const tt = bkOptTot(t.dataset.bk, bkRow(t.dataset.bk)); tr.querySelector('input[data-bkf="tot"]').value = tt == null || Number.isNaN(tt) ? '' : bkShow(tt, u); }
     } else if (isItem && t.dataset.bkf === 'tot') {
       // 直接填合计 = 工料合一的综合单价（不拆材料/人工），存进「人工」一栏，其他清空
@@ -1351,7 +1354,7 @@
         if (n.some(v => !Number.isFinite(v))) { errs.push(`「${o.key.label}：${o.v}」的价格不是数字`); return r; }
         if (!x) { errs.push(`「${PRICE[o.code].name}」标准价还没定，先填标准价再填「${o.v}」`); return r; }
         // 存成比标准多/少多少：材料差价要带上损耗，和报价时的算法一致
-        r[4] = R4((n[0] - x.mat) * (1 + x.w / 100)); r[5] = R4(n[1] - x.aux); r[6] = R4(n[2] - x.lab);
+        r[4] = bkTileSize(r[1]) ? '0' : R4((n[0] - x.mat) * (1 + x.w / 100)); r[5] = R4(n[1] - x.aux); r[6] = R4(n[2] - x.lab);
         return r;
       }
       if (!i || !bookDraft[r[1]]) return r;
