@@ -618,4 +618,14 @@ ok('阳台阳光棚只算顶；阳光房算顶 + 玻璃围合（长 × 高），
   assert.ok(roof.spec.includes('夹胶钢化玻璃') && roof.priceTbd.length, '换玻璃顶要标价差待定，不能按阳光板价算');
 });
 
+ok('车廊上的棚叫车棚：旧报价的「雨棚」迁移成车棚，面积和价钱不变；和全屋雨棚同时选会提示重复', () => {
+  const r = { ...Q.newRoom('porch', 1, 1), measured: true, packs: ['awning'], vals: { awning: { area: 300 } } };
+  const p = project([r]); delete p.mig; const before = Q.totals(p, Q.buildLines(p)).total;
+  Q.migrate(p);
+  assert.deepEqual(r.packs, ['carport']); assert.equal(r.vals.carport.area, 300);
+  assert.equal(Q.totals(p, Q.buildLines(p)).total, before, '只是改名，金额不变');
+  p.house = { awning: { on: true } };
+  assert.ok(Q.checks(p, Q.buildLines(p), 'estimate').red.some(x => x.m.includes('重复收费')));
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

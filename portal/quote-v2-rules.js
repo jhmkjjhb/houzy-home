@@ -103,7 +103,7 @@
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
     extension: { label: '加建空间', icon: '🏗️', L: 20, W: 10, doors: 1, ext: true, landed: true, packs: ['floor', 'wet_tile', 'wall_finish', 'ceiling', 'ceil_paint', 'electric', 'kitchen_water', 'aircon', 'fan', 'window_new', 'fly_screen', 'door', 'cabinets', 'sill'] },
-    porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] }
+    porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'carport', 'garden_light'] }
   };
   Object.values(ROOMS).forEach(t => { if (!t.outdoor) t.packs.push('custom_item'); });
 
@@ -322,6 +322,8 @@
     sunroom:        { g: 'out', label: '阳光房（顶 + 四周玻璃）', icon: '🏡', hint: '顶棚 + 玻璃围合成半室内空间；一般要物业/市政同意',
                       inputs: [{ k: 'area', label: '顶面面积', unit: '平方尺', def: (r, g) => g.floor }, { k: 'len', label: '玻璃围合长度', unit: '尺', def: (r, g) => r2(g.L + 2 * g.W) }, { k: 'h', label: '围合高度', unit: '尺', def: (r, g) => g.H || 9 }],
                       lines: (r, g, v) => [['awning', v.area, '顶面面积'], ['sunroom_wall', r2(v.len * v.h), `玻璃围合 ${v.len} 尺 × 高 ${v.h} 尺`]] },
+    // 车廊上的棚叫「车棚」：做法、材料和雨棚一样（同一个价目编号），只是名称不同
+    carport:        { g: 'out', label: '车棚', icon: '⛱️', inputs: [{ k: 'area', label: '车棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '车棚面积']] },
     awning:         { g: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '雨棚面积']] },
     garden_light:   { g: 'out', label: '户外灯', icon: '💡', inputs: [{ k: 'n', label: '灯位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['garden_light', v.n, '灯位']] }
   };
@@ -514,7 +516,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
@@ -571,7 +573,7 @@
       if (packs.includes('ceiling') && packs.includes('ceil_paint')) red.push({ m: `「${label}」同时选了「天花吊顶」和「天花重刷」，吊顶已含天花油漆，请去掉一个`, go: room.id });
       if (room.type === 'bath' && packs.includes('sanitary') && !packs.includes('bath_tile')) yellow.push({ m: `「${label}」换洁具但不做防水瓷砖，确认原防水没问题`, go: room.id });
     });
-    ['awning', 'drain_ch'].forEach(k => { if (project.house?.[k]?.on && project.rooms.some(r => (r.packs || []).includes(k))) red.push({ m: `「${PACKS[k].label}」在车廊/前院和全屋项目都选了，会重复收费，请去掉一个`, go: 'all' }); });
+    ['awning', 'drain_ch'].forEach(k => { if (project.house?.[k]?.on && project.rooms.some(r => (r.packs || []).includes(k) || (k === 'awning' && (r.packs || []).includes('carport')))) red.push({ m: `「${PACKS[k].label}」在车廊/前院和全屋项目都选了，会重复收费，请去掉一个`, go: 'all' }); });
     if (project.house?.extension?.on && project.rooms.some(r => r.ext)) yellow.push({ m: '全屋项目选了「加建/扩建」，房间里也有加建空间，确认面积没有重复算', go: 'all' });
     (project.extras || []).forEach((x, i) => {
       const nm = String(x.name || '').trim() || `第 ${i + 1} 项`;
@@ -687,6 +689,7 @@
       if (has('ceil_feature')) { swap('ceil_feature', 'ceiling'); set('ceiling', 'style', '叠级+灯槽'); }
       if (has('ceil_flat')) { swap('ceil_flat', 'ceiling'); set('ceiling', 'style', '平顶'); }
       if (has('paint')) swap('paint', 'wall_finish');
+      if (r.type === 'porch' && has('awning')) swap('awning', 'carport');
       // 淋浴隔断从「洁具」里拆出来成为「淋浴区」：旧报价里选了洁具的卫生间补上淋浴区，金额不变（只迁移一次）
       if (!(project.mig || {}).shower && has('sanitary') && !has('shower_area')) r.packs.push('shower_area');
     });
