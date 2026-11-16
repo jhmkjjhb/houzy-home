@@ -89,20 +89,20 @@
   }
 
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
-  const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core'];
+  const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
   const ROOMS = {
     living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'soft_panel', 'bar_counter', 'floor_border', 'mosaic', 'culture_stone', 'glass_block', 'bay_window', 'audio_wire'] },
     dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel', 'wine_cab', 'bar_counter', 'floor_border'] },
     master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window', 'audio_wire'] },
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
     study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
-    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'bar_counter', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'ro_filter'] },
-    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new', 'bathtub', 'slide_door', 'mosaic', 'glass_block', 'floor_raise', 'wall_core'] },
+    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'bar_counter', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'ro_filter', 'smart_room'] },
+    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new', 'bathtub', 'slide_door', 'mosaic', 'glass_block', 'floor_raise', 'wall_core', 'smart_room'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new', 'mop_sink', 'slide_door', 'wall_core'] },
     balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out', 'mop_sink', 'mosaic', 'culture_stone', 'decking'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'tatami', 'soft_panel', 'floor_border', 'culture_stone', 'audio_wire'] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door', 'damp_proof'] },
-    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh', 'smart_room'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out', 'culture_stone', 'decking'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
@@ -255,6 +255,12 @@
       glass: { label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
       frame: { label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
     } },
+    switch: { label: '开关面板 / 智能开关', icon: '🔘', keys: {
+      brand:    { label: '开关面板品牌', opts: ['普通品牌（示范价）', 'Bull 公牛', 'Panasonic 松下', 'Schneider 施耐德', 'Legrand 罗格朗', 'MK'], std: '普通品牌（示范价）', codes: ['panel'] },
+      color:    { label: '面板颜色', opts: ['白色', '黑色', '灰色', '香槟金'], std: '白色', codes: ['panel', 'smart_switch'], noPrice: true },
+      smartType:{ label: '智能开关类型', opts: ['单火智能开关（旧房免拉零线）', '零火智能开关（更稳定）', '智能触屏场景面板'], std: '单火智能开关（旧房免拉零线）', codes: ['smart_switch'] },
+      platform: { label: '智能系统', opts: ['Tuya / Smart Life', '小米米家', 'Aqara（支持 Apple Home）', 'Schneider Wiser'], std: 'Tuya / Smart Life', codes: ['smart_switch', 'curtain_motor', 'smart_sensor', 'smart_ir'] }
+    } },
     lighting: { label: '灯具', icon: '💡', keys: {
       grade: { label: '灯具档次', opts: ['标准 LED 筒灯/吸顶灯', '防眩筒灯+射灯'], std: '标准 LED 筒灯/吸顶灯', codes: ['light'] },
       temp:  { label: '色温', opts: ['3000K 暖光', '4000K 自然光', '6000K 白光'], std: '4000K 自然光', codes: ['light', 'led_strip'], noPrice: true }
@@ -311,8 +317,13 @@
     bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
 
     electric:       { g: 'mep', label: '插座开关+灯位', icon: '💡',
-                      inputs: [{ k: 'pts', label: '插座/开关', unit: '个', def: (r, g) => ceil(g.floor / 30) + 2 }, { k: 'lights', label: '灯位', unit: '个', def: (r, g) => ceil(g.floor / 50) + 1 }],
-                      lines: (r, g, v) => [['wire', v.pts, '插座/开关点位'], ['panel', v.pts, '= 点位数'], ['light', v.lights, '灯位']] },
+                      inputs: [{ k: 'pts', label: '插座/开关', unit: '个', def: (r, g) => ceil(g.floor / 30) + 2 }, { k: 'lights', label: '灯位', unit: '个', def: (r, g) => ceil(g.floor / 50) + 1 },
+                               { k: 'smart', label: '其中换智能开关', unit: '个', def: () => 0, opt: true }],
+                      // 智能开关替换普通面板：普通面板 = 点位 − 智能开关；款式、品牌、智能系统在「④ 选材」定
+                      lines: (r, g, v) => { const sm = Math.min(num(v.smart), num(v.pts)); return [['wire', v.pts, '插座/开关点位'], ['panel', r2(num(v.pts) - sm), sm ? `点位 ${v.pts} − 智能开关 ${sm}` : '= 点位数'], ['smart_switch', sm, '智能开关（替换普通开关）'], ['light', v.lights, '灯位']]; } },
+    smart_room:     { g: 'mep', label: '智能家居（本间）', icon: '📱', hint: '网关和全屋调试在「③ 全屋」；智能开关在「插座开关+灯位」里填数量', wide: true,
+                      inputs: [{ k: 'curtain', label: '智能窗帘电机', unit: '个', def: () => 0, opt: true }, { k: 'sensor', label: '传感器（人体/门窗/温湿度）', unit: '个', def: () => 0, opt: true }, { k: 'ir', label: '红外遥控器（空调/电视接入）', unit: '个', def: () => 0, opt: true }],
+                      lines: (r, g, v) => [['curtain_motor', v.curtain, '智能窗帘电机'], ['smart_sensor', v.sensor, '传感器'], ['smart_ir', v.ir, '红外遥控器']] },
     aircon:         { g: 'mep', label: '空调预埋', icon: '❄️', inputs: [{ k: 'n', label: '空调', unit: '台', def: () => 1 }],
                       lines: (r, g, v) => [['aircon_pipe', v.n, '空调台数'], ['circuit', v.n, '每台一条专用回路']] },
     fan:            { g: 'mep', label: '吊扇', icon: '🌀', inputs: [{ k: 'n', label: '吊扇', unit: '台', def: () => 1 }], lines: (r, g, v) => [['fan_point', v.n, '吊扇台数'], ['ceiling_fan', v.n, '吊扇台数']] },
@@ -447,9 +458,11 @@
 
   // ---------- 全屋项目：不属于某个房间 ----------
   // grp 决定分组显示；landed = 只在有地房屋显示（公寓不显示，已选的仍然显示）
-  const HOUSE_GROUPS = [['struct', '结构与申请'], ['mep', '水电'], ['secure', '门窗与安防'], ['out', '外部、屋顶与加建'], ['finish', '完工与环保']];
+  const HOUSE_GROUPS = [['struct', '结构与申请'], ['mep', '水电'], ['smart', '智能家居系统'], ['secure', '门窗与安防'], ['out', '外部、屋顶与加建'], ['finish', '完工与环保']];
   const HOUSE_ITEMS = [
     { k: 'drywall', grp: 'struct', label: '轻钢龙骨石膏板隔墙', icon: '🧱', why: '比砌砖墙轻、快，适合公寓和楼上', inputs: [{ k: 'area', label: '隔墙面积', unit: '平方尺', def: () => 80 }], lines: v => [['drywall', v.area, '隔墙面积（长 × 高）']] },
+    { k: 'smart_hub', grp: 'smart', label: '智能网关 + 全屋场景调试', icon: '📶', why: '智能开关、窗帘、传感器都要接网关；含 App 设置和回家/离家/睡眠等场景编程', lines: () => [['smart_hub', 1, '']] },
+    { k: 'smart_lock', grp: 'smart', label: '智能门锁（指纹/密码/App）', icon: '🔐', inputs: [{ k: 'n', label: '把数', unit: '把', def: () => 1 }], lines: v => [['smart_lock', v.n, '把数']] },
     { k: 'db_move', grp: 'mep', label: '配电箱移位', icon: '🔌', why: '配电箱换位置：拆装、延长主线、重新接回路', lines: () => [['db_move', 1, '']] },
     { k: 'lv_box', grp: 'mep', label: '弱电箱（网络/电视/监控集中箱）', icon: '📡', lines: () => [['lv_box', 1, '']] },
     { k: 'hot_insul', grp: 'mep', label: '热水管保温', icon: '♨️', inputs: [{ k: 'len', label: '热水管长度', unit: '尺', def: () => 40 }], lines: v => [['hot_insul', v.len, '热水管长度']] },

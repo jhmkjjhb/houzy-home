@@ -189,6 +189,12 @@
    ['lv_box', 'mep', '弱电箱（网络/电视/监控集中箱）', '项', 450, '弱电箱 + 网络模块，网络/电视/监控线集中接入'],
    ['hot_insul', 'mep', '热水管保温', '延尺', 6, '热水管外包保温棉，减少热损失和冷凝水'],
    ['formaldehyde', 'equip', '除甲醛 / 空气治理（含检测）', '平方尺', 1.5, '全屋喷涂治理剂，柜内重点处理，完工后检测出报告'],
+   ['smart_switch', 'equip', '智能开关（含安装、配网）', '个', 180, '替换普通开关面板，接线后加入 App 配网测试；零火款需开关盒有零线'],
+   ['curtain_motor', 'equip', '智能窗帘电机（含电动轨道）', '个', 650, '电动轨道 + 电机，预留插座，配网后可 App/语音/定时控制'],
+   ['smart_sensor', 'equip', '智能传感器（人体/门窗/温湿度）', '个', 120, '安装、配对网关，设置联动场景'],
+   ['smart_ir', 'equip', '智能红外遥控器', '个', 150, '学习空调/电视遥控，接入 App'],
+   ['smart_hub', 'equip', '智能网关 + 全屋场景调试', '项', 600, '网关安装配网，全部设备接入，设置常用场景并教客户使用'],
+   ['smart_lock', 'custom', '智能门锁（指纹/密码/App）', '把', 1200, '按门厚开孔安装，录入指纹，配网测试；不适用的门需另加改装'],
    ['wall_cloth', 'ceil', '墙布（代替乳胶漆）', '平方尺', 9, '墙面批平后上基膜，无缝墙布整幅粘贴']
   ].forEach(([code, stage, name, unit, v, desc]) => { root.QV2_PRICE[code] = { stage, name, unit, mat: 0, aux: 0, lab: v, waste: 0, ref: true, desc }; });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
@@ -242,6 +248,9 @@
     'cabinet.doorStyle.框式门（法式/美式线条）': 30, 'cabinet.doorStyle.铝框玻璃门': 20, 'cabinet.doorStyle.格栅门': 25,
     'cabinet.handle.隐形拉手（铝合金嵌入）': 6, 'cabinet.handle.免拉手（反弹器）': 5, 'cabinet.handle.门板开槽（一体拉手）': 4,
     'cabinet.edge.PUR 激光封边（无缝）': 8, 'cabinet.back.18 mm 加厚背板': 8, 'cabinet.kick.铝合金踢脚': 2, 'cabinet.kick.悬空（底部灯带）': 5,
+    'switch.brand.Bull 公牛': 10, 'switch.brand.Panasonic 松下': 35, 'switch.brand.Schneider 施耐德': 40, 'switch.brand.Legrand 罗格朗': 45, 'switch.brand.MK': 60,
+    'switch.smartType.零火智能开关（更稳定）': 15, 'switch.smartType.智能触屏场景面板': 150,
+    'switch.platform.小米米家': 0, 'switch.platform.Aqara（支持 Apple Home）': 25, 'switch.platform.Schneider Wiser': 60,
     'door2.slide.铝合金折叠门': 30, 'cabinet.wardrobeDoor.推拉移门': 10, 'cabinet.wardrobeDoor.开放式（无门）': -25,
     'craft.toilet.蹲厕（含水箱）': -40, 'craft.casing.石材窗套': 40, 'craft.casing.铝合金/不锈钢窗套': 20, 'craft.bay.大理石': 30, 'craft.bay.石英石': 20,
     'craft.tatami.地台 + 抽屉': 25, 'craft.tatami.榻榻米（带升降桌）': 40, 'craft.bar.岩板台面': 30, 'craft.bar.实木台面': 20,

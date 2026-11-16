@@ -154,6 +154,22 @@ ok('全屋定制柜做法：环保等级、门板造型、拉手、封边、背�
   ['tv_cab', 'shoe_cab', 'wine_cab', 'cab_low'].forEach(c => assert.ok(Q.specKeysFor(c).some(([cat, k]) => cat === 'cabinet' && k === 'handle'), c + ' 也能选拉手'));
 });
 
+ok('开关和智能家居：智能开关替换普通面板不重复收，品牌/类型/系统改价，窗帘电机传感器按间填，网关门锁在全屋', () => {
+  const r = { ...Q.newRoom('master', 1, 1), measured: true, packs: ['electric', 'smart_room'], vals: { electric: { pts: 10, lights: 4, smart: 3 }, smart_room: { curtain: 2, sensor: 1, ir: 1 } } };
+  const p = project([r], { house: { smart_hub: { on: true }, smart_lock: { on: true, n: 1 } } });
+  let L = Q.buildLines(p);
+  assert.equal(qty(L, 'panel'), 7, '普通面板 = 10 − 3 个智能开关');
+  assert.equal(qty(L, 'smart_switch'), 3); assert.equal(qty(L, 'wire'), 10, '布线点位不变');
+  assert.equal(qty(L, 'curtain_motor'), 2); assert.equal(qty(L, 'smart_sensor'), 1); assert.equal(qty(L, 'smart_ir'), 1);
+  assert.equal(qty(L, 'smart_hub'), 1); assert.equal(qty(L, 'smart_lock'), 1);
+  const u = (specs, c) => find(Q.buildLines(project([r], { plans: [{ id: 'A', specs: { switch: specs }, roomSpecs: {} }] })), c)[0].unit;
+  assert.ok(u({ brand: 'Schneider 施耐德' }, 'panel') > u({}, 'panel'), '品牌面板更贵');
+  assert.ok(u({ smartType: '智能触屏场景面板' }, 'smart_switch') > u({}, 'smart_switch'));
+  assert.ok(u({ platform: 'Aqara（支持 Apple Home）' }, 'curtain_motor') > u({}, 'curtain_motor'), '系统影响窗帘电机价');
+  const r0 = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['electric'] };
+  assert.equal(qty(Q.buildLines(project([r0])), 'smart_switch'), 0, '默认不加智能开关');
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);
