@@ -1113,40 +1113,82 @@
   // 在页面上直接改价：改动先放草稿，点「保存」才生效，同时下载一份价目表留底
   let bookDraft = {}, bookFilter = 'unpriced', bookQ = '';
   const BK_F = [['mat', '材料'], ['aux', '辅料'], ['lab', '人工'], ['waste', '损耗%']];
+  // 规格行（选材价差）挂在所属项目下面，每个规格直接填「合计单价」；保存时换算成比标准价多/少多少
+  const bkOptCode = id => id.split('@')[1];
+  function bkOptInfo(id) {
+    const [ok, code] = id.split('@'), [cat, k, ...vv] = ok.split('.');
+    const key = Q.SPEC_CATS[cat].keys[k];
+    return { code, key, v: vv.join('.'), std: typeof key.std === 'function' ? '普通做法' : key.std };
+  }
+  let bkRows = [];
+  const bkRow = id => bkRows.find(r => r[1] === id);
+  // 项目的合计单价；draft=false 用保存前的原价
+  function bkStdTot(code, draft = true) {
+    const r = bkRow(code); if (!r) return null;
+    const v = BK_F.map(([f], j) => String((draft ? bookVal(code, r, f, j) : r[4 + j]) ?? '').trim());
+    if (v.slice(0, 3).every(x => x === '')) return null;
+    const n = v.map(x => (x === '' ? 0 : Number(x)));
+    return n.some(x => !Number.isFinite(x)) ? null : n[0] * (1 + n[3] / 100) + n[1] + n[2];
+  }
+  // 规格的合计单价：改过就用改的；没改且已有价差 = 原标准价 + 价差
+  function bkOptAbs(id, r) {
+    const d = bookDraft[id] && bookDraft[id].tot;
+    if (d !== undefined) return d;
+    if ([4, 5, 6].every(i => r[i] === '')) return '';
+    const std = bkStdTot(bkOptCode(id), false);
+    return std == null ? '' : String(Math.round((std + [4, 5, 6].reduce((t, i) => t + (Number(r[i]) || 0), 0)) * 100) / 100);
+  }
   function bookEditor(rows) {
-    const filters = [['unpriced', '只看没定价的'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '选材价差']];
-    const list = rows.filter(r => {
-      const isOpt = r[0] === '选材价差';
-      if (bookQ && !(r[2] + r[1]).toLowerCase().includes(bookQ.toLowerCase())) return false;
-      if (bookFilter === 'opt') return isOpt;
-      if (bookFilter === 'unpriced') return isOpt ? (r[4] === '' && r[5] === '' && r[6] === '') : r[4] === '';
-      if (isOpt) return false;
-      return bookFilter === 'all' || PRICE[r[1]].stage === bookFilter;
+    bkRows = rows;
+    const filters = [['unpriced', '只看没定价的'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '有规格的项目']];
+    const items = rows.filter(r => r[0] !== '选材价差'), opts = rows.filter(r => r[0] === '选材价差');
+    const optSet = o => [4, 5, 6].some(i => o[i] !== '');
+    const q = bookQ.toLowerCase(), hit = r => !q || (r[2] + r[1]).toLowerCase().includes(q);
+    const list = [];
+    items.forEach(r => {
+      if (!['all', 'opt', 'unpriced'].includes(bookFilter) && PRICE[r[1]].stage !== bookFilter) return;
+      let kids = opts.filter(o => bkOptCode(o[1]) === r[1]);
+      if (bookFilter === 'opt' && !kids.length) return;
+      if (bookFilter === 'unpriced') kids = kids.filter(o => !optSet(o));
+      const selfHit = hit(r); if (!selfHit) kids = kids.filter(hit);
+      if (!(selfHit && (bookFilter !== 'unpriced' || r[4] === '')) && !kids.length) return;
+      list.push(r, ...kids);
     });
     const n = Object.keys(bookDraft).length;
     let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">直接在这里改价</h2>
       <button class="btn pri" data-book="save" ${n ? '' : 'disabled'} id="bookSave">${n ? `保存 ${n} 处修改并下载价目表` : '改了价格后点这里保存'}</button></div>
       <div class="adds" style="margin:10px 0 6px">${filters.map(([k, l]) => `<button class="chip ${bookFilter === k ? 'on' : ''}" data-bookf="${k}">${l}</button>`).join('')}</div>
-      <input class="cust" style="width:100%;margin-bottom:8px" placeholder="搜索项目名称，例如：衣柜、三相电" data-bookq value="${esc(bookQ)}">
-      <div class="scroll-x"><table class="q bookT"><thead><tr><th>项目</th><th>单位</th>${BK_F.map(([, l]) => `<th class="r">${l}</th>`).join('')}<th class="r">合计单价</th></tr></thead><tbody>`;
+      <input class="cust" style="width:100%;margin-bottom:8px" placeholder="搜索项目名称，例如：衣柜、三相电、600×1200" data-bookq value="${esc(bookQ)}">
+      <div class="scroll-x"><table class="q bookT"><thead><tr><th>项目 / 规格</th><th>单位</th>${BK_F.map(([, l]) => `<th class="r">${l}</th>`).join('')}<th class="r">合计单价</th></tr></thead><tbody>`;
     h += list.map(r => {
-      const isOpt = r[0] === '选材价差', id = r[1];
+      const id = r[1];
+      if (r[0] === '选材价差') {
+        const o = bkOptInfo(id), d = bookDraft[id] && bookDraft[id].tot !== undefined;
+        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b></td><td class="bkunit">${esc(r[3])}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" value="${esc(bkOptAbs(id, r))}" placeholder="待定"></td></tr>`;
+      }
+      const stds = opts.some(o => bkOptCode(o[1]) === id) ? [...new Set(opts.filter(o => bkOptCode(o[1]) === id).map(o => { const x = bkOptInfo(o[1]); return `${x.key.label} ${x.std}`; }))] : [];
       const cells = BK_F.map(([f], j) => {
-        if (isOpt && f === 'waste') return '<td></td>';
-        const d = bookDraft[id] && bookDraft[id][f], v = d !== undefined ? d : r[4 + j];
-        return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${d !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" value="${esc(v)}" placeholder="—"></td>`;
+        const dv = bookDraft[id] && bookDraft[id][f], v = dv !== undefined ? dv : r[4 + j];
+        return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${dv !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" value="${esc(v)}" placeholder="—"></td>`;
       }).join('');
-      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${isOpt ? `<span class="desc">选材价差</span><br>` : ''}${esc(r[2])}</td><td class="bkunit">${esc(r[3])}</td>${cells}<td class="r mono bksum" data-l="合计">${bookSum(id, r)}</td></tr>`;
+      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(r[3])}</td>${cells}<td class="r mono bksum" data-l="合计">${bookSum(id, r)}</td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
-    return h + `</tbody></table></div><p class="hint">空着 = 还没定；选材价差填 0 = 不加价，便宜的填负数。改过的格子会变色，点「保存」才生效。</p></div>`;
+    return h + `</tbody></table></div><p class="hint">空着 = 还没定。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
   }
   function bookVal(id, r, f, j) { const d = bookDraft[id] && bookDraft[id][f]; return d !== undefined ? d : r[4 + j]; }
   function bookSum(id, r) {
+    if (r[0] === '选材价差') {
+      const a = String(bkOptAbs(id, r)).trim(); if (a === '') return '待定';
+      const n = Number(a); if (!Number.isFinite(n)) return '<span style="color:var(--red)">不是数字</span>';
+      const std = bkStdTot(bkOptCode(id)); if (std == null) return '标准价还没定';
+      const d = Math.round((n - std) * 100) / 100;
+      return d === 0 ? '和标准规格一样价' : `比标准规格${d > 0 ? '贵' : '便宜'} RM ${nf(Math.abs(d))}`;
+    }
     const v = BK_F.map(([f], j) => String(bookVal(id, r, f, j) ?? '').trim());
     if (v.slice(0, 3).every(x => x === '')) return '待定';
     const n = v.map(x => (x === '' ? 0 : Number(x)));
     if (n.some(x => !Number.isFinite(x))) return '<span style="color:var(--red)">不是数字</span>';
-    const t = r[0] === '选材价差' ? n[0] + n[1] + n[2] : n[0] * (1 + n[3] / 100) + n[1] + n[2];
+    const t = n[0] * (1 + n[3] / 100) + n[1] + n[2];
     return (t < 0 ? '−' : '') + 'RM ' + nf(Math.abs(t));
   }
   document.addEventListener('input', e => {
@@ -1157,18 +1199,31 @@
     t.classList.add('chg');
     const B = window.QV2_BOOK, row = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).find(r => r[1] === t.dataset.bk);
     t.closest('tr').querySelector('.bksum').innerHTML = bookSum(t.dataset.bk, row);
+    document.querySelectorAll('tr[data-bkopt]').forEach(tr => { if (tr.dataset.bkopt === t.dataset.bk) tr.querySelector('.bksum').innerHTML = bookSum(tr.dataset.bkrow, bkRow(tr.dataset.bkrow)); });
     const n = Object.keys(bookDraft).length, sb = document.getElementById('bookSave'); sb.disabled = false; sb.textContent = `保存 ${n} 处修改并下载价目表`;
   });
   function bookSave() {
     const B = window.QV2_BOOK, rows = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES));
     const errs = [];
     // 用草稿改出一张完整的新表，再走和上传一样的读取校验，保证两条路结果一致
+    bkRows = rows.slice(1);
     const out = rows.map((r, i) => {
+      if (i && r[0] === '选材价差' && (bookDraft[r[1]] || bookDraft[bkOptCode(r[1])])) {
+        const a = String(bkOptAbs(r[1], r)).trim(), o = bkOptInfo(r[1]);
+        r = [...r];
+        if (a === '') { r[4] = r[5] = r[6] = ''; return r; }
+        const std = bkStdTot(o.code);
+        if (!Number.isFinite(Number(a))) { errs.push(`「${o.key.label}：${o.v}」的单价不是数字`); return r; }
+        if (std == null) { errs.push(`「${PRICE[o.code].name}」标准价还没定，先填标准价再填「${o.v}」`); return r; }
+        r[4] = String(Math.round((Number(a) - std) * 10000) / 10000); r[5] = ''; r[6] = '';
+        return r;
+      }
       if (!i || !bookDraft[r[1]]) return r;
       r = [...r]; BK_F.forEach(([f], j) => { if (bookDraft[r[1]][f] !== undefined) r[4 + j] = bookDraft[r[1]][f]; });
       return r;
     });
     const csv = '﻿' + out.map(r => r.map(x => { x = String(x ?? ''); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(',')).join('\r\n');
+    if (errs.length) { bookMsg = { ok: false, lines: errs.slice(0, 8) }; render(); return; }
     const res = B.read(csv, PRICE);
     if (res.errors.length) { bookMsg = { ok: false, lines: res.errors.slice(0, 8) }; render(); return; }
     const ni = Object.keys(res.items).length, no = Object.values(res.options).reduce((t, o) => t + Object.keys(o).length, 0);
