@@ -1112,6 +1112,13 @@
   }
   // 在页面上直接改价：改动先放草稿，点「保存」才生效，同时下载一份价目表留底
   let bookDraft = {}, bookFilter = 'unpriced', bookQ = '';
+  // 面积类单价可以按平方米填：页面上显示/输入按平方米，存的时候自动换成平方尺（1 平方米 = 10.7639 平方尺）
+  const SQM = 10.7639;
+  let bookM2 = false; try { bookM2 = localStorage.getItem('houzy-quote-v2-book-m2') === '1'; } catch (e) {}
+  const bkArea = u => bookM2 && u === '平方尺';
+  const bkShow = (v, u) => { const x = String(v ?? '').trim(); return bkArea(u) && x !== '' && Number.isFinite(+x) ? String(Math.round(+x * SQM * 100) / 100) : x; };
+  const bkStore = (v, u) => { const x = String(v ?? '').trim(); return bkArea(u) && x !== '' && Number.isFinite(+x) ? String(Math.round(+x / SQM * 10000) / 10000) : x; };
+  const bkUnit = u => (bkArea(u) ? '平方米' : u);
   const BK_F = [['mat', '材料'], ['aux', '辅料'], ['lab', '人工'], ['waste', '损耗%']];
   // 规格行（选材价差）挂在所属项目下面，每个规格直接填「合计单价」；保存时换算成比标准价多/少多少
   const bkOptCode = id => id.split('@')[1];
@@ -1157,6 +1164,7 @@
     const n = Object.keys(bookDraft).length;
     let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">直接在这里改价</h2>
       <button class="btn pri" data-book="save" ${n ? '' : 'disabled'} id="bookSave">${n ? `保存 ${n} 处修改并下载价目表` : '改了价格后点这里保存'}</button></div>
+      <div class="adds" style="margin:10px 0 6px;align-items:center"><span class="hint" style="margin:0">面积单价按：</span><button class="chip ${bookM2 ? '' : 'on'}" data-bookm2="0">每平方尺</button><button class="chip ${bookM2 ? 'on' : ''}" data-bookm2="1">每平方米（自动换算）</button></div>
       <div class="adds" style="margin:10px 0 6px">${filters.map(([k, l]) => `<button class="chip ${bookFilter === k ? 'on' : ''}" data-bookf="${k}">${l}</button>`).join('')}</div>
       <input class="cust" style="width:100%;margin-bottom:8px" placeholder="搜索项目名称，例如：衣柜、三相电、600×1200" data-bookq value="${esc(bookQ)}">
       <div class="scroll-x"><table class="q bookT"><thead><tr><th>项目 / 规格</th><th>单位</th>${BK_F.map(([, l]) => `<th class="r">${l}</th>`).join('')}<th class="r">合计单价</th></tr></thead><tbody>`;
@@ -1164,15 +1172,15 @@
       const id = r[1];
       if (r[0] === '选材价差') {
         const o = bkOptInfo(id), d = bookDraft[id] && bookDraft[id].tot !== undefined;
-        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b></td><td class="bkunit">${esc(r[3])}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" value="${esc(bkOptAbs(id, r))}" placeholder="待定"></td></tr>`;
+        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b></td><td class="bkunit">${esc(bkUnit(r[3]))}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${esc(bkShow(bkOptAbs(id, r), r[3]))}" placeholder="待定"></td></tr>`;
       }
       const stds = opts.some(o => bkOptCode(o[1]) === id) ? [...new Set(opts.filter(o => bkOptCode(o[1]) === id).map(o => { const x = bkOptInfo(o[1]); return `${x.key.label} ${x.std}`; }))] : [];
       const cells = BK_F.map(([f], j) => {
         const dv = bookDraft[id] && bookDraft[id][f], v = dv !== undefined ? dv : r[4 + j];
-        return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${dv !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" value="${esc(v)}" placeholder="—"></td>`;
+        return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${dv !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" data-bku="${esc(r[3])}" value="${esc(f === 'waste' ? v : bkShow(v, r[3]))}" placeholder="—"></td>`;
       }).join('');
       const dt = bookDraft[id] && bookDraft[id].tot !== undefined, tv = bkStdTot(id);
-      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(r[3])}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" value="${tv == null ? '' : Math.round(tv * 100) / 100}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
+      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${tv == null ? '' : bkShow(tv, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
     return h + `</tbody></table></div><p class="hint">空着 = 还没定。工料拆不开的项目，直接在「合计单价」填综合价就行。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
   }
@@ -1182,7 +1190,7 @@
       const a = String(bkOptAbs(id, r)).trim(); if (a === '') return '待定';
       const n = Number(a); if (!Number.isFinite(n)) return '<span style="color:var(--red)">不是数字</span>';
       const std = bkStdTot(bkOptCode(id)); if (std == null) return '标准价还没定';
-      const d = Math.round((n - std) * 100) / 100;
+      const d = Math.round((n - std) * (bkArea(r[3]) ? SQM : 1) * 100) / 100;
       return d === 0 ? '和标准规格一样价' : `比标准规格${d > 0 ? '贵' : '便宜'} RM ${nf(Math.abs(d))}`;
     }
     const v = BK_F.map(([f], j) => String(bookVal(id, r, f, j) ?? '').trim());
@@ -1195,14 +1203,15 @@
     const t = e.target;
     if (t.hasAttribute('data-bookq')) { bookQ = t.value; render(); return; }
     if (t.dataset.bk === undefined) return;
-    const dr = (bookDraft[t.dataset.bk] = bookDraft[t.dataset.bk] || {}), isItem = !!PRICE[t.dataset.bk], tr = t.closest('tr');
+    const dr = (bookDraft[t.dataset.bk] = bookDraft[t.dataset.bk] || {}), isItem = !!PRICE[t.dataset.bk], tr = t.closest('tr'), u = t.dataset.bku;
+    const val = t.dataset.bkf === 'waste' ? t.value.trim() : bkStore(t.value, u);
     if (isItem && t.dataset.bkf === 'tot') {
       // 直接填合计 = 工料合一的综合单价（不拆材料/人工），存进「人工」一栏，其他清空
-      Object.assign(dr, { mat: '', aux: '', lab: t.value.trim(), waste: '', tot: t.value.trim() });
-      BK_F.forEach(([f]) => { const i = tr.querySelector(`input[data-bkf="${f}"]`); i.value = dr[f]; i.classList.add('chg'); });
+      Object.assign(dr, { mat: '', aux: '', lab: val, waste: '', tot: val });
+      BK_F.forEach(([f]) => { const i = tr.querySelector(`input[data-bkf="${f}"]`); i.value = f === 'lab' ? t.value.trim() : ''; i.classList.add('chg'); });
     } else {
-      dr[t.dataset.bkf] = t.value.trim();
-      if (isItem) { delete dr.tot; const ti = tr.querySelector('input[data-bkf="tot"]'), tv = bkStdTot(t.dataset.bk); ti.value = tv == null ? '' : Math.round(tv * 100) / 100; }
+      dr[t.dataset.bkf] = val;
+      if (isItem) { delete dr.tot; const ti = tr.querySelector('input[data-bkf="tot"]'), tv = bkStdTot(t.dataset.bk); ti.value = tv == null ? '' : bkShow(tv, u); }
     }
     t.classList.add('chg');
     const B = window.QV2_BOOK, row = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).find(r => r[1] === t.dataset.bk);
@@ -1341,6 +1350,7 @@
     const ds = b.dataset;
     if (ds.book === 'save') { bookSave(); return; }
     if (ds.bookf) { bookFilter = ds.bookf; render(); return; }
+    if (ds.bookm2 !== undefined) { bookM2 = ds.bookm2 === '1'; try { localStorage.setItem('houzy-quote-v2-book-m2', bookM2 ? '1' : '0'); } catch (e) {} render(); return; }
     if (ds.book === 'dl') { const csv = window.QV2_BOOK.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = '新版报价器价目表.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); return; }
     if (ds.book === 'clear') { if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = '再点一次确认删除'; return; } window.QV2_BOOK.clear(); location.reload(); return; }
     if (ds.layout) { P.layout = { ...Q.layoutsFor(P.houseType).find(x => x.id === ds.layout) }; layoutConfirm = false; render(); return; }
