@@ -846,7 +846,21 @@
   const specExp = new Set();
   const foldBar = (ek, summary, extra) => `<div class="adds" style="margin:8px 0 0;align-items:center"><span style="flex:1 1 200px;color:var(--navy);font-weight:600">${summary}</span><button class="btn" data-specexp="${ek}">修改</button>${extra || ''}</div>`;
   // ④ 选材：按空间类型（卧室、卫浴……）统一选材料和选品；某间要不同再单独改
-  let specGroup = null; const specOne = new Set();
+  let specGroup = null; const specOne = new Set(), specDetail = new Set();
+  // 选材卡片的「各间明细」：每间这个项目出了哪些项、数量、尺寸、金额
+  function specDetailHtml(c, have, C, ek) {
+    const open = specDetail.has(ek), ls = C.lines.filter(l => l.pack === c && have.some(x => x.id === l.roomId));
+    const tot = ls.reduce((t, l) => t + l.total, 0);
+    let h = `<div style="margin-top:8px"><button class="chip" data-sdetail="${ek}">${open ? '▾ 收起明细' : `▸ 各间数量明细（${have.length} 间 · ${rm(tot)}）`}</button></div>`;
+    if (!open) return h;
+    h += `<div class="scroll-x" style="margin-top:6px"><table class="q"><thead><tr><th>房间</th><th>项目</th><th class="r">数量</th><th>怎么算 / 尺寸</th><th class="r">金额</th></tr></thead><tbody>`;
+    have.forEach(x => {
+      const xs = ls.filter(l => l.roomId === x.id), g = Q.geo(x, P);
+      h += `<tr class="st"><td colspan="4">${esc(Q.roomLabel(x, P))} <span class="desc" style="font-weight:400">${nf(g.L)}×${nf(g.W)} 尺 · 地面 ${nf(g.floor)} 平方尺</span></td><td class="r mono">${rm(xs.reduce((t, l) => t + l.total, 0))}</td></tr>`;
+      h += xs.map(l => `<tr><td></td><td>${esc(l.name)}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}</div>` : ''}</td><td class="r mono">${nf(l.qty)} ${esc(l.unitName)}</td><td class="desc">${esc(l.formula || '')}</td><td class="r mono">${l.unpriced ? '<span style="color:var(--yellow)">待定价</span>' : rm(l.total)}</td></tr>`).join('') || '<tr><td></td><td colspan="4" class="hint">数量为 0，请到「② 房间」补尺寸</td></tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
   const matKeys = (x, c, C) => (Q.placesOf(P, x, C.lines).find(y => y.pack === c) || { keys: [] }).keys.filter(([cat, k]) => !Q.SPEC_CATS[cat].keys[k].scope);
   function specItems(rs, C) {
     const out = [], packs = [...new Set(rs.flatMap(r => r.packs || []))].filter(c => PACKS[c]);
@@ -872,8 +886,8 @@
     const done = !it.open, diff = rows.some(r => !r.same);
     let h = `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px">${ic(PACKS[c].icon)}</span><b style="font-size:15px">${esc(label)}</b><span class="desc">${have.map(x => esc(Q.roomLabel(x, P))).join('、')}</span><span class="desc" style="margin-left:auto;font-weight:600;color:${done ? 'var(--ok)' : 'var(--yellow)'}">${done ? '✓ 已定' : '未定 · 暂按标准档估价'}</span></div>`;
     if (done && !specExp.has(ek)) {
-      if (!diff) return h + foldBar(ek, rows.map(r => esc(r.cur[0].v)).join(' · ')) + '</div>';
-      return h + have.map(x => `<div class="desc" style="margin:6px 0 0;color:var(--ink)"><b>${esc(Q.roomLabel(x, P))}</b>：${matKeys(x, c, C).map(([cat, k]) => esc(Q.specOf(P, x, cat, k, null, c).v)).join(' · ')}</div>`).join('') + foldBar(ek, '') + '</div>';
+      if (!diff) return h + foldBar(ek, rows.map(r => esc(r.cur[0].v)).join(' · ')) + specDetailHtml(c, have, C, ek) + '</div>';
+      return h + have.map(x => `<div class="desc" style="margin:6px 0 0;color:var(--ink)"><b>${esc(Q.roomLabel(x, P))}</b>：${matKeys(x, c, C).map(([cat, k]) => esc(Q.specOf(P, x, cat, k, null, c).v)).join(' · ')}</div>`).join('') + foldBar(ek, '') + specDetailHtml(c, have, C, ek) + '</div>';
     }
     rows.forEach(({ cat, k, rs, cur, same }) => {
       const K = Q.SPEC_CATS[cat].keys[k], std = Q.stdOf(K, rs[0]);
@@ -886,7 +900,7 @@
       const K = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, x, cat, k, null, c);
       return `<div class="hint" style="margin:6px 0 2px">${esc(K.label)}${cur.decided ? '' : ' · 暂按标准档'}</div><div class="dopt" style="margin:0 0 4px">${K.opts.map(o => `<button class="${cur.decided && cur.v === o ? 'on' : ''}" style="padding:6px 10px;min-width:auto" data-room="${x.id}" data-place="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><b style="font-size:13px">${cur.decided && cur.v === o ? '✓ ' : ''}${esc(o)}</b></button>`).join('')}</div>`;
     }).join('')}</div>`).join('');
-    return h + '</div>';
+    return h + specDetailHtml(c, have, C, ek) + '</div>';
   }
   function viewSpec(C) {
     let h = `<h2>④ 选材</h2><p class="hint">先在「② 房间」定好每个空间做什么，这里按空间类型统一选材料和选品：点一个选项，这一类空间都用它；某一间要不同，点「某间要不同」单独改。选项下面是换成它以后总价的变化，没想好的先按标准档估价。</p>${planBar()}`;
@@ -1383,6 +1397,7 @@
     if (b.hasAttribute('data-toall')) { tab = 'all'; render(); window.scrollTo(0, 0); return; }
     if (b.hasAttribute('data-tospec')) { tab = 'spec'; specGroup = null; render(); window.scrollTo(0, 0); return; }
     if (ds.specgroup) { tab = 'spec'; specGroup = ds.specgroup; render(); window.scrollTo(0, 0); return; }
+    if (ds.sdetail) { specDetail.has(ds.sdetail) ? specDetail.delete(ds.sdetail) : specDetail.add(ds.sdetail); render(); return; }
     if (ds.sone) { specOne.has(ds.sone) ? specOne.delete(ds.sone) : specOne.add(ds.sone); render(); return; }
     if (ds.splace) { P.rooms.filter(r => Q.roomGroup(r) === ds.sg && (r.packs || []).includes(ds.splace)).forEach(r => placeSet(plan(), r.id, ds.splace, ds.specCat, ds.specK, ds.specV)); render(); return; }
     if (ds.sstd !== undefined) {
