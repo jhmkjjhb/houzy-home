@@ -20,7 +20,9 @@ for (const [code, v] of Object.entries(context.QV2_MARKET_BOOK.items)) {
 }
 storage.set('houzy-quote-v2-pricebook', JSON.stringify({ items: { demo_floor: { mat: 0, aux: 0, lab: 1, waste: 0, unit: '平方尺' } }, options: {}, tiles: { 'tile.size.600×1200 mm.亮光': 112 } }));
 vm.runInNewContext(src('quote-v2-pricebook.js'), context);
-assert.ok(storage.get('houzy-quote-v2-pricebook-before-market-20261116'), '迁移旧价前应备份');
-assert.equal(context.QV2_PRICE.demo_floor.lab, 2.21, '首次启用时调查建议价优先于旧浏览器价');
+// 老板 11-16 决定：已保存的公司价不能被市场估价替换，估价只填没定过的项目
+assert.equal(context.QV2_PRICE.demo_floor.lab, 1, '公司已保存的价优先于市场估价');
+assert.ok(!context.QV2_PRICE.demo_floor.ref, '公司价不标参考价');
+assert.equal(context.QV2_PRICE.demo_wall.ref, true, '没定过的项目仍用市场估价并标参考价');
 assert.equal(context.QV2_TILE_PIECE_PRICES['tile.size.600×1200 mm.亮光'], 112, '瓷砖系统片价保持独立');
 console.log('PASS: market workbook overlay and migration');

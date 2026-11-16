@@ -131,23 +131,8 @@
   if (root.QV2_PRICE && root.localStorage) {
     root.QV2_OPTION_PRICES = root.QV2_OPTION_PRICES || {};
     root.QV2_TILE_PIECE_PRICES = root.QV2_TILE_PIECE_PRICES || {};
-    let b = load();
-    // 首次启用市场调查建议价时，备份旧浏览器价目表，并让新建议价优先生效。
-    // 之后员工手工保存的单项价格仍能覆盖建议价。
-    const market = root.QV2_MARKET_BOOK, migration = KEY + '-market-20261116';
-    if (b && market && !root.localStorage.getItem(migration)) {
-      try {
-        root.localStorage.setItem(KEY + '-before-market-20261116', JSON.stringify(b));
-        const items = Object.fromEntries(Object.entries(b.items || {}).filter(([code]) => !market.items[code]));
-        const options = {};
-        Object.entries(b.options || {}).forEach(([key, byCode]) => {
-          const keep = Object.fromEntries(Object.entries(byCode).filter(([code]) => !market.options[key]?.[code]));
-          if (Object.keys(keep).length) options[key] = keep;
-        });
-        const next = { ...b, items, options, info: { ...(b.info || {}), marketReference: '2026-11-16' } };
-        if (save(next)) { root.localStorage.setItem(migration, '1'); b = next; }
-      } catch (e) { /* localStorage 不可写时保留原价 */ }
-    }
+    // 市场调查建议价只是参考价（已在 quote-v2-market 里铺好）；公司已保存过的价格照常覆盖它，不会被建议价替换（老板 11-16 决定）
+    const b = load();
     if (b) { apply(b, root.QV2_PRICE, root.QV2_OPTION_PRICES, root.QV2_TILE_PIECE_PRICES); root.QV2_BOOK_INFO = b.info || null; }
   }
 })(typeof window !== 'undefined' ? window : globalThis);
