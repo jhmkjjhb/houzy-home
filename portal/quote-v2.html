@@ -645,6 +645,7 @@
   const cartOpen = {};
   // grp = true：按空间分组排，每组前面一个组名按钮（点了进「这一组一起选做法」）
   let groupId = null; const groupOff = new Set();
+  let roomPicked = false; // 全部完成后，只有点了某一间才打开那间
   function roomBar(list, curId, attr, sub, isDone, key, doneWord, grp) {
     if (grp) list = Q.sortRooms(list);
     const act = list.filter(x => !isDone(x) || x.id === curId), done = list.filter(x => isDone(x) && x.id !== curId);
@@ -714,6 +715,12 @@
     if (!room(roomId)) roomId = Q.sortRooms(P.rooms)[0].id;
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     const kin = Q.roomGroup(r), G = Q.SPACE_GROUPS.find(x => x.id === kin), nKin = P.rooms.filter(x => Q.roomGroup(x) === kin).length;
+    if (P.rooms.every(x => x.done) && !roomPicked) {
+      let h = roomBar(P.rooms, null, 'data-goroom', roomSub(C, bad), x => !!x.done, 'room', '已完成', true);
+      h += `<div class="card" style="text-align:center;padding:28px 16px"><div style="font-size:18px;font-weight:700;color:var(--ok)">${ic('check')} 全部 ${P.rooms.length} 间（室内 + 室外）要做什么都定好了</div><p class="hint" style="margin:8px 0 16px">要改哪一间，直接点下面的房间名。</p><button class="btn pri" data-toall>下一步：全屋项目 →</button></div>`;
+      h += `<div class="card"><table class="q"><tbody>${Q.sortRooms(P.rooms).map(x => `<tr><td><button class="x" style="text-decoration:underline" data-goroom="${x.id}">${esc(Q.roomLabel(x, P))}</button></td><td class="r mono">${roomTotal(C.lines, x.id) ? rm(roomTotal(C.lines, x.id)) : '不做'}</td></tr>`).join('')}</tbody></table></div>`;
+      return h;
+    }
     let h = roomBar(P.rooms, roomId, 'data-goroom', roomSub(C, bad), x => !!x.done, 'room', '已完成', true);
     // 全部房间都完成了还回到这里：提示去下一步，不让人以为还卡在这一间
     if (P.rooms.every(x => x.done)) h += `<div class="ok" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">${ic('check')} 全部 ${P.rooms.length} 间（室内 + 室外）要做什么都定好了 <button class="btn pri" data-toall>下一步：全屋项目 →</button></div>`;
@@ -1338,7 +1345,7 @@
       render(); return;
     }
     if (ds.demogo !== undefined) { demoIdx = +ds.demogo; window.scrollTo(0, 0); render(); return; }
-    if (ds.tab) { tab = ds.tab; confirmReset = false; render(); window.scrollTo(0, 0); return; }
+    if (ds.tab) { tab = ds.tab; confirmReset = false; roomPicked = false; render(); window.scrollTo(0, 0); return; }
     if (ds.house) {
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; P.layout = null; layoutConfirm = false; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
@@ -1354,7 +1361,7 @@
       if (!off && kind) ids.filter(t => (t.packs || []).includes(c) && !(t[OPEN[kind].list] || []).length).forEach(t => { t[OPEN[kind].list] = [OPEN[kind].def()]; if (kind === 'door') t.doors = 1; });
       render(); return;
     }
-    if (ds.goroom) { groupId = null; syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; render(); window.scrollTo(0, 0); return; }
+    if (ds.goroom) { groupId = null; syncPrompt = null; copyOpen = false; copyMsg = null; roomId = ds.goroom; tab = 'room'; roomPicked = true; render(); window.scrollTo(0, 0); return; }
     if (ds.addroom) { const n = P.rooms.filter(r => r.type === ds.addroom).length + 1; const r = Q.newRoom(ds.addroom, +ds.lv, n); P.rooms.push(r); render(); return; }
     if (b.hasAttribute('data-addlevel')) { const lv = Math.max(1, ...P.rooms.map(r => r.level || 1)) + 1; P.rooms.push(Q.newRoom('bedroom', lv, P.rooms.filter(r => r.type === 'bedroom').length + 1)); render(); return; }
     if (ds.delroom) { delete IMG.rooms[ds.delroom]; saveImg(); P.rooms = P.rooms.filter(r => r.id !== ds.delroom); P.extras = (P.extras || []).filter(x => x.roomId !== ds.delroom); roomId = P.rooms[0]?.id; render(); return; }
