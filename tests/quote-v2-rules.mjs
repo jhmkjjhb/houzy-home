@@ -121,6 +121,29 @@ ok('11-17 新增工艺：推拉门、玻璃隔断、轻钢龙骨隔墙、石材�
   assert.ok(tub('按摩浴缸') > tub('亚克力独立浴缸'), '按摩浴缸更贵');
 });
 
+ok('11-17 第二批工艺：每项都在对应空间可选、能算钱、标参考价；选项改变价格', () => {
+  const where = { wine_cab: 'dining', window_casing: 'bedroom', bay_window: 'master', tatami: 'bedroom', bar_counter: 'kitchen', soft_panel: 'master', mirror_wall: 'corridor', culture_stone: 'living', glass_block: 'bath', mosaic: 'bath', wall_mesh: 'living', floor_border: 'living', floor_raise: 'bath', floor_refinish: 'bedroom', decking: 'balcony', audio_wire: 'living', wall_core: 'kitchen', ro_filter: 'kitchen' };
+  Object.values(Q.ROOMS).forEach(t => t.packs.forEach(c => assert.ok(Q.PACKS[c], '房间引用了不存在的项目 ' + c)));
+  Object.entries(where).forEach(([pk, rt]) => {
+    assert.ok(Q.ROOMS[rt].packs.includes(pk), `${rt} 能选 ${pk}`);
+    const r = { ...Q.newRoom(rt, 1, 1), measured: true, packs: [pk], windows: [{ w: 4, h: 5 }] };
+    const L = Q.buildLines(project([r])).filter(l => l.roomId === r.id && l.pack === pk);
+    assert.ok(L.length && L.every(l => l.qty > 0 && l.unit > 0), pk + ' 有数量和单价');
+    assert.ok(L.some(l => l.ref.length), pk + ' 标参考价');
+  });
+  const p = project([], { house: { db_move: { on: true }, lv_box: { on: true }, hot_insul: { on: true, len: 40 }, formaldehyde: { on: true, area: 1000 } } });
+  const H = Q.buildLines(p);
+  ['db_move', 'lv_box', 'hot_insul', 'formaldehyde'].forEach(c => assert.ok(find(H, c)[0].total > 0, c));
+  // 选项：蹲厕比马桶便宜；衣柜移门比平开贵；折叠门是推拉门的一种；墙布是墙面做法的一种
+  const price = (room, pk, specs) => { const r = { ...Q.newRoom(room, 1, 1), measured: true, packs: [pk] }; const q = project([r], { plans: [{ id: 'A', specs, roomSpecs: {} }] }); return Q.buildLines(q).filter(l => l.roomId === r.id); };
+  const toilet = v => price('bath', 'sanitary', { craft: { toilet: v } }).find(l => l.code === 'toilet').unit;
+  assert.ok(toilet('蹲厕（含水箱）') < toilet('坐便马桶'));
+  const ward = v => price('bedroom', 'wardrobe', { cabinet: { wardrobeDoor: v } }).find(l => l.code === 'wardrobe').unit;
+  assert.ok(ward('推拉移门') > ward('平开门') && ward('开放式（无门）') < ward('平开门'));
+  assert.ok(Q.SPEC_CATS.door2.keys.slide.opts.includes('铝合金折叠门'));
+  assert.ok(price('bedroom', 'wall_finish', { wall: { method: '墙布' } }).some(l => l.code === 'wall_cloth'), '墙布出墙布项目');
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);

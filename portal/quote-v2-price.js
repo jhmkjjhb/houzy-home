@@ -166,6 +166,31 @@
     bathtub: { stage: 'equip', name: '浴缸（含龙头、下水、安装）', unit: '套', mat: 0, aux: 0, lab: 2200, waste: 0, ref: true, desc: '浴缸 + 龙头 + 下水，安装后放水试漏' },
     mop_sink: { stage: 'equip', name: '拖把池（含龙头）', unit: '个', mat: 0, aux: 0, lab: 380, waste: 0, ref: true, desc: '陶瓷拖把池 + 龙头，下水接驳，安装后试水' }
   });
+  // 2026-11-17 新增工艺（参考价，含材料和安装）
+  [['wine_cab', 'custom', '酒柜', '平方尺', 110, '按设计做酒格/吊杯架，可选玻璃门和柜内灯'],
+   ['window_casing', 'custom', '窗套', '延尺', 25, '窗洞四周找方，基层板 + 饰面/石材，收口打胶'],
+   ['bay_window', 'tile', '飘窗台面', '延尺', 80, '按飘窗实测下料，台面磨边，下方防水垫底，打胶收口'],
+   ['tatami', 'custom', '地台 / 榻榻米', '平方尺', 90, '龙骨/柜体框架，面板 + 储物格，按需做升降桌或抽屉'],
+   ['bar_counter', 'custom', '吧台（含柜体和台面）', '延尺', 450, '柜体 + 台面，预留插座和灯位'],
+   ['soft_panel', 'custom', '软包 / 硬包背景', '平方尺', 50, '木基层 + 海绵（软包）+ 布艺/皮革包面，分块安装'],
+   ['mirror_wall', 'custom', '镜面墙', '平方尺', 30, '防潮背板 + 防爆膜镜面，结构胶 + 机械固定'],
+   ['culture_stone', 'tile', '文化石墙', '平方尺', 28, '墙面拉毛，专用胶粘贴，勾缝，表面防护'],
+   ['glass_block', 'prep', '玻璃砖墙', '平方尺', 60, '玻璃砖专用砂浆砌筑，每层加钢筋，勾缝'],
+   ['mosaic', 'tile', '马赛克铺贴（含材料）', '平方尺', 30, '基层找平，专用胶贴，环氧或普通填缝'],
+   ['wall_mesh', 'ceil', '墙面挂网防裂', '平方尺', 2.5, '新旧墙交接、开槽处挂玻纤网/钢丝网，再批灰'],
+   ['floor_border', 'tile', '波打线 / 地面拼花', '延尺', 18, '按图切割拼铺，转角 45° 对角'],
+   ['floor_raise', 'tile', '地面垫高回填（每 4 寸）', '平方尺', 6, '分层回填压实，面层水泥砂浆找平'],
+   ['floor_refinish', 'tile', '旧木地板打磨翻新', '平方尺', 5, '机器粗磨到细磨，补缝，上漆/木蜡油 2-3 遍'],
+   ['decking', 'outdoor', '户外防腐木地板', '平方尺', 25, '龙骨架空，不锈钢螺丝固定，留缝排水，表面木油'],
+   ['audio_wire', 'mep', '音响线预埋', '个点位', 150, '音箱线穿管预埋到功放位，墙面留出线盒'],
+   ['wall_core', 'mep', '墙体开孔（水钻）', '个', 120, '水钻开孔，孔内加套管，外侧防雨封堵'],
+   ['ro_filter', 'equip', '厨下净水器（含安装）', '套', 1200, '接进水和废水，单独水龙头，试压无渗漏'],
+   ['db_move', 'mep', '配电箱移位', '项', 800, '拆装配电箱、延长主线、重新接回路并测试'],
+   ['lv_box', 'mep', '弱电箱（网络/电视/监控集中箱）', '项', 450, '弱电箱 + 网络模块，网络/电视/监控线集中接入'],
+   ['hot_insul', 'mep', '热水管保温', '延尺', 6, '热水管外包保温棉，减少热损失和冷凝水'],
+   ['formaldehyde', 'equip', '除甲醛 / 空气治理（含检测）', '平方尺', 1.5, '全屋喷涂治理剂，柜内重点处理，完工后检测出报告'],
+   ['wall_cloth', 'ceil', '墙布（代替乳胶漆）', '平方尺', 9, '墙面批平后上基膜，无缝墙布整幅粘贴']
+  ].forEach(([code, stage, name, unit, v, desc]) => { root.QV2_PRICE[code] = { stage, name, unit, mat: 0, aux: 0, lab: v, waste: 0, ref: true, desc }; });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
@@ -213,6 +238,13 @@
     'door2.slide.极窄边框（铝合金）': 40, 'door2.slide.木质移门（吊轨）': 10, 'door2.glass.长虹玻璃': 15, 'door2.glass.磨砂玻璃': 10,
     'door2.frame.黑色细框（工业风）': 25, 'door2.frame.无框': 15, 'door2.tub.砌台嵌入式（含砌台贴砖）': 30, 'door2.tub.按摩浴缸': 150,
     'tile.stone.大理石': 40, 'tile.stone.水磨石': -10, 'tile.solidWood.橡木': 20, 'tile.solidWood.柚木': 60,
+    'door2.slide.铝合金折叠门': 30, 'cabinet.wardrobeDoor.推拉移门': 10, 'cabinet.wardrobeDoor.开放式（无门）': -25,
+    'craft.toilet.蹲厕（含水箱）': -40, 'craft.casing.石材窗套': 40, 'craft.casing.铝合金/不锈钢窗套': 20, 'craft.bay.大理石': 30, 'craft.bay.石英石': 20,
+    'craft.tatami.地台 + 抽屉': 25, 'craft.tatami.榻榻米（带升降桌）': 40, 'craft.bar.岩板台面': 30, 'craft.bar.实木台面': 20,
+    'craft.softPanel.皮革软包': 40, 'craft.softPanel.硬包（木基层 + 布/皮）': 10, 'craft.mirror.茶镜/灰镜': 10, 'craft.mirror.车边银镜': 25,
+    'craft.stone.天然板岩': 40, 'craft.gblock.磨砂/彩色玻璃砖': 15, 'craft.mosaic.玻璃马赛克': 20, 'craft.mosaic.石材马赛克': 50,
+    'craft.border.石材波打线': 60, 'craft.border.水刀拼花': 200, 'craft.raise.砂浆砖渣回填': -20, 'craft.refinish.打磨 + 木蜡油': 20,
+    'craft.deck.樟子松防腐木': -30, 'craft.deck.WPC 塑木': -10, 'craft.core.排烟/排风孔（150 mm 以上）': 50, 'craft.purifier.超滤 UF（无废水）': -40,
     'soft.grade.经济': -40, 'soft.grade.高档': 80,
     'shower.glass.10 mm 钢化透明': 20, 'shower.glass.8 mm 钢化磨砂': 10, 'shower.glass.8 mm 长虹玻璃': 15, 'shower.frame.哑黑': 10, 'shower.frame.枪灰': 10, 'shower.frame.拉丝金': 20,
     'lighting.grade.防眩筒灯+射灯': 30
