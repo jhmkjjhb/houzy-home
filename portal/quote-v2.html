@@ -693,6 +693,8 @@
     const r = room(roomId), T = ROOMS[r.type], g = Q.geo(r, P), bad = badRooms(C.K);
     const kin = Q.roomGroup(r), G = Q.SPACE_GROUPS.find(x => x.id === kin), nKin = P.rooms.filter(x => Q.roomGroup(x) === kin).length;
     let h = roomBar(P.rooms, roomId, 'data-goroom', roomSub(C, bad), x => !!x.done, 'room', '已完成', true);
+    // 全部房间都完成了还回到这里：提示去下一步，不让人以为还卡在这一间
+    if (P.rooms.every(x => x.done)) h += `<div class="ok" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">${ic('check')} 全部 ${P.rooms.length} 间（室内 + 室外）要做什么都定好了 <button class="btn pri" data-tospec>下一步：选怎么做、用什么材料 →</button></div>`;
     h += `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:22px">${ic(T.icon)}</span><input class="cust" style="flex:1;font-weight:700;font-size:15px" data-rname="${r.id}" value="${esc(r.name)}">${G && nKin > 1 ? `<button class="btn" data-gogroup="${kin}">和其他${esc(G.label)}一起选（${nKin} 间）</button>` : ''}${P.rooms.length > 1 && r.packs.length ? '<button class="btn" data-copyopen>复制这间做法到…</button>' : ''}${P.rooms.some(x => x.id !== r.id && (x.level || 1) === (r.level || 1)) ? '<button class="btn" data-mergeopen>合并…</button>' : ''}<button class="btn warn" data-delroom="${r.id}">删除房间</button></div>
       ${mergeOpen === r.id ? `<div class="sync" style="margin-top:12px"><b>把哪一间并进「${esc(r.name)}」？</b><span class="hint">同一个空间被拆开时用（例如客厅、餐厅、干厨房之间没有墙）。面积相加，两间选的工程都保留，另一间会删掉。</span><div class="adds">${P.rooms.filter(x => x.id !== r.id && (x.level || 1) === (r.level || 1)).map(x => `<button class="chip" data-mergein="${x.id}">${esc(x.name)}</button>`).join('')}<button class="chip" data-mergeopen>取消</button></div></div>` : ''}
       ${HOUSES[P.houseType]?.landed && !T.outdoor ? `<div class="donebar"><button class="chip extchip ${r.ext ? 'on' : ''}" data-ext>${r.ext ? ic('check') + ' ' : ''}这间是加建部分（新建地基、墙、屋顶，按 ${nf(g.floor)} 平方尺算）</button>${r.ext ? `<span class="hint">结构 ${rm(C.lines.filter(l => l.roomId === r.id && l.code === 'extension').reduce((t, l) => t + l.total, 0))}，整单会加一次市政局申请</span>` : ''}</div>` : ''}
@@ -1361,6 +1363,7 @@
       render(); return;
     }
     if (ds.gospec) { tab = 'spec'; specGroup = Q.roomGroup(room(roomId)); render(); window.scrollTo(0, 0); return; }
+    if (b.hasAttribute('data-tospec')) { tab = 'spec'; specGroup = null; render(); window.scrollTo(0, 0); return; }
     if (ds.specgroup) { tab = 'spec'; specGroup = ds.specgroup; render(); window.scrollTo(0, 0); return; }
     if (ds.sone) { specOne.has(ds.sone) ? specOne.delete(ds.sone) : specOne.add(ds.sone); render(); return; }
     if (ds.splace) { P.rooms.filter(r => Q.roomGroup(r) === ds.sg && (r.packs || []).includes(ds.splace)).forEach(r => placeSet(plan(), r.id, ds.splace, ds.specCat, ds.specK, ds.specV)); render(); return; }
