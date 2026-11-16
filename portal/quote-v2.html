@@ -668,6 +668,11 @@
       h += `<h2>这组一起选材</h2><p class="hint">点一个选项，这组选了这项的房间都用它。没想好的可以先不点，按标准档估价。</p>`;
       mats.forEach(({ c, s, pl }) => {
         h += `<div class="card"><b style="font-size:15px">${ic(PACKS[c].icon)} ${esc(pl.label)}</b> <span class="desc">${s.have.length} 间</span>`;
+        // 整组都定了、而且各间一样：折叠成一行，点「修改」再展开
+        const vals = pl.keys.map(([cat, k]) => s.have.map(x => Q.specOf(P, x, cat, k, null, c)));
+        const done = vals.every(cur => cur.every(v => v.decided && v.v === cur[0].v)), ek = 'g:' + groupId + ':' + c;
+        if (done && !specExp.has(ek)) { h += foldBar(ek, vals.map(cur => esc(cur[0].v)).join(' · ')) + '</div>'; return; }
+        if (done) h += `<button class="btn" style="float:right" data-specexp="${ek}">收起</button>`;
         pl.keys.forEach(([cat, k]) => {
           const key = Q.SPEC_CATS[cat].keys[k], cur = s.have.map(x => Q.specOf(P, x, cat, k, null, c)), same = cur.every(v => v.v === cur[0].v && v.decided === cur[0].decided), std = Q.stdOf(key, s.have[0]);
           h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}${same ? (cur[0].decided ? '' : ' <span class="desc">· 未定，暂按标准档</span>') : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div><div class="adds" style="margin:0">${key.opts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-gplace="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}</button>`; }).join('')}</div></div>`;
@@ -816,15 +821,20 @@
     const d = Q.totals(clone, L).total - base;
     return `<span class="desc mono" style="color:${d > 0 ? 'var(--accent)' : d < 0 ? 'var(--ok)' : 'var(--ink-dim)'}">${d === 0 ? '不加价' : (d > 0 ? '+' : '−') + rm(Math.abs(d))}</span>`;
   }
+  // 已定的选材折叠成一行（选了什么一眼看到），点「修改」展开
+  const specExp = new Set();
+  const foldBar = (ek, summary, extra) => `<div class="adds" style="margin:8px 0 0;align-items:center"><span style="flex:1 1 200px;color:var(--navy);font-weight:600">${summary}</span><button class="btn" data-specexp="${ek}">修改</button>${extra || ''}</div>`;
   function placeCard(r, place, C) {
     const pk = PACKS[place.pack], ls = C.lines.filter(l => l.roomId === r.id && l.pack === place.pack);
     const main = ls.find(l => l.spec) || ls[0], same = P.rooms.filter(x => x.id !== r.id && (x.packs || []).includes(place.pack));
     let h = `<div class="card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:20px">${ic(pk.icon)}</span><b style="font-size:15px">${esc(place.label)}</b><span class="desc">${main ? `${esc(main.name)} ${nf(main.qty)} ${main.unitName}` : ''}</span><span class="desc" style="margin-left:auto;font-weight:600;color:${place.open ? 'var(--yellow)' : 'var(--ok)'}">${place.open ? '未定 · 暂按标准档估价' : '✓ 已定'}</span></div>`;
+    const ek = r.id + ':' + place.pack, copyBtn = same.length && !place.open ? `<button class="btn" data-place-copy="${place.pack}">同款用到其他 ${same.length} 个空间的「${esc(place.label)}」</button>` : '';
+    if (!place.open && !specExp.has(ek)) return h + foldBar(ek, place.keys.map(([cat, k]) => esc(Q.specOf(P, r, cat, k, null, place.pack).v)).join(' · '), copyBtn) + '</div>';
     place.keys.forEach(([cat, k]) => {
       const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, r, cat, k, null, place.pack), std = Q.stdOf(key, r);
       h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}</div><div class="adds" style="margin:0">${key.opts.map(o => `<button class="pack opt ${cur.decided && cur.v === o ? 'on' : ''}" data-place="${place.pack}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${cur.decided && cur.v === o ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${optDelta(r, place.pack, cat, k, o, C.T.total)}</button>`).join('')}</div></div>`;
     });
-    h += `<div class="adds" style="margin-top:10px">${place.open ? `<button class="btn okb" data-place-std="${place.pack}">没想好，先按标准档</button>` : ''}${same.length && !place.open ? `<button class="btn" data-place-copy="${place.pack}">同款用到其他 ${same.length} 个空间的「${esc(place.label)}」</button>` : ''}</div></div>`;
+    h += `<div class="adds" style="margin-top:10px">${place.open ? `<button class="btn okb" data-place-std="${place.pack}">没想好，先按标准档</button>` : ''}${copyBtn}${place.open ? '' : `<button class="btn" data-specexp="${ek}">收起</button>`}</div></div>`;
     return h;
   }
   let specRoomId = null;
@@ -1237,6 +1247,7 @@
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; P.layout = null; layoutConfirm = false; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
     }
+    if (ds.specexp) { specExp.has(ds.specexp) ? specExp.delete(ds.specexp) : specExp.add(ds.specexp); render(); return; }
     if (ds.gogroup) { groupId = ds.gogroup; syncPrompt = null; copyOpen = false; copyMsg = null; tab = 'room'; render(); window.scrollTo(0, 0); return; }
     if (ds.gsel) { groupOff.has(ds.gsel) ? groupOff.delete(ds.gsel) : groupOff.add(ds.gsel); render(); return; }
     if (ds.gpack) {
