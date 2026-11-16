@@ -318,7 +318,25 @@
 
   function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true, plans: [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }], planId: 'A', quoteMode: 'estimate', mig: { shower: 1 } }; }
   function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return Q.migrate({ ...blank(), ...x }); } catch (e) {} return blank(); }
-  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
+  // 自动备份：每次保存时，如果距上次备份超过 2 分钟，就存一份（最多 15 份），可在「① 户型」里恢复
+  const BAK = STORE + '-backups';
+  const backups = () => { try { return JSON.parse(localStorage.getItem(BAK) || '[]'); } catch (e) { return []; } };
+  const bakSummary = x => ({ rooms: (x.rooms || []).length, done: (x.rooms || []).filter(r => r.done).length, packs: (x.rooms || []).reduce((t, r) => t + (r.packs || []).length, 0) });
+  function backupNow(force) {
+    try {
+      const list = backups(), last = list[0];
+      if (!P.rooms.length || (!force && last && Date.now() - last.at < 120000)) return;
+      list.unshift({ at: Date.now(), data: JSON.stringify(P) });
+      localStorage.setItem(BAK, JSON.stringify(list.slice(0, 15)));
+    } catch (e) {}
+  }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} backupNow(); }
+  // 同一份报价开在两个窗口时：另一个窗口保存后，这里马上换成最新的，免得旧窗口一操作就把新内容盖掉
+  let syncNote = null;
+  window.addEventListener('storage', e => {
+    if (e.key !== STORE || !e.newValue) return;
+    try { const x = JSON.parse(e.newValue); if (x && Array.isArray(x.rooms)) { P = Q.migrate({ ...blank(), ...x }); syncNote = '这份报价在另一个窗口改过，这里已经换成最新内容。建议只开一个窗口做报价。'; render(); } } catch (err) {}
+  });
 
   // ---------- 平面图与房间照片：单独存，不放进报价数据（算价时会反复复制报价数据） ----------
   const IMG_STORE = 'houzy-quote-v2-images', ROOM_PHOTO_MAX = 2;
@@ -592,7 +610,8 @@
   // ---------- ① 户型 ----------
   function viewHouse(C) {
     const bad = badRooms(C.K);
-    let h = `<h2>① 选房屋类型</h2><p class="hint">选好后自动排出常见房间，按实际情况增删。点任何一个房间就进入该房间。</p><div class="houses">`;
+    const bl = backups();
+    let h = (syncNote ? `<div class="issue y" style="margin-bottom:10px"><b>已同步</b><span>${esc(syncNote)}</span></div>` : '') + `<h2>① 选房屋类型</h2><p class="hint">选好后自动排出常见房间，按实际情况增删。点任何一个房间就进入该房间。</p><div class="houses">`;
     h += Object.entries(HOUSES).map(([k, x]) => `<button class="house ${P.houseType === k ? 'on' : ''}" data-house="${k}"><b>${x.label}</b><span>${x.en}${x.landed ? ' · 有地' : ''}</span></button>`).join('') + '</div>';
     if (!P.houseType) return h;
     const levels = Math.max(HOUSES[P.houseType].levels, ...P.rooms.map(r => r.level || 1));
@@ -607,6 +626,8 @@
       <div class="adds">${Object.entries(ROOMS).filter(([k, t]) => !(t.outdoor || t.landed) || HOUSES[P.houseType].landed).map(([k, t]) => `<button class="chip" data-addroom="${k}" data-lv="${lv}">+ ${ic(t.icon)} ${t.label}</button>`).join('')}</div></div>`;
     }
     h += `<div class="adds noprint" style="margin-top:14px"><button class="btn" data-addlevel>+ 加一层</button></div>`;
+    // 自动备份：误操作或被旧窗口覆盖时，可以恢复到之前的版本
+    if (bl.length) h += `<h2>之前的版本（自动备份）</h2><p class="hint">每隔约 2 分钟自动存一份，最多 15 份，只存在这台电脑这个浏览器里。点「恢复」会先把当前内容也备份一份。</p><div class="card">${bl.map((b, i) => { const x = bakSummary(JSON.parse(b.data)); return `<div class="adds" style="margin:4px 0;align-items:center"><span style="flex:1 1 220px">${new Date(b.at).toLocaleString('zh-CN', { hour12: false })} · ${x.rooms} 间，${x.done} 间已完成，${x.packs} 个项目</span><button class="chip" data-restore="${i}">恢复这个版本</button></div>`; }).join('')}</div>`;
     return h;
   }
 
@@ -1397,6 +1418,10 @@
       render(); return;
     }
     if (ds.gospec) { tab = 'spec'; specGroup = Q.roomGroup(room(roomId)); render(); window.scrollTo(0, 0); return; }
+    if (ds.restore !== undefined) {
+      const b = backups()[+ds.restore]; if (!b) return;
+      backupNow(true); P = Q.migrate({ ...blank(), ...JSON.parse(b.data) }); roomId = P.rooms[0]?.id || null; syncNote = null; render(); window.scrollTo(0, 0); return;
+    }
     if (ds.feereset) { if (P.feeQty) delete P.feeQty[ds.feereset]; if (P.prices) delete P.prices[ds.feereset]; render(); return; }
     if (ds.waive) { P.waive = P.waive || {}; if (P.waive[ds.waive]) delete P.waive[ds.waive]; else P.waive[ds.waive] = true; render(); return; }
     if (b.hasAttribute('data-toall')) { tab = 'all'; render(); window.scrollTo(0, 0); return; }
