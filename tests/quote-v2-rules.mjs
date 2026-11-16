@@ -144,6 +144,16 @@ ok('11-17 第二批工艺：每项都在对应空间可选、能算钱、标参�
   assert.ok(price('bedroom', 'wall_finish', { wall: { method: '墙布' } }).some(l => l.code === 'wall_cloth'), '墙布出墙布项目');
 });
 
+ok('全屋定制柜做法：环保等级、门板造型、拉手、封边、背板、踢脚都能选，升级做法比标准贵，全部柜子通用', () => {
+  ['grade', 'doorStyle', 'handle', 'edge', 'back', 'top', 'kick'].forEach(k => assert.ok(Q.SPEC_CATS.cabinet.keys[k], k));
+  const unit = specs => { const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wardrobe'] }; return Q.buildLines(project([r], { plans: [{ id: 'A', specs: { cabinet: specs }, roomSpecs: {} }] })).find(l => l.code === 'wardrobe').unit; };
+  const std = unit({});
+  [['grade', 'ENF 级（无醛添加）'], ['doorStyle', '框式门（法式/美式线条）'], ['handle', '隐形拉手（铝合金嵌入）'], ['edge', 'PUR 激光封边（无缝）'], ['back', '18 mm 加厚背板']].forEach(([k, v]) => assert.ok(unit({ [k]: v }) > std, v + ' 比标准贵'));
+  assert.equal(unit({ top: '不到顶（上方留空）' }), std, '顶部收口只记录做法，不改单价（面积已按实际高度算）');
+  assert.ok(unit({ grade: 'ENF 级（无醛添加）', edge: 'PUR 激光封边（无缝）' }) > unit({ grade: 'ENF 级（无醛添加）' }), '多项升级叠加');
+  ['tv_cab', 'shoe_cab', 'wine_cab', 'cab_low'].forEach(c => assert.ok(Q.specKeysFor(c).some(([cat, k]) => cat === 'cabinet' && k === 'handle'), c + ' 也能选拉手'));
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);
