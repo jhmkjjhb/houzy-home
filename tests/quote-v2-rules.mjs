@@ -651,4 +651,14 @@ ok('天花做法：L-box 只做一圈、双层叠级两倍长度、格栅/铝扣
   r.vals = { ceiling: { pelmet: 12 } }; L = set('平顶'); assert.equal(q(L, 'pelmet'), 12, '窗帘盒按填的长度');
 });
 
+ok('收费里的自动杂项可以手动改数量和单价；清掉手动值就恢复自动算', () => {
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wall_finish'] };
+  const p = project([r]), w = () => Q.buildLines(p).find(l => l.code === 'waste_out');
+  const autoQty = w().qty;
+  p.feeQty = { waste_out: 4 }; p.prices = { waste_out: { mat: 0, aux: 0, waste: 0, lab: 300 } };
+  assert.equal(w().qty, 4); assert.equal(w().total, 1200); assert.match(w().formula, /手动填写/);
+  delete p.feeQty.waste_out; delete p.prices.waste_out;
+  assert.equal(w().qty, autoQty); assert.equal(w().unit, 350);
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

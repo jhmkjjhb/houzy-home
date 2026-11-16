@@ -485,7 +485,12 @@
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
     // 自动收的杂项：在「③ 全屋 → 收费」里逐项列出，员工可以对某单免收（project.waive）
-    const auto = (code, qty, f, from) => { if (!(project.waive || {})[code]) push(null, code, qty, f, from); };
+    // 数量可手动改（project.feeQty），单价可手动改（project.prices，和价目表改价同一处）
+    const auto = (code, qty, f, from) => {
+      if ((project.waive || {})[code]) return;
+      const mq = (project.feeQty || {})[code];
+      if (mq !== undefined && mq !== '') push(null, code, num(mq), `手动填写（自动算 ${r2(qty)}）`, from); else push(null, code, qty, f, from);
+    };
     if (anyWork) { auto('setout', 1, '每单必做', '全屋'); auto('protect', 1, '每单必做', '全屋'); }
     if (anyWork && HOUSES[project.houseType] && !HOUSES[project.houseType].landed) auto('permit', 1, '公寓有管理处，装修要先申请', '全屋');
     project.rooms.forEach(room => {
