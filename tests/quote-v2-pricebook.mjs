@@ -1,4 +1,5 @@
 // 价目表上传：为什么重要——老板填的价格必须真的进到报价里，填错的行不能悄悄吞掉。
+import assert from 'node:assert/strict';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const B = require('../portal/quote-v2-pricebook.js');
@@ -39,4 +40,14 @@ ok(OPT['cabinet.door.烤漆'].wardrobe.mat === 15, '价差合并进选材价');
 const bad = B.read('类型,编号,名称,单位,材料,辅料,人工,损耗%,说明\n项目单价,no_such,,,1,,,,\n项目单价,setout,,,abc,,,,\n项目单价,protect,,,-1,,,,', PRICE);
 ok(bad.errors.length === 3, '编号不存在、非数字、负单价都要报错 ' + bad.errors.join(';'));
 ok(B.read('a,b\n1,2', PRICE).errors.length === 1, '表头不对要报错');
+
+{
+  // 旧价目表里「成品保护」是按「项」填的总价；改成按平方尺后不能再套用，否则 2,000 平方尺 × 250 = 50 万
+  const price = { protect: { unit: '平方尺', mat: 0, aux: 0, lab: 0, unpriced: true }, setout: { unit: '项', mat: 0, aux: 0, lab: 150 } };
+  B.apply({ items: { protect: { mat: 250, aux: 50, lab: 200, waste: 0 }, setout: { mat: 0, aux: 0, lab: 500, waste: 0 } } }, price, {});
+  assert.equal(price.protect.mat, 0); assert.ok(price.protect.unpriced, '旧单位的价不套用');
+  assert.equal(price.setout.lab, 500, '单位没变的照常套用');
+  B.apply({ items: { protect: { mat: 0, aux: 0, lab: 0.3, waste: 0, unit: '平方尺' } } }, price, {});
+  assert.equal(price.protect.lab, 0.3, '按新单位填的价可以用');
+}
 console.log(`PASS: ${n} pricebook checks`);

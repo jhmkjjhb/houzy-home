@@ -73,18 +73,21 @@
       } else {
         if (!price[id]) { out.errors.push(`第 ${line} 行没有这个项目编号：${id}`); return; }
         if ((vals['材料'] || 0) < 0 || (vals['辅料'] || 0) < 0 || (vals['人工'] || 0) < 0) { out.errors.push(`第 ${line} 行项目单价不能是负数`); return; }
-        out.items[id] = { mat: vals['材料'] || 0, aux: vals['辅料'] || 0, lab: vals['人工'] || 0, waste: vals['损耗%'] || 0 };
+        out.items[id] = { mat: vals['材料'] || 0, aux: vals['辅料'] || 0, lab: vals['人工'] || 0, waste: vals['损耗%'] || 0, unit: price[id].unit };
       }
     });
     return out;
   }
 
   // 把价目表合并进价格对象（原地修改，计算规则持有同一个对象）
+  const UNIT_CHANGED = { protect: true };
   function apply(book, price, optPrices) {
     if (!book) return;
     Object.entries(book.items || {}).forEach(([code, v]) => {
       if (!price[code]) return;
-      Object.assign(price[code], v);
+      // 计价单位改过的项目（如成品保护 项 → 平方尺），旧价目表里按旧单位填的价不能套用，否则会按平方尺乘出天价
+      if (v.unit ? v.unit !== price[code].unit : UNIT_CHANGED[code]) return;
+      Object.assign(price[code], { mat: v.mat, aux: v.aux, lab: v.lab, waste: v.waste });
       if (v.mat + v.aux + v.lab > 0) delete price[code].unpriced;
     });
     Object.entries(book.options || {}).forEach(([k, byCode]) => { optPrices[k] = { ...(optPrices[k] || {}), ...byCode }; });
