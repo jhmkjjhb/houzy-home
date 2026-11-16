@@ -64,6 +64,26 @@ ok('范围只选「地面翻新」；材料在选材层定：瓷砖和地板只�
   assert.equal(qty(L, 'laminate'), 110);
 });
 
+ok('公司还没定价的项目和规格先按参考价算进总价，但要标出来提醒核定', () => {
+  const p = project([], { house: { three_phase: { on: true } } });
+  let L = Q.buildLines(p);
+  assert.ok(find(L, 'three_phase')[0].total > 0, '参考价计入总价，不是 0');
+  assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('参考价')), '提醒用了参考价');
+  assert.ok(!Q.checks(p, L, 'formal').red.some(x => /价/.test(x.m)), '参考价不挡正式报价');
+  p.prices = { three_phase: { lab: 2800 } };
+  L = Q.buildLines(p);
+  assert.ok(!find(L, 'three_phase')[0].ref.length, '本单自己填了价就不算参考价');
+  // 规格：客户选 800×800，公司没填价差 → 按参考百分比比 600×600 贵，并标参考价
+  const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
+  const p2 = project([r]);
+  const std = find(Q.buildLines(p2), 'floor_tile')[0].unit;
+  p2.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '800×800 mm' } }, roomSpecs: {} }];
+  const l = find(Q.buildLines(p2), 'floor_tile')[0];
+  assert.ok(l.unit > std, '大规格比标准贵');
+  assert.deepEqual(l.priceTbd, [], '有参考价就不是价差待定');
+  assert.ok(l.ref.some(x => x.includes('800×800')));
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);
@@ -118,6 +138,9 @@ ok('没确认尺寸：正式报价拦住，预估只提醒；窗户没填完、�
 });
 
 ok('价格待核定的项目：没填价格就拦住，本单填了就放行', () => {
+  const keep = { ...Q.PRICE.three_phase };
+  Object.assign(Q.PRICE.three_phase, { mat: 0, aux: 0, lab: 0, unpriced: true }); delete Q.PRICE.three_phase.ref;
+  try {
   const p = project([], { house: { three_phase: { on: true } } });
   assert.ok(Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('单价待公司核定')));
   assert.ok(Q.checks(p, Q.buildLines(p), 'estimate').yellow.some(x => x.m.includes('暂未计入总价')), '预估时提醒但不拦');
@@ -125,6 +148,7 @@ ok('价格待核定的项目：没填价格就拦住，本单填了就放行', (
   const L = Q.buildLines(p);
   assert.equal(find(L, 'three_phase')[0].total, 2500);
   assert.ok(!Q.checks(p, L).red.some(x => x.m.includes('单价待公司核定')));
+  } finally { Object.keys(Q.PRICE.three_phase).forEach(k => delete Q.PRICE.three_phase[k]); Object.assign(Q.PRICE.three_phase, keep); }
 });
 
 ok('单价 = 主材×(1+损耗) + 辅材 + 人工，与旧版报价器一致', () => {
@@ -155,12 +179,12 @@ ok('可改实际施工面积：旧地砖只铺一半就只拆一半；地砖改�
   assert.ok(Q.checks(project([r]), Q.buildLines(project([r]))).yellow.some(x => x.m.includes('大于房间地面')));
 });
 
-ok('定制柜按正面面积 = 宽 × 高；单价未定前拦住出单', () => {
+ok('定制柜按正面面积 = 宽 × 高；公司没定价前先按参考价算，并提醒核定', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['wardrobe'], vals: { wardrobe: { w: 9, h: 8 } } };
   const p = project([r]); const L = Q.buildLines(p);
   assert.equal(Q.PRICE.wardrobe.unit, '平方尺');
   assert.equal(qty(L, 'wardrobe'), 72);
-  assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('衣柜定制')));
+  assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('参考价') && x.m.includes('衣柜定制')));
   p.prices = { wardrobe: { lab: 60 } };
   assert.equal(find(Q.buildLines(p), 'wardrobe')[0].total, 72 * 60);
 });
@@ -197,6 +221,9 @@ ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
 });
 
 ok('换了非标准选项但公司还没登记价差：标记价差待定，正式报价拦住；登记后按价差加价', () => {
+  // 这里测「既没有公司价差、也没有参考价」的选项
+  const refKeep = Q.OPTION_REF['tile.floorSize.600×1200 mm']; delete Q.OPTION_REF['tile.floorSize.600×1200 mm'];
+  try {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×1200 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }] });
   let line = find(Q.buildLines(p), 'floor_tile')[0];
@@ -208,6 +235,7 @@ ok('换了非标准选项但公司还没登记价差：标记价差待定，正�
   assert.equal(line.priceTbd.length, 0);
   assert.equal(line.unit, Math.round((Q.unitPrice('floor_tile') + 3) * 100) / 100);
   delete Q.OPTION_PRICES['tile.floorSize.600×1200 mm'];
+  } finally { Q.OPTION_REF['tile.floorSize.600×1200 mm'] = refKeep; }
 });
 
 ok('大板砖（750×1500 以上）自动加大板铺贴加价', () => {
@@ -439,7 +467,7 @@ ok('楼梯：踏步、扶手、楼梯灯都能报', () => {
   assert.equal(qty(L, 'stair_tread'), 18); assert.equal(qty(L, 'stair_rail'), 15); assert.equal(qty(L, 'stair_light'), 2);
 });
 
-ok('客厅可以选神龛：按正面宽×高的平方尺计，单价待公司核定（不乱填价）', () => {
+ok('客厅可以选神龛：按正面宽×高的平方尺计，公司没定价前用参考价', () => {
   assert.ok(Q.ROOMS.living.packs.includes('altar'), '客厅有神龛选项');
   const lv = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['altar'], vals: { altar: { w: 4, h: 7 } } };
   const l = Q.buildLines(project([lv])).find(x => x.code === 'altar_cab');
@@ -544,7 +572,7 @@ ok('浴室柜：每间按自己的尺寸列出；整组可一起选定制和材�
   assert.ok(c0 && Math.abs(c0.qty - 120 / 30.48) < 0.01, '定制按柜宽（延尺）算');
   assert.ok(!L.some(l => l.code === 'vanity'), '选了定制就不再算成品柜');
   assert.ok(c0.spec.includes('铝合金'), '材质写进报价单');
-  assert.ok(c0.unpriced, '定制浴室柜单价待公司核定，不能悄悄按 0 算');
+  assert.ok(!c0.unpriced && c0.unit > 0 && c0.ref.length, '定制浴室柜公司没定价前按参考价算并标参考价，不能悄悄按 0 算');
 });
 
 ok('淋浴区：每间尺寸和做法可不同；淋浴盘、L 型隔断、浴帘按选的做法出项目；旧报价迁移后隔断不丢', () => {
@@ -605,7 +633,7 @@ ok('楼梯：踏步做法、栏杆做法、踏步灯按选的出项目；没改�
   assert.ok(codes().includes('stair_wood') && codes().includes('stair_wood_land') && !codes().includes('stair_tread'), '实木踏板不再算瓷砖');
   assert.ok(codes().includes('rail_glass') && !codes().includes('stair_rail'));
   assert.equal(L.find(l => l.code === 'led_strip').qty, 64, '灯带 = 16 级 × 4 尺');
-  assert.ok(L.find(l => l.code === 'stair_wood').unpriced, '实木踏板等公司定价，不按 0 算');
+  { const w = L.find(l => l.code === 'stair_wood'); assert.ok(w.unit > 0 && w.ref.length, '实木踏板公司没定价前按参考价，不按 0 算'); }
 });
 
 ok('阳台按墙面算的项目要现场确认墙面面积，填了才放行；其他房间不受影响', () => {
@@ -628,7 +656,7 @@ ok('阳台阳光棚只算顶；阳光房算顶 + 玻璃围合（长 × 高），
   L = Q.buildLines(p);
   assert.equal(L.find(l => l.code === 'sunroom_wall').qty, 312, '围合 39 尺 × 高 8 尺');
   const roof = L.find(l => l.code === 'awning');
-  assert.ok(roof.spec.includes('夹胶钢化玻璃') && roof.priceTbd.length, '换玻璃顶要标价差待定，不能按阳光板价算');
+  assert.ok(roof.spec.includes('夹胶钢化玻璃') && roof.unit > Q.unitPrice('awning') && roof.ref.length, '换玻璃顶不能按阳光板价算：公司没定价差前按参考价加价并标参考价');
 });
 
 ok('车廊上的棚叫车棚：旧报价的「雨棚」迁移成车棚，面积和价钱不变；和全屋雨棚同时选会提示重复', () => {

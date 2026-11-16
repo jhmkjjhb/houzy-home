@@ -159,5 +159,45 @@
   // 例：'tile.floorSize.600×1200 mm': { floor_tile: { mat: 2, lab: 0.5 } }
   root.QV2_OPTION_PRICES = {};
   root.QV2_STAGES = [{"id":"prep","no":1,"name":"拆改与现场保护"},{"id":"mep","no":2,"name":"水电隐蔽"},{"id":"wp","no":3,"name":"防水"},{"id":"tile","no":4,"name":"泥水瓷砖 / 地面"},{"id":"ceil","no":5,"name":"天花墙面"},{"id":"custom","no":6,"name":"定制柜与门窗"},{"id":"equip","no":7,"name":"设备安装与收尾"},{"id":"outdoor","no":8,"name":"户外与外围工程"},{"id":"soft","no":9,"name":"软装"}];
-  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES };
+  // ---------- 参考价（公司还没核定的项目先有个价，报价单和价目表都标「参考价」）----------
+  // 来源：2025-2026 新山 / 马来西亚公开报价（Qanvast、RenovationKL、承包商报价、家具店）取中间偏下，含工含料卖价。公司核定后在价目表里改掉即可。
+  const REF_ITEMS = {
+    protect: 0.5, reno_permit: 1500, wardrobe: 95, shoe_cab: 100, tv_cab: 80, three_phase: 2500, main_pipe: 25, water_filter: 1800, sewer: 1500,
+    garden_light: 150, downpipe: 18, laundry_cab: 90, sideboard: 95, headboard: 60, bookcase: 85, desk: 1200,
+    hw_spice: 280, hw_corner: 1200, hw_tall: 1500, hw_lift: 900, hw_rack: 250, hw_bin: 250, hw_cutlery: 80, hw_rice: 280, hw_flap: 120,
+    whw_pants: 220, whw_basket: 200, whw_lift: 450, whw_mirror: 350, whw_jewel: 280, whw_shoe: 200, whw_safe: 250,
+    altar_cab: 120, shower_tray: 650, screen_l: 1500, screen_diamond: 2000, curtain_rod: 150, niche: 350, tile_border: 20,
+    stair_wood: 300, stair_wood_land: 35, stair_stone: 220, stair_stone_land: 30, stair_paint: 60, stair_paint_area: 6,
+    rail_glass: 280, rail_iron: 180, rail_wood: 250, rail_black: 150, rail_alu: 160, stair_steplight: 120, stair_steplight_sensor: 160,
+    sunroom_wall: 45, termite: 1.2, roro_bin: 450, car_insurance: 600, ceil_slat: 28, ceil_alu: 12, ceil_curve: 25,
+    sf_sofa: 3500, sf_coffee: 800, sf_side: 350, sf_rug: 600, sf_pendant: 600, sf_art: 250, sf_fan: 650, sf_dining: 3000, sf_bed: 3500,
+    sf_night: 350, sf_dresser: 900, sf_bedding: 450, sf_lamp: 300, sf_desk: 1000, sf_shelf: 500, sf_outdoor: 1800, sf_umbrella: 600, sf_plant: 120,
+    vanity_custom: 450
+  };
+  Object.entries(REF_ITEMS).forEach(([code, v]) => {
+    const p = root.QV2_PRICE[code]; if (!p || !p.unpriced) return;
+    Object.assign(p, { mat: 0, aux: 0, lab: v, waste: 0, ref: true }); delete p.unpriced;
+  });
+  // 选材参考价差：比标准规格贵（+）/便宜（−）百分之几，按当时的标准价算，所以标准价改了会跟着变。公司填了具体价差就用公司的。
+  root.QV2_OPTION_REF = {
+    'tile.floorSize.300×600 mm': 0, 'tile.floorSize.800×800 mm': 10, 'tile.floorSize.600×1200 mm': 25, 'tile.floorSize.750×1500 mm': 30, 'tile.floorSize.900×1800 mm': 45, 'tile.floorSize.1200×1200 mm': 40,
+    'tile.wallSize.600×600 mm': 5, 'tile.wallSize.600×1200 mm': 25, 'tile.wallSize.750×1500 mm': 35,
+    'tile.woodGrade.加厚 8 mm': 20, 'tile.woodGrade.多层实木复合': 80,
+    'wall.brand.Dulux': 5, 'wall.brand.Jotun': 10, 'wall.base.新墙满批': 60, 'wall.base.铲除旧漆重做': 100,
+    'ceiling.board.普通石膏板': 0, 'ceiling.board.防潮石膏板': 10, 'ceiling.board.硅酸钙板': 25,
+    'ceiling.slat.WPC 木塑格栅': 15, 'ceiling.slat.实木格栅': 60, 'ceiling.alu.300×600 mm': 5, 'ceiling.alu.条形扣板': 15,
+    'cabinet.body.防潮颗粒板': -15, 'cabinet.body.铝合金': 25, 'cabinet.door.PET': 10, 'cabinet.door.烤漆': 30, 'cabinet.door.木皮': 40,
+    'cabinet.hardware.Blum': 20, 'cabinet.hardware.Hettich': 15, 'cabinet.hardware.悍高（HIGOLD）': 8, 'cabinet.hardware.DTC（东泰）': 5, 'cabinet.light.感应灯带': 10,
+    'cabinet.counter.岩板': 40, 'cabinet.counter.花岗岩': -10,
+    'vanity.body.铝合金': 15, 'vanity.body.防潮多层实木板': 20, 'vanity.top.石英石台面 + 台下盆': 40, 'vanity.top.岩板台面 + 台下盆': 60, 'vanity.mirror.LED 智能镜': 150, 'vanity.mirror.镜柜': 120,
+    'stairs.wood.柚木': 60, 'stairs.wood.橡木': 30, 'stairs.wood.实木复合': -20, 'stairs.stone.大理石': 40, 'stairs.stone.水磨石': 10,
+    'stairs.paint.地坪漆': 20, 'stairs.paint.彩色水泥漆': 0, 'stairs.nosing.开防滑槽': 0, 'stairs.nosing.不做': -10,
+    'canopy.roof.夹胶钢化玻璃': 80, 'canopy.roof.铝合金隔热板（三明治板）': 25, 'canopy.roof.金属浪板（Metal Deck）': -30, 'canopy.roof.铝合金百叶（可调）': 150,
+    'canopy.frame.铝合金': 10, 'canopy.frame.不锈钢': 40, 'canopy.wall.铝合金折叠门': 20, 'canopy.wall.固定玻璃 + 部分推拉': 0, 'canopy.wall.无框玻璃': 30,
+    'canopy.glass.8 mm 钢化透明': 10, 'canopy.glass.夹胶玻璃': 30, 'canopy.glass.隔热 Low-E 玻璃': 50, 'canopy.glass.茶色/灰色钢化玻璃': 5,
+    'soft.grade.经济': -40, 'soft.grade.高档': 80,
+    'shower.glass.10 mm 钢化透明': 20, 'shower.glass.8 mm 钢化磨砂': 10, 'shower.glass.8 mm 长虹玻璃': 15, 'shower.frame.哑黑': 10, 'shower.frame.枪灰': 10, 'shower.frame.拉丝金': 20,
+    'lighting.grade.防眩筒灯+射灯': 30
+  };
+  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES, OPTION_REF: root.QV2_OPTION_REF };
 })(typeof window !== "undefined" ? window : globalThis);

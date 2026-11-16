@@ -5,6 +5,8 @@ const require = createRequire(import.meta.url);
 const B = require('../portal/quote-v2-pricebook.js');
 const src = require('../portal/quote-v2-price.js');
 const PRICE = JSON.parse(JSON.stringify(src.PRICE)), OPT = {};
+// 三相电现在有参考价；这里把它当成「公司还没给价」的项目来测上传流程
+Object.assign(PRICE.three_phase, { mat: 0, aux: 0, lab: 0, unpriced: true }); delete PRICE.three_phase.ref;
 let n = 0; const ok = (c, m) => { if (!c) { console.error('FAIL:', m); process.exit(1); } n++; };
 
 const csv = B.template(PRICE, globalThis.QV2_SPEC_CATS || require('../portal/quote-v2-rules.js').SPEC_CATS, OPT);
@@ -60,5 +62,11 @@ ok(B.read('a,b\n1,2', PRICE).errors.length === 1, '表头不对要报错');
   const p2 = { laminate: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 }, wood_floor: { unit: '平方尺', mat: 5.5, aux: 0, lab: 0 } };
   B.apply({ items: { laminate: { mat: 8, aux: 1, lab: 2, waste: 5, unit: '平方尺' }, wood_floor: { mat: 12, aux: 1, lab: 2, waste: 5, unit: '平方尺' } } }, p2, {});
   assert.equal(p2.wood_floor.mat, 12, '木地板单独定过价就用自己的');
+}
+{
+  // 参考价只是先顶着用：公司在价目表填了价，就不再标参考价
+  const price = { termite: { unit: '平方尺', mat: 0, aux: 0, lab: 1.2, waste: 0, ref: true } };
+  B.apply({ items: { termite: { mat: 0, aux: 0, lab: 1.5, waste: 0, unit: '平方尺' } } }, price, {});
+  assert.equal(price.termite.lab, 1.5); assert.ok(!price.termite.ref, '公司价覆盖参考价');
 }
 console.log(`PASS: ${n} pricebook checks`);

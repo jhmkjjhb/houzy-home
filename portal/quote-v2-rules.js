@@ -9,6 +9,7 @@
   const P = root.QV2_PRICE || src.PRICE;
   const STAGES = root.QV2_STAGES || src.STAGES;
   const OPTION_PRICES = root.QV2_OPTION_PRICES || (src && src.OPTION_PRICES) || {};
+  const OPTION_REF = root.QV2_OPTION_REF || (src && src.OPTION_REF) || {};
   const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
   const r2 = n => Math.round(n * 100) / 100;
   const ceil = Math.ceil;
@@ -472,7 +473,8 @@
   function pricedLine(project, room, code, pack, planId) {
     const p = { ...P[code], ...((project.prices && project.prices[code]) || {}) };
     let mat = num(p.mat) * (1 + num(p.waste) / 100), aux = num(p.aux), lab = num(p.lab);
-    const spec = [], tbdKeys = [], priceTbd = [];
+    const base = mat + aux + lab, spec = [], tbdKeys = [], priceTbd = [], ref = [];
+    if (P[code].ref && !(project.prices && project.prices[code])) ref.push(P[code].name);
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
       const s = specOf(project, room, cat, k, planId, pack);
       spec.push(s.v);
@@ -482,9 +484,11 @@
       if (mod && mod.matZero) { mat = 0; return; }
       const add = OPTION_PRICES[`${cat}.${k}.${s.v}`]?.[code];
       if (add) { mat += num(add.mat); aux += num(add.aux); lab += num(add.lab); }
+      // 公司没填价差：有参考百分比就先按参考价算，并标「参考价」
+      else if (OPTION_REF[`${cat}.${k}.${s.v}`] !== undefined) { mat += base * OPTION_REF[`${cat}.${k}.${s.v}`] / 100; ref.push(`${key.label}：${s.v}`); }
       else priceTbd.push(`${key.label}：${s.v}`);
     });
-    return { unit: r2(mat + aux + lab), lab: r2(lab), spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd };
+    return { unit: r2(mat + aux + lab), lab: r2(lab), spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd, ref };
   }
   const roomLabel = (room, project) => (levelsOf(project) > 1 ? `${room.level || 1}楼 · ` : '') + room.name;
   const levelsOf = project => Math.max(1, ...project.rooms.map(r => r.level || 1));
@@ -494,10 +498,10 @@
     const push = (room, code, qty, formula, from, pack, item) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
-      let unit, lab = 0, spec = '', tbd = [], priceTbd = [];
+      let unit, lab = 0, spec = '', tbd = [], priceTbd = [], ref = [];
       if (item) unit = r2(num(item.price));
-      else ({ unit, lab, spec, tbd, priceTbd } = pricedLine(project, room, code, pack, planId));
-      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), spec, tbd, priceTbd, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
+      else ({ unit, lab, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));
+      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), spec, tbd, priceTbd, ref, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
       // 赠送：这间这一项照常列出、写明原价，但不收钱
       const last = lines[lines.length - 1];
       // 送产品不送人工：材料+辅料（含损耗）免收，人工安装照收
@@ -651,6 +655,9 @@
     const tbdPrice = {};
     lines.forEach(l => l.priceTbd.forEach(x => { tbdPrice[x] = 1; }));
     Object.keys(tbdPrice).forEach(x => (mode === 'formal' ? red : yellow).push({ m: `选了「${x}」，价差待公司核定${mode === 'formal' ? '' : '（暂按标准价算）'}`, go: 'price' }));
+    // 参考价：能出报价，但提醒这些价公司还没核定
+    const refs = [...new Set(lines.flatMap(l => l.ref || []))];
+    if (refs.length) yellow.push({ m: `有 ${refs.length} 项用的是参考价（公司还没核定）：${refs.slice(0, 6).join('、')}${refs.length > 6 ? ' 等' : ''}`, go: 'price' });
     return { red, yellow };
   }
 
@@ -757,7 +764,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116l"></script>
+<script src="quote-v2-price.js?v=20261116m"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
-<script src="quote-v2-pricebook.js?v=20261116b"></script>
-<script src="quote-v2-rules.js?v=20261116v"></script>
+<script src="quote-v2-pricebook.js?v=20261116c"></script>
+<script src="quote-v2-rules.js?v=20261116w"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -1092,10 +1092,11 @@
     const B = window.QV2_BOOK, info = window.QV2_BOOK_INFO;
     const rows = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).slice(1);
     const itemsLeft = rows.filter(r => r[0] === '项目单价' && r[4] === '').length;
+    const refN = rows.filter(r => r[0] === '项目单价' && PRICE[r[1]].ref).length + rows.filter(r => r[0] === '选材价差' && [4, 5, 6].every(i => r[i] === '') && Q.OPTION_REF[r[1].split('@')[0]] !== undefined).length;
     const optAll = rows.filter(r => r[0] === '选材价差'), optLeft = optAll.filter(r => r[4] === '' && r[5] === '' && r[6] === '').length;
     let h = `<div class="card"><h2>公司价目表</h2>
       <p class="hint">所有报价单的单价和选材价差都从这里来。改价格的方法：下载模板 → 用 Excel 填好 → 上传。</p>
-      <div class="bookStat"><div><b class="mono">${itemsLeft}</b><span>个项目还没有单价</span></div><div><b class="mono">${optLeft}</b><span>/ ${optAll.length} 个选材价差还没填</span></div></div>
+      <div class="bookStat"><div><b class="mono">${itemsLeft}</b><span>个项目还没有单价</span></div><div><b class="mono">${optLeft}</b><span>/ ${optAll.length} 个选材价差还没填</span></div><div><b class="mono" style="color:var(--yellow)">${refN}</b><span>个用的是参考价，等公司核定</span></div></div>
       ${info ? `<p class="hint">已上传：${esc(info.file)} · ${esc(info.at)} · ${info.items} 个单价、${info.options} 个价差</p>` : '<p class="hint">还没上传过，现在用的是系统自带的参考价。</p>'}
       <div class="row"><button class="btn pri" data-book="dl">下载价格模板</button>
       <label class="btn">上传填好的价格<input type="file" accept=".csv,text/csv" data-bookfile hidden></label>
@@ -1138,16 +1139,20 @@
     return n.some(x => !Number.isFinite(x)) ? null : n[0] * (1 + n[3] / 100) + n[1] + n[2];
   }
   // 规格的合计单价：改过就用改的；没改且已有价差 = 原标准价 + 价差
-  function bkOptAbs(id, r) {
+  // 规格没填价差、但有参考百分比
+  const bkOptRef = (id, r) => [4, 5, 6].every(i => r[i] === '') && Q.OPTION_REF[id.split('@')[0]] !== undefined && !(bookDraft[id] && bookDraft[id].tot !== undefined);
+  const REFTAG = '<span class="desc" style="color:var(--yellow);font-weight:700"> 参考价</span>';
+  function bkOptAbs(id, r, useRef = true) {
     const d = bookDraft[id] && bookDraft[id].tot;
     if (d !== undefined) return d;
+    if (useRef && bkOptRef(id, r)) { const std = bkStdTot(bkOptCode(id)); return std == null ? '' : String(Math.round(std * (1 + Q.OPTION_REF[id.split('@')[0]] / 100) * 10000) / 10000); }
     if ([4, 5, 6].every(i => r[i] === '')) return '';
     const std = bkStdTot(bkOptCode(id), false);
     return std == null ? '' : String(Math.round((std + [4, 5, 6].reduce((t, i) => t + (Number(r[i]) || 0), 0)) * 100) / 100);
   }
   function bookEditor(rows) {
     bkRows = rows;
-    const filters = [['unpriced', '只看没定价的'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '有规格的项目']];
+    const filters = [['unpriced', '只看没核定的（含参考价）'], ['all', '全部项目'], ...STAGES.map(st => [st.id, st.no + '. ' + st.name]), ['opt', '有规格的项目']];
     const items = rows.filter(r => r[0] !== '选材价差'), opts = rows.filter(r => r[0] === '选材价差');
     const optSet = o => [4, 5, 6].some(i => o[i] !== '');
     const q = bookQ.toLowerCase(), hit = r => !q || (r[2] + r[1]).toLowerCase().includes(q);
@@ -1158,7 +1163,7 @@
       if (bookFilter === 'opt' && !kids.length) return;
       if (bookFilter === 'unpriced') kids = kids.filter(o => !optSet(o));
       const selfHit = hit(r); if (!selfHit) kids = kids.filter(hit);
-      if (!(selfHit && (bookFilter !== 'unpriced' || r[4] === '')) && !kids.length) return;
+      if (!(selfHit && (bookFilter !== 'unpriced' || r[4] === '' || PRICE[r[1]].ref)) && !kids.length) return;
       list.push(r, ...kids);
     });
     const n = Object.keys(bookDraft).length;
@@ -1172,7 +1177,7 @@
       const id = r[1];
       if (r[0] === '选材价差') {
         const o = bkOptInfo(id), d = bookDraft[id] && bookDraft[id].tot !== undefined;
-        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b></td><td class="bkunit">${esc(bkUnit(r[3]))}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${esc(bkShow(bkOptAbs(id, r), r[3]))}" placeholder="待定"></td></tr>`;
+        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b>${bkOptRef(id, r) ? REFTAG : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${esc(bkShow(bkOptAbs(id, r), r[3]))}" placeholder="待定"></td></tr>`;
       }
       const stds = opts.some(o => bkOptCode(o[1]) === id) ? [...new Set(opts.filter(o => bkOptCode(o[1]) === id).map(o => { const x = bkOptInfo(o[1]); return `${x.key.label} ${x.std}`; }))] : [];
       const cells = BK_F.map(([f], j) => {
@@ -1180,7 +1185,7 @@
         return `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${dv !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${f}" data-bku="${esc(r[3])}" value="${esc(f === 'waste' ? v : bkShow(v, r[3]))}" placeholder="—"></td>`;
       }).join('');
       const dt = bookDraft[id] && bookDraft[id].tot !== undefined, tv = bkStdTot(id);
-      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${tv == null ? '' : bkShow(tv, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
+      return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${PRICE[id].ref && !bookDraft[id] ? REFTAG : ''}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${tv == null ? '' : bkShow(tv, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
     return h + `</tbody></table></div><p class="hint">空着 = 还没定。工料拆不开的项目，直接在「合计单价」填综合价就行。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
   }
@@ -1225,8 +1230,8 @@
     // 用草稿改出一张完整的新表，再走和上传一样的读取校验，保证两条路结果一致
     bkRows = rows.slice(1);
     const out = rows.map((r, i) => {
-      if (i && r[0] === '选材价差' && (bookDraft[r[1]] || bookDraft[bkOptCode(r[1])])) {
-        const a = String(bkOptAbs(r[1], r)).trim(), o = bkOptInfo(r[1]);
+      if (i && r[0] === '选材价差' && (bookDraft[r[1]] || (bookDraft[bkOptCode(r[1])] && [4, 5, 6].some(k => r[k] !== '')))) {
+        const a = String(bkOptAbs(r[1], r, false)).trim(), o = bkOptInfo(r[1]);
         r = [...r];
         if (a === '') { r[4] = r[5] = r[6] = ''; return r; }
         const std = bkStdTot(o.code);
@@ -1243,6 +1248,7 @@
     if (errs.length) { bookMsg = { ok: false, lines: errs.slice(0, 8) }; render(); return; }
     const res = B.read(csv, PRICE);
     if (res.errors.length) { bookMsg = { ok: false, lines: res.errors.slice(0, 8) }; render(); return; }
+    Object.keys(res.items).forEach(c => { if (PRICE[c].ref && !bookDraft[c]) delete res.items[c]; });
     const ni = Object.keys(res.items).length, no = Object.values(res.options).reduce((t, o) => t + Object.keys(o).length, 0);
     const at = new Date().toLocaleString('zh-CN', { hour12: false });
     if (!B.save({ items: res.items, options: res.options, info: { file: '后台直接修改', at, items: ni, options: no } })) { bookMsg = { ok: false, lines: ['浏览器不让保存（可能是无痕模式）'] }; render(); return; }
