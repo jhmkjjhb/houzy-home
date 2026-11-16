@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116a"></script>
+<script src="quote-v2-price.js?v=20261116b"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116d"></script>
+<script src="quote-v2-rules.js?v=20261116f"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -316,7 +316,7 @@
   let roomId = P.rooms[0]?.id || null;
   let confirmReset = false;
 
-  function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true, plans: [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }], planId: 'A', quoteMode: 'estimate' }; }
+  function blank() { return { houseType: '', rooms: [], house: {}, prices: {}, info: { name: '' }, discount: 0, design: true, plans: [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }], planId: 'A', quoteMode: 'estimate', mig: { shower: 1 } }; }
   function load() { try { const x = JSON.parse(localStorage.getItem(STORE) || 'null'); if (x && Array.isArray(x.rooms)) return Q.migrate({ ...blank(), ...x }); } catch (e) {} return blank(); }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
 
@@ -663,20 +663,41 @@
     h += `<h3 style="margin:18px 0 4px;padding-top:12px;border-top:1px dashed var(--line)">还可以加的项目</h3>`;
     GROUPS.forEach(([gid, gname]) => { const codes = avail.filter(c => PACKS[c].g === gid && !stat(c).have.length); if (codes.length) h += `<div class="grp"><h3>${gname}</h3><div class="packs">${codes.map(gcard).join('')}</div></div>`; });
     // 选材：这组一起定；各间选得不一样时显示「各间不同」，点一个就统一
-    const mats = chosen.map(c => { const s = stat(c), r0 = s.have[0], pl = Q.placesOf(P, r0, C.lines).find(x => x.pack === c); return pl ? { c, s, pl } : null; }).filter(Boolean);
+    // 选材项：取这组所有房间用到的选项（各间做法不同时，选项也可能不同）
+    const keysOf = (c, rs2) => { const seen = new Set(), out = []; let label = PACKS[c].label; rs2.forEach(x => { const pl = Q.placesOf(P, x, C.lines).find(y => y.pack === c); if (pl) { label = pl.label; pl.keys.forEach(([cat, k]) => { if (!seen.has(cat + k)) { seen.add(cat + k); out.push([cat, k]); } }); } }); return { label, keys: out }; };
+    const mats = chosen.map(c => { const s = stat(c), pl = keysOf(c, s.have); return pl.keys.length ? { c, s, pl } : null; }).filter(Boolean);
     if (mats.length) {
-      h += `<h2>这组一起选材</h2><p class="hint">点一个选项，这组选了这项的房间都用它。没想好的可以先不点，按标准档估价。</p>`;
+      h += `<h2>这组一起选材</h2><p class="hint">点一个选项，这组选了这项的房间都用它。没想好的可以先不点，按标准档估价。浴室柜、淋浴区这类每间尺寸和做法可能不一样的，下面每间单独填、单独改。</p>`;
+      const sizeOf = (x, c) => { const v = Q.packValues(x, c, Q.geo(x, P)); return (PACKS[c].inputs || []).map(i => `${i.label.replace(/^(淋浴区|柜)/, '')} ${nf(v[i.k])}`).join(' × ') + ' ' + ((PACKS[c].inputs || [])[0]?.unit || ''); };
+      const keysFor = (x, c) => (Q.placesOf(P, x, C.lines).find(y => y.pack === c) || { keys: [] }).keys;
       mats.forEach(({ c, s, pl }) => {
-        h += `<div class="card"><b style="font-size:15px">${ic(PACKS[c].icon)} ${esc(pl.label)}</b> <span class="desc">${s.have.length} 间</span>`;
-        // 整组都定了、而且各间一样：折叠成一行，点「修改」再展开
+        const per = PACKS[c].perRoom, ek = 'g:' + groupId + ':' + c;
+        h += `<div class="card"><b style="font-size:15px">${ic(PACKS[c].icon)} ${esc(pl.label)}</b> <span class="desc">${s.have.length} 间${per ? ' · 每间可不同' : ''}</span>`;
         const vals = pl.keys.map(([cat, k]) => s.have.map(x => Q.specOf(P, x, cat, k, null, c)));
-        const done = vals.every(cur => cur.every(v => v.decided && v.v === cur[0].v)), ek = 'g:' + groupId + ':' + c;
-        if (done && !specExp.has(ek)) { h += foldBar(ek, vals.map(cur => esc(cur[0].v)).join(' · ')) + '</div>'; return; }
+        // 整组都定了就折叠：一般项目要各间一样；每间可不同的项目只要每间都定了，逐间列出
+        const done = per ? s.have.every(x => keysFor(x, c).every(([cat, k]) => Q.specOf(P, x, cat, k, null, c).decided)) : vals.every(cur => cur.every(v => v.decided && v.v === cur[0].v));
+        if (done && !specExp.has(ek)) {
+          h += per ? s.have.map(x => `<div class="desc" style="margin:6px 0 0;color:var(--ink)"><b>${esc(Q.roomLabel(x, P))}</b>：${esc(sizeOf(x, c))} · ${keysFor(x, c).map(([cat, k]) => esc(Q.specOf(P, x, cat, k, null, c).v)).join(' · ')}</div>`).join('') + foldBar(ek, '') + '</div>' : foldBar(ek, vals.map(cur => esc(cur[0].v)).join(' · ')) + '</div>';
+          return;
+        }
         if (done) h += `<button class="btn" style="float:right" data-specexp="${ek}">收起</button>`;
-        pl.keys.forEach(([cat, k]) => {
-          const key = Q.SPEC_CATS[cat].keys[k], cur = s.have.map(x => Q.specOf(P, x, cat, k, null, c)), same = cur.every(v => v.v === cur[0].v && v.decided === cur[0].decided), std = Q.stdOf(key, s.have[0]);
+        if (per) h += `<div class="hint" style="margin:8px 0 0;font-weight:700;color:var(--navy)">全部统一选（点一下，${s.have.length} 间都用）</div>`;
+        pl.keys.forEach(([cat, k], ki) => {
+          const key = Q.SPEC_CATS[cat].keys[k], cur = vals[ki], same = cur.every(v => v.v === cur[0].v && v.decided === cur[0].decided), std = Q.stdOf(key, s.have[0]);
           h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}${same ? (cur[0].decided ? '' : ' <span class="desc">· 未定，暂按标准档</span>') : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div><div class="adds" style="margin:0">${key.opts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-gplace="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}</button>`; }).join('')}</div></div>`;
         });
+        if (per) {
+          h += `<div class="hint" style="margin:14px 0 0;padding-top:10px;border-top:1px solid var(--line);font-weight:700;color:var(--navy)">每间单独填尺寸、单独改做法</div>`;
+          s.have.forEach(x => {
+            const v = Q.packValues(x, c, Q.geo(x, P));
+            h += `<div style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px"><b>${esc(Q.roomLabel(x, P))}</b><div class="row" style="margin-top:4px">${(PACKS[c].inputs || []).map(i => field(i.label, i.unit, stepper(`data-wroom="${x.id}" data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === 'cm' ? 5 : 1))).join('')}</div>`;
+            keysFor(x, c).forEach(([cat, k]) => {
+              const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, x, cat, k, null, c);
+              h += `<div class="hint" style="margin:6px 0 2px">${esc(key.label)}${cur.decided ? '' : ' · 暂按标准档'}</div><div class="dopt" style="margin:0 0 4px">${key.opts.map(o => `<button class="${cur.decided && cur.v === o ? 'on' : ''}" style="padding:6px 10px;min-width:auto" data-room="${x.id}" data-place="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><b style="font-size:13px">${cur.decided && cur.v === o ? '✓ ' : ''}${esc(o)}</b></button>`).join('')}</div>`;
+            });
+            h += '</div>';
+          });
+        }
         h += '</div>';
       });
     }

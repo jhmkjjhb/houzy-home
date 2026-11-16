@@ -93,7 +93,7 @@
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk'] },
     study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk'] },
     kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
-    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
+    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
     balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
@@ -113,6 +113,7 @@
   // 其他非标准选项的价差在 quote-v2-price.js 的 OPTION_PRICES 里登记，没登记的显示「价差待定」。
   const TILE_CODES = ['floor_tile', 'wall_tile', 'porch_tile'];
   const CAB_CODES = ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard', 'cab_low', 'cab_up'];
+  const SCREEN_CODES = ['screen', 'screen_l', 'screen_diamond', 'curtain_rod', 'shower_tray'];
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate'], packs: ['floor'], noPrice: true },
@@ -145,6 +146,12 @@
       body:   { label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
       top:    { label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
       mirror: { label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
+    } },
+    shower: { label: '淋浴区', icon: '🚿', keys: {
+      base:  { label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
+      type:  { label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
+      glass: { label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
+      frame: { label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
     } },
     lighting: { label: '灯具', icon: '💡', keys: {
       grade: { label: '灯具档次', opts: ['标准 LED 筒灯/吸顶灯', '防眩筒灯+射灯'], std: '标准 LED 筒灯/吸顶灯', codes: ['light'] },
@@ -212,9 +219,15 @@
                       lines: (r, g, v, picked, sp) => [['wp', g.floor, '地面'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['drain', 1, '地漏'], ...tileExtra(sp, g.floor)] },
     bath_move:      { g: 'wet', area: ['floor'], label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
 
-    sanitary:       { g: 'fix', label: '洁具（马桶+花洒+淋浴隔断）', icon: '🚽', lines: () => [['toilet', 1, ''], ['shower', 1, ''], ['screen', 1, ''], ['exhaust', 1, '卫生间必配'], ['bath_acc', 1, '毛巾架/纸巾架/挂钩']] },
+    sanitary:       { g: 'fix', label: '洁具（马桶+花洒+排风）', icon: '🚽', lines: () => [['toilet', 1, ''], ['shower', 1, ''], ['exhaust', 1, '卫生间必配'], ['bath_acc', 1, '毛巾架/纸巾架/挂钩']] },
+    // 淋浴区：每间尺寸不同，单独填；淋浴盘/挡水、隔断形式、玻璃、五金颜色可整组一起定，也可每间不同
+    shower_area:    { g: 'fix', label: '淋浴区（淋浴盘/挡水 + 玻璃隔断）', icon: '🚿', perRoom: true,
+                      inputs: [{ k: 'w', label: '淋浴区宽', unit: 'cm', def: () => 90 }, { k: 'd', label: '淋浴区深', unit: 'cm', def: () => 90 }, { k: 'h', label: '隔断高', unit: 'cm', def: () => 200 }],
+                      lines: (r, g, v, picked, sp) => { const type = sp('shower', 'type'), base = sp('shower', 'base'), size = `宽 ${v.w} × 深 ${v.d} cm`;
+                        return [...(base === '成品淋浴盘' ? [['shower_tray', 1, size]] : []),
+                          type === '浴帘杆（不做玻璃）' ? ['curtain_rod', 1, '宽 ' + v.w + ' cm'] : [{ '一字型': 'screen', 'L 型': 'screen_l', '钻石型': 'screen_diamond' }[type] || 'screen', 1, `${type}，宽 ${v.w} × 深 ${v.d} × 高 ${v.h} cm`]]; } },
     // 浴室柜：每间填自己的尺寸（cm），报价单上逐间列出尺寸；定制的按柜宽（延尺）计价
-    vanity:         { g: 'fix', label: '浴室柜+镜子', icon: '🪞',
+    vanity:         { g: 'fix', label: '浴室柜+镜子', icon: '🪞', perRoom: true,
                       inputs: [{ k: 'w', label: '柜宽', unit: 'cm', def: () => 80 }, { k: 'd', label: '柜深', unit: 'cm', def: () => 48 }, { k: 'h', label: '柜高', unit: 'cm', def: () => 85 }],
                       lines: (r, g, v, picked, sp) => { const size = `宽 ${v.w} × 深 ${v.d} × 高 ${v.h} cm`;
                         return [sp('vanity', 'kind') === '定制浴室柜' ? ['vanity_custom', r2(num(v.w) / 30.48), size + '，按柜宽计'] : ['vanity', 1, size], ['mirror', 1, '宽度配合浴室柜']]; } },
@@ -442,7 +455,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', vanity: '浴室柜与镜子', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
@@ -612,7 +625,10 @@
       if (has('ceil_feature')) { swap('ceil_feature', 'ceiling'); set('ceiling', 'style', '叠级+灯槽'); }
       if (has('ceil_flat')) { swap('ceil_flat', 'ceiling'); set('ceiling', 'style', '平顶'); }
       if (has('paint')) swap('paint', 'wall_finish');
+      // 淋浴隔断从「洁具」里拆出来成为「淋浴区」：旧报价里选了洁具的卫生间补上淋浴区，金额不变（只迁移一次）
+      if (!(project.mig || {}).shower && has('sanitary') && !has('shower_area')) r.packs.push('shower_area');
     });
+    project.mig = { ...(project.mig || {}), shower: 1 };
     return project;
   }
 

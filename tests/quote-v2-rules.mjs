@@ -534,4 +534,24 @@ ok('浴室柜：每间按自己的尺寸列出；整组可一起选定制和材�
   assert.ok(c0.unpriced, '定制浴室柜单价待公司核定，不能悄悄按 0 算');
 });
 
+ok('淋浴区：每间尺寸和做法可不同；淋浴盘、L 型隔断、浴帘按选的做法出项目；旧报价迁移后隔断不丢', () => {
+  const p = project(Q.presetRooms('semi')), baths = p.rooms.filter(r => r.type === 'bath');
+  Q.setPackFor(p, baths.map(r => r.id), 'shower_area', true);
+  baths[0].vals = { shower_area: { w: 120, d: 90, h: 200 } };
+  const pl = Q.activePlan(p);
+  (pl.roomSpecs[baths[0].id] = {})['@shower_area'] = { shower: { base: '成品淋浴盘', type: 'L 型' } };
+  (pl.roomSpecs[baths[1].id] = {})['@shower_area'] = { shower: { type: '浴帘杆（不做玻璃）' } };
+  const L = Q.buildLines(p), of = r => L.filter(l => l.roomId === r.id && l.pack === 'shower_area').map(l => l.code);
+  assert.deepEqual(of(baths[0]), ['shower_tray', 'screen_l']);
+  assert.match(L.find(l => l.code === 'screen_l').formula, /L 型，宽 120 × 深 90 × 高 200 cm/, '报价单写清这间隔断形式和尺寸');
+  assert.deepEqual(of(baths[1]), ['curtain_rod'], '选浴帘就不算玻璃隔断');
+  if (baths[2]) assert.deepEqual(of(baths[2]), ['screen'], '没改的按标准一字型');
+  assert.ok(!L.some(l => l.pack === 'sanitary' && l.code === 'screen'), '隔断不再重复算在洁具里');
+  const old = project([{ ...Q.newRoom('bath', 1, 1), packs: ['sanitary'] }]); delete old.mig;
+  Q.migrate(old);
+  assert.ok(old.rooms[0].packs.includes('shower_area'), '旧报价选了洁具的，迁移后补上淋浴区');
+  old.rooms[0].packs = ['sanitary']; Q.migrate(old);
+  assert.ok(!old.rooms[0].packs.includes('shower_area'), '只迁移一次，员工自己取消后不会又加回来');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

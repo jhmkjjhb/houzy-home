@@ -120,6 +120,10 @@
   root.QV2_PRICE.altar_cab = {"stage":"custom","name":"神龛/神台柜定制","unit":"平方尺","mat":0,"aux":0,"lab":0,"waste":0,"desc":"按客户确认的款式和尺寸定做（神台、地主位、下柜抽屉/柜门），神台灯要预留电源插座"};
   ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard'].forEach(c => Object.assign(root.QV2_PRICE[c], { unit: '平方尺', mat: 0, aux: 0, lab: 0, unpriced: true }));
   Object.assign(root.QV2_PRICE.desk, { unit: '项' });
+  [['shower_tray', '成品淋浴盘', '个', '亚克力/石材成品淋浴盘，按淋浴区尺寸订做，含下水'], ['screen_l', '淋浴玻璃隔断（L 型）', '套', '两面钢化玻璃转角，不锈钢五金，底部挡水，打胶防水'],
+   ['screen_diamond', '淋浴玻璃隔断（钻石型）', '套', '钻石形钢化玻璃，不锈钢五金，底部挡水，打胶防水'], ['curtain_rod', '浴帘杆 + 浴帘', '套', '不做玻璃隔断时使用']].forEach(([code, name, unit, desc]) => {
+    root.QV2_PRICE[code] = { stage: 'equip', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
+  });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
