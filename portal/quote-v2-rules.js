@@ -509,14 +509,15 @@
   // ---------- 沿用到其他空间：复制，不是联动；复制后每间仍可单独改 ----------
   // 哪些房间也能做这个工项（同类房间排前面）
   // 空间分组：先分室内/室外，再按做法相近的类型分。按类型一起选做法、同类房间排前面，都用这一套。
-  // 洗衣房、楼梯做法和别的差别大，各自单独一组；阳台按室外做（防滑砖、排水）。
+  // 洗衣房、楼梯、加建做法和别的差别大，各自单独一组；阳台按室外做（防滑砖、排水）。
   const SPACE_GROUPS = [
     { id: 'bed', label: '卧室', icon: '🛏️', types: ['master', 'bedroom', 'study'] },
     { id: 'bath', label: '卫浴', icon: '🚿', types: ['bath'] },
     { id: 'kitchen', label: '厨房', icon: '🍳', types: ['kitchen'] },
     { id: 'laundry', label: '洗衣房', icon: '🧺', types: ['laundry'] },
-    { id: 'hall', label: '公共区', icon: '🛋️', types: ['living', 'dining', 'family', 'corridor', 'store', 'extension'] },
+    { id: 'hall', label: '公共区', icon: '🛋️', types: ['living', 'dining', 'family', 'corridor', 'store'] },
     { id: 'stairs', label: '楼梯', icon: '🪜', types: ['stairs'] },
+    { id: 'ext', label: '加建', icon: '🏗️', types: ['extension'] },
     { id: 'out', label: '室外', icon: '🌳', out: true, types: ['yard', 'porch', 'balcony'] }
   ];
   const kinOf = type => (SPACE_GROUPS.find(x => x.types.includes(type)) || { id: type }).id;

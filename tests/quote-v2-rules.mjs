@@ -492,6 +492,7 @@ ok('空间分组：室内在前室外在后；洗衣房、楼梯单独一组；�
   assert.equal(Q.kinOf('laundry'), 'laundry'); assert.equal(Q.kinOf('stairs'), 'stairs');
   assert.notEqual(Q.kinOf('laundry'), Q.kinOf('kitchen'), '洗衣房不跟厨房一组');
   assert.equal(Q.kinOf('balcony'), Q.kinOf('porch'), '阳台按室外做');
+  assert.equal(Q.kinOf('extension'), 'ext', '加建空间单独一组，不混进客厅公共区');
   assert.ok(Q.SPACE_GROUPS.find(g => g.id === Q.kinOf('yard')).out);
   const typed = new Set(Q.SPACE_GROUPS.flatMap(g => g.types));
   Object.keys(Q.ROOMS).forEach(t => assert.ok(typed.has(t), t + ' 要归到某一组，不然按类型做时会漏'));
