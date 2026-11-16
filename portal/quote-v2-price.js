@@ -17,7 +17,7 @@
     "bath_drop":{"stage":"prep","name":"卫生间降板/二次排水处理","unit":"平方尺","mat":5,"aux":3,"lab":12,"waste":0,"desc":"移位后重新找坡排水，二次排水层+防水加强，确保排水通畅不积水"},
     "carry_up":{"stage":"prep","name":"材料搬运上楼（2楼及以上）","unit":"平方尺","mat":0,"aux":0,"lab":0.3,"waste":0,"desc":"无电梯人工搬运材料上楼及垃圾下楼"},
     "scaffold":{"stage":"prep","name":"挑空/高天花脚手架（高空作业）","unit":"处","mat":0,"aux":200,"lab":600,"waste":0,"desc":"搭设/拆除脚手架，高空作业做好安全防护"},
-    "waste_out":{"stage":"prep","name":"建筑垃圾清运","unit":"车次","mat":0,"aux":0,"lab":150,"waste":0,"desc":"垃圾装袋，运至合法垃圾场，含车费及人工"},
+    "waste_out":{"stage":"prep","name":"建筑垃圾清运","unit":"车次","mat":0,"aux":0,"lab":350,"waste":0,"desc":"垃圾装袋，运至合法垃圾场，含车费及人工"},
     "wire":{"stage":"mep","name":"电路开槽穿管布线","unit":"个点位","mat":20,"aux":15,"lab":25,"waste":0,"desc":"墙面切槽，阻燃 PVC 线管，插座 2.5mm²、照明 1.5mm² 电线（示范规格），接线盒预埋，完工出具线路走向图"},
     "circuit":{"stage":"mep","name":"专用回路（空调/热水器等大功率电器）","unit":"回路","mat":60,"aux":20,"lab":60,"waste":0,"desc":"从配电箱单独拉线，4mm² 电线+独立断路器，避免跳闸"},
     "db_box":{"stage":"mep","name":"配电箱更换（主开关+漏电保护 RCCB）","unit":"个","mat":450,"aux":50,"lab":250,"waste":0,"desc":"更换新配电箱，含主开关、漏电保护器、各回路断路器，逐个标注回路名称"},
