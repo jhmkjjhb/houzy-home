@@ -737,7 +737,7 @@
   const winEditor = (r, mode) => openEditor(r, mode, 'win');
   const kindOf = pk => pk.needWindows ? 'win' : pk.needDoors ? 'door' : null;
   function doneBar(r, bad) {
-    return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : '，下一步：选怎么做、用什么材料'}</button>`}</div>`;
+    return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>${(() => { const nx = nextOpen(r.id, x => !!x.done); return nx ? `<button class="btn pri" data-goroom="${nx.id}">下一间：${esc(Q.roomLabel(nx, P))} →</button>` : '<button class="btn pri" data-tospec>下一步：选怎么做、用什么材料 →</button>'; })()}` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : '，下一步：选怎么做、用什么材料'}</button>`}</div>`;
   }
   // 沿用到其他空间：点了某个工项后，问其他能做这项的房间要不要一样（同类房间排前面）
   let syncPrompt = null, copyOpen = false, copyMsg = null;
