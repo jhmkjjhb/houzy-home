@@ -298,12 +298,12 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116m"></script>
+<script src="quote-v2-price.js?v=20261116tref"></script>
 <script src="quote-v2-market-20261116.js?v=1"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261116keep"></script>
-<script src="quote-v2-rules.js?v=20261116split3"></script>
+<script src="quote-v2-rules.js?v=20261116tref"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -1266,9 +1266,9 @@
       const conf = !!confirms[rowKey(r)];
       const trClass = conf ? 'price-confirmed' : '';
       if (r[0] === '瓷砖片价') {
-        const d = bookDraft[id] && bookDraft[id].piece !== undefined;
-        const v = d ? bookDraft[id].piece : r[4];
-        return `<tr data-bkrow="${esc(id)}" class="bkopt ${trClass}"><td class="bkname" style="padding-left:22px">└ 砖材规格：<b>${esc(r[2])}</b></td><td class="bkunit">片</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="每片砖材价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="piece" data-bku="片" value="${esc(v)}" placeholder="RM / 片"></td><td><button class="confirm-price" data-confirm-price="${esc(id)}">${conf ? '✓ 已确认' : '确认此价格'}</button></td></tr>`;
+        const d = bookDraft[id] && bookDraft[id].piece !== undefined, tref = !d && String(r[4] ?? '').trim() === '' && Q.TILE_PIECE_REF[id] !== undefined;
+        const v = d ? bookDraft[id].piece : tref ? Q.TILE_PIECE_REF[id] : r[4];
+        return `<tr data-bkrow="${esc(id)}" class="bkopt ${trClass}"><td class="bkname" style="padding-left:22px">└ 砖材规格：<b>${esc(r[2])}</b>${tref ? REFTAG : ''}</td><td class="bkunit">片</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="每片砖材价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="piece" data-bku="片" value="${esc(v)}" placeholder="RM / 片"></td><td><button class="confirm-price" data-confirm-price="${esc(id)}">${conf ? '✓ 已确认' : '确认此价格'}</button></td></tr>`;
       }
       if (r[0] === '选材价差') {
         const o = bkOptInfo(id);
@@ -1288,7 +1288,7 @@
   function bookVal(id, r, f, j) { const d = bookDraft[id] && bookDraft[id][f]; return d !== undefined ? d : r[4 + j]; }
   function bookSum(id, r) {
     if (r[0] === '瓷砖片价') {
-      const raw = bookDraft[id]?.piece ?? r[4], dims = id.match(/\.(\d+)×(\d+) mm(?:\.|@)/);
+      const raw = bookDraft[id]?.piece ?? (String(r[4] ?? '').trim() === '' && Q.TILE_PIECE_REF[id] !== undefined ? Q.TILE_PIECE_REF[id] : r[4]), dims = id.match(/\.(\d+)×(\d+) mm(?:\.|@)/);
       if (String(raw).trim() === '') return '片价未填：选此表面时须补价';
       const price = Number(raw), area = dims ? +dims[1] * +dims[2] / 1000000 : 0;
       if (!Number.isFinite(price) || price < 0 || !area) return '<span style="color:var(--red)">请输入非负的每片价格</span>';
@@ -1475,6 +1475,7 @@
     const ds = b.dataset;
     if (ds.confirmPrice) {
       const id = ds.confirmPrice, row = bkRow(id);
+      if (row?.[0] === '瓷砖片价' && String(row[4] ?? '').trim() === '' && bookDraft[id]?.piece === undefined && Q.TILE_PIECE_REF[id] !== undefined) bookDraft[id] = { piece: String(Q.TILE_PIECE_REF[id]) };
       const raw = row?.[0] === '瓷砖片价' ? String(bookDraft[id]?.piece ?? row[4] ?? '').trim() : row?.[0] === '项目单价' ? [4,5,6].some(i => String(bookDraft[id]?.[BK_F[i][0]] ?? row[i] ?? '').trim() !== '') : [4,5,6].some(i => String(row?.[i] ?? '').trim() !== '');
       if (!raw) { bookMsg = { ok:false, lines:['请先填写价格，再确认。'] }; render(); return; }
       const c = priceConfirmations(); c[id] = { confirmed:true, at:new Date().toISOString() };

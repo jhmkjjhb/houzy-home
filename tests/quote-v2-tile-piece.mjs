@@ -14,9 +14,16 @@ const line = (p, code) => Q.buildLines(p).find(l => l.code === code);
 const floorId = 'tile.floorSize.600×600 mm@floor_tile';
 const largeId = 'tile.floorSize.600×1200 mm@floor_tile';
 
+// 公司没填片价：用市场参考片价，标参考价
+const withRef = line(project([room('bedroom', ['floor'])]), 'floor_tile');
+assert.equal(withRef.tile.price, Q.TILE_PIECE_REF['tile.size.600×600 mm.哑光'], '没公司片价时用参考片价');
+assert.ok(withRef.ref.some(x => x.includes('砖材片价')) && !withRef.priceTbd.length);
+// 连参考片价也没有：标待定，不套旧面积砖材价
+const refKeep = { ...Q.TILE_PIECE_REF }; Object.keys(Q.TILE_PIECE_REF).forEach(k => delete Q.TILE_PIECE_REF[k]);
 const legacy = line(project([room('bedroom', ['floor'])]), 'floor_tile');
 assert.equal(legacy.tile, null, '无片价时不套旧面积砖材价');
 assert.ok(legacy.priceTbd.some(x => x.includes('砖材片价')));
+Object.assign(Q.TILE_PIECE_REF, refKeep);
 Q.TILE_PIECE_PRICES['tile.size.600×600 mm.哑光'] = 20;
 const standard = line(project([room('bedroom', ['floor'])], { tile: { material: '瓷砖', floorSize: '600×600 mm' } }), 'floor_tile');
 assert.equal(standard.tile.areaM2, 10);
@@ -51,7 +58,8 @@ assert.equal(matte.tile.materialTotal, 600);
 assert.equal(glossy.tile.materialTotal, 300, '表面改变后自动取不同片价');
 assert.equal(matte.tile.splitPricing, true);
 const missingFinish = line(project([room('bedroom', ['floor'])], { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '质感亮面' } }), 'floor_tile');
-assert.ok(missingFinish.priceTbd.some(x => x.includes('砖材片价')), '缺该表面价时不套其他价格');
+assert.equal(missingFinish.tile.price, Q.TILE_PIECE_REF['tile.size.600×600 mm.质感亮面'], '缺该表面公司价时不套其他表面的公司价，只用这个表面自己的参考片价');
+assert.ok(missingFinish.ref.length);
 const sharedId = 'tile.size.600×600 mm.质感哑面';
 Q.TILE_PIECE_PRICES[sharedId] = 29;
 const sharedFloor = line(project([room('bedroom', ['floor'])], { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '质感哑面' } }), 'floor_tile');
@@ -81,7 +89,7 @@ assert.equal(shown[0].total + shown[1].total, matte.total, '分行不重复计�
 const oldShown = ctx.quoteDisplayLines([legacy]);
 assert.equal(oldShown.length, 2, '缺片价时仍在报价单分列砖材待定和铺贴');
 assert.equal(oldShown[0].total + oldShown[1].total, legacy.total);
-const pendingShown = ctx.quoteDisplayLines([missingFinish]);
+const pendingShown = ctx.quoteDisplayLines([legacy]);
 assert.equal(pendingShown.length, 2);
 assert.equal(pendingShown[0].tilePending, true, '缺片价时仍单列待定价砖材');
 

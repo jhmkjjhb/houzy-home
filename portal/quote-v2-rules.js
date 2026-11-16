@@ -11,6 +11,7 @@
   const OPTION_PRICES = root.QV2_OPTION_PRICES || (src && src.OPTION_PRICES) || {};
   const OPTION_REF = root.QV2_OPTION_REF || (src && src.OPTION_REF) || {};
   const TILE_PIECE_PRICES = root.QV2_TILE_PIECE_PRICES || {};
+  const TILE_PIECE_REF = root.QV2_TILE_PIECE_REF || (src && src.TILE_PIECE_REF) || {};
   const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
   const r2 = n => Math.round(n * 100) / 100;
   const r4 = n => Math.round(n * 10000) / 10000;
@@ -506,7 +507,10 @@
       const sizeKey = code === 'wall_tile' ? 'wallSize' : 'floorSize', finishKey = code === 'wall_tile' ? 'wallFinish' : 'finish';
       const size = specOf(project, room, 'tile', sizeKey, planId, pack).v;
       const finish = specOf(project, room, 'tile', finishKey, planId, pack).v;
-      const dims = size.match(/^(\d+)×(\d+) mm$/), price = TILE_PIECE_PRICES[`tile.size.${size}.${finish}`] ?? TILE_PIECE_PRICES[`tile.${sizeKey}.${size}.${finish}@${code}`];
+      const dims = size.match(/^(\d+)×(\d+) mm$/), own = TILE_PIECE_PRICES[`tile.size.${size}.${finish}`] ?? TILE_PIECE_PRICES[`tile.${sizeKey}.${size}.${finish}@${code}`];
+      // 公司没填片价：先用市场参考片价，并标「参考价」
+      const price = own ?? TILE_PIECE_REF[`tile.size.${size}.${finish}`];
+      if (own === undefined && price !== undefined && !supplied) ref.push(`${size} · ${finish} 砖材片价`);
       mat = 0;
       if (!supplied && dims && price !== undefined && Number.isFinite(Number(price))) tile = { size, finish, width: +dims[1], height: +dims[2], price: +price, waste: num(p.waste), splitPricing: true };
       else if (!supplied) priceTbd.push(`${P[code].name}：${size} · ${finish} 砖材片价`);
@@ -801,7 +805,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -79,8 +79,8 @@ ok('公司还没定价的项目和规格先按参考价算进总价，但要标�
   const std = find(Q.buildLines(p2), 'floor_tile')[0].unit;
   p2.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '800×800 mm' } }, roomSpecs: {} }];
   const l = find(Q.buildLines(p2), 'floor_tile')[0];
-  assert.equal(l.unit, std, '不同瓷砖规格在缺片价时只计相同的铺贴面积价');
-  assert.ok(l.priceTbd.some(x => x.includes('砖材片价')), '规格片价待定');
+  assert.ok(l.tile && l.tile.price === Q.TILE_PIECE_REF['tile.size.800×800 mm.哑光'], '公司没填片价时按市场参考片价算砖材');
+  assert.ok(l.ref.some(x => x.includes('800×800')), '并标参考价');
 });
 
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
@@ -219,8 +219,9 @@ ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
   assert.equal(find(Q.buildLines(p), 'floor_tile')[0].unit, Math.round((t.aux + t.lab) * 100) / 100);
 });
 
-ok('瓷砖缺规格片价时待定；旧面积价差不能代替片价', () => {
+ok('瓷砖缺规格片价（连参考片价也没有）时待定；旧面积价差不能代替片价', () => {
   const id = 'tile.size.600×1200 mm.哑光';
+  const refKeep = Q.TILE_PIECE_REF[id]; delete Q.TILE_PIECE_REF[id];
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×1200 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }] });
   let line = find(Q.buildLines(p), 'floor_tile')[0];
@@ -235,6 +236,7 @@ ok('瓷砖缺规格片价时待定；旧面积价差不能代替片价', () => {
   assert.equal(line.priceTbd.length, 0);
   delete Q.TILE_PIECE_PRICES[id];
   delete Q.OPTION_PRICES['tile.floorSize.600×1200 mm'];
+  Q.TILE_PIECE_REF[id] = refKeep;
 });
 
 ok('大板砖（750×1500 以上）自动加大板铺贴加价', () => {

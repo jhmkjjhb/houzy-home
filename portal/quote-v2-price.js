@@ -199,5 +199,13 @@
     'shower.glass.10 mm 钢化透明': 20, 'shower.glass.8 mm 钢化磨砂': 10, 'shower.glass.8 mm 长虹玻璃': 15, 'shower.frame.哑黑': 10, 'shower.frame.枪灰': 10, 'shower.frame.拉丝金': 20,
     'lighting.grade.防眩筒灯+射灯': 30
   };
-  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES, OPTION_REF: root.QV2_OPTION_REF };
+  // 瓷砖每片参考价（RM/片，卖价，不含铺贴）：新山建材店常见中档价，按普通亮面定基价，其他表面按系数加。公司填了片价就用公司的。
+  root.QV2_TILE_PIECE_REF = (() => {
+    const base = { '300×600 mm': 5.5, '600×600 mm': 11, '800×800 mm': 30, '600×1200 mm': 38, '750×1500 mm': 75, '1200×1200 mm': 110, '900×1800 mm': 120 };
+    const k = { '普通亮面': 1, '亮光': 1.05, '哑光': 1, '柔光': 1.1, '防滑': 1.05, '质感': 1.15, '质感亮面': 1.2, '质感哑面': 1.2 };
+    const out = {};
+    Object.entries(base).forEach(([size, b]) => Object.entries(k).forEach(([f, x]) => { out[`tile.size.${size}.${f}`] = Math.round(b * x * 2) / 2; }));
+    return out;
+  })();
+  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES, OPTION_REF: root.QV2_OPTION_REF, TILE_PIECE_REF: root.QV2_TILE_PIECE_REF };
 })(typeof window !== "undefined" ? window : globalThis);
