@@ -1130,25 +1130,41 @@
   }
   let bkRows = [];
   const bkRow = id => bkRows.find(r => r[1] === id);
-  // 项目的合计单价；draft=false 用保存前的原价
-  function bkStdTot(code, draft = true) {
+  // 规格行和标准行一样分材料/辅料/人工填（每栏填这个规格的价，不是差价）；损耗% 跟标准行。保存时换算成比标准多/少多少。
+  const bkN = x => { x = String(x ?? '').trim(); return x === '' ? 0 : Number(x); };
+  const R4 = x => String(Math.round(x * 10000) / 10000);
+  const OF = ['mat', 'aux', 'lab'];
+  // 标准项目各栏（按平方尺存的价）；draft=false 用保存前的原价
+  function bkStdF(code, draft = true) {
     const r = bkRow(code); if (!r) return null;
     const v = BK_F.map(([f], j) => String((draft ? bookVal(code, r, f, j) : r[4 + j]) ?? '').trim());
     if (v.slice(0, 3).every(x => x === '')) return null;
-    const n = v.map(x => (x === '' ? 0 : Number(x)));
-    return n.some(x => !Number.isFinite(x)) ? null : n[0] * (1 + n[3] / 100) + n[1] + n[2];
+    const n = v.map(bkN); if (n.some(x => !Number.isFinite(x))) return null;
+    return { mat: n[0], aux: n[1], lab: n[2], w: n[3] };
   }
-  // 规格的合计单价：改过就用改的；没改且已有价差 = 原标准价 + 价差
+  function bkStdTot(code, draft = true) { const x = bkStdF(code, draft); return x && x.mat * (1 + x.w / 100) + x.aux + x.lab; }
+  const bkOptSet = r => [4, 5, 6].some(i => r[i] !== '');
+  const bkRefPct = id => Q.OPTION_REF[id.split('@')[0]];
   // 规格没填价差、但有参考百分比
-  const bkOptRef = (id, r) => [4, 5, 6].every(i => r[i] === '') && Q.OPTION_REF[id.split('@')[0]] !== undefined && !(bookDraft[id] && bookDraft[id].tot !== undefined);
+  const bkOptRef = (id, r) => !bkOptSet(r) && bkRefPct(id) !== undefined && !bookDraft[id];
   const REFTAG = '<span class="desc" style="color:var(--yellow);font-weight:700"> 参考价</span>';
-  function bkOptAbs(id, r, useRef = true) {
-    const d = bookDraft[id] && bookDraft[id].tot;
-    if (d !== undefined) return d;
-    if (useRef && bkOptRef(id, r)) { const std = bkStdTot(bkOptCode(id)); return std == null ? '' : String(Math.round(std * (1 + Q.OPTION_REF[id.split('@')[0]] / 100) * 10000) / 10000); }
-    if ([4, 5, 6].every(i => r[i] === '')) return '';
-    const std = bkStdTot(bkOptCode(id), false);
-    return std == null ? '' : String(Math.round((std + [4, 5, 6].reduce((t, i) => t + (Number(r[i]) || 0), 0)) * 100) / 100);
+  // 规格各栏的价：先看已存的价差（换回成这个规格的价）或参考价，再叠上这次改的
+  function bkOptF(id, r) {
+    const code = bkOptCode(id); let base = { mat: '', aux: '', lab: '' };
+    if (bkOptSet(r)) { const x = bkStdF(code, false); if (x) { const w = 1 + x.w / 100; base = { mat: R4(x.mat + bkN(r[4]) / w), aux: R4(x.aux + bkN(r[5])), lab: R4(x.lab + bkN(r[6])) }; } }
+    else if (bkRefPct(id) !== undefined) { const x = bkStdF(code), k = 1 + bkRefPct(id) / 100; if (x) base = { mat: R4(x.mat * k), aux: R4(x.aux * k), lab: R4(x.lab * k) }; }
+    const d = bookDraft[id] || {};
+    return { mat: d.mat ?? base.mat, aux: d.aux ?? base.aux, lab: d.lab ?? base.lab };
+  }
+  function bkOptTot(id, r) {
+    const f = bkOptF(id, r); if (OF.every(k => String(f[k]).trim() === '')) return null;
+    const x = bkStdF(bkOptCode(id)), n = OF.map(k => bkN(f[k]));
+    return n.some(v => !Number.isFinite(v)) ? NaN : n[0] * (x ? 1 + x.w / 100 : 1) + n[1] + n[2];
+  }
+  function bkOptCells(id, r) {
+    const f = bkOptF(id, r), x = bkStdF(bkOptCode(id)), d = bookDraft[id] || {}, t = bkOptTot(id, r);
+    return OF.map((k, j) => `<td class="r" data-l="${BK_F[j][1]}"><input class="bkin ${d[k] !== undefined ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="${k}" data-bku="${esc(r[3])}" value="${esc(bkShow(f[k], r[3]))}" placeholder="—"></td>`).join('')
+      + `<td class="r desc" data-l="损耗%">${x ? x.w : ''}<br>同标准</td><td class="r" data-l="合计单价"><input class="bkin ${OF.some(k => d[k] !== undefined) ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${t == null || Number.isNaN(t) ? '' : bkShow(t, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td>`;
   }
   function bookEditor(rows) {
     bkRows = rows;
@@ -1176,8 +1192,8 @@
     h += list.map(r => {
       const id = r[1];
       if (r[0] === '选材价差') {
-        const o = bkOptInfo(id), d = bookDraft[id] && bookDraft[id].tot !== undefined;
-        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b>${bkOptRef(id, r) ? REFTAG : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td><td colspan="4" class="desc bksum">${bookSum(id, r)}</td><td class="r" data-l="合计单价"><input class="bkin ${d ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${esc(bkShow(bkOptAbs(id, r), r[3]))}" placeholder="待定"></td></tr>`;
+        const o = bkOptInfo(id);
+        return `<tr data-bkrow="${esc(id)}" data-bkopt="${esc(o.code)}" class="bkopt"><td class="bkname" style="padding-left:22px">└ ${esc(o.key.label)}：<b>${esc(o.v)}</b>${bkOptRef(id, r) ? REFTAG : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${bkOptCells(id, r)}</tr>`;
       }
       const stds = opts.some(o => bkOptCode(o[1]) === id) ? [...new Set(opts.filter(o => bkOptCode(o[1]) === id).map(o => { const x = bkOptInfo(o[1]); return `${x.key.label} ${x.std}`; }))] : [];
       const cells = BK_F.map(([f], j) => {
@@ -1187,13 +1203,13 @@
       const dt = bookDraft[id] && bookDraft[id].tot !== undefined, tv = bkStdTot(id);
       return `<tr data-bkrow="${esc(id)}"><td class="bkname">${esc(r[2])}${PRICE[id].ref && !bookDraft[id] ? REFTAG : ''}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${tv == null ? '' : bkShow(tv, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
-    return h + `</tbody></table></div><p class="hint">空着 = 还没定。工料拆不开的项目，直接在「合计单价」填综合价就行。项目下面「└」开头的是各规格，直接填这个规格的合计单价（每单位卖多少），系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
+    return h + `</tbody></table></div><p class="hint">空着 = 还没定。工料拆不开的项目，直接在「合计单价」填综合价就行。项目下面「└」开头的是各规格：和标准行一样分材料、辅料、人工填这个规格自己的价（损耗% 跟标准行），也可以只填合计；系统自动算出比标准规格贵/便宜多少。改过的格子会变色，点「保存」才生效。</p></div>`;
   }
   function bookVal(id, r, f, j) { const d = bookDraft[id] && bookDraft[id][f]; return d !== undefined ? d : r[4 + j]; }
   function bookSum(id, r) {
     if (r[0] === '选材价差') {
-      const a = String(bkOptAbs(id, r)).trim(); if (a === '') return '待定';
-      const n = Number(a); if (!Number.isFinite(n)) return '<span style="color:var(--red)">不是数字</span>';
+      const n = bkOptTot(id, r); if (n == null) return '待定';
+      if (!Number.isFinite(n)) return '<span style="color:var(--red)">不是数字</span>';
       const std = bkStdTot(bkOptCode(id)); if (std == null) return '标准价还没定';
       const d = Math.round((n - std) * (bkArea(r[3]) ? SQM : 1) * 100) / 100;
       return d === 0 ? '和标准规格一样价' : `比标准规格${d > 0 ? '贵' : '便宜'} RM ${nf(Math.abs(d))}`;
@@ -1210,7 +1226,14 @@
     if (t.dataset.bk === undefined) return;
     const dr = (bookDraft[t.dataset.bk] = bookDraft[t.dataset.bk] || {}), isItem = !!PRICE[t.dataset.bk], tr = t.closest('tr'), u = t.dataset.bku;
     const val = t.dataset.bkf === 'waste' ? t.value.trim() : bkStore(t.value, u);
-    if (isItem && t.dataset.bkf === 'tot') {
+    if (!isItem) {
+      // 规格行第一次改：先把当前显示的各栏（已存价/参考价，空的按标准价）放进草稿，再改这一栏
+      if (!OF.some(k => dr[k] !== undefined)) { const f = bkOptF(t.dataset.bk, bkRow(t.dataset.bk)), x = bkStdF(bkOptCode(t.dataset.bk)) || {}; OF.forEach(k => { dr[k] = String(f[k]).trim() !== '' ? f[k] : (x[k] !== undefined ? R4(x[k]) : ''); }); }
+      if (t.dataset.bkf === 'tot') Object.assign(dr, { mat: '', aux: '', lab: val }); // 只填合计 = 工料合一
+      else dr[t.dataset.bkf] = val;
+      OF.forEach(k => { const i = tr.querySelector(`input[data-bkf="${k}"]`); if (i !== t) { i.value = bkShow(dr[k], u); i.classList.add('chg'); } });
+      if (t.dataset.bkf !== 'tot') { const tt = bkOptTot(t.dataset.bk, bkRow(t.dataset.bk)); tr.querySelector('input[data-bkf="tot"]').value = tt == null || Number.isNaN(tt) ? '' : bkShow(tt, u); }
+    } else if (isItem && t.dataset.bkf === 'tot') {
       // 直接填合计 = 工料合一的综合单价（不拆材料/人工），存进「人工」一栏，其他清空
       Object.assign(dr, { mat: '', aux: '', lab: val, waste: '', tot: val });
       BK_F.forEach(([f]) => { const i = tr.querySelector(`input[data-bkf="${f}"]`); i.value = f === 'lab' ? t.value.trim() : ''; i.classList.add('chg'); });
@@ -1221,7 +1244,8 @@
     t.classList.add('chg');
     const B = window.QV2_BOOK, row = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES)).find(r => r[1] === t.dataset.bk);
     t.closest('tr').querySelector('.bksum').innerHTML = bookSum(t.dataset.bk, row);
-    document.querySelectorAll('tr[data-bkopt]').forEach(tr => { if (tr.dataset.bkopt === t.dataset.bk) tr.querySelector('.bksum').innerHTML = bookSum(tr.dataset.bkrow, bkRow(tr.dataset.bkrow)); });
+    // 标准价改了：下面各规格的「比标准」刷新；参考价的规格按百分比跟着变
+    document.querySelectorAll('tr[data-bkopt]').forEach(tr => { if (tr.dataset.bkopt !== t.dataset.bk) return; const id = tr.dataset.bkrow, r = bkRow(id); if (!bookDraft[id] && !bkOptSet(r)) { const tmp = document.createElement('tbody'); tmp.innerHTML = `<tr>${bkOptCells(id, r)}</tr>`; [...tr.children].slice(2).forEach(c => c.remove()); [...tmp.firstChild.children].forEach(c => tr.appendChild(c)); } else tr.querySelector('.bksum').innerHTML = bookSum(id, r); });
     const n = Object.keys(bookDraft).length, sb = document.getElementById('bookSave'); sb.disabled = false; sb.textContent = `保存 ${n} 处修改并下载价目表`;
   });
   function bookSave() {
@@ -1231,13 +1255,14 @@
     bkRows = rows.slice(1);
     const out = rows.map((r, i) => {
       if (i && r[0] === '选材价差' && (bookDraft[r[1]] || (bookDraft[bkOptCode(r[1])] && [4, 5, 6].some(k => r[k] !== '')))) {
-        const a = String(bkOptAbs(r[1], r, false)).trim(), o = bkOptInfo(r[1]);
+        const f = bkOptF(r[1], r), o = bkOptInfo(r[1]);
         r = [...r];
-        if (a === '') { r[4] = r[5] = r[6] = ''; return r; }
-        const std = bkStdTot(o.code);
-        if (!Number.isFinite(Number(a))) { errs.push(`「${o.key.label}：${o.v}」的单价不是数字`); return r; }
-        if (std == null) { errs.push(`「${PRICE[o.code].name}」标准价还没定，先填标准价再填「${o.v}」`); return r; }
-        r[4] = String(Math.round((Number(a) - std) * 10000) / 10000); r[5] = ''; r[6] = '';
+        if (OF.every(k => String(f[k]).trim() === '')) { r[4] = r[5] = r[6] = ''; return r; }
+        const x = bkStdF(o.code), n = OF.map(k => bkN(f[k]));
+        if (n.some(v => !Number.isFinite(v))) { errs.push(`「${o.key.label}：${o.v}」的价格不是数字`); return r; }
+        if (!x) { errs.push(`「${PRICE[o.code].name}」标准价还没定，先填标准价再填「${o.v}」`); return r; }
+        // 存成比标准多/少多少：材料差价要带上损耗，和报价时的算法一致
+        r[4] = R4((n[0] - x.mat) * (1 + x.w / 100)); r[5] = R4(n[1] - x.aux); r[6] = R4(n[2] - x.lab);
         return r;
       }
       if (!i || !bookDraft[r[1]]) return r;
