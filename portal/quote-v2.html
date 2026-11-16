@@ -960,7 +960,8 @@
     }
     h += `<h3 style="font-size:13px;margin:10px 0 6px">检查</h3><div class="noprint">`;
     if (!K.red.length && !K.yellow.length) h += `<div class="ok">✓ 全部检查通过，可以出${mode === 'formal' ? '正式' : '预估'}报价单</div>`;
-    h += K.red.map(x => `<button class="issue r" data-go="${x.go}"><b>必须处理</b><span>${esc(x.m)}</span></button>`).join('');
+    const fx = m => /尺寸还是默认值|长和宽/.test(m) ? 'dims' : /樘窗/.test(m) ? 'win' : /樘门/.test(m) ? 'door' : /墙面要现场确认/.test(m) ? 'wall' : '';
+    h += K.red.map(x => `<button class="issue r" data-go="${x.go}" data-fx="${fx(x.m)}"><b>必须处理</b><span>${esc(x.m)} <u>去改 →</u></span></button>`).join('');
     h += K.yellow.map(x => `<button class="issue y" data-go="${x.go}"><b>请确认</b><span>${esc(x.m)}</span></button>`).join('');
     h += `</div>`;
     h += `<div class="card noprint"><b>有不确定的项目？</b><p class="hint" style="margin:4px 0 8px">价目表没有的、现场还要再看的，先人工增加一项，写清名称和暂定单价。</p>${extrasEditor('')}</div>`;
@@ -1461,7 +1462,15 @@
     }
     if (ds.go) {
       if (ds.go === 'all') { tab = 'all'; render(); return; }
-      if (ds.go.startsWith('spec:')) { tab = 'spec'; specGroup = room(ds.go.slice(5)) ? Q.roomGroup(room(ds.go.slice(5))) : null; } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; }
+      if (room(ds.go)) {
+        roomId = ds.go; tab = 'room'; roomPicked = true; groupId = null; render();
+        // 跳到要改的地方并把光标放进去
+        const sel = { dims: 'input[data-rf="L"]', win: 'input[data-wk="w"]', door: 'input[data-dk="w"]', wall: 'input[data-pk="wall"]' }[ds.fx];
+        const el = (sel && document.querySelector(sel)) || document.querySelector('.donebar .issue') || document.querySelector('.card');
+        if (el) { el.scrollIntoView({ block: 'center' }); if (el.focus) el.focus(); if (ds.fx === 'dims') { const mb = document.querySelector('[data-measured]'); if (mb) mb.style.boxShadow = '0 0 0 3px var(--accent)'; } } else window.scrollTo(0, 0);
+        return;
+      }
+      if (ds.go.startsWith('spec:')) { tab = 'spec'; specGroup = room(ds.go.slice(5)) ? Q.roomGroup(room(ds.go.slice(5))) : null; } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; roomPicked = true; groupId = null; }
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }
