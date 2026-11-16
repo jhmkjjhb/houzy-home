@@ -606,4 +606,16 @@ ok('阳台按墙面算的项目要现场确认墙面面积，填了才放行；�
   assert.equal(Q.buildLines(p).find(l => l.roomId === b.id && l.code === 'paint_wall').qty, 295, '按员工填的实际面积算');
 });
 
+ok('阳台阳光棚只算顶；阳光房算顶 + 玻璃围合（长 × 高），顶面材料可选', () => {
+  const b = { ...Q.newRoom('balcony', 1, 1), L: 18, W: 10.5, measured: true, packs: ['sun_canopy'] };
+  const p = project([b]); let L = Q.buildLines(p);
+  assert.equal(L.find(l => l.code === 'awning').qty, 189); assert.ok(!L.some(l => l.code === 'sunroom_wall'), '阳光棚四周不封');
+  b.packs = ['sunroom']; b.vals = { sunroom: { area: 189, len: 39, h: 8 } };
+  Q.activePlan(p).roomSpecs[b.id] = { '@sunroom': { canopy: { roof: '夹胶钢化玻璃' } } };
+  L = Q.buildLines(p);
+  assert.equal(L.find(l => l.code === 'sunroom_wall').qty, 312, '围合 39 尺 × 高 8 尺');
+  const roof = L.find(l => l.code === 'awning');
+  assert.ok(roof.spec.includes('夹胶钢化玻璃') && roof.priceTbd.length, '换玻璃顶要标价差待定，不能按阳光板价算');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

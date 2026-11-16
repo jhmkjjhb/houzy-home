@@ -95,12 +95,12 @@
     kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
     bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
-    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal'] },
+    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
     corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
-    yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] },
+    yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
     extension: { label: '加建空间', icon: '🏗️', L: 20, W: 10, doors: 1, ext: true, landed: true, packs: ['floor', 'wet_tile', 'wall_finish', 'ceiling', 'ceil_paint', 'electric', 'kitchen_water', 'aircon', 'fan', 'window_new', 'fly_screen', 'door', 'cabinets', 'sill'] },
     porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'garden_light'] }
@@ -167,6 +167,14 @@
       paint:     { label: '踏步油漆', opts: ['木器清漆', '地坪漆', '彩色水泥漆'], std: '木器清漆', codes: ['stair_paint', 'stair_paint_area'] },
       nosing:    { label: '防滑处理', opts: ['铝合金防滑条', '开防滑槽', '不做'], std: '铝合金防滑条', codes: ['stair_tread', 'stair_stone'] },
       railColor: { label: '栏杆颜色', opts: ['黑色', '白色', '木色', '不锈钢本色', '香槟金'], std: '黑色', codes: Object.values(RAIL_CODES), noPrice: true }
+    } },
+    // 阳光棚 / 阳光房 / 雨棚：马来西亚常见做法
+    canopy: { label: '阳光棚/阳光房', icon: '⛱️', keys: {
+      roof:  { label: '顶面材料', opts: ['阳光板（Polycarbonate）', '夹胶钢化玻璃', '铝合金隔热板（三明治板）', '金属浪板（Metal Deck）', '铝合金百叶（可调）'], std: '阳光板（Polycarbonate）', codes: ['awning'] },
+      frame: { label: '框架', opts: ['镀锌钢（防锈漆）', '铝合金', '不锈钢'], std: '镀锌钢（防锈漆）', codes: ['awning', 'sunroom_wall'] },
+      wall:  { label: '四周围合', opts: ['铝合金推拉窗', '铝合金折叠门', '固定玻璃 + 部分推拉', '无框玻璃'], std: '铝合金推拉窗', codes: ['sunroom_wall'] },
+      glass: { label: '围合玻璃', opts: ['6 mm 钢化透明', '8 mm 钢化透明', '夹胶玻璃', '隔热 Low-E 玻璃', '茶色/灰色钢化玻璃'], std: '6 mm 钢化透明', codes: ['sunroom_wall'] },
+      color: { label: '框架颜色', opts: ['黑色', '白色', '香槟', '灰色'], std: '黑色', codes: ['awning', 'sunroom_wall'], noPrice: true }
     } },
     shower: { label: '淋浴区', icon: '🚿', keys: {
       base:  { scope: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
@@ -308,6 +316,12 @@
     scaffold:       { g: 'demo', label: '挑空/高处脚手架', icon: '🏗️', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: (r, g, v) => [['scaffold', v.n, '处数']] },
     porch_tile:     { g: 'out', area: ['floor'], label: '防滑地砖', icon: '🟫', lines: (r, g, v, picked, sp) => [['screed', g.floor, '地面找平'], ['porch_tile', g.floor, '地面'], ...tileExtra(sp, g.floor)] },
     drain_ch:       { g: 'out', label: '排水沟', icon: '〰️', inputs: [{ k: 'len', label: '排水沟长度', unit: '尺', def: (r, g) => g.W }], lines: (r, g, v) => [['drain_ch', v.len, '排水沟长度']] },
+    // 阳光棚只做顶；阳光房是顶 + 四周玻璃围合。面积、围合长度和高度每家不同，现场量；顶面、框架、玻璃到「④ 选材」
+    sun_canopy:     { g: 'out', label: '阳光棚（只做顶）', icon: '⛱️', hint: '封顶挡雨遮阳，四周不封；可能要物业/市政同意',
+                      inputs: [{ k: 'area', label: '顶棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '顶棚面积']] },
+    sunroom:        { g: 'out', label: '阳光房（顶 + 四周玻璃）', icon: '🏡', hint: '顶棚 + 玻璃围合成半室内空间；一般要物业/市政同意',
+                      inputs: [{ k: 'area', label: '顶面面积', unit: '平方尺', def: (r, g) => g.floor }, { k: 'len', label: '玻璃围合长度', unit: '尺', def: (r, g) => r2(g.L + 2 * g.W) }, { k: 'h', label: '围合高度', unit: '尺', def: (r, g) => g.H || 9 }],
+                      lines: (r, g, v) => [['awning', v.area, '顶面面积'], ['sunroom_wall', r2(v.len * v.h), `玻璃围合 ${v.len} 尺 × 高 ${v.h} 尺`]] },
     awning:         { g: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '雨棚面积']] },
     garden_light:   { g: 'out', label: '户外灯', icon: '💡', inputs: [{ k: 'n', label: '灯位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['garden_light', v.n, '灯位']] }
   };
@@ -500,7 +514,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));

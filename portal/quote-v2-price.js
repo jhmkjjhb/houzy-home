@@ -98,7 +98,7 @@
     "ceiling_fan":{"stage":"equip","name":"吊扇安装（吊扇客户自购或另计）","unit":"台","mat":0,"aux":10,"lab":60,"waste":0,"desc":"安装吊扇及调速开关，检查平衡无晃动"},
     "extension":{"stage":"outdoor","name":"厨房/后院扩建（地基+砌墙+屋顶）","unit":"平方尺","mat":45,"aux":10,"lab":35,"waste":0,"desc":"按批准图纸施工：地基、砖墙、屋顶（金属板或瓦）、新旧屋面接缝防水；水电瓷砖另按各项计"},
     "ext_permit":{"stage":"outdoor","name":"扩建图纸及市政局（Majlis）申请","unit":"项","mat":0,"aux":0,"lab":1800,"waste":0,"desc":"绘制扩建图纸并向地方市政局申请批准；未批准前不得动工"},
-    "awning":{"stage":"outdoor","name":"雨棚（Awning）","unit":"平方尺","mat":18,"aux":3,"lab":6,"waste":0,"desc":"钢结构框架+防锈漆，顶面阳光板/金属板（规格客户选定），排水槽引水"},
+    "awning":{"stage":"outdoor","name":"顶棚（雨棚 / 阳光棚 / 阳光房顶）","unit":"平方尺","mat":18,"aux":3,"lab":6,"waste":0,"desc":"钢结构框架+防锈漆，顶面阳光板/金属板（规格客户选定），排水槽引水"},
     "fence":{"stage":"outdoor","name":"围墙/栏杆","unit":"延尺","mat":60,"aux":10,"lab":30,"waste":0,"desc":"砖墙或铁栏杆围墙（款式客户选定），基础与原地面连接"},
     "autogate":{"stage":"outdoor","name":"自动大门（Autogate）","unit":"套","mat":2200,"aux":200,"lab":600,"waste":0,"desc":"平开/推拉自动门电机+遥控器，含门体改装及布线，后备电池"},
     "drain_ch":{"stage":"outdoor","name":"户外排水沟","unit":"延尺","mat":15,"aux":5,"lab":15,"waste":0,"desc":"混凝土排水沟+盖板，按坡度接至公共排水"},
@@ -135,6 +135,7 @@
    ['stair_steplight', '嵌墙踏步灯', '个', 'equip', '墙面预埋底盒，嵌入式 LED 踏步灯'], ['stair_steplight_sensor', '人体感应踏步灯', '个', 'equip', '感应自动亮灭']].forEach(([code, name, unit, stage, desc]) => {
     root.QV2_PRICE[code] = { stage, name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
   });
+  root.QV2_PRICE.sunroom_wall = { stage: 'outdoor', name: '阳光房玻璃围合', unit: '平方尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '铝合金框+钢化玻璃围合，含门窗五金，打胶防水；需先获物业/市政同意' };
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
