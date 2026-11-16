@@ -10,8 +10,10 @@
   const STAGES = root.QV2_STAGES || src.STAGES;
   const OPTION_PRICES = root.QV2_OPTION_PRICES || (src && src.OPTION_PRICES) || {};
   const OPTION_REF = root.QV2_OPTION_REF || (src && src.OPTION_REF) || {};
+  const TILE_PIECE_PRICES = root.QV2_TILE_PIECE_PRICES || {};
   const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
   const r2 = n => Math.round(n * 100) / 100;
+  const r4 = n => Math.round(n * 10000) / 10000;
   const ceil = Math.ceil;
 
   // ---------- 房屋类型与预设房间 ----------
@@ -148,8 +150,8 @@
       material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate', 'wood_floor'], packs: ['floor'], noPrice: true },
       floorSize: { label: '地砖尺寸', opts: ['600×600 mm', '300×600 mm', '600×1200 mm', '800×800 mm', '750×1500 mm', '900×1800 mm', '1200×1200 mm'], std: '600×600 mm', codes: ['floor_tile', 'porch_tile'] },
       wallSize:  { label: '墙砖尺寸', opts: ['300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm'], std: '300×600 mm', codes: ['wall_tile'] },
-      finish:    { label: '地砖表面', opts: ['哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: ['floor_tile', 'porch_tile'], noPrice: true },
-      wallFinish:{ label: '墙砖表面', opts: ['哑光', '柔光', '亮光'], std: '亮光', codes: ['wall_tile'], noPrice: true },
+      finish:    { label: '地砖表面', opts: ['普通亮面', '质感', '质感亮面', '质感哑面', '哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: ['floor_tile', 'porch_tile'], noPrice: true },
+      wallFinish:{ label: '墙砖表面', opts: ['普通亮面', '质感', '质感亮面', '质感哑面', '哑光', '柔光', '亮光'], std: '亮光', codes: ['wall_tile'], noPrice: true },
       supply:    { label: '瓷砖供应', opts: ['包工包料', '客户自备砖'], std: '包工包料', codes: TILE_CODES, mod: { '客户自备砖': { matZero: true } } },
       woodGrade: { label: '地板档次', opts: ['标准 5 mm', '加厚 8 mm', '多层实木复合'], std: '标准 5 mm', codes: ['wood_floor'] }
     } },
@@ -474,21 +476,43 @@
     const p = { ...P[code], ...((project.prices && project.prices[code]) || {}) };
     let mat = num(p.mat) * (1 + num(p.waste) / 100), aux = num(p.aux), lab = num(p.lab);
     const base = mat + aux + lab, spec = [], tbdKeys = [], priceTbd = [], ref = [];
+    let tile = null, supplied = false;
+    const variantMode = TILE_CODES.includes(code); // 新报价一律按规格片价；缺价明确待定，避免套用旧面积砖材价
     if (P[code].ref && !(project.prices && project.prices[code])) ref.push(P[code].name);
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
       const s = specOf(project, room, cat, k, planId, pack);
       spec.push(s.v);
       if (!s.decided && !key.scope) tbdKeys.push(cat);
+      if (TILE_CODES.includes(code) && cat === 'tile' && (k === 'floorSize' || k === 'wallSize')) {
+        if (variantMode) return;
+        const id = `${cat}.${k}.${s.v}@${code}`, price = TILE_PIECE_PRICES[id];
+        const dims = s.v.match(/^(\d+)×(\d+) mm$/);
+        if (dims && price !== undefined && Number.isFinite(Number(price))) {
+          tile = { size: s.v, width: +dims[1], height: +dims[2], price: +price, waste: num(p.waste) };
+          mat = 0;
+          return;
+        }
+      }
       if (key.noPrice || s.v === stdOf(key, room)) return;
       const mod = key.mod && key.mod[s.v];
-      if (mod && mod.matZero) { mat = 0; return; }
+      if (mod && mod.matZero) { mat = 0; supplied = true; return; }
       const add = OPTION_PRICES[`${cat}.${k}.${s.v}`]?.[code];
       if (add) { mat += num(add.mat); aux += num(add.aux); lab += num(add.lab); }
       // 公司没填价差：有参考百分比就先按参考价算，并标「参考价」
       else if (OPTION_REF[`${cat}.${k}.${s.v}`] !== undefined) { mat += base * OPTION_REF[`${cat}.${k}.${s.v}`] / 100; ref.push(`${key.label}：${s.v}`); }
       else priceTbd.push(`${key.label}：${s.v}`);
     });
-    return { unit: r2(mat + aux + lab), lab: r2(lab), spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd, ref };
+    if (variantMode) {
+      const sizeKey = code === 'wall_tile' ? 'wallSize' : 'floorSize', finishKey = code === 'wall_tile' ? 'wallFinish' : 'finish';
+      const size = specOf(project, room, 'tile', sizeKey, planId, pack).v;
+      const finish = specOf(project, room, 'tile', finishKey, planId, pack).v;
+      const dims = size.match(/^(\d+)×(\d+) mm$/), price = TILE_PIECE_PRICES[`tile.size.${size}.${finish}`] ?? TILE_PIECE_PRICES[`tile.${sizeKey}.${size}.${finish}@${code}`];
+      mat = 0;
+      if (!supplied && dims && price !== undefined && Number.isFinite(Number(price))) tile = { size, finish, width: +dims[1], height: +dims[2], price: +price, waste: num(p.waste), splitPricing: true };
+      else if (!supplied) priceTbd.push(`${P[code].name}：${size} · ${finish} 砖材片价`);
+    }
+    const areaUnit = P[code].unit === '平方尺' && !!P[code].companyPrice;
+    return { unit: areaUnit ? r4(mat + aux + lab) : r2(mat + aux + lab), lab: areaUnit ? r4(lab) : r2(lab), matUnit: mat, layUnit: aux + lab, customerSupplied: supplied, tile: supplied ? null : tile, splitPricing: variantMode, spec: spec.join(' · '), tbd: [...new Set(tbdKeys)], priceTbd, ref };
   }
   const roomLabel = (room, project) => (levelsOf(project) > 1 ? `${room.level || 1}楼 · ` : '') + room.name;
   const levelsOf = project => Math.max(1, ...project.rooms.map(r => r.level || 1));
@@ -498,14 +522,27 @@
     const push = (room, code, qty, formula, from, pack, item) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
-      let unit, lab = 0, spec = '', tbd = [], priceTbd = [], ref = [];
+      let unit, lab = 0, matUnit = 0, layUnit = 0, customerSupplied = false, tile = null, splitPricing = false, spec = '', tbd = [], priceTbd = [], ref = [];
       if (item) unit = r2(num(item.price));
-      else ({ unit, lab, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));
-      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total: Math.round(qty * unit), spec, tbd, priceTbd, ref, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
+      else ({ unit, lab, matUnit, layUnit, customerSupplied, tile, splitPricing, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));
+      let total = Math.round(qty * unit);
+      if (tile) {
+        const tileArea = tile.width * tile.height / 1000000;
+        tile.areaM2 = r2(qty / 10.7639);
+        tile.theoretical = qty / 10.7639 / tileArea;
+        // 报价面积已四舍五入到 0.01 平方尺；允许这半格的测量误差，避免整数边界多算一片。
+        const roundingTolerance = 0.005 / 10.7639 / tileArea * (1 + tile.waste / 100) + 1e-9;
+        tile.pieces = Math.max(1, Math.ceil(tile.theoretical * (1 + tile.waste / 100) - roundingTolerance));
+        tile.materialTotal = r2(tile.pieces * tile.price);
+        tile.areaTotal = r2(qty * unit);
+        total = Math.round(tile.materialTotal + tile.areaTotal);
+        unit = r2((tile.materialTotal + tile.areaTotal) / qty);
+      }
+      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total, tile, splitPricing, matUnit, layUnit, customerSupplied, spec, tbd, priceTbd, ref, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
       // 赠送：这间这一项照常列出、写明原价，但不收钱
       const last = lines[lines.length - 1];
       // 送产品不送人工：材料+辅料（含损耗）免收，人工安装照收
-      if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.labUnit = lab; last.total = Math.round(qty * lab); last.giftValue = Math.round(qty * unit) - last.total; }
+      if (room && room.gift && room.gift[code] && !item) { last.gift = true; last.labUnit = lab; last.total = Math.round(qty * lab); last.giftValue = total - last.total; }
     };
     const anyWork = project.rooms.some(r => (r.packs || []).length) || Object.keys(project.house || {}).some(k => project.house[k] && project.house[k].on) || (project.extras || []).length > 0;
     // 自动收的杂项：在「③ 全屋 → 收费」里逐项列出，员工可以对某单免收（project.waive）
@@ -764,7 +801,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

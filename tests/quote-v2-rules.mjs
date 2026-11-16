@@ -73,15 +73,14 @@ ok('公司还没定价的项目和规格先按参考价算进总价，但要标�
   p.prices = { three_phase: { lab: 2800 } };
   L = Q.buildLines(p);
   assert.ok(!find(L, 'three_phase')[0].ref.length, '本单自己填了价就不算参考价');
-  // 规格：客户选 800×800，公司没填价差 → 按参考百分比比 600×600 贵，并标参考价
+  // 瓷砖：没有系统片价时不能再把旧面积价差当成砖材价
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p2 = project([r]);
   const std = find(Q.buildLines(p2), 'floor_tile')[0].unit;
   p2.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '800×800 mm' } }, roomSpecs: {} }];
   const l = find(Q.buildLines(p2), 'floor_tile')[0];
-  assert.ok(l.unit > std, '大规格比标准贵');
-  assert.deepEqual(l.priceTbd, [], '有参考价就不是价差待定');
-  assert.ok(l.ref.some(x => x.includes('800×800')));
+  assert.equal(l.unit, std, '不同瓷砖规格在缺片价时只计相同的铺贴面积价');
+  assert.ok(l.priceTbd.some(x => x.includes('砖材片价')), '规格片价待定');
 });
 
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
@@ -220,22 +219,22 @@ ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
   assert.equal(find(Q.buildLines(p), 'floor_tile')[0].unit, Math.round((t.aux + t.lab) * 100) / 100);
 });
 
-ok('换了非标准选项但公司还没登记价差：标记价差待定，正式报价拦住；登记后按价差加价', () => {
-  // 这里测「既没有公司价差、也没有参考价」的选项
-  const refKeep = Q.OPTION_REF['tile.floorSize.600×1200 mm']; delete Q.OPTION_REF['tile.floorSize.600×1200 mm'];
-  try {
+ok('瓷砖缺规格片价时待定；旧面积价差不能代替片价', () => {
+  const id = 'tile.size.600×1200 mm.哑光';
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r], { plans: [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×1200 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }] });
   let line = find(Q.buildLines(p), 'floor_tile')[0];
-  assert.deepEqual(line.priceTbd, ['地砖尺寸：600×1200 mm']);
-  assert.equal(line.unit, Q.unitPrice('floor_tile'), '价差未定时暂按标准价');
-  assert.ok(Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('价差待公司核定')));
+  assert.ok(line.priceTbd.some(x => x.includes('砖材片价')));
+  assert.equal(line.tile, null);
   Q.OPTION_PRICES['tile.floorSize.600×1200 mm'] = { floor_tile: { mat: 2, lab: 1 } };
   line = find(Q.buildLines(p), 'floor_tile')[0];
+  assert.ok(line.priceTbd.some(x => x.includes('砖材片价')), '旧面积价差不解除待定');
+  Q.TILE_PIECE_PRICES[id] = 40;
+  line = find(Q.buildLines(p), 'floor_tile')[0];
+  assert.equal(line.tile.price, 40);
   assert.equal(line.priceTbd.length, 0);
-  assert.equal(line.unit, Math.round((Q.unitPrice('floor_tile') + 3) * 100) / 100);
+  delete Q.TILE_PIECE_PRICES[id];
   delete Q.OPTION_PRICES['tile.floorSize.600×1200 mm'];
-  } finally { Q.OPTION_REF['tile.floorSize.600×1200 mm'] = refKeep; }
 });
 
 ok('大板砖（750×1500 以上）自动加大板铺贴加价', () => {
@@ -265,11 +264,13 @@ ok('卫生间、厨房天花默认防潮石膏板，其他房间普通石膏板�
 });
 
 ok('同一范围两套方案：方案之间只差选材，范围和数量相同', () => {
+  Q.TILE_PIECE_PRICES['tile.size.600×600 mm.哑光'] = 20;
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor', 'wall_finish'] };
   const p = project([r], { plans: [{ id: 'A', specs: { tile: { supply: '包工包料' } }, roomSpecs: {} }, { id: 'B', specs: { tile: { supply: '客户自备砖' } }, roomSpecs: {} }] });
   const A = Q.buildLines(p, 'A'), B = Q.buildLines(p, 'B');
   assert.deepEqual(A.map(l => [l.code, l.qty]), B.map(l => [l.code, l.qty]));
   assert.ok(Q.totals(p, A).total > Q.totals(p, B).total);
+  delete Q.TILE_PIECE_PRICES['tile.size.600×600 mm.哑光'];
 });
 
 ok('旧草稿迁移：地砖/木地板/吊顶/刷漆卡片转成新的范围卡片和选材', () => {

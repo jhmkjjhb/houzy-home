@@ -13,7 +13,7 @@ const csv = B.template(PRICE, globalThis.QV2_SPEC_CATS || require('../portal/quo
 const rows = B.parseCsv(csv);
 ok(rows[0][1] === '编号', '模板有表头');
 ok(rows.some(r => r[1] === 'three_phase' && r[4] === ''), '待核定项目单价留空');
-ok(rows.some(r => r[1] === 'floor_tile' && r[4] !== ''), '已有单价的项目带出现价');
+ok(rows.some(r => r[1] === 'floor_tile' && r[4] === '' && r[5] !== ''), '瓷砖铺贴行只带出辅料人工价');
 ok(rows.some(r => r[1] === 'cabinet.door.烤漆@wardrobe'), '选材价差按项目分行');
 ok(!rows.some(r => r[1].startsWith('tile.finish.')), '不影响价格的选项不出行');
 ok(!rows.some(r => r[1] === 'tile.supply.客户自备砖@floor_tile'), '已知算法的选项（自备砖）不出行');

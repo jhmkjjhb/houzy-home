@@ -1,21 +1,28 @@
 // 新版报价器「公司价目表」：下载模板 → 填价格 → 上传。
-// 模板两类行：「项目单价」= 价目表里每个项目的售价；「选材价差」= 选了非标准选项后，每单位加/减多少（可填负数）。
+// 模板三类行：「项目单价」= 施工/旧面积单价；「选材价差」= 非标准选项的旧面积价差；「瓷砖片价」= 砖材 RM/片。
 // 空白 = 还没定（项目显示「单价待核定」，选材显示「价差待定」）；填 0 = 不加价。
 // 上传的价格存在本机浏览器，并在加载计算规则之前合并进 QV2_PRICE / QV2_OPTION_PRICES。
 (function (root) {
   const KEY = 'houzy-quote-v2-pricebook';
   const HEAD = ['类型', '编号', '名称', '单位', '材料', '辅料', '人工', '损耗%', '说明'];
-  const ITEM = '项目单价', OPT = '选材价差';
+  const ITEM = '项目单价', OPT = '选材价差', TILE = '瓷砖片价';
   const cell = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const blank = v => v === '' || v == null;
 
   // specCats 来自 QV2.SPEC_CATS；只为会影响价格的选项出行
-  function template(price, specCats, optPrices) {
+  function template(price, specCats, optPrices, tilePrices = {}) {
     const rows = [HEAD];
     Object.entries(price).forEach(([code, p]) => {
       const un = p.unpriced;
-      rows.push([ITEM, code, p.name, p.unit, un ? '' : p.mat, un ? '' : p.aux, un ? '' : p.lab, un ? '' : p.waste, un ? '单价待公司核定' : '']);
+      const tileLay = ['floor_tile', 'wall_tile', 'porch_tile'].includes(code);
+      rows.push([ITEM, code, p.name, p.unit, un || tileLay ? '' : p.mat, un ? '' : p.aux, un ? '' : p.lab, un ? '' : p.waste, un ? '单价待公司核定' : tileLay ? '本行只填铺贴辅料及人工；砖材统一规格片价另填' : '']);
     });
+    const sizes = [...new Set([...specCats.tile.keys.floorSize.opts, ...specCats.tile.keys.wallSize.opts])];
+    const finishes = [...new Set([...specCats.tile.keys.finish.opts, ...specCats.tile.keys.wallFinish.opts])];
+    sizes.forEach(size => finishes.forEach(finish => {
+      const id = `tile.size.${size}.${finish}`, value = tilePrices[id];
+      rows.push([TILE, id, `${size}·${finish}（地／墙／门廊通用）`, '片', value === undefined ? '' : value, '', '', '', '同规格表面只填一次 RM/片；铺贴另按面积计费']);
+    }));
     Object.entries(specCats).forEach(([cat, c]) => Object.entries(c.keys).forEach(([k, key]) => {
       if (key.noPrice) return;
       const std = typeof key.std === 'function' ? null : key.std;
@@ -24,9 +31,11 @@
         key.codes.forEach(code => {
           if (!price[code]) return;
           const o = (optPrices[`${cat}.${k}.${v}`] || {})[code];
+          // 旧面积价差要能在再次保存时保留；新规格只显示独立的 RM/片输入。
+          if (cat === 'tile' && (k === 'floorSize' || k === 'wallSize') && !o) return;
           rows.push([OPT, `${cat}.${k}.${v}@${code}`, `${c.label}·${key.label}：${v} → ${price[code].name}`, price[code].unit,
             o ? o.mat : '', o ? o.aux : '', o ? o.lab : '', '',
-            std ? `比标准「${std}」每${price[code].unit}多/少多少` : '标准档按房间不同（干区/湿区），填比普通做法多/少多少']);
+            cat === 'tile' && (k === 'floorSize' || k === 'wallSize') ? '旧面积价差：仅在该规格未填 RM/片时生效' : std ? `比标准「${std}」每${price[code].unit}多/少多少` : '标准档按房间不同（干区/湿区），填比普通做法多/少多少']);
         });
       });
     }));
@@ -48,9 +57,9 @@
     return rows.filter(r => r.some(x => String(x).trim() !== ''));
   }
 
-  // 读上传的表 → { items: {code:{mat,aux,lab,waste}}, options: {'cat.key.value': {code:{mat,aux,lab}}}, errors: [] }
+  // 读上传的表 → { items, options, tiles: {'tile.floorSize.600×600 mm@floor_tile': 片价}, errors }
   function read(text, price) {
-    const rows = parseCsv(text), out = { items: {}, options: {}, errors: [] };
+    const rows = parseCsv(text), out = { items: {}, options: {}, tiles: {}, errors: [] };
     const h = (rows[0] || []).map(s => String(s).trim());
     const col = n => h.indexOf(n);
     if (col('编号') < 0 || col('材料') < 0) { out.errors.push('表头不对，请用「下载价格模板」下载的表来填'); return out; }
@@ -66,7 +75,13 @@
         vals[n] = v; any = true;
       });
       if (bad || !any) return;
-      if (type === OPT) {
+      if (type === TILE) {
+        const shared = /^tile\.size\.(\d+)×(\d+) mm\.([^@]+)$/.test(id);
+        const m = id.match(/^tile\.(floorSize|wallSize)\.(\d+)×(\d+) mm(?:\.([^@]+))?@(floor_tile|wall_tile|porch_tile)$/);
+        if (!shared && (!m || !price[m[5]] || (m[1] === 'wallSize' ? m[5] !== 'wall_tile' : m[5] === 'wall_tile'))) { out.errors.push(`第 ${line} 行瓷砖编号看不懂：${id}`); return; }
+        if (!Object.hasOwn(vals, '材料') || vals['材料'] < 0 || Object.hasOwn(vals, '辅料') || Object.hasOwn(vals, '人工')) { out.errors.push(`第 ${line} 行瓷砖片价只填非负的「材料」`); return; }
+        out.tiles[id] = vals['材料'];
+      } else if (type === OPT) {
         const m = id.match(/^(.+)@(.+)$/);
         if (!m || !price[m[2]]) { out.errors.push(`第 ${line} 行编号看不懂：${id}`); return; }
         (out.options[m[1]] = out.options[m[1]] || {})[m[2]] = { mat: vals['材料'] || 0, aux: vals['辅料'] || 0, lab: vals['人工'] || 0 };
@@ -82,13 +97,14 @@
   // 把价目表合并进价格对象（原地修改，计算规则持有同一个对象）
   const UNIT_CHANGED = { protect: true };
   const SPLIT_FROM = { wood_floor: 'laminate' };
-  function apply(book, price, optPrices) {
+  function apply(book, price, optPrices, tilePrices = {}) {
     if (!book) return;
     Object.entries(book.items || {}).forEach(([code, v]) => {
       if (!price[code]) return;
       // 计价单位改过的项目（如成品保护 项 → 平方尺），旧价目表里按旧单位填的价不能套用，否则会按平方尺乘出天价
       if (v.unit ? v.unit !== price[code].unit : UNIT_CHANGED[code]) return;
       Object.assign(price[code], { mat: v.mat, aux: v.aux, lab: v.lab, waste: v.waste });
+      price[code].companyPrice = true;
       delete price[code].ref; // 公司填过价就不再是参考价
       if (v.mat + v.aux + v.lab > 0) delete price[code].unpriced;
     });
@@ -102,6 +118,7 @@
       if (/^tile\.woodGrade\./.test(k) && byCode.laminate && !byCode.wood_floor) byCode = { ...byCode, wood_floor: byCode.laminate };
       optPrices[k] = { ...(optPrices[k] || {}), ...byCode };
     });
+    Object.assign(tilePrices, book.tiles || {});
   }
 
   function load() { try { return JSON.parse(root.localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }
@@ -113,6 +130,24 @@
   // 浏览器里：在计算规则加载之前把已上传的价目表合并进去
   if (root.QV2_PRICE && root.localStorage) {
     root.QV2_OPTION_PRICES = root.QV2_OPTION_PRICES || {};
-    const b = load(); if (b) { apply(b, root.QV2_PRICE, root.QV2_OPTION_PRICES); root.QV2_BOOK_INFO = b.info || null; }
+    root.QV2_TILE_PIECE_PRICES = root.QV2_TILE_PIECE_PRICES || {};
+    let b = load();
+    // 首次启用市场调查建议价时，备份旧浏览器价目表，并让新建议价优先生效。
+    // 之后员工手工保存的单项价格仍能覆盖建议价。
+    const market = root.QV2_MARKET_BOOK, migration = KEY + '-market-20261116';
+    if (b && market && !root.localStorage.getItem(migration)) {
+      try {
+        root.localStorage.setItem(KEY + '-before-market-20261116', JSON.stringify(b));
+        const items = Object.fromEntries(Object.entries(b.items || {}).filter(([code]) => !market.items[code]));
+        const options = {};
+        Object.entries(b.options || {}).forEach(([key, byCode]) => {
+          const keep = Object.fromEntries(Object.entries(byCode).filter(([code]) => !market.options[key]?.[code]));
+          if (Object.keys(keep).length) options[key] = keep;
+        });
+        const next = { ...b, items, options, info: { ...(b.info || {}), marketReference: '2026-11-16' } };
+        if (save(next)) { root.localStorage.setItem(migration, '1'); b = next; }
+      } catch (e) { /* localStorage 不可写时保留原价 */ }
+    }
+    if (b) { apply(b, root.QV2_PRICE, root.QV2_OPTION_PRICES, root.QV2_TILE_PIECE_PRICES); root.QV2_BOOK_INFO = b.info || null; }
   }
 })(typeof window !== 'undefined' ? window : globalThis);
