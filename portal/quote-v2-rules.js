@@ -160,7 +160,7 @@
     } },
     wall: { label: '墙面', icon: '🖌️', keys: {
       method: { label: '墙面做法', opts: ['乳胶漆', '墙纸', '艺术漆', '墙布'], std: '乳胶漆', codes: ['paint_wall', 'wallpaper', 'art_paint', 'wall_cloth'], packs: ['wall_finish'], noPrice: true },
-      brand:  { label: '油漆品牌', opts: ['Nippon Paint', 'Dulux', 'Jotun'], std: 'Nippon Paint', codes: ['paint_wall'] },
+      brand:  { label: '油漆品牌', opts: ['Nippon Paint', 'Dulux', 'Jotun'], std: 'Nippon Paint', codes: ['paint_wall', 'paint_ceiling'] },
       base:   { label: '基层处理', opts: ['旧墙局部修补', '新墙满批', '铲除旧漆重做'], std: '旧墙局部修补', codes: ['skim'] }
     } },
     ceiling: { label: '天花', icon: '⬜', keys: {
@@ -222,6 +222,49 @@
       glass: { label: '隔断玻璃', opts: ['钢化清玻', '长虹玻璃', '磨砂玻璃'], std: '钢化清玻', codes: ['glass_part'] },
       frame: { label: '隔断框', opts: ['铝合金框', '黑色细框（工业风）', '无框'], std: '铝合金框', codes: ['glass_part'] },
       tub:   { label: '浴缸款式', opts: ['亚克力独立浴缸', '砌台嵌入式（含砌台贴砖）', '按摩浴缸'], std: '亚克力独立浴缸', codes: ['bathtub'] }
+    } },
+    // 11-17 主材选品：每种材料的款式/品牌，换了按参考百分比加减价
+    doorwin: { label: '门窗选材', icon: '🚪', keys: {
+      doorMat: { label: '室内门材质', opts: ['实木复合门', '免漆门（PVC 覆膜）', '烤漆门', '实心实木门', '铝合金玻璃门'], std: '实木复合门', codes: ['door'] },
+      winType: { label: '窗户类型', opts: ['普通铝合金窗', '隔音窗（双层夹胶玻璃）', '断桥铝窗（中空玻璃）'], std: '普通铝合金窗', codes: ['window_new', 'balc_seal'] },
+      winOpen: { label: '窗户开启方式', opts: ['推拉窗', '平开窗', '上悬窗'], std: '推拉窗', codes: ['window_new'] },
+      screen: { label: '纱窗类型', opts: ['推拉纱窗', '隐形卷帘纱窗', '折叠纱窗', '固定纱窗'], std: '推拉纱窗', codes: ['fly_screen'] }
+    } },
+    bathkit: { label: '卫浴 / 厨房选品', icon: '🚽', keys: {
+      toiletKind: { label: '马桶款式', opts: ['分体马桶', '连体马桶', '壁挂入墙马桶（含隐藏水箱）', '智能马桶'], std: '分体马桶', codes: ['toilet'] },
+      sanBrand: { label: '洁具品牌', opts: ['普通品牌（示范价）', 'Johnson Suisse', 'American Standard', 'TOTO', 'Kohler'], std: '普通品牌（示范价）', codes: ['toilet', 'shower'] },
+      shower: { label: '花洒类型', opts: ['明装普通花洒', '明装恒温花洒', '暗装入墙花洒'], std: '明装普通花洒', codes: ['shower'] },
+      heater: { label: '热水器类型', opts: ['即热式', '储水式', '热泵热水器', '太阳能热水器'], std: '即热式', codes: ['heater'] },
+      sink: { label: '厨房水槽', opts: ['不锈钢单槽', '不锈钢双槽', '石英石水槽', '不锈钢台下盆'], std: '不锈钢单槽', codes: ['sink'] },
+      tap: { label: '厨房龙头', opts: ['普通龙头', '抽拉式龙头'], std: '普通龙头', codes: ['sink'] },
+      exhaust: { label: '排气扇', opts: ['普通排气扇', '静音排气扇', '带灯排气扇'], std: '普通排气扇', codes: ['exhaust'] },
+      acc: { label: '卫浴五金挂件', opts: ['不锈钢', '太空铝', '哑黑', '拉丝金'], std: '不锈钢', codes: ['bath_acc'] },
+      drain: { label: '地漏', opts: ['普通防臭地漏', '侧排地漏', '长条线性地漏'], std: '普通防臭地漏', codes: ['drain'] }
+    } },
+    base: { label: '泥水 / 水电辅材', icon: '🧱', keys: {
+      stone: { label: '门槛石 / 窗台石材质', opts: ['人造石', '大理石', '花岗岩', '石英石'], std: '人造石', codes: ['threshold', 'window_sill'] },
+      skirting: { label: '踢脚线', opts: ['瓷砖踢脚', 'PVC 踢脚', '铝合金/不锈钢踢脚', '实木踢脚', '隐形踢脚（与墙面齐平）'], std: '瓷砖踢脚', codes: ['skirting'] },
+      grout: { label: '美缝', opts: ['环氧彩砂美缝', '普通填缝剂', '聚脲美缝'], std: '环氧彩砂美缝', codes: ['grout'] },
+      wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp'] },
+      pipe: { label: '水管', opts: ['PPR 水管', 'PEX 水管', '不锈钢水管'], std: 'PPR 水管', codes: ['water_pt'] },
+      wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
+      cornice: { label: '石膏线材料', opts: ['石膏线', 'PU 线条'], std: '石膏线', codes: ['cornice'] }
+    } },
+    soft2: { label: '窗帘 / 晾衣架 / 吊扇', icon: '🎐', keys: {
+      curtain: { label: '窗帘类型', opts: ['布帘 + 纱帘（双层）', '遮光布帘 + 纱帘', '卷帘', '斑马帘', '铝百叶', '木百叶', '电动窗帘（布帘）'], std: '布帘 + 纱帘（双层）', codes: ['curtain'] },
+      rack: { label: '晾衣架', opts: ['手摇升降晾衣架', '电动升降晾衣架', '墙挂折叠晾衣架'], std: '手摇升降晾衣架', codes: ['rack'] },
+      fanSupply: { label: '吊扇供应', opts: ['客户自购（只安装）', '我们供应吊扇'], std: '客户自购（只安装）', codes: ['ceiling_fan'], noPrice: true },
+      fanBrand: { label: '吊扇品牌', opts: ['KDK', 'Panasonic', 'Fanco', 'Deka'], std: 'KDK', codes: ['fan_unit'] }
+    } },
+    outer: { label: '大门 / 外墙 / 安防', icon: '🏠', keys: {
+      mainDoor: { label: '入户大门', opts: ['钢制防盗门', '实木大门', '铝合金大门', '铁艺大门', '智能防盗门（含智能锁）'], std: '钢制防盗门', codes: ['main_door'] },
+      grille: { label: '防盗铁花', opts: ['镀锌铁花', '不锈钢铁花', '隐形防盗网（钢丝）'], std: '镀锌铁花', codes: ['grille'] },
+      extPaint: { label: '外墙漆品牌', opts: ['Nippon Weatherbond', 'Dulux Weathershield', 'Jotun Jotashield'], std: 'Nippon Weatherbond', codes: ['ext_paint'] },
+      cctvRes: { label: 'CCTV 摄像头', opts: ['2MP 普通', '4MP 高清', '4MP 彩色夜视 + 人形侦测'], std: '2MP 普通', codes: ['cctv'] },
+      cctvBrand: { label: 'CCTV 品牌', opts: ['Hikvision', 'Dahua', 'Ezviz（萤石）'], std: 'Hikvision', codes: ['cctv'] },
+      doorbell: { label: '可视门铃', opts: ['普通可视门铃', 'Wi-Fi 手机可视门铃'], std: '普通可视门铃', codes: ['doorbell'] },
+      gateType: { label: '自动大门款式', opts: ['平移门（Sliding）', '双开摇臂门（Swing）', '折叠门（Folding）'], std: '平移门（Sliding）', codes: ['autogate'] },
+      gateMotor: { label: '大门电机', opts: ['普通电机', '中高档电机', '进口电机（Nice / BFT）'], std: '普通电机', codes: ['autogate'] }
     } },
     craft: { label: '其他工艺做法', icon: '🧰', keys: {
       toilet:   { label: '马桶 / 蹲厕', opts: ['坐便马桶', '蹲厕（含水箱）'], std: '坐便马桶', codes: ['toilet'] },
@@ -326,7 +369,7 @@
                       lines: (r, g, v) => [['curtain_motor', v.curtain, '智能窗帘电机'], ['smart_sensor', v.sensor, '传感器'], ['smart_ir', v.ir, '红外遥控器']] },
     aircon:         { g: 'mep', label: '空调预埋', icon: '❄️', inputs: [{ k: 'n', label: '空调', unit: '台', def: () => 1 }],
                       lines: (r, g, v) => [['aircon_pipe', v.n, '空调台数'], ['circuit', v.n, '每台一条专用回路']] },
-    fan:            { g: 'mep', label: '吊扇', icon: '🌀', inputs: [{ k: 'n', label: '吊扇', unit: '台', def: () => 1 }], lines: (r, g, v) => [['fan_point', v.n, '吊扇台数'], ['ceiling_fan', v.n, '吊扇台数']] },
+    fan:            { g: 'mep', label: '吊扇', icon: '🌀', inputs: [{ k: 'n', label: '吊扇', unit: '台', def: () => 1 }], lines: (r, g, v, picked, sp) => [['fan_point', v.n, '吊扇台数'], ['ceiling_fan', v.n, '吊扇台数'], ...(sp('soft2', 'fanSupply') === '我们供应吊扇' ? [['fan_unit', v.n, '吊扇产品（品牌在选材定）']] : [])] },
     kitchen_water:  { g: 'mep', label: '水路改造', icon: '🚰', inputs: [{ k: 'n', label: '水点位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['water_pt', v.n, '水点位']] },
     bath_water:     { g: 'mep', label: '水路改造', icon: '🚰', inputs: [{ k: 'n', label: '水点位', unit: '个', def: () => 5 }], lines: (r, g, v) => [['water_pt', v.n, '水点位'], ['pipe_box', 1, '下水立管包封']] },
     laundry_water:  { g: 'mep', label: '洗衣机水位', icon: '🚰', inputs: [{ k: 'n', label: '水点位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['water_pt', v.n, '水点位']] },
@@ -478,15 +521,15 @@
     { k: 'water_filter', grp: 'mep', label: '全屋净水器', icon: '💧', lines: () => [['water_filter', 1, '']] },
     { k: 'sewer', landed: true, grp: 'mep', label: '排污管/化粪池接驳', icon: '🕳️', lines: () => [['sewer', 1, '']] },
     { k: 'pump', landed: true, grp: 'mep', label: '水泵/水箱', icon: '🛢️', lines: () => [['water_pump', 1, '']] },
-    { k: 'cctv', grp: 'secure', label: '监控 CCTV', icon: '📹', inputs: [{ k: 'n', label: '摄像头', unit: '个', def: () => 4 }], lines: v => [['cctv', v.n, '摄像头数量']] },
-    { k: 'doorbell', grp: 'secure', label: '可视门铃', icon: '🔔', lines: () => [['doorbell', 1, '']] },
-    { k: 'main_door', grp: 'secure', label: '换大门', icon: '🚪', lines: () => [['main_door', 1, '']] },
-    { k: 'grille', grp: 'secure', label: '防盗铁花', icon: '🔒', inputs: [{ k: 'area', label: '面积', unit: '平方尺', def: () => 40 }], lines: v => [['grille', v.area, '铁花面积']] },
-    { k: 'autogate', landed: true, grp: 'secure', label: '自动大门', icon: '🚧', lines: () => [['autogate', 1, '']] },
+    { k: 'cctv', specs: [['outer', 'cctvRes'], ['outer', 'cctvBrand']], grp: 'secure', label: '监控 CCTV', icon: '📹', inputs: [{ k: 'n', label: '摄像头', unit: '个', def: () => 4 }], lines: v => [['cctv', v.n, '摄像头数量']] },
+    { k: 'doorbell', specs: [['outer', 'doorbell']], grp: 'secure', label: '可视门铃', icon: '🔔', lines: () => [['doorbell', 1, '']] },
+    { k: 'main_door', specs: [['outer', 'mainDoor']], grp: 'secure', label: '换大门', icon: '🚪', lines: () => [['main_door', 1, '']] },
+    { k: 'grille', specs: [['outer', 'grille']], grp: 'secure', label: '防盗铁花', icon: '🔒', inputs: [{ k: 'area', label: '面积', unit: '平方尺', def: () => 40 }], lines: v => [['grille', v.area, '铁花面积']] },
+    { k: 'autogate', specs: [['outer', 'gateType'], ['outer', 'gateMotor']], landed: true, grp: 'secure', label: '自动大门', icon: '🚧', lines: () => [['autogate', 1, '']] },
     { k: 'extension', landed: true, grp: 'out', label: '加建/扩建（地基+砌墙+屋顶）', icon: '🏗️', why: '会自动加上扩建图纸及市政局申请；已经按房间加了「加建空间」的不要在这里重复', inputs: [{ k: 'area', label: '加建面积', unit: '平方尺', def: () => 100 }], lines: v => [['extension', v.area, '加建面积']] },
     { k: 'awning', landed: true, grp: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: () => 200 }], lines: v => [['awning', v.area, '雨棚面积']] },
     { k: 'roof_fix', landed: true, grp: 'out', label: '屋顶补漏', icon: '🏠', inputs: [{ k: 'n', label: '漏点', unit: '处', def: () => 1 }], lines: v => [['roof_fix', v.n, '漏点处数']] },
-    { k: 'ext_paint', landed: true, grp: 'out', label: '外墙油漆', icon: '🎨', inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 1500 }], lines: v => [['ext_paint', v.area, '外墙面积']] },
+    { k: 'ext_paint', specs: [['outer', 'extPaint']], landed: true, grp: 'out', label: '外墙油漆', icon: '🎨', inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 1500 }], lines: v => [['ext_paint', v.area, '外墙面积']] },
     { k: 'downpipe', landed: true, grp: 'out', label: '换雨水管', icon: '🌧️', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['downpipe', v.len, '雨水管长度']] },
     { k: 'fence', landed: true, grp: 'out', label: '围墙/栏杆', icon: '🧱', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['fence', v.len, '围墙长度']] },
     { k: 'termite', landed: true, grp: 'struct', label: '白蚁防治', icon: '🐜', why: '有地房屋拆地面、加建、木作多时建议做', inputs: [{ k: 'area', label: '处理面积', unit: '平方尺', def: () => 1000 }], lines: v => [['termite', v.area, '处理面积']] },
@@ -514,8 +557,9 @@
   // 取某个房间某个位置的选材：位置（例如客厅·地面）> 房间 > 全屋 > 标准档；decided = 是否已明确选定
   function specOf(project, room, cat, k, planId, pack) {
     const pl = activePlan(project, planId), key = SPEC_CATS[cat].keys[k];
-    const place = room && pack && pl.roomSpecs?.[room.id]?.['@' + pack]?.[cat]?.[k];
-    const own = room && pl.roomSpecs?.[room.id]?.[cat]?.[k];
+    // 全屋项目没有房间（room = null）：直接用全屋选材，不能把 null 当成「这间已选」
+    const place = room && pack ? pl.roomSpecs?.[room.id]?.['@' + pack]?.[cat]?.[k] : undefined;
+    const own = room ? pl.roomSpecs?.[room.id]?.[cat]?.[k] : undefined;
     const all = pl.specs?.[cat]?.[k];
     if (place !== undefined) return { v: place, decided: true, own: true };
     if (own !== undefined) return { v: own, decided: true, own: true };

@@ -298,12 +298,12 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261117smart"></script>
+<script src="quote-v2-price.js?v=20261117mat"></script>
 <script src="quote-v2-market-20261116.js?v=1"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261116tlab"></script>
-<script src="quote-v2-rules.js?v=20261117smart"></script>
+<script src="quote-v2-rules.js?v=20261117mat2"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -869,7 +869,7 @@
         const q = P.house[it.k] || {}, on = !!q.on, v = Q.houseValues(q, it);
         const my = on ? C.lines.filter(l => l.from === it.label) : [], sub = my.reduce((t, l) => t + l.total, 0);
         return `<div class="pack ${on ? 'on' : ''}"><button type="button" style="all:unset;display:flex;gap:8px;align-items:center;width:100%;cursor:pointer" data-hitem="${it.k}"><span class="tick">${on ? '✓' : ''}</span><span style="font-size:18px">${ic(it.icon)}</span><span style="font-weight:600">${it.label}</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--accent);white-space:nowrap">${on ? (my.some(l => l.unpriced) ? '待定价' : rm(sub)) : ''}</span></button>
-          ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], i.unit === '平方尺' ? 10 : 1))).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
+          ${on && it.inputs ? `<div class="pkbody">${it.inputs.map(i => field(i.label, i.unit, stepper(`data-hv="${it.k}" data-hk="${i.k}"`, v[i.k], i.unit === '平方尺' ? 10 : 1))).join('')}</div>` : ''}${on && it.specs ? `<div class="pkbody">${it.specs.map(([c, k]) => { const key = Q.SPEC_CATS[c].keys[k], cur = Q.specOf(P, null, c, k).v; return `<div style="margin:4px 0"><div class="desc">${esc(key.label)}</div><div class="adds">${key.opts.map(o => `<button type="button" class="chip ${o === cur ? 'on' : ''}" data-hspec="${esc(c + '|' + k + '|' + o)}">${esc(o)}</button>`).join('')}</div></div>`; }).join('')}</div>` : ''}${it.why ? `<div class="desc" style="margin-top:4px">${it.why}</div>` : ''}</div>`;
       }).join('') + `</div></div>`;
     });
     h += `<div class="grp"><h3>人工增加项（全屋）</h3><p class="hint">价目表没有、或者不确定的项目（例如屋顶翻新、外墙防水、特殊加建），自己填名称、单位、数量和单价。房间里的项目请到该房间里加。</p>${extrasEditor('')}</div>`;
@@ -1666,6 +1666,8 @@
     }
     if (b.hasAttribute('data-delplan')) { const ps = Q.plans(P); if (ps.length > 1) { P.plans = ps.filter(p => p.id !== plan().id); P.planId = P.plans[0].id; } render(); return; }
     if (ds.mode) { P.quoteMode = ds.mode; render(); return; }
+    // 全屋项目的款式（大门、铁花、CCTV 等）：存为方案的全屋选材
+    if (ds.hspec) { const [c, k, ...rest] = ds.hspec.split('|'), pl = Q.activePlan(P); ((pl.specs = pl.specs || {})[c] = pl.specs[c] || {})[k] = rest.join('|'); render(); return; }
     if (ds.hitem) { const q = P.house[ds.hitem] = P.house[ds.hitem] || {}; q.on = !q.on; render(); return; }
     if (ds.stp) {
       const inp = b.parentElement.querySelector('input'), step = parseFloat(ds.stp);

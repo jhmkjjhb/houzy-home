@@ -170,6 +170,25 @@ ok('开关和智能家居：智能开关替换普通面板不重复收，品牌/
   assert.equal(qty(Q.buildLines(project([r0])), 'smart_switch'), 0, '默认不加智能开关');
 });
 
+ok('主材选品：每个选项都有参考价差（不会出现价差待定），升级的比标准贵；吊扇选我们供应才出产品；全屋项目也能选款式', () => {
+  ['doorwin', 'bathkit', 'base', 'soft2', 'outer'].forEach(cat => Object.entries(Q.SPEC_CATS[cat].keys).forEach(([k, key]) => {
+    if (key.noPrice) return;
+    key.opts.slice(1).forEach(v => assert.ok(Q.OPTION_REF[`${cat}.${k}.${v}`] !== undefined, `${cat}.${k}.${v} 缺参考价差`));
+    key.codes.forEach(c => assert.ok(Q.PRICE[c], c));
+  }));
+  const r = { ...Q.newRoom('bath', 1, 1), measured: true, packs: ['sanitary'] };
+  const u = specs => find(Q.buildLines(project([r], { plans: [{ id: 'A', specs: { bathkit: specs }, roomSpecs: {} }] })), 'toilet')[0].unit;
+  assert.ok(u({ toiletKind: '智能马桶' }) > u({ toiletKind: '连体马桶' }) && u({ toiletKind: '连体马桶' }) > u({}));
+  assert.ok(u({ toiletKind: '连体马桶', sanBrand: 'TOTO' }) > u({ toiletKind: '连体马桶' }), '款式和品牌叠加');
+  const f = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['fan'] };
+  const fl = sup => Q.buildLines(project([f], { plans: [{ id: 'A', specs: { soft2: { fanSupply: sup } }, roomSpecs: {} }] }));
+  assert.equal(qty(fl('客户自购（只安装）'), 'fan_unit'), 0, '客户自购只收安装');
+  assert.equal(qty(fl('我们供应吊扇'), 'fan_unit'), 1);
+  const g = sp => find(Q.buildLines(project([], { house: { main_door: { on: true } }, plans: [{ id: 'A', specs: { outer: sp }, roomSpecs: {} }] })), 'main_door')[0].unit;
+  assert.ok(g({ mainDoor: '智能防盗门（含智能锁）' }) > g({}), '全屋大门款式改价');
+  ['main_door', 'grille', 'cctv', 'autogate', 'ext_paint', 'doorbell'].forEach(k => assert.ok(Q.HOUSE_ITEMS.find(h => h.k === k).specs, k + ' 在全屋里有款式可选'));
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);
@@ -295,8 +314,8 @@ ok('预估报价：没定的选材只提醒；正式报价：必须全部定好'
   assert.ok(Q.checks(p, L, 'estimate').yellow.some(x => x.m.includes('地面还没定选材')));
   assert.ok(!Q.checks(p, L, 'estimate').red.some(x => x.m.includes('地面还没定选材')));
   assert.ok(Q.checks(p, L, 'formal').red.some(x => x.m.includes('地面还没定选材')));
-  p.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '哑光', supply: '包工包料' } }, roomSpecs: {} }];
-  assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('选材')), '选材都定了就不再挡');
+  p.plans = [{ id: 'A', specs: { tile: { material: '瓷砖', floorSize: '600×600 mm', finish: '哑光', supply: '包工包料' }, base: { skirting: '瓷砖踢脚', grout: '环氧彩砂美缝' } }, roomSpecs: {} }];
+  assert.ok(!Q.checks(p, Q.buildLines(p), 'formal').red.some(x => x.m.includes('选材')), '选材都定了（含踢脚线、美缝）就不再挡');
 });
 
 ok('客户自备砖：地砖只收辅材+人工，不收主材', () => {
