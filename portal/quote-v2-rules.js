@@ -142,16 +142,23 @@
     } },
     // 浴室柜：成品/定制、材质这些可以整组卫生间一起定；尺寸每间单独填
     vanity: { label: '浴室柜', icon: '🪞', keys: {
-      kind:   { label: '浴室柜类型', opts: ['成品浴室柜', '定制浴室柜'], std: '成品浴室柜', codes: ['vanity', 'vanity_custom'], noPrice: true },
-      body:   { label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
-      top:    { label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
-      mirror: { label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
+      kind:   { per: true, label: '浴室柜类型', opts: ['成品浴室柜', '定制浴室柜'], std: '成品浴室柜', codes: ['vanity', 'vanity_custom'], noPrice: true },
+      body:   { per: true, label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
+      top:    { per: true, label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
+      mirror: { per: true, label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
+    } },
+    demo: { label: '拆旧', icon: '⛏️', keys: {
+      scope: { per: true, label: '拆除范围', opts: ['地砖 + 墙砖全拆', '只拆地砖（墙砖保留）', '只拆墙砖（地砖保留）'], std: '地砖 + 墙砖全拆', codes: ['demo_floor', 'demo_wall_tile', 'demo_piece'], packs: ['bath_demo'], noPrice: true }
+    } },
+    wet: { label: '防水与墙砖', icon: '💧', keys: {
+      wpHeight: { per: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp'], packs: ['bath_tile'], noPrice: true },
+      wallTile: { per: true, label: '墙砖铺到', opts: ['满墙到顶', '到吊顶下（约 8 尺）', '半墙 4 尺（上面刷漆）'], std: '满墙到顶', codes: ['wall_tile'], packs: ['bath_tile'], noPrice: true }
     } },
     shower: { label: '淋浴区', icon: '🚿', keys: {
-      base:  { label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
-      type:  { label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
-      glass: { label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
-      frame: { label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
+      base:  { per: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
+      type:  { per: true, label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
+      glass: { per: true, label: '玻璃', opts: ['8 mm 钢化透明', '10 mm 钢化透明', '8 mm 钢化磨砂', '8 mm 长虹玻璃'], std: '8 mm 钢化透明', codes: ['screen', 'screen_l', 'screen_diamond'] },
+      frame: { per: true, label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
     } },
     lighting: { label: '灯具', icon: '💡', keys: {
       grade: { label: '灯具档次', opts: ['标准 LED 筒灯/吸顶灯', '防眩筒灯+射灯'], std: '标准 LED 筒灯/吸顶灯', codes: ['light'] },
@@ -181,7 +188,11 @@
     demo_skin:      { g: 'demo', area: ['wall'], label: '铲旧墙皮', icon: '🧽', lines: (r, g) => [['demo_skin', g.wall, '墙面面积']] },
     demo_wall_tile: { g: 'demo', area: ['wall'], label: '拆旧墙砖', icon: '⛏️', lines: (r, g) => [['demo_wall_tile', g.wall, '墙砖面积']] },
     demo_ceiling:   { g: 'demo', area: ['floor'], label: '拆旧天花', icon: '⛏️', lines: (r, g) => [['demo_ceiling', g.floor, '旧天花面积']] },
-    bath_demo:      { g: 'demo', area: ['floor', 'wall'], label: '拆旧（地砖+墙砖+洁具）', icon: '⛏️', lines: (r, g) => [['demo_floor', g.floor, '地面'], ['demo_wall_tile', g.wall, '墙面'], ['demo_piece', 3, '旧马桶/面盆/花洒']] },
+    // 卫生间拆旧：每间拆的范围、面积、旧洁具件数可能不同（组页面每间单独填）
+    bath_demo:      { g: 'demo', area: ['floor', 'wall'], label: '拆旧（地砖+墙砖+洁具）', icon: '⛏️', perRoom: true,
+                      inputs: [{ k: 'pcs', label: '旧洁具件数', unit: '件', def: () => 3, opt: true }],
+                      lines: (r, g, v, picked, sp) => { const sc = sp('demo', 'scope');
+                        return [...(sc !== '只拆墙砖（地砖保留）' ? [['demo_floor', g.floor, '地面']] : []), ...(sc !== '只拆地砖（墙砖保留）' ? [['demo_wall_tile', g.wall, '墙面']] : []), ['demo_piece', v.pcs, '旧马桶/面盆/花洒等']]; } },
 
     floor:          { g: 'floor', area: ['floor'], label: '地面翻新', icon: '🟫', hint: '材料在「④ 选材」定',
                       lines: (r, g, v, picked, sp) => sp('tile', 'material') === '瓷砖'
@@ -213,8 +224,16 @@
 
     kitchen_tile:   { g: 'wet', area: ['floor'], label: '地砖+操作区墙砖+防水', icon: '🧱', inputs: [{ k: 'back', label: '操作区墙砖长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }],
                       lines: (r, g, v, picked, sp) => [['wp', g.floor, '厨房地面'], ['flood_test', 1, '做防水就要闭水'], ['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['wall_tile', r2(v.back * 2.5), `操作区 ${v.back}×2.5 尺高`], ['grout', r2(g.floor + v.back * 2.5), '地砖+墙砖'], ['drain', 1, '厨房地漏'], ...tileExtra(sp, g.floor)] },
-    bath_tile:      { g: 'wet', area: ['floor', 'wall'], label: '防水+地砖+满墙砖', icon: '🧱',
-                      lines: (r, g, v, picked, sp) => [['wp', r2(g.floor + g.perim + 36), '地面 + 周长×上翻1尺 + 淋浴区墙 6×6'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['wall_tile', g.wall, '满墙'], ['grout', r2(g.floor + g.wall), '地砖+墙砖'], ['drain', 2, '淋浴区 + 干区'], ['threshold', g.doors, '每个门口一条挡水'], ...tileExtra(sp, g.floor)] },
+    // 卫生间防水+铺贴：防水做多高、墙砖铺多高、壁龛、腰线每间可能不同（组页面每间单独填）
+    bath_tile:      { g: 'wet', area: ['floor', 'wall'], label: '防水+地砖+墙砖', icon: '🧱', perRoom: true,
+                      inputs: [{ k: 'niche', label: '壁龛', unit: '个', def: () => 0, opt: true }, { k: 'border', label: '腰线/花砖', unit: '延尺', def: () => 0, opt: true }],
+                      lines: (r, g, v, picked, sp) => {
+                        const wpH = sp('wet', 'wpHeight'), wt = sp('wet', 'wallTile'), H = g.H || 9;
+                        const wp = wpH === '全部墙面到顶' ? [r2(g.floor + g.wall), '地面 + 全部墙面'] : wpH === '淋浴区到顶 + 其余上翻 30 cm' ? [r2(g.floor + g.perim + 6 * H), `地面 + 周长×上翻1尺 + 淋浴区墙 6×${H} 到顶`] : [r2(g.floor + g.perim + 36), '地面 + 周长×上翻1尺 + 淋浴区墙 6×6'];
+                        const tileH = wt === '半墙 4 尺（上面刷漆）' ? 4 : wt === '到吊顶下（约 8 尺）' ? Math.min(8, H) : H, wallTile = r2(g.wall * Math.min(1, tileH / H));
+                        return [['wp', wp[0], wp[1]], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['wall_tile', wallTile, tileH >= H ? '满墙到顶' : `铺到 ${tileH} 尺高`], ['grout', r2(g.floor + wallTile), '地砖+墙砖'],
+                          ...(wt === '半墙 4 尺（上面刷漆）' ? [['paint_wall', r2(g.wall - wallTile), '4 尺以上墙面刷防潮漆']] : []),
+                          ['drain', 2, '淋浴区 + 干区'], ['threshold', g.doors, '每个门口一条挡水'], ['niche', v.niche, '淋浴区墙内壁龛'], ['tile_border', v.border, '腰线/花砖'], ...tileExtra(sp, g.floor)]; } },
     wet_tile:       { g: 'wet', area: ['floor'], label: '防水+地砖', icon: '🧱',
                       lines: (r, g, v, picked, sp) => [['wp', g.floor, '地面'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['drain', 1, '地漏'], ...tileExtra(sp, g.floor)] },
     bath_move:      { g: 'wet', area: ['floor'], label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
@@ -455,7 +474,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));

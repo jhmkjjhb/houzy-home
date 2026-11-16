@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116b"></script>
+<script src="quote-v2-price.js?v=20261116c"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116f"></script>
+<script src="quote-v2-rules.js?v=20261116h"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -668,16 +668,19 @@
     const mats = chosen.map(c => { const s = stat(c), pl = keysOf(c, s.have); return pl.keys.length ? { c, s, pl } : null; }).filter(Boolean);
     if (mats.length) {
       h += `<h2>这组一起选材</h2><p class="hint">点一个选项，这组选了这项的房间都用它。没想好的可以先不点，按标准档估价。浴室柜、淋浴区这类每间尺寸和做法可能不一样的，下面每间单独填、单独改。</p>`;
-      const sizeOf = (x, c) => { const v = Q.packValues(x, c, Q.geo(x, P)); return (PACKS[c].inputs || []).map(i => `${i.label.replace(/^(淋浴区|柜)/, '')} ${nf(v[i.k])}`).join(' × ') + ' ' + ((PACKS[c].inputs || [])[0]?.unit || ''); };
-      const keysFor = (x, c) => (Q.placesOf(P, x, C.lines).find(y => y.pack === c) || { keys: [] }).keys;
+      const sizeOf = (x, c) => { const v = Q.packValues(x, c, Q.geo(x, P)); return Q.inputsOf(c).filter(i => !(i.opt && !Q.num(v[i.k]))).map(i => `${i.label} ${nf(v[i.k])} ${i.unit}`).join('，'); };
+      // 每间单独改的只列「per」选项（做法、高度、类型）；瓷砖款式、油漆品牌这类整组统一，要每间不同到「④ 选材」改
+      const keysFor = (x, c) => (Q.placesOf(P, x, C.lines).find(y => y.pack === c) || { keys: [] }).keys.filter(([cat, k]) => Q.SPEC_CATS[cat].keys[k].per);
+      const isPer = ([cat, k]) => Q.SPEC_CATS[cat].keys[k].per;
       mats.forEach(({ c, s, pl }) => {
         const per = PACKS[c].perRoom, ek = 'g:' + groupId + ':' + c;
         h += `<div class="card"><b style="font-size:15px">${ic(PACKS[c].icon)} ${esc(pl.label)}</b> <span class="desc">${s.have.length} 间${per ? ' · 每间可不同' : ''}</span>`;
         const vals = pl.keys.map(([cat, k]) => s.have.map(x => Q.specOf(P, x, cat, k, null, c)));
         // 整组都定了就折叠：一般项目要各间一样；每间可不同的项目只要每间都定了，逐间列出
-        const done = per ? s.have.every(x => keysFor(x, c).every(([cat, k]) => Q.specOf(P, x, cat, k, null, c).decided)) : vals.every(cur => cur.every(v => v.decided && v.v === cur[0].v));
+        const common = pl.keys.map((x, i) => [x, vals[i]]).filter(([x]) => !per || !isPer(x));
+        const done = common.every(([, cur]) => cur.every(v => v.decided && v.v === cur[0].v)) && (!per || s.have.every(x => keysFor(x, c).every(([cat, k]) => Q.specOf(P, x, cat, k, null, c).decided)));
         if (done && !specExp.has(ek)) {
-          h += per ? s.have.map(x => `<div class="desc" style="margin:6px 0 0;color:var(--ink)"><b>${esc(Q.roomLabel(x, P))}</b>：${esc(sizeOf(x, c))} · ${keysFor(x, c).map(([cat, k]) => esc(Q.specOf(P, x, cat, k, null, c).v)).join(' · ')}</div>`).join('') + foldBar(ek, '') + '</div>' : foldBar(ek, vals.map(cur => esc(cur[0].v)).join(' · ')) + '</div>';
+          h += per ? s.have.map(x => `<div class="desc" style="margin:6px 0 0;color:var(--ink)"><b>${esc(Q.roomLabel(x, P))}</b>：${esc(sizeOf(x, c))}${keysFor(x, c).length ? ' · ' + keysFor(x, c).map(([cat, k]) => esc(Q.specOf(P, x, cat, k, null, c).v)).join(' · ') : ''}</div>`).join('') + foldBar(ek, common.length ? '全部：' + common.map(([, cur]) => esc(cur[0].v)).join(' · ') : '') + '</div>' : foldBar(ek, vals.map(cur => esc(cur[0].v)).join(' · ')) + '</div>';
           return;
         }
         if (done) h += `<button class="btn" style="float:right" data-specexp="${ek}">收起</button>`;
@@ -687,10 +690,10 @@
           h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${key.label}${same ? (cur[0].decided ? '' : ' <span class="desc">· 未定，暂按标准档</span>') : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div><div class="adds" style="margin:0">${key.opts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-gplace="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}</button>`; }).join('')}</div></div>`;
         });
         if (per) {
-          h += `<div class="hint" style="margin:14px 0 0;padding-top:10px;border-top:1px solid var(--line);font-weight:700;color:var(--navy)">每间单独填尺寸、单独改做法</div>`;
+          h += `<div class="hint" style="margin:14px 0 0;padding-top:10px;border-top:1px solid var(--line);font-weight:700;color:var(--navy)">每间单独填尺寸、单独改做法</div>${pl.keys.some(x => !isPer(x)) ? '<div class="hint" style="margin:2px 0 0">瓷砖款式、油漆品牌等按上面整组统一；某间要不同，到「④ 选材」单独改那间</div>' : ''}`;
           s.have.forEach(x => {
             const v = Q.packValues(x, c, Q.geo(x, P));
-            h += `<div style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px"><b>${esc(Q.roomLabel(x, P))}</b><div class="row" style="margin-top:4px">${(PACKS[c].inputs || []).map(i => field(i.label, i.unit, stepper(`data-wroom="${x.id}" data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === 'cm' ? 5 : 1))).join('')}</div>`;
+            h += `<div style="border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px"><b>${esc(Q.roomLabel(x, P))}</b><div class="row" style="margin-top:4px">${Q.inputsOf(c).map(i => field(i.label, i.unit, stepper(`data-wroom="${x.id}" data-pv="${c}" data-pk="${i.k}"`, v[i.k], i.unit === 'cm' || i.area ? 5 : 1))).join('')}</div>`;
             keysFor(x, c).forEach(([cat, k]) => {
               const key = Q.SPEC_CATS[cat].keys[k], cur = Q.specOf(P, x, cat, k, null, c);
               h += `<div class="hint" style="margin:6px 0 2px">${esc(key.label)}${cur.decided ? '' : ' · 暂按标准档'}</div><div class="dopt" style="margin:0 0 4px">${key.opts.map(o => `<button class="${cur.decided && cur.v === o ? 'on' : ''}" style="padding:6px 10px;min-width:auto" data-room="${x.id}" data-place="${c}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><b style="font-size:13px">${cur.decided && cur.v === o ? '✓ ' : ''}${esc(o)}</b></button>`).join('')}</div>`;

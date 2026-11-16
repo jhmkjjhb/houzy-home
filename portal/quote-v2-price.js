@@ -124,6 +124,8 @@
    ['screen_diamond', '淋浴玻璃隔断（钻石型）', '套', '钻石形钢化玻璃，不锈钢五金，底部挡水，打胶防水'], ['curtain_rod', '浴帘杆 + 浴帘', '套', '不做玻璃隔断时使用']].forEach(([code, name, unit, desc]) => {
     root.QV2_PRICE[code] = { stage: 'equip', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
   });
+  root.QV2_PRICE.niche = { stage: 'tile', name: '淋浴区墙内壁龛', unit: '个', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '开墙槽做壁龛，内部防水后贴砖，阳角收边' };
+  root.QV2_PRICE.tile_border = { stage: 'tile', name: '腰线/花砖', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '墙砖中间加一道腰线或花砖，按长度计' };
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };

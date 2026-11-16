@@ -554,4 +554,20 @@ ok('淋浴区：每间尺寸和做法可不同；淋浴盘、L 型隔断、浴�
   assert.ok(!old.rooms[0].packs.includes('shower_area'), '只迁移一次，员工自己取消后不会又加回来');
 });
 
+ok('卫生间拆旧/防水/墙砖每间可不同：拆除范围、防水高度、墙砖高度改变数量；壁龛按个列出', () => {
+  const p = project(Q.presetRooms('semi')), [a, b] = p.rooms.filter(r => r.type === 'bath');
+  Q.setPackFor(p, [a.id, b.id], 'bath_demo', true); Q.setPackFor(p, [a.id, b.id], 'bath_tile', true);
+  const pl = Q.activePlan(p);
+  pl.roomSpecs[a.id] = { '@bath_demo': { demo: { scope: '只拆地砖（墙砖保留）' } }, '@bath_tile': { wet: { wpHeight: '全部墙面到顶', wallTile: '半墙 4 尺（上面刷漆）' } } };
+  a.vals = { bath_tile: { niche: 2 } };
+  const L = Q.buildLines(p), q = (r, code, pack) => L.filter(l => l.roomId === r.id && l.code === code && (!pack || l.pack === pack)).reduce((t, l) => t + l.qty, 0);
+  const ga = Q.geo(a, p), gb = Q.geo(b, p);
+  assert.equal(q(a, 'demo_wall_tile'), 0, '墙砖保留就不算拆墙砖'); assert.ok(q(b, 'demo_wall_tile') > 0, '另一间照常全拆');
+  assert.equal(q(a, 'wp'), Q.r2(ga.floor + ga.wall), '全墙防水 = 地面 + 全部墙面');
+  assert.equal(q(b, 'wp'), Q.r2(gb.floor + gb.perim + 36), '标准做法不变');
+  assert.ok(Math.abs(q(a, 'wall_tile') - ga.wall * 4 / ga.H) < 0.02, '半墙只铺 4 尺');
+  assert.ok(q(a, 'paint_wall', 'bath_tile') > 0, '半墙上面要刷漆，不能漏');
+  assert.equal(q(a, 'niche'), 2); assert.equal(q(b, 'niche'), 0, '没填壁龛的不出这项');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);
