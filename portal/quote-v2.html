@@ -735,7 +735,7 @@
   const winEditor = (r, mode) => openEditor(r, mode, 'win');
   const kindOf = pk => pk.needWindows ? 'win' : pk.needDoors ? 'door' : null;
   function doneBar(r, bad) {
-    return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : '，去下一步：全屋项目'}</button>`}</div>`;
+    return `<div class="donebar">${r.done ? `<span class="donetag">${ic('check')} 这间已完成</span><button class="btn" data-undone>${ic('undo')} 重新编辑</button>` : bad.has(r.id) ? `<div class="issue r" style="margin:0"><b>先处理这些才能点完成</b><span>${lastK.red.filter(x => x.go === r.id).map(x => esc(x.m)).join('<br>')}</span></div>` : `<button class="btn okb" data-done>${ic('check')} ${r.packs.length || r.ext ? '这间完成' : '这间不做，完成'}${nextOpen(r.id, x => !!x.done) ? '，下一间' : '，下一步：选怎么做、用什么材料'}</button>`}</div>`;
   }
   // 沿用到其他空间：点了某个工项后，问其他能做这项的房间要不要一样（同类房间排前面）
   let syncPrompt = null, copyOpen = false, copyMsg = null;
@@ -793,9 +793,7 @@
   // ---------- ③ 全屋 ----------
   let allDoneMsg = null;
   function viewHouseItems(C) {
-    let h = (allDoneMsg ? `<div class="ok" style="margin-bottom:10px">${ic('check')} ${esc(allDoneMsg)}</div>` : '') + `<h2>③ 全屋项目</h2>`;
-    allDoneMsg = null;
-    h += `<p class="hint">不属于某个房间的工程。开工放线、成品保护、公寓物业申请、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p>`;
+    let h = `<h2>③ 全屋项目</h2><p class="hint">不属于某个房间的工程。开工放线、成品保护、公寓物业申请、垃圾清运、开荒清洁、水管打压、楼上搬运会按房间自动加上，不用在这里选。</p>`;
     const landed = !!(HOUSES[P.houseType] && HOUSES[P.houseType].landed);
     Q.HOUSE_GROUPS.forEach(([gid, gname]) => {
       const items = HOUSE_ITEMS.filter(it => it.grp === gid && (!it.landed || landed || P.house[it.k]?.on));
@@ -875,8 +873,9 @@
     return h + '</div>';
   }
   function viewSpec(C) {
-    let h = `<h2>④ 选材</h2><p class="hint">先在「② 房间」定好每个空间做什么，这里按空间类型统一选材料和选品：点一个选项，这一类空间都用它；某一间要不同，点「某间要不同」单独改。选项下面是换成它以后总价的变化，没想好的先按标准档估价。</p>${planBar()}`;
+    let h = (allDoneMsg ? `<div class="ok" style="margin-bottom:10px">${ic('check')} ${esc(allDoneMsg)}</div>` : '') + `<h2>④ 选材</h2><p class="hint">先在「② 房间」定好每个空间做什么，这里按空间类型统一选材料和选品：点一个选项，这一类空间都用它；某一间要不同，点「某间要不同」单独改。选项下面是换成它以后总价的变化，没想好的先按标准档估价。</p>${planBar()}`;
     const groups = Q.SPACE_GROUPS.map(G => { const rs = Q.sortRooms(P.rooms).filter(r => Q.roomGroup(r) === G.id); return { G, rs, items: specItems(rs, C) }; }).filter(x => x.items.length);
+    allDoneMsg = null;
     if (!groups.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
     if (!groups.some(x => x.G.id === specGroup)) specGroup = (groups.find(x => x.items.some(i => i.open)) || groups[0]).G.id;
     h += `<div class="roombar noprint">${groups.map(x => { const n = x.items.filter(i => i.open).length; return `<button class="rchip ${x.G.id === specGroup ? 'on' : ''}" data-specgroup="${x.G.id}">${ic(x.G.icon)} ${esc(x.G.label)}<small style="color:${n ? 'var(--yellow)' : 'var(--ok)'}">${n ? n + ' 项未定' : '已定'}</small></button>`; }).join('')}</div>`;
@@ -1264,8 +1263,8 @@
     if (ds.cart) { cartOpen[ds.cart] = !cartOpen[ds.cart]; render(); return; }
     if (b.hasAttribute('data-done')) {
       const r = room(roomId); r.done = true; const nx = nextOpen(r.id, x => !!x.done); syncPrompt = null; copyOpen = false;
-      // 最后一间也完成了：不停在原地，直接进下一步「③ 全屋」
-      if (nx) roomId = nx.id; else { tab = 'all'; allDoneMsg = `全部 ${P.rooms.length} 间房都完成了。接着看下面的全屋项目，然后去「④ 选材」统一选材料。`; }
+      // 最后一间也完成了：空间做什么定好了，直接进「④ 选材」选怎么做、用什么材料
+      if (nx) roomId = nx.id; else { tab = 'spec'; specGroup = null; allDoneMsg = `全部 ${P.rooms.length} 间房要做什么都定好了。现在按空间类型选怎么做、用什么材料；全屋项目（水电总改、外墙等）在「③ 全屋」，有需要再去看。`; }
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-undone')) { room(roomId).done = false; render(); return; }
