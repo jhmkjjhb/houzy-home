@@ -155,6 +155,17 @@
   // 岩板背景墙 / 护墙板：新山市场参考价（含材料、安装），公司核定后在价目表改
   root.QV2_PRICE.slab_wall = { stage: 'custom', name: '岩板背景墙', unit: '平方尺', mat: 0, aux: 0, lab: 85, waste: 0, ref: true, desc: '岩板按墙面排版切割，专用胶 + 挂件/背板固定，对缝、磨边；预留开关插座孔位' };
   root.QV2_PRICE.wall_panel = { stage: 'custom', name: '护墙板', unit: '平方尺', mat: 0, aux: 0, lab: 45, waste: 0, ref: true, desc: '墙面找平后打底龙骨/卡扣安装，收口线条，预留开关插座孔位' };
+  // 2026-11-16 新增工艺（参考价，含材料和安装，公司核定后在价目表改）
+  Object.assign(root.QV2_PRICE, {
+    slide_door: { stage: 'custom', name: '推拉门/移门', unit: '平方尺', mat: 0, aux: 0, lab: 45, waste: 0, ref: true, desc: '按洞口实测下单，含上下轨/吊轨、滑轮、锁扣与收口；门洞不平先修整' },
+    glass_part: { stage: 'custom', name: '玻璃隔断', unit: '平方尺', mat: 0, aux: 0, lab: 55, waste: 0, ref: true, desc: '钢化玻璃 + 框，顶地固定，玻璃胶收口；尺寸按现场复测' },
+    drywall: { stage: 'prep', name: '轻钢龙骨石膏板隔墙', unit: '平方尺', mat: 0, aux: 0, lab: 12, waste: 0, ref: true, desc: '轻钢龙骨 + 双面石膏板，中间填隔音棉；门洞处加固，接缝贴网带批平' },
+    stone_floor: { stage: 'tile', name: '石材地面铺贴（大理石/花岗岩）', unit: '平方尺', mat: 0, aux: 0, lab: 35, waste: 0, ref: true, desc: '石材六面防护，水泥砂浆铺贴，留缝填缝；完工后打磨、结晶' },
+    solid_wood: { stage: 'tile', name: '实木地板铺装', unit: '平方尺', mat: 0, aux: 0, lab: 28, waste: 0, ref: true, desc: '地面找平、铺防潮层和龙骨/夹板基层，实木地板钉装，四周留伸缩缝' },
+    damp_proof: { stage: 'ceil', name: '墙面防潮/防霉处理', unit: '平方尺', mat: 0, aux: 0, lab: 6, waste: 0, ref: true, desc: '铲除返潮墙皮到底层，防水砂浆/防潮涂料，再做防霉腻子' },
+    bathtub: { stage: 'equip', name: '浴缸（含龙头、下水、安装）', unit: '套', mat: 0, aux: 0, lab: 2200, waste: 0, ref: true, desc: '浴缸 + 龙头 + 下水，安装后放水试漏' },
+    mop_sink: { stage: 'equip', name: '拖把池（含龙头）', unit: '个', mat: 0, aux: 0, lab: 380, waste: 0, ref: true, desc: '陶瓷拖把池 + 龙头，下水接驳，安装后试水' }
+  });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
@@ -199,6 +210,9 @@
     'canopy.glass.8 mm 钢化透明': 10, 'canopy.glass.夹胶玻璃': 30, 'canopy.glass.隔热 Low-E 玻璃': 50, 'canopy.glass.茶色/灰色钢化玻璃': 5,
     'panel.slab.连纹岩板（大板对纹）': 30, 'panel.slab.厚岩板（9-12 mm）': 20,
     'panel.board.竹木纤维集成墙板': -45, 'panel.board.WPC 木塑墙板': -35, 'panel.board.实木护墙板': 80,
+    'door2.slide.极窄边框（铝合金）': 40, 'door2.slide.木质移门（吊轨）': 10, 'door2.glass.长虹玻璃': 15, 'door2.glass.磨砂玻璃': 10,
+    'door2.frame.黑色细框（工业风）': 25, 'door2.frame.无框': 15, 'door2.tub.砌台嵌入式（含砌台贴砖）': 30, 'door2.tub.按摩浴缸': 150,
+    'tile.stone.大理石': 40, 'tile.stone.水磨石': -10, 'tile.solidWood.橡木': 20, 'tile.solidWood.柚木': 60,
     'soft.grade.经济': -40, 'soft.grade.高档': 80,
     'shower.glass.10 mm 钢化透明': 20, 'shower.glass.8 mm 钢化磨砂': 10, 'shower.glass.8 mm 长虹玻璃': 15, 'shower.frame.哑黑': 10, 'shower.frame.枪灰': 10, 'shower.frame.拉丝金': 20,
     'lighting.grade.防眩筒灯+射灯': 30

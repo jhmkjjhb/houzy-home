@@ -97,6 +97,30 @@ ok('岩板背景墙、护墙板：按墙面宽×高计，材料不同价格不�
   assert.ok(find(L, 'slab_wall')[0].ref.length, '标参考价');
 });
 
+ok('11-17 新增工艺：推拉门、玻璃隔断、轻钢龙骨隔墙、石材地面、墙面防潮、实木地板、浴缸、拖把池都能选、能算钱、标参考价', () => {
+  Object.values(Q.ROOMS).forEach(t => t.packs.forEach(c => assert.ok(Q.PACKS[c], '房间引用了不存在的项目 ' + c)));
+  assert.ok(Q.ROOMS.living.packs.includes('slide_door') && Q.ROOMS.living.packs.includes('glass_part') && Q.ROOMS.living.packs.includes('damp_proof'));
+  assert.ok(Q.ROOMS.bath.packs.includes('bathtub') && Q.ROOMS.laundry.packs.includes('mop_sink'));
+  const r = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['slide_door', 'glass_part', 'damp_proof', 'floor'], vals: { slide_door: { n: 2, w: 6, h: 7 }, glass_part: { w: 8, h: 9 } } };
+  const b = { ...Q.newRoom('bath', 1, 1), measured: true, packs: ['bathtub'] };
+  const l = { ...Q.newRoom('laundry', 1, 1), measured: true, packs: ['mop_sink'] };
+  const p = project([r, b, l], { house: { drywall: { on: true, area: 100 } } });
+  let L = Q.buildLines(p);
+  assert.equal(qty(L, 'slide_door'), 84, '2 樘 × 6 × 7');
+  assert.equal(qty(L, 'glass_part'), 72);
+  assert.equal(qty(L, 'drywall'), 100);
+  assert.ok(qty(L, 'damp_proof') > 0, '防潮默认 周长 × 3 尺');
+  assert.equal(qty(L, 'bathtub'), 1); assert.equal(qty(L, 'mop_sink'), 1);
+  ['slide_door', 'glass_part', 'drywall', 'damp_proof', 'bathtub', 'mop_sink'].forEach(c => { const x = find(L, c)[0]; assert.ok(x.unit > 0 && x.ref.length, c + ' 有参考价并标出'); });
+  // 地面选石材 / 实木地板：出对应项目，不再出瓷砖
+  const plan = m => { p.plans = [{ id: 'A', specs: { tile: { material: m } }, roomSpecs: {} }]; return Q.buildLines(p); };
+  L = plan('石材（大理石/花岗岩）'); assert.ok(qty(L, 'stone_floor') > 0 && !qty(L, 'floor_tile'));
+  L = plan('实木地板'); assert.ok(qty(L, 'solid_wood') > 0 && !qty(L, 'laminate') && !qty(L, 'wood_floor'));
+  // 款式不同价格不同
+  const tub = m => { p.plans = [{ id: 'A', specs: { door2: { tub: m } }, roomSpecs: {} }]; return find(Q.buildLines(p), 'bathtub')[0].unit; };
+  assert.ok(tub('按摩浴缸') > tub('亚克力独立浴缸'), '按摩浴缸更贵');
+});
+
 ok('SPC 和强化复合木地板是两种材料，各取各的价，不能共用一个单价', () => {
   const r = { ...Q.newRoom('bedroom', 1, 1), measured: true, packs: ['floor'] };
   const p = project([r]);

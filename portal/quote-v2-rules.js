@@ -89,20 +89,20 @@
   }
 
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
-  const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new'];
+  const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof'];
   const ROOMS = {
     living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel'] },
     dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel'] },
     master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed', 'slab_wall', 'wall_panel'] },
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed', 'slab_wall', 'wall_panel'] },
     study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study', 'slab_wall', 'wall_panel'] },
-    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
-    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
-    laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
-    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out'] },
+    kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part'] },
+    bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new', 'bathtub', 'slide_door'] },
+    laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new', 'mop_sink', 'slide_door'] },
+    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out', 'mop_sink'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living', 'slab_wall', 'wall_panel'] },
-    store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
-    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel'] },
+    store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door', 'damp_proof'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
@@ -148,12 +148,14 @@
   }
   const SPEC_CATS = {
     tile: { label: '地面与瓷砖', icon: '🟫', keys: {
-      material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板'], std: '瓷砖', codes: ['floor_tile', 'laminate', 'wood_floor'], packs: ['floor'], noPrice: true },
+      material:  { label: '干区地面材料', opts: ['瓷砖', 'SPC 石塑地板', '强化复合木地板', '实木地板', '石材（大理石/花岗岩）'], std: '瓷砖', codes: ['floor_tile', 'laminate', 'wood_floor', 'solid_wood', 'stone_floor'], packs: ['floor'], noPrice: true },
       floorSize: { label: '地砖尺寸', opts: ['600×600 mm', '300×600 mm', '600×1200 mm', '800×800 mm', '750×1500 mm', '900×1800 mm', '1200×1200 mm'], std: '600×600 mm', codes: ['floor_tile', 'porch_tile'] },
       wallSize:  { label: '墙砖尺寸', opts: ['300×600 mm', '600×600 mm', '600×1200 mm', '750×1500 mm'], std: '300×600 mm', codes: ['wall_tile'] },
       finish:    { label: '地砖表面', opts: ['普通亮面', '质感', '质感亮面', '质感哑面', '哑光', '柔光', '亮光', '防滑'], std: room => (room && (ROOMS[room.type].wet || ROOMS[room.type].outdoor) ? '防滑' : '哑光'), codes: ['floor_tile', 'porch_tile'], noPrice: true },
       wallFinish:{ label: '墙砖表面', opts: ['普通亮面', '质感', '质感亮面', '质感哑面', '哑光', '柔光', '亮光'], std: '亮光', codes: ['wall_tile'], noPrice: true },
       supply:    { label: '瓷砖供应', opts: ['包工包料', '客户自备砖'], std: '包工包料', codes: TILE_CODES, mod: { '客户自备砖': { matZero: true } } },
+      stone:     { label: '石材品种', opts: ['花岗岩', '大理石', '水磨石'], std: '花岗岩', codes: ['stone_floor'] },
+      solidWood: { label: '实木地板木种', opts: ['菠萝格（Merbau）', '橡木', '柚木'], std: '菠萝格（Merbau）', codes: ['solid_wood'] },
       woodGrade: { label: '地板档次', opts: ['标准 5 mm', '加厚 8 mm', '多层实木复合'], std: '标准 5 mm', codes: ['wood_floor'] }
     } },
     wall: { label: '墙面', icon: '🖌️', keys: {
@@ -207,6 +209,12 @@
       glass: { label: '围合玻璃', opts: ['6 mm 钢化透明', '8 mm 钢化透明', '夹胶玻璃', '隔热 Low-E 玻璃', '茶色/灰色钢化玻璃'], std: '6 mm 钢化透明', codes: ['sunroom_wall'] },
       color: { label: '框架颜色', opts: ['黑色', '白色', '香槟', '灰色'], std: '黑色', codes: ['awning', 'sunroom_wall'], noPrice: true }
     } },
+    door2: { label: '推拉门 / 玻璃隔断 / 浴缸', icon: '🚪', keys: {
+      slide: { label: '推拉门款式', opts: ['铝合金框 + 钢化玻璃', '极窄边框（铝合金）', '木质移门（吊轨）'], std: '铝合金框 + 钢化玻璃', codes: ['slide_door'] },
+      glass: { label: '隔断玻璃', opts: ['钢化清玻', '长虹玻璃', '磨砂玻璃'], std: '钢化清玻', codes: ['glass_part'] },
+      frame: { label: '隔断框', opts: ['铝合金框', '黑色细框（工业风）', '无框'], std: '铝合金框', codes: ['glass_part'] },
+      tub:   { label: '浴缸款式', opts: ['亚克力独立浴缸', '砌台嵌入式（含砌台贴砖）', '按摩浴缸'], std: '亚克力独立浴缸', codes: ['bathtub'] }
+    } },
     panel: { label: '岩板 / 护墙板', icon: '🪨', keys: {
       slab:  { label: '岩板做法', opts: ['普通岩板（6 mm）', '连纹岩板（大板对纹）', '厚岩板（9-12 mm）'], std: '普通岩板（6 mm）', codes: ['slab_wall'] },
       board: { label: '护墙板材料', opts: ['木饰面（多层板基材）', '竹木纤维集成墙板', 'WPC 木塑墙板', '实木护墙板'], std: '木饰面（多层板基材）', codes: ['wall_panel'] }
@@ -258,8 +266,12 @@
     floor:          { g: 'floor', area: ['floor'], label: '地面翻新', icon: '🟫', hint: '材料在「④ 选材」定',
                       lines: (r, g, v, picked, sp) => sp('tile', 'material') === '瓷砖'
                         ? [['screed', g.floor, '地面找平'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['skirting', g.skirt, '周长 − 门宽'], ...tileExtra(sp, g.floor)]
-                        // SPC 和强化复合木地板分开定价
-                        : [[sp('tile', 'material') === '强化复合木地板' ? 'wood_floor' : 'laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
+                        // 石材要先找平、铺完打磨结晶；SPC / 强化复合 / 实木地板各自定价
+                        : sp('tile', 'material') === '石材（大理石/花岗岩）' ? [['screed', g.floor, '地面找平'], ['stone_floor', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']]
+                        : [[{ '强化复合木地板': 'wood_floor', '实木地板': 'solid_wood' }[sp('tile', 'material')] || 'laminate', g.floor, '地面'], ['skirting', g.skirt, '周长 − 门宽']] },
+    damp_proof:     { g: 'wall', label: '墙面防潮/防霉处理', icon: '💧', hint: '墙脚返潮、发霉：铲到底层，做防水砂浆和防霉处理',
+                      inputs: [{ k: 'area', label: '处理面积', unit: '平方尺', def: (r, g) => r2(g.perim * 3) }],
+                      lines: (r, g, v) => [['damp_proof', v.area, '默认 = 周长 × 墙脚 3 尺高']] },
     wall_finish:    { g: 'wall', area: ['wall'], label: '墙面翻新', icon: '🖌️', hint: '做法在「④ 选材」定',
                       lines: (r, g, v, picked, sp) => {
                         // 厨房贴了操作区墙砖的部分不再批灰刷漆
@@ -300,6 +312,8 @@
                       lines: (r, g, v, picked, sp) => [['wp', g.floor, '地面'], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['grout', g.floor, '= 地砖面积'], ['drain', 1, '地漏'], ...tileExtra(sp, g.floor)] },
     bath_move:      { g: 'wet', area: ['floor'], label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
 
+    bathtub:        { g: 'fix', label: '浴缸', icon: '🛁', hint: '款式在「④ 选材」定', lines: () => [['bathtub', 1, '含龙头、下水、试水']] },
+    mop_sink:       { g: 'fix', label: '拖把池', icon: '🪣', lines: () => [['mop_sink', 1, ''], ['water_pt', 1, '拖把池进水']] },
     sanitary:       { g: 'fix', label: '洁具（马桶+花洒+排风）', icon: '🚽', lines: () => [['toilet', 1, ''], ['shower', 1, ''], ['exhaust', 1, '卫生间必配'], ['bath_acc', 1, '毛巾架/纸巾架/挂钩']] },
     // 淋浴区：每间尺寸不同，单独填；淋浴盘/挡水、隔断形式、玻璃、五金颜色可整组一起定，也可每间不同
     shower_area:    { g: 'fix', label: '淋浴区（淋浴盘/挡水 + 玻璃隔断）', icon: '🚿', perRoom: true,
@@ -337,6 +351,12 @@
     custom_item:    { g: 'cab', label: '其他定制小件（按项）', icon: '🪑', items: true, lines: r => (r.items || []).map(it => ['custom_item', num(it.qty), '按项', it]) },
 
     door:           { g: 'open', label: '换门', icon: '🚪', needDoors: true, lines: (r, g) => [['door', g.doors, '= 房间门数'], ['demo_piece', g.doors, '拆旧门 = 门数']] },
+    slide_door:     { g: 'open', label: '推拉门/移门', icon: '🚪', hint: '门的款式在「④ 选材」定',
+                      inputs: [{ k: 'n', label: '樘数', unit: '樘', def: () => 1 }, { k: 'w', label: '每樘宽', unit: '尺', def: () => 6 }, { k: 'h', label: '高', unit: '尺', def: () => 7 }],
+                      lines: (r, g, v) => [['slide_door', r2(num(v.n) * v.w * v.h), `${v.n} 樘 × 宽 ${v.w} × 高 ${v.h}`]] },
+    glass_part:     { g: 'open', label: '玻璃隔断', icon: '🪟', hint: '玻璃和框在「④ 选材」定',
+                      inputs: [{ k: 'w', label: '宽', unit: '尺', def: () => 8 }, { k: 'h', label: '高', unit: '尺', def: () => 9 }],
+                      lines: (r, g, v) => [['glass_part', r2(v.w * v.h), `宽 ${v.w} × 高 ${v.h}`]] },
     window_new:     { g: 'open', label: '换窗', icon: '🪟', needWindows: true, lines: (r, g) => [['window_new', g.winA, '各樘窗 宽×高 合计'], ['demo_piece', g.wins.length, '拆旧窗 = 窗数']] },
     curtain:        { g: 'open', label: '窗帘', icon: '🎐', needWindows: true, lines: (r, g, v, picked) => [['curtain', g.winW, '各樘窗宽合计'], ...(picked.ceiling ? [['curtain_box', g.winW, '有吊顶 → 窗帘盒 = 窗宽']] : [])] },
     fly_screen:     { g: 'open', label: '纱窗', icon: '🦟', needWindows: true, lines: (r, g) => [['fly_screen', g.winA, '各樘窗 宽×高 合计']] },
@@ -382,6 +402,7 @@
   // grp 决定分组显示；landed = 只在有地房屋显示（公寓不显示，已选的仍然显示）
   const HOUSE_GROUPS = [['struct', '结构与申请'], ['mep', '水电'], ['secure', '门窗与安防'], ['out', '外部、屋顶与加建']];
   const HOUSE_ITEMS = [
+    { k: 'drywall', grp: 'struct', label: '轻钢龙骨石膏板隔墙', icon: '🧱', why: '比砌砖墙轻、快，适合公寓和楼上', inputs: [{ k: 'area', label: '隔墙面积', unit: '平方尺', def: () => 80 }], lines: v => [['drywall', v.area, '隔墙面积（长 × 高）']] },
     { k: 'wall_demo', grp: 'struct', label: '拆墙/开门洞', icon: '🔨', inputs: [{ k: 'area', label: '拆墙面积', unit: '平方尺', def: () => 40 }], lines: v => [['demo_wall', v.area, '拆墙面积']] },
     { k: 'load_wall', grp: 'struct', label: '动承重墙', icon: '🏗️', why: '必须结构工程师签字', inputs: [{ k: 'n', label: '处数', unit: '处', def: () => 1 }], lines: v => [['struct', v.n, '处数'], ['engineer', 1, '动承重墙必须有']] },
     { k: 'reno_permit', grp: 'struct', label: '改建申请（市政局准证）', icon: '📄', lines: () => [['reno_permit', 1, '']] },
@@ -630,7 +651,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { slab_wall: '岩板背景墙', wall_panel: '护墙板', floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚', soft_living: '客厅软装', soft_dining: '餐厅软装', soft_bed: '卧室软装', soft_study: '书房软装', soft_out: '户外软装' };
+  const PLACE_LABEL = { slide_door: '推拉门', glass_part: '玻璃隔断', bathtub: '浴缸', slab_wall: '岩板背景墙', wall_panel: '护墙板', floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚', soft_living: '客厅软装', soft_dining: '餐厅软装', soft_bed: '卧室软装', soft_study: '书房软装', soft_out: '户外软装' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
