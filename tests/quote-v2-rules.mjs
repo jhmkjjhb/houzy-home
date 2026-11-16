@@ -648,7 +648,8 @@ ok('天花做法：L-box 只做一圈、双层叠级两倍长度、格栅/铝扣
   L = set('叠级+灯槽'); assert.equal(q(L, 'ceiling_step'), 70); assert.equal(q(L, 'led_strip'), 70);
   L = set('双层回字形叠级'); assert.equal(q(L, 'ceiling_step'), 140);
   L = set('木纹格栅'); assert.equal(q(L, 'ceil_slat'), 300); assert.equal(q(L, 'plaster_ceiling'), 0);
-  r.vals = { ceiling: { pelmet: 12 } }; L = set('平顶'); assert.equal(q(L, 'pelmet'), 12, '窗帘盒按填的长度');
+  r.windows = [{ w: 6, h: 5 }]; r.packs = ['ceiling', 'curtain']; L = set('平顶');
+  assert.equal(q(L, 'curtain_box'), 6, '有吊顶 + 窗帘 → 窗帘盒按窗宽算一次'); assert.equal(q(L, 'pelmet'), 0, '天花里不再重复算窗帘盒');
 });
 
 ok('收费里的自动杂项可以手动改数量和单价；清掉手动值就恢复自动算', () => {

@@ -121,7 +121,8 @@
   const CEIL_STYLES = ['平顶', '四周 L-box 灯槽（中间不吊）', '叠级+灯槽', '双层回字形叠级', '弧形造型', '木纹格栅', '铝扣板（厨卫）'];
   // 天花按做法出项目：板面积、叠级/灯槽长度、灯带、刷漆
   function ceilLines(g, v, style) {
-    const box = r2(g.perim * 2), pel = num(v.pelmet) > 0 ? [['pelmet', v.pelmet, '隐藏式窗帘盒']] : [];
+    // 窗帘盒不在这里算：选了「窗帘」又有吊顶时，窗帘那项会自动加窗帘盒（按窗宽），避免重复收费
+    const box = r2(g.perim * 2), pel = [];
     if (style === '木纹格栅') return [['ceil_slat', g.floor, '格栅面积'], ...pel];
     if (style === '铝扣板（厨卫）') return [['ceil_alu', g.floor, '扣板面积'], ...pel];
     if (style === '四周 L-box 灯槽（中间不吊）') return [['plaster_ceiling', box, '周长 × 2 尺宽 L-box'], ['ceiling_step', g.perim, '= 周长'], ['led_strip', g.perim, '= 周长'], ['paint_ceiling', g.floor, '全天花刷漆'], ...pel];
@@ -242,8 +243,7 @@
                         const tiled = picked.kitchen_tile ? r2(packValues(r, 'kitchen_tile', g).back * 2.5) : 0, a = r2(Math.max(0, g.wall - tiled)), f = tiled ? `墙面 − 操作区墙砖 ${tiled}` : '墙面';
                         return [['skim', a, f], [{ '乳胶漆': 'paint_wall', '墙纸': 'wallpaper', '艺术漆': 'art_paint' }[sp('wall', 'method')], a, f]];
                       } },
-    ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '平顶、L-box、叠级、格栅、铝扣板等做法选上后在卡片里定',
-                      inputs: [{ k: 'pelmet', label: '隐藏式窗帘盒', unit: '延尺', def: () => 0, opt: true }],
+    ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '平顶、L-box、叠级、格栅、铝扣板等做法选上后在卡片里定；窗帘盒随「窗帘」自动加',
                       lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
     ceil_paint:     { g: 'ceil', area: ['floor'], label: '天花重刷（不吊顶）', icon: '🖌️', lines: (r, g) => [['paint_ceiling', g.floor, '天花面积']] },
     cornice:        { g: 'ceil', label: '石膏线', icon: '〰️', lines: (r, g) => [['cornice', g.perim, '= 周长']] },
