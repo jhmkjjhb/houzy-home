@@ -87,20 +87,20 @@
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
   const DRY = ['demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new'];
   const ROOMS = {
-    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar'] },
-    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard'] },
-    master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard'] },
-    bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk'] },
-    study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk'] },
+    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living'] },
+    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining'] },
+    master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed'] },
+    bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed'] },
+    study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study'] },
     kitchen: { label: '厨房', icon: '🍳', L: 10, W: 8, doors: 0, wet: true, packs: ['demo_floor', 'demo_wall_tile', 'demo_ceiling', 'kitchen_tile', 'cabinets', 'cab_basket', 'kitchen_water', 'pipe_box', 'electric', 'wall_finish', 'ceiling', 'ceil_paint', 'aircon', 'sill', 'fly_screen', 'door', 'window_new'] },
     bath:    { label: '卫生间', icon: '🚿', L: 8, W: 5, doors: 1, wet: true, packs: ['bath_demo', 'demo_ceiling', 'bath_tile', 'sanitary', 'shower_area', 'vanity', 'heater', 'bath_water', 'bath_move', 'bath_ceil', 'electric', 'door', 'window_new'] },
     laundry: { label: '洗衣区', icon: '🧺', L: 8, W: 5, doors: 0, wet: true, packs: ['demo_floor', 'wet_tile', 'laundry_water', 'pipe_box', 'laundry_cab', 'rack', 'electric', 'wall_finish', 'window_new'] },
-    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom'] },
-    family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY] },
+    balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out'] },
+    family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'soft_living'] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door'] },
     corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
-    yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light'] },
+    yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
     extension: { label: '加建空间', icon: '🏗️', L: 20, W: 10, doors: 1, ext: true, landed: true, packs: ['floor', 'wet_tile', 'wall_finish', 'ceiling', 'ceil_paint', 'electric', 'kitchen_water', 'aircon', 'fan', 'window_new', 'fly_screen', 'door', 'cabinets', 'sill'] },
     porch:   { label: '车廊/前院', icon: '🚗', L: 20, W: 18, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'carport', 'garden_light'] }
@@ -118,6 +118,16 @@
   // 其余是材料和选品，在「④ 选材」按空间类型统一选，某间可单独不同。
   const RAIL_CODES = { '不锈钢立柱 + 木扶手': 'stair_rail', '钢化玻璃栏板 + 木扶手': 'rail_glass', '铁艺栏杆': 'rail_iron', '实木栏杆': 'rail_wood', '黑色方管栏杆（现代简约）': 'rail_black', '铝合金栏杆': 'rail_alu' };
   const STAIR_CODES = ['stair_tread', 'stair_wood', 'stair_stone', 'stair_paint'];
+  // 软装：按房间类型列常用家具/灯饰/配饰，每样填数量（0 = 不要）；档次和风格到「④ 选材」统一选。软装不收管理费。
+  const SOFT = {
+    living:  [['sofa', '沙发', '套', 'sf_sofa', 1], ['coffee', '茶几', '张', 'sf_coffee', 1], ['side', '边几', '张', 'sf_side', 0], ['rug', '地毯', '张', 'sf_rug', 1], ['pendant', '装饰吊灯', '盏', 'sf_pendant', 1], ['art', '挂画', '幅', 'sf_art', 0], ['fan', '吊扇（产品）', '台', 'sf_fan', 0], ['decor', '配饰包（靠垫/花艺/摆件）', '项', 'decor', 0]],
+    dining:  [['table', '餐桌椅', '套', 'sf_dining', 1], ['pendant', '餐吊灯', '盏', 'sf_pendant', 1], ['fan', '吊扇（产品）', '台', 'sf_fan', 0], ['decor', '配饰包', '项', 'decor', 0]],
+    bed:     [['bed', '床架 + 床垫', '套', 'sf_bed', 1], ['night', '床头柜', '个', 'sf_night', 2], ['dresser', '梳妆台', '张', 'sf_dresser', 0], ['bedding', '床品', '套', 'sf_bedding', 0], ['lamp', '落地灯/台灯', '盏', 'sf_lamp', 0], ['fan', '吊扇（产品）', '台', 'sf_fan', 0], ['decor', '配饰包', '项', 'decor', 0]],
+    study:   [['desk', '书桌椅', '套', 'sf_desk', 1], ['shelf', '成品书架', '个', 'sf_shelf', 0], ['lamp', '台灯', '盏', 'sf_lamp', 0], ['fan', '吊扇（产品）', '台', 'sf_fan', 0]],
+    out:     [['outdoor', '户外桌椅', '套', 'sf_outdoor', 1], ['umbrella', '遮阳伞', '把', 'sf_umbrella', 0], ['plant', '绿植', '盆', 'sf_plant', 0]]
+  };
+  const softPack = (label, list) => ({ g: 'soft', label, icon: '🛋️', wide: true, inputs: list.map(([k, l, u, , d]) => ({ k, label: l, unit: u, def: () => d, opt: true })), lines: (r, g, v) => list.map(([k, l, , c]) => [c, num(v[k]), l]) });
+  const SOFT_CODES = [...new Set(Object.values(SOFT).flat().map(x => x[3]))];
   const CEIL_STYLES = ['平顶', '四周 L-box 灯槽（中间不吊）', '叠级+灯槽', '双层回字形叠级', '弧形造型', '木纹格栅', '铝扣板（厨卫）'];
   // 天花按做法出项目：板面积、叠级/灯槽长度、灯带、刷漆
   function ceilLines(g, v, style) {
@@ -193,6 +203,10 @@
       glass: { label: '围合玻璃', opts: ['6 mm 钢化透明', '8 mm 钢化透明', '夹胶玻璃', '隔热 Low-E 玻璃', '茶色/灰色钢化玻璃'], std: '6 mm 钢化透明', codes: ['sunroom_wall'] },
       color: { label: '框架颜色', opts: ['黑色', '白色', '香槟', '灰色'], std: '黑色', codes: ['awning', 'sunroom_wall'], noPrice: true }
     } },
+    soft: { label: '软装', icon: '🛋️', keys: {
+      grade: { label: '软装档次', opts: ['经济', '中档', '高档'], std: '中档', codes: SOFT_CODES },
+      style: { label: '风格', opts: ['现代简约', '奶油风', '北欧', '新中式', '轻奢', '侘寂/原木'], std: '现代简约', codes: SOFT_CODES, noPrice: true }
+    } },
     shower: { label: '淋浴区', icon: '🚿', keys: {
       base:  { scope: true, label: '淋浴区地面', opts: ['瓷砖找坡 + 石材挡水条', '成品淋浴盘', '地面找坡（不做挡水）'], std: '瓷砖找坡 + 石材挡水条', codes: SCREEN_CODES, noPrice: true },
       type:  { scope: true, label: '隔断形式', opts: ['一字型', 'L 型', '钻石型', '浴帘杆（不做玻璃）'], std: '一字型', codes: SCREEN_CODES, noPrice: true },
@@ -209,7 +223,7 @@
   // ---------- 第一层：范围项目（一个卡片 = 一组一定一起做的项目） ----------
   // area：按面积算的项目，默认 = 房间面积，可改成实际施工面积；inputs：其他要确认的数字，都有默认值。
   // lines(room, geo, values, picked, sp)：sp(类别, 选项) 取当前选材，用于「材料不同、项目也不同」的情况。
-  const GROUPS = [['demo', '拆旧'], ['floor', '地面'], ['wall', '墙面'], ['ceil', '天花'], ['mep', '水电'], ['wet', '防水与瓷砖'], ['fix', '洁具设备'], ['cab', '定制柜'], ['open', '门窗窗帘'], ['out', '户外']];
+  const GROUPS = [['demo', '拆旧'], ['floor', '地面'], ['wall', '墙面'], ['ceil', '天花'], ['mep', '水电'], ['wet', '防水与瓷砖'], ['fix', '洁具设备'], ['cab', '定制柜'], ['open', '门窗窗帘'], ['out', '户外'], ['soft', '软装家具']];
   const BIG_TILE = ['750×1500 mm', '900×1800 mm', '1200×1200 mm'];
   // [输入键, 名称, 单位, 价目编号, 默认数量]
   const HW = [['n', '碗碟拉篮（地柜抽拉）', '套', 'cab_basket', 1], ['spice', '调味拉篮（窄柜）', '套', 'hw_spice', 0], ['corner', '转角拉篮（小怪物/飞碟）', '套', 'hw_corner', 0],
@@ -341,6 +355,11 @@
                       lines: (r, g, v) => [['awning', v.area, '顶面面积'], ['sunroom_wall', r2(v.len * v.h), `玻璃围合 ${v.len} 尺 × 高 ${v.h} 尺`]] },
     // 车廊上的棚叫「车棚」：做法、材料和雨棚一样（同一个价目编号），只是名称不同
     carport:        { g: 'out', label: '车棚', icon: '⛱️', inputs: [{ k: 'area', label: '车棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '车棚面积']] },
+    soft_living:    softPack('客厅软装', SOFT.living),
+    soft_dining:    softPack('餐厅软装', SOFT.dining),
+    soft_bed:       softPack('卧室软装', SOFT.bed),
+    soft_study:     softPack('书房软装', SOFT.study),
+    soft_out:       softPack('户外软装', SOFT.out),
     awning:         { g: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: (r, g) => g.floor }], lines: (r, g, v) => [['awning', v.area, '雨棚面积']] },
     garden_light:   { g: 'out', label: '户外灯', icon: '💡', inputs: [{ k: 'n', label: '灯位', unit: '个', def: () => 2 }], lines: (r, g, v) => [['garden_light', v.n, '灯位']] }
   };
@@ -539,7 +558,9 @@
     // 设计费只按「有施工的室内房间」面积算：只做客厅就不收全屋设计费
     const floorSum = project.rooms.filter(r => !ROOMS[r.type].outdoor && (r.packs || []).length).reduce((t, r) => t + geo(r, project).floor, 0);
     const design = project.design === false ? 0 : Math.round(floorSum * num(s.designRate));
-    const mgmt = Math.round(direct * num(s.mgmtRate) / 100), cont = Math.round(direct * num(s.contRate) / 100);
+    // 软装（stage soft：家具、灯饰、配饰、窗帘）按产品价收，不收管理费和不可预见费
+    const soft = lines.filter(l => l.stage === 'soft').reduce((t, l) => t + l.total, 0), hard = direct - soft;
+    const mgmt = Math.round(hard * num(s.mgmtRate) / 100), cont = Math.round(hard * num(s.contRate) / 100);
     const before = direct + design + mgmt + cont;
     const discount = Math.min(Math.round(num(project.discount)), before);
     const sst = Math.round((before - discount) * num(s.sst) / 100);
@@ -548,11 +569,11 @@
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
-    return { direct, design, mgmt, cont, discount, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+    return { direct, hard, soft, design, mgmt, cont, discount, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '防水与瓷砖', bath_demo: '拆旧', vanity: '浴室柜与镜子', shower_area: '淋浴区', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面', stair_tile: '楼梯踏步', stair_rail: '扶手栏杆', stair_step_light: '踏步灯', sun_canopy: '阳光棚', sunroom: '阳光房', awning: '雨棚', carport: '车棚', soft_living: '客厅软装', soft_dining: '餐厅软装', soft_bed: '卧室软装', soft_study: '书房软装', soft_out: '户外软装' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));

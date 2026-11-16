@@ -143,6 +143,13 @@
    ['ceil_curve', '弧形造型天花', '延尺', '按设计做弧形/曲线造型，接缝批平']].forEach(([code, name, unit, desc]) => {
     root.QV2_PRICE[code] = { stage: 'ceil', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc };
   });
+  // 软装：价格按「中档」登记；没给价之前待定价
+  [['sf_sofa', '沙发', '套'], ['sf_coffee', '茶几', '张'], ['sf_side', '边几', '张'], ['sf_rug', '地毯', '张'], ['sf_pendant', '装饰吊灯', '盏'], ['sf_art', '挂画', '幅'],
+   ['sf_fan', '吊扇（产品）', '台'], ['sf_dining', '餐桌椅', '套'], ['sf_bed', '床架 + 床垫', '套'], ['sf_night', '床头柜', '个'], ['sf_dresser', '梳妆台', '张'],
+   ['sf_bedding', '床品', '套'], ['sf_lamp', '落地灯/台灯', '盏'], ['sf_desk', '书桌椅', '套'], ['sf_shelf', '成品书架', '个'], ['sf_outdoor', '户外桌椅', '套'],
+   ['sf_umbrella', '遮阳伞', '把'], ['sf_plant', '绿植', '盆']].forEach(([code, name, unit]) => {
+    root.QV2_PRICE[code] = { stage: 'soft', name, unit, mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '成品软装，款式按客户确认的风格和档次，含送货安装' };
+  });
   root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };

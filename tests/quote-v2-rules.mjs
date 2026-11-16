@@ -671,4 +671,16 @@ ok('选材明细里可直接改某一行数量（如地漏 2→3），只改这�
   delete a.lineQty['bath_tile:drain:1']; assert.equal(d(a).qty, 2);
 });
 
+ok('软装按房间选、数量 0 = 不要；管理费和不可预见费只按硬装算', () => {
+  const lv = { ...Q.newRoom('living', 1, 1), measured: true, packs: ['wall_finish', 'soft_living'], vals: { soft_living: { art: 2 } } };
+  const p = project([lv]); p.prices = { sf_sofa: { mat: 3000, aux: 0, waste: 0, lab: 0 } }; p.settings = { contRate: 5 };
+  const L = Q.buildLines(p), T = Q.totals(p, L);
+  assert.equal(L.filter(l => l.pack === 'soft_living' && l.code === 'sf_art')[0].qty, 2);
+  assert.ok(!L.some(l => l.code === 'sf_side'), '默认 0 的不出项');
+  assert.equal(T.soft, L.filter(l => l.stage === 'soft').reduce((t, l) => t + l.total, 0));
+  assert.ok(T.soft >= 3000, '沙发按填的价算进软装');
+  assert.equal(T.mgmt, Math.round((T.direct - T.soft) * 0.06), '软装不收管理费');
+  assert.equal(T.cont, Math.round((T.direct - T.soft) * 0.05));
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

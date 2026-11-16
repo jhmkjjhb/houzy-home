@@ -295,10 +295,10 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261116i"></script>
+<script src="quote-v2-price.js?v=20261116j"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-pricebook.js?v=20261115b"></script>
-<script src="quote-v2-rules.js?v=20261116s"></script>
+<script src="quote-v2-rules.js?v=20261116t"></script>
 <script src="quote-v2-plan.js?v=20261115m"></script>
 <script>
 (function () {
@@ -819,7 +819,7 @@
       return `<tr><td>${esc(PRICE[code].name)}<div class="desc">${esc(l.formula)}</div></td><td>${field('数量', l.unitName, stepper(`data-feeqty="${code}"`, l.qty, 1))}</td><td>${field('单价', 'RM', stepper(`data-price="${code}"`, l.unit, 10))}</td><td class="r mono">${rm(amt)}</td><td class="r">${changed ? `<button class="chip" data-feereset="${code}">恢复自动</button> ` : ''}<button class="chip" data-waive="${code}">这单免收</button></td></tr>`; };
     h += `</div><h2>收费</h2><div class="card"><p class="hint" style="margin:0 0 6px">下面这些按房间和工程量自动加上，不用另外选；某一单不收的，点「这单免收」。</p>
       <table class="q"><tbody>${Q.AUTO_FEES.map(feeRow).join('') || '<tr><td class="hint">选了施工项目后自动出现</td></tr>'}</tbody></table>
-      <div class="row" style="margin-top:12px">${field(`管理费（工程直接费 × %）= ${rm(T.mgmt)}`, '%', stepper('data-setting="mgmtRate"', T.settings.mgmtRate, 1))}${field(`不可预见费（工程直接费 × %）= ${rm(T.cont)}`, '%', stepper('data-setting="contRate"', T.settings.contRate, 1))}${field(`SST = ${rm(T.sst)}`, '%', stepper('data-setting="sst"', T.settings.sst, 1))}</div>
+      <div class="row" style="margin-top:12px">${field(`管理费（硬装直接费 × %，软装不收）= ${rm(T.mgmt)}`, '%', stepper('data-setting="mgmtRate"', T.settings.mgmtRate, 1))}${field(`不可预见费（硬装直接费 × %）= ${rm(T.cont)}`, '%', stepper('data-setting="contRate"', T.settings.contRate, 1))}${field(`SST = ${rm(T.sst)}`, '%', stepper('data-setting="sst"', T.settings.sst, 1))}</div>
       <div class="row" style="margin-top:8px"><label class="fld"><span><input type="checkbox" data-design ${P.design !== false ? 'checked' : ''}> 收设计费（有施工的室内面积 ${nf(T.floorSum)} 平方尺 × 单价）= ${rm(T.design)}</span></label>${field('设计费单价', 'RM/平方尺', stepper('data-setting="designRate"', T.settings.designRate, 1))}
       ${field('优惠金额', 'RM', stepper(`data-discount`, P.discount || 0, 100))}</div>
       <p class="hint" style="margin-top:8px">不含在报价里、要提前告诉客户的：物业装修押金（客户直接交物业，完工退还）、施工期间水电费、白蚁防治 / 大垃圾箱 / 工程保险（需要的话在上面「结构与申请」里选）。</p></div>`;
@@ -950,7 +950,7 @@
       h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${PRICE[l.code].desc ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${nf(l.qty)} ${l.unitName}</td><td class="r mono">${nf(l.unit)}</td><td class="r mono">${l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
-      <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>
+      <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>${T.soft ? `<div class="desc" style="display:flex;justify-content:space-between"><span>其中 硬装 ${rm(T.hard)} · 软装 ${rm(T.soft)}</span><span>管理费只按硬装算</span></div>` : ''}
       ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
       <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>${T.cont ? `<div><span>不可预见费（${T.settings.contRate}%）</span><span class="mono">${rm(T.cont)}</span></div>` : ''}
       ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送产品（材料免收，人工安装照收）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
