@@ -523,8 +523,10 @@
   const kinOf = type => (SPACE_GROUPS.find(x => x.types.includes(type)) || { id: type }).id;
   const kinLabel = type => (SPACE_GROUPS.find(x => x.id === kinOf(type)) || { label: ROOMS[type].label }).label;
   // 房间按分组顺序排（室内在前、室外在后），同组内按楼层
-  const groupIdx = type => { const i = SPACE_GROUPS.findIndex(x => x.types.includes(type)); return i < 0 ? SPACE_GROUPS.length : i; };
-  const sortRooms = rooms => rooms.map((r, i) => [r, i]).sort((a, b) => groupIdx(a[0].type) - groupIdx(b[0].type) || (a[0].level || 1) - (b[0].level || 1) || a[1] - b[1]).map(x => x[0]);
+  // 房间属于哪一组：标了「加建部分」的房间不管原来是什么类型，都归加建组
+  const roomGroup = r => (r.ext ? 'ext' : kinOf(r.type));
+  const groupIdx = r => { const i = SPACE_GROUPS.findIndex(x => x.id === roomGroup(r)); return i < 0 ? SPACE_GROUPS.length : i; };
+  const sortRooms = rooms => rooms.map((r, i) => [r, i]).sort((a, b) => groupIdx(a[0]) - groupIdx(b[0]) || (a[0].level || 1) - (b[0].level || 1) || a[1] - b[1]).map(x => x[0]);
   // 一组房间一起开/关一个工项：只加到这类房间做得了的；数量各按自己尺寸算
   function setPackFor(project, ids, code, on) {
     const pk = PACKS[code]; let n = 0;
@@ -603,7 +605,7 @@
     return project;
   }
 
-  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, SPACE_GROUPS, sortRooms, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

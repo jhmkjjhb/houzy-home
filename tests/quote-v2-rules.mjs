@@ -498,6 +498,9 @@ ok('空间分组：室内在前室外在后；洗衣房、楼梯单独一组；�
   Object.keys(Q.ROOMS).forEach(t => assert.ok(typed.has(t), t + ' 要归到某一组，不然按类型做时会漏'));
   const p = project(Q.presetRooms('semi')), order = Q.sortRooms(p.rooms).map(r => Q.SPACE_GROUPS.find(g => g.types.includes(r.type)).out ? 1 : 0);
   assert.deepEqual(order, [...order].sort(), '室外房间排在所有室内房间后面');
+  const bed = p.rooms.find(r => r.type === 'bedroom'); bed.ext = true;
+  assert.equal(Q.roomGroup(bed), 'ext', '标了加建的卧室归加建组（要一起算地基、墙、屋顶）');
+  assert.equal(Q.roomGroup(p.rooms.find(r => r.type === 'master')), 'bed', '没标加建的还在卧室组');
 });
 
 ok('按类型一起选：只加到这类房间做得了的，数量各按自己尺寸算；再点一次全部取消', () => {
