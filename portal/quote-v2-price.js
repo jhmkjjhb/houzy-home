@@ -120,6 +120,7 @@
   root.QV2_PRICE.altar_cab = {"stage":"custom","name":"神龛/神台柜定制","unit":"平方尺","mat":0,"aux":0,"lab":0,"waste":0,"desc":"按客户确认的款式和尺寸定做（神台、地主位、下柜抽屉/柜门），神台灯要预留电源插座"};
   ['wardrobe', 'tv_cab', 'shoe_cab', 'altar_cab', 'sideboard', 'bookcase', 'laundry_cab', 'headboard'].forEach(c => Object.assign(root.QV2_PRICE[c], { unit: '平方尺', mat: 0, aux: 0, lab: 0, unpriced: true }));
   Object.assign(root.QV2_PRICE.desk, { unit: '项' });
+  root.QV2_PRICE.vanity_custom = { stage: 'custom', name: '定制浴室柜（含台面、台盆、龙头）', unit: '延尺', mat: 0, aux: 0, lab: 0, waste: 0, unpriced: true, desc: '按现场尺寸定做，防水柜体，下水加防臭存水弯' };
   // 小件定制（凳子、桌子等）按项，名称和单价由员工逐项填写
   root.QV2_PRICE.custom_item = { stage: 'custom', name: '定制小件', unit: '项', mat: 0, aux: 0, lab: 0, waste: 0 };
   // 选材价差：键为「类别.选项.值」，内容为各项目在标准价上的加减（RM/单位）。公司核定后在这里登记。

@@ -516,4 +516,22 @@ ok('按类型一起选：只加到这类房间做得了的，数量各按自己�
   assert.ok(baths.every(r => !r.packs.includes('bath_tile')));
 });
 
+ok('浴室柜：每间按自己的尺寸列出；整组可一起选定制和材质；定制按柜宽计价', () => {
+  const p = project(Q.presetRooms('semi')), baths = p.rooms.filter(r => r.type === 'bath');
+  Q.setPackFor(p, baths.map(r => r.id), 'vanity', true);
+  baths[0].vals = { vanity: { w: 120, d: 50, h: 85 } };
+  let L = Q.buildLines(p);
+  const v0 = L.find(l => l.roomId === baths[0].id && l.code === 'vanity'), v1 = L.find(l => l.roomId === baths[1].id && l.code === 'vanity');
+  assert.match(v0.formula, /宽 120 × 深 50 × 高 85 cm/, '报价单上写清这间浴室柜尺寸');
+  assert.match(v1.formula, /宽 80 /, '另一间用自己的（默认）尺寸，不被第一间带走');
+  const pl = Q.activePlan(p);
+  baths.forEach(r => { ((pl.roomSpecs[r.id] = pl.roomSpecs[r.id] || {})['@vanity'] = { vanity: { kind: '定制浴室柜', body: '铝合金' } }); });
+  L = Q.buildLines(p);
+  const c0 = L.find(l => l.roomId === baths[0].id && l.code === 'vanity_custom');
+  assert.ok(c0 && Math.abs(c0.qty - 120 / 30.48) < 0.01, '定制按柜宽（延尺）算');
+  assert.ok(!L.some(l => l.code === 'vanity'), '选了定制就不再算成品柜');
+  assert.ok(c0.spec.includes('铝合金'), '材质写进报价单');
+  assert.ok(c0.unpriced, '定制浴室柜单价待公司核定，不能悄悄按 0 算');
+});
+
 console.log(`PASS: ${n} quote-v2 rule checks`);

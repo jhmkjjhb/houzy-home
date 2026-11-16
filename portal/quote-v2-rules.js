@@ -139,6 +139,13 @@
       light:    { label: '柜内灯', opts: ['不做', '感应灯带'], std: '不做', codes: CAB_CODES },
       counter:  { label: '厨房台面', opts: ['石英石', '岩板', '花岗岩'], std: '石英石', codes: ['counter'] }
     } },
+    // 浴室柜：成品/定制、材质这些可以整组卫生间一起定；尺寸每间单独填
+    vanity: { label: '浴室柜', icon: '🪞', keys: {
+      kind:   { label: '浴室柜类型', opts: ['成品浴室柜', '定制浴室柜'], std: '成品浴室柜', codes: ['vanity', 'vanity_custom'], noPrice: true },
+      body:   { label: '柜体材质', opts: ['PVC 防水板', '铝合金', '防潮多层实木板'], std: 'PVC 防水板', codes: ['vanity', 'vanity_custom'] },
+      top:    { label: '台面与台盆', opts: ['陶瓷一体盆', '石英石台面 + 台下盆', '岩板台面 + 台下盆'], std: '陶瓷一体盆', codes: ['vanity', 'vanity_custom'] },
+      mirror: { label: '镜子', opts: ['防雾镜', 'LED 智能镜', '镜柜'], std: '防雾镜', codes: ['mirror'] }
+    } },
     lighting: { label: '灯具', icon: '💡', keys: {
       grade: { label: '灯具档次', opts: ['标准 LED 筒灯/吸顶灯', '防眩筒灯+射灯'], std: '标准 LED 筒灯/吸顶灯', codes: ['light'] },
       temp:  { label: '色温', opts: ['3000K 暖光', '4000K 自然光', '6000K 白光'], std: '4000K 自然光', codes: ['light', 'led_strip'], noPrice: true }
@@ -206,7 +213,11 @@
     bath_move:      { g: 'wet', area: ['floor'], label: '改马桶/排水位置', icon: '↔️', lines: (r, g) => [['bath_drop', g.floor, '改位置要降板+二次排水']] },
 
     sanitary:       { g: 'fix', label: '洁具（马桶+花洒+淋浴隔断）', icon: '🚽', lines: () => [['toilet', 1, ''], ['shower', 1, ''], ['screen', 1, ''], ['exhaust', 1, '卫生间必配'], ['bath_acc', 1, '毛巾架/纸巾架/挂钩']] },
-    vanity:         { g: 'fix', label: '浴室柜+镜子', icon: '🪞', lines: () => [['vanity', 1, ''], ['mirror', 1, '']] },
+    // 浴室柜：每间填自己的尺寸（cm），报价单上逐间列出尺寸；定制的按柜宽（延尺）计价
+    vanity:         { g: 'fix', label: '浴室柜+镜子', icon: '🪞',
+                      inputs: [{ k: 'w', label: '柜宽', unit: 'cm', def: () => 80 }, { k: 'd', label: '柜深', unit: 'cm', def: () => 48 }, { k: 'h', label: '柜高', unit: 'cm', def: () => 85 }],
+                      lines: (r, g, v, picked, sp) => { const size = `宽 ${v.w} × 深 ${v.d} × 高 ${v.h} cm`;
+                        return [sp('vanity', 'kind') === '定制浴室柜' ? ['vanity_custom', r2(num(v.w) / 30.48), size + '，按柜宽计'] : ['vanity', 1, size], ['mirror', 1, '宽度配合浴室柜']]; } },
     rack:           { g: 'fix', label: '晾衣架', icon: '👕', lines: () => [['rack', 1, '']] },
 
     cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️',
@@ -431,7 +442,7 @@
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
-  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
+  const PLACE_LABEL = { floor: '地面', wall_finish: '墙面', ceiling: '天花', bath_ceil: '天花', kitchen_tile: '地砖与墙砖', bath_tile: '地砖与墙砖', vanity: '浴室柜与镜子', wet_tile: '地砖', porch_tile: '地砖', electric: '灯具', cabinets: '橱柜与台面' };
   function placesOf(project, room, lines) {
     const order = [];
     Object.entries(SPEC_CATS).forEach(([cat, c]) => Object.keys(c.keys).forEach(k => order.push(cat + '.' + k)));
