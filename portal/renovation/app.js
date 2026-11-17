@@ -9,7 +9,7 @@ let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,uplo
 function blank(){return {lines:[],payments:[],net:0,discount:0,signed_on:'',warnings:[],source_text:'',contract_path:''};}
 let feedbackTarget=null;
 // 进度表要用的数据：子单、履约跟踪、项目；只有确认 / 执行中的项目能改计划
-const scheduleData=()=>({work,tracking:scheduleTracking,project,locked:!project||!['confirmed','executing'].includes(project.state)});
+const scheduleData=()=>({sb,work,tracking:scheduleTracking,project,lines:project?effectiveSnapshot().lines:[],payments:snapshot.payments||[],manager:['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role),locked:!project||!['confirmed','executing'].includes(project.state)});
 function message(text,error=false){
  for(const id of new Set(['message',feedbackTarget||'save-message'])){const el=$(id);if(el){el.textContent=text;el.classList.toggle('error',error);}}
 }

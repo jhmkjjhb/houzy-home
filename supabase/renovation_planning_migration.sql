@@ -76,19 +76,20 @@ REVOKE ALL ON FUNCTION public.renovation_crew_save(uuid,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.renovation_crew_save(uuid,jsonb) TO authenticated;
 
 -- 撞期检查：这些师傅在其它项目上、和给定日期重叠的计划（所有门店都查，只返回合同号、子单名和日期）
-CREATE OR REPLACE FUNCTION public.renovation_crew_busy(p_names text[],p_exclude uuid)
+DROP FUNCTION IF EXISTS public.renovation_crew_busy(text[],uuid);
+CREATE OR REPLACE FUNCTION public.renovation_crew_busy(p_names jsonb,p_exclude uuid)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE me profiles%ROWTYPE;
 BEGIN
  SELECT * INTO me FROM profiles WHERE id=auth.uid();
  IF me.id IS NULL OR me.role NOT IN ('staff','store_manager','regional_manager','general_manager','admin','superadmin') THEN RAISE EXCEPTION '请登录后重试'; END IF;
- IF p_names IS NULL OR cardinality(p_names)=0 THEN RETURN '[]'::jsonb; END IF;
- IF cardinality(p_names)>100 THEN RAISE EXCEPTION '一次最多查 100 位'; END IF;
+ IF p_names IS NULL OR jsonb_typeof(p_names)<>'array' OR jsonb_array_length(p_names)=0 THEN RETURN '[]'::jsonb; END IF;
+ IF jsonb_array_length(p_names)>100 THEN RAISE EXCEPTION '一次最多查 100 位'; END IF;
  RETURN coalesce((SELECT jsonb_agg(jsonb_build_object('crew',w.assignee,'contract_no',p.contract_no,'group_name',regexp_replace(w.group_name,'^增项-[0-9a-fA-F-]{36} · ?','增项 · '),'start',w.planned_start,'end',w.planned_end) ORDER BY w.planned_start)
   FROM renovation_work_orders w JOIN renovation_projects p ON p.id=w.project_id
   WHERE p.id<>coalesce(p_exclude,'00000000-0000-0000-0000-000000000000'::uuid) AND p.state IN ('confirmed','executing') AND w.cancelled_at IS NULL
-   AND w.planned_start IS NOT NULL AND lower(trim(w.assignee))=ANY(SELECT lower(trim(x)) FROM unnest(p_names) x)
+   AND w.planned_start IS NOT NULL AND lower(trim(w.assignee)) IN (SELECT lower(trim(x)) FROM jsonb_array_elements_text(p_names) x)
    AND NOT EXISTS(SELECT 1 FROM renovation_work_items i WHERE i.work_order_id=w.id AND i.stage<>'cancelled' HAVING bool_and(i.stage='done'))),'[]'::jsonb);
 END $$;
-REVOKE ALL ON FUNCTION public.renovation_crew_busy(text[],uuid) FROM PUBLIC,anon;
-GRANT EXECUTE ON FUNCTION public.renovation_crew_busy(text[],uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.renovation_crew_busy(jsonb,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.renovation_crew_busy(jsonb,uuid) TO authenticated;

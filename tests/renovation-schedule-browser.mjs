@@ -25,7 +25,7 @@ const lines=[L('18','主卧 A 衣柜 Master Wardrobe A','E0 板 白色 2.4m',1,8
  L('50','客厅铺砖','600x1200',650,9,'work','泥水','sqft'),L('51','卫生间防水','',2,850,'work','泥水','间'),L('60','全屋电线更换','',1,6500,'work','水电'),L('61','全屋墙面油漆','Nippon',1,7800,'work','油漆'),L('70','设计服务','',1,0,'gift','赠品与设计','项')];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-2026-031','陈先生','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) SELECT $1,g,jsonb_agg(x->>'id') FROM (SELECT x,x->>'group' g FROM jsonb_array_elements($2::jsonb) x) t GROUP BY g`,[id,JSON.stringify(lines)]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -66,7 +66,7 @@ try{
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();
  assert.equal(await sch.locator('.sch-bar').count(),6,'every sub-order except the gift gets a bar');
- assert((await sch.innerText()).includes('改了还没保存'),'unsaved changes are flagged');
+ assert((await sch.innerText()).includes('有改动还没保存'),'unsaved changes are flagged');
  assert.equal((await plans())['泥水'].s,null,'nothing saved before 保存');
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
  await page.waitForFunction(async()=>true);await new Promise(r=>setTimeout(r,800));
@@ -80,9 +80,9 @@ try{
  await page.screenshot({path:out+'/staff-schedule.png',fullPage:false,clip:await sch.boundingBox()});
  // 2) 拖动：泥水整条往后挪 2 天；拖右端让油漆多 1 天
  const dw=+(await page.locator('#schedule').getAttribute('data-dw'));
- const bar=sch.locator('.sch-row',{hasText:'泥水'}).locator('.sch-bar');const b=await bar.boundingBox();
+ const bar=sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^泥水$/})}).locator('.sch-bar');const b=await bar.boundingBox();
  await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2+dw*2+2,b.y+b.height/2,{steps:6});await page.mouse.up();
- const end=sch.locator('.sch-row',{hasText:'油漆'}).locator('[data-sch-end]');const eb=await end.boundingBox();
+ const end=sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^油漆$/})}).locator('[data-sch-end]');const eb=await end.boundingBox();
  await page.mouse.move(eb.x+eb.width/2,eb.y+eb.height/2);await page.mouse.down();await page.mouse.move(eb.x+eb.width/2+dw+1,eb.y+eb.height/2,{steps:4});await page.mouse.up();
  assert.equal(await sch.locator('.sch-bar.dirty').count(),2,'both dragged bars marked unsaved');
  await sch.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
@@ -91,7 +91,7 @@ try{
  assert(Q['油漆'].s===P['油漆'].s&&days(P['油漆'].e,Q['油漆'].e)===1,'end handle adds 1 day');
  // 3) 手机：点名称改日期
  const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();
- await ps.locator('[data-sch-name]',{hasText:'水电'}).click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-ok]').click();
+ await ps.locator('[data-sch-name]',{has:ph.locator('span',{hasText:/^水电$/})}).click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-ok]').click();
  await ps.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
  assert((await plans())['水电'].s==='2026-11-20','phone date edit saved');
  const ofl=await ph.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'page does not scroll sideways on phone (chart scrolls inside): '+ofl);
@@ -99,7 +99,28 @@ try{
  // 4) 超期：水电计划已过（今天之后的测试日期除外），且没完成 → 红色
  await sys(`UPDATE renovation_work_orders SET planned_start='2026-01-05',planned_end='2026-01-09' WHERE project_id=$1 AND group_name='水电'`,[id]);
  await page.reload();await sch.locator('.sch-bar').first().waitFor();
- assert(await sch.locator('.sch-row',{hasText:'水电'}).locator('.sch-bar.late').count()===1&&(await sch.innerText()).includes('超过计划完成日'),'overdue shows red');
+ assert(await sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^水电$/})}).locator('.sch-bar.late').count()===1&&(await sch.innerText()).includes('超过计划完成日'),'overdue shows red');
+ // 4b) 施工计划：交房日太早 → 红色提醒；材料最晚下单日；验收节点对上收款；漏项检查
+ await sch.locator('[data-sch-handover]').fill('2026-12-20');await sch.locator('[data-sch-handover]').dispatchEvent('change');
+ let st=await sch.innerText();assert(/比交房日 12\/20 晚 \d+ 天/.test(st),'too-early handover is flagged: '+st.slice(0,200));
+ await sch.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
+ assert.equal((await sys('SELECT handover_on::text d FROM renovation_projects WHERE id=$1',[id]))[0].d,'2026-12-20','handover saved');
+ const mats=sch.locator('.sch-box',{hasText:'材料下单'});if(!(await mats.evaluate(e=>e.open)))await mats.locator('summary').click();
+ const mt=await mats.innerText();assert(mt.includes('全屋定制')&&mt.includes('最晚下单')&&mt.includes('业主还没签名'),'material order list with deadline: '+mt.slice(0,160));
+ assert(await sch.locator('.sch-ms .sch-dia').count()>=3,'inspection points on the chart');
+ const chk=await sch.locator('.sch-box',{hasText:'漏项检查'}).innerText();assert(chk.includes('漏项检查'),'missing-item check shown');
+ // 4c) 师傅名单 + 撞期：店长加「阿强」，另一个工地同一时间也排了阿强
+ const boss=await open(manager,`/portal/renovation.html#${id}`);const bs=boss.locator('#schedule .sch');await bs.locator('.sch-bar').first().waitFor();
+ await bs.locator('summary',{hasText:'师傅名单'}).click();await bs.locator('[data-crew-f="name"]').fill('阿强');await bs.locator('[data-crew-f="trade"]').selectOption('泥水工');await bs.locator('[data-crew-add]').click();
+ await boss.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('泥水工 · 2 人'));
+ const ni=(await plans())['泥水'];const p2='30000000-0000-4000-8000-000000000077';
+ await sys(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'JALAN-9','X','6011','Addr','executing','{"lines":[]}'::jsonb)`,[p2,store,staff]);
+ await sys(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids,assignee,planned_start,planned_end) VALUES($1,'泥水','[]'::jsonb,'阿强',$2,$3)`,[p2,ni.s,ni.e]);
+ await sys(`UPDATE renovation_work_orders SET assignee='阿强' WHERE project_id=$1 AND group_name='泥水'`,[id]);
+ await page.reload();await sch.locator('.sch-bar').first().waitFor();await page.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('撞期'));
+ assert((await sch.innerText()).includes('撞期 JALAN-9'),'crew clash with the other site shown');
+ assert.equal(await page.locator('input[id^="assignee-"]').first().getAttribute('list'),'crew-list','worker field suggests names from the list');
+ await page.locator('#schedule').screenshot({path:out+'/staff-plan.png'});
  // 5) 业主看到简版：有名称和日期，没有厂家、价格、执行人
  const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
  const cu=await open(null,`/portal/renovation-customer.html#${token}`,{width:390,height:844});

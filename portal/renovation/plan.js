@@ -57,7 +57,10 @@ window.RenoPlan=(()=>{
    else if(t==='pc'&&p.pc&&q>0)days+=q/p.pc;else days+=p.lot||1;}
   return Math.max(1,Math.min(45,Math.ceil(days)));
  }
- const materialOf=lines=>{const txt=lines.filter(l=>['custom','stock'].includes(l.kind)).map(l=>l.name+' '+(l.spec||'')).join(' ');if(!txt)return null;return MATERIALS.find(m=>m.re.test(txt))||{lead:7,label:'材料'};};
+ // 先按项目名称判断（「厨房地柜」规格里写了「石英石台面」，不能当成台面），名称看不出来再看规格
+ const materialOf=lines=>{const g=lines.filter(l=>['custom','stock'].includes(l.kind));if(!g.length)return null;
+  const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
+  return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
  // 主计算
  function build({work:wos,lines,tracking,payments,start,handover,today}){
   const T=parse(today)||parse(new Date().toISOString()),S=work(parse(start)||T);
