@@ -146,3 +146,12 @@
 .fx-chip{padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.6;white-space:nowrap;background:#eef1ef;color:#7a867f}
 .fx-chip.ok{background:#e3f4e8;color:#157a3c}.fx-chip.now{background:#fff0c7;color:#8a5a00}.fx-chip.wait{background:#efe6fa;color:#633899}.fx-chip.bad{background:#fde4e4;color:#b42318}
 .fx-chip.mid{background:#e6eefb;color:#245ea6}.fx-row>.fx-chip{flex:none;align-self:center}
+
+.fx-overview{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 14px;padding:10px 12px;border:1px solid #dce2df;border-radius:10px;background:#fff}
+.fx-overview-title{font-weight:700;margin-right:6px}.fx-overview-hint{font-size:12px;margin-left:auto}
+.fx-overview .fx-chip{border:0;cursor:pointer;font:inherit;font-size:13px;font-weight:600;padding:4px 11px}
+.fx-overview .fx-chip.on{outline:2px solid currentColor;outline-offset:1px}
+.fx-chip.later{background:#eef1ef;color:#7a867f}.fx-chip.okn{display:none;background:#e3f4e8;color:#157a3c}
+.fx-done>summary{cursor:pointer;font-weight:700;color:#157a3c}
+.fx-shortcut{align-items:center;margin:6px 0}
+@media(max-width:600px){.fx-chips .fx-chip.step,.fx-chips .fx-chip.later{display:none}.fx-chips .fx-chip.okn{display:inline}.fx-overview-hint{margin-left:0;flex-basis:100%}}

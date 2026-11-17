@@ -64,7 +64,7 @@ try{
  await card.locator('[data-act="request_signature"]').click();
  await card.locator('[data-act="copy_link"]').waitFor();
  assert((await card.locator('summary').first().innerText()).includes('等业主签名'));
- await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>document.querySelector('[data-wo] [data-feedback]').textContent.includes('已复制'));
+ await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('已复制')));
  const link=await page.evaluate(()=>navigator.clipboard.readText());assert(link.includes('renovation-custom-sign.html'));
  await page.screenshot({path:out+'/staff-waiting-signature.png',fullPage:true});
  // Stock may be ordered now; custom lines must stay behind.

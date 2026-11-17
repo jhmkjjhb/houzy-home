@@ -58,7 +58,7 @@ try{
  let card=await openCard(page,'全屋定制');
  await card.locator('[data-f="document"]').first().setInputFiles({name:'draw.png',mimeType:'image/png',buffer:png});
  await card.locator('[data-act="request_signature"]').click();await card.locator('[data-act="copy_link"]').waitFor();
- await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>document.querySelector('[data-wo] [data-feedback]').textContent.includes('已复制'));
+ await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('已复制')));
  const ownerLink=await page.evaluate(()=>navigator.clipboard.readText());
  const owner=await open(null,ownerLink.replace(base,''),{width:390,height:844});
  await owner.locator('[data-last4]').fill('4567');await owner.locator('[data-verify]').click();await owner.locator('[data-signature]').waitFor();
@@ -124,6 +124,42 @@ try{
  const vf=card.locator('[data-form]',{has:page.locator('[data-act="signoff_void"]')});await vf.locator('[data-f="reason"]').fill('发错人');await vf.locator('[data-act="signoff_void"]').click();
  await page.waitForFunction(()=>![...document.querySelectorAll('[data-act="signoff_void"]')].length);
  const fac2=await open(null,link2.replace(base,''),{width:390,height:844});await fac2.locator('[data-code]').fill(code2);await fac2.locator('[data-verify]').click();await fac2.getByText('已撤销').waitFor();
+
+ // 6) 项目总览：每类有几张，点一下只看这一类；要处理的排前面
+ await page.reload();await page.locator('.fx-overview').waitFor();
+ const ov=await page.locator('.fx-overview').innerText();
+ assert(ov.includes('共 2 张子单')&&ov.includes('待下单 1')&&ov.includes('待排期 1'),'overview counts: '+ov);
+ await page.locator('[data-fxfilter="schedule"]').click();
+ assert(await page.locator('details.work',{hasText:'全屋定制'}).isHidden()&&await page.locator('details.work',{hasText:'泥水'}).isVisible(),'filter shows only that kind');
+ await page.locator('[data-fxfilter="schedule"]').click();assert(await page.locator('details.work',{hasText:'全屋定制'}).isVisible(),'click again shows all');
+ // 7) 下单前提醒：C1 工厂已确认，C2 没确认
+ card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-unconfirmed').innerText();
+ assert(warn.includes('书房柜')&&!warn.includes('主卧衣柜'),'reminds only the lines the factory has not confirmed: '+warn);
+ assert(await card.locator('.fx-need-assignee').isVisible(),'tells staff to set the worker before ordering');
+ await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
+ await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');
+ const of=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
+ await of.locator('[data-f="supplier"]').fill('广州工厂');await of.locator('[data-f="order_no"]').fill('PO-9');await of.locator('[data-f="expected_on"]').fill('2099-01-01');await of.locator('[data-f="stock_confirmed"]').check();
+ await of.locator('[data-act="place_order"]').click();await card.locator('[data-act="arrive"]').waitFor();
+ // 8) 到货验收签了 → 一键标记到货
+ card=await openCard(page,'全屋定制');await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
+ const f2=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
+ await f2.locator('[data-f="purpose"]').selectOption('arrival');await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
+ const link3=await page.evaluate(()=>navigator.clipboard.readText()),code3=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival' AND status='pending'`))[0].access_code;
+ const wh=await open(null,link3.replace(base,''),{width:390,height:844});await wh.locator('[data-code]').fill(code3);await wh.locator('[data-verify]').click();await wh.locator('[data-signature]').waitFor();
+ await wh.locator('[data-name]').fill('阿明');await draw(wh,'[data-signature]');await wh.locator('[data-consent]').check();await wh.locator('[data-submit]').click();await wh.getByText('签字成功').waitFor();
+ assert.equal((await stages()).C1,'ordered','signing alone does not change progress');
+ await page.reload();card=await openCard(page,'全屋定制');
+ const sc=card.locator('[data-act="so_arrive"]');assert((await sc.innerText()).includes('1项'),'shortcut offers the signed line');
+ await page.screenshot({path:out+'/staff-arrival-shortcut.png',fullPage:true});
+ await sc.click();await page.waitForFunction(()=>!document.querySelector('[data-act="so_arrive"]'));
+ const st2=await stages();assert(st2.C1==='arrived'&&st2.C2==='ordered','one click marks only the signed line arrived');
+ // 9) 手机：已完成步骤收成 ✓N，后续灰色步骤不显示
+ const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});const sum=ph.locator('details.work',{hasText:'全屋定制'}).locator('summary').first();await sum.waitFor();
+ assert(await sum.locator('.fx-chip.okn').isVisible()&&await sum.locator('.fx-chip.step').first().isHidden(),'phone shows ✓N instead of every done step');
+ await ph.screenshot({path:out+'/phone-overview.png'});
+ const ofl2=await ph.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl2<=1,'no sideways scroll: '+ofl2);
  assert.deepEqual(errors,[],'no page errors');
  console.log('PASS party sign-off browser flow');
 }finally{await browser.close();server.close();}

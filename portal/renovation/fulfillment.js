@@ -38,29 +38,38 @@ window.RenoFulfillment=(()=>{
  }
 
  // 子单标题行上的彩色状态：绿 = 已完成的步骤，黄 = 现在这一步，紫 = 等别人签字，红 = 有问题，灰 = 还没到
- function badges(w,tracking){
+ // 一张子单现在的状态。keys 用于项目总览的筛选；rank 用于排序（0 有问题 → 1 要我处理 → 2 等别人签字 → 3 已完成）
+ function state(w,tracking){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
-  if(!items.length)return '';
-  const chips=[],add=(cls,txt)=>chips.push(`<span class="fx-chip ${cls}">${txt}</span>`);
+  if(!items.length)return null;
+  const chips=[],keys=new Set(),add=(cls,txt)=>chips.push({cls,txt});
   const customs=items.filter(i=>i.kind==='custom'),goods=items.filter(i=>['custom','stock'].includes(i.kind)),works=items.filter(i=>i.kind==='work');
   const allDone=items.every(i=>i.stage==='done');
   const doneWord=works.length===items.length?'已完工':works.length?'已完成':'已交付';
-  if(allDone)add('ok','✓ '+doneWord);
+  let mine=false;
+  if(allDone){add('ok final','✓ '+doneWord);keys.add('done');}
   else{
    let cur=false;
-   const step=(n,total,doneTxt,todoTxt)=>{if(!total)return;if(n>=total){add('ok','✓ '+doneTxt);return;}add(cur?'':'now',n?`${doneTxt} ${n}/${total}`:todoTxt);cur=true;};
+   const step=(key,n,total,doneTxt,todoTxt)=>{if(!total)return;if(n>=total){add('ok step','✓ '+doneTxt);return;}if(cur){add('later',todoTxt);return;}add('now',n?`${doneTxt} ${n}/${total}`:todoTxt);cur=true;mine=true;keys.add(key);};
    const live=(t.confirmations||[]).find(c=>c.work_order_id===w.id&&['pending','paper_review'].includes(c.status));
-   if(customs.length){const n=customs.filter(i=>i.stage!=='pending').length;if(live&&n<customs.length){add('wait',live.status==='pending'?'等业主签名':'纸质单待审核');cur=true;}else step(n,customs.length,'已签字','待业主签名');}
-   step(goods.filter(i=>['ordered','arrived','done'].includes(i.stage)).length,goods.length,'已下单','待下单');
-   step(goods.filter(i=>['arrived','done'].includes(i.stage)).length,goods.length,'已到货','待到货');
-   step(works.filter(i=>['scheduled','working','done'].includes(i.stage)).length,works.length,'已排期','待排期');
-   step(items.filter(i=>i.stage==='done').length,items.length,doneWord,doneWord==='已交付'?'待交付':'待完工');
+   if(customs.length){const n=customs.filter(i=>i.stage!=='pending').length;if(live&&n<customs.length){add('wait',live.status==='pending'?'等业主签名':'纸质单待审核');cur=true;keys.add('wait');if(live.status==='paper_review'){mine=true;keys.add('sign');}}else step('sign',n,customs.length,'已签字','待业主签名');}
+   step('order',goods.filter(i=>['ordered','arrived','done'].includes(i.stage)).length,goods.length,'已下单','待下单');
+   step('arrive',goods.filter(i=>['arrived','done'].includes(i.stage)).length,goods.length,'已到货','待到货');
+   step('schedule',works.filter(i=>['scheduled','working','done'].includes(i.stage)).length,works.length,'已排期','待排期');
+   step('finish',items.filter(i=>i.stage==='done').length,items.length,doneWord,doneWord==='已交付'?'待交付':'待完工');
   }
-  const issues=items.filter(i=>i.issue_note).length;if(issues)add('bad',`⚠ ${issues}项有问题`);
-  const so=(t.signoffs||[]).filter(x=>x.work_order_id===w.id);
-  if(so.some(x=>x.status==='pending'))add('wait','等工厂 / 负责人签字');
-  return `<span class="fx-chips">${chips.join('')}</span>`;
+  const issues=items.filter(i=>i.issue_note).length;if(issues){add('bad',`⚠ ${issues}项有问题`);keys.add('issue');}
+  if((t.signoffs||[]).some(x=>x.work_order_id===w.id&&x.status==='pending')){add('wait','等工厂 / 负责人签字');keys.add('wait');}
+  const rank=issues?0:allDone?3:mine?1:2;
+  return {chips,keys:[...keys],rank,okCount:chips.filter(c=>c.cls==='ok step').length};
  }
+ // 子单标题行上的彩色状态：绿 = 已完成的步骤，黄 = 现在这一步，紫 = 等别人签字，红 = 有问题，灰 = 还没到
+ // 手机上已完成的步骤收成一个「✓N」，灰色的后续步骤不显示
+ function badges(w,tracking){
+  const st=state(w,tracking);if(!st)return '';
+  return `<span class="fx-chips">${st.chips.map(c=>`<span class="fx-chip ${c.cls}">${c.txt}</span>`).join('')}${st.okCount?`<span class="fx-chip okn">✓${st.okCount}</span>`:''}</span>`;
+ }
+ let filter='all';
  const field=(label,name,attrs='')=>`<label>${label}<input data-f="${name}" ${attrs}></label>`;
  const file=(label,name,accept)=>`<label>${label}<input data-f="${name}" type="file" accept="${accept}"></label>`;
  const PDF_IMG='application/pdf,image/jpeg,image/png,image/webp';
@@ -97,7 +106,9 @@ window.RenoFulfillment=(()=>{
   const form=(prefix='')=>`${field('厂家','supplier','maxlength="120"')}${field(prefix||'厂家单号','order_no','maxlength="120"')}${field('下单日期','ordered_on',`type="date" value="${today()}"`)}${field('预计到货日','expected_on','type="date"')}`;
   const legacyHtml=legacy.length?`<details><summary>登记上线前已下单（店长）</summary><div class="work-controls" data-form>${form()}${field('下单情况说明','reason')}<button type="button" class="secondary" data-act="legacy_order">登记历史订单（${legacy.length}项）</button></div></details>`:'';
   if(!b.orderable.length)return (b.unsigned.length?`<div class="work-terms"><b>下单</b><p class="muted">定制项须先由业主签名，才能下单。</p>${legacyHtml}</div>`:legacyHtml?`<div class="work-terms">${legacyHtml}</div>`:'');
-  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}<div class="work-controls" data-form>${form()}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button></div>${legacyHtml}</div>`;
+  const confirmed=new Set((o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order').flatMap(x=>x.line_ids||[]));
+  const unconfirmed=o.signoffsReady?b.orderable.filter(i=>i.kind==='custom'&&!confirmed.has(i.line_id)):[];
+  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${unconfirmed.length?`<p class="warning fx-unconfirmed">⚠ ${unconfirmed.length} 项定制工厂还没签字确认下单内容：${unconfirmed.map(i=>E(i.name)).join('、')}。建议先在「更多操作」转发工厂签字（不确认也能下单）。</p>`:''}<div class="work-controls" data-form>${form()}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button></div>${legacyHtml}</div>`;
  }
  function batchBlock(w,items,tracking,o){
   const list=tracking.batches.filter(x=>x.work_order_id===w.id);if(!list.length)return '';
@@ -129,6 +140,21 @@ window.RenoFulfillment=(()=>{
     <div class="work-controls"><label>签字用途<select data-f="purpose">${Object.entries(PURPOSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>${field('签字方（工厂或负责人）','party','maxlength="120"')}</div>
     <div class="work-controls">${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:'<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>'}</details>`;
  }
+ // 对方已签「到货验收」或「安装完工」：把对应的项一键标记到货 / 完成（最后由员工确认）
+ function signoffShortcuts(items,o){
+  if(o.locked)return '';
+  const kl=d=>new Date(d).toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
+  let html='';
+  for(const x of (o.signoffs||[]).filter(x=>x.status==='signed'&&['arrival','install'].includes(x.purpose))){
+   const mine=items.filter(i=>(x.line_ids||[]).includes(i.line_id)&&free(i));
+   const ready=x.purpose==='arrival'?mine.filter(i=>i.stage==='ordered'):mine.filter(i=>!i.change_pending&&((['custom','stock'].includes(i.kind)&&i.stage==='arrived')||(i.kind==='work'&&i.stage==='working')||(i.kind==='gift'&&i.stage==='pending')));
+   if(!ready.length)continue;
+   const who=`${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleDateString('zh-CN'))}`,names=ready.map(i=>E(i.name)).join('、'),lines=ready.map(i=>E(i.line_id)).join(',');
+   if(x.purpose==='arrival')html+=`<div class="actions fx-shortcut" data-form><span>✓ 到货验收已签（${who}）：${names}</span><button type="button" data-act="so_arrive" data-lines="${lines}" data-on="${kl(x.signed_at)}">一键标记到货（${ready.length}项）</button></div>`;
+   else html+=`<div class="work-controls fx-shortcut" data-form><span style="flex-basis:100%">✓ 安装完工已签（${who}）：${names}</span>${ready.some(i=>i.kind!=='gift')?file('完工照片或文件','proof',PDF_IMG):''}<button type="button" data-act="so_finish" data-lines="${lines}" data-on="${kl(x.signed_at)}">标记完成（${ready.length}项）</button></div>`;
+  }
+  return html?`<div class="work-terms"><b>对方已签字，确认后更新进度</b>${html}</div>`:'';
+ }
  const soHead=x=>`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
  // 等待对方签字的链接放在操作区（要用验证码）
  function pendingSignoffs(o){
@@ -151,7 +177,10 @@ window.RenoFulfillment=(()=>{
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
   if(!items.length||w.cancelled_at)return '';
   const o={locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
-  const now=signBlock(w,items,t,o)+orderBlock(items,o)+stepBlocks(items,o)+pendingSignoffs(o);
+  const steps=orderBlock(items,o)+stepBlocks(items,o);
+  // 下单、排期、完成都要先有执行人（数据库会拦），提前说清楚
+  const needAssignee=!o.locked&&steps&&!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能下单、排期和标记完成。</p>':'';
+  const now=needAssignee+signoffShortcuts(items,o)+signBlock(w,items,t,o)+steps+pendingSignoffs(o);
   return `<div class="fulfillment" data-wo="${w.id}">${itemList(items,o)}${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -163,8 +192,16 @@ window.RenoFulfillment=(()=>{
   if(error)throw new Error(`${label}上传失败：${error.message}`);
   return {path,hash};
  }
+ function applyFilter(el){
+  el.querySelectorAll('[data-fxfilter]').forEach(b=>b.classList.toggle('on',b.dataset.fxfilter===filter));
+  el.querySelectorAll('details.work[data-fx]').forEach(d=>{d.hidden=filter!=='all'&&!d.dataset.fx.split(' ').includes(filter);});
+  const doneBox=el.querySelector('details.fx-done');if(doneBox){if(filter==='done')doneBox.open=true;doneBox.hidden=filter!=='all'&&filter!=='done';}
+ }
  function bind(el,ctx){
   let busy=false;
+  el.addEventListener('click',e=>{const f=e.target.closest('[data-fxfilter]');if(!f||!el.contains(f))return;filter=filter===f.dataset.fxfilter?'all':f.dataset.fxfilter;applyFilter(el);});
+  // 页面重新渲染后，保持刚才选的筛选
+  new MutationObserver(()=>{if(el.querySelector('[data-fxfilter]'))applyFilter(el);}).observe(el,{childList:true});
   el.addEventListener('click',async e=>{
    const btn=e.target.closest('[data-act]');if(!btn||!el.contains(btn))return;
    const root=btn.closest('[data-wo]'),box=btn.closest('[data-form]')||root,feedback=root.querySelector('[data-feedback]');
@@ -186,6 +223,8 @@ window.RenoFulfillment=(()=>{
      const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=`签字链接已复制。验证码 ${data.code}，请另外单独发给对方（下方记录里也能看到）。`;
      ctx.message('已生成签字链接');
     }
+    else if(act==='so_arrive')await send('arrive',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on});
+    else if(act==='so_finish'){const needs=!!input('proof');const f=needs?await upload(ctx.sb,project.id,input('proof'),'完工照片或文件'):null;await send('finish',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on,proof_path:f?.path});}
     else if(act==='signoff_copy_link'){const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='链接已复制。验证码请另外单独发给对方。';}
     else if(act==='signoff_copy_code'){await navigator.clipboard.writeText(btn.dataset.code);feedback.textContent=`验证码 ${btn.dataset.code} 已复制。`;}
     else if(act==='signoff_void'){const {error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'void',p_data:{signoff_id:btn.dataset.id,reason:v('reason')}});if(error)throw error;await ctx.onChange();ctx.message('已撤销');}
@@ -213,5 +252,5 @@ window.RenoFulfillment=(()=>{
   const so=await sb.from('renovation_party_signoffs').select('*').eq('project_id',projectId);
   return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
  }
- return {panel,headline,badges,bind,load,buckets};
+ return {panel,headline,badges,state,bind,load,buckets};
 })();
