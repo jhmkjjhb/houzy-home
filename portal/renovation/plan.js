@@ -116,11 +116,11 @@ window.RenoPlan=(()=>{
   // 验收节点（对上合同收款期数）
   const pay=re=>(payments||[]).find(p=>re.test(p.name||''));
   const ms=[];const pe=k=>phaseEnd[k];
-  if(pe('mep'))ms.push({key:'mep',name:'水电隐蔽工程验收（打压测试、拍照）',on:iso(next(pe('mep'))),pay:pay(/水电|隐蔽/)});
+  if(pe('mep'))ms.push({key:'mep',short:'水电验收',name:'水电隐蔽工程验收（打压测试、拍照）',on:iso(next(pe('mep'))),pay:pay(/水电|隐蔽/)});
   const wet=tasks.find(t=>t.phase===2&&/浴|卫生间|厕|防水|厨房/.test(t.name+' '+t.lines.map(l=>l.name).join(' ')));
-  if(wet)ms.push({key:'water',name:'防水闭水试验 48 小时',on:iso(endAfter(wet.start,Math.min(3,wet.days))),pay:null});
-  if(pe('masonry'))ms.push({key:'masonry',name:'泥水瓷砖工程验收',on:iso(next(pe('masonry'))),pay:pay(/泥水|瓷砖/)});
-  if(finish)ms.push({key:'final',name:'竣工验收交付',on:iso(next(finish)),pay:pay(/竣工|交付/)});
+  if(wet)ms.push({key:'water',short:'闭水',name:'防水闭水试验 48 小时',on:iso(endAfter(wet.start,Math.min(3,wet.days))),pay:null});
+  if(pe('masonry'))ms.push({key:'masonry',short:'泥水验收',name:'泥水瓷砖工程验收',on:iso(next(pe('masonry'))),pay:pay(/泥水|瓷砖/)});
+  if(finish)ms.push({key:'final',short:'竣工',name:'竣工验收交付',on:iso(next(finish)),pay:pay(/竣工|交付/)});
   // 交房日
   const H=parse(handover);let handoverInfo=null;
   if(H&&finish){const slack=diff(next(finish),H);handoverInfo={slack,latestStart:slack>=0?iso(work(add(S,slack))):null,late:slack<0};}

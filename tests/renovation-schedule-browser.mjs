@@ -60,8 +60,10 @@ const openCard=async(page,name)=>{const card=page.locator('details.work',{hasTex
 
 const plans=async()=>Object.fromEntries((await sys('SELECT group_name,planned_start::text s,planned_end::text e FROM renovation_work_orders WHERE project_id=$1',[id])).map(r=>[r.group_name,r]));
 const dow=s=>new Date(s+'T00:00:00Z').getUTCDay();const days=(a,b)=>Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/864e5);
+const planTab=async p=>{await p.locator('.fx-tabs [role=tab][data-fxtab="plan"]').click();};
 try{
- const page=await open(staff,`/portal/renovation.html#${id}`);const sch=page.locator('#schedule .sch');await sch.waitFor();
+ const page=await open(staff,`/portal/renovation.html#${id}`);await page.locator('#work-orders details.work').first().waitFor();
+ assert(await page.locator('#schedule').isHidden(),'opens on 子单执行 by default');await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor();
  assert((await sch.innerText()).includes('还没有排期'),'empty state explains what to do');
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();
@@ -90,7 +92,7 @@ try{
  assert(days(P['泥水'].s,Q['泥水'].s)===2&&days(P['泥水'].e,Q['泥水'].e)===2,'move keeps length, shifts 2 days');
  assert(Q['油漆'].s===P['油漆'].s&&days(P['油漆'].e,Q['油漆'].e)===1,'end handle adds 1 day');
  // 3) 手机：点名称改日期
- const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();
+ const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});await ph.locator('#work-orders details.work').first().waitFor();await planTab(ph);const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();
  await ps.locator('[data-sch-name]',{has:ph.locator('span',{hasText:/^水电$/})}).click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-ok]').click();
  await ps.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
  assert((await plans())['水电'].s==='2026-11-20','phone date edit saved');
@@ -99,7 +101,8 @@ try{
  // 4) 超期：水电计划已过（今天之后的测试日期除外），且没完成 → 红色
  await sys(`UPDATE renovation_work_orders SET planned_start='2026-01-05',planned_end='2026-01-09' WHERE project_id=$1 AND group_name='水电'`,[id]);
  await page.reload();await sch.locator('.sch-bar').first().waitFor();
- assert(await sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^水电$/})}).locator('.sch-bar.late').count()===1&&(await sch.innerText()).includes('超过计划完成日'),'overdue shows red');
+ assert(await sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^水电$/})}).locator('.sch-bar.late').count()===1&&(await sch.locator('.sch-issues').innerText()).includes('超期：水电'),'overdue shows red and is listed under 要处理');
+ assert((await page.locator('#plan-summary').innerText()).includes('件要处理'),'tab summary says there is something to handle');
  // 4b) 施工计划：交房日太早 → 红色提醒；材料最晚下单日；验收节点对上收款；漏项检查
  await sch.locator('[data-sch-handover]').fill('2026-12-20');await sch.locator('[data-sch-handover]').dispatchEvent('change');
  let st=await sch.innerText();assert(/比交房日 12\/20 晚 \d+ 天/.test(st),'too-early handover is flagged: '+st.slice(0,200));
@@ -110,9 +113,13 @@ try{
  assert(await sch.locator('.sch-ms .sch-dia').count()>=3,'inspection points on the chart');
  const chk=await sch.locator('.sch-box',{hasText:'漏项检查'}).innerText();assert(chk.includes('漏项检查'),'missing-item check shown');
  // 4c) 师傅名单 + 撞期：店长加「阿强」，另一个工地同一时间也排了阿强
- const boss=await open(manager,`/portal/renovation.html#${id}`);const bs=boss.locator('#schedule .sch');await bs.locator('.sch-bar').first().waitFor();
- await bs.locator('summary',{hasText:'师傅名单'}).click();await bs.locator('[data-crew-f="name"]').fill('阿强');await bs.locator('[data-crew-f="trade"]').selectOption('泥水工');await bs.locator('[data-crew-add]').click();
- await boss.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('泥水工 · 2 人'));
+ // 师傅名单在整装首页（公司共用），不在每个项目里
+ const boss=await open(manager,'/portal/renovation.html');const ca=boss.locator('#crew-admin');await ca.locator('summary').waitFor();
+ await ca.locator('summary').click();await ca.locator('[data-crew-f="name"]').fill('阿强');await ca.locator('[data-crew-f="trade"]').selectOption('泥水工');await ca.locator('[data-crew-add]').click();
+ await boss.waitForFunction(()=>document.querySelector('#crew-admin')?.innerText.includes('已加入'));
+ assert((await ca.innerText()).includes('阿强'),'crew listed on the home page');
+ await ca.locator('[data-crew-toggle]').click();await boss.waitForFunction(()=>document.querySelector('#crew-admin')?.innerText.includes('恢复'));await ca.locator('[data-crew-toggle]').click();await boss.waitForFunction(()=>document.querySelector('#crew-admin [data-crew-toggle]')?.textContent==='停用');
+ assert.equal(await page.locator('#schedule .sch-box',{hasText:'师傅名单'}).count(),0,'no crew list inside each project');
  const ni=(await plans())['泥水'];const p2='30000000-0000-4000-8000-000000000077';
  await sys(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'JALAN-9','X','6011','Addr','executing','{"lines":[]}'::jsonb)`,[p2,store,staff]);
  await sys(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids,assignee,planned_start,planned_end) VALUES($1,'泥水','[]'::jsonb,'阿强',$2,$3)`,[p2,ni.s,ni.e]);

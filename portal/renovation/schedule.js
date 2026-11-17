@@ -45,9 +45,22 @@ window.RenoSchedule=(()=>{
   // 撞期
   const clash=r=>{const who=String(r.w.assignee||'').trim().toLowerCase();if(!who||!r.plan)return [];return state.busy.filter(b=>String(b.crew||'').trim().toLowerCase()===who&&b.start<=r.plan.end&&b.end>=r.plan.start);};
   const clashes=rows.filter(r=>clash(r).length).length;
-  let html=`<div class="sch"><div class="sch-head"><div class="sch-sum"><b>施工计划</b>${lastEnd?`<span>计划完工 <b>${E(md(lastEnd))}</b></span>`:''}${hand}<span>已完成 ${doneCount}/${rows.length} 张</span>${late.length?`<span class="fx-chip bad">⚠ ${late.length} 张超过计划完成日</span>`:''}${clashes?`<span class="fx-chip bad">⚠ ${clashes} 张师傅撞期</span>`:''}${state.dirty.size||state.handoverDirty?`<span class="fx-chip now">有改动还没保存</span>`:''}</div>`;
+  // 一句话说清现在的状况（最严重的那条用颜色），细节放在下面的「要处理」里
+  const slack=state.handover&&lastEnd?diff(add(parse(lastEnd),1),parse(state.handover)):null;
+  const matIssues=(P?.materials||[]).filter(m=>['late','soon'].includes(m.status));
+  const issues=[];
+  if(slack!=null&&slack<0)issues.push(`比交房日 ${md(state.handover)} 晚 ${-slack} 天：要提前开工、加派人手，或和业主改交房日`);
+  rows.forEach(r=>clash(r).forEach(b=>issues.push(`撞期 ${b.contract_no}：${short(r.w.group_name)}（${String(r.w.assignee).trim()}）${md(r.plan.start)}–${md(r.plan.end)}，那边 ${b.group_name} ${md(b.start)}–${md(b.end)}`)));
+  late.forEach(r=>issues.push(`超期：${short(r.w.group_name)} 计划 ${md(r.plan.end)} 完成，还有 ${r.p.total-r.p.done} 项没做完`));
+  matIssues.forEach(m=>issues.push(`${m.status==='late'?'已过':'快到'}最晚下单日：${m.name} 最晚 ${md(m.orderBy)} 下单${m.signNeeded?'（业主还没签名）':''}`));
+  const headline=!lastEnd?'还没有排期':slack!=null?(slack<0?`<b class="bad">⚠ 计划 ${E(md(lastEnd))} 完工，比交房日晚 ${-slack} 天</b>`:`<b class="ok">计划 ${E(md(lastEnd))} 完工，交房前余 ${slack} 天</b>${slack>0&&parse(state.startOn)>=t?`，最晚 ${E(md(iso(add(parse(state.startOn),slack))))} 开工还来得及`:''}`):`<b>计划 ${E(md(lastEnd))} 完工</b>（填交房日可以算余量）`;
+  state.summary={lastEnd,slack,issues:issues.length};
+  const sumEl=document.getElementById('plan-summary');
+  if(sumEl)sumEl.innerHTML=lastEnd?`计划 ${E(md(lastEnd))} 完工${slack!=null?(slack<0?` · <b class="bad">晚 ${-slack} 天</b>`:` · 余 ${slack} 天`):''}${issues.length?` · <b class="bad">⚠ ${issues.length} 件要处理</b>`:''}`:'还没排期';
+  let html=`<div class="sch"><div class="sch-head"><div class="sch-sum"><span class="sch-headline">${headline}</span><span class="muted">已完成 ${doneCount}/${rows.length} 张</span>${state.dirty.size||state.handoverDirty?`<span class="fx-chip now">有改动还没保存</span>`:''}</div>`;
   if(!ctx.locked)html+=`<div class="sch-tools"><label>开工日<input type="date" data-sch-start value="${E(state.startOn)}"></label><label>交房日<input type="date" data-sch-handover value="${E(state.handover)}"></label><button type="button" class="secondary" data-sch-auto>${planned.length?'按工程量重新排':'按工程量自动排期'}</button><button type="button" data-sch-save ${state.dirty.size||state.handoverDirty?'':'disabled'}>保存计划</button></div>`;
   html+='</div>';
+  if(issues.length)html+=`<div class="sch-issues"><b>要处理（${issues.length}）</b><ul>${issues.map(x=>`<li>${E(x)}</li>`).join('')}</ul></div>`;
   if(!planned.length){html+=`<p class="muted sch-empty">还没有排期。填开工日（和交房日），点「按工程量自动排期」：系统按合同工程量算每道工序要几天，按 拆除 → 水电 → 泥水 → 天花木作 → 油漆 → 定制柜 → 台面门窗玻璃 → 洁具灯具 → 清洁 排好；定制和门窗会等生产 / 复尺。排好后可以拖动调整。</p>${extras(P,ctx,rows)}</div>`;el.innerHTML=html;afterRender(el,ctx);return;}
   const ms=(P?.milestones||[]).filter(m=>m.on);
   const from=add([...planned.map(r=>parse(r.plan.start)),t,...ms.map(m=>parse(m.on))].reduce((a,b)=>a<b?a:b),-2);
@@ -65,15 +78,17 @@ window.RenoSchedule=(()=>{
    const tip=`${short(r.w.group_name)}：${r.plan.start} → ${r.plan.end}`+(r.info?`（${r.info.days} 个工作日，${r.info.trade}${r.info.why?`；${r.info.why}`:''}）`:'');
    return `<div class="sch-bar ${cls}${state.dirty.has(r.w.id)?' dirty':''}${r.info?.critical&&!r.p.finished?' crit':''}" data-sch-bar="${r.w.id}" style="left:${left}px;width:${width}px" title="${E(tip)}"><i style="width:${pct}%"></i><span>${E(md(r.plan.start))}–${E(md(r.plan.end))}</span>${ctx.locked?'':'<b data-sch-end aria-hidden="true"></b>'}</div>`;
   };
-  const sub=r=>{const c=clash(r);const who=String(r.w.assignee||'').trim();
-   return r.p.finished?'<small class="ok">✓ 已完成</small>':`<small>${r.info?E(r.info.trade)+' · ':''}${who?E(who)+' · ':''}${r.p.done}/${r.p.total} 项${r.plan&&parse(r.plan.end)<t?' · <span class="bad">超期</span>':''}${c.length?` · <span class="bad" title="${E(c.map(b=>`${b.contract_no} ${b.group_name} ${b.start}~${b.end}`).join('；'))}">撞期 ${E(c[0].contract_no)}</span>`:''}</small>`;};
+  const sub=r=>{const who=String(r.w.assignee||'').trim();
+   if(!r.info&&!r.plan)return '<small class="muted">不用排期</small>';
+   return r.p.finished?'<small class="ok">✓ 已完成</small>':`<small>${who?E(who):`<span class="muted">${r.info?E(r.info.trade)+' · ':''}未定人</span>`}</small>`;};
+  const dot=r=>!r.p.finished&&(clash(r).length||(r.plan&&parse(r.plan.end)<t))?'<i class="sch-dot" title="有问题，见上面「要处理」"></i>':'';
   const editor=r=>state.editing===r.w.id&&!ctx.locked?`<div class="sch-edit"><label>开始<input type="date" data-sch-es value="${E(r.plan?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(r.plan?.end||'')}"></label><button type="button" data-sch-ok="${r.w.id}">确定</button><button type="button" class="secondary" data-sch-cancel>取消</button></div>`:'';
-  const msRow=ms.length?`<div class="sch-row sch-ms"><div class="sch-label"><span>验收节点</span><small>◆ 对应收款</small></div><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${ms.map(m=>`<span class="sch-dia${m.pay?' pay':''}" style="left:${diff(from,parse(m.on))*dw+dw/2}px" title="${E(m.on+' '+m.name+(m.pay?`；收款：${m.pay.name} ${money(m.pay.amount)}`:''))}">◆</span>`).join('')}</div></div>`:'';
+  const msRow=ms.length?`<div class="sch-row sch-ms"><div class="sch-label"><span>验收节点</span><small>$ = 可收款</small></div><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${ms.map((m,k)=>`<span class="sch-dia${m.pay?' pay':''}${k%2?' low':''}" style="left:${diff(from,parse(m.on))*dw+dw/2}px" title="${E(m.on+' '+m.name+(m.pay?`；收款：${m.pay.name} ${money(m.pay.amount)}`:''))}">◆<em>${E(m.short||'')}${m.pay?' $':''}</em></span>`).join('')}</div></div>`:'';
   const hx=state.handover?`<div class="sch-hand" style="left:calc(var(--label) + ${diff(from,parse(state.handover))*dw+dw/2}px)" title="交房日 ${E(state.handover)}"><span>交房</span></div>`:'';
   html+=`<div class="sch-scroll"><div class="sch-grid" style="--w:${days*dw}px"><div class="sch-row sch-axis"><div class="sch-label"></div><div class="sch-lane">${ticks}</div></div>
-   ${rows.map(r=>`<div class="sch-row"><button type="button" class="sch-label" data-sch-name="${r.w.id}" ${ctx.locked?'disabled':''}><span>${E(short(r.w.group_name))}</span>${sub(r)}</button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${bar(r)}</div></div>${editor(r)}`).join('')}${msRow}
+   ${rows.map(r=>`<div class="sch-row"><button type="button" class="sch-label" data-sch-name="${r.w.id}" ${ctx.locked?'disabled':''}><span>${E(short(r.w.group_name))}${dot(r)}</span>${sub(r)}</button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${bar(r)}</div></div>${editor(r)}`).join('')}${msRow}
    <div class="sch-today" style="left:calc(var(--label) + ${diff(from,t)*dw+dw/2}px)" title="今天"></div>${hx}</div></div>
-   <p class="muted sch-hint">${ctx.locked?'':'拖动横条整体改日期，拖右端改完成日；手机上点子单名称改日期。'}<span class="sch-key wait"></span>未开始 <span class="sch-key active"></span>进行中 <span class="sch-key done"></span>已完成 <span class="sch-key late"></span>超期 <span class="sch-key crit"></span>关键工序（它晚一天，完工就晚一天） ◆ 验收节点</p>${extras(P,ctx,rows)}</div>`;
+   <p class="muted sch-hint">${ctx.locked?'':'拖动横条整体改日期，拖右端改完成日；手机上点子单名称改日期。'}<span class="sch-key wait"></span>未开始 <span class="sch-key active"></span>进行中 <span class="sch-key done"></span>已完成 <span class="sch-key late"></span>超期 <span class="sch-key crit"></span>卡完工的工序（它晚一天，交房就晚一天）</p>${extras(P,ctx,rows)}</div>`;
   const keep=el.querySelector('.sch-scroll')?.scrollLeft;
   el.innerHTML=html;el.dataset.dw=dw;
   // 打开时自动滚到「今天」附近；重新画图时保持原来的位置
@@ -88,13 +103,11 @@ window.RenoSchedule=(()=>{
   const soon=P.materials.filter(m=>['late','soon'].includes(m.status)).length;
   const msl=P.milestones.length?`<ul class="sch-list">${P.milestones.map(m=>`<li><b>${E(md(m.on))}</b> ${E(m.name)}${m.pay?`<br><small>对应收款：${E(m.pay.name)} <b>${money(m.pay.amount)}</b></small>`:''}</li>`).join('')}</ul>`:'<p class="muted">排期后显示。</p>';
   const ck=P.checks.length?`<ul class="sch-list">${P.checks.map(c=>`<li><span class="fx-chip ${c.level==='必查'?'bad':'now'}">${E(c.level)}</span> ${E(c.msg)}${c.items?.length?`<br><small>${E(c.items.join('；'))}</small>`:''}</li>`).join('')}</ul><p class="muted sch-note">只是提醒：确认合同里另有安排或业主自理就不用管。</p>`:'<p class="ok-text">✓ 没发现常见漏项</p>';
-  const crews=state.crews.length?`<ul class="sch-list">${state.crews.map(c=>`<li><b>${E(c.name)}</b> · ${E(c.trade)} · ${c.headcount} 人${c.phone?` · ${E(c.phone)}`:''}${c.active?'':' · 已停用'}</li>`).join('')}</ul>`:'<p class="muted">还没有师傅名单。</p>';
-  const crewForm=ctx.manager&&!ctx.locked?`<div class="work-controls sch-crew-form"><label>名称<input data-crew-f="name" maxlength="60" placeholder="例：阿强泥水队"></label><label>工种<select data-crew-f="trade">${['水电工','泥水工','木工','油漆工','柜体安装队','厂家安装','杂工','清洁','其他'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>人数<input data-crew-f="headcount" type="number" min="1" max="50" value="2"></label><label>电话<input data-crew-f="phone" maxlength="40"></label><button type="button" data-crew-add>加入名单</button></div>`:'';
   return `<div class="sch-extras">
    <details class="sch-box" ${soon?'open':''}><summary>材料下单${soon?` <span class="fx-chip bad">${soon} 项要注意</span>`:''}</summary>${mats}</details>
    <details class="sch-box"><summary>验收节点 · ${P.milestones.length} 个</summary>${msl}</details>
    <details class="sch-box" ${P.checks.some(c=>c.level==='必查')?'open':''}><summary>漏项检查${P.checks.length?` <span class="fx-chip ${P.checks.some(c=>c.level==='必查')?'bad':'now'}">${P.checks.length} 条</span>`:' ✓'}</summary>${ck}</details>
-   <details class="sch-box" ${state.crewOpen?'open':''} data-crew-box><summary>师傅名单 · ${state.crews.length}</summary>${crews}${crewForm}<p class="muted sch-note">子单的「执行人」填名单里的名字，系统才能查出跨工地撞期。</p></details></div>`;
+   </div><p class="muted sch-note">执行人从「师傅名单」里选（整装首页项目列表下面），系统才能查出跨工地撞期。</p>`;
  }
  // 读师傅名单、查撞期（失败不影响页面）
  let loading=false;
@@ -134,13 +147,8 @@ window.RenoSchedule=(()=>{
     else if(d.schOk){const box=b.closest('.sch-edit'),s=box.querySelector('[data-sch-es]').value,en=box.querySelector('[data-sch-ee]').value;
      if(!s||!en)throw new Error('请填开始和完成日期');if(en<s)throw new Error('完成日期不能早于开始日期');setPlan(d.schOk,s,en);state.editing=null;rerender();}
     else if('schCancel' in d){state.editing=null;rerender();}
-    else if('crewAdd' in d){const f=k=>el.querySelector(`[data-crew-f="${k}"]`)?.value||'';
-     if(!f('name').trim())throw new Error('请填写师傅 / 队伍名称');
-     const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:null,p_data:{name:f('name'),trade:f('trade'),headcount:Number(f('headcount'))||1,phone:f('phone')}});if(error)throw error;
-     state.loadedFor=null;state.crewOpen=true;ctx.message(`已把「${f('name').trim()}」加入师傅名单。`);rerender();}
    }catch(err){ctx.message(err.message||String(err),true);if(d.schSave!==undefined)b.disabled=false;}
   });
-  el.addEventListener('toggle',e=>{if(e.target.matches?.('[data-crew-box]'))state.crewOpen=e.target.open;},true);
   el.addEventListener('change',e=>{
    if(e.target.matches('[data-sch-start]'))state.startOn=e.target.value;
    if(e.target.matches('[data-sch-handover]')){state.handover=e.target.value;state.handoverDirty=true;rerender();}
@@ -165,5 +173,30 @@ window.RenoSchedule=(()=>{
   };
   el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
  }
- return {render,bind};
+ // 整装首页：师傅名单（公司共用）。员工能看；店长及以上能新增、停用 / 恢复
+ async function crewAdmin(el,ctx){
+  if(!el)return;
+  const TRADES=['水电工','泥水工','木工','油漆工','柜体安装队','厂家安装','杂工','清洁','其他'];
+  const draw=async(msg='')=>{
+   const r=await ctx.sb.from('renovation_crews').select('*').order('trade').order('name');
+   if(r.error){el.hidden=true;return;}
+   el.hidden=false;const list=r.data||[];
+   el.innerHTML=`<details class="panel crew-admin"${el.dataset.open?' open':''}><summary><b>师傅名单</b> <span class="muted">${list.filter(c=>c.active).length} 位在用 · 子单「执行人」从这里选，系统才能查跨工地撞期</span></summary>
+    ${list.length?`<div class="sch-tablewrap"><table class="sch-table"><thead><tr><th>名称</th><th>工种</th><th>人数</th><th>电话</th><th></th></tr></thead><tbody>${list.map(c=>`<tr class="${c.active?'':'off'}"><td><b>${E(c.name)}</b></td><td>${E(c.trade)}</td><td>${c.headcount}</td><td>${E(c.phone)}</td><td>${ctx.manager()?`<button type="button" class="secondary" data-crew-toggle="${c.id}" data-on="${c.active?'0':'1'}">${c.active?'停用':'恢复'}</button>`:(c.active?'':'已停用')}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">还没有师傅。</p>'}
+    ${ctx.manager()?`<div class="work-controls"><label>名称<input data-crew-f="name" maxlength="60" placeholder="例：阿强泥水队"></label><label>工种<select data-crew-f="trade">${TRADES.map(x=>`<option>${x}</option>`).join('')}</select></label><label>人数<input data-crew-f="headcount" type="number" min="1" max="50" value="2"></label><label>电话<input data-crew-f="phone" maxlength="40"></label><button type="button" data-crew-add>加入名单</button></div>`:'<p class="muted">由店长或上级维护。</p>'}
+    <p class="muted sch-note" data-crew-msg role="status">${E(msg)}</p></details>`;
+   el.querySelector('details').addEventListener('toggle',e=>{el.dataset.open=e.target.open?'1':'';});
+  };
+  el.onclick=async e=>{
+   const b=e.target.closest('button');if(!b)return;const f=k=>el.querySelector(`[data-crew-f="${k}"]`)?.value||'';
+   try{
+    if('crewAdd' in b.dataset){if(!f('name').trim())throw new Error('请填写师傅 / 队伍名称');
+     const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:null,p_data:{name:f('name'),trade:f('trade'),headcount:Number(f('headcount'))||1,phone:f('phone')}});if(error)throw error;
+     el.dataset.open='1';await draw(`已加入「${f('name').trim()}」。`);}
+    else if(b.dataset.crewToggle){const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:b.dataset.crewToggle,p_data:{name:b.closest('tr').querySelector('b').textContent,active:b.dataset.on==='1'}});if(error)throw error;el.dataset.open='1';await draw('已更新。');}
+   }catch(err){const m=el.querySelector('[data-crew-msg]');if(m)m.textContent=err.message||String(err);}
+  };
+  await draw();
+ }
+ return {render,bind,crewAdmin};
 })();

@@ -221,3 +221,21 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-list{margin:6px 0 0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}.sch-list small{color:#68766e}.sch-note{font-size:12px;margin:6px 0 0}.ok-text{color:#157a3c;margin:6px 0 0}
 .sch-crew-form{margin-top:8px}
 @media(min-width:760px){.sch-extras>.sch-box:first-child{grid-column:span 2}}
+
+/* 履约子订单两个标签 */
+.fx-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 12px;border-bottom:1px solid #dce2df}
+.renovation-workspace .fx-tabs button,.fx-tabs button{width:auto;min-height:38px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#68766e;font-weight:600;padding:6px 12px;margin-bottom:-1px}
+.fx-tabs button[aria-selected=true]{color:#153927;border-bottom-color:#153927}
+.renovation-workspace .fx-tabs .fx-plan-sum,.fx-tabs .fx-plan-sum{margin-left:auto;font-weight:400;font-size:13px;color:#3d4d45;border-bottom-color:transparent}
+.fx-plan-sum .bad,.sch-headline .bad,.sch-label .bad{color:#b42318}.sch-headline .ok{color:#157a3c}
+.sch-headline{font-size:15px}
+.sch-issues{border:1px solid #f1c5c0;background:#fdf3f2;border-radius:8px;padding:8px 12px}.sch-issues b{color:#b42318}.sch-issues ul{margin:4px 0 0;padding-left:18px;display:grid;gap:3px;font-size:13.5px}
+.sch-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#b42318;margin-left:6px;vertical-align:middle}
+/* 颜色只表示一件事：卡完工的工序用深色粗框，不再用紫色；可收款的验收节点用绿色 */
+.sch-bar.crit{box-shadow:inset 0 0 0 2px #22362e}.sch-key.crit{border:2px solid #22362e}
+.sch-dia{display:flex;align-items:center;gap:2px;white-space:nowrap}.sch-dia em{font-style:normal;font-size:11px;color:#3d4d45;background:rgba(255,255,255,.85);padding:0 2px;border-radius:3px}
+.sch-dia.pay{color:#157a3c}.sch-dia.pay em{color:#157a3c;font-weight:700}
+.crew-admin{margin:14px 0}.crew-admin>summary{cursor:pointer}.crew-admin tr.off td{color:#9aa6a0}
+@media(max-width:600px){.renovation-workspace .fx-tabs .fx-plan-sum,.fx-tabs .fx-plan-sum{margin-left:0;flex-basis:100%;text-align:left;padding-top:0}}
+.renovation-workspace .fx-tabs button:hover,.fx-tabs button:hover,.fx-tabs button:focus{background:none;color:#153927}
+.sch-ms .sch-lane{min-height:44px}.sch-dia.low{top:24px}

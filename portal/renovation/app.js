@@ -222,6 +222,11 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  if(!['staff','store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role))throw new Error('此入口仅供门店员工及管理人员使用');
  const sr=await sb.from('stores').select('id,name').eq('active',true);if(sr.error)throw sr.error;stores=sr.data;
  $('store').innerHTML=stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');if(actor.store_id)$('store').value=actor.store_id;
+ // 履约子订单：两个标签（子单执行 / 施工计划），记住上次看的是哪个
+ const fxTab=name=>{document.querySelectorAll('[data-fxpane]').forEach(p=>p.hidden=p.dataset.fxpane!==name);document.querySelectorAll('.fx-tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.fxtab===name)));try{sessionStorage.setItem('reno-fx-tab',name);}catch(e){}};
+ document.querySelector('.fx-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-fxtab]');if(b)fxTab(b.dataset.fxtab);});
+ try{fxTab(sessionStorage.getItem('reno-fx-tab')||'exec');}catch(e){fxTab('exec');}
+ if(window.RenoSchedule)RenoSchedule.crewAdmin($('crew-admin'),{sb,manager:()=>['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await openProject(project.id);},message:(m,err)=>message(m,err)});
  RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await openProject(project.id);await loadList();},message});
  const refreshHome=async()=>{await RenoFulfillmentHome.load({sb,openProject,refresh:async()=>{await loadList();await refreshHome();}});};
