@@ -68,16 +68,15 @@ try{
 
  // 1) 员工在后台点开业主签名：看到签的清单、图纸按钮和手写签名图
  await page.reload();card=await openCard(page,'全屋定制');
- await card.locator('summary',{hasText:'查看业主签名'}).click();
- const ownerView=card.locator('details',{has:page.locator('summary',{hasText:'查看业主签名'})});
+ await card.locator('summary',{hasText:'记录：'}).click();await card.locator('summary',{hasText:'查看业主签名'}).click();
+ const ownerView=card.locator('summary',{hasText:'查看业主签名'}).locator('..');
  assert((await ownerView.innerText()).includes('主卧衣柜'),'signed lines listed');
  assert(await ownerView.locator('svg polyline').count()>0,'owner hand signature drawn');
  assert(await ownerView.locator('[data-act="view_file"]').count()>0,'drawing can be opened');
  await page.screenshot({path:out+'/staff-owner-signature.png',fullPage:true});
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
- await card.locator('details.work-terms>summary',{hasText:'按项查看'}).click();
- await card.locator('[data-line="C1"]').check();
+ await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  const form=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
  await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
@@ -87,7 +86,7 @@ try{
  const link=await page.evaluate(()=>navigator.clipboard.readText());assert(link.includes('renovation-party-sign.html'),'link copied: '+link);
  const row=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];
  card=await openCard(page,'全屋定制');const pend=await card.innerText();
- assert(pend.includes('等待签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
+ assert(pend.includes('等待工厂 / 负责人签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
  await page.screenshot({path:out+'/staff-signoff-pending.png',fullPage:true});
 
  // 3) 工厂用手机打开：没验证码看不到；验证后只看到勾选的项，没有价格和业主电话
@@ -106,18 +105,17 @@ try{
  const ofl=await fac.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'no sideways scroll on phone: '+ofl);
 
  // 4) 员工看到签字：记录、备注、签名图，以及清单项上的 ✓
- await page.reload();card=await openCard(page,'全屋定制');const after=await card.innerText();
- assert(after.includes('已签字')&&after.includes('王厂长')&&after.includes('12月5日出货'),'staff sees who signed and the note');
- await card.locator('details.work-terms>summary',{hasText:'按项查看'}).click();
- assert((await card.locator('label.check',{has:page.locator('[data-line="C1"]')}).innerText()).includes('✓ 工厂确认下单内容'),'line marked as factory-confirmed');
- assert(!(await card.locator('label.check',{has:page.locator('[data-line="C2"]')}).innerText()).includes('✓'),'unticked line not marked');
+ await page.reload();card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'记录：'}).click();const after=await card.innerText();
+ assert(after.includes('工厂 / 负责人签字 1')&&after.includes('王厂长')&&after.includes('12月5日出货'),'staff sees who signed and the note');
+ assert((await card.locator('label.fx-row',{has:page.locator('[data-line="C1"]')}).innerText()).includes('✓ 工厂确认下单内容'),'line marked as factory-confirmed');
+ assert(!(await card.locator('label.fx-row',{has:page.locator('[data-line="C2"]')}).innerText()).includes('✓'),'unticked line not marked');
  await card.locator('summary',{hasText:'查看签字'}).click();
- assert(await card.locator('details',{has:page.locator('summary',{hasText:'查看签字'})}).locator('svg polyline').count()>0,'factory signature drawn');
+ assert(await card.locator('summary',{hasText:'查看签字'}).locator('..').locator('svg polyline').count()>0,'factory signature drawn');
  await page.screenshot({path:out+'/staff-signoff-signed.png',fullPage:true});
  const stagesNow=await stages();assert.equal(stagesNow.C1,'confirmed','signing does not move progress');
 
  // 5) 撤销：再发一个到货验收，撤销后链接打不开
- await card.locator('[data-line="C2"]').check();
+ await card.locator('[data-line="C2"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  await form.locator('[data-f="purpose"]').selectOption('arrival');await form.locator('[data-f="party"]').fill('仓库阿明');
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));

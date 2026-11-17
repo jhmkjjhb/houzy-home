@@ -84,14 +84,14 @@ try{
  assert.deepEqual((await stages()).C1,'confirmed');
  // Whole sub-order order
  await page.reload();card=await openCard(page,'全屋定制');
- const history=await card.innerText();assert(history.includes('Owner Wife')&&history.includes('配偶'),'signature history shown');
+ await card.locator('summary',{hasText:'记录：'}).click();const history=await card.innerText();assert(history.includes('Owner Wife')&&history.includes('配偶'),'signature history shown');
  const form=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
  await form.locator('[data-f="supplier"]').fill('厂家A');await form.locator('[data-f="order_no"]').fill('PO-1');await form.locator('[data-f="expected_on"]').fill('2099-01-01');
  await form.locator('[data-act="place_order"]').click();await card.locator('[data-feedback]').getByText('勾选').waitFor();
  await form.locator('[data-f="stock_confirmed"]').check();await form.locator('[data-act="place_order"]').click();
  await card.locator('[data-act="arrive"]').waitFor();let s=await stages();assert(s.C1==='ordered'&&s.C2==='ordered'&&s.S1==='ordered','one click orders all three');
  // Exception: one line missing
- card=await openCard(page,'全屋定制');await card.locator('details.work-terms>summary',{hasText:'按项查看'}).click();
+ card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'更多操作'}).click();
  await card.locator('[data-line="C2"]').check();const issue=card.locator('[data-form]',{has:page.locator('[data-act="flag_issue"]')});
  await issue.locator('[data-f="note"]').fill('缺门板');await issue.locator('[data-f="follow_up_on"]').fill('2099-01-01');await issue.locator('[data-act="flag_issue"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo]')].some(e=>e.textContent.includes('缺门板')));

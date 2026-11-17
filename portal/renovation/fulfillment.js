@@ -44,10 +44,6 @@ window.RenoFulfillment=(()=>{
   const customs=items.filter(i=>i.kind==='custom');if(!customs.length)return '';
   const all=tracking.confirmations.filter(c=>c.work_order_id===w.id).sort((a,b)=>b.version-a.version);
   const live=all.find(c=>['pending','paper_review'].includes(c.status)),signed=all.find(c=>c.status==='signed');
-  const history=all.filter(c=>c.status==='signed').map(c=>`<li>第${c.version}版${c.kind==='change'?'（改单）':''} · ${E(c.signer_name)}（${E(c.signer_relation)}）· ${E(new Date(c.signed_at).toLocaleString('zh-CN'))} · ${c.method==='paper'?'纸质':'电子'}${c.terms?.change_note?` · ${E(c.terms.change_note)}`:''}
-   <details><summary>查看业主签名</summary><p>签名的清单（${(c.terms?.lines||[]).length}项）：${(c.terms?.lines||[]).map(l=>`${E(l.name)}${l.spec?`（${E(l.spec)}）`:''} × ${E(l.qty)} ${E(l.unit)}`).join('；')}</p>${c.terms?.note?`<p>说明：${E(c.terms.note)}</p>`:''}
-   <div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(c.document_path)}">查看签名时的图纸</button>${c.paper_path?`<button type="button" class="secondary" data-act="view_file" data-path="${E(c.paper_path)}">查看纸质确认单</button>`:''}</div>
-   ${c.method==='electronic'&&c.signature_strokes?`<p>手写签名：</p>${sigSvg(c.signature_strokes)}`:''}</details></li>`).join('');
   let body='';
   if(o.locked){body='';}
   else if(live?.status==='pending')body=`<p><b>等待业主签名</b>（第${live.version}版）。业主须输入登记手机号后四位才能查看。</p><div class="actions"><button type="button" class="secondary" data-act="copy_link" data-id="${live.id}" data-token="${live.signing_token}">复制签名链接</button></div>
@@ -58,7 +54,16 @@ window.RenoFulfillment=(()=>{
    const waiting=customs.filter(i=>['pending','confirmed'].includes(i.stage));
    if(waiting.length)body=`<div class="work-controls" data-form>${file(signed?'新版定稿图纸（旧签名将失效，业主会看到）':'定稿图纸或确认文件（业主会看到，请勿含成本价）','document',PDF_IMG)}${field('给业主的说明（选填，业主会看到）','note')}<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'整单发起业主签名'}（${waiting.length}项）</button></div>`;
   }
-  return `<div class="work-terms"><b>业主签名 · 定制必签</b>${body}${history?`<ul>${history}</ul>`:''}</div>`;
+  // 已签过、只是可以重新发起的，不算「现在要做」，放进「更多操作」
+  if(signed&&!live&&body){o.resign=body;return '';}
+  return body?`<div class="work-terms"><b>业主签名 · 定制必签</b>${body}</div>`:'';
+ }
+ function ownerHistory(w,tracking){
+  const all=tracking.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').sort((a,b)=>b.version-a.version);
+  return all.map(c=>`<li>第${c.version}版${c.kind==='change'?'（改单）':''} · ${E(c.signer_name)}（${E(c.signer_relation)}）· ${E(new Date(c.signed_at).toLocaleString('zh-CN'))} · ${c.method==='paper'?'纸质':'电子'}${c.terms?.change_note?` · ${E(c.terms.change_note)}`:''}
+   <details><summary>查看业主签名</summary><p>签名的清单（${(c.terms?.lines||[]).length}项）：${(c.terms?.lines||[]).map(l=>`${E(l.name)}${l.spec?`（${E(l.spec)}）`:''} × ${E(l.qty)} ${E(l.unit)}`).join('；')}</p>${c.terms?.note?`<p>说明：${E(c.terms.note)}</p>`:''}
+   <div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(c.document_path)}">查看签名时的图纸</button>${c.paper_path?`<button type="button" class="secondary" data-act="view_file" data-path="${E(c.paper_path)}">查看纸质确认单</button>`:''}</div>
+   ${c.method==='electronic'&&c.signature_strokes?`<p>手写签名：</p>${sigSvg(c.signature_strokes)}`:''}</details></li>`).join('');
  }
  function orderBlock(items,o){
   if(o.locked)return '';
@@ -72,7 +77,7 @@ window.RenoFulfillment=(()=>{
  function batchBlock(w,items,tracking,o){
   const list=tracking.batches.filter(x=>x.work_order_id===w.id);if(!list.length)return '';
   const now=today();
-  return `<div class="work-terms"><b>下单记录</b>${list.map(x=>{const waiting=items.some(i=>i.batch_id===x.id&&i.stage==='ordered'),late=waiting&&x.expected_on<now;return `<p>${E(x.supplier)}${x.supplier_order_no?` · 单号 ${E(x.supplier_order_no)}`:''} · 下单 ${E(x.ordered_on)} · 预计到货 ${E(x.expected_on)} · ${items.filter(i=>i.batch_id===x.id).length}项${x.legacy?' · 上线前已下单':''}${late?' <span class="warning">已逾期</span>':''}</p>${o.locked?'':`<details><summary>更正这条记录</summary><div class="work-controls" data-form>${field('厂家','supplier',`value="${E(x.supplier)}"`)}${field('厂家单号','order_no',`value="${E(x.supplier_order_no)}"`)}${field('预计到货日','expected_on',`type="date" value="${E(x.expected_on)}"`)}${field('更正原因','reason')}<button type="button" class="secondary" data-act="correct_batch" data-id="${x.id}">保存更正</button></div></details>`}`;}).join('')}</div>`;
+  return `<b>下单记录</b>${list.map(x=>{const waiting=items.some(i=>i.batch_id===x.id&&i.stage==='ordered'),late=waiting&&x.expected_on<now;return `<p>${E(x.supplier)}${x.supplier_order_no?` · 单号 ${E(x.supplier_order_no)}`:''} · 下单 ${E(x.ordered_on)} · 预计到货 ${E(x.expected_on)} · ${items.filter(i=>i.batch_id===x.id).length}项${x.legacy?' · 上线前已下单':''}${late?' <span class="warning">已逾期</span>':''}</p>${o.locked?'':`<details><summary>更正这条记录</summary><div class="work-controls" data-form>${field('厂家','supplier',`value="${E(x.supplier)}"`)}${field('厂家单号','order_no',`value="${E(x.supplier_order_no)}"`)}${field('预计到货日','expected_on',`type="date" value="${E(x.expected_on)}"`)}${field('更正原因','reason')}<button type="button" class="secondary" data-act="correct_batch" data-id="${x.id}">保存更正</button></div></details>`}`;}).join('')}`;
  }
  function stepBlocks(items,o){
   if(o.locked)return '';const b=buckets(items);let html='';
@@ -82,37 +87,57 @@ window.RenoFulfillment=(()=>{
   if(b.finishable.length){const photo=b.finishable.some(i=>i.kind!=='gift');html+=`<div class="work-controls" data-form>${field('完成日期','on',`type="date" value="${today()}"`)}${photo?file('完工照片或文件','proof',PDF_IMG):''}<button type="button" data-act="finish">整单完成（${b.finishable.length}项）</button></div>`;}
   return html?`<div class="work-terms"><b>进度</b>${html}</div>`:'';
  }
- function exceptionBlock(items,o){
+ // 进度一行看完：签名 → 下单 → 到货 → 完成，当前这一步高亮
+ function progress(items){
+  const goods=items.filter(i=>['custom','stock'].includes(i.kind)),customs=items.filter(i=>i.kind==='custom');
+  const steps=[];
+  if(customs.length)steps.push(['业主签名',customs.filter(i=>i.stage!=='pending').length,customs.length]);
+  if(goods.length){steps.push(['下单',goods.filter(i=>['ordered','arrived','done'].includes(i.stage)).length,goods.length]);steps.push(['到货',goods.filter(i=>['arrived','done'].includes(i.stage)).length,goods.length]);}
+  steps.push(['完成',items.filter(i=>i.stage==='done').length,items.length]);
+  let current=false;
+  return `<div class="fx-steps">${steps.map(([n,d,t])=>{const ok=d>=t,cls=ok?'ok':current?'':'now';if(!ok)current=true;return `<span class="fx-step ${cls}">${ok?'✓ ':''}${n} ${d}/${t}</span>`;}).join('<span class="fx-arrow">→</span>')}${items.some(i=>i.issue_note)?`<span class="fx-step bad">⚠ ${items.filter(i=>i.issue_note).length}项有问题</span>`:''}</div>`;
+ }
+ // 清单：每项一行。勾选后，下单 / 到货 / 完成 / 标记问题 / 转发签字只处理勾选的项
+ function itemList(items,o){
   const done=(o.signoffs||[]).filter(x=>x.status==='signed');
-  const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>` · <span style="color:#15803d">✓ ${E(PURPOSES[x.purpose])}（${E(x.signer_company)} ${E(x.signer_name)}）</span>`).join('');
-  const rows=items.map(i=>`<label class="check"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}> #${E(i.line_id)} ${E(i.name)} · ${kindNames[i.kind]} · ${E(stage(i))}${tags(i)}${i.change_pending?' · 改单待签名':''}${i.issue_note?` · <span class="warning">问题：${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</span>`:''}</label>`).join('');
-  return `<details class="work-terms"><summary>按项查看和处理例外（${items.length}项）</summary>${rows}${o.locked?'':`<p class="muted">勾选后，上方的下单、到货、完成只处理勾选的项，可用于分开下单。</p>
+  const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>`<span class="fx-tag ok">✓ ${E(PURPOSES[x.purpose])} · ${E(x.signer_company)}</span>`).join('');
+  const row=i=>`<label class="fx-row"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-tag ${i.stage==='done'?'ok':''}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
+  return `<div class="fx-list">${items.map(row).join('')}</div>${o.locked?'':'<p class="muted fx-hint">不勾选 = 整张子单；勾选后，下面的操作只处理勾选的项。</p>'}`;
+ }
+ function moreBlock(items,o){
+  if(o.locked)return '';
+  return `<details class="work-terms fx-more"><summary>更多操作：标记问题 · 改单 · 转发工厂 / 负责人签字${o.resign?' · 重新发起业主签名':''}</summary>
+   ${o.resign?`<div style="margin-top:6px"><b>重新发起业主签名</b>${o.resign}</div>`:''}
    <div class="work-controls" data-form>${field('问题说明（缺件、破损、尺寸不对等）','note')}${field('跟进日期','follow_up_on','type="date"')}<button type="button" class="secondary" data-act="flag_issue">标记问题</button><button type="button" class="secondary" data-act="resolve_issue">问题已解决</button></div>
    ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（业主会看到）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}
-   ${o.signoffsReady?`<div data-form style="margin-top:14px"><b>转发给工厂 / 负责人签字</b><p class="muted">勾选上面的项（不勾 = 整张子单），生成链接和 4 位验证码，分开发给对方。对方看不到价格和业主电话。</p>
+   ${o.signoffsReady?`<div data-form style="margin-top:14px"><b>转发给工厂 / 负责人签字</b><p class="muted">生成链接和 4 位验证码，分开发给对方。对方看不到价格和业主电话。</p>
     <div class="work-controls"><label>签字用途<select data-f="purpose">${Object.entries(PURPOSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>${field('签字方（工厂或负责人）','party','maxlength="120"')}</div>
-    <div class="work-controls">${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:''}`}</details>`;
+    <div class="work-controls">${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:'<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>'}</details>`;
  }
- // 转发签字记录：待签的可复制链接 / 验证码、撤销；已签的可看签名
- function signoffBlock(w,o){
-  if(!o.signoffsReady)return o.locked?'':`<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>`;
-  const list=(o.signoffs||[]).filter(x=>x.status!=='voided').sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-  if(!list.length)return '';
-  const one=x=>{
-   const head=`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
-   if(x.status==='pending')return `<li>${head} · <span class="warning">等待签字</span>${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
+ const soHead=x=>`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
+ // 等待对方签字的链接放在操作区（要用验证码）
+ function pendingSignoffs(o){
+  const list=(o.signoffs||[]).filter(x=>x.status==='pending');if(!list.length)return '';
+  return `<div class="work-terms"><b>等待工厂 / 负责人签字</b><ul>${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
     <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
-    ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`;
-   return `<li>${head} · <span style="color:#15803d">已签字</span> · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
-    <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(x.document_path)}">查看附件</button></div>`:''}${sigSvg(x.signature_strokes)}</details></li>`;
-  };
-  return `<div class="work-terms"><b>转发签字（工厂 / 负责人）</b><ul>${list.map(one).join('')}</ul></div>`;
+    ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`).join('')}</ul></div>`;
+ }
+ // 记录：业主签名、下单、已签的转发签字，默认收起
+ function records(w,items,t,o){
+  const owner=ownerHistory(w,t),batches=batchBlock(w,items,t,o),signed=(o.signoffs||[]).filter(x=>x.status==='signed').sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)));
+  const nOwner=t.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').length,nBatch=t.batches.filter(x=>x.work_order_id===w.id).length;
+  if(!nOwner&&!nBatch&&!signed.length)return '';
+  const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
+    <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(x.document_path)}">查看附件</button></div>`:''}${sigSvg(x.signature_strokes)}</details></li>`).join('');
+  return `<details class="work-terms fx-records"><summary>记录：业主签名 ${nOwner} · 下单 ${nBatch} · 工厂 / 负责人签字 ${signed.length}</summary>
+   ${owner?`<b>业主签名</b><ul>${owner}</ul>`:''}${batches}${so?`<b>工厂 / 负责人签字</b><ul>${so}</ul>`:''}</details>`;
  }
  function panel(w,tracking,options){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
   if(!items.length||w.cancelled_at)return '';
   const o={locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
-  return `<div class="fulfillment" data-wo="${w.id}">${signBlock(w,items,t,o)}${orderBlock(items,o)}${batchBlock(w,items,t,o)}${stepBlocks(items,o)}${exceptionBlock(items,o)}${signoffBlock(w,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
+  const now=signBlock(w,items,t,o)+orderBlock(items,o)+stepBlocks(items,o)+pendingSignoffs(o);
+  return `<div class="fulfillment" data-wo="${w.id}">${progress(items)}${itemList(items,o)}${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  async function upload(sb,projectId,input,label){
