@@ -141,3 +141,8 @@
 .fx-now-title{display:block;margin-bottom:4px;color:#633899}
 .fx-now .work-terms{border-top:0;padding-top:4px;margin-top:4px}
 .work-contract{margin:12px 0}.work-contract>summary,.fx-more>summary,.fx-records>summary{cursor:pointer;color:#3d4d45;font-weight:600}
+
+.fx-chips{display:inline-flex;flex-wrap:wrap;gap:5px;margin-left:8px;vertical-align:middle}
+.fx-chip{padding:2px 9px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.6;white-space:nowrap;background:#eef1ef;color:#7a867f}
+.fx-chip.ok{background:#e3f4e8;color:#157a3c}.fx-chip.now{background:#fff0c7;color:#8a5a00}.fx-chip.wait{background:#efe6fa;color:#633899}.fx-chip.bad{background:#fde4e4;color:#b42318}
+.fx-chip.mid{background:#e6eefb;color:#245ea6}.fx-row>.fx-chip{flex:none;align-self:center}

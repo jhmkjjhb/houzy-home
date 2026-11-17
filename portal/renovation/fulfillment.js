@@ -36,6 +36,31 @@ window.RenoFulfillment=(()=>{
   if(b.arriving.length)return items.some(i=>i.stage==='arrived')?'部分到货':'已下单待到货';
   return '进行中';
  }
+
+ // 子单标题行上的彩色状态：绿 = 已完成的步骤，黄 = 现在这一步，紫 = 等别人签字，红 = 有问题，灰 = 还没到
+ function badges(w,tracking){
+  const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
+  if(!items.length)return '';
+  const chips=[],add=(cls,txt)=>chips.push(`<span class="fx-chip ${cls}">${txt}</span>`);
+  const customs=items.filter(i=>i.kind==='custom'),goods=items.filter(i=>['custom','stock'].includes(i.kind)),works=items.filter(i=>i.kind==='work');
+  const allDone=items.every(i=>i.stage==='done');
+  const doneWord=works.length===items.length?'已完工':works.length?'已完成':'已交付';
+  if(allDone)add('ok','✓ '+doneWord);
+  else{
+   let cur=false;
+   const step=(n,total,doneTxt,todoTxt)=>{if(!total)return;if(n>=total){add('ok','✓ '+doneTxt);return;}add(cur?'':'now',n?`${doneTxt} ${n}/${total}`:todoTxt);cur=true;};
+   const live=(t.confirmations||[]).find(c=>c.work_order_id===w.id&&['pending','paper_review'].includes(c.status));
+   if(customs.length){const n=customs.filter(i=>i.stage!=='pending').length;if(live&&n<customs.length){add('wait',live.status==='pending'?'等业主签名':'纸质单待审核');cur=true;}else step(n,customs.length,'已签字','待业主签名');}
+   step(goods.filter(i=>['ordered','arrived','done'].includes(i.stage)).length,goods.length,'已下单','待下单');
+   step(goods.filter(i=>['arrived','done'].includes(i.stage)).length,goods.length,'已到货','待到货');
+   step(works.filter(i=>['scheduled','working','done'].includes(i.stage)).length,works.length,'已排期','待排期');
+   step(items.filter(i=>i.stage==='done').length,items.length,doneWord,doneWord==='已交付'?'待交付':'待完工');
+  }
+  const issues=items.filter(i=>i.issue_note).length;if(issues)add('bad',`⚠ ${issues}项有问题`);
+  const so=(t.signoffs||[]).filter(x=>x.work_order_id===w.id);
+  if(so.some(x=>x.status==='pending'))add('wait','等工厂 / 负责人签字');
+  return `<span class="fx-chips">${chips.join('')}</span>`;
+ }
  const field=(label,name,attrs='')=>`<label>${label}<input data-f="${name}" ${attrs}></label>`;
  const file=(label,name,accept)=>`<label>${label}<input data-f="${name}" type="file" accept="${accept}"></label>`;
  const PDF_IMG='application/pdf,image/jpeg,image/png,image/webp';
@@ -87,21 +112,11 @@ window.RenoFulfillment=(()=>{
   if(b.finishable.length){const photo=b.finishable.some(i=>i.kind!=='gift');html+=`<div class="work-controls" data-form>${field('完成日期','on',`type="date" value="${today()}"`)}${photo?file('完工照片或文件','proof',PDF_IMG):''}<button type="button" data-act="finish">整单完成（${b.finishable.length}项）</button></div>`;}
   return html?`<div class="work-terms"><b>进度</b>${html}</div>`:'';
  }
- // 进度一行看完：签名 → 下单 → 到货 → 完成，当前这一步高亮
- function progress(items){
-  const goods=items.filter(i=>['custom','stock'].includes(i.kind)),customs=items.filter(i=>i.kind==='custom');
-  const steps=[];
-  if(customs.length)steps.push(['业主签名',customs.filter(i=>i.stage!=='pending').length,customs.length]);
-  if(goods.length){steps.push(['下单',goods.filter(i=>['ordered','arrived','done'].includes(i.stage)).length,goods.length]);steps.push(['到货',goods.filter(i=>['arrived','done'].includes(i.stage)).length,goods.length]);}
-  steps.push(['完成',items.filter(i=>i.stage==='done').length,items.length]);
-  let current=false;
-  return `<div class="fx-steps">${steps.map(([n,d,t])=>{const ok=d>=t,cls=ok?'ok':current?'':'now';if(!ok)current=true;return `<span class="fx-step ${cls}">${ok?'✓ ':''}${n} ${d}/${t}</span>`;}).join('<span class="fx-arrow">→</span>')}${items.some(i=>i.issue_note)?`<span class="fx-step bad">⚠ ${items.filter(i=>i.issue_note).length}项有问题</span>`:''}</div>`;
- }
  // 清单：每项一行。勾选后，下单 / 到货 / 完成 / 标记问题 / 转发签字只处理勾选的项
  function itemList(items,o){
   const done=(o.signoffs||[]).filter(x=>x.status==='signed');
   const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>`<span class="fx-tag ok">✓ ${E(PURPOSES[x.purpose])} · ${E(x.signer_company)}</span>`).join('');
-  const row=i=>`<label class="fx-row"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-tag ${i.stage==='done'?'ok':''}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
+  const row=i=>`<label class="fx-row"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-chip ${i.issue_note?'bad':i.stage==='done'?'ok':i.stage==='pending'?'now':'mid'}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
   return `<div class="fx-list">${items.map(row).join('')}</div>${o.locked?'':'<p class="muted fx-hint">不勾选 = 整张子单；勾选后，下面的操作只处理勾选的项。</p>'}`;
  }
  function moreBlock(items,o){
@@ -137,7 +152,7 @@ window.RenoFulfillment=(()=>{
   if(!items.length||w.cancelled_at)return '';
   const o={locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
   const now=signBlock(w,items,t,o)+orderBlock(items,o)+stepBlocks(items,o)+pendingSignoffs(o);
-  return `<div class="fulfillment" data-wo="${w.id}">${progress(items)}${itemList(items,o)}${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
+  return `<div class="fulfillment" data-wo="${w.id}">${itemList(items,o)}${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  async function upload(sb,projectId,input,label){
@@ -198,5 +213,5 @@ window.RenoFulfillment=(()=>{
   const so=await sb.from('renovation_party_signoffs').select('*').eq('project_id',projectId);
   return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
  }
- return {panel,headline,bind,load,buckets};
+ return {panel,headline,badges,bind,load,buckets};
 })();

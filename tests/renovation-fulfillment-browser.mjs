@@ -55,7 +55,7 @@ const openCard=async(page,name)=>{const card=page.locator('details.work',{hasTex
 try{
  let page=await open(staff,`/portal/renovation.html#${id}`);
  let card=await openCard(page,'全屋定制');
- assert((await card.locator('summary').first().innerText()).includes('待发起业主签名'),'headline says what is next');
+ assert((await card.locator('summary').first().innerText()).includes('待业主签名'),'title tag says what is next');
  assert((await card.innerText()).includes('还有 2 项定制未签名'),'staff are told custom lines will not be ordered');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);
  card=await openCard(page,'全屋定制');assert.equal(await card.locator('[id^="assignee-"]').inputValue(),'张师傅');
@@ -63,7 +63,7 @@ try{
  await card.locator('[data-f="document"]').first().setInputFiles({name:'draw.png',mimeType:'image/png',buffer:png});
  await card.locator('[data-act="request_signature"]').click();
  await card.locator('[data-act="copy_link"]').waitFor();
- assert((await card.locator('summary').first().innerText()).includes('等待业主签名'));
+ assert((await card.locator('summary').first().innerText()).includes('等业主签名'));
  await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>document.querySelector('[data-wo] [data-feedback]').textContent.includes('已复制'));
  const link=await page.evaluate(()=>navigator.clipboard.readText());assert(link.includes('renovation-custom-sign.html'));
  await page.screenshot({path:out+'/staff-waiting-signature.png',fullPage:true});
@@ -90,6 +90,8 @@ try{
  await form.locator('[data-act="place_order"]').click();await card.locator('[data-feedback]').getByText('勾选').waitFor();
  await form.locator('[data-f="stock_confirmed"]').check();await form.locator('[data-act="place_order"]').click();
  await card.locator('[data-act="arrive"]').waitFor();let s=await stages();assert(s.C1==='ordered'&&s.C2==='ordered'&&s.S1==='ordered','one click orders all three');
+ {const sum=card.locator('summary').first();const tx=await sum.innerText();assert(tx.includes('✓ 已签字')&&tx.includes('✓ 已下单')&&tx.includes('待到货'),'title shows done steps and the next one: '+tx);
+  assert.equal(await sum.locator('.fx-chip.ok').count(),2,'done steps are green');assert.equal(await sum.locator('.fx-chip.now').count(),1,'only the current step is highlighted');}
  // Exception: one line missing
  card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'更多操作'}).click();
  await card.locator('[data-line="C2"]').check();const issue=card.locator('[data-form]',{has:page.locator('[data-act="flag_issue"]')});
