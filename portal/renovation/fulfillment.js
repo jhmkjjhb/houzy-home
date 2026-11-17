@@ -7,7 +7,10 @@ window.RenoFulfillment=(()=>{
  const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
  const stageNames={custom:{pending:'待业主签名',confirmed:'已签名待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},stock:{pending:'待下单',confirmed:'待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},work:{pending:'待排期',scheduled:'已排期',working:'施工中',done:'已完工'},gift:{pending:'待交付',done:'已交付'}};
  const kindNames={custom:'定制',stock:'现货',work:'施工',gift:'赠品'};
- const empty={items:[],confirmations:[],batches:[]};
+ const empty={items:[],confirmations:[],batches:[],signoffs:[]};
+ // 手写签名按笔画保存（0~1 的相对坐标），这里画成图给员工看
+ const sigSvg=strokes=>`<svg viewBox="0 0 600 180" role="img" aria-label="手写签名" style="width:100%;max-width:420px;height:auto;display:block;border:1px solid #dce2df;border-radius:6px;background:#fff">${(Array.isArray(strokes)?strokes:[]).filter(x=>Array.isArray(x)&&x.length>1).map(x=>`<polyline fill="none" stroke="#22362e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" points="${x.map(q=>`${(+q[0]*600).toFixed(1)},${(+q[1]*180).toFixed(1)}`).join(' ')}"/>`).join('')}</svg>`;
+ const PURPOSES={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工',issue:'问题处理'};
  const stage=i=>i.stage==='cancelled'?'已取消':stageNames[i.kind]?.[i.stage]||i.stage;
  const open=i=>i.stage!=='done'&&i.stage!=='cancelled';
  const free=i=>!i.issue_note;
@@ -41,7 +44,10 @@ window.RenoFulfillment=(()=>{
   const customs=items.filter(i=>i.kind==='custom');if(!customs.length)return '';
   const all=tracking.confirmations.filter(c=>c.work_order_id===w.id).sort((a,b)=>b.version-a.version);
   const live=all.find(c=>['pending','paper_review'].includes(c.status)),signed=all.find(c=>c.status==='signed');
-  const history=all.filter(c=>c.status==='signed').map(c=>`<li>第${c.version}版${c.kind==='change'?'（改单）':''} · ${E(c.signer_name)}（${E(c.signer_relation)}）· ${E(new Date(c.signed_at).toLocaleString('zh-CN'))} · ${c.method==='paper'?'纸质':'电子'}${c.terms?.change_note?` · ${E(c.terms.change_note)}`:''}</li>`).join('');
+  const history=all.filter(c=>c.status==='signed').map(c=>`<li>第${c.version}版${c.kind==='change'?'（改单）':''} · ${E(c.signer_name)}（${E(c.signer_relation)}）· ${E(new Date(c.signed_at).toLocaleString('zh-CN'))} · ${c.method==='paper'?'纸质':'电子'}${c.terms?.change_note?` · ${E(c.terms.change_note)}`:''}
+   <details><summary>查看业主签名</summary><p>签名的清单（${(c.terms?.lines||[]).length}项）：${(c.terms?.lines||[]).map(l=>`${E(l.name)}${l.spec?`（${E(l.spec)}）`:''} × ${E(l.qty)} ${E(l.unit)}`).join('；')}</p>${c.terms?.note?`<p>说明：${E(c.terms.note)}</p>`:''}
+   <div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(c.document_path)}">查看签名时的图纸</button>${c.paper_path?`<button type="button" class="secondary" data-act="view_file" data-path="${E(c.paper_path)}">查看纸质确认单</button>`:''}</div>
+   ${c.method==='electronic'&&c.signature_strokes?`<p>手写签名：</p>${sigSvg(c.signature_strokes)}`:''}</details></li>`).join('');
   let body='';
   if(o.locked){body='';}
   else if(live?.status==='pending')body=`<p><b>等待业主签名</b>（第${live.version}版）。业主须输入登记手机号后四位才能查看。</p><div class="actions"><button type="button" class="secondary" data-act="copy_link" data-id="${live.id}" data-token="${live.signing_token}">复制签名链接</button></div>
@@ -77,16 +83,36 @@ window.RenoFulfillment=(()=>{
   return html?`<div class="work-terms"><b>进度</b>${html}</div>`:'';
  }
  function exceptionBlock(items,o){
-  const rows=items.map(i=>`<label class="check"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}> #${E(i.line_id)} ${E(i.name)} · ${kindNames[i.kind]} · ${E(stage(i))}${i.change_pending?' · 改单待签名':''}${i.issue_note?` · <span class="warning">问题：${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</span>`:''}</label>`).join('');
+  const done=(o.signoffs||[]).filter(x=>x.status==='signed');
+  const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>` · <span style="color:#15803d">✓ ${E(PURPOSES[x.purpose])}（${E(x.signer_company)} ${E(x.signer_name)}）</span>`).join('');
+  const rows=items.map(i=>`<label class="check"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}> #${E(i.line_id)} ${E(i.name)} · ${kindNames[i.kind]} · ${E(stage(i))}${tags(i)}${i.change_pending?' · 改单待签名':''}${i.issue_note?` · <span class="warning">问题：${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</span>`:''}</label>`).join('');
   return `<details class="work-terms"><summary>按项查看和处理例外（${items.length}项）</summary>${rows}${o.locked?'':`<p class="muted">勾选后，上方的下单、到货、完成只处理勾选的项，可用于分开下单。</p>
    <div class="work-controls" data-form>${field('问题说明（缺件、破损、尺寸不对等）','note')}${field('跟进日期','follow_up_on','type="date"')}<button type="button" class="secondary" data-act="flag_issue">标记问题</button><button type="button" class="secondary" data-act="resolve_issue">问题已解决</button></div>
-   ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（业主会看到）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}`}</details>`;
+   ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（业主会看到）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}
+   ${o.signoffsReady?`<div data-form style="margin-top:14px"><b>转发给工厂 / 负责人签字</b><p class="muted">勾选上面的项（不勾 = 整张子单），生成链接和 4 位验证码，分开发给对方。对方看不到价格和业主电话。</p>
+    <div class="work-controls"><label>签字用途<select data-f="purpose">${Object.entries(PURPOSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>${field('签字方（工厂或负责人）','party','maxlength="120"')}</div>
+    <div class="work-controls">${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:''}`}</details>`;
+ }
+ // 转发签字记录：待签的可复制链接 / 验证码、撤销；已签的可看签名
+ function signoffBlock(w,o){
+  if(!o.signoffsReady)return o.locked?'':`<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>`;
+  const list=(o.signoffs||[]).filter(x=>x.status!=='voided').sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  if(!list.length)return '';
+  const one=x=>{
+   const head=`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
+   if(x.status==='pending')return `<li>${head} · <span class="warning">等待签字</span>${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
+    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
+    ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`;
+   return `<li>${head} · <span style="color:#15803d">已签字</span> · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
+    <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(x.document_path)}">查看附件</button></div>`:''}${sigSvg(x.signature_strokes)}</details></li>`;
+  };
+  return `<div class="work-terms"><b>转发签字（工厂 / 负责人）</b><ul>${list.map(one).join('')}</ul></div>`;
  }
  function panel(w,tracking,options){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
   if(!items.length||w.cancelled_at)return '';
-  const o={locked:!!options?.locked,manager:!!options?.manager};
-  return `<div class="fulfillment" data-wo="${w.id}">${signBlock(w,items,t,o)}${orderBlock(items,o)}${batchBlock(w,items,t,o)}${stepBlocks(items,o)}${exceptionBlock(items,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
+  const o={locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
+  return `<div class="fulfillment" data-wo="${w.id}">${signBlock(w,items,t,o)}${orderBlock(items,o)}${batchBlock(w,items,t,o)}${stepBlocks(items,o)}${exceptionBlock(items,o)}${signoffBlock(w,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  async function upload(sb,projectId,input,label){
@@ -110,6 +136,19 @@ window.RenoFulfillment=(()=>{
    const send=async(action,data)=>{const {error}=await ctx.sb.rpc('renovation_fulfillment_command',{p_id:project.id,p_revision:project.revision,p_action:action,p_data:data});if(error)throw error;await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;ctx.message('已保存');};
    try{
     if(act==='copy_link'){const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='已复制，请发给业主。业主须输入登记手机号后四位才能查看和签名。';}
+    else if(act==='signoff_create'){
+     const docInput=input('so_doc'),f=docInput?.files?.[0]?await upload(ctx.sb,project.id,docInput,'附件'):null;
+     const {data,error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'create',p_data:{work_order_id:root.dataset.wo,line_ids:picked,purpose:v('purpose'),party:v('party'),note:v('so_note'),document_path:f?.path||null,document_sha256:f?.hash||null}});
+     if(error)throw error;
+     const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',data.id);url.searchParams.set('sign',data.token);
+     try{await navigator.clipboard.writeText(url.href);}catch(e){}
+     await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;
+     const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=`签字链接已复制。验证码 ${data.code}，请另外单独发给对方（下方记录里也能看到）。`;
+     ctx.message('已生成签字链接');
+    }
+    else if(act==='signoff_copy_link'){const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='链接已复制。验证码请另外单独发给对方。';}
+    else if(act==='signoff_copy_code'){await navigator.clipboard.writeText(btn.dataset.code);feedback.textContent=`验证码 ${btn.dataset.code} 已复制。`;}
+    else if(act==='signoff_void'){const {error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'void',p_data:{signoff_id:btn.dataset.id,reason:v('reason')}});if(error)throw error;await ctx.onChange();ctx.message('已撤销');}
     else if(act==='view_file'){const {data,error}=await ctx.sb.storage.from(BUCKET).createSignedUrl(btn.dataset.path,300);if(error)throw error;window.open(data.signedUrl,'_blank','noopener');feedback.textContent='';}
     else if(act==='request_signature'){const f=await upload(ctx.sb,project.id,input('document'),'定稿图纸或确认文件');await send(act,{...base,document_path:f.path,document_sha256:f.hash,note:v('note')});}
     else if(act==='request_change'){if(!picked.length)throw new Error('请勾选要修改的清单项');const f=await upload(ctx.sb,project.id,input('document'),'改单图纸或文件');await send('request_signature',{...base,document_path:f.path,document_sha256:f.hash,change_note:v('change_note')});}
@@ -131,7 +170,8 @@ window.RenoFulfillment=(()=>{
  async function load(sb,projectId){
   const r=await Promise.all(['renovation_work_items','renovation_custom_confirmations','renovation_purchase_batches'].map(t=>sb.from(t).select('*').eq('project_id',projectId)));
   for(const x of r)if(x.error)throw x.error;
-  return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[]};
+  const so=await sb.from('renovation_party_signoffs').select('*').eq('project_id',projectId);
+  return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
  }
  return {panel,headline,bind,load,buckets};
 })();
