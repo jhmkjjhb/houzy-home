@@ -155,3 +155,4 @@
 .fx-done>summary{cursor:pointer;font-weight:700;color:#157a3c}
 .fx-shortcut{align-items:center;margin:6px 0}
 @media(max-width:600px){.fx-chips .fx-chip.step,.fx-chips .fx-chip.later{display:none}.fx-chips .fx-chip.okn{display:inline}.fx-overview-hint{margin-left:0;flex-basis:100%}}
+.fx-all{background:#f6f8f7}.fx-all b{color:#3d4d45}

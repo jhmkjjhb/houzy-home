@@ -56,6 +56,13 @@ try{
  let page=await open(staff,`/portal/renovation.html#${id}`);
  let card=await openCard(page,'全屋定制');
  assert((await card.locator('summary').first().innerText()).includes('待业主签名'),'title tag says what is next');
+ // 每个合同分组都已有子单：「生成子订单」按钮不再出现，免得以为还要再点
+ assert(await page.locator('#split').isHidden(),'split button hidden once every group has a sub-order');
+ // 全选：一下勾上所有能勾的项，再点取消；单项取消后全选变成「部分」
+ await card.locator('[data-allx]').check();
+ const enabled=await card.locator('[data-line]:not(:disabled)').count();assert(enabled>1&&await card.locator('[data-line]:checked').count()===enabled,'select all ticks every open line');
+ await card.locator('[data-line="C2"]').uncheck();assert.equal(await card.locator('[data-allx]').evaluate(e=>e.indeterminate&&!e.checked),true,'partly ticked shows as partial');
+ await card.locator('[data-allx]').check();await card.locator('[data-allx]').uncheck();assert.equal(await card.locator('[data-line]:checked').count(),0,'untick all clears');
  assert((await card.innerText()).includes('还有 2 项定制未签名'),'staff are told custom lines will not be ordered');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);
  card=await openCard(page,'全屋定制');assert.equal(await card.locator('[id^="assignee-"]').inputValue(),'张师傅');

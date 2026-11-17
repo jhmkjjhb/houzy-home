@@ -128,7 +128,9 @@ window.RenoFulfillment=(()=>{
   const done=(o.signoffs||[]).filter(x=>x.status==='signed');
   const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>`<span class="fx-tag ok">✓ ${E(PURPOSES[x.purpose])} · ${E(x.signer_company)}</span>`).join('');
   const row=i=>`<label class="fx-row"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-chip ${i.issue_note?'bad':i.stage==='done'?'ok':i.stage==='pending'?'now':'mid'}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
-  return `<div class="fx-list">${items.map(row).join('')}</div>${o.locked?'':'<p class="muted fx-hint">不勾选 = 整张子单；勾选后，下面的操作只处理勾选的项。</p>'}`;
+  const can=items.filter(i=>!o.locked&&open(i)).length;
+  const all=can>1?`<label class="fx-row fx-all"><input type="checkbox" data-allx><span class="fx-name"><b>全选</b><small>勾选全部 ${can} 项（已完成的不能勾）</small></span></label>`:'';
+  return `<div class="fx-list">${all}${items.map(row).join('')}</div>${o.locked?'':'<p class="muted fx-hint">不勾选 = 整张子单；勾选后，下面的操作只处理勾选的项。</p>'}`;
  }
  function moreBlock(items,o){
   if(o.locked)return '';
@@ -199,6 +201,13 @@ window.RenoFulfillment=(()=>{
  }
  function bind(el,ctx){
   let busy=false;
+  // 全选 / 取消全选；单项改动后同步「全选」的勾
+  el.addEventListener('change',e=>{
+   const root=e.target.closest('[data-wo]');if(!root)return;
+   const boxes=[...root.querySelectorAll('[data-line]:not(:disabled)')],allx=root.querySelector('[data-allx]');
+   if(e.target.matches('[data-allx]'))boxes.forEach(b=>b.checked=e.target.checked);
+   else if(allx&&e.target.matches('[data-line]')){const n=boxes.filter(b=>b.checked).length;allx.checked=n===boxes.length;allx.indeterminate=n>0&&n<boxes.length;}
+  });
   el.addEventListener('click',e=>{const f=e.target.closest('[data-fxfilter]');if(!f||!el.contains(f))return;filter=filter===f.dataset.fxfilter?'all':f.dataset.fxfilter;applyFilter(el);});
   // 页面重新渲染后，保持刚才选的筛选
   new MutationObserver(()=>{if(el.querySelector('[data-fxfilter]'))applyFilter(el);}).observe(el,{childList:true});

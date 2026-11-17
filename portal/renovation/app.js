@@ -66,6 +66,9 @@ function render(){
  $('view-contract').textContent=upload?'预览所选合同PDF':'查看归档合同';
  $('view-contract').disabled=!upload&&!snapshot.contract_path;
  $('confirm').disabled=!project||locked;$('split').disabled=!project||!['confirmed','executing'].includes(project.state);
+ {const missing=project&&['confirmed','executing'].includes(project.state)?[...new Set((snapshot.lines||[]).map(l=>l.group).filter(Boolean))].filter(g=>!(work||[]).some(w=>w.group_name===g)):[];
+  $('split').hidden=!!project&&(work||[]).length>0&&!missing.length;
+  $('split').textContent=(work||[]).length&&missing.length?`补生成缺少的子订单（${missing.length} 组：${missing.join('、')}）`:'按确认清单生成子订单';}
  $('accept').disabled=!project||project.state!=='executing'||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  $('customer-action-help').textContent=!project||project.state==='draft'?'合同确认后，才能发给业主。':project.state==='accepted'?'已竣工验收。点「复制发给业主」，业主可以随时查看清单和质保。':canManage?'竣工验收：全部子单完成后，填验收日期、上传双方签字的验收单，再点「确认竣工验收」。':'竣工验收由店长或上级确认。';
@@ -183,7 +186,7 @@ $('confirm').onclick=()=>guarded(async()=>{
  if(await RenoContractEsign.beforeConfirm({project,sb})){const {data,error}=await sb.from('renovation_projects').select('revision').eq('id',project.id).single();if(error)throw error;project.revision=data.revision;}
  await rpc('confirm',{signed:true,reviewed:true});await openProject(project.id);await loadList();
 });
-$('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject(project.id);await loadList();message('子订单已按执行分组生成，未增加客户应收。');});
+$('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject(project.id);await loadList();message('子订单已生成，未增加客户应收。');});
 $('work-orders').onclick=e=>guarded(async()=>{const b=e.target.closest('[data-work]');if(!b)return;const i=+b.dataset.work;await rpc('work',{id:work[i].id,assignee:$('assignee-'+i).value,status:$('assignee-'+i).value.trim()?'assigned':'draft'});await openProject(project.id);});
 $('view-contract').onclick=()=>guarded(async()=>{
  if(!upload&&!snapshot.contract_path)throw new Error('请先选择合同PDF，或打开已有归档合同的项目');
