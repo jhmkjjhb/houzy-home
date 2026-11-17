@@ -4,9 +4,12 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=n=>Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 const states={draft:'合同草稿',confirmed:'合同已确认',executing:'履约中',accepted:'已竣工验收'};
 const kinds={custom:'定制供货',stock:'现货材料',work:'施工服务',gift:'赠送项目'};
+let scheduleTracking=null;
 let sb,actor,stores=[],project=null,snapshot=blank(),busy=false,dirty=false,upload=null,work=[],additionData=null,deductionData=null,draftPaymentWeights=[];
 function blank(){return {lines:[],payments:[],net:0,discount:0,signed_on:'',warnings:[],source_text:'',contract_path:''};}
 let feedbackTarget=null;
+// 进度表要用的数据：子单、履约跟踪、项目；只有确认 / 执行中的项目能改计划
+const scheduleData=()=>({work,tracking:scheduleTracking,project,locked:!project||!['confirmed','executing'].includes(project.state)});
 function message(text,error=false){
  for(const id of new Set(['message',feedbackTarget||'save-message'])){const el=$(id);if(el){el.textContent=text;el.classList.toggle('error',error);}}
 }
@@ -92,7 +95,8 @@ async function openProject(id){
  const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id}),sb.rpc('renovation_deduction_view',{p_id:id})]);
  for(const r of results)if(r.error)throw r.error;
  work=results[0].data;additionData=results[2].data;deductionData=results[3].data;render();
- const tracking=await RenoFulfillment.load(sb,id);
+ const tracking=await RenoFulfillment.load(sb,id);scheduleTracking=tracking;
+ if(window.RenoSchedule)RenoSchedule.render($('schedule'),scheduleData());
  $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted',tracking,{manager:['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
  const actionNames={fulfillment_request_signature:'发起业主签名',fulfillment_customer_signed:'业主签名确认',fulfillment_void_signature:'撤销确认单',fulfillment_submit_paper:'提交纸质确认单',fulfillment_review_paper:'审核纸质确认单',fulfillment_place_order:'下单',fulfillment_legacy_order:'登记上线前已下单',fulfillment_correct_batch:'更正下单记录',fulfillment_arrive:'登记到货',fulfillment_schedule:'施工排期',fulfillment_start_work:'开工',fulfillment_finish:'登记完成',fulfillment_flag_issue:'标记问题',fulfillment_resolve_issue:'解决问题',handover:'项目交接',save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单',deduction_add:'登记原合同减项',deduction_void:'撤销待签减项',deduction_customer_signed:'客户电子签署减项'};
@@ -218,6 +222,7 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  if(!['staff','store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role))throw new Error('此入口仅供门店员工及管理人员使用');
  const sr=await sb.from('stores').select('id,name').eq('active',true);if(sr.error)throw sr.error;stores=sr.data;
  $('store').innerHTML=stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');if(actor.store_id)$('store').value=actor.store_id;
+ if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await openProject(project.id);},message:(m,err)=>message(m,err)});
  RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await openProject(project.id);await loadList();},message});
  const refreshHome=async()=>{await RenoFulfillmentHome.load({sb,openProject,refresh:async()=>{await loadList();await refreshHome();}});};
  await loadList();await refreshHome().catch(e=>message(e.message,true));if(new URLSearchParams(location.search).get('new')==='1'){reset();return;}const id=location.hash.slice(1);if(/^[0-9a-f-]{36}$/i.test(id))await openProject(id);else message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');

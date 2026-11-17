@@ -71,6 +71,27 @@ window.RenoFulfillment=(()=>{
   return `<span class="fx-chips">${st.chips.map(c=>`<span class="fx-chip ${c.cls}">${c.txt}</span>`).join('')}${st.okCount?`<span class="fx-chip okn">✓${st.okCount}</span>`:''}</span>`;
  }
  let filter='all';
+ const picking=new Set(); // 哪些子单正在「只处理其中几项」
+ // 标题行右边的按钮：就是下一步。复制签名链接直接复制；其它的打开子单并跳到要填的地方
+ function primary(w,tracking,options){
+  const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
+  if(!items.length||w.cancelled_at||options?.locked||items.every(i=>i.stage==='done'))return null;
+  if(items.some(i=>i.issue_note))return {label:'处理问题'};
+  const b=buckets(items),so=(t.signoffs||[]).filter(x=>x.work_order_id===w.id&&x.status==='signed');
+  const covered=(p,ok)=>so.some(x=>x.purpose===p&&items.some(i=>(x.line_ids||[]).includes(i.line_id)&&ok(i)));
+  if(covered('arrival',i=>i.stage==='ordered'&&free(i)))return {label:'确认到货（对方已签）'};
+  if(covered('install',i=>b.finishable.includes(i)))return {label:'确认完工（对方已签）'};
+  const live=(t.confirmations||[]).find(c=>c.work_order_id===w.id&&['pending','paper_review'].includes(c.status));
+  if(b.unsigned.length&&!live)return {label:'发起业主签名'};
+  if(live?.status==='paper_review')return {label:options?.manager?'审核纸质确认单':'查看纸质确认单'};
+  if(b.orderable.length)return {label:'下单'};
+  if(live?.status==='pending')return {label:'复制签名链接',copy:{id:live.id,token:live.signing_token}};
+  if(b.arriving.length)return {label:'到货'};
+  if(b.toSchedule.length)return {label:'排期'};
+  if(b.toStart.length)return {label:'开工'};
+  if(b.finishable.length)return {label:b.finishable.every(i=>i.kind==='gift')?'交付':'完工'};
+  return null;
+ }
  const field=(label,name,attrs='')=>`<label>${label}<input data-f="${name}" ${attrs}></label>`;
  const file=(label,name,accept)=>`<label>${label}<input data-f="${name}" type="file" accept="${accept}"></label>`;
  const PDF_IMG='application/pdf,image/jpeg,image/png,image/webp';
@@ -128,10 +149,14 @@ window.RenoFulfillment=(()=>{
  function itemList(items,o){
   const done=(o.signoffs||[]).filter(x=>x.status==='signed');
   const tags=i=>done.filter(x=>(x.line_ids||[]).includes(i.line_id)).map(x=>`<span class="fx-tag ok">✓ ${E(PURPOSES[x.purpose])} · ${E(x.signer_company)}</span>`).join('');
-  const row=i=>`<label class="fx-row"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-chip ${i.issue_note?'bad':i.stage==='done'?'ok':i.stage==='pending'?'now':'mid'}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
+  const counts={};items.forEach(i=>{const k=stage(i);counts[k]=(counts[k]||0)+1;});
+  const common=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const showStage=i=>items.length===1||stage(i)!==common||i.issue_note||i.change_pending;
+  const row=i=>`<label class="fx-row${showStage(i)?'':' same'}"><input type="checkbox" data-line="${E(i.line_id)}" ${o.locked||!open(i)?'disabled':''}><span class="fx-name"><b>${E(i.name)}</b><small>#${E(i.line_id)} · ${kindNames[i.kind]}${i.spec?` · ${E(i.spec)}`:''} · ${E(i.qty??'')} ${E(i.unit)}</small>${i.issue_note?`<small class="warning">⚠ ${E(i.issue_note)}（跟进 ${E(i.issue_follow_up_on)}）</small>`:''}${tags(i)}</span><span class="fx-chip ${i.issue_note?'bad':i.stage==='done'?'ok':i.stage==='pending'?'now':'mid'}">${E(stage(i))}${i.change_pending?' · 改单待签':''}</span></label>`;
   const can=items.filter(i=>!o.locked&&open(i)).length;
   const all=can>1?`<label class="fx-row fx-all"><input type="checkbox" data-allx><span class="fx-name"><b>全选</b><small>勾选全部 ${can} 项（已完成的不能勾）</small></span></label>`:'';
-  return `<div class="fx-list">${all}${items.map(row).join('')}</div>${o.locked?'':'<p class="muted fx-hint">不勾选 = 整张子单；勾选后，下面的操作只处理勾选的项。</p>'}`;
+  const pickable=!o.locked&&can>0;
+  return `<div class="fx-list">${all}${items.map(row).join('')}</div>${pickable?`<p class="muted fx-hint"><span class="fx-hint-whole">「现在要做」处理整张子单（${items.length} 项）。</span><span class="fx-hint-pick">勾选后，「现在要做」只处理勾选的项。</span> <button type="button" class="fx-link" data-fxpick>${o.picking?'改回整张子单':'只处理其中几项'}</button></p>`:''}`;
  }
  function moreBlock(items,o){
   if(o.locked)return '';
@@ -179,12 +204,14 @@ window.RenoFulfillment=(()=>{
  function panel(w,tracking,options){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
   if(!items.length||w.cancelled_at)return '';
-  const o={locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
+  const o={picking:picking.has(w.id),locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
   const steps=orderBlock(items,o)+stepBlocks(items,o);
   // 下单、排期、完成都要先有执行人（数据库会拦），提前说清楚
-  const needAssignee=!o.locked&&steps&&!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能下单、排期和标记完成。</p>':'';
+  const bk=buckets(items);
+  const needAssignee=!o.locked&&(bk.toSchedule.length||bk.finishable.length)&&!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能排期和标记完成。</p>':'';
   const now=needAssignee+signoffShortcuts(items,o)+signBlock(w,items,t,o)+steps+pendingSignoffs(o);
-  return `<div class="fulfillment" data-wo="${w.id}">${itemList(items,o)}${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
+  // 先放「现在要做」，再放清单：打开子单第一眼就是要填的东西
+  return `<div class="fulfillment${o.picking?' picking':''}" data-wo="${w.id}">${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${itemList(items,o)}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  async function upload(sb,projectId,input,label){
@@ -208,6 +235,21 @@ window.RenoFulfillment=(()=>{
    const boxes=[...root.querySelectorAll('[data-line]:not(:disabled)')],allx=root.querySelector('[data-allx]');
    if(e.target.matches('[data-allx]'))boxes.forEach(b=>b.checked=e.target.checked);
    else if(allx&&e.target.matches('[data-line]')){const n=boxes.filter(b=>b.checked).length;allx.checked=n===boxes.length;allx.indeterminate=n>0&&n<boxes.length;}
+  });
+  el.addEventListener('click',async e=>{
+   const go=e.target.closest('[data-fxgo],[data-fxcopy]');
+   if(go&&el.contains(go)){
+    e.preventDefault();e.stopPropagation();const card=go.closest('details.work');
+    if(go.dataset.fxcopy){const [cid,tok]=go.dataset.fxcopy.split(':');const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',cid);url.searchParams.set('sign',tok);
+     try{await navigator.clipboard.writeText(url.href);ctx.message('业主签名链接已复制，发给业主即可。业主要输入登记手机号后四位才能查看。');}catch(err){ctx.message('浏览器不让自动复制，请打开子单后点「复制签名链接」。',true);}return;}
+    card.open=true;const now=card.querySelector('.fx-now')||card.querySelector('.fulfillment');
+    if(now){now.scrollIntoView({block:'center',behavior:'smooth'});now.classList.remove('fx-flash');void now.offsetWidth;now.classList.add('fx-flash');const f=now.querySelector('input:not([type=checkbox]):not([disabled]),button:not([disabled])');if(f)f.focus({preventScroll:true});}
+    return;
+   }
+   const pk=e.target.closest('[data-fxpick]');
+   if(pk&&el.contains(pk)){const root=pk.closest('[data-wo]'),id=root.dataset.wo;
+    if(picking.has(id)){picking.delete(id);root.querySelectorAll('[data-line],[data-allx]').forEach(b=>{b.checked=false;b.indeterminate=false;});}else picking.add(id);
+    root.classList.toggle('picking',picking.has(id));pk.textContent=picking.has(id)?'改回整张子单':'只处理其中几项';return;}
   });
   el.addEventListener('click',e=>{const f=e.target.closest('[data-fxfilter]');if(!f||!el.contains(f))return;filter=filter===f.dataset.fxfilter?'all':f.dataset.fxfilter;applyFilter(el);});
   // 页面重新渲染后，保持刚才选的筛选
@@ -262,5 +304,5 @@ window.RenoFulfillment=(()=>{
   const so=await sb.from('renovation_party_signoffs').select('*').eq('project_id',projectId);
   return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
  }
- return {panel,headline,badges,state,bind,load,buckets};
+ return {panel,headline,badges,state,primary,bind,load,buckets};
 })();

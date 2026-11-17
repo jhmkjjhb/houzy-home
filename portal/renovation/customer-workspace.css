@@ -87,3 +87,13 @@
 .plan-change th{font-weight:600;color:var(--muted);font-size:12px}
 .plan-change-total td{font-weight:700;border-bottom:0}
 .plan-change .muted{margin:10px 0 0;font-size:12px}
+
+/* 业主看到的进度计划 */
+.cs-schedule{display:grid;gap:8px;margin:0 0 18px}.cs-schedule h3{margin:0}
+.cs-rows{display:grid;gap:10px}.cs-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;align-items:center}
+.cs-name{display:grid;min-width:0}.cs-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-name small{color:#68766e;font-size:12.5px}
+.cs-track{position:relative;height:14px;border-radius:7px;background:#eef1ef}
+.cs-bar{position:absolute;top:0;bottom:0;border-radius:7px;background:#cfd6d2;overflow:hidden}.cs-bar>span{display:block;height:100%;background:#7fb595}
+.cs-bar.active{background:#bcd3f3}.cs-bar.active>span{background:#5b8fd6}.cs-bar.done{background:#7fd59f}.cs-bar.done>span{background:#2f9e5b}
+.cs-now{position:absolute;top:-3px;bottom:-3px;width:2px;background:#b42318;opacity:.6;z-index:1}
+@media(max-width:520px){.cs-row{grid-template-columns:1fr}}

@@ -53,6 +53,7 @@ const sys=async(sql,a=[])=>{const j=queue.then(async()=>{await db.exec('RESET RO
 const stages=async()=>Object.fromEntries((await sys('SELECT line_id,stage FROM renovation_work_items WHERE project_id=$1',[id])).map(r=>[r.line_id,r.stage]));
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==','base64');
 const openCard=async(page,name)=>{const card=page.locator('details.work',{hasText:name});await card.waitFor();if(!(await card.evaluate(e=>e.open)))await card.locator('summary').first().click();return card;};
+const pickMode=async card=>{if(!(await card.locator('.fulfillment.picking').count()))await card.locator('[data-fxpick]').click();};
 try{
  let page=await open(staff,`/portal/renovation.html#${id}`);
  let card=await openCard(page,'全屋定制');
@@ -76,7 +77,7 @@ try{
  await page.screenshot({path:out+'/staff-owner-signature.png',fullPage:true});
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
- await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
+ await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  const form=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
  await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
@@ -115,7 +116,7 @@ try{
  const stagesNow=await stages();assert.equal(stagesNow.C1,'confirmed','signing does not move progress');
 
  // 5) 撤销：再发一个到货验收，撤销后链接打不开
- await card.locator('[data-line="C2"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
+ await pickMode(card);await card.locator('[data-line="C2"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  await form.locator('[data-f="purpose"]').selectOption('arrival');await form.locator('[data-f="party"]').fill('仓库阿明');
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
@@ -135,14 +136,14 @@ try{
  // 7) 下单前提醒：C1 工厂已确认，C2 没确认
  card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-unconfirmed').innerText();
  assert(warn.includes('书房柜')&&!warn.includes('主卧衣柜'),'reminds only the lines the factory has not confirmed: '+warn);
- assert(await card.locator('.fx-need-assignee').isVisible(),'tells staff to set the worker before ordering');
+ assert.equal(await card.locator('.fx-need-assignee').count(),0,'ordering does not ask for a worker');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');
  const of=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
  await of.locator('[data-f="supplier"]').fill('广州工厂');await of.locator('[data-f="order_no"]').fill('PO-9');await of.locator('[data-f="expected_on"]').fill('2099-01-01');await of.locator('[data-f="stock_confirmed"]').check();
  await of.locator('[data-act="place_order"]').click();await card.locator('[data-act="arrive"]').waitFor();
  // 8) 到货验收签了 → 一键标记到货
- card=await openCard(page,'全屋定制');await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
+ card=await openCard(page,'全屋定制');await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  const f2=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await f2.locator('[data-f="purpose"]').selectOption('arrival');await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));

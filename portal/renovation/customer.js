@@ -49,6 +49,19 @@
    return `<div class="warranty-row"><b>${E(w.component)}</b><span>${w.years?E(w.years)+'年':'期限待确认'} · ${!w.years?'联系HOUZY补充凭证':!p.accepted_on?'竣工验收后起算':`${end<today?'已届满':'质保期内'}，到期日 ${E(end)}`}</span></div><p class="mini-note">依据：${E(w.source||'待补充合同凭证')}</p>`;
   }).join('')||'<p class="mini-note">此项质保范围待确认，请联系HOUZY。</p>'}</details>`).join('')||'<p class="mini-note">暂无部件质保明细，请联系门店核对合同。</p>';
  }
+ // 进度表（简版）：门店排好的各分组计划日期和完成进度；还没排期时不显示
+ async function loadSchedule(el){
+  let rows=[];try{const r=await sb.rpc('renovation_customer_schedule',{p_token:token});if(r.error||!Array.isArray(r.data))return;rows=r.data.filter(x=>x.planned_start&&x.planned_end);}catch(e){return;}
+  if(!rows.length||!el.isConnected)return;
+  const d=s=>new Date(String(s).slice(0,10)+'T00:00:00Z').getTime(),md=s=>String(s).slice(5,10).replace('-','/');
+  const now=d(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'}));
+  const from=Math.min(...rows.map(x=>d(x.planned_start))),to=Math.max(...rows.map(x=>d(x.planned_end)))+86400000,span=to-from;
+  const pct=v=>Math.max(0,Math.min(100,(v-from)/span*100));
+  const box=document.createElement('div');box.className='cs-schedule';
+  box.innerHTML=`<h3>进度计划</h3><p class="mini-note">门店排定的计划日期，实际以现场为准；计划完工 <b>${E(md(rows.reduce((m,x)=>x.planned_end>m?x.planned_end:m,'')))}</b>。</p><div class="cs-rows">${rows.map(x=>{const fin=x.total>0&&x.done===x.total,st=fin?'已完成':x.started||x.done?`进行中 ${x.done}/${x.total}`:'未开始';
+   return `<div class="cs-row"><div class="cs-name"><strong>${E(x.name)}</strong><small>${E(md(x.planned_start))} – ${E(md(x.planned_end))} · ${E(st)}</small></div><div class="cs-track">${now>=from&&now<=to?`<i class="cs-now" style="left:${pct(now)}%"></i>`:''}<span class="cs-bar ${fin?'done':x.started||x.done?'active':''}" style="left:${pct(d(x.planned_start))}%;width:${Math.max(2,pct(d(x.planned_end)+86400000)-pct(d(x.planned_start)))}%"><span style="width:${x.total?Math.round(100*x.done/x.total):0}%"></span></span></div></div>`;}).join('')}</div>`;
+  el.querySelector('.cs-schedule')?.remove();el.prepend(box);
+ }
  function renderProgress(data,error){
   const el=$('customer-progress');
   if(error||!data){el.innerHTML='<div class="callout">工程明细暂时无法同步，请刷新档案或联系门店核对；其他已读取资料仍可查看。</div>';return;}
@@ -56,6 +69,7 @@
   if(!work.length){el.innerHTML='<div class="callout">门店尚未生成可显示的执行分组，请联系门店了解安排。</div>';return;}
   const status={draft:'待安排',assigned:'已安排',working:'进行中',done:'已完成'};
   el.innerHTML=`<div class="progress-summary"><span>执行分组完成</span><strong>${done} <small>/ ${work.length}</small></strong></div><div class="progress-track" role="progressbar" aria-label="已完成执行分组数量" aria-valuemin="0" aria-valuemax="${work.length}" aria-valuenow="${done}"><span style="width:${done/work.length*100}%"></span></div><p class="mini-note">按已完成分组数量展示，不代表工程量或施工时间占比。</p><div class="execution-list">${work.map(w=>`<article class="execution-item ${w.status==='done'?'done':''}"><span class="execution-icon" aria-hidden="true">${w.status==='done'?'✓':'◷'}</span><div class="execution-copy"><strong>${E(String(w.group_name||'').replace(/^增项-[0-9a-f-]{36} · ?/i,'增项 · '))}</strong><small>${w.updated_at?'最近更新 '+E(new Date(w.updated_at).toLocaleDateString('zh-CN',{timeZone:'Asia/Kuala_Lumpur'})):'等待门店更新'}</small></div><span class="status-badge">${E(status[w.status]||'待门店核对')}</span></article>`).join('')}</div><div class="callout">完成全部执行分组后，仍须单独完成竣工验收，质保才开始起算。</div>`;
+  loadSchedule(el);
  }
  function lockUnavailable(text){stopTour();clearInterval(refreshTimer);$('customer-workspace').hidden=true;$('customer-controls').hidden=true;$('customer-guide').hidden=true;$('message').textContent=text;$('message').classList.add('error');}
  try{

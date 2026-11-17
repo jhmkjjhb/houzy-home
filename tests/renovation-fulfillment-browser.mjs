@@ -52,17 +52,24 @@ const sys=async(sql,a=[])=>{const j=queue.then(async()=>{await db.exec('RESET RO
 const stages=async()=>Object.fromEntries((await sys('SELECT line_id,stage FROM renovation_work_items WHERE project_id=$1',[id])).map(r=>[r.line_id,r.stage]));
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==','base64');
 const openCard=async(page,name)=>{const card=page.locator('details.work',{hasText:name});await card.waitFor();if(!(await card.evaluate(e=>e.open)))await card.locator('summary').first().click();return card;};
+const pickMode=async card=>{if(!(await card.locator('.fulfillment.picking').count()))await card.locator('[data-fxpick]').click();};
 try{
  let page=await open(staff,`/portal/renovation.html#${id}`);
+ // 标题行右边的按钮就是下一步：点了打开子单、跳到要填的地方，不用先展开再找
+ {const go=page.locator('details.work',{hasText:'全屋定制'}).locator('summary [data-fxgo]');await go.waitFor();assert.equal(await go.innerText(),'发起业主签名','title button names the next step');
+  await go.click();const cd=page.locator('details.work',{hasText:'全屋定制'});assert(await cd.evaluate(e=>e.open),'button opens the card');
+  assert(await cd.locator('.fx-now [data-act="request_signature"]').isVisible(),'the form for that step is right there');
+  assert(await cd.locator('[data-line="C1"]').isHidden(),'tick boxes hidden until 只处理其中几项');
+  const shown=await cd.locator('.fx-row:not(.same):not(.fx-all)').allInnerTexts();assert(shown.length===1&&shown[0].includes('柜门拉手'),'only the line whose status differs shows it (two custom lines share 待业主签名, the stock handle is 待下单): '+shown.join('|'));}
  let card=await openCard(page,'全屋定制');
  assert((await card.locator('summary').first().innerText()).includes('待业主签名'),'title tag says what is next');
  // 每个合同分组都已有子单：「生成子订单」按钮不再出现，免得以为还要再点
  assert(await page.locator('#split').isHidden(),'split button hidden once every group has a sub-order');
  // 全选：一下勾上所有能勾的项，再点取消；单项取消后全选变成「部分」
- await card.locator('[data-allx]').check();
+ await pickMode(card);await card.locator('[data-allx]').check();
  const enabled=await card.locator('[data-line]:not(:disabled)').count();assert(enabled>1&&await card.locator('[data-line]:checked').count()===enabled,'select all ticks every open line');
  await card.locator('[data-line="C2"]').uncheck();assert.equal(await card.locator('[data-allx]').evaluate(e=>e.indeterminate&&!e.checked),true,'partly ticked shows as partial');
- await card.locator('[data-allx]').check();await card.locator('[data-allx]').uncheck();assert.equal(await card.locator('[data-line]:checked').count(),0,'untick all clears');
+ await pickMode(card);await card.locator('[data-allx]').check();await card.locator('[data-allx]').uncheck();assert.equal(await card.locator('[data-line]:checked').count(),0,'untick all clears');
  assert((await card.innerText()).includes('还有 2 项定制未签名'),'staff are told custom lines will not be ordered');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);
  card=await openCard(page,'全屋定制');assert.equal(await card.locator('[id^="assignee-"]').inputValue(),'张师傅');
@@ -71,6 +78,7 @@ try{
  await card.locator('[data-act="request_signature"]').click();
  await card.locator('[data-act="copy_link"]').waitFor();
  assert((await card.locator('summary').first().innerText()).includes('等业主签名'));
+ {const sum=page.locator('details.work',{hasText:'全屋定制'}).locator('summary').first();assert.equal(await sum.locator('[data-fxgo]').innerText(),'下单','while the owner signs, the stock line can already be ordered');assert((await sum.innerText()).includes('等业主签名'),'title still says it is waiting for the owner');}
  await card.locator('[data-act="copy_link"]').click();await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('已复制')));
  const link=await page.evaluate(()=>navigator.clipboard.readText());assert(link.includes('renovation-custom-sign.html'));
  await page.screenshot({path:out+'/staff-waiting-signature.png',fullPage:true});
@@ -101,7 +109,7 @@ try{
   assert.equal(await sum.locator('.fx-chip.ok').count(),2,'done steps are green');assert.equal(await sum.locator('.fx-chip.now').count(),1,'only the current step is highlighted');}
  // Exception: one line missing
  card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'更多操作'}).click();
- await card.locator('[data-line="C2"]').check();const issue=card.locator('[data-form]',{has:page.locator('[data-act="flag_issue"]')});
+ await pickMode(card);await card.locator('[data-line="C2"]').check();const issue=card.locator('[data-form]',{has:page.locator('[data-act="flag_issue"]')});
  await issue.locator('[data-f="note"]').fill('缺门板');await issue.locator('[data-f="follow_up_on"]').fill('2099-01-01');await issue.locator('[data-act="flag_issue"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo]')].some(e=>e.textContent.includes('缺门板')));
  card=await openCard(page,'全屋定制');assert((await card.locator('[data-act="arrive"]').innerText()).includes('2项'),'arrival skips the problem line');

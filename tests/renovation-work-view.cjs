@@ -13,3 +13,13 @@ const mixed=V.render([{group_name:'混合',status:'draft',line_ids:['1','2','mis
  const w={id:'w1',group_name:'增项-155232e6-c75a-41c4-a0d9-ef6b32abd4e6 · 新增材料'},t={items:[{work_order_id:'w1',line_id:'ADD-9',kind:'stock',stage:'pending'}],confirmations:[],batches:[],signoffs:[]};
  const b=F.badges(w,t);assert(b.includes('fx-chip ok step">✓ 业主已签增项'),'signed tag shown');assert(b.indexOf('业主已签增项')<b.indexOf('待下单'),'signed comes before ordering');
  assert(!F.badges({id:'w2',group_name:'全屋定制'},{...t,items:[{...t.items[0],work_order_id:'w2'}]}).includes('业主已签增项'),'normal sub-orders not tagged');console.log('PASS: addition sub-orders show the owner already signed');}
+// 标题行按钮 = 下一步：只剩等业主签名时是「复制签名链接」；有问题先处理问题；全部完成没有按钮
+{const c={window:{}};vm.runInNewContext(fs.readFileSync('portal/renovation/fulfillment.js','utf8'),c);const F=c.window.RenoFulfillment;
+ const w={id:'w1',group_name:'全屋定制'},it=(stage,kind='custom',x={})=>({work_order_id:'w1',line_id:'L'+Math.random(),kind,stage,...x}),T=(items,conf=[])=>({items,confirmations:conf,batches:[],signoffs:[]});
+ assert.equal(F.primary(w,T([it('pending')])).label,'发起业主签名');
+ const live=F.primary(w,T([it('pending')],[{id:'c1',work_order_id:'w1',status:'pending',signing_token:'t1'}]));assert(live.label==='复制签名链接'&&live.copy.id==='c1'&&live.copy.token==='t1','waiting: copy link');
+ assert.equal(F.primary(w,T([it('pending'),it('pending','stock')],[{id:'c1',work_order_id:'w1',status:'pending',signing_token:'t1'}])).label,'下单','stock can be ordered while waiting');
+ assert.equal(F.primary(w,T([it('ordered')])).label,'到货');assert.equal(F.primary(w,T([it('pending','work')])).label,'排期');assert.equal(F.primary(w,T([it('scheduled','work')])).label,'开工');
+ assert.equal(F.primary(w,T([it('working','work')])).label,'完工');assert.equal(F.primary(w,T([it('pending','gift')])).label,'交付');
+ assert.equal(F.primary(w,T([it('ordered','custom',{issue_note:'缺件'})])).label,'处理问题');assert.equal(F.primary(w,T([it('done')])),null);assert.equal(F.primary(w,T([it('pending')]),{locked:true}),null,'accepted project has no buttons');
+ console.log('PASS: title button is the next step');}
