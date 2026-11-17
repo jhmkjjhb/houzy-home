@@ -299,9 +299,9 @@ window.RenoFulfillment=(()=>{
   });
  }
  async function load(sb,projectId){
-  const r=await Promise.all(['renovation_work_items','renovation_custom_confirmations','renovation_purchase_batches'].map(t=>sb.from(t).select('*').eq('project_id',projectId)));
+  // 四张表同时读，不排队
+  const [so,...r]=await Promise.all(['renovation_party_signoffs','renovation_work_items','renovation_custom_confirmations','renovation_purchase_batches'].map(t=>sb.from(t).select('*').eq('project_id',projectId)));
   for(const x of r)if(x.error)throw x.error;
-  const so=await sb.from('renovation_party_signoffs').select('*').eq('project_id',projectId);
   return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
  }
  return {panel,headline,badges,state,primary,bind,load,buckets};

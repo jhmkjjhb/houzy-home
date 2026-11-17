@@ -17,6 +17,9 @@ window.RenoSchedule=(()=>{
   const items=(tracking?.items||[]).filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled'),done=items.filter(i=>i.stage==='done').length;
   return {total:items.length,done,started:items.some(i=>['ordered','arrived','scheduled','working','done'].includes(i.stage)),finished:items.length>0&&done===items.length};
  }
+ // 师傅名单首页和施工计划共用一次读取；改动后清掉重读
+ let crewCache=null;
+ const getCrews=sb=>crewCache||(crewCache=sb.from('renovation_crews').select('*').order('trade').order('name').then(r=>{if(r.error)crewCache=null;return r;},e=>{crewCache=null;return {error:e};}));
  let state=null; // {project, plans, dirty:Set, editing, startOn, handover, handoverDirty, busy:[], crews:[], crewOpen}
  function planInput(ctx){
   const work=(ctx.work||[]).filter(w=>!w.cancelled_at);
@@ -118,7 +121,7 @@ window.RenoSchedule=(()=>{
   const key=ctx.project.id+'|'+(ctx.work||[]).map(w=>w.assignee||'').join(',');
   if(!ctx.sb||loading||state.loadedFor===key)return;loading=true;state.loadedFor=key;
   try{
-   const [c,b]=await Promise.all([ctx.sb.from('renovation_crews').select('*').order('name'),
+   const [c,b]=await Promise.all([getCrews(ctx.sb),
     ctx.sb.rpc('renovation_crew_busy',{p_names:[...new Set((ctx.work||[]).map(w=>String(w.assignee||'').trim()).filter(Boolean))],p_exclude:ctx.project.id})]);
    if(!c.error)state.crews=c.data||[];if(!b.error)state.busy=b.data||[];
   }catch(e){}finally{loading=false;}
@@ -178,7 +181,7 @@ window.RenoSchedule=(()=>{
   if(!el)return;
   const TRADES=['水电工','泥水工','木工','油漆工','柜体安装队','厂家安装','杂工','清洁','其他'];
   const draw=async(msg='')=>{
-   const r=await ctx.sb.from('renovation_crews').select('*').order('trade').order('name');
+   const r=await getCrews(ctx.sb);
    if(r.error){el.hidden=true;return;}
    el.hidden=false;const list=r.data||[];
    el.innerHTML=`<details class="panel crew-admin"${el.dataset.open?' open':''}><summary><b>师傅名单</b> <span class="muted">${list.filter(c=>c.active).length} 位在用 · 子单「执行人」从这里选，系统才能查跨工地撞期</span></summary>
@@ -192,8 +195,8 @@ window.RenoSchedule=(()=>{
    try{
     if('crewAdd' in b.dataset){if(!f('name').trim())throw new Error('请填写师傅 / 队伍名称');
      const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:null,p_data:{name:f('name'),trade:f('trade'),headcount:Number(f('headcount'))||1,phone:f('phone')}});if(error)throw error;
-     el.dataset.open='1';await draw(`已加入「${f('name').trim()}」。`);}
-    else if(b.dataset.crewToggle){const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:b.dataset.crewToggle,p_data:{name:b.closest('tr').querySelector('b').textContent,active:b.dataset.on==='1'}});if(error)throw error;el.dataset.open='1';await draw('已更新。');}
+     crewCache=null;el.dataset.open='1';await draw(`已加入「${f('name').trim()}」。`);}
+    else if(b.dataset.crewToggle){const {error}=await ctx.sb.rpc('renovation_crew_save',{p_id:b.dataset.crewToggle,p_data:{name:b.closest('tr').querySelector('b').textContent,active:b.dataset.on==='1'}});if(error)throw error;crewCache=null;el.dataset.open='1';await draw('已更新。');}
    }catch(err){const m=el.querySelector('[data-crew-msg]');if(m)m.textContent=err.message||String(err);}
   };
   await draw();

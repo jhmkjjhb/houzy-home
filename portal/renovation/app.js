@@ -76,32 +76,34 @@ function render(){
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  $('customer-action-help').textContent=!project||project.state==='draft'?'合同确认后，才能发给业主。':project.state==='accepted'?'已竣工验收。点「复制发给业主」，业主可以随时查看清单和质保。':canManage?'竣工验收：全部子单完成后，填验收日期、上传双方签字的验收单，再点「确认竣工验收」。':'竣工验收由店长或上级确认。';
  if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
- RenoAdditions.render({data:additionData,deductionsTotal:deductionData?.deductions_total,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoDeductions.isDirty()});
- RenoDeductions.render({data:deductionData,project,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
- RenoContractEsign.render({project,sb,isDirty:()=>dirty||!!upload,onChange:async()=>{await openProject(project.id);await loadList();}}).catch(e=>message(e.message,true));
+ RenoAdditions.render({data:additionData,deductionsTotal:deductionData?.deductions_total,project,actor,sb,onChange:async()=>{await openProject(project.id);loadList().catch(()=>{});},canSave:()=>!dirty&&!busy&&!RenoDeductions.isDirty()});
+ RenoDeductions.render({data:deductionData,project,sb,onChange:async()=>{await openProject(project.id);loadList().catch(()=>{});},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
+ RenoContractEsign.render({project,sb,isDirty:()=>dirty||!!upload,onChange:async()=>{await openProject(project.id);loadList().catch(()=>{});}}).catch(e=>message(e.message,true));
  renderLines();renderPayments();updateTotals();renderWarranty();
 }
 async function loadList(){
- const {data,error}=await sb.from('renovation_projects').select('id,contract_no,customer_name,address,state,revision,snapshot,additions_total,current_total,created_at').order('created_at',{ascending:false}).limit(200);
+ // 列表只要合同总额：只取 snapshot 里的 net，不下载整份合同清单（项目多时省很多流量）
+ const {data,error}=await sb.from('renovation_projects').select('id,contract_no,customer_name,address,state,revision,net:snapshot->net,additions_total,current_total,created_at').order('created_at',{ascending:false}).limit(200);
  if(error)throw new Error('整装档案暂不可用，请联系管理员完成整装功能部署。原商品订单仍可使用。');
+ (data||[]).forEach(p=>{if(!p.snapshot)p.snapshot={net:p.net};});
  $('list').innerHTML=(data||[]).map(p=>`<article class="project" data-project-state="${esc(p.state)}" data-search="${esc([p.contract_no,p.customer_name,p.address].join(' ').toLocaleLowerCase())}"><div class="project-identity"><div class="project-topline"><span class="type renovation">整装主单</span><span class="project-status" data-state="${esc(p.state)}">${esc(states[p.state]||p.state)}</span><small>合同 · 履约 · 质保</small></div><h2>${esc(p.contract_no)} · ${esc(p.customer_name)}</h2><p class="project-address">${esc(p.address)}</p></div><div class="project-side"><b class="project-amount"><small>RM</small>${fmt(p.current_total??p.snapshot?.net)}</b><button class="secondary" data-open="${esc(p.id)}">查看项目档案 →</button></div></article>`).join('')||'<div class="empty-state"><span class="empty-symbol" aria-hidden="true">⌂</span><h3>建立第一份整装项目档案</h3><p>点击“新建整装订单”，填写客户资料并归档合同。</p></div>';
  window.RenoWorkspace?.update(data||[]);
 }
 async function openProject(id){
  if((dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty())&&!confirm('当前核对内容尚未保存，确定切换项目？'))return;
  const resetScroll=$('editor').hidden||project?.id!==id;
- const {data,error}=await sb.from('renovation_projects').select('*').eq('id',id).single();if(error)throw error;
+ const [pr,...results]=await Promise.all([sb.from('renovation_projects').select('*').eq('id',id).single(),sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id}),sb.rpc('renovation_deduction_view',{p_id:id}),RenoFulfillment.load(sb,id).then(v=>({data:v}),e=>({error:e}))]);
+ const {data,error}=pr;if(error)throw error;
  project=data;snapshot=Object.assign(blank(),data.snapshot);draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=false;upload=null;$('signed').checked=false;$('reviewed').checked=false;
- const results=await Promise.all([sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),sb.from('renovation_audit').select('action,created_at,actor').eq('project_id',id).order('created_at',{ascending:false}).limit(30),sb.rpc('renovation_addition_view',{p_id:id}),sb.rpc('renovation_deduction_view',{p_id:id})]);
  for(const r of results)if(r.error)throw r.error;
  work=results[0].data;additionData=results[2].data;deductionData=results[3].data;render();
- const tracking=await RenoFulfillment.load(sb,id);scheduleTracking=tracking;
+ const tracking=results[4].data;scheduleTracking=tracking;
  if(window.RenoSchedule)RenoSchedule.render($('schedule'),scheduleData());
  $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted',tracking,{manager:['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
  const actionNames={fulfillment_request_signature:'发起业主签名',fulfillment_customer_signed:'业主签名确认',fulfillment_void_signature:'撤销确认单',fulfillment_submit_paper:'提交纸质确认单',fulfillment_review_paper:'审核纸质确认单',fulfillment_place_order:'下单',fulfillment_legacy_order:'登记上线前已下单',fulfillment_correct_batch:'更正下单记录',fulfillment_arrive:'登记到货',fulfillment_schedule:'施工排期',fulfillment_start_work:'开工',fulfillment_finish:'登记完成',fulfillment_flag_issue:'标记问题',fulfillment_resolve_issue:'解决问题',handover:'项目交接',save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单',deduction_add:'登记原合同减项',deduction_void:'撤销待签减项',deduction_customer_signed:'客户电子签署减项'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
- await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()&&!RenoDeductions.isDirty()});
+ await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);loadList().catch(()=>{});},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()&&!RenoDeductions.isDirty()});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
  if(resetScroll)window.scrollTo(0,0);
 }
@@ -218,9 +220,10 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  if(!window.supabase)throw new Error('登录组件加载失败，请刷新或检查网络');
  sb=supabase.createClient('https://csabbxiijzghooppayae.supabase.co','sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH');
  const {data:{session},error}=await sb.auth.getSession();if(error)throw error;if(!session){location.replace('login.html?next=renovation.html');return;}
- const result=await sb.rpc('get_my_profile');if(result.error||!result.data)throw new Error('无法读取员工身份');actor=result.data;
+ const [result,sr]=await Promise.all([sb.rpc('get_my_profile'),sb.from('stores').select('id,name').eq('active',true)]);
+ if(result.error||!result.data)throw new Error('无法读取员工身份');actor=result.data;
  if(!['staff','store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role))throw new Error('此入口仅供门店员工及管理人员使用');
- const sr=await sb.from('stores').select('id,name').eq('active',true);if(sr.error)throw sr.error;stores=sr.data;
+ if(sr.error)throw sr.error;stores=sr.data;
  $('store').innerHTML=stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');if(actor.store_id)$('store').value=actor.store_id;
  // 履约子订单：两个标签（子单执行 / 施工计划），记住上次看的是哪个
  const fxTab=name=>{document.querySelectorAll('[data-fxpane]').forEach(p=>p.hidden=p.dataset.fxpane!==name);document.querySelectorAll('.fx-tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.fxtab===name)));try{sessionStorage.setItem('reno-fx-tab',name);}catch(e){}};
@@ -228,8 +231,13 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  try{fxTab(sessionStorage.getItem('reno-fx-tab')||'exec');}catch(e){fxTab('exec');}
  if(window.RenoSchedule)RenoSchedule.crewAdmin($('crew-admin'),{sb,manager:()=>['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await openProject(project.id);},message:(m,err)=>message(m,err)});
- RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await openProject(project.id);await loadList();},message});
+ RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await openProject(project.id);loadList().catch(()=>{});},message});
  const refreshHome=async()=>{await RenoFulfillmentHome.load({sb,openProject,refresh:async()=>{await loadList();await refreshHome();}});};
- await loadList();await refreshHome().catch(e=>message(e.message,true));if(new URLSearchParams(location.search).get('new')==='1'){reset();return;}const id=location.hash.slice(1);if(/^[0-9a-f-]{36}$/i.test(id))await openProject(id);else message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');
+ // 有项目编号时先开项目，列表和待办在后台同时读，不用等
+ const id=location.hash.slice(1),isNew=new URLSearchParams(location.search).get('new')==='1';
+ const listJob=Promise.all([loadList(),refreshHome().catch(e=>message(e.message,true))]);
+ if(isNew){await listJob;reset();return;}
+ if(/^[0-9a-f-]{36}$/i.test(id)){await openProject(id);listJob.catch(e=>message(e.message,true));}
+ else{await listJob;message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');}
  }catch(e){message(e.message,true);$('new-project').disabled=true;}
 })();
