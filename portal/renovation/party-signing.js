@@ -31,7 +31,7 @@
   if(data.status==='wrong_code')return gate(`验证码不正确，还可尝试 ${data.remaining} 次。`);
   if(data.status!=='pending')return done(`<span style="color:#15803d">已于 ${E(new Date(data.signed_at).toLocaleString('zh-CN'))} 由 ${E(data.signer_company)} ${E(data.signer_name)} 签字确认。</span>`);
   view=data;const t=data.terms;
-  const shortGroup=(name,items)=>{const m=/^增项-[0-9a-f-]{36} · ?(.*)$/i.exec(String(name||''));if(!m)return name;const n=(items||[]).filter(Boolean);return n.length?`增项：${n.slice(0,2).join('、')}${n.length>2?` 等${n.length}项`:''}${m[1]?`（${m[1]}）`:''}`:`增项${m[1]?' · '+m[1]:''}`;};
+  const shortGroup=(name,items)=>{const m=/^增项-[0-9a-f-]{36} · ?(.*)$/i.exec(String(name||''));if(!m)return name;const n=(items||[]).filter(Boolean).map(x=>String(x).replace(/^【[^】]*】\s*/,''));return n.length?`增项：${n.slice(0,2).join('、')}${n.length>2?` 等${n.length}项`:''}`:`增项${m[1]?' · '+m[1]:''}`;};
   el.innerHTML=`<h2>${E(TITLE[t.purpose]||'核对签字')}</h2><p>${E(shortGroup(t.group_name,t.lines.map(l=>l.name)))} · ${E(t.contract_no)} · ${E(t.address)}</p><p>签字方：<b>${E(t.party)}</b></p>${t.note?`<p class="warning"><b>门店说明：</b>${E(t.note)}</p>`:''}
    <h3>核对清单（${t.lines.length}项）</h3>${t.lines.map((l,n)=>`<p><b>${n+1}. ${E(l.name)}</b><br>${E(l.spec||'规格见附件')} · ${E(l.qty??'')} ${E(l.unit)}${l.issue?`<br><span class="warning">问题：${E(l.issue)}</span>`:''}</p>`).join('')}
    ${data.document_path?'<h3>附件</h3><div data-pages>正在读取文件…</div>':''}<section data-sign hidden></section>`;

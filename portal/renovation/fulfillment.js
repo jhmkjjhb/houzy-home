@@ -47,6 +47,7 @@ window.RenoFulfillment=(()=>{
   const allDone=items.every(i=>i.stage==='done');
   const doneWord=works.length===items.length?'已完工':works.length?'已完成':'已交付';
   let mine=false;
+  if(/^增项-/.test(String(w.group_name||''))&&!allDone)add('ok step','✓ 业主已签增项');
   if(allDone){add('ok final','✓ '+doneWord);keys.add('done');}
   else{
    let cur=false;

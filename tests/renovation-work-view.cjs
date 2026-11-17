@@ -5,4 +5,11 @@ const mixed=V.render([{group_name:'混合',status:'draft',line_ids:['1','2','mis
 // 增项子单在数据库里叫「增项-<编号> · 分组」：员工看到的应是真正的项目名称，而不是一串编号
 {const s={lines:[{id:'ADD-1',name:'书房吸顶灯',qty:2,rate:100,unit:'pc',kind:'stock'},{id:'ADD-2',name:'插座',qty:1,rate:1,unit:'pc',kind:'stock'},{id:'ADD-3',name:'开关',qty:1,rate:1,unit:'pc',kind:'stock'}]};
  const h=V.render([{group_name:'增项-155232e6-c75a-41c4-a0d9-ef6b32abd4e6 · 新增材料',status:'draft',line_ids:['ADD-1','ADD-2','ADD-3']}],s,false);
- assert(!h.includes('155232e6'),'no id in the title');assert(h.includes('增项：书房吸顶灯、插座 等3项（新增材料）'),'title shows the real items');console.log('PASS: addition sub-orders show item names, not ids');}
+ assert(!h.includes('155232e6'),'no id in the title');assert(h.includes('增项：书房吸顶灯、插座 等3项'),'title shows the real items');console.log('PASS: addition sub-orders show item names, not ids');}
+{const s={lines:[{id:'ADD-9',name:'【增项材料】车棚雨棚增加项',qty:1,rate:1,unit:'lot',kind:'stock'}]};const h=V.render([{group_name:'增项-155232e6-c75a-41c4-a0d9-ef6b32abd4e6 · 新增材料',status:'draft',line_ids:['ADD-9']}],s,false);
+ assert(h.includes('<b>增项：车棚雨棚增加项</b>'),'增项 said once: '+h.match(/<b>增项[^<]*<\/b>/)?.[0]);console.log('PASS: addition title says 增项 once');}
+// 增项子单是业主签了增项才生成的：标题要让人看出「签名已经做完」，下一步是下单，而不是再去签一次
+{const c={window:{}};vm.runInNewContext(fs.readFileSync('portal/renovation/fulfillment.js','utf8'),c);const F=c.window.RenoFulfillment;
+ const w={id:'w1',group_name:'增项-155232e6-c75a-41c4-a0d9-ef6b32abd4e6 · 新增材料'},t={items:[{work_order_id:'w1',line_id:'ADD-9',kind:'stock',stage:'pending'}],confirmations:[],batches:[],signoffs:[]};
+ const b=F.badges(w,t);assert(b.includes('fx-chip ok step">✓ 业主已签增项'),'signed tag shown');assert(b.indexOf('业主已签增项')<b.indexOf('待下单'),'signed comes before ordering');
+ assert(!F.badges({id:'w2',group_name:'全屋定制'},{...t,items:[{...t.items[0],work_order_id:'w2'}]}).includes('业主已签增项'),'normal sub-orders not tagged');console.log('PASS: addition sub-orders show the owner already signed');}
