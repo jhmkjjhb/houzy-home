@@ -724,7 +724,13 @@ sb.auth.onAuthStateChange((event, session) => {
   const hash = new URLSearchParams(window.location.hash.replace('#',''));
   if (hash.get('type') === 'recovery') { showPanel('reset-panel'); return; }
   const { data: { session } } = await sb.auth.getSession();
-  if (session) { const { data } = await sb.rpc('get_my_profile'); if (data) redirect(data); }
+  if (!session) return;
+  for (let i = 0; i < 5; i++) {
+    const { data, error } = await sb.rpc('get_my_profile');
+    if (data) { redirect(data); return; }
+    if (!error) return;
+    await new Promise(r => setTimeout(r, 2000));
+  }
 })();
 
 async function doLogin(e) {
@@ -778,14 +784,22 @@ async function loadRegisterStores() {
 }
 
 async function redirect(data) {
+  let rpcErr = null;
   if (!data) {
-    const { data: profileData, error: rpcErr } = await sb.rpc('get_my_profile');
-    data = profileData;
+    const { data: profileData, error } = await sb.rpc('get_my_profile');
+    data = profileData; rpcErr = error;
     if (rpcErr) console.error('get_my_profile error:', rpcErr.message);
   }
   if (!data) {
-    await sb.auth.signOut();
     const err = document.getElementById('err');
+    if (rpcErr) {
+      err.textContent = t('err_login_failed') + (rpcErr.message || 'network');
+      err.classList.remove('hidden');
+      document.getElementById('btn').textContent = t('login_btn');
+      document.getElementById('btn').disabled = false;
+      return;
+    }
+    await sb.auth.signOut();
     err.textContent = t('err_no_profile');
     err.classList.remove('hidden');
     document.getElementById('btn').textContent = t('login_btn');

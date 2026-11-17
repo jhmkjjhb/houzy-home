@@ -2354,11 +2354,63 @@ function toggleMobileMenu() {
 }
 
 // ── Init ──
-async function init() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = 'login.html'; return; }
+// 手机锁屏或切到别的 App 回来时，网络常常要几秒才恢复。
+// 这时登录凭证还在，只是暂时换不到新的通行证：先等网络，不要马上踢回登录页让人重输密码。
+const AUTH_KEY = 'sb-csabbxiijzghooppayae-auth-token';
+const hasSavedLogin = () => { try { return !!localStorage.getItem(AUTH_KEY); } catch (e) { return false; } };
+function showWaitNet(on) {
+  let el = document.getElementById('wait-net');
+  if (!on) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'wait-net';
+    el.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:9999;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:12px 14px;border-radius:10px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.12)';
+    el.innerHTML = '网络还没连上，正在等待… 登录状态还在，不用重新输入密码。 <button onclick="location.reload()" style="margin-left:8px;text-decoration:underline">重试</button>';
+    document.body.appendChild(el);
+  }
+}
+async function getSessionPatiently() {
+  // 超过 3 秒还没连上就先告诉员工在等网络，不是死机
+  const slow = setTimeout(() => { if (hasSavedLogin()) showWaitNet(true); }, 3000);
+  try { return await waitSession(); } finally { clearTimeout(slow); }
+}
+async function waitSession() {
+  for (let i = 0; ; i++) {
+    let session = null;
+    try { ({ data: { session } } = await sb.auth.getSession()); } catch (e) {}
+    if (session) { showWaitNet(false); return session; }
+    // 凭证已经没有了（真的过期或已退出）才去登录页
+    if (!hasSavedLogin()) return null;
+    await new Promise(r => setTimeout(r, Math.min(2000 + i * 1000, 8000)));
+  }
+}
+async function getProfilePatiently() {
+  for (let i = 0; i < 6; i++) {
+    let r; try { r = await sb.rpc('get_my_profile'); } catch (e) { r = { error: e }; }
+    if (!r.error) return r.data;
+    await new Promise(res => setTimeout(res, 2000));
+  }
+  return null;
+}
+// 记住上次停在哪一页（含正在看的订单），下次打开回到那里
+const LAST_VIEW = 'houzy-staff-last-view';
+function rememberView(view) {
+  try { localStorage.setItem(LAST_VIEW, JSON.stringify({ v: view, id: view === 'detail' ? _openDetailId : null })); } catch (e) {}
+}
+function restoreLastView() {
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem(LAST_VIEW) || 'null'); } catch (e) {}
+  if (!last || !last.v || last.v === 'dashboard') return;
+  if (last.v === 'detail') { if (last.id) openDetail(last.id, 'orders'); return; }
+  const perm = { registrations: 'nav_registrations', users: 'nav_users', pricing: 'nav_pricing', designers: 'nav_designers', settle: 'nav_settle', reports: 'nav_reports' }[last.v];
+  if (perm && !canDo(FIELD_MIN_LEVEL[perm])) return;
+  if (['orders', 'create', 'customers', 'registrations', 'users', 'pricing', 'designers', 'settle', 'reports'].includes(last.v)) goto(last.v);
+}
 
-  profile = await sb.rpc('get_my_profile').then(r => r.data);
+async function init() {
+  const session = await getSessionPatiently();
+  if (!session) { window.location.href = 'login.html?next=staff.html'; return; }
+
+  profile = await getProfilePatiently();
   let storeName = '';
   if (profile?.store_id) {
     const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
@@ -2405,6 +2457,7 @@ async function init() {
   setLang(currentLang);
   const requestedView = new URLSearchParams(window.location.search).get('view');
   if (['orders','create'].includes(requestedView)) goto(requestedView);
+  else if (!new URLSearchParams(window.location.search).get('hitpay')) restoreLastView();
   const hitpayReturn = new URLSearchParams(window.location.search);
   const hitpayOrder = hitpayReturn.get('order');
   if (hitpayReturn.get('hitpay') === 'success' && hitpayOrder) {
@@ -2557,6 +2610,7 @@ function goto(view) {
   // 离开订单详情页后，不要让实时订单更新再次把页面带回上一笔订单。
   // 详情页本身仍由 openDetail() 保留当前订单 ID，以便实时刷新。
   if (view !== 'detail') _openDetailId = null;
+  if (view !== 'suppliers') rememberView(view);
   // 'suppliers' is now a tab inside 'users'
   if (view === 'suppliers') { goto('users'); switchUserTab('supplier'); return; }
   ['dashboard','orders','create','customers','detail','registrations','users','pricing','designers','settle','reports'].forEach(v => {
