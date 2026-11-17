@@ -66,9 +66,9 @@ function render(){
  $('view-contract').textContent=upload?'预览所选合同PDF':'查看归档合同';
  $('view-contract').disabled=!upload&&!snapshot.contract_path;
  $('confirm').disabled=!project||locked;$('split').disabled=!project||!['confirmed','executing'].includes(project.state);
- $('accept').disabled=!project||project.state!=='executing'||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('customer-code').disabled=!project||project.state==='draft';
+ $('accept').disabled=!project||project.state!=='executing'||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);$('accepted-on').value=project?.accepted_on||'';$('customer-link').disabled=!project||project.state==='draft';$('rotate-link').disabled=!project||!['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
  const canManage=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role);
- $('customer-action-help').textContent=!project||project.state==='draft'?'确认合同后，才能生成客户查询资料和客户链接。':!canManage?'可复制客户查询资料；竣工验收及使旧链接失效需由店长或上级操作。':project.state==='accepted'?'项目已竣工验收，可复制客户查询资料；使旧链接失效后须重新发送新资料。':'可复制客户查询资料。竣工验收需全部子单完成、填写验收日期并上传双方验收凭证。';
+ $('customer-action-help').textContent=!project||project.state==='draft'?'合同确认后，才能发给业主。':project.state==='accepted'?'已竣工验收。点「复制发给业主」，业主可以随时查看清单和质保。':canManage?'竣工验收：全部子单完成后，填验收日期、上传双方签字的验收单，再点「确认竣工验收」。':'竣工验收由店长或上级确认。';
  if(!project||project.state==='draft')RenoFinance.load({sb,project,actor});
  RenoAdditions.render({data:additionData,deductionsTotal:deductionData?.deductions_total,project,actor,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoDeductions.isDirty()});
  RenoDeductions.render({data:deductionData,project,sb,onChange:async()=>{await openProject(project.id);await loadList();},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()});
@@ -200,13 +200,11 @@ $('view-contract').onclick=()=>guarded(async()=>{
  }catch(e){tab.close();throw e;}
 });
 $('accept').onclick=()=>guarded(async()=>{const date=$('accepted-on').value;if(!date)throw new Error('请填写竣工验收日期');if(!work.length||work.some(w=>w.status!=='done'))throw new Error('先完成全部子订单，再确认竣工验收');const file=$('acceptance-file').files[0];if(!file)throw new Error('请上传双方竣工验收凭证');if(!confirm('确认验收凭证和日期无误，并按合同启动质保？')){message('已取消竣工验收，项目状态未改变。');return;}const path=await archive(file,'acceptance');await rpc('accept',{accepted_on:date,acceptance_path:path});await openProject(project.id);await loadList();message('竣工验收已保存，质保已按验收日期起算。');},'customer-action-message');
-$('customer-code').onclick=()=>guarded(async()=>{
- if(!project||project.state==='draft')throw new Error('先确认合同');
- const text='HOUZY HOME 整装合同查询\n合同编号：'+project.contract_no+'\n登记手机号：+'+project.customer_phone+'\n入口：https://houzyhome.com/portal/customer.html\n请选择对应国家区号，输入登记手机号即可查看整装合同、清单及质保。';
- await copyCustomerText(text,'已复制登记手机号及查询入口，请发给业主。');
-},'customer-action-message');
-$('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;await copyCustomerText(url.href,'已复制客户链接，仅发给业主或授权联系人。');},'customer-action-message');
-$('rotate-link').onclick=()=>guarded(async()=>{if(!project)throw new Error('请先打开项目');if(!confirm('旧客户链接将立即失效；客户仍可用登记手机号查到新链接。继续？')){message('已取消，旧客户链接仍然有效。');return;}const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧客户链接已失效；客户可重新用登记手机号查询。');},'customer-action-message');
+// 发给业主只要一段话：直接点的链接 + 链接打不开时用手机号查询的方法
+$('customer-link').onclick=()=>guarded(async()=>{if(!project||project.state==='draft')throw new Error('先确认合同');const url=new URL('renovation-customer.html',location.href);url.hash=project.customer_token;
+ const text='HOUZY HOME 整装项目（合同 '+project.contract_no+'）\n点开查看清单、施工进度和质保：\n'+url.href+'\n\n链接打不开时：打开 https://houzyhome.com/portal/customer.html ，输入登记手机号 +'+project.customer_phone+' 查询。';
+ await copyCustomerText(text,'已复制，直接粘贴发给业主（微信 / WhatsApp）。');},'customer-action-message');
+$('rotate-link').onclick=()=>guarded(async()=>{if(!project)throw new Error('请先打开项目');if(!confirm('作废后，旧链接马上打不开；业主用登记手机号查询可以拿到新链接。确定作废？')){message('已取消，旧链接仍然有效。');return;}const {error}=await sb.rpc('renovation_rotate_link',{p_id:project.id,p_revision:project.revision});if(error)throw error;await openProject(project.id);message('旧链接已作废。请点「复制发给业主」，把新链接重新发给业主。');},'customer-action-message');
 $('export').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.download(project,effectiveSnapshot());message('已导出Excel核对清单，包含当前页面的核对内容；导出不会保存或归档项目。');});
 $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)throw new Error('请先上传合同或填写工程清单');RenoExport.print(project,effectiveSnapshot());});
 (async()=>{try{
