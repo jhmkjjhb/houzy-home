@@ -5,7 +5,8 @@ window.RenoFulfillmentHome=(()=>{
  const labels={issue:'有问题待处理',overdue_arrival:'到货已逾期',paper_review:'纸质确认单待审核',awaiting_signature:'等待业主签名',need_signature:'待发起业主签名',to_order:'待下单',arriving_soon:'3天内到货'};
  const order=Object.keys(labels);
  const roles={staff:'店员',store_manager:'店长',regional_manager:'区域经理',general_manager:'总经理',admin:'管理员',superadmin:'管理员'};
- const todoLine=t=>`<li><b>${E(labels[t.type]||t.type)}</b> · ${E(t.group_name)} · ${t.count}项${t.due?` · ${E(t.due)}`:''}${t.note?` · ${E(t.note)}`:''}</li>`;
+ const shortGroup=name=>{const m=/^增项-[0-9a-f-]{36} · ?(.*)$/i.exec(String(name||''));return m?`增项${m[1]?' · '+m[1]:''}`:name;};
+ const todoLine=t=>`<li><b>${E(labels[t.type]||t.type)}</b> · ${E(shortGroup(t.group_name))} · ${t.count}项${t.due?` · ${E(t.due)}`:''}${t.note?` · ${E(t.note)}`:''}</li>`;
  function todosHtml(data){
   const items=[...data.items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)),by=new Map();
   for(const t of items){if(!by.has(t.project_id))by.set(t.project_id,{no:t.contract_no,name:t.customer_name,rows:[]});by.get(t.project_id).rows.push(t);}

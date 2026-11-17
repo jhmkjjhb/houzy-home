@@ -25,7 +25,8 @@ window.RenoCustomSigning=(()=>{
   if(data.status==='paper_review')return done('门店已收到纸质确认单，正在审核。');
   if(data.status!=='pending')return done(`<span style="color:#15803d">已于 ${E(new Date(data.signed_at).toLocaleString('zh-CN'))} 由 ${E(data.signer_name)}（${E(data.signer_relation)}）签名确认。</span>`);
   view=data;const t=data.terms;
-  el.innerHTML=`<h2>${E(t.group_name)}</h2><p>${E(t.contract_no)} · ${E(t.address)} · 第${E(t.version)}版</p>${t.change_note?`<p class="warning"><b>改单内容：</b>${E(t.change_note)}</p>`:''}${t.note?`<p>${E(t.note)}</p>`:''}<h3>确认清单（${t.lines.length}项）</h3>${t.lines.map(l=>`<p><b>${E(l.name)}</b><br>${E(l.spec||'规格见图纸')} · ${E(l.qty)} ${E(l.unit)}</p>`).join('')}<h3>定稿图纸</h3><div data-pages>正在读取文件…</div><section data-sign hidden></section>`;
+  const shortGroup=(name,items)=>{const m=/^增项-[0-9a-f-]{36} · ?(.*)$/i.exec(String(name||''));if(!m)return name;const n=(items||[]).filter(Boolean);return n.length?`增项：${n.slice(0,2).join('、')}${n.length>2?` 等${n.length}项`:''}${m[1]?`（${m[1]}）`:''}`:`增项${m[1]?' · '+m[1]:''}`;};
+  el.innerHTML=`<h2>${E(shortGroup(t.group_name,t.lines.map(l=>l.name)))}</h2><p>${E(t.contract_no)} · ${E(t.address)} · 第${E(t.version)}版</p>${t.change_note?`<p class="warning"><b>改单内容：</b>${E(t.change_note)}</p>`:''}${t.note?`<p>${E(t.note)}</p>`:''}<h3>确认清单（${t.lines.length}项）</h3>${t.lines.map(l=>`<p><b>${E(l.name)}</b><br>${E(l.spec||'规格见图纸')} · ${E(l.qty)} ${E(l.unit)}</p>`).join('')}<h3>定稿图纸</h3><div data-pages>正在读取文件…</div><section data-sign hidden></section>`;
   await pages();
  }
  async function pages(){
