@@ -42,7 +42,7 @@ const stub=`window.supabase={createClient:(u,k,o)=>{const call=async r=>{const x
  const b64=async f=>{const a=new Uint8Array(await f.arrayBuffer());let s='';for(const c of a)s+=String.fromCharCode(c);return btoa(s);};
  return {rpc:async(name,args)=>call({kind:'rpc',name,args}),auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{}}:null}})},
  from(table){const r={kind:'select',table,eq:[]};let one=false;const q={select(){return q},eq(k,v){r.eq.push([k,v]);return q},order(){return q},limit(n){r.limit=n;return q},single(){one=true;return q},then(ok,no){return call(r).then(x=>x.error?x:({data:one?(x.data||[])[0]:x.data,error:null})).then(ok,no);}};return q;},
- storage:{from:bucket=>({upload:async(path,file)=>call({kind:'upload',bucket,path,base64:await b64(file)}),download:async path=>{const x=await call({kind:'download',bucket,path});if(x.error)return x;const s=atob(x.data),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return {data:new Blob([a],{type:'image/png'}),error:null};},createSignedUrl:async()=>({data:{signedUrl:'about:blank'},error:null})})}};}};`;
+ storage:{from:bucket=>({upload:async(path,file)=>call({kind:'upload',bucket,path,base64:await b64(file)}),download:async path=>{const x=await call({kind:'download',bucket,path});if(x.error)return x;const s=atob(x.data),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return {data:new Blob([a],{type:'image/png'}),error:null};},createSignedUrl:async path=>({data:{signedUrl:'${base}/portal/renovation.html?signed='+encodeURIComponent(path)},error:null})})}};}};`;
 const browser=await chromium.launch({channel:'chrome',headless:true});const errors=[];
 const open=async(user,url,viewport={width:1280,height:1000})=>{const c=await browser.newContext({viewport});await c.grantPermissions(['clipboard-read','clipboard-write'],{origin:base});const page=await c.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  await c.exposeFunction('__db',r=>{const req=JSON.parse(r);const job=queue.then(()=>handle(user,req)).then(data=>JSON.stringify({data,error:null}),e=>JSON.stringify({data:null,error:{message:e.message}}));queue=job.catch(()=>{});return job;});
@@ -74,6 +74,8 @@ try{
  assert((await ownerView.innerText()).includes('主卧衣柜'),'signed lines listed');
  assert(await ownerView.locator('svg polyline').count()>0,'owner hand signature drawn');
  assert(await ownerView.locator('[data-act="view_file"]').count()>0,'drawing can be opened');
+ // 手机浏览器会拦截「等一会儿才打开」的新页面：点的当下就要开出新页面，再载入图纸
+ {const [pop]=await Promise.all([page.waitForEvent('popup'),ownerView.locator('[data-act="view_file"]').first().click()]);await pop.waitForURL(/signed=/,{waitUntil:'commit'});assert(decodeURIComponent(pop.url()).includes('/fulfillment/'),'drawing opens in the new page: '+pop.url());await pop.close();}
  await page.screenshot({path:out+'/staff-owner-signature.png',fullPage:true});
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
@@ -140,6 +142,11 @@ try{
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');
  const of=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
+ // 下单这一步旁边就有「转发给工厂确认下单内容」，点了直接跳到转发表单，并带上已填的厂家
+ {await of.locator('[data-f="supplier"]').fill('广州柜体厂');await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();
+  const more=card.locator('details.fx-more');assert(await more.evaluate(e=>e.open),'jump opens the forward form');
+  assert.equal(await more.locator('[data-f="purpose"]').inputValue(),'order');assert.equal(await more.locator('[data-f="party"]').inputValue(),'广州柜体厂','factory name carried over');
+  await more.locator('[data-f="party"]').fill('');await more.locator('summary').click();}
  await of.locator('[data-f="supplier"]').fill('广州工厂');await of.locator('[data-f="order_no"]').fill('PO-9');await of.locator('[data-f="expected_on"]').fill('2099-01-01');await of.locator('[data-f="stock_confirmed"]').check();
  await of.locator('[data-act="place_order"]').click();await card.locator('[data-act="arrive"]').waitFor();
  // 8) 到货验收签了 → 一键标记到货
