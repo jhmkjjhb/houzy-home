@@ -283,6 +283,7 @@ window.RenoFulfillment=(()=>{
    try{
     if(act==='copy_link'){const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='已复制，请发给业主。业主须输入登记手机号后四位才能查看和签名。';}
     else if(act==='signoff_create'){
+     if(!v('party').trim()){input('party')?.focus();throw new Error('请先填写「签字方」：工厂名称或负责人名字');}
      const docInput=input('so_doc'),f=picked1(docInput)?await upload(ctx.sb,project.id,docInput,'附件'):null;
      const {data,error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'create',p_data:{work_order_id:root.dataset.wo,line_ids:picked,purpose:v('purpose'),party:v('party'),note:v('so_note'),document_path:f?.path||null,document_sha256:f?.hash||null}});
      if(error)throw error;
@@ -312,7 +313,9 @@ window.RenoFulfillment=(()=>{
     else if(act==='finish'){const needs=!!input('proof');const f=needs?await upload(ctx.sb,project.id,input('proof'),'完工照片或文件'):null;await send(act,{...base,on:v('on'),proof_path:f?.path});}
     else if(act==='flag_issue'){if(!picked.length)throw new Error('请勾选有问题的清单项');await send(act,{...base,note:v('note'),follow_up_on:v('follow_up_on')});}
     else if(act==='resolve_issue'){if(!picked.length)throw new Error('请勾选已解决的清单项');await send(act,base);}
-   }catch(err){const now=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`)||feedback;now.textContent=err.message||String(err);}
+   }catch(err){const msg=err.message||String(err);const now=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`)||feedback;now.textContent=msg;
+    // 出错时就在点的按钮下面显示原因，不用往下找
+    if(box!==root&&box.isConnected){let m=box.querySelector(':scope > .fx-inline-msg');if(!m){m=document.createElement('p');m.className='fx-inline-msg warning';m.setAttribute('role','alert');box.append(m);}m.textContent=msg;}}
    finally{busy=false;}
   });
  }

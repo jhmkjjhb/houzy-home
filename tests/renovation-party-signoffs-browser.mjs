@@ -83,6 +83,7 @@ try{
  await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
  const form=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
+ assert((await form.locator('.fx-inline-msg').innerText()).includes('签字方'),'the reason shows right under the button, not somewhere down the page');
  await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
  // 手机上能直接拍照：拍照框打开后置相机，拍的照片当作附件上传
  {const cam=form.locator('.fx-file [data-cam]');assert.equal(await cam.getAttribute('capture'),'environment','camera button opens the back camera');
