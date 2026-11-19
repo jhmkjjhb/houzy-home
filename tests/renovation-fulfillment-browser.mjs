@@ -58,7 +58,7 @@ try{
  // 标题行右边的按钮就是下一步：点了打开子单、跳到要填的地方，不用先展开再找
  {const go=page.locator('details.work',{hasText:'全屋定制'}).locator('summary [data-fxgo]');await go.waitFor();assert.equal(await go.innerText(),'发起业主签名','title button names the next step');
   await go.click();const cd=page.locator('details.work',{hasText:'全屋定制'});assert(await cd.evaluate(e=>e.open),'button opens the card');
-  assert(await cd.locator('.fx-now [data-act="request_signature"]').isVisible(),'the form for that step is right there');
+  assert(await cd.locator('.fx-st.now [data-act="request_signature"]').isVisible(),'the form for that step is right there');
   assert(await cd.locator('[data-line="C1"]').isHidden(),'tick boxes hidden until 只处理其中几项');
   const shown=await cd.locator('.fx-row:not(.same):not(.fx-all)').allInnerTexts();assert(shown.length===1&&shown[0].includes('柜门拉手'),'only the line whose status differs shows it (two custom lines share 待业主签名, the stock handle is 待下单): '+shown.join('|'));}
  let card=await openCard(page,'全屋定制');

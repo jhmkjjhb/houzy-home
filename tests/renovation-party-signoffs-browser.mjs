@@ -81,7 +81,9 @@ try{
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
  // 转发工厂确认是下单的第 1 步，表单直接摆在下单区，不藏在「更多操作」里
- {const st=await card.locator('.fx-step').first().innerText();assert(st.includes('第 1 步')&&st.includes('转发给工厂确认下单内容'),'forwarding to the factory is step 1 of ordering: '+st);
+ {const steps=await card.locator('.fx-st').evaluateAll(l=>l.map(e=>e.dataset.step+':'+e.className.split(' ').pop()+':'+e.querySelector('.fx-st-no').textContent));
+  assert.deepEqual(steps,['sign:done:✓','factory:now:2','order:now:3','arrive:wait:4','finish:wait:5'],'numbered flow: owner signed ✓, factory confirm and order are current, later steps wait: '+steps);
+  assert((await card.locator('.fx-st[data-step="sign"]').innerText()).includes('已签名'),'done step says what happened');
   assert((await card.locator('summary',{hasText:'更多操作'}).innerText()).includes('非常规'),'more actions is for unusual problems');
   assert.equal(await card.locator('details.fx-more [data-f="purpose"]').inputValue(),'issue','more actions only forwards problem sign-offs');
   assert.equal(await card.locator('summary [data-fxgo]').innerText(),'转发工厂确认','title button names the forward step');}
@@ -102,7 +104,7 @@ try{
  assert.equal(msg.trim(),link,'only the link is copied: '+msg);
  const row=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];
  card=await openCard(page,'全屋定制');const pend=await card.innerText();
- assert(pend.includes('等待工厂 / 负责人签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
+ assert(pend.includes('已转发，等工厂签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
  assert(pend.includes('工厂确认下单内容 · 全屋定制 · 广州工厂'),'pending link names the sub-order');
  await page.screenshot({path:out+'/staff-signoff-pending.png',fullPage:true});
 
@@ -164,8 +166,8 @@ try{
  assert(await page.locator('details.work',{hasText:'全屋定制'}).isHidden()&&await page.locator('details.work',{hasText:'泥水'}).isVisible(),'filter shows only that kind');
  await page.locator('[data-fxfilter="schedule"]').click();assert(await page.locator('details.work',{hasText:'全屋定制'}).isVisible(),'click again shows all');
  // 7) 下单前提醒：C1 工厂已确认，C2 没确认
- card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-step').first().innerText();
- assert(warn.includes('书房柜')&&!warn.includes('主卧衣柜'),'reminds only the lines the factory has not confirmed: '+warn);
+ card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-st[data-step="factory"]').innerText();
+ assert(warn.includes('1 项定制'),'counts only the lines the factory has not confirmed: '+warn);
  assert.equal(await card.locator('.fx-need-assignee').count(),0,'ordering does not ask for a worker');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');

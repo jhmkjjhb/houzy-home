@@ -254,3 +254,30 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .fx-step{margin:10px 0 0;padding:10px 0 0;border-top:1px dashed #dce2df}.fx-step:first-of-type{border-top:0}
 .fx-step>b{display:block;color:var(--hz-green,#153927)}.fx-step-wait>b{color:#9a6700}
 .fx-step .fx-so-inline{border-style:solid}
+/* 子单流程：编号步骤，竖排 */
+.fx-flow{list-style:none;margin:10px 0 14px;padding:0;counter-reset:none}
+.fx-st{position:relative;padding:0 0 14px 40px}
+.fx-st:not(:last-child)::before{content:"";position:absolute;left:13px;top:28px;bottom:2px;width:2px;background:#e3e8e4}
+.fx-st.done:not(:last-child)::before{background:#9fd3b0}
+.fx-st-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-height:28px}
+.fx-st-no{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:#eef1ef;color:#8a968f;border:2px solid #e3e8e4;box-sizing:border-box}
+.fx-st-head b{font-size:15px;line-height:28px;color:#8a968f}
+.fx-st-sum{font-size:13px;color:#68766e}
+.fx-st.done .fx-st-no{background:#15803d;border-color:#15803d;color:#fff}
+.fx-st.done .fx-st-head b{color:#22362e;font-weight:600}
+.fx-st.now .fx-st-no{background:#633899;border-color:#633899;color:#fff}
+.fx-st.now .fx-st-head b{color:#633899;font-weight:700}
+.fx-st-body{margin-top:6px;padding:12px 14px;border:1px solid #e6dcf2;border-radius:10px;background:#fbf9fe}
+.fx-st-body>p{margin:0 0 8px}
+.fx-form{margin:8px 0 0}
+.fx-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 12px;align-items:end}
+.fx-fields:empty{display:none}
+.fx-fields label{margin:0}
+.fx-fields .fx-wide,.fx-fields .fx-file{grid-column:1/-1}
+.fx-fields .check{margin:2px 0}
+.fx-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.fx-st-body .fx-so-inline{margin-top:10px;padding:12px;border:1px dashed rgba(99,56,153,.45);border-radius:10px;background:#fff}
+.fx-pending{list-style:none;margin:4px 0;padding:0}.fx-pending>li{padding:8px 0;border-bottom:1px dashed #e3e8e4}.fx-pending .actions{margin:6px 0}
+.fx-legacy{margin-top:10px}
+@media(max-width:600px){.fx-st{padding-left:36px}.fx-st-body{padding:10px}.fx-actions button{flex:1 1 100%}}
+.fx-idx{color:#8a968f;font-weight:600;margin-right:2px}

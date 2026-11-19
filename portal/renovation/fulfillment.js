@@ -115,11 +115,11 @@ window.RenoFulfillment=(()=>{
   else if(live)body=`<p><b>纸质确认单待审核</b>：${E(live.signer_name)}（${E(live.signer_relation)}）。</p><div class="actions">${fileBtn(live.paper_path,'查看扫描件')}${o.manager?`<button type="button" data-act="review_paper" data-id="${live.id}" data-approve="1">审核通过</button><button type="button" class="secondary" data-act="review_paper" data-id="${live.id}" data-approve="">退回</button>`:'<span class="muted">须由店长或上级审核</span>'}</div>`;
   else{
    const waiting=customs.filter(i=>['pending','confirmed'].includes(i.stage));
-   if(waiting.length)body=`<div class="work-controls" data-form>${file(signed?'新版定稿图纸（旧签名将失效，业主会看到）':'定稿图纸或确认文件（业主会看到，请勿含成本价）','document',PDF_IMG)}${field('给业主的说明（选填，业主会看到）','note')}<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'整单发起业主签名'}（${waiting.length}项）</button></div>`;
+   if(waiting.length)body=frm(file(signed?'新版定稿图纸（旧签名将失效，业主会看到）':'定稿图纸（业主会看到，请勿含成本价）','document',PDF_IMG)+field('给业主的说明（选填）','note'),`<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'发起业主签名'}（${waiting.length}项）</button>`);
   }
   // 已签过、只是可以重新发起的，不算「现在要做」，放进「更多操作」
   if(signed&&!live&&body){o.resign=body;return '';}
-  return body?`<div class="work-terms"><b>业主签名 · 定制必签</b>${body}</div>`:'';
+  return body;
  }
  function ownerHistory(w,tracking){
   const all=tracking.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').sort((a,b)=>b.version-a.version);
@@ -128,41 +128,52 @@ window.RenoFulfillment=(()=>{
    <div class="actions">${fileBtn(c.document_path,'查看签名时的图纸')}${c.paper_path?`${fileBtn(c.paper_path,'查看纸质确认单')}`:''}</div>
    ${c.method==='electronic'&&c.signature_strokes?`<p>手写签名：</p>${sigSvg(c.signature_strokes)}`:''}</details></li>`).join('');
  }
- function orderBlock(items,o){
-  if(o.locked)return '';
-  const b=buckets(items),hasStock=b.orderable.some(i=>i.kind==='stock');
-  const legacy=o.manager?items.filter(i=>i.legacy_eligible&&['pending','confirmed'].includes(i.stage)&&['custom','stock'].includes(i.kind)):[];
-  // 工厂签字确认时填过的厂家、单号、出货日期，直接带进下单表（可改）
-  const fs=(o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order'&&x.ship_on).sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)))[0];
-  const val=x=>x?` value="${E(x)}"`:'';
-  const form=(prefix='',pre=null)=>`${field('厂家','supplier','maxlength="120"'+val(pre?.signer_company))}${field(prefix||'厂家单号','order_no','maxlength="120"'+val(pre?.factory_ref))}${field('下单日期','ordered_on',`type="date" value="${today()}"`)}${field(pre?.ship_on?'预计到货日（工厂说 '+E(pre.ship_on)+' 出货）':'预计到货日','expected_on','type="date"'+val(pre?.ship_on))}`;
-  const legacyHtml=legacy.length?`<details><summary>登记上线前已下单（店长）</summary><div class="work-controls" data-form>${form()}${field('下单情况说明','reason')}<button type="button" class="secondary" data-act="legacy_order">登记历史订单（${legacy.length}项）</button></div></details>`:'';
-  if(!b.orderable.length)return (b.unsigned.length?`<div class="work-terms"><b>下单</b><p class="muted">定制项须先由业主签名，才能下单。</p>${legacyHtml}</div>`:legacyHtml?`<div class="work-terms">${legacyHtml}</div>`:'');
+ // 表单：上面是填写项（自动排成一到三列），下面一行是按钮
+ const frm=(fields,actions,extra='')=>`<div class="fx-form" data-form><div class="fx-fields">${fields}</div><div class="fx-actions">${actions}</div>${extra}</div>`;
+ function soInline(purpose,o,open=false){ // 点「转发…」就在按钮下面展开，不跳到页面别处
+  if(!o.signoffsReady)return '';
+  return `<div class="fx-form fx-so-inline" data-form data-so-inline="${purpose}"${open?'':' hidden'}><input type="hidden" data-f="purpose" value="${purpose}"><div class="fx-fields">${field('签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}</div><div class="fx-actions"><button type="button" data-act="signoff_create">生成签字链接</button></div></div>`;
+ }
+ const pendList=(list,o)=>list.length?`<ul class="fx-pending">${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
+    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
+    ${o.locked?'':`<details><summary>撤销这个链接</summary>${frm(field('撤销原因','reason'),`<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button>`)}</details>`}</li>`).join('')}</ul>`:'';
+ // 每一步要填的内容（只在这一步「正在做」时显示）
+ function stepBodies(w,items,o){
+  const b=buckets(items),out={};if(o.locked)return out;
+  const hasStock=b.orderable.some(i=>i.kind==='stock');
   const confirmed=new Set((o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order').flatMap(x=>x.line_ids||[]));
   const unconfirmed=o.signoffsReady?b.orderable.filter(i=>i.kind==='custom'&&!confirmed.has(i.line_id)):[];
-  // 定制项先转发工厂确认下单内容（第 1 步），再下单（第 2 步）。这是常规步骤，不放在「更多操作」里
-  const pendOrder=(o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose==='order'&&unconfirmed.some(i=>(x.line_ids||[]).includes(i.line_id)));
-  const step1=!unconfirmed.length?'':pendOrder.length
-   ?`<div class="fx-step fx-step-wait"><b>第 1 步 · 已转发工厂确认，等对方签字</b><p class="muted">${pendOrder.map(x=>`${E(x.party)}：验证码 <b class="mono">${E(x.access_code)}</b>`).join('；')}。签字后厂家、单号、出货日期会自动带进下单。</p><div class="actions"><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${pendOrder[0].id}" data-token="${pendOrder[0].signing_token}">复制链接</button><button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">再转发一份</button></div>${soInline('order',o)}</div>`
-   :`<div class="fx-step"><b>第 1 步 · 转发给工厂确认下单内容</b><p class="muted">${unconfirmed.length} 项定制：${unconfirmed.map(i=>E(i.name)).join('、')}。工厂会看到清单、业主签名时的图纸和签名，并填写出货日期后签字。</p>${soInline('order',o,true)}</div>`;
-  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${step1}<div class="${step1?'fx-step':''}">${step1?`<b>第 2 步 · 下单</b>${pendOrder.length||!unconfirmed.length?'':'<p class="muted">工厂签字后再下单最稳妥；急的话也可以先下单。</p>'}`:''}<div class="work-controls" data-form>${form('',fs)}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady&&!step1?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${step1?'':soInline('order',o)}</div>${legacyHtml}</div>`;
+  const pendOrder=(o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose==='order');
+  // 工厂确认下单内容
+  if(unconfirmed.length){
+   const waiting=pendOrder.filter(x=>unconfirmed.some(i=>(x.line_ids||[]).includes(i.line_id)));
+   out.factory=waiting.length
+    ?`<p class="muted">已转发，等工厂签字。签字后厂家、单号、出货日期会自动带进「下单」。</p>${pendList(waiting,o)}<div class="fx-actions"><button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">再转发一份</button></div>${soInline('order',o)}`
+    :`<p class="muted">${unconfirmed.length} 项定制。工厂会看到清单、业主签名时的图纸和签名，填写出货日期后签字。</p>${soInline('order',o,true)}`;
+  }
+  // 下单
+  if(b.orderable.length){
+   const fs=(o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order'&&x.ship_on).sort((a,c)=>String(c.signed_at).localeCompare(String(a.signed_at)))[0];
+   const val=x=>x?` value="${E(x)}"`:'';
+   out.order=`${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${unconfirmed.length&&!pendOrder.length?'<p class="muted">建议等工厂签字后再下单；急的话也可以先下单。</p>':''}`+frm(
+    field('厂家','supplier','maxlength="120"'+val(fs?.signer_company))+field('厂家单号','order_no','maxlength="120"'+val(fs?.factory_ref))+field('下单日期','ordered_on',`type="date" value="${today()}"`)+field(fs?.ship_on?`预计到货日（工厂 ${E(fs.ship_on)} 出货）`:'预计到货日','expected_on','type="date"'+val(fs?.ship_on))+(hasStock?'<label class="check fx-wide"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>':''),
+    `<button type="button" data-act="place_order">确认下单（${b.orderable.length}项）</button>`);
+  }
+  const legacy=o.manager?items.filter(i=>i.legacy_eligible&&['pending','confirmed'].includes(i.stage)&&['custom','stock'].includes(i.kind)):[];
+  if(legacy.length)out.legacy=`<details class="fx-legacy"><summary>登记上线前已下单（店长）</summary>${frm(field('厂家','supplier','maxlength="120"')+field('厂家单号','order_no','maxlength="120"')+field('下单日期','ordered_on',`type="date" value="${today()}"`)+field('预计到货日','expected_on','type="date"')+field('下单情况说明','reason'),`<button type="button" class="secondary" data-act="legacy_order">登记历史订单（${legacy.length}项）</button>`)}</details>`;
+  const fwd=(p,label)=>o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="${p}">${label}</button>`:'';
+  const pend=p=>pendList((o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose===p),o);
+  if(b.arriving.length)out.arrive=pend('arrival')+frm(field('到货日期','on',`type="date" value="${today()}"`),`<button type="button" data-act="arrive">确认到货（${b.arriving.length}项）</button>${fwd('arrival','转发到货验收签字')}`)+soInline('arrival',o);
+  const needAssignee=!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能排期和标记完成。</p>':'';
+  if(b.toSchedule.length)out.schedule=needAssignee+frm(field('排期日期','on','type="date"'),`<button type="button" data-act="schedule">确认排期（${b.toSchedule.length}项）</button>`);
+  if(b.toStart.length)out.start=frm('',`<button type="button" data-act="start_work">确认开工（${b.toStart.length}项）</button>`);
+  if(b.finishable.length){const photo=b.finishable.some(i=>i.kind!=='gift');out.finish=needAssignee+pend('install')+frm(field('完成日期','on',`type="date" value="${today()}"`)+(photo?file('完工照片或文件','proof',PDF_IMG):''),`<button type="button" data-act="finish">确认完成（${b.finishable.length}项）</button>${fwd('install','转发安装完工签字')}`)+soInline('install',o);}
+  return out;
  }
  function batchBlock(w,items,tracking,o){
   const list=tracking.batches.filter(x=>x.work_order_id===w.id);if(!list.length)return '';
   const now=today();
   return `<b>下单记录</b>${list.map(x=>{const waiting=items.some(i=>i.batch_id===x.id&&i.stage==='ordered'),late=waiting&&x.expected_on<now;return `<p>${E(x.supplier)}${x.supplier_order_no?` · 单号 ${E(x.supplier_order_no)}`:''} · 下单 ${E(x.ordered_on)} · 预计到货 ${E(x.expected_on)} · ${items.filter(i=>i.batch_id===x.id).length}项${x.legacy?' · 上线前已下单':''}${late?' <span class="warning">已逾期</span>':''}</p>${o.locked?'':`<details><summary>更正这条记录</summary><div class="work-controls" data-form>${field('厂家','supplier',`value="${E(x.supplier)}"`)}${field('厂家单号','order_no',`value="${E(x.supplier_order_no)}"`)}${field('预计到货日','expected_on',`type="date" value="${E(x.expected_on)}"`)}${field('更正原因','reason')}<button type="button" class="secondary" data-act="correct_batch" data-id="${x.id}">保存更正</button></div></details>`}`;}).join('')}`;
- }
- function soInline(purpose,o,open=false){ // 点「转发…」就在按钮下面展开，不跳到页面别处
-  if(!o.signoffsReady)return '';
-  return `<div class="work-controls fx-so-inline" data-form data-so-inline="${purpose}"${open?'':' hidden'}><input type="hidden" data-f="purpose" value="${purpose}">${field('签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div>`;
- }
- function stepBlocks(items,o){ // o.signoffsReady：转发签字功能可用时，每一步旁边给一个转发按钮
-  if(o.locked)return '';const b=buckets(items);let html='';
-  if(b.arriving.length)html+=`<div class="work-controls" data-form>${field('到货日期','on',`type="date" value="${today()}"`)}<button type="button" data-act="arrive">整单到货（${b.arriving.length}项）</button>${o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="arrival">转发到货验收签字</button>`:''}</div>${soInline('arrival',o)}`;
-  if(b.toSchedule.length)html+=`<div class="work-controls" data-form>${field('排期日期','on','type="date"')}<button type="button" data-act="schedule">整单排期（${b.toSchedule.length}项）</button></div>`;
-  if(b.toStart.length)html+=`<div class="actions" data-form><button type="button" data-act="start_work">整单开工（${b.toStart.length}项）</button></div>`;
-  if(b.finishable.length){const photo=b.finishable.some(i=>i.kind!=='gift');html+=`<div class="work-controls" data-form>${field('完成日期','on',`type="date" value="${today()}"`)}${photo?file('完工照片或文件','proof',PDF_IMG):''}<button type="button" data-act="finish">整单完成（${b.finishable.length}项）</button>${o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="install">转发安装完工签字</button>`:''}</div>${soInline('install',o)}`;}
-  return html?`<div class="work-terms"><b>进度</b>${html}</div>`:'';
  }
  // 清单：每项一行。勾选后，下单 / 到货 / 完成 / 标记问题 / 转发签字只处理勾选的项
  function itemList(items,o){
@@ -175,7 +186,7 @@ window.RenoFulfillment=(()=>{
   const can=items.filter(i=>!o.locked&&open(i)).length;
   const all=can>1?`<label class="fx-row fx-all"><input type="checkbox" data-allx><span class="fx-name"><b>全选</b><small>勾选全部 ${can} 项（已完成的不能勾）</small></span></label>`:'';
   const pickable=!o.locked&&can>0;
-  return `<div class="fx-list">${all}${items.map(row).join('')}</div>${pickable?`<p class="muted fx-hint"><span class="fx-hint-whole">「现在要做」处理整张子单（${items.length} 项）。</span><span class="fx-hint-pick">勾选后，「现在要做」只处理勾选的项。</span> <button type="button" class="fx-link" data-fxpick>${o.picking?'改回整张子单':'只处理其中几项'}</button></p>`:''}`;
+  return `<div class="fx-list">${all}${items.map((i,n)=>row(i).replace('<span class="fx-name"><b>',`<span class="fx-name"><b><span class="fx-idx">${n+1}.</span> `)).join('')}</div>${pickable?`<p class="muted fx-hint"><span class="fx-hint-whole">上面每一步默认处理整张子单（${items.length} 项）。</span><span class="fx-hint-pick">勾选后，上面的步骤只处理勾选的项。</span> <button type="button" class="fx-link" data-fxpick>${o.picking?'改回整张子单':'只处理其中几项'}</button></p>`:''}`;
  }
  function moreBlock(items,o){
   if(o.locked)return '';
@@ -204,13 +215,6 @@ window.RenoFulfillment=(()=>{
  }
  const soHead=x=>{const ls=x.terms?.lines||[],n=(x.line_ids||[]).length;const g=String(x.terms?.group_name||'').replace(/^增项-[0-9a-fA-F-]{36} · ?/,'增项 ').replace(/^【[^】]*】\s*/,'').trim();return `<b>${E(PURPOSES[x.purpose])}</b>${g?` · ${E(g)}`:''} · ${E(x.party)} · ${n<=2&&ls.length?ls.map(l=>E(l.name)).join('、'):`${n} 项`}`;}; // 清单在链接里，这里只写项数
  // 等待对方签字的链接放在操作区（要用验证码）
- function pendingSignoffs(o){
-  const list=(o.signoffs||[]).filter(x=>x.status==='pending');if(!list.length)return '';
-  return `<div class="work-terms"><b>等待工厂 / 负责人签字</b><ul>${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
-    
-    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
-    ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`).join('')}</ul></div>`;
- }
  // 记录：业主签名、下单、已签的转发签字，默认收起
  function records(w,items,t,o){
   const owner=ownerHistory(w,t),batches=batchBlock(w,items,t,o),signed=(o.signoffs||[]).filter(x=>x.status==='signed').sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)));
@@ -221,17 +225,36 @@ window.RenoFulfillment=(()=>{
   return `<details class="work-terms fx-records"><summary>记录：业主签名 ${nOwner} · 下单 ${nBatch} · 工厂 / 负责人签字 ${signed.length}</summary>
    ${owner?`<b>业主签名</b><ul>${owner}</ul>`:''}${batches}${so?`<b>工厂 / 负责人签字</b><ul>${so}</ul>`:''}</details>`;
  }
+ const RANK={custom:{pending:0,confirmed:1,ordered:2,arrived:3,done:4},stock:{pending:1,confirmed:1,ordered:2,arrived:3,done:4},work:{pending:0,scheduled:1,working:2,done:3},gift:{pending:0,done:1}};
+ const kl=d=>d?new Date(d).toLocaleDateString('zh-CN',{timeZone:'Asia/Kuala_Lumpur',month:'numeric',day:'numeric'}):'';
+ // 子单流程：按顺序编号，已完成的打 ✓ 写一句结果，正在做的展开要填的内容，还没轮到的变灰
+ function flow(w,items,t,o){
+  const body=stepBodies(w,items,o),rk=i=>RANK[i.kind]?.[i.stage]??0,all=(arr,r)=>arr.every(i=>rk(i)>=r);
+  const cus=items.filter(i=>i.kind==='custom'),mat=items.filter(i=>['custom','stock'].includes(i.kind)),wk=items.filter(i=>i.kind==='work');
+  const conf=t.confirmations.filter(c=>c.work_order_id===w.id).sort((a,c)=>c.version-a.version),live=conf.find(c=>['pending','paper_review'].includes(c.status)),signedC=conf.find(c=>c.status==='signed');
+  const soSigned=(o.signoffs||[]).filter(x=>x.status==='signed'),ordSo=soSigned.filter(x=>x.purpose==='order').sort((a,c)=>String(c.signed_at).localeCompare(String(a.signed_at)));
+  const batches=t.batches.filter(x=>x.work_order_id===w.id);
+  const steps=[];
+  if(cus.length){const sb=signBlock(w,items,t,o);steps.push({key:'sign',title:'业主签名确认',done:all(cus,1)&&!live,body:sb,sum:signedC?`业主 ${kl(signedC.signed_at)} 已签名`:''});}
+  if(cus.length&&o.signoffsReady){const conf2=new Set(ordSo.flatMap(x=>x.line_ids||[]));const done=cus.every(i=>conf2.has(i.line_id)||rk(i)>=2);
+   steps.push({key:'factory',title:'工厂确认下单内容',done,body:body.factory,sum:ordSo.length?`${ordSo[0].signer_company} ${kl(ordSo[0].signed_at)} 已签字${ordSo[0].ship_on?` · 出货 ${ordSo[0].ship_on}`:''}`:done?'已下单（未经工厂签字）':''});}
+  if(mat.length){const last=batches.sort((a,c)=>String(c.ordered_on).localeCompare(String(a.ordered_on)))[0];
+   steps.push({key:'order',title:'下单',done:all(mat,2),body:(body.order||'')+(body.legacy||''),sum:last?`${last.supplier}${last.supplier_order_no?' · '+last.supplier_order_no:''} · 预计到货 ${last.expected_on}`:''});
+   steps.push({key:'arrive',title:'到货',done:all(mat,3),body:body.arrive,sum:''});}
+  if(wk.length){steps.push({key:'schedule',title:'排期',done:all(wk,1),body:body.schedule,sum:''});steps.push({key:'start',title:'开工',done:all(wk,2),body:body.start,sum:''});}
+  const onlyGift=items.every(i=>i.kind==='gift');
+  steps.push({key:'finish',title:onlyGift?'交付':wk.length&&!mat.length?'完工':'安装完成',done:items.every(i=>i.stage==='done'),body:body.finish,sum:''});
+  let n=0;
+  return `<ol class="fx-flow">${steps.map(st=>{n++;const state=st.done&&!st.body?'done':st.body?'now':'wait';
+   return `<li class="fx-st ${state}" data-step="${st.key}"><div class="fx-st-head"><span class="fx-st-no">${state==='done'?'✓':n}</span><b>${st.title}</b><span class="fx-st-sum">${state==='done'?E(st.sum||'已完成'):state==='wait'?'等前面的步骤':''}</span></div>${state==='now'?`<div class="fx-st-body">${st.body}</div>`:''}</li>`;}).join('')}</ol>`;
+ }
  function panel(w,tracking,options){
   const t=tracking||empty,items=t.items.filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
   if(!items.length||w.cancelled_at)return '';
   const o={picking:picking.has(w.id),locked:!!options?.locked,manager:!!options?.manager,signoffsReady:Array.isArray(t.signoffs),signoffs:(t.signoffs||[]).filter(x=>x.work_order_id===w.id)};
-  const steps=orderBlock(items,o)+stepBlocks(items,o);
-  // 下单、排期、完成都要先有执行人（数据库会拦），提前说清楚
-  const bk=buckets(items);
-  const needAssignee=!o.locked&&(bk.toSchedule.length||bk.finishable.length)&&!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能排期和标记完成。</p>':'';
-  const now=needAssignee+signoffShortcuts(items,o)+signBlock(w,items,t,o)+steps+pendingSignoffs(o);
-  // 先放「现在要做」，再放清单：打开子单第一眼就是要填的东西
-  return `<div class="fulfillment${o.picking?' picking':''}" data-wo="${w.id}">${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${itemList(items,o)}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
+  const other=pendList(o.signoffs.filter(x=>x.status==='pending'&&x.purpose==='issue'),o);
+  // 先放流程（按序号，一眼看到做到哪一步），再放清单
+  return `<div class="fulfillment${o.picking?' picking':''}" data-wo="${w.id}">${signoffShortcuts(items,o)}${flow(w,items,t,o)}${other?`<div class="work-terms"><b>问题处理：等负责人签字</b>${other}</div>`:''}${itemList(items,o)}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  const picked1=input=>input?.files?.[0]||input?.closest?.('.fx-file')?.querySelector('[data-cam]')?.files?.[0]||null; // 老浏览器里拍的照片留在拍照框
@@ -265,7 +288,7 @@ window.RenoFulfillment=(()=>{
     e.preventDefault();e.stopPropagation();const card=go.closest('details.work');
     if(go.dataset.fxcopy){const [cid,tok]=go.dataset.fxcopy.split(':');const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',cid);url.searchParams.set('sign',tok);
      try{await navigator.clipboard.writeText(url.href);ctx.message('业主签名链接已复制，发给业主即可。业主要输入登记手机号后四位才能查看。');}catch(err){ctx.message('浏览器不让自动复制，请打开子单后点「复制签名链接」。',true);}return;}
-    card.open=true;const now=card.querySelector('.fx-now')||card.querySelector('.fulfillment');
+    card.open=true;const now=card.querySelector('.fx-st.now')||card.querySelector('.fulfillment');
     if(now){now.scrollIntoView({block:'center',behavior:'smooth'});now.classList.remove('fx-flash');void now.offsetWidth;now.classList.add('fx-flash');const f=now.querySelector('input:not([type=checkbox]):not([disabled]),button:not([disabled])');if(f)f.focus({preventScroll:true});}
     return;
    }
