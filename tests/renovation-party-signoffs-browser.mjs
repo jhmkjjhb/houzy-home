@@ -103,6 +103,7 @@ try{
  const row=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];
  card=await openCard(page,'全屋定制');const pend=await card.innerText();
  assert(pend.includes('等待工厂 / 负责人签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
+ assert(pend.includes('工厂确认下单内容 · 全屋定制 · 广州工厂'),'pending link names the sub-order');
  await page.screenshot({path:out+'/staff-signoff-pending.png',fullPage:true});
 
  // 3) 工厂用手机打开：没验证码看不到；验证后只看到勾选的项，没有价格和业主电话
