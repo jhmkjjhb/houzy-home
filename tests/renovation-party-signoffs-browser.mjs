@@ -117,7 +117,9 @@ try{
  // 工厂确认下单：带上业主签名时的图纸和业主手写签名，工厂能看到业主已确认
  {const proof=fac.locator('.owner-proof');assert.equal(await proof.count(),1,'owner proof shown');const pt=await proof.innerText();
   assert(pt.includes('业主已于')&&pt.includes('主卧衣柜')&&pt.includes('业主确认时的图纸')&&pt.includes('业主签名'),'proof explains what the owner signed: '+pt);
-  await proof.locator('[data-proof-file] img').waitFor();assert.equal(await proof.locator('svg polyline').count()>0,true,'owner signature drawn');}
+  await proof.locator('[data-proof-file] img').waitFor();
+  await proof.locator('summary').click();assert(!(await proof.locator('[data-proof-file] img').isVisible()),'tap the heading to fold the drawing away');
+  await proof.locator('summary').click();assert(await proof.locator('[data-proof-file] img').isVisible(),'tap again to open it');assert.equal(await proof.locator('svg polyline').count()>0,true,'owner signature drawn');}
  await fac.locator('[data-submit]').click();await fac.getByText('请填写姓名').waitFor();
  await fac.locator('[data-name]').fill('王厂长');await draw(fac,'[data-signature]');await fac.locator('[data-note]').fill('12月5日出货');await fac.locator('[data-consent]').check();
  // 下单确认必须填出货日期

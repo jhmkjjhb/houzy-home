@@ -44,12 +44,12 @@
  const sigSvg=st=>`<svg viewBox="0 0 600 180" role="img" aria-label="业主手写签名" style="width:100%;max-width:420px;height:auto;display:block;border:1px solid #dce2df;border-radius:6px;background:#fff">${(st||[]).filter(x=>x.length>1).map(x=>`<polyline fill="none" stroke="#22362e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${x.map(p=>`${(p[0]*600).toFixed(1)},${(p[1]*180).toFixed(1)}`).join(' ')}"/>`).join('')}</svg>`;
  function proofsHtml(list){
   if(!list?.length)return '';
-  return `<h3>业主已签名确认（${list.length}份）</h3><p class="muted">以下是业主签名确认时的图纸和签名，请按此生产。</p>${list.map(x=>`<div class="owner-proof" style="border:1px solid #dce2df;border-left:4px solid #15803d;border-radius:8px;padding:12px;margin:10px 0;background:#fff">
-   <p style="margin:0 0 6px"><b style="color:#15803d">✓ 业主已于 ${E(new Date(x.signed_at).toLocaleDateString('zh-CN'))} ${x.method==='paper'?'签纸质确认单':'手写签名'}确认</b>${x.kind==='change'?' · 改单':''}<br><span>${E((x.lines||[]).join('、'))}</span></p>
+  return `<h3>业主已签名确认（${list.length}份）</h3><p class="muted">以下是业主签名确认时的图纸和签名，请按此生产。</p>${list.map(x=>`<details open class="owner-proof" style="border:1px solid #dce2df;border-left:4px solid #15803d;border-radius:8px;padding:12px;margin:10px 0;background:#fff">
+   <summary style="cursor:pointer;list-style-position:outside;margin-left:16px"><b style="color:#15803d">✓ 业主已于 ${E(new Date(x.signed_at).toLocaleDateString('zh-CN'))} ${x.method==='paper'?'签纸质确认单':'手写签名'}确认</b>${x.kind==='change'?' · 改单':''}<span style="color:#68766e;font-size:13px">（点此折叠 / 展开）</span><br><span>${E((x.lines||[]).join('、'))}</span></summary>
    ${x.document_path?`<p style="margin:8px 0 4px"><b>业主确认时的图纸</b></p><div data-proof-file="${E(x.document_path)}" data-sha="${E(x.document_sha256||'')}">正在读取图纸…</div>`:''}
    ${x.strokes?`<p style="margin:8px 0 4px"><b>业主签名</b></p>${sigSvg(x.strokes)}`:''}
    ${x.paper_path?`<p style="margin:8px 0 4px"><b>业主签字的纸质确认单</b></p><div data-proof-file="${E(x.paper_path)}" data-sha="${E(x.paper_sha256||'')}">正在读取…</div>`:''}
-  </div>`).join('')}`;
+  </details>`).join('')}`;
  }
  async function showFile(box,path,sha){
   const {data:blob,error}=await sb.storage.from('renovation-fulfillment').download(path);
