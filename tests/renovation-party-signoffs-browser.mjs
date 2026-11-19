@@ -98,9 +98,8 @@ try{
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
  const msg=await page.evaluate(()=>navigator.clipboard.readText()),link=msg.match(/https?:\/\/\S+/)[0];assert(link.includes('renovation-party-sign.html'),'link copied: '+msg);
- // 转发给工厂的文字自带整单明细，不含价格和业主地址，也不含验证码
- assert(msg.includes('核对清单（共 1 项）')&&msg.includes('1. 主卧衣柜 · 白色 2.4m')&&msg.includes('门板颜色按样板'),'forwarded message lists the items: '+msg);
- {const row0=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];assert(!msg.includes('8800')&&!msg.includes('Jalan')&&!msg.replace(link,'').includes(row0.access_code),'no price, address or code in the message');}
+ // 只复制链接本身（粘贴到浏览器或聊天里都能直接打开）；清单在链接页面里看
+ assert.equal(msg.trim(),link,'only the link is copied: '+msg);
  const row=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];
  card=await openCard(page,'全屋定制');const pend=await card.innerText();
  assert(pend.includes('等待工厂 / 负责人签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');

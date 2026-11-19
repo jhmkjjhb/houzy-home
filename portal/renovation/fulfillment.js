@@ -6,7 +6,7 @@ window.RenoFulfillment=(()=>{
  const BUCKET='renovation-fulfillment';
  // 图纸 / 附件：载入时就签好链接，按钮是真正的链接，手机和微信点了直接打开（不靠弹窗）
  let fileUrls={},fileUrlsAt=0;
- const soMessage=btn=>{const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);return btn.dataset.msg?`${btn.dataset.msg}\n\n请打开链接逐项核对后签字：\n${url.href}\n（4 位验证码另外发给你）`:url.href;};
+ const soMessage=btn=>{const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);return url.href;}; // 只复制链接；清单在链接页面里看
  const fileBtn=(path,label)=>{const u=fileUrls[path];return u?`<a class="fx-file-link" href="${E(u)}" target="_blank" rel="noopener" data-act="view_file" data-path="${E(path)}">${label}</a>`:`<button type="button" class="secondary" data-act="view_file" data-path="${E(path)}">${label}</button>`;};
  const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
  const stageNames={custom:{pending:'待业主签名',confirmed:'已签名待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},stock:{pending:'待下单',confirmed:'待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},work:{pending:'待排期',scheduled:'已排期',working:'施工中',done:'已完工'},gift:{pending:'待交付',done:'已交付'}};
@@ -143,7 +143,7 @@ window.RenoFulfillment=(()=>{
   // 定制项先转发工厂确认下单内容（第 1 步），再下单（第 2 步）。这是常规步骤，不放在「更多操作」里
   const pendOrder=(o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose==='order'&&unconfirmed.some(i=>(x.line_ids||[]).includes(i.line_id)));
   const step1=!unconfirmed.length?'':pendOrder.length
-   ?`<div class="fx-step fx-step-wait"><b>第 1 步 · 已转发工厂确认，等对方签字</b><p class="muted">${pendOrder.map(x=>`${E(x.party)}：验证码 <b class="mono">${E(x.access_code)}</b>`).join('；')}。签字后厂家、单号、出货日期会自动带进下单。</p><div class="actions"><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${pendOrder[0].id}" data-token="${pendOrder[0].signing_token}" data-msg="${E(soText(pendOrder[0]))}">复制链接和清单</button><button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">再转发一份</button></div>${soInline('order',o)}</div>`
+   ?`<div class="fx-step fx-step-wait"><b>第 1 步 · 已转发工厂确认，等对方签字</b><p class="muted">${pendOrder.map(x=>`${E(x.party)}：验证码 <b class="mono">${E(x.access_code)}</b>`).join('；')}。签字后厂家、单号、出货日期会自动带进下单。</p><div class="actions"><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${pendOrder[0].id}" data-token="${pendOrder[0].signing_token}">复制链接</button><button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">再转发一份</button></div>${soInline('order',o)}</div>`
    :`<div class="fx-step"><b>第 1 步 · 转发给工厂确认下单内容</b><p class="muted">${unconfirmed.length} 项定制：${unconfirmed.map(i=>E(i.name)).join('、')}。工厂会看到清单、业主签名时的图纸和签名，并填写出货日期后签字。</p>${soInline('order',o,true)}</div>`;
   return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${step1}<div class="${step1?'fx-step':''}">${step1?`<b>第 2 步 · 下单</b>${pendOrder.length||!unconfirmed.length?'':'<p class="muted">工厂签字后再下单最稳妥；急的话也可以先下单。</p>'}`:''}<div class="work-controls" data-form>${form('',fs)}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady&&!step1?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${step1?'':soInline('order',o)}</div>${legacyHtml}</div>`;
  }
@@ -204,14 +204,11 @@ window.RenoFulfillment=(()=>{
  }
  const soHead=x=>`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
  // 等待对方签字的链接放在操作区（要用验证码）
- // 转发给工厂的文字：带整单明细（不含价格、不含业主地址电话），链接另附，验证码另外发
- const soLines=x=>(x.terms?.lines||[]);
- const soText=x=>{const ls=soLines(x);return `【HOUZY HOME · ${PURPOSES[x.purpose]||'核对签字'}】\n合同 ${x.terms?.contract_no||''} · ${(x.terms?.group_name||'').replace(/^增项-[0-9a-fA-F-]{36} · ?/,'增项 · ')}\n签字方：${x.party||x.terms?.party||''}\n${x.terms?.note?`说明：${x.terms.note}\n`:''}核对清单（共 ${ls.length} 项）：\n${ls.map((l,n)=>`${n+1}. ${l.name}${l.spec?` · ${l.spec}`:''} · ${l.qty??''} ${l.unit||''}`).join('\n')}`;};
  function pendingSignoffs(o){
   const list=(o.signoffs||[]).filter(x=>x.status==='pending');if(!list.length)return '';
   return `<div class="work-terms"><b>等待工厂 / 负责人签字</b><ul>${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
-    ${soLines(x).length?`<details class="fx-so-lines"><summary>清单 ${soLines(x).length} 项：${E(soLines(x).slice(0,3).map(l=>l.name).join('、'))}${soLines(x).length>3?'…':''}</summary><ol>${soLines(x).map(l=>`<li>${E(l.name)}${l.spec?` · ${E(l.spec)}`:''} · ${E(l.qty??'')} ${E(l.unit)}</li>`).join('')}</ol></details>`:''}
-    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}" data-msg="${E(soText(x))}">复制链接和清单</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
+    
+    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
     ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`).join('')}</ul></div>`;
  }
  // 记录：业主签名、下单、已签的转发签字，默认收起
@@ -300,12 +297,12 @@ window.RenoFulfillment=(()=>{
      await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;
      const cb=document.querySelector(`[data-act="signoff_copy_link"][data-id="${data.id}"]`);let copied=false;
      if(cb){try{await navigator.clipboard.writeText(soMessage(cb));copied=true;}catch(e){}}
-     const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=copied?`链接和整单明细已复制，可直接粘贴到 WhatsApp。验证码 ${data.code} 请另外单独发给对方。`:`签字链接已生成。请在下方「等待工厂 / 负责人签字」里点「复制链接和清单」，验证码 ${data.code} 另外单独发。`;
+     const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=copied?`签字链接已复制。验证码 ${data.code} 请另外单独发给对方。`:`签字链接已生成。请点「复制链接」，验证码 ${data.code} 另外单独发。`;
      ctx.message('已生成签字链接');
     }
     else if(act==='so_arrive')await send('arrive',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on});
     else if(act==='so_finish'){const needs=!!input('proof');const f=needs?await upload(ctx.sb,project.id,input('proof'),'完工照片或文件'):null;await send('finish',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on,proof_path:f?.path});}
-    else if(act==='signoff_copy_link'){await navigator.clipboard.writeText(soMessage(btn));feedback.textContent='链接和整单明细已复制，可直接粘贴到 WhatsApp。验证码请另外单独发给对方。';}
+    else if(act==='signoff_copy_link'){await navigator.clipboard.writeText(soMessage(btn));feedback.textContent='链接已复制。对方打开链接、输入验证码后就能看到清单和图纸。验证码请另外单独发。';}
     else if(act==='signoff_copy_code'){await navigator.clipboard.writeText(btn.dataset.code);feedback.textContent=`验证码 ${btn.dataset.code} 已复制。`;}
     else if(act==='signoff_void'){const {error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'void',p_data:{signoff_id:btn.dataset.id,reason:v('reason')}});if(error)throw error;await ctx.onChange();ctx.message('已撤销');}
     else if(act==='view_file'){const tab=window.open('about:blank','_blank');const {data,error}=await ctx.sb.storage.from(BUCKET).createSignedUrl(btn.dataset.path,300);if(error){tab?.close();throw error;}if(tab){tab.opener=null;tab.location.replace(data.signedUrl);}else location.href=data.signedUrl;feedback.textContent='';}
