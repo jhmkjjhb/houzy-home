@@ -7,7 +7,7 @@
  const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs';
  const TITLE={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工确认',issue:'问题处理确认'};
  const CONSENT={
-  order:'我已逐项核对上方清单和附件，确认名称、规格、颜色、尺寸和数量无误，按此生产 / 备货。',
+  order:'我已逐项核对上方清单、业主确认的图纸和附件，确认名称、规格、颜色、尺寸和数量无误，按此生产 / 备货。',
   arrival:'我已逐项清点上方货品，数量和外观与清单一致；如有缺件、破损，已在备注写明。',
   install:'上方各项已按图纸安装完成；如有遗留问题，已在备注写明。',
   issue:'上方问题已按说明处理完成；如仍有遗留，已在备注写明。'
@@ -34,8 +34,38 @@
   const shortGroup=(name,items)=>{const m=/^增项-[0-9a-f-]{36} · ?(.*)$/i.exec(String(name||''));if(!m)return name;const n=(items||[]).filter(Boolean).map(x=>String(x).replace(/^【[^】]*】\s*/,''));return n.length?`增项：${n.slice(0,2).join('、')}${n.length>2?` 等${n.length}项`:''}`:`增项${m[1]?' · '+m[1]:''}`;};
   el.innerHTML=`<h2>${E(TITLE[t.purpose]||'核对签字')}</h2><p>${E(shortGroup(t.group_name,t.lines.map(l=>l.name)))} · ${E(t.contract_no)} · ${E(t.address)}</p><p>签字方：<b>${E(t.party)}</b></p>${t.note?`<p class="warning"><b>门店说明：</b>${E(t.note)}</p>`:''}
    <h3>核对清单（${t.lines.length}项）</h3>${t.lines.map((l,n)=>`<p><b>${n+1}. ${E(l.name)}</b><br>${E(l.spec||'规格见附件')} · ${E(l.qty??'')} ${E(l.unit)}${l.issue?`<br><span class="warning">问题：${E(l.issue)}</span>`:''}</p>`).join('')}
+   ${proofsHtml(data.owner_proofs)}
    ${data.document_path?'<h3>附件</h3><div data-pages>正在读取文件…</div>':''}<section data-sign hidden></section>`;
+  // 业主确认的图纸 / 纸质确认单：读不出来只提示，不挡签字
+  for(const b of el.querySelectorAll('[data-proof-file]'))showFile(b,b.dataset.proofFile,b.dataset.sha).catch(()=>{b.textContent='文件加载失败，请刷新页面重新验证。';});
   if(data.document_path)await pages();else sign();
+ }
+ // 业主已签名确认：每一版一块，有图纸放图纸，有手写签名放签名，纸质确认单放扫描件
+ const sigSvg=st=>`<svg viewBox="0 0 600 180" role="img" aria-label="业主手写签名" style="width:100%;max-width:420px;height:auto;display:block;border:1px solid #dce2df;border-radius:6px;background:#fff">${(st||[]).filter(x=>x.length>1).map(x=>`<polyline fill="none" stroke="#22362e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${x.map(p=>`${(p[0]*600).toFixed(1)},${(p[1]*180).toFixed(1)}`).join(' ')}"/>`).join('')}</svg>`;
+ function proofsHtml(list){
+  if(!list?.length)return '';
+  return `<h3>业主已签名确认（${list.length}份）</h3><p class="muted">以下是业主签名确认时的图纸和签名，请按此生产。</p>${list.map(x=>`<div class="owner-proof" style="border:1px solid #dce2df;border-left:4px solid #15803d;border-radius:8px;padding:12px;margin:10px 0;background:#fff">
+   <p style="margin:0 0 6px"><b style="color:#15803d">✓ 业主已于 ${E(new Date(x.signed_at).toLocaleDateString('zh-CN'))} ${x.method==='paper'?'签纸质确认单':'手写签名'}确认</b>${x.kind==='change'?' · 改单':''}<br><span>${E((x.lines||[]).join('、'))}</span></p>
+   ${x.document_path?`<p style="margin:8px 0 4px"><b>业主确认时的图纸</b></p><div data-proof-file="${E(x.document_path)}" data-sha="${E(x.document_sha256||'')}">正在读取图纸…</div>`:''}
+   ${x.strokes?`<p style="margin:8px 0 4px"><b>业主签名</b></p>${sigSvg(x.strokes)}`:''}
+   ${x.paper_path?`<p style="margin:8px 0 4px"><b>业主签字的纸质确认单</b></p><div data-proof-file="${E(x.paper_path)}" data-sha="${E(x.paper_sha256||'')}">正在读取…</div>`:''}
+  </div>`).join('')}`;
+ }
+ async function showFile(box,path,sha){
+  const {data:blob,error}=await sb.storage.from('renovation-fulfillment').download(path);
+  if(error||!blob){box.textContent='文件加载失败，请刷新页面重新验证。';return false;}
+  const bytes=await blob.arrayBuffer();
+  if(sha&&await sha256(bytes)!==sha){box.textContent='文件校验失败。请联系门店。';return false;}
+  if(!/\.pdf$/i.test(path)){const img=document.createElement('img');img.src=URL.createObjectURL(blob);img.alt='图纸';img.style.cssText='width:100%;display:block;border:1px solid #dce2df';box.replaceChildren(img);return true;}
+  const pdfjs=await import(PDFJS);pdfjs.GlobalWorkerOptions.workerSrc=PDFJS.replace('pdf.min.mjs','pdf.worker.min.mjs');
+  const doc=await pdfjs.getDocument({data:bytes,isEvalSupported:false}).promise;box.replaceChildren();
+  for(let n=1;n<=doc.numPages;n++){
+   const page=await doc.getPage(n),base=page.getViewport({scale:1}),width=Math.min(box.clientWidth||360,900),dpr=Math.min(devicePixelRatio||1,2);
+   const vp=page.getViewport({scale:width/base.width*dpr}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+   c.style.cssText='width:100%;display:block;margin:0 0 12px;border:1px solid #dce2df;background:white';c.setAttribute('aria-label',`第 ${n} 页`);
+   box.append(c);await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  }
+  return true;
  }
  async function pages(){
   const box=el.querySelector('[data-pages]');

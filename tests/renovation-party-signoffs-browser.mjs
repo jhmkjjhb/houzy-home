@@ -21,7 +21,7 @@ for(const name of ['renovation_orders','renovation_payments','renovation_payment
 const lines=[{id:'C1',name:'主卧衣柜',spec:'白色 2.4m',qty:1,rate:8800,kind:'custom',group:'全屋定制',unit:'lot',warranties:[]},{id:'C2',name:'书房柜',spec:'灰色',qty:1,rate:5100,kind:'custom',group:'全屋定制',unit:'lot',warranties:[]},{id:'S1',name:'柜门拉手',qty:10,rate:30,kind:'stock',group:'全屋定制',unit:'pc',warranties:[]},{id:'W1',name:'铺砖',qty:1,rate:100,kind:'work',group:'泥水',unit:'lot',warranties:[]}];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-E2E','Owner','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'全屋定制','["C1","C2","S1"]'::jsonb),($1,'泥水','["W1"]'::jsonb)`,[id]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -110,6 +110,10 @@ try{
  assert(shown.includes('主卧衣柜')&&shown.includes('白色 2.4m')&&shown.includes('门板颜色按样板'),'factory sees line, spec and note');
  assert(!shown.includes('书房柜')&&!shown.includes('8800')&&!shown.includes('8,800')&&!shown.includes('60101234567')&&!shown.includes('Owner'),'only ticked line; no price, no owner');
  assert(await fac.locator('[data-pages] img').count()===1,'attachment shown');
+ // 工厂确认下单：带上业主签名时的图纸和业主手写签名，工厂能看到业主已确认
+ {const proof=fac.locator('.owner-proof');assert.equal(await proof.count(),1,'owner proof shown');const pt=await proof.innerText();
+  assert(pt.includes('业主已于')&&pt.includes('主卧衣柜')&&pt.includes('业主确认时的图纸')&&pt.includes('业主签名'),'proof explains what the owner signed: '+pt);
+  await proof.locator('[data-proof-file] img').waitFor();assert.equal(await proof.locator('svg polyline').count()>0,true,'owner signature drawn');}
  await fac.locator('[data-submit]').click();await fac.getByText('请填写姓名').waitFor();
  await fac.locator('[data-name]').fill('王厂长');await draw(fac,'[data-signature]');await fac.locator('[data-note]').fill('12月5日出货');await fac.locator('[data-consent]').check();
  await fac.screenshot({path:out+'/factory-signing-phone.png',fullPage:true});

@@ -40,7 +40,7 @@ async function run(who,action,data,p=id){const r=await rev(p);await actor(who);r
 // 转发签字：工厂 / 负责人凭「链接 + 4 位验证码」签字。要保证的是：
 // 1) 链接里没有价格、没有业主姓名电话（工厂不该看到）；2) 没有验证码看不到内容，猜错 8 次锁定；
 // 3) 只有本项目有权限的员工能发起和撤销；4) 签过的不能被改签、撤销的不能再签；5) 签字只是凭证，不改清单进度。
-const so=fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(so);await db.exec(so);checks++;
+const so=fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(so);await db.exec(so);checks++;const op=fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8');await db.exec(op);await db.exec(op);
 const custom=await wo('全屋定制');
 async function cmd(who,action,data){await actor(who);return (await db.query('SELECT renovation_signoff_command($1,$2,$3::jsonb) v',[id,action,JSON.stringify(data)])).rows[0].v;}
 const anonQ=async(sql,args)=>{await actor(staff,'anon');return (await db.query(sql,args)).rows[0]?.v;};
@@ -107,5 +107,26 @@ const s4=await cmd(staff,'create',{work_order_id:custom.id,purpose:'issue',party
 ok((await sys('SELECT terms FROM renovation_party_signoffs WHERE id=$1',[s4.id]))[0].terms.lines[0].issue==='门板破损','issue sign-off carries the flagged problem');
 
 // 重跑迁移不丢数据
-await db.exec('RESET ROLE');await db.exec(so);ok((await sys('SELECT count(*)::int n FROM renovation_party_signoffs'))[0].n===4,'re-run keeps sign-offs');
+await db.exec('RESET ROLE');await db.exec(so);await db.exec(op);ok((await sys('SELECT count(*)::int n FROM renovation_party_signoffs'))[0].n===4,'re-run keeps sign-offs');
+// 工厂确认下单时带上业主签名确认的证据：每一项取业主最新一版已签名的确认（图纸 + 电子签名或纸质确认单），
+// 工厂能看清业主确认了什么；业主姓名电话仍不给；到货 / 安装签字不带；验证码前和签完后都读不到这些文件。
+{const P=await sys('SELECT 1');void P;
+ await sys(`INSERT INTO storage.objects(bucket_id,name) VALUES('renovation-fulfillment','${id}/own1.pdf'),('renovation-fulfillment','${id}/own2.png'),('renovation-fulfillment','${id}/ownpaper.jpg'),('renovation-fulfillment','${id}/ownpending.pdf')`);
+ const base=`INSERT INTO renovation_custom_confirmations(project_id,work_order_id,version,kind,line_ids,terms,document_path,document_sha256,status,method,signer_name,signer_relation,signed_at,signed_terms_hash,signature_strokes,signature_hash,paper_path,paper_sha256,paper_reviewed_by,created_by)`;
+ await sys(base+` VALUES($1,$2,11,'confirm','["C1","C2"]','{}',$3,$4,'signed','paper','Owner','本人',now()-interval '2 day',NULL,NULL,NULL,$5,$4,$6,$6)`,[id,custom.id,`${id}/own1.pdf`,HASH,`${id}/ownpaper.jpg`,staff]);
+ await sys(base+` VALUES($1,$2,12,'change','["C1"]','{}',$3,$4,'signed','electronic','Owner','本人',now()-interval '1 day',$4,$5::jsonb,$4,NULL,NULL,NULL,$6)`,[id,custom.id,`${id}/own2.png`,HASH,JSON.stringify(strokes),staff]);
+ await sys(base+` VALUES($1,$2,13,'change','["C2"]','{}',$3,$4,'pending',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,$5)`,[id,custom.id,`${id}/ownpending.pdf`,HASH,staff]);
+ const o=await cmd(staff,'create',{work_order_id:custom.id,purpose:'order',party:'佛山工厂',line_ids:['C1','C2']});
+ const readable=f=>anonQ('SELECT public._reno_signoff_doc_readable($1) v',[`${id}/${f}`]);
+ ok(await readable('own2.png')===false,'owner drawing closed before the code check');
+ const ov=await open(o,o.code),pr=ov.owner_proofs;
+ ok(pr.length===2,'one proof per latest owner sign-off: '+JSON.stringify(pr.map(x=>x.version)));
+ const c1=pr.find(x=>x.version===12),c2=pr.find(x=>x.version===11);
+ ok(c1&&JSON.stringify(c1.lines)==='["衣柜"]'&&c1.method==='electronic'&&c1.strokes?.length===1&&c1.document_path===`${id}/own2.png`,'衣柜 shows the newest change drawing and the owner hand signature');
+ ok(c2&&JSON.stringify(c2.lines)==='["地柜"]'&&c2.method==='paper'&&c2.paper_path===`${id}/ownpaper.jpg`&&!c2.strokes,'地柜 shows the earlier drawing and the signed paper form');
+ ok(!/Owner|60101234567|本人/.test(JSON.stringify(ov)),'still no owner name, relation or phone');
+ ok(await readable('own2.png')&&await readable('own1.pdf')&&await readable('ownpaper.jpg'),'owner drawing and paper form readable after the code check');
+ ok(await readable('ownpending.pdf')===false,'an unsigned owner drawing is never shown');
+ const a=await cmd(staff,'create',{work_order_id:custom.id,purpose:'arrival',party:'仓库'});ok((await open(a,a.code)).owner_proofs.length===0,'arrival links do not carry owner proofs');
+ await signIt(o,o.code,ov.terms_hash);ok(await readable('own2.png')===false,'closed again once the factory has signed');checks++;}
 console.log(`PASS ${checks} party sign-off checks`);
