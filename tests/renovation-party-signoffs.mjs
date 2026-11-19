@@ -133,4 +133,23 @@ await db.exec('RESET ROLE');await db.exec(so);await db.exec(op);ok((await sys('S
  ok(await readable('ownpending.pdf')===false,'an unsigned owner drawing is never shown');
  const a=await cmd(staff,'create',{work_order_id:custom.id,purpose:'arrival',party:'仓库'});ok((await open(a,a.code)).owner_proofs.length===0,'arrival links do not carry owner proofs');
  await signIt(o,o.code,ov.terms_hash);ok(await readable('own2.png')===false,'closed again once the factory has signed');checks++;}
+// 定制 / 现货：合同导入时材料默认算定制，成品可以改为现货（不用业主签名和工厂确认）；只能在下单前改，等业主签名的要先撤销
+{await db.exec('RESET ROLE');await db.exec(fs.readFileSync('supabase/renovation_item_kind_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_item_kind_migration.sql','utf8'));
+ const pid='30000000-0000-4000-8000-000000000009';
+ await sys(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'KIND','Owner','60101234567','Addr','executing',$4::jsonb)`,[pid,store,staff,snap]);
+ await sys(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'卫浴','["C1","C2","S1","W1"]'::jsonb)`,[pid]);
+ const w=(await sys('SELECT id FROM renovation_work_orders WHERE project_id=$1',[pid]))[0].id;
+ const it=async()=>Object.fromEntries((await sys('SELECT line_id,kind,stage FROM renovation_work_items WHERE work_order_id=$1',[w])).map(i=>[i.line_id,i.kind+'/'+i.stage]));
+ const kind=async(who,lines,k)=>{await actor(who);return (await db.query('SELECT renovation_item_kind_set($1,$2,$3::jsonb,$4) v',[pid,w,JSON.stringify(lines),k])).rows[0].v;};
+ await reject(()=>kind(outsider,['C1'],'stock'),/无此项目权限/);
+ await reject(()=>kind(staff,['W1'],'stock'),/不能改/);
+ await reject(()=>kind(staff,[],'stock'),/勾选/);
+ const r=await kind(staff,['C1'],'stock');ok(r.changed===1&&(await it()).C1==='stock/pending','a finished product becomes stock and can be ordered straight away');
+ await reject(()=>kind(staff,['C1'],'stock'),/已经是这个类型/);
+ await sys(`INSERT INTO renovation_custom_confirmations(project_id,work_order_id,version,kind,line_ids,terms,document_path,document_sha256,created_by) VALUES($1,$2,1,'confirm','["C2"]','{}','${pid}/x.pdf',$3,$4)`,[pid,w,HASH,staff]);
+ await reject(()=>kind(staff,['C2'],'stock'),/等业主签名/);
+ await kind(staff,['S1'],'custom');ok((await it()).S1==='custom/pending','stock turned back to custom must go through the owner signature again');
+ await sys(`UPDATE renovation_work_items SET stage='ordered' WHERE work_order_id=$1 AND line_id='C1'`,[w]);await reject(()=>kind(staff,['C1'],'custom'),/已下单/);
+ ok((await sys(`SELECT count(*)::int n FROM renovation_audit WHERE action='fulfillment_kind_changed' AND project_id=$1`,[pid]))[0].n===2,'kind changes are in the history');
+ ok(!(await sys(`SELECT pg_get_functiondef('public.renovation_fulfillment_command(uuid,integer,text,jsonb)'::regprocedure) d`))[0].d.includes('定制单请填写厂家单号'),'factory order no is optional when ordering (factories often send it later)');}
 console.log(`PASS ${checks} party sign-off checks`);

@@ -281,3 +281,4 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .fx-legacy{margin-top:10px}
 @media(max-width:600px){.fx-st{padding-left:36px}.fx-st-body{padding:10px}.fx-actions button{flex:1 1 100%}}
 .fx-idx{color:#8a968f;font-weight:600;margin-right:2px}
+.fx-kind{margin-top:12px;font-size:14px}.fx-kind summary{color:#633899}.fx-kind .check{margin:6px 0}

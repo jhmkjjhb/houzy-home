@@ -84,6 +84,9 @@ try{
  {const steps=await card.locator('.fx-st').evaluateAll(l=>l.map(e=>e.dataset.step+':'+e.className.split(' ').pop()+':'+e.querySelector('.fx-st-no').textContent));
   assert.deepEqual(steps,['sign:done:✓','factory:now:2','order:now:3','arrive:wait:4','finish:wait:5'],'numbered flow: owner signed ✓, factory confirm and order are current, later steps wait: '+steps);
   assert((await card.locator('.fx-st[data-step="sign"]').innerText()).includes('已签名'),'done step says what happened');
+  // 定制里混了成品：在工厂确认这一步就能直接改为现货
+  {const kf=card.locator('.fx-st[data-step="factory"] .fx-kind');await kf.locator('summary').click();assert.equal(await kf.locator('[data-kline]').count(),2,'both custom lines can be switched to stock');
+   await kf.locator('[data-act="kind_stock"]').click();assert((await kf.locator('.fx-inline-msg').innerText()).includes('请先勾选'),'asks which ones');await kf.locator('summary').click();}
   assert((await card.locator('summary',{hasText:'更多操作'}).innerText()).includes('非常规'),'more actions is for unusual problems');
   assert.equal(await card.locator('details.fx-more [data-f="purpose"]').inputValue(),'issue','more actions only forwards problem sign-offs');
   assert.equal(await card.locator('summary [data-fxgo]').innerText(),'转发工厂确认','title button names the forward step');}
