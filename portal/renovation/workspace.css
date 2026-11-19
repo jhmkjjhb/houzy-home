@@ -251,3 +251,6 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .fx-file-name{font-size:12px;word-break:break-all}
 .fx-so-lines{margin:6px 0 0;font-size:13px}.fx-so-lines summary{color:var(--muted)}.fx-so-lines ol{margin:6px 0 0;padding-left:20px}
 .fx-inline-msg{flex-basis:100%;margin:8px 0 0;font-size:13px}
+.fx-step{margin:10px 0 0;padding:10px 0 0;border-top:1px dashed #dce2df}.fx-step:first-of-type{border-top:0}
+.fx-step>b{display:block;color:var(--hz-green,#153927)}.fx-step-wait>b{color:#9a6700}
+.fx-step .fx-so-inline{border-style:solid}

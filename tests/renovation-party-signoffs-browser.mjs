@@ -80,11 +80,16 @@ try{
  await page.screenshot({path:out+'/staff-owner-signature.png',fullPage:true});
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
- await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
- const form=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
+ // 转发工厂确认是下单的第 1 步，表单直接摆在下单区，不藏在「更多操作」里
+ {const st=await card.locator('.fx-step').first().innerText();assert(st.includes('第 1 步')&&st.includes('转发给工厂确认下单内容'),'forwarding to the factory is step 1 of ordering: '+st);
+  assert((await card.locator('summary',{hasText:'更多操作'}).innerText()).includes('非常规'),'more actions is for unusual problems');
+  assert.equal(await card.locator('details.fx-more [data-f="purpose"]').inputValue(),'issue','more actions only forwards problem sign-offs');
+  assert.equal(await card.locator('summary [data-fxgo]').innerText(),'转发工厂确认','title button names the forward step');}
+ await pickMode(card);await card.locator('[data-line="C1"]').check();
+ const form=card.locator('[data-so-inline="order"]');assert(await form.isVisible(),'step 1 form is open');
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
  assert((await form.locator('.fx-inline-msg').innerText()).includes('签字方'),'the reason shows right under the button, not somewhere down the page');
- await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
+ await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
  // 手机上能直接拍照：拍照框打开后置相机，拍的照片当作附件上传
  {const cam=form.locator('.fx-file [data-cam]');assert.equal(await cam.getAttribute('capture'),'environment','camera button opens the back camera');
   await cam.setInputFiles({name:'site.png',mimeType:'image/png',buffer:png});assert((await form.locator('.fx-file-name').innerText()).includes('site.png'),'shows the photo taken');
@@ -139,11 +144,11 @@ try{
  const stagesNow=await stages();assert.equal(stagesNow.C1,'confirmed','signing does not move progress');
 
  // 5) 撤销：再发一个到货验收，撤销后链接打不开
- await pickMode(card);await card.locator('[data-line="C2"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
- await form.locator('[data-f="purpose"]').selectOption('arrival');await form.locator('[data-f="party"]').fill('仓库阿明');
+ await pickMode(card);await card.locator('[data-line="C2"]').check();
+ await form.locator('[data-f="party"]').fill('发错的厂');
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
- const link2=(await page.evaluate(()=>navigator.clipboard.readText())).match(/https?:\/\/\S+/)[0];const code2=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival'`))[0].access_code;
+ const link2=(await page.evaluate(()=>navigator.clipboard.readText())).match(/https?:\/\/\S+/)[0];const code2=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE party='发错的厂'`))[0].access_code;
  card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'撤销这个链接'}).click();
  const vf=card.locator('[data-form]',{has:page.locator('[data-act="signoff_void"]')});await vf.locator('[data-f="reason"]').fill('发错人');await vf.locator('[data-act="signoff_void"]').click();
  await page.waitForFunction(()=>![...document.querySelectorAll('[data-act="signoff_void"]')].length);
@@ -157,25 +162,25 @@ try{
  assert(await page.locator('details.work',{hasText:'全屋定制'}).isHidden()&&await page.locator('details.work',{hasText:'泥水'}).isVisible(),'filter shows only that kind');
  await page.locator('[data-fxfilter="schedule"]').click();assert(await page.locator('details.work',{hasText:'全屋定制'}).isVisible(),'click again shows all');
  // 7) 下单前提醒：C1 工厂已确认，C2 没确认
- card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-unconfirmed').innerText();
+ card=await openCard(page,'全屋定制');const warn=await card.locator('.fx-step').first().innerText();
  assert(warn.includes('书房柜')&&!warn.includes('主卧衣柜'),'reminds only the lines the factory has not confirmed: '+warn);
  assert.equal(await card.locator('.fx-need-assignee').count(),0,'ordering does not ask for a worker');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');
  const of=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
- // 下单这一步旁边就有「转发给工厂确认下单内容」：点了就在按钮下面展开小表单，页面不跳，并带上已填的厂家
- {await of.locator('[data-f="supplier"]').fill('广州柜体厂');const y0=await page.evaluate(()=>scrollY);await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();
-  const box=card.locator('[data-so-inline="order"]');assert(await box.isVisible(),'inline forward form opens under the button');
-  assert.equal(await page.evaluate(()=>scrollY),y0,'page does not jump');
-  assert(!(await card.locator('details.fx-more').evaluate(e=>e.open)),'does not open the bottom section');
-  assert.equal(await box.locator('[data-f="purpose"]').inputValue(),'order');assert.equal(await box.locator('[data-f="party"]').inputValue(),'广州柜体厂','factory name carried over');
-  await box.locator('[data-f="party"]').fill('');await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();assert(!(await box.isVisible()),'second tap folds it away');}
  await of.locator('[data-f="supplier"]').fill('广州工厂');await of.locator('[data-f="order_no"]').fill('PO-9');await of.locator('[data-f="expected_on"]').fill('2099-01-01');await of.locator('[data-f="stock_confirmed"]').check();
  await of.locator('[data-act="place_order"]').click();await card.locator('[data-act="arrive"]').waitFor();
  // 8) 到货验收签了 → 一键标记到货
- card=await openCard(page,'全屋定制');await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
- const f2=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
- await f2.locator('[data-f="purpose"]').selectOption('arrival');await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
+ card=await openCard(page,'全屋定制');
+ // 到货这一步旁边就有「转发到货验收签字」：点了就在按钮下面展开小表单，页面不跳
+ {const y0=await page.evaluate(()=>scrollY);await card.locator('[data-act="goto_signoff"][data-purpose="arrival"]').click();
+  const box=card.locator('[data-so-inline="arrival"]');assert(await box.isVisible(),'inline forward form opens under the button');
+  assert.equal(await page.evaluate(()=>scrollY),y0,'page does not jump');assert(!(await card.locator('details.fx-more').evaluate(e=>e.open)),'does not open the bottom section');
+  await card.locator('[data-act="goto_signoff"][data-purpose="arrival"]').click();assert(!(await box.isVisible()),'second tap folds it away');
+  await card.locator('[data-act="goto_signoff"][data-purpose="arrival"]').click();}
+ await pickMode(card);await card.locator('[data-line="C1"]').check();
+ const f2=card.locator('[data-so-inline="arrival"]');
+ await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
  const link3=(await page.evaluate(()=>navigator.clipboard.readText())).match(/https?:\/\/\S+/)[0],code3=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival' AND status='pending'`))[0].access_code;
  const wh=await open(null,link3.replace(base,''),{width:390,height:844});await wh.locator('[data-code]').fill(code3);await wh.locator('[data-verify]').click();await wh.locator('[data-signature]').waitFor();

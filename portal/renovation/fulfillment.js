@@ -88,7 +88,9 @@ window.RenoFulfillment=(()=>{
   const live=(t.confirmations||[]).find(c=>c.work_order_id===w.id&&['pending','paper_review'].includes(c.status));
   if(b.unsigned.length&&!live)return {label:'发起业主签名'};
   if(live?.status==='paper_review')return {label:options?.manager?'审核纸质确认单':'查看纸质确认单'};
-  if(b.orderable.length)return {label:'下单'};
+  if(b.orderable.length){const all=t.signoffs?(t.signoffs||[]).filter(x=>x.work_order_id===w.id&&x.purpose==='order'&&x.status!=='voided'):null;
+   const need=all&&b.orderable.some(i=>i.kind==='custom'&&!all.some(x=>(x.line_ids||[]).includes(i.line_id)));
+   return {label:need?'转发工厂确认':'下单'};}
   if(live?.status==='pending')return {label:'复制签名链接',copy:{id:live.id,token:live.signing_token}};
   if(b.arriving.length)return {label:'到货'};
   if(b.toSchedule.length)return {label:'排期'};
@@ -138,16 +140,21 @@ window.RenoFulfillment=(()=>{
   if(!b.orderable.length)return (b.unsigned.length?`<div class="work-terms"><b>下单</b><p class="muted">定制项须先由业主签名，才能下单。</p>${legacyHtml}</div>`:legacyHtml?`<div class="work-terms">${legacyHtml}</div>`:'');
   const confirmed=new Set((o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order').flatMap(x=>x.line_ids||[]));
   const unconfirmed=o.signoffsReady?b.orderable.filter(i=>i.kind==='custom'&&!confirmed.has(i.line_id)):[];
-  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${unconfirmed.length?`<p class="warning fx-unconfirmed">⚠ ${unconfirmed.length} 项定制工厂还没签字确认下单内容：${unconfirmed.map(i=>E(i.name)).join('、')}。建议先转发工厂签字确认（不确认也能下单）。</p>`:''}<div class="work-controls" data-form>${form('',fs)}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${soInline('order',o)}${legacyHtml}</div>`;
+  // 定制项先转发工厂确认下单内容（第 1 步），再下单（第 2 步）。这是常规步骤，不放在「更多操作」里
+  const pendOrder=(o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose==='order'&&unconfirmed.some(i=>(x.line_ids||[]).includes(i.line_id)));
+  const step1=!unconfirmed.length?'':pendOrder.length
+   ?`<div class="fx-step fx-step-wait"><b>第 1 步 · 已转发工厂确认，等对方签字</b><p class="muted">${pendOrder.map(x=>`${E(x.party)}：验证码 <b class="mono">${E(x.access_code)}</b>`).join('；')}。签字后厂家、单号、出货日期会自动带进下单。</p><div class="actions"><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${pendOrder[0].id}" data-token="${pendOrder[0].signing_token}" data-msg="${E(soText(pendOrder[0]))}">复制链接和清单</button><button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">再转发一份</button></div>${soInline('order',o)}</div>`
+   :`<div class="fx-step"><b>第 1 步 · 转发给工厂确认下单内容</b><p class="muted">${unconfirmed.length} 项定制：${unconfirmed.map(i=>E(i.name)).join('、')}。工厂会看到清单、业主签名时的图纸和签名，并填写出货日期后签字。</p>${soInline('order',o,true)}</div>`;
+  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${step1}<div class="${step1?'fx-step':''}">${step1?`<b>第 2 步 · 下单</b>${pendOrder.length||!unconfirmed.length?'':'<p class="muted">工厂签字后再下单最稳妥；急的话也可以先下单。</p>'}`:''}<div class="work-controls" data-form>${form('',fs)}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady&&!step1?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${step1?'':soInline('order',o)}</div>${legacyHtml}</div>`;
  }
  function batchBlock(w,items,tracking,o){
   const list=tracking.batches.filter(x=>x.work_order_id===w.id);if(!list.length)return '';
   const now=today();
   return `<b>下单记录</b>${list.map(x=>{const waiting=items.some(i=>i.batch_id===x.id&&i.stage==='ordered'),late=waiting&&x.expected_on<now;return `<p>${E(x.supplier)}${x.supplier_order_no?` · 单号 ${E(x.supplier_order_no)}`:''} · 下单 ${E(x.ordered_on)} · 预计到货 ${E(x.expected_on)} · ${items.filter(i=>i.batch_id===x.id).length}项${x.legacy?' · 上线前已下单':''}${late?' <span class="warning">已逾期</span>':''}</p>${o.locked?'':`<details><summary>更正这条记录</summary><div class="work-controls" data-form>${field('厂家','supplier',`value="${E(x.supplier)}"`)}${field('厂家单号','order_no',`value="${E(x.supplier_order_no)}"`)}${field('预计到货日','expected_on',`type="date" value="${E(x.expected_on)}"`)}${field('更正原因','reason')}<button type="button" class="secondary" data-act="correct_batch" data-id="${x.id}">保存更正</button></div></details>`}`;}).join('')}`;
  }
- function soInline(purpose,o){ // 点「转发…」就在按钮下面展开，不跳到页面别处
+ function soInline(purpose,o,open=false){ // 点「转发…」就在按钮下面展开，不跳到页面别处
   if(!o.signoffsReady)return '';
-  return `<div class="work-controls fx-so-inline" data-form data-so-inline="${purpose}" hidden><input type="hidden" data-f="purpose" value="${purpose}">${field('签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div>`;
+  return `<div class="work-controls fx-so-inline" data-form data-so-inline="${purpose}"${open?'':' hidden'}><input type="hidden" data-f="purpose" value="${purpose}">${field('签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div>`;
  }
  function stepBlocks(items,o){ // o.signoffsReady：转发签字功能可用时，每一步旁边给一个转发按钮
   if(o.locked)return '';const b=buckets(items);let html='';
@@ -172,13 +179,13 @@ window.RenoFulfillment=(()=>{
  }
  function moreBlock(items,o){
   if(o.locked)return '';
-  return `<details class="work-terms fx-more"><summary>更多操作：标记问题 · 改单 · 转发工厂 / 负责人签字${o.resign?' · 重新发起业主签名':''}</summary>
+  return `<details class="work-terms fx-more"><summary>更多操作（非常规）：标记问题 · 改单 · 问题处理签字${o.resign?' · 重新发起业主签名':''}</summary>
    ${o.resign?`<div style="margin-top:6px"><b>重新发起业主签名</b>${o.resign}</div>`:''}
    <div class="work-controls" data-form>${field('问题说明（缺件、破损、尺寸不对等）','note')}${field('跟进日期','follow_up_on','type="date"')}<button type="button" class="secondary" data-act="flag_issue">标记问题</button><button type="button" class="secondary" data-act="resolve_issue">问题已解决</button></div>
    ${items.some(i=>i.kind==='custom')?`<div class="work-controls" data-form>${field('改单内容（业主会看到）','change_note')}${file('改单图纸或文件','document',PDF_IMG)}<button type="button" class="secondary" data-act="request_change">发起改单签名</button></div>`:''}
-   ${o.signoffsReady?`<div data-form style="margin-top:14px"><b>转发给工厂 / 负责人签字</b><p class="muted">生成链接和 4 位验证码，分开发给对方。对方看不到价格和业主电话。</p>
-    <div class="work-controls"><label>签字用途<select data-f="purpose">${Object.entries(PURPOSES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>${field('签字方（工厂或负责人）','party','maxlength="120"')}</div>
-    <div class="work-controls">${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:'<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>'}</details>`;
+   ${o.signoffsReady?`<div data-form style="margin-top:14px"><b>问题处理签字（转发给负责人）</b><p class="muted">先勾选有问题的项并「标记问题」，再生成链接让负责人处理完签字。下单、到货、完工的转发在上面对应的步骤里。</p>
+    <input type="hidden" data-f="purpose" value="issue"><div class="work-controls">${field('签字方（负责人或工厂）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}</div>
+    <div class="work-controls">${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}<button type="button" data-act="signoff_create">生成签字链接</button></div></div>`:'<p class="muted">转发签字功能需要先在 Supabase 运行 renovation_party_signoffs_migration.sql。</p>'}</details>`;
  }
  // 对方已签「到货验收」或「安装完工」：把对应的项一键标记到货 / 完成（最后由员工确认）
  function signoffShortcuts(items,o){
