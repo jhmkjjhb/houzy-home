@@ -239,3 +239,5 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 @media(max-width:600px){.renovation-workspace .fx-tabs .fx-plan-sum,.fx-tabs .fx-plan-sum{margin-left:0;flex-basis:100%;text-align:left;padding-top:0}}
 .renovation-workspace .fx-tabs button:hover,.fx-tabs button:hover,.fx-tabs button:focus{background:none;color:#153927}
 .sch-ms .sch-lane{min-height:44px}.sch-dia.low{top:24px}
+.fx-so-inline{margin-top:8px;padding:10px 12px;border:1px dashed rgba(99,56,153,.45);border-radius:10px;background:rgba(99,56,153,.04)}
+.fx-so-inline[hidden]{display:none}

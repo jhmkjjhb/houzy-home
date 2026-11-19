@@ -80,7 +80,7 @@ try{
 
  // 2) 按项勾选 C1，生成「工厂确认下单内容」签字链接，带附件
  await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
- const form=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
+ const form=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
  await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
  await form.locator('[data-f="so_doc"]').setInputFiles({name:'spec.png',mimeType:'image/png',buffer:png});
@@ -142,16 +142,18 @@ try{
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');assert.equal(await card.locator('.fx-need-assignee').count(),0,'reminder gone once set');
  await card.locator('[id^="assignee-"]').fill('张师傅');await card.locator('[data-work]').click();await page.waitForTimeout(800);card=await openCard(page,'全屋定制');
  const of=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
- // 下单这一步旁边就有「转发给工厂确认下单内容」，点了直接跳到转发表单，并带上已填的厂家
- {await of.locator('[data-f="supplier"]').fill('广州柜体厂');await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();
-  const more=card.locator('details.fx-more');assert(await more.evaluate(e=>e.open),'jump opens the forward form');
-  assert.equal(await more.locator('[data-f="purpose"]').inputValue(),'order');assert.equal(await more.locator('[data-f="party"]').inputValue(),'广州柜体厂','factory name carried over');
-  await more.locator('[data-f="party"]').fill('');await more.locator('summary').click();}
+ // 下单这一步旁边就有「转发给工厂确认下单内容」：点了就在按钮下面展开小表单，页面不跳，并带上已填的厂家
+ {await of.locator('[data-f="supplier"]').fill('广州柜体厂');const y0=await page.evaluate(()=>scrollY);await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();
+  const box=card.locator('[data-so-inline="order"]');assert(await box.isVisible(),'inline forward form opens under the button');
+  assert.equal(await page.evaluate(()=>scrollY),y0,'page does not jump');
+  assert(!(await card.locator('details.fx-more').evaluate(e=>e.open)),'does not open the bottom section');
+  assert.equal(await box.locator('[data-f="purpose"]').inputValue(),'order');assert.equal(await box.locator('[data-f="party"]').inputValue(),'广州柜体厂','factory name carried over');
+  await box.locator('[data-f="party"]').fill('');await card.locator('[data-act="goto_signoff"][data-purpose="order"]').click();assert(!(await box.isVisible()),'second tap folds it away');}
  await of.locator('[data-f="supplier"]').fill('广州工厂');await of.locator('[data-f="order_no"]').fill('PO-9');await of.locator('[data-f="expected_on"]').fill('2099-01-01');await of.locator('[data-f="stock_confirmed"]').check();
  await of.locator('[data-act="place_order"]').click();await card.locator('[data-act="arrive"]').waitFor();
  // 8) 到货验收签了 → 一键标记到货
  card=await openCard(page,'全屋定制');await pickMode(card);await card.locator('[data-line="C1"]').check();await card.locator('summary',{hasText:'更多操作'}).click();
- const f2=card.locator('[data-form]',{has:page.locator('[data-act="signoff_create"]')});
+ const f2=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await f2.locator('[data-f="purpose"]').selectOption('arrival');await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
  const link3=await page.evaluate(()=>navigator.clipboard.readText()),code3=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival' AND status='pending'`))[0].access_code;
