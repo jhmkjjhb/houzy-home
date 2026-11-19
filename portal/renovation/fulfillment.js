@@ -6,6 +6,7 @@ window.RenoFulfillment=(()=>{
  const BUCKET='renovation-fulfillment';
  // 图纸 / 附件：载入时就签好链接，按钮是真正的链接，手机和微信点了直接打开（不靠弹窗）
  let fileUrls={},fileUrlsAt=0;
+ const soMessage=btn=>{const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);return btn.dataset.msg?`${btn.dataset.msg}\n\n请打开链接逐项核对后签字：\n${url.href}\n（4 位验证码另外发给你）`:url.href;};
  const fileBtn=(path,label)=>{const u=fileUrls[path];return u?`<a class="fx-file-link" href="${E(u)}" target="_blank" rel="noopener" data-act="view_file" data-path="${E(path)}">${label}</a>`:`<button type="button" class="secondary" data-act="view_file" data-path="${E(path)}">${label}</button>`;};
  const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
  const stageNames={custom:{pending:'待业主签名',confirmed:'已签名待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},stock:{pending:'待下单',confirmed:'待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},work:{pending:'待排期',scheduled:'已排期',working:'施工中',done:'已完工'},gift:{pending:'待交付',done:'已交付'}};
@@ -193,10 +194,14 @@ window.RenoFulfillment=(()=>{
  }
  const soHead=x=>`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
  // 等待对方签字的链接放在操作区（要用验证码）
+ // 转发给工厂的文字：带整单明细（不含价格、不含业主地址电话），链接另附，验证码另外发
+ const soLines=x=>(x.terms?.lines||[]);
+ const soText=x=>{const ls=soLines(x);return `【HOUZY HOME · ${PURPOSES[x.purpose]||'核对签字'}】\n合同 ${x.terms?.contract_no||''} · ${(x.terms?.group_name||'').replace(/^增项-[0-9a-fA-F-]{36} · ?/,'增项 · ')}\n签字方：${x.party||x.terms?.party||''}\n${x.terms?.note?`说明：${x.terms.note}\n`:''}核对清单（共 ${ls.length} 项）：\n${ls.map((l,n)=>`${n+1}. ${l.name}${l.spec?` · ${l.spec}`:''} · ${l.qty??''} ${l.unit||''}`).join('\n')}`;};
  function pendingSignoffs(o){
   const list=(o.signoffs||[]).filter(x=>x.status==='pending');if(!list.length)return '';
   return `<div class="work-terms"><b>等待工厂 / 负责人签字</b><ul>${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
-    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
+    ${soLines(x).length?`<details class="fx-so-lines"><summary>清单 ${soLines(x).length} 项：${E(soLines(x).slice(0,3).map(l=>l.name).join('、'))}${soLines(x).length>3?'…':''}</summary><ol>${soLines(x).map(l=>`<li>${E(l.name)}${l.spec?` · ${E(l.spec)}`:''} · ${E(l.qty??'')} ${E(l.unit)}</li>`).join('')}</ol></details>`:''}
+    <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}" data-msg="${E(soText(x))}">复制链接和清单</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
     ${o.locked?'':`<details><summary>撤销这个链接</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="signoff_void" data-id="${x.id}">撤销</button></div></details>`}</li>`).join('')}</ul></div>`;
  }
  // 记录：业主签名、下单、已签的转发签字，默认收起
@@ -281,15 +286,15 @@ window.RenoFulfillment=(()=>{
      const docInput=input('so_doc'),f=picked1(docInput)?await upload(ctx.sb,project.id,docInput,'附件'):null;
      const {data,error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'create',p_data:{work_order_id:root.dataset.wo,line_ids:picked,purpose:v('purpose'),party:v('party'),note:v('so_note'),document_path:f?.path||null,document_sha256:f?.hash||null}});
      if(error)throw error;
-     const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',data.id);url.searchParams.set('sign',data.token);
-     try{await navigator.clipboard.writeText(url.href);}catch(e){}
      await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;
-     const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=`签字链接已复制。验证码 ${data.code}，请另外单独发给对方（下方记录里也能看到）。`;
+     const cb=document.querySelector(`[data-act="signoff_copy_link"][data-id="${data.id}"]`);let copied=false;
+     if(cb){try{await navigator.clipboard.writeText(soMessage(cb));copied=true;}catch(e){}}
+     const fb=document.querySelector(`[data-wo="${root.dataset.wo}"] [data-feedback]`);if(fb)fb.textContent=copied?`链接和整单明细已复制，可直接粘贴到 WhatsApp。验证码 ${data.code} 请另外单独发给对方。`:`签字链接已生成。请在下方「等待工厂 / 负责人签字」里点「复制链接和清单」，验证码 ${data.code} 另外单独发。`;
      ctx.message('已生成签字链接');
     }
     else if(act==='so_arrive')await send('arrive',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on});
     else if(act==='so_finish'){const needs=!!input('proof');const f=needs?await upload(ctx.sb,project.id,input('proof'),'完工照片或文件'):null;await send('finish',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on,proof_path:f?.path});}
-    else if(act==='signoff_copy_link'){const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='链接已复制。验证码请另外单独发给对方。';}
+    else if(act==='signoff_copy_link'){await navigator.clipboard.writeText(soMessage(btn));feedback.textContent='链接和整单明细已复制，可直接粘贴到 WhatsApp。验证码请另外单独发给对方。';}
     else if(act==='signoff_copy_code'){await navigator.clipboard.writeText(btn.dataset.code);feedback.textContent=`验证码 ${btn.dataset.code} 已复制。`;}
     else if(act==='signoff_void'){const {error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'void',p_data:{signoff_id:btn.dataset.id,reason:v('reason')}});if(error)throw error;await ctx.onChange();ctx.message('已撤销');}
     else if(act==='view_file'){const tab=window.open('about:blank','_blank');const {data,error}=await ctx.sb.storage.from(BUCKET).createSignedUrl(btn.dataset.path,300);if(error){tab?.close();throw error;}if(tab){tab.opener=null;tab.location.replace(data.signedUrl);}else location.href=data.signedUrl;feedback.textContent='';}

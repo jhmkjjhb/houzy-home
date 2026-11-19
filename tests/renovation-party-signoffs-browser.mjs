@@ -91,7 +91,10 @@ try{
  await form.locator('[data-f="so_doc"]').setInputFiles({name:'spec.png',mimeType:'image/png',buffer:png});
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
- const link=await page.evaluate(()=>navigator.clipboard.readText());assert(link.includes('renovation-party-sign.html'),'link copied: '+link);
+ const msg=await page.evaluate(()=>navigator.clipboard.readText()),link=msg.match(/https?:\/\/\S+/)[0];assert(link.includes('renovation-party-sign.html'),'link copied: '+msg);
+ // 转发给工厂的文字自带整单明细，不含价格和业主地址，也不含验证码
+ assert(msg.includes('核对清单（共 1 项）')&&msg.includes('1. 主卧衣柜 · 白色 2.4m')&&msg.includes('门板颜色按样板'),'forwarded message lists the items: '+msg);
+ {const row0=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];assert(!msg.includes('8800')&&!msg.includes('Jalan')&&!msg.replace(link,'').includes(row0.access_code),'no price, address or code in the message');}
  const row=(await sys('SELECT access_code FROM renovation_party_signoffs'))[0];
  card=await openCard(page,'全屋定制');const pend=await card.innerText();
  assert(pend.includes('等待工厂 / 负责人签字')&&pend.includes(row.access_code)&&pend.includes('广州工厂'),'pending link shows code for staff');
@@ -127,7 +130,7 @@ try{
  await form.locator('[data-f="purpose"]').selectOption('arrival');await form.locator('[data-f="party"]').fill('仓库阿明');
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
- const link2=await page.evaluate(()=>navigator.clipboard.readText());const code2=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival'`))[0].access_code;
+ const link2=(await page.evaluate(()=>navigator.clipboard.readText())).match(/https?:\/\/\S+/)[0];const code2=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival'`))[0].access_code;
  card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'撤销这个链接'}).click();
  const vf=card.locator('[data-form]',{has:page.locator('[data-act="signoff_void"]')});await vf.locator('[data-f="reason"]').fill('发错人');await vf.locator('[data-act="signoff_void"]').click();
  await page.waitForFunction(()=>![...document.querySelectorAll('[data-act="signoff_void"]')].length);
@@ -161,7 +164,7 @@ try{
  const f2=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await f2.locator('[data-f="purpose"]').selectOption('arrival');await f2.locator('[data-f="party"]').fill('仓库阿明');await f2.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));
- const link3=await page.evaluate(()=>navigator.clipboard.readText()),code3=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival' AND status='pending'`))[0].access_code;
+ const link3=(await page.evaluate(()=>navigator.clipboard.readText())).match(/https?:\/\/\S+/)[0],code3=(await sys(`SELECT access_code FROM renovation_party_signoffs WHERE purpose='arrival' AND status='pending'`))[0].access_code;
  const wh=await open(null,link3.replace(base,''),{width:390,height:844});await wh.locator('[data-code]').fill(code3);await wh.locator('[data-verify]').click();await wh.locator('[data-signature]').waitFor();
  await wh.locator('[data-name]').fill('阿明');await draw(wh,'[data-signature]');await wh.locator('[data-consent]').check();await wh.locator('[data-submit]').click();await wh.getByText('签字成功').waitFor();
  assert.equal((await stages()).C1,'ordered','signing alone does not change progress');
