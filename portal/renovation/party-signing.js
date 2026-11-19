@@ -86,7 +86,7 @@
  }
  function sign(){
   const t=view.terms,box=el.querySelector('[data-sign]');box.hidden=false;
-  box.innerHTML=`<h3>签字确认</h3><label>签字人姓名<input data-name maxlength="100" autocomplete="name"></label><label>所属工厂 / 单位<input data-company maxlength="120" value="${E(t.party)}"></label><label>${E(NOTE_HINT[t.purpose]||'备注（选填）')}<textarea data-note maxlength="1000" rows="3" style="width:100%"></textarea></label><p>请在下方手写签名：</p><canvas data-signature aria-label="手写签名" style="width:100%;height:180px;display:block;border:1px solid #b2bcb6;border-radius:8px;background:white;touch-action:none"></canvas><div class="actions"><button type="button" data-clear class="secondary">清除重签</button></div><label class="check"><input type="checkbox" data-consent>${E(CONSENT[t.purpose]||'我已核对上方全部内容。')}</label><button type="button" data-submit>确认并签字</button><p data-feedback role="status" aria-live="polite"></p>`;
+  box.innerHTML=`<h3>签字确认</h3><label>签字人姓名<input data-name maxlength="100" autocomplete="name"></label><label>所属工厂 / 单位<input data-company maxlength="120" value="${E(t.party)}"></label>${t.purpose==='order'?`<label>预计出货日期（必填）<input data-ship type="date" min="${new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'})}"></label><label>工厂单号（选填）<input data-ref maxlength="60"></label><label>工厂联系人电话（选填）<input data-phone type="tel" maxlength="40" autocomplete="tel"></label>`:''}<label>${E(NOTE_HINT[t.purpose]||'备注（选填）')}<textarea data-note maxlength="1000" rows="3" style="width:100%"></textarea></label><p>请在下方手写签名：</p><canvas data-signature aria-label="手写签名" style="width:100%;height:180px;display:block;border:1px solid #b2bcb6;border-radius:8px;background:white;touch-action:none"></canvas><div class="actions"><button type="button" data-clear class="secondary">清除重签</button></div><label class="check"><input type="checkbox" data-consent>${E(CONSENT[t.purpose]||'我已核对上方全部内容。')}</label><button type="button" data-submit>确认并签字</button><p data-feedback role="status" aria-live="polite"></p>`;
   canvas=box.querySelector('[data-signature]');ctx=canvas.getContext('2d');strokes=[];paint();
   const feedback=box.querySelector('[data-feedback]');let pointer=null;
   const point=e=>{const r=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];};
@@ -97,8 +97,13 @@
   box.querySelector('[data-submit]').onclick=async()=>{
    if(busy||pointer!==null)return;const name=box.querySelector('[data-name]').value.trim(),company=box.querySelector('[data-company]').value.trim();
    if(!name||!company||!box.querySelector('[data-consent]').checked||strokes.reduce((n,v)=>n+v.length,0)<8){feedback.textContent='请填写姓名、工厂 / 单位，完整手写签名，并勾选确认。';return;}
+   const shipBox=box.querySelector('[data-ship]'),ship=shipBox?.value||'';if(shipBox&&!ship){feedback.textContent='请填写预计出货日期。';shipBox.focus();return;}
+   const extra=shipBox?{ship_on:ship,factory_ref:box.querySelector('[data-ref]').value.trim(),contact_phone:box.querySelector('[data-phone]').value.trim()}:null;
    busy=true;box.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=true);feedback.textContent='正在提交，请稍候…';
-   try{const {data,error}=await sb.rpc('renovation_signoff_sign',{p_id:id,p_token:token,p_code:code,p_terms_hash:view.terms_hash,p_name:name,p_company:company,p_note:box.querySelector('[data-note]').value.trim(),p_strokes:strokes,p_accept:true});
+   try{const note=box.querySelector('[data-note]').value.trim(),args={p_id:id,p_token:token,p_code:code,p_terms_hash:view.terms_hash,p_name:name,p_company:company,p_note:note,p_strokes:strokes,p_accept:true};
+    let {data,error}=await sb.rpc('renovation_signoff_sign',extra?{...args,p_extra:extra}:args);
+    // 数据库还没升级时，出货信息写进备注，不让工厂签不了
+    if(error&&extra&&/p_extra|function|schema cache/i.test(error.message||'')){const add=`预计出货 ${extra.ship_on}${extra.factory_ref?` · 工厂单号 ${extra.factory_ref}`:''}${extra.contact_phone?` · 电话 ${extra.contact_phone}`:''}`;({data,error}=await sb.rpc('renovation_signoff_sign',{...args,p_note:(add+(note?'；'+note:'')).slice(0,1000)}));}
     if(error||!data?.ok)throw new Error(error?.message||'签字暂未成功，请重试。');
     dirty=false;done('<span style="color:#15803d">签字成功，谢谢！</span>门店已收到记录。');}
    catch(e){feedback.textContent=e.message;}finally{busy=false;box.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=false);}

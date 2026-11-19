@@ -116,6 +116,9 @@ try{
   await proof.locator('[data-proof-file] img').waitFor();assert.equal(await proof.locator('svg polyline').count()>0,true,'owner signature drawn');}
  await fac.locator('[data-submit]').click();await fac.getByText('请填写姓名').waitFor();
  await fac.locator('[data-name]').fill('王厂长');await draw(fac,'[data-signature]');await fac.locator('[data-note]').fill('12月5日出货');await fac.locator('[data-consent]').check();
+ // 下单确认必须填出货日期
+ await fac.locator('[data-submit]').click();await fac.getByText('请填写预计出货日期').waitFor();
+ await fac.locator('[data-ship]').fill('2099-12-05');await fac.locator('[data-ref]').fill('GZ-2099');await fac.locator('[data-phone]').fill('+86 138 0000 0000');
  await fac.screenshot({path:out+'/factory-signing-phone.png',fullPage:true});
  await fac.locator('[data-submit]').click();await fac.getByText('签字成功').waitFor();
  const ofl=await fac.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'no sideways scroll on phone: '+ofl);
@@ -123,6 +126,11 @@ try{
  // 4) 员工看到签字：记录、备注、签名图，以及清单项上的 ✓
  await page.reload();card=await openCard(page,'全屋定制');await card.locator('summary',{hasText:'记录：'}).click();const after=await card.innerText();
  assert(after.includes('工厂 / 负责人签字 1')&&after.includes('王厂长')&&after.includes('12月5日出货'),'staff sees who signed and the note');
+ assert(after.includes('预计出货：2099-12-05')&&after.includes('GZ-2099')&&after.includes('+86 138 0000 0000'),'staff sees the ship date, factory ref and phone');
+ // 下单表自动带入工厂填的厂家、单号、出货日期
+ {const of0=card.locator('[data-form]',{has:page.locator('[data-act="place_order"]')});
+  assert.equal(await of0.locator('[data-f="expected_on"]').inputValue(),'2099-12-05','order form takes the factory ship date');
+  assert.equal(await of0.locator('[data-f="order_no"]').inputValue(),'GZ-2099');assert.equal(await of0.locator('[data-f="supplier"]').inputValue(),'广州工厂');}
  assert((await card.locator('label.fx-row',{has:page.locator('[data-line="C1"]')}).innerText()).includes('✓ 工厂确认下单内容'),'line marked as factory-confirmed');
  assert(!(await card.locator('label.fx-row',{has:page.locator('[data-line="C2"]')}).innerText()).includes('✓'),'unticked line not marked');
  await card.locator('summary',{hasText:'查看签字'}).click();

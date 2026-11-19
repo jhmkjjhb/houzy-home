@@ -130,12 +130,15 @@ window.RenoFulfillment=(()=>{
   if(o.locked)return '';
   const b=buckets(items),hasStock=b.orderable.some(i=>i.kind==='stock');
   const legacy=o.manager?items.filter(i=>i.legacy_eligible&&['pending','confirmed'].includes(i.stage)&&['custom','stock'].includes(i.kind)):[];
-  const form=(prefix='')=>`${field('厂家','supplier','maxlength="120"')}${field(prefix||'厂家单号','order_no','maxlength="120"')}${field('下单日期','ordered_on',`type="date" value="${today()}"`)}${field('预计到货日','expected_on','type="date"')}`;
+  // 工厂签字确认时填过的厂家、单号、出货日期，直接带进下单表（可改）
+  const fs=(o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order'&&x.ship_on).sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)))[0];
+  const val=x=>x?` value="${E(x)}"`:'';
+  const form=(prefix='',pre=null)=>`${field('厂家','supplier','maxlength="120"'+val(pre?.signer_company))}${field(prefix||'厂家单号','order_no','maxlength="120"'+val(pre?.factory_ref))}${field('下单日期','ordered_on',`type="date" value="${today()}"`)}${field(pre?.ship_on?'预计到货日（工厂说 '+E(pre.ship_on)+' 出货）':'预计到货日','expected_on','type="date"'+val(pre?.ship_on))}`;
   const legacyHtml=legacy.length?`<details><summary>登记上线前已下单（店长）</summary><div class="work-controls" data-form>${form()}${field('下单情况说明','reason')}<button type="button" class="secondary" data-act="legacy_order">登记历史订单（${legacy.length}项）</button></div></details>`:'';
   if(!b.orderable.length)return (b.unsigned.length?`<div class="work-terms"><b>下单</b><p class="muted">定制项须先由业主签名，才能下单。</p>${legacyHtml}</div>`:legacyHtml?`<div class="work-terms">${legacyHtml}</div>`:'');
   const confirmed=new Set((o.signoffs||[]).filter(x=>x.status==='signed'&&x.purpose==='order').flatMap(x=>x.line_ids||[]));
   const unconfirmed=o.signoffsReady?b.orderable.filter(i=>i.kind==='custom'&&!confirmed.has(i.line_id)):[];
-  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${unconfirmed.length?`<p class="warning fx-unconfirmed">⚠ ${unconfirmed.length} 项定制工厂还没签字确认下单内容：${unconfirmed.map(i=>E(i.name)).join('、')}。建议先转发工厂签字确认（不确认也能下单）。</p>`:''}<div class="work-controls" data-form>${form()}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${soInline('order',o)}${legacyHtml}</div>`;
+  return `<div class="work-terms"><b>下单</b>${b.unsigned.length?`<p class="muted">还有 ${b.unsigned.length} 项定制未签名，这次不会下单。</p>`:''}${unconfirmed.length?`<p class="warning fx-unconfirmed">⚠ ${unconfirmed.length} 项定制工厂还没签字确认下单内容：${unconfirmed.map(i=>E(i.name)).join('、')}。建议先转发工厂签字确认（不确认也能下单）。</p>`:''}<div class="work-controls" data-form>${form('',fs)}${hasStock?`<label class="check"><input data-f="stock_confirmed" type="checkbox">现货规格和数量已与业主确认</label>`:''}<button type="button" data-act="place_order">整单下单（${b.orderable.length}项）</button>${o.signoffsReady?`<button type="button" class="secondary" data-act="goto_signoff" data-purpose="order">转发给工厂确认下单内容</button>`:''}</div>${soInline('order',o)}${legacyHtml}</div>`;
  }
  function batchBlock(w,items,tracking,o){
   const list=tracking.batches.filter(x=>x.work_order_id===w.id);if(!list.length)return '';
@@ -209,7 +212,7 @@ window.RenoFulfillment=(()=>{
   const owner=ownerHistory(w,t),batches=batchBlock(w,items,t,o),signed=(o.signoffs||[]).filter(x=>x.status==='signed').sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)));
   const nOwner=t.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').length,nBatch=t.batches.filter(x=>x.work_order_id===w.id).length;
   if(!nOwner&&!nBatch&&!signed.length)return '';
-  const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
+  const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.ship_on?`<br>预计出货：<b>${E(x.ship_on)}</b>${x.factory_ref?` · 工厂单号 ${E(x.factory_ref)}`:''}${x.contact_phone?` · 电话 ${E(x.contact_phone)}`:''}`:''}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
     <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions">${fileBtn(x.document_path,'查看附件')}</div>`:''}${sigSvg(x.signature_strokes)}</details></li>`).join('');
   return `<details class="work-terms fx-records"><summary>记录：业主签名 ${nOwner} · 下单 ${nBatch} · 工厂 / 负责人签字 ${signed.length}</summary>
    ${owner?`<b>业主签名</b><ul>${owner}</ul>`:''}${batches}${so?`<b>工厂 / 负责人签字</b><ul>${so}</ul>`:''}</details>`;

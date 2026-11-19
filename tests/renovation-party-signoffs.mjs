@@ -45,7 +45,7 @@ const custom=await wo('全屋定制');
 async function cmd(who,action,data){await actor(who);return (await db.query('SELECT renovation_signoff_command($1,$2,$3::jsonb) v',[id,action,JSON.stringify(data)])).rows[0].v;}
 const anonQ=async(sql,args)=>{await actor(staff,'anon');return (await db.query(sql,args)).rows[0]?.v;};
 const open=(s,code)=>anonQ('SELECT renovation_signoff_open($1,$2,$3) v',[s.id,s.token,code]);
-const signIt=(s,code,hash,extra={})=>anonQ('SELECT renovation_signoff_sign($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9) v',[s.id,s.token,code,hash,extra.name??'王师傅',extra.company??'广州工厂',extra.note??'',JSON.stringify(extra.strokes??strokes),extra.accept??true]);
+const signIt=(s,code,hash,extra={})=>anonQ('SELECT renovation_signoff_sign($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10::jsonb) v',[s.id,s.token,code,hash,extra.name??'王师傅',extra.company??'广州工厂',extra.note??'',JSON.stringify(extra.strokes??strokes),extra.accept??true,JSON.stringify(extra.extra===undefined?{ship_on:'2099-01-01',factory_ref:'GZ-88',contact_phone:'138000'}:extra.extra)]);
 
 // 发起：只签勾选的两项，带图纸
 const s1=await cmd(staff,'create',{work_order_id:custom.id,purpose:'order',party:'广州工厂',note:'请按图纸生产',line_ids:['C1','C2'],document_path:`${id}/d1.pdf`,document_sha256:HASH});
@@ -76,7 +76,11 @@ await reject(()=>signIt(s1,s1.code,'0'.repeat(64)),/内容已更新/);
 await reject(()=>signIt(s1,s1.code,v.terms_hash,{company:''}),/所属工厂/);
 await reject(()=>signIt(s1,s1.code,v.terms_hash,{accept:false}),/勾选确认/);
 const stagesBefore=JSON.stringify(Object.values(await items()).map(i=>[i.line_id,i.stage]));
+// 工厂确认下单必须给出货日期，不能填过去的日期
+await reject(()=>signIt(s1,s1.code,v.terms_hash,{extra:null}),/预计出货日期/);
+await reject(()=>signIt(s1,s1.code,v.terms_hash,{extra:{ship_on:'2020-01-01'}}),/不能早于今天/);
 const r=await signIt(s1,s1.code,v.terms_hash,{note:'颜色按样板'});ok(r.ok&&r.signature_hash,'factory signs');
+{const x=(await sys('SELECT ship_on::text d,factory_ref,contact_phone FROM renovation_party_signoffs WHERE id=$1',[s1.id]))[0];ok(x.d==='2099-01-01'&&x.factory_ref==='GZ-88'&&x.contact_phone==='138000','ship date, factory ref and phone kept for staff');}
 ok(JSON.stringify(Object.values(await items()).map(i=>[i.line_id,i.stage]))===stagesBefore,'signing is a record only: item progress unchanged');
 const signed=(await sys('SELECT * FROM renovation_party_signoffs WHERE id=$1',[s1.id]))[0];
 ok(signed.status==='signed'&&signed.signer_company==='广州工厂'&&signed.signer_note==='颜色按样板'&&signed.verified_until===null,'signature, company and note are kept');
