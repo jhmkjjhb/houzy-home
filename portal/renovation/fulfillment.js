@@ -202,7 +202,7 @@ window.RenoFulfillment=(()=>{
   }
   return html?`<div class="work-terms"><b>对方已签字，确认后更新进度</b>${html}</div>`:'';
  }
- const soHead=x=>`<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${(x.line_ids||[]).length}项（${(x.terms?.lines||[]).map(l=>E(l.name)).join('、')}）`;
+ const soHead=x=>{const ls=x.terms?.lines||[],n=(x.line_ids||[]).length;return `<b>${E(PURPOSES[x.purpose])}</b> · ${E(x.party)} · ${n<=2&&ls.length?ls.map(l=>E(l.name)).join('、'):`${n} 项`}`;}; // 清单在链接里，这里只写项数
  // 等待对方签字的链接放在操作区（要用验证码）
  function pendingSignoffs(o){
   const list=(o.signoffs||[]).filter(x=>x.status==='pending');if(!list.length)return '';
