@@ -96,7 +96,8 @@ window.RenoFulfillment=(()=>{
   return null;
  }
  const field=(label,name,attrs='')=>`<label>${label}<input data-f="${name}" ${attrs}></label>`;
- const file=(label,name,accept)=>`<label>${label}<input data-f="${name}" type="file" accept="${accept}"></label>`;
+ // 手机上分成「拍照」和「相册 / 文件」两个按钮；拍的照片放进同一个输入框，上传逻辑不变
+ const file=(label,name,accept)=>`<div class="fx-file"><span class="fx-file-label">${label}</span><div class="fx-file-btns">${/image/.test(accept)?`<label class="fx-pick">📷 拍照<input class="fx-file-input" data-cam type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label>`:''}<label class="fx-pick">🖼 相册 / 文件<input class="fx-file-input" data-f="${name}" type="file" accept="${accept}"></label></div><span class="fx-file-name muted">未选择</span></div>`;
  const PDF_IMG='application/pdf,image/jpeg,image/png,image/webp';
  const relationField=`<label>与业主的关系<select data-f="signer_relation"><option>本人</option><option>配偶</option><option>子女</option><option>父母</option><option>其他家人</option></select></label>`;
  function signBlock(w,items,tracking,o){
@@ -221,8 +222,9 @@ window.RenoFulfillment=(()=>{
   return `<div class="fulfillment${o.picking?' picking':''}" data-wo="${w.id}">${now?`<div class="fx-now"><b class="fx-now-title">现在要做</b>${now}</div>`:''}${itemList(items,o)}${moreBlock(items,o)}${records(w,items,t,o)}<p data-feedback role="status" aria-live="polite"></p></div>`;
  }
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
+ const picked1=input=>input?.files?.[0]||input?.closest?.('.fx-file')?.querySelector('[data-cam]')?.files?.[0]||null; // 老浏览器里拍的照片留在拍照框
  async function upload(sb,projectId,input,label){
-  const f=input?.files?.[0];if(!f)throw new Error(`请先选择${label}`);
+  const f=picked1(input);if(!f)throw new Error(`请先拍照或选择${label}`);
   const ext=(f.name.split('.').pop()||'').toLowerCase(),path=`${projectId}/fulfillment/${crypto.randomUUID()}.${ext}`;
   const hash=await sha256(await f.arrayBuffer());
   const {error}=await sb.storage.from(BUCKET).upload(path,f,{upsert:false,contentType:f.type});
@@ -238,6 +240,8 @@ window.RenoFulfillment=(()=>{
   let busy=false;
   // 全选 / 取消全选；单项改动后同步「全选」的勾
   el.addEventListener('change',e=>{
+   const fi=e.target.closest?.('.fx-file');
+   if(fi&&e.target.type==='file'){const main=fi.querySelector('[data-f]');if(e.target.hasAttribute('data-cam')&&e.target.files.length){try{main.files=e.target.files;}catch(err){}}const f=main.files?.[0]||e.target.files?.[0];fi.querySelector('.fx-file-name').textContent=f?`已选：${f.name}`:'未选择';return;}
    const root=e.target.closest('[data-wo]');if(!root)return;
    const boxes=[...root.querySelectorAll('[data-line]:not(:disabled)')],allx=root.querySelector('[data-allx]');
    if(e.target.matches('[data-allx]'))boxes.forEach(b=>b.checked=e.target.checked);
@@ -274,7 +278,7 @@ window.RenoFulfillment=(()=>{
    try{
     if(act==='copy_link'){const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',btn.dataset.id);url.searchParams.set('sign',btn.dataset.token);await navigator.clipboard.writeText(url.href);feedback.textContent='已复制，请发给业主。业主须输入登记手机号后四位才能查看和签名。';}
     else if(act==='signoff_create'){
-     const docInput=input('so_doc'),f=docInput?.files?.[0]?await upload(ctx.sb,project.id,docInput,'附件'):null;
+     const docInput=input('so_doc'),f=picked1(docInput)?await upload(ctx.sb,project.id,docInput,'附件'):null;
      const {data,error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'create',p_data:{work_order_id:root.dataset.wo,line_ids:picked,purpose:v('purpose'),party:v('party'),note:v('so_note'),document_path:f?.path||null,document_sha256:f?.hash||null}});
      if(error)throw error;
      const url=new URL('renovation-party-sign.html',location.href);url.searchParams.set('signoff',data.id);url.searchParams.set('sign',data.token);

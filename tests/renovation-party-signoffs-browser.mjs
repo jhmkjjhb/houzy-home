@@ -84,6 +84,10 @@ try{
  const form=card.locator('details.fx-more [data-form]',{has:page.locator('[data-act="signoff_create"]')});
  await form.locator('[data-act="signoff_create"]').click();await card.locator('[data-feedback]').getByText('签字方').waitFor();
  await form.locator('[data-f="purpose"]').selectOption('order');await form.locator('[data-f="party"]').fill('广州工厂');await form.locator('[data-f="so_note"]').fill('门板颜色按样板');
+ // 手机上能直接拍照：拍照框打开后置相机，拍的照片当作附件上传
+ {const cam=form.locator('.fx-file [data-cam]');assert.equal(await cam.getAttribute('capture'),'environment','camera button opens the back camera');
+  await cam.setInputFiles({name:'site.png',mimeType:'image/png',buffer:png});assert((await form.locator('.fx-file-name').innerText()).includes('site.png'),'shows the photo taken');
+  assert.equal(await form.locator('[data-f="so_doc"]').evaluate(e=>e.files[0]?.name),'site.png','photo taken goes into the attachment');}
  await form.locator('[data-f="so_doc"]').setInputFiles({name:'spec.png',mimeType:'image/png',buffer:png});
  await form.locator('[data-act="signoff_create"]').click();
  await page.waitForFunction(()=>[...document.querySelectorAll('[data-wo] [data-feedback]')].some(e=>e.textContent.includes('验证码')));

@@ -243,3 +243,9 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .fx-so-inline[hidden]{display:none}
 .fx-file-link{display:inline-block;padding:10px 16px;border:1px solid #d6ddcf;border-radius:7px;background:#fff;color:var(--hz-green,#153927);text-decoration:none;font-weight:500}
 .fx-file-link:hover{background:#f5f7f1;border-color:#aeb9a3}
+.fx-file{display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px;font-size:13px;color:var(--muted)}
+.fx-file-btns{display:flex;gap:8px;flex-wrap:wrap}
+.fx-pick{position:relative;flex:1;min-width:110px;display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border:1px solid #d6ddcf;border-radius:7px;background:#fff;color:var(--hz-green,#153927);font-size:14px;font-weight:500;cursor:pointer}
+.fx-pick:active{background:#f5f7f1}
+.fx-file-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+.fx-file-name{font-size:12px;word-break:break-all}
