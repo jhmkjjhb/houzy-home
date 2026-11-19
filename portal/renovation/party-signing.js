@@ -5,14 +5,15 @@
  const params=new URLSearchParams(location.search),id=params.get('signoff'),token=params.get('sign');
  const uuid=s=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s||'');
  const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs';
- const TITLE={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工确认',issue:'问题处理确认'};
+ const TITLE={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工确认',issue:'问题处理确认',schedule:'施工排期确认'};
  const CONSENT={
   order:'我已逐项核对上方清单、业主确认的图纸和附件，确认名称、规格、颜色、尺寸和数量无误，按此生产 / 备货。',
   arrival:'我已逐项清点上方货品，数量和外观与清单一致；如有缺件、破损，已在备注写明。',
   install:'上方各项已按图纸安装完成；如有遗留问题，已在备注写明。',
-  issue:'上方问题已按说明处理完成；如仍有遗留，已在备注写明。'
+  issue:'上方问题已按说明处理完成；如仍有遗留，已在备注写明。',
+  schedule:'上方施工项按我填写的日期安排开工；如有变动会提前通知门店。'
  };
- const NOTE_HINT={order:'备注（选填，如需改动请写明）',arrival:'备注（如有缺件、破损请写明）',install:'备注（如有遗留问题请写明）',issue:'备注（处理结果或遗留问题）'};
+ const NOTE_HINT={order:'备注（选填，如需改动请写明）',arrival:'备注（如有缺件、破损请写明）',install:'备注（如有遗留问题请写明）',issue:'备注（处理结果或遗留问题）',schedule:'备注（人手安排、需要业主配合的事项等）'};
  let sb,el,code='',view,strokes=[],canvas,ctx,busy=false,dirty=false;
  async function sha256(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');}
  function paint(){if(!canvas)return;const w=canvas.clientWidth||600,h=180,dpr=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#22362e';for(const s of strokes){if(s.length<2)continue;ctx.beginPath();ctx.moveTo(s[0][0]*w,s[0][1]*h);for(const p of s.slice(1))ctx.lineTo(p[0]*w,p[1]*h);ctx.stroke();}}
@@ -86,7 +87,7 @@
  }
  function sign(){
   const t=view.terms,box=el.querySelector('[data-sign]');box.hidden=false;
-  box.innerHTML=`<h3>签字确认</h3><label>签字人姓名<input data-name maxlength="100" autocomplete="name"></label><label>所属工厂 / 单位<input data-company maxlength="120" value="${E(t.party)}"></label>${t.purpose==='order'?`<label>预计出货日期（必填）<input data-ship type="date" min="${new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'})}"></label><label>工厂单号（选填）<input data-ref maxlength="60"></label><label>工厂联系人电话（选填）<input data-phone type="tel" maxlength="40" autocomplete="tel"></label>`:''}<label>${E(NOTE_HINT[t.purpose]||'备注（选填）')}<textarea data-note maxlength="1000" rows="3" style="width:100%"></textarea></label><p>请在下方手写签名：</p><canvas data-signature aria-label="手写签名" style="width:100%;height:180px;display:block;border:1px solid #b2bcb6;border-radius:8px;background:white;touch-action:none"></canvas><div class="actions"><button type="button" data-clear class="secondary">清除重签</button></div><label class="check"><input type="checkbox" data-consent>${E(CONSENT[t.purpose]||'我已核对上方全部内容。')}</label><button type="button" data-submit>确认并签字</button><p data-feedback role="status" aria-live="polite"></p>`;
+  box.innerHTML=`<h3>签字确认</h3><label>签字人姓名<input data-name maxlength="100" autocomplete="name"></label><label>所属工厂 / 单位<input data-company maxlength="120" value="${E(t.party)}"></label>${t.purpose==='order'?`<label>预计出货日期（必填）<input data-ship type="date" min="${new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'})}"></label><label>工厂单号（选填）<input data-ref maxlength="60"></label><label>工厂联系人电话（选填）<input data-phone type="tel" maxlength="40" autocomplete="tel"></label>`:''}${t.purpose==='schedule'?`<label>计划开工日期（必填）<input data-start type="date" min="${new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'})}"></label><label>计划完工日期（选填）<input data-end type="date"></label><label>联系电话（选填）<input data-phone type="tel" maxlength="40" autocomplete="tel"></label>`:''}<label>${E(NOTE_HINT[t.purpose]||'备注（选填）')}<textarea data-note maxlength="1000" rows="3" style="width:100%"></textarea></label><p>请在下方手写签名：</p><canvas data-signature aria-label="手写签名" style="width:100%;height:180px;display:block;border:1px solid #b2bcb6;border-radius:8px;background:white;touch-action:none"></canvas><div class="actions"><button type="button" data-clear class="secondary">清除重签</button></div><label class="check"><input type="checkbox" data-consent>${E(CONSENT[t.purpose]||'我已核对上方全部内容。')}</label><button type="button" data-submit>确认并签字</button><p data-feedback role="status" aria-live="polite"></p>`;
   canvas=box.querySelector('[data-signature]');ctx=canvas.getContext('2d');strokes=[];paint();
   const feedback=box.querySelector('[data-feedback]');let pointer=null;
   const point=e=>{const r=canvas.getBoundingClientRect();return [Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))];};
@@ -98,12 +99,15 @@
    if(busy||pointer!==null)return;const name=box.querySelector('[data-name]').value.trim(),company=box.querySelector('[data-company]').value.trim();
    if(!name||!company||!box.querySelector('[data-consent]').checked||strokes.reduce((n,v)=>n+v.length,0)<8){feedback.textContent='请填写姓名、工厂 / 单位，完整手写签名，并勾选确认。';return;}
    const shipBox=box.querySelector('[data-ship]'),ship=shipBox?.value||'';if(shipBox&&!ship){feedback.textContent='请填写预计出货日期。';shipBox.focus();return;}
-   const extra=shipBox?{ship_on:ship,factory_ref:box.querySelector('[data-ref]').value.trim(),contact_phone:box.querySelector('[data-phone]').value.trim()}:null;
+   const startBox=box.querySelector('[data-start]'),start=startBox?.value||'',end=box.querySelector('[data-end]')?.value||'';
+   if(startBox&&!start){feedback.textContent='请填写计划开工日期。';startBox.focus();return;}
+   if(startBox&&end&&end<start){feedback.textContent='完工日期不能早于开工日期。';return;}
+   const extra=shipBox?{ship_on:ship,factory_ref:box.querySelector('[data-ref]').value.trim(),contact_phone:box.querySelector('[data-phone]').value.trim()}:startBox?{start_on:start,end_on:end,contact_phone:box.querySelector('[data-phone]').value.trim()}:null;
    busy=true;box.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=true);feedback.textContent='正在提交，请稍候…';
    try{const note=box.querySelector('[data-note]').value.trim(),args={p_id:id,p_token:token,p_code:code,p_terms_hash:view.terms_hash,p_name:name,p_company:company,p_note:note,p_strokes:strokes,p_accept:true};
     let {data,error}=await sb.rpc('renovation_signoff_sign',extra?{...args,p_extra:extra}:args);
     // 数据库还没升级时，出货信息写进备注，不让工厂签不了
-    if(error&&extra&&/p_extra|function|schema cache/i.test(error.message||'')){const add=`预计出货 ${extra.ship_on}${extra.factory_ref?` · 工厂单号 ${extra.factory_ref}`:''}${extra.contact_phone?` · 电话 ${extra.contact_phone}`:''}`;({data,error}=await sb.rpc('renovation_signoff_sign',{...args,p_note:(add+(note?'；'+note:'')).slice(0,1000)}));}
+    if(error&&extra&&/p_extra|function|schema cache/i.test(error.message||'')){const add=extra.start_on?`计划开工 ${extra.start_on}${extra.end_on?` 至 ${extra.end_on}`:''}${extra.contact_phone?` · 电话 ${extra.contact_phone}`:''}`:`预计出货 ${extra.ship_on}${extra.factory_ref?` · 工厂单号 ${extra.factory_ref}`:''}${extra.contact_phone?` · 电话 ${extra.contact_phone}`:''}`;({data,error}=await sb.rpc('renovation_signoff_sign',{...args,p_note:(add+(note?'；'+note:'')).slice(0,1000)}));}
     if(error||!data?.ok)throw new Error(error?.message||'签字暂未成功，请重试。');
     dirty=false;done('<span style="color:#15803d">签字成功，谢谢！</span>门店已收到记录。');}
    catch(e){feedback.textContent=e.message;}finally{busy=false;box.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=false);}

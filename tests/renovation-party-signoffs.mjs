@@ -40,7 +40,7 @@ async function run(who,action,data,p=id){const r=await rev(p);await actor(who);r
 // 转发签字：工厂 / 负责人凭「链接 + 4 位验证码」签字。要保证的是：
 // 1) 链接里没有价格、没有业主姓名电话（工厂不该看到）；2) 没有验证码看不到内容，猜错 8 次锁定；
 // 3) 只有本项目有权限的员工能发起和撤销；4) 签过的不能被改签、撤销的不能再签；5) 签字只是凭证，不改清单进度。
-const so=fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(so);await db.exec(so);checks++;const op=fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8');await db.exec(op);await db.exec(op);
+const so=fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(so);await db.exec(so);checks++;const op=fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8');await db.exec(op);await db.exec(op);const sp=fs.readFileSync('supabase/renovation_signoff_schedule_migration.sql','utf8');await db.exec(sp);await db.exec(sp);
 const custom=await wo('全屋定制');
 async function cmd(who,action,data){await actor(who);return (await db.query('SELECT renovation_signoff_command($1,$2,$3::jsonb) v',[id,action,JSON.stringify(data)])).rows[0].v;}
 const anonQ=async(sql,args)=>{await actor(staff,'anon');return (await db.query(sql,args)).rows[0]?.v;};
@@ -111,7 +111,7 @@ const s4=await cmd(staff,'create',{work_order_id:custom.id,purpose:'issue',party
 ok((await sys('SELECT terms FROM renovation_party_signoffs WHERE id=$1',[s4.id]))[0].terms.lines[0].issue==='门板破损','issue sign-off carries the flagged problem');
 
 // 重跑迁移不丢数据
-await db.exec('RESET ROLE');await db.exec(so);await db.exec(op);ok((await sys('SELECT count(*)::int n FROM renovation_party_signoffs'))[0].n===4,'re-run keeps sign-offs');
+await db.exec('RESET ROLE');await db.exec(so);await db.exec(op);await db.exec(sp);ok((await sys('SELECT count(*)::int n FROM renovation_party_signoffs'))[0].n===4,'re-run keeps sign-offs');
 // 工厂确认下单时带上业主签名确认的证据：每一项取业主最新一版已签名的确认（图纸 + 电子签名或纸质确认单），
 // 工厂能看清业主确认了什么；业主姓名电话仍不给；到货 / 安装签字不带；验证码前和签完后都读不到这些文件。
 {const P=await sys('SELECT 1');void P;
@@ -152,4 +152,15 @@ await db.exec('RESET ROLE');await db.exec(so);await db.exec(op);ok((await sys('S
  await sys(`UPDATE renovation_work_items SET stage='ordered' WHERE work_order_id=$1 AND line_id='C1'`,[w]);await reject(()=>kind(staff,['C1'],'custom'),/已下单/);
  ok((await sys(`SELECT count(*)::int n FROM renovation_audit WHERE action='fulfillment_kind_changed' AND project_id=$1`,[pid]))[0].n===2,'kind changes are in the history');
  ok(!(await sys(`SELECT pg_get_functiondef('public.renovation_fulfillment_command(uuid,integer,text,jsonb)'::regprocedure) d`))[0].d.includes('定制单请填写厂家单号'),'factory order no is optional when ordering (factories often send it later)');}
+// 施工排期转发给监理 / 外部施工单位：必须填计划开工日期，完工日期不能早于开工；签字只作记录，不改进度
+{await sys(`UPDATE renovation_work_orders SET assignee='外包队' WHERE project_id=$1 AND group_name='拆除'`,[id]);
+ const dw=await wo('拆除');const sc=await cmd(staff,'create',{work_order_id:dw.id,purpose:'schedule',party:'外包施工队'});
+ const sv=await open(sc,sc.code);ok(sv.status==='pending'&&sv.terms.purpose==='schedule','schedule link opens');
+ await reject(()=>signIt(sc,sc.code,sv.terms_hash,{extra:{}}),/计划开工日期/);
+ await reject(()=>signIt(sc,sc.code,sv.terms_hash,{extra:{start_on:'2099-02-01',end_on:'2099-01-01'}}),/完工日期不能早于开工/);
+ const before=(await items()).W2.stage;
+ await signIt(sc,sc.code,sv.terms_hash,{extra:{start_on:'2099-01-05',end_on:'2099-01-20',contact_phone:'012'}});
+ const x=(await sys('SELECT plan_start::text a,plan_end::text b,contact_phone FROM renovation_party_signoffs WHERE id=$1',[sc.id]))[0];
+ ok(x.a==='2099-01-05'&&x.b==='2099-01-20'&&x.contact_phone==='012','schedule dates kept for staff');
+ ok((await items()).W2.stage===before,'signing the schedule does not change progress by itself');}
 console.log(`PASS ${checks} party sign-off checks`);

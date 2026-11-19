@@ -14,7 +14,7 @@ window.RenoFulfillment=(()=>{
  const empty={items:[],confirmations:[],batches:[],signoffs:[]};
  // 手写签名按笔画保存（0~1 的相对坐标），这里画成图给员工看
  const sigSvg=strokes=>`<svg viewBox="0 0 600 180" role="img" aria-label="手写签名" style="width:100%;max-width:420px;height:auto;display:block;border:1px solid #dce2df;border-radius:6px;background:#fff">${(Array.isArray(strokes)?strokes:[]).filter(x=>Array.isArray(x)&&x.length>1).map(x=>`<polyline fill="none" stroke="#22362e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" points="${x.map(q=>`${(+q[0]*600).toFixed(1)},${(+q[1]*180).toFixed(1)}`).join(' ')}"/>`).join('')}</svg>`;
- const PURPOSES={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工',issue:'问题处理'};
+ const PURPOSES={order:'工厂确认下单内容',arrival:'到货验收',install:'安装完工',issue:'问题处理',schedule:'施工排期'};
  const stage=i=>i.stage==='cancelled'?'已取消':stageNames[i.kind]?.[i.stage]||i.stage;
  const open=i=>i.stage!=='done'&&i.stage!=='cancelled';
  const free=i=>!i.issue_note;
@@ -85,6 +85,7 @@ window.RenoFulfillment=(()=>{
   const covered=(p,ok)=>so.some(x=>x.purpose===p&&items.some(i=>(x.line_ids||[]).includes(i.line_id)&&ok(i)));
   if(covered('arrival',i=>i.stage==='ordered'&&free(i)))return {label:'确认到货（对方已签）'};
   if(covered('install',i=>b.finishable.includes(i)))return {label:'确认完工（对方已签）'};
+  if(so.some(x=>x.purpose==='schedule'&&x.plan_start&&items.some(i=>(x.line_ids||[]).includes(i.line_id)&&i.kind==='work'&&i.stage==='pending'&&free(i))))return {label:'确认排期（对方已填）'};
   const live=(t.confirmations||[]).find(c=>c.work_order_id===w.id&&['pending','paper_review'].includes(c.status));
   if(b.unsigned.length&&!live)return {label:'发起业主签名'};
   if(live?.status==='paper_review')return {label:options?.manager?'审核纸质确认单':'查看纸质确认单'};
@@ -132,7 +133,7 @@ window.RenoFulfillment=(()=>{
  const frm=(fields,actions,extra='')=>`<div class="fx-form" data-form><div class="fx-fields">${fields}</div><div class="fx-actions">${actions}</div>${extra}</div>`;
  function soInline(purpose,o,open=false){ // 点「转发…」就在按钮下面展开，不跳到页面别处
   if(!o.signoffsReady)return '';
-  return `<div class="fx-form fx-so-inline" data-form data-so-inline="${purpose}"${open?'':' hidden'}><input type="hidden" data-f="purpose" value="${purpose}"><div class="fx-fields">${field('签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}</div><div class="fx-actions"><button type="button" data-act="signoff_create">生成签字链接</button></div></div>`;
+  return `<div class="fx-form fx-so-inline" data-form data-so-inline="${purpose}"${open?'':' hidden'}><input type="hidden" data-f="purpose" value="${purpose}"><div class="fx-fields">${field(purpose==='schedule'?'对方（监理或施工单位）':'签字方（工厂或负责人）','party','maxlength="120"')}${field('给对方的说明（选填）','so_note','maxlength="1000"')}${file('附件：图纸或照片（选填）','so_doc',PDF_IMG)}</div><div class="fx-actions"><button type="button" data-act="signoff_create">生成签字链接</button></div></div>`;
  }
  const pendList=(list,o)=>list.length?`<ul class="fx-pending">${list.map(x=>`<li>${soHead(x)}${(x.failed_checks||0)>=8?' · <span class="warning">验证码错太多次已锁定，请撤销后重发</span>':''}
     <div class="actions"><span>验证码 <b class="mono" style="font-size:1.15em;letter-spacing:2px">${E(x.access_code)}</b></span><button type="button" class="secondary" data-act="signoff_copy_link" data-id="${x.id}" data-token="${x.signing_token}">复制链接</button><button type="button" class="secondary" data-act="signoff_copy_code" data-code="${E(x.access_code)}">复制验证码</button></div>
@@ -165,7 +166,7 @@ window.RenoFulfillment=(()=>{
   const pend=p=>pendList((o.signoffs||[]).filter(x=>x.status==='pending'&&x.purpose===p),o);
   if(b.arriving.length)out.arrive=pend('arrival')+frm(field('到货日期','on',`type="date" value="${today()}"`),`<button type="button" data-act="arrive">确认到货（${b.arriving.length}项）</button>${fwd('arrival','转发到货验收签字')}`)+soInline('arrival',o);
   const needAssignee=!String(w.assignee||'').trim()?'<p class="warning fx-need-assignee">⚠ 先在上方填写「执行人」并保存，才能排期和标记完成。</p>':'';
-  if(b.toSchedule.length)out.schedule=needAssignee+frm(field('排期日期','on','type="date"'),`<button type="button" data-act="schedule">确认排期（${b.toSchedule.length}项）</button>`);
+  if(b.toSchedule.length)out.schedule=needAssignee+pend('schedule')+frm(field('排期日期','on','type="date"'),`<button type="button" data-act="schedule">确认排期（${b.toSchedule.length}项）</button>${fwd('schedule','转发给监理 / 施工方填排期')}`)+soInline('schedule',o);
   if(b.toStart.length)out.start=frm('',`<button type="button" data-act="start_work">确认开工（${b.toStart.length}项）</button>`);
   if(b.finishable.length){const photo=b.finishable.some(i=>i.kind!=='gift');out.finish=needAssignee+pend('install')+frm(field('完成日期','on',`type="date" value="${today()}"`)+(photo?file('完工照片或文件','proof',PDF_IMG):''),`<button type="button" data-act="finish">确认完成（${b.finishable.length}项）</button>${fwd('install','转发安装完工签字')}`)+soInline('install',o);}
   return out;
@@ -204,12 +205,13 @@ window.RenoFulfillment=(()=>{
   if(o.locked)return '';
   const kl=d=>new Date(d).toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
   let html='';
-  for(const x of (o.signoffs||[]).filter(x=>x.status==='signed'&&['arrival','install'].includes(x.purpose))){
+  for(const x of (o.signoffs||[]).filter(x=>x.status==='signed'&&['arrival','install','schedule'].includes(x.purpose))){
    const mine=items.filter(i=>(x.line_ids||[]).includes(i.line_id)&&free(i));
-   const ready=x.purpose==='arrival'?mine.filter(i=>i.stage==='ordered'):mine.filter(i=>!i.change_pending&&((['custom','stock'].includes(i.kind)&&i.stage==='arrived')||(i.kind==='work'&&i.stage==='working')||(i.kind==='gift'&&i.stage==='pending')));
+   const ready=x.purpose==='schedule'?(x.plan_start?mine.filter(i=>i.kind==='work'&&i.stage==='pending'):[]):x.purpose==='arrival'?mine.filter(i=>i.stage==='ordered'):mine.filter(i=>!i.change_pending&&((['custom','stock'].includes(i.kind)&&i.stage==='arrived')||(i.kind==='work'&&i.stage==='working')||(i.kind==='gift'&&i.stage==='pending')));
    if(!ready.length)continue;
    const who=`${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleDateString('zh-CN'))}`,names=ready.map(i=>E(i.name)).join('、'),lines=ready.map(i=>E(i.line_id)).join(',');
-   if(x.purpose==='arrival')html+=`<div class="actions fx-shortcut" data-form><span>✓ 到货验收已签（${who}）：${names}</span><button type="button" data-act="so_arrive" data-lines="${lines}" data-on="${kl(x.signed_at)}">一键标记到货（${ready.length}项）</button></div>`;
+   if(x.purpose==='schedule')html+=`<div class="actions fx-shortcut" data-form><span>✓ ${E(x.signer_company)} 已填排期：${E(x.plan_start)}${x.plan_end?' 至 '+E(x.plan_end):''}（${names}）</span><button type="button" data-act="so_schedule" data-lines="${lines}" data-on="${E(x.plan_start)}" data-end="${E(x.plan_end||'')}">一键确认排期（${ready.length}项）</button></div>`;
+   else if(x.purpose==='arrival')html+=`<div class="actions fx-shortcut" data-form><span>✓ 到货验收已签（${who}）：${names}</span><button type="button" data-act="so_arrive" data-lines="${lines}" data-on="${kl(x.signed_at)}">一键标记到货（${ready.length}项）</button></div>`;
    else html+=`<div class="work-controls fx-shortcut" data-form><span style="flex-basis:100%">✓ 安装完工已签（${who}）：${names}</span>${ready.some(i=>i.kind!=='gift')?file('完工照片或文件','proof',PDF_IMG):''}<button type="button" data-act="so_finish" data-lines="${lines}" data-on="${kl(x.signed_at)}">标记完成（${ready.length}项）</button></div>`;
   }
   return html?`<div class="work-terms"><b>对方已签字，确认后更新进度</b>${html}</div>`:'';
@@ -221,7 +223,7 @@ window.RenoFulfillment=(()=>{
   const owner=ownerHistory(w,t),batches=batchBlock(w,items,t,o),signed=(o.signoffs||[]).filter(x=>x.status==='signed').sort((a,b)=>String(b.signed_at).localeCompare(String(a.signed_at)));
   const nOwner=t.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').length,nBatch=t.batches.filter(x=>x.work_order_id===w.id).length;
   if(!nOwner&&!nBatch&&!signed.length)return '';
-  const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.ship_on?`<br>预计出货：<b>${E(x.ship_on)}</b>${x.factory_ref?` · 工厂单号 ${E(x.factory_ref)}`:''}${x.contact_phone?` · 电话 ${E(x.contact_phone)}`:''}`:''}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
+  const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.plan_start?`<br>计划：<b>${E(x.plan_start)}${x.plan_end?' 至 '+E(x.plan_end):''}</b>${x.contact_phone?` · 电话 ${E(x.contact_phone)}`:''}`:''}${x.ship_on?`<br>预计出货：<b>${E(x.ship_on)}</b>${x.factory_ref?` · 工厂单号 ${E(x.factory_ref)}`:''}${x.contact_phone?` · 电话 ${E(x.contact_phone)}`:''}`:''}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
     <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions">${fileBtn(x.document_path,'查看附件')}</div>`:''}${sigSvg(x.signature_strokes)}</details></li>`).join('');
   return `<details class="work-terms fx-records"><summary>记录：业主签名 ${nOwner} · 下单 ${nBatch} · 工厂 / 负责人签字 ${signed.length}</summary>
    ${owner?`<b>业主签名</b><ul>${owner}</ul>`:''}${batches}${so?`<b>工厂 / 负责人签字</b><ul>${so}</ul>`:''}</details>`;
@@ -325,7 +327,7 @@ window.RenoFulfillment=(()=>{
      if(!v('party').trim()){input('party')?.focus();throw new Error('请先填写「签字方」：工厂名称或负责人名字');}
      const docInput=input('so_doc'),f=picked1(docInput)?await upload(ctx.sb,project.id,docInput,'附件'):null;
      const {data,error}=await ctx.sb.rpc('renovation_signoff_command',{p_id:project.id,p_action:'create',p_data:{work_order_id:root.dataset.wo,line_ids:picked,purpose:v('purpose'),party:v('party'),note:v('so_note'),document_path:f?.path||null,document_sha256:f?.hash||null}});
-     if(error)throw error;
+     if(error)throw v('purpose')==='schedule'&&/签字用途|purpose_check/.test(error.message||'')?new Error('转发排期要先在 Supabase 运行 renovation_signoff_schedule_migration.sql'):error;
      await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;
      const cb=document.querySelector(`[data-act="signoff_copy_link"][data-id="${data.id}"]`);let copied=false;
      if(cb){try{await navigator.clipboard.writeText(soMessage(cb));copied=true;}catch(e){}}
@@ -339,6 +341,8 @@ window.RenoFulfillment=(()=>{
      if(error)throw /function|schema cache/i.test(error.message||'')?new Error('这个功能要先在 Supabase 运行 renovation_item_kind_migration.sql'):error;
      await ctx.onChange();const again=document.querySelector(`[data-wo="${root.dataset.wo}"]`);if(again)again.closest('details').open=true;ctx.message(act==='kind_stock'?`已改为现货 ${ids.length} 项`:`已改回定制 ${ids.length} 项`);
     }
+    else if(act==='so_schedule'){await send('schedule',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on});
+     if(btn.dataset.end){const {error}=await ctx.sb.rpc('renovation_schedule_save',{p_id:project.id,p_plans:[{work_order_id:root.dataset.wo,start:btn.dataset.on,end:btn.dataset.end}]});if(error)ctx.message('排期已确认，但计划完工日没存上：'+error.message,true);else await ctx.onChange();}}
     else if(act==='so_arrive')await send('arrive',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on});
     else if(act==='so_finish'){const needs=!!input('proof');const f=needs?await upload(ctx.sb,project.id,input('proof'),'完工照片或文件'):null;await send('finish',{work_order_id:root.dataset.wo,line_ids:btn.dataset.lines.split(','),on:btn.dataset.on,proof_path:f?.path});}
     else if(act==='signoff_copy_link'){await navigator.clipboard.writeText(soMessage(btn));feedback.textContent='链接已复制。对方打开链接、输入验证码后就能看到清单和图纸。验证码请另外单独发。';}

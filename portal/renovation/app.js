@@ -203,7 +203,7 @@ $('confirm').onclick=()=>guarded(async()=>{
  await rpc('confirm',{signed:true,reviewed:true});await openProject(project.id);await loadList();
 });
 $('split').onclick=()=>guarded(async()=>{await rpc('split',{});await openProject(project.id);await loadList();message('子订单已生成，未增加客户应收。');});
-$('work-orders').onclick=e=>guarded(async()=>{const b=e.target.closest('[data-work]');if(!b)return;const i=+b.dataset.work;await rpc('work',{id:work[i].id,assignee:$('assignee-'+i).value,status:$('assignee-'+i).value.trim()?'assigned':'draft'});await openProject(project.id);});
+$('work-orders').onclick=e=>guarded(async()=>{const b=e.target.closest('[data-work]');if(!b)return;const i=+b.dataset.work;await rpc('work',{id:work[i].id,assignee:$('assignee-'+i).value,status:$('assignee-'+i).value.trim()?'assigned':'draft'});await refreshWork(project.id);const c=$('assignee-'+i)?.closest('details.work');if(c)c.open=true;});
 $('view-contract').onclick=()=>guarded(async()=>{
  if(!upload&&!snapshot.contract_path)throw new Error('请先选择合同PDF，或打开已有归档合同的项目');
  // Open during the click gesture, before requesting a private storage URL.
