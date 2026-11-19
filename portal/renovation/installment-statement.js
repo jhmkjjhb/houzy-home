@@ -45,6 +45,8 @@ window.RenoInstallmentStatement=(()=>{
   <footer>This document reflects the latest confirmed payment allocation when generated. It is a progress payment statement, not a tax invoice or a MyInvois-validated e-Invoice. A tax e-Invoice, where applicable, is issued separately.<br>本单按生成时已确认归期的收款记录显示；并非税务发票或经 MyInvois 验证的电子发票。适用时税务电子发票另行开具。<br>HOUZY HOME · ${esc(date(data.generated_at))}</footer></article>`;
  }
  async function download(data,company){
+  // PDF 组件较大，用到时才下载，不拖慢打开页面
+  if(typeof html2pdf!=='function')await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('PDF component is unavailable / PDF 组件未加载，请检查网络后重试'));document.head.appendChild(sc);});
   if(typeof html2pdf!=='function')throw new Error('PDF component is unavailable / PDF 组件未加载，请刷新重试');
   const wrapper=document.createElement('div');wrapper.className='reno-pdf-capture';wrapper.style.cssText='position:absolute;left:0;top:0;width:750px;background:#fff;z-index:-1;pointer-events:none';
   wrapper.innerHTML=render(data,company);document.body.appendChild(wrapper);

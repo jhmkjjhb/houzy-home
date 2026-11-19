@@ -107,6 +107,16 @@ async function openProject(id){
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
  if(resetScroll)window.scrollTo(0,0);
 }
+// 子单 / 施工计划里的操作只影响项目版本、子单和跟踪表：只重读这三样再重画这两块，不重读整个项目（快很多）
+async function refreshWork(id){
+ const [pr,wo,tr]=await Promise.all([sb.from('renovation_projects').select('*').eq('id',id).single(),sb.from('renovation_work_orders').select('*').eq('project_id',id).order('group_name'),RenoFulfillment.load(sb,id).then(v=>({data:v}),e=>({error:e}))]);
+ for(const r of [pr,wo,tr])if(r.error)throw r.error;
+ if(project?.id!==id)return;
+ project=pr.data;work=wo.data;scheduleTracking=tr.data;
+ if(window.RenoSchedule)RenoSchedule.render($('schedule'),scheduleData());
+ $('work-orders').innerHTML=RenoWorkView.render(work,effectiveSnapshot(),project.state==='accepted',tr.data,{manager:['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
+ if(project.state==='accepted')$('work-orders').querySelectorAll('input,select').forEach(e=>e.disabled=true);
+}
 async function archive(file,kind='contract'){
  if(!project)throw new Error('请先补齐客户资料并保存项目草稿，再归档文件');
  if(!file||file.size>20*1024*1024||file.type!=='application/pdf')throw new Error('请选择20MB以内的PDF文件');
@@ -230,8 +240,8 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  document.querySelector('.fx-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-fxtab]');if(b)fxTab(b.dataset.fxtab);});
  try{fxTab(sessionStorage.getItem('reno-fx-tab')||'exec');}catch(e){fxTab('exec');}
  if(window.RenoSchedule)RenoSchedule.crewAdmin($('crew-admin'),{sb,manager:()=>['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
- if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await openProject(project.id);},message:(m,err)=>message(m,err)});
- RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await openProject(project.id);loadList().catch(()=>{});},message});
+ if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await refreshWork(project.id);},message:(m,err)=>message(m,err)});
+ RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await refreshWork(project.id);setTimeout(()=>loadList().catch(()=>{}),1500);},message});
  const refreshHome=async()=>{await RenoFulfillmentHome.load({sb,openProject,refresh:async()=>{await loadList();await refreshHome();}});};
  // 有项目编号时先开项目，列表和待办在后台同时读，不用等
  const id=location.hash.slice(1),isNew=new URLSearchParams(location.search).get('new')==='1';

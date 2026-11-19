@@ -332,8 +332,10 @@ window.RenoFulfillment=(()=>{
   for(const x of r)if(x.error)throw x.error;
   const t={items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
   const paths=[...new Set([...t.confirmations.flatMap(c=>[c.document_path,c.paper_path]),...(t.signoffs||[]).map(x=>x.document_path)].filter(Boolean))];
+  // 图纸链接在后台签，不挡页面显示；签好后把按钮换成真正的链接
   fileUrls={};
-  if(paths.length){try{const {data}=await sb.storage.from(BUCKET).createSignedUrls(paths,3600);for(const x of data||[])if(x.signedUrl&&!x.error)fileUrls[x.path]=x.signedUrl;fileUrlsAt=Date.now();}catch(e){/* 签不出来就退回按钮，点时再签 */}}
+  if(paths.length)Promise.resolve().then(()=>sb.storage.from(BUCKET).createSignedUrls(paths,3600)).then(({data})=>{for(const x of data||[])if(x.signedUrl&&!x.error)fileUrls[x.path]=x.signedUrl;fileUrlsAt=Date.now();
+   document.querySelectorAll('button[data-act="view_file"][data-path]').forEach(b=>{if(fileUrls[b.dataset.path])b.outerHTML=fileBtn(b.dataset.path,b.innerHTML);});}).catch(()=>{/* 签不出来就保留按钮，点时再签 */});
   return t;
  }
  return {panel,headline,badges,state,primary,bind,load,buckets};
