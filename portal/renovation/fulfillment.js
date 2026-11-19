@@ -4,6 +4,9 @@
 window.RenoFulfillment=(()=>{
  const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const BUCKET='renovation-fulfillment';
+ // 图纸 / 附件：载入时就签好链接，按钮是真正的链接，手机和微信点了直接打开（不靠弹窗）
+ let fileUrls={},fileUrlsAt=0;
+ const fileBtn=(path,label)=>{const u=fileUrls[path];return u?`<a class="fx-file-link" href="${E(u)}" target="_blank" rel="noopener" data-act="view_file" data-path="${E(path)}">${label}</a>`:`<button type="button" class="secondary" data-act="view_file" data-path="${E(path)}">${label}</button>`;};
  const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuala_Lumpur'});
  const stageNames={custom:{pending:'待业主签名',confirmed:'已签名待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},stock:{pending:'待下单',confirmed:'待下单',ordered:'已下单',arrived:'已到货',done:'已安装'},work:{pending:'待排期',scheduled:'已排期',working:'施工中',done:'已完工'},gift:{pending:'待交付',done:'已交付'}};
  const kindNames={custom:'定制',stock:'现货',work:'施工',gift:'赠品'};
@@ -105,7 +108,7 @@ window.RenoFulfillment=(()=>{
   else if(live?.status==='pending')body=`<p><b>等待业主签名</b>（第${live.version}版）。业主须输入登记手机号后四位才能查看。</p><div class="actions"><button type="button" class="secondary" data-act="copy_link" data-id="${live.id}" data-token="${live.signing_token}">复制签名链接</button></div>
    <details><summary>业主已签纸质确认单</summary><div class="work-controls" data-form>${file('扫描件','paper',PDF_IMG)}${field('签名人姓名','signer_name','maxlength="100"')}${relationField}<button type="button" data-act="submit_paper" data-id="${live.id}">提交店长审核</button></div></details>
    <details><summary>撤销这份确认单</summary><div class="work-controls" data-form>${field('撤销原因','reason')}<button type="button" class="secondary" data-act="void_signature" data-id="${live.id}">撤销</button></div></details>`;
-  else if(live)body=`<p><b>纸质确认单待审核</b>：${E(live.signer_name)}（${E(live.signer_relation)}）。</p><div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(live.paper_path)}">查看扫描件</button>${o.manager?`<button type="button" data-act="review_paper" data-id="${live.id}" data-approve="1">审核通过</button><button type="button" class="secondary" data-act="review_paper" data-id="${live.id}" data-approve="">退回</button>`:'<span class="muted">须由店长或上级审核</span>'}</div>`;
+  else if(live)body=`<p><b>纸质确认单待审核</b>：${E(live.signer_name)}（${E(live.signer_relation)}）。</p><div class="actions">${fileBtn(live.paper_path,'查看扫描件')}${o.manager?`<button type="button" data-act="review_paper" data-id="${live.id}" data-approve="1">审核通过</button><button type="button" class="secondary" data-act="review_paper" data-id="${live.id}" data-approve="">退回</button>`:'<span class="muted">须由店长或上级审核</span>'}</div>`;
   else{
    const waiting=customs.filter(i=>['pending','confirmed'].includes(i.stage));
    if(waiting.length)body=`<div class="work-controls" data-form>${file(signed?'新版定稿图纸（旧签名将失效，业主会看到）':'定稿图纸或确认文件（业主会看到，请勿含成本价）','document',PDF_IMG)}${field('给业主的说明（选填，业主会看到）','note')}<button type="button" data-act="request_signature">${signed?'重新发起业主签名':'整单发起业主签名'}（${waiting.length}项）</button></div>`;
@@ -118,7 +121,7 @@ window.RenoFulfillment=(()=>{
   const all=tracking.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').sort((a,b)=>b.version-a.version);
   return all.map(c=>`<li>第${c.version}版${c.kind==='change'?'（改单）':''} · ${E(c.signer_name)}（${E(c.signer_relation)}）· ${E(new Date(c.signed_at).toLocaleString('zh-CN'))} · ${c.method==='paper'?'纸质':'电子'}${c.terms?.change_note?` · ${E(c.terms.change_note)}`:''}
    <details><summary>查看业主签名</summary><p>签名的清单（${(c.terms?.lines||[]).length}项）：${(c.terms?.lines||[]).map(l=>`${E(l.name)}${l.spec?`（${E(l.spec)}）`:''} × ${E(l.qty)} ${E(l.unit)}`).join('；')}</p>${c.terms?.note?`<p>说明：${E(c.terms.note)}</p>`:''}
-   <div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(c.document_path)}">查看签名时的图纸</button>${c.paper_path?`<button type="button" class="secondary" data-act="view_file" data-path="${E(c.paper_path)}">查看纸质确认单</button>`:''}</div>
+   <div class="actions">${fileBtn(c.document_path,'查看签名时的图纸')}${c.paper_path?`${fileBtn(c.paper_path,'查看纸质确认单')}`:''}</div>
    ${c.method==='electronic'&&c.signature_strokes?`<p>手写签名：</p>${sigSvg(c.signature_strokes)}`:''}</details></li>`).join('');
  }
  function orderBlock(items,o){
@@ -201,7 +204,7 @@ window.RenoFulfillment=(()=>{
   const nOwner=t.confirmations.filter(c=>c.work_order_id===w.id&&c.status==='signed').length,nBatch=t.batches.filter(x=>x.work_order_id===w.id).length;
   if(!nOwner&&!nBatch&&!signed.length)return '';
   const so=signed.map(x=>`<li>${soHead(x)} · ${E(x.signer_company)} ${E(x.signer_name)} · ${E(new Date(x.signed_at).toLocaleString('zh-CN'))}${x.signer_note?`<br>对方备注：<b>${E(x.signer_note)}</b>`:''}
-    <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions"><button type="button" class="secondary" data-act="view_file" data-path="${E(x.document_path)}">查看附件</button></div>`:''}${sigSvg(x.signature_strokes)}</details></li>`).join('');
+    <details><summary>查看签字</summary>${x.terms?.note?`<p>说明：${E(x.terms.note)}</p>`:''}${x.document_path?`<div class="actions">${fileBtn(x.document_path,'查看附件')}</div>`:''}${sigSvg(x.signature_strokes)}</details></li>`).join('');
   return `<details class="work-terms fx-records"><summary>记录：业主签名 ${nOwner} · 下单 ${nBatch} · 工厂 / 负责人签字 ${signed.length}</summary>
    ${owner?`<b>业主签名</b><ul>${owner}</ul>`:''}${batches}${so?`<b>工厂 / 负责人签字</b><ul>${so}</ul>`:''}</details>`;
  }
@@ -260,6 +263,7 @@ window.RenoFulfillment=(()=>{
   new MutationObserver(()=>{if(el.querySelector('[data-fxfilter]'))applyFilter(el);}).observe(el,{childList:true});
   el.addEventListener('click',async e=>{
    const btn=e.target.closest('[data-act]');if(!btn||!el.contains(btn))return;
+   if(btn.tagName==='A'){if(Date.now()-fileUrlsAt<50*60e3)return;e.preventDefault();} // 链接超过 50 分钟就现签一个
    const root=btn.closest('[data-wo]'),box=btn.closest('[data-form]')||root,feedback=root.querySelector('[data-feedback]');
    if(busy)return;busy=true;feedback.textContent='正在处理…';
    const v=n=>box.querySelector(`[data-f="${n}"]`)?.value??'',input=n=>box.querySelector(`[data-f="${n}"]`);
@@ -307,7 +311,11 @@ window.RenoFulfillment=(()=>{
   // 四张表同时读，不排队
   const [so,...r]=await Promise.all(['renovation_party_signoffs','renovation_work_items','renovation_custom_confirmations','renovation_purchase_batches'].map(t=>sb.from(t).select('*').eq('project_id',projectId)));
   for(const x of r)if(x.error)throw x.error;
-  return {items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
+  const t={items:r[0].data||[],confirmations:r[1].data||[],batches:r[2].data||[],signoffs:so.error?null:(so.data||[])};
+  const paths=[...new Set([...t.confirmations.flatMap(c=>[c.document_path,c.paper_path]),...(t.signoffs||[]).map(x=>x.document_path)].filter(Boolean))];
+  fileUrls={};
+  if(paths.length){try{const {data}=await sb.storage.from(BUCKET).createSignedUrls(paths,3600);for(const x of data||[])if(x.signedUrl&&!x.error)fileUrls[x.path]=x.signedUrl;fileUrlsAt=Date.now();}catch(e){/* 签不出来就退回按钮，点时再签 */}}
+  return t;
  }
  return {panel,headline,badges,state,primary,bind,load,buckets};
 })();

@@ -241,3 +241,5 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-ms .sch-lane{min-height:44px}.sch-dia.low{top:24px}
 .fx-so-inline{margin-top:8px;padding:10px 12px;border:1px dashed rgba(99,56,153,.45);border-radius:10px;background:rgba(99,56,153,.04)}
 .fx-so-inline[hidden]{display:none}
+.fx-file-link{display:inline-block;padding:10px 16px;border:1px solid #d6ddcf;border-radius:7px;background:#fff;color:var(--hz-green,#153927);text-decoration:none;font-weight:500}
+.fx-file-link:hover{background:#f5f7f1;border-color:#aeb9a3}
