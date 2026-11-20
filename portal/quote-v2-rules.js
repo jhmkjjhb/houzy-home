@@ -160,7 +160,7 @@
     } },
     wall: { label: '墙面', icon: '🖌️', keys: {
       method: { label: '墙面做法', opts: ['乳胶漆', '墙纸', '艺术漆', '墙布'], std: '乳胶漆', codes: ['paint_wall', 'wallpaper', 'art_paint', 'wall_cloth'], packs: ['wall_finish'], noPrice: true },
-      brand:  { label: '油漆品牌', opts: ['Nippon Paint', 'Dulux', 'Jotun'], std: 'Nippon Paint', codes: ['paint_wall', 'paint_ceiling'] },
+      brand:  { label: '油漆品牌', opts: ['Nippon Paint', 'Dulux', 'Jotun', 'Seamaster'], std: 'Nippon Paint', codes: ['paint_wall', 'paint_ceiling'] },
       base:   { label: '基层处理', opts: ['旧墙局部修补', '新墙满批', '铲除旧漆重做'], std: '旧墙局部修补', codes: ['skim'] }
     } },
     ceiling: { label: '天花', icon: '⬜', keys: {
@@ -247,7 +247,7 @@
       grout: { label: '美缝', opts: ['环氧彩砂美缝', '普通填缝剂', '聚脲美缝'], std: '环氧彩砂美缝', codes: ['grout'] },
       wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp'] },
       pipe: { label: '水管', opts: ['PPR 水管', 'PEX 水管', '不锈钢水管'], std: 'PPR 水管', codes: ['water_pt'] },
-      wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
+      wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Tai Sin', 'Power Cables Malaysia', 'Sindutch Cable（Prysmian）', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
       cornice: { label: '石膏线材料', opts: ['石膏线', 'PU 线条'], std: '石膏线', codes: ['cornice'] }
     } },
     soft2: { label: '窗帘 / 晾衣架 / 吊扇', icon: '🎐', keys: {
@@ -259,7 +259,7 @@
     outer: { label: '大门 / 外墙 / 安防', icon: '🏠', keys: {
       mainDoor: { label: '入户大门', opts: ['钢制防盗门', '实木大门', '铝合金大门', '铁艺大门', '智能防盗门（含智能锁）'], std: '钢制防盗门', codes: ['main_door'] },
       grille: { label: '防盗铁花', opts: ['镀锌铁花', '不锈钢铁花', '隐形防盗网（钢丝）'], std: '镀锌铁花', codes: ['grille'] },
-      extPaint: { label: '外墙漆品牌', opts: ['Nippon Weatherbond', 'Dulux Weathershield', 'Jotun Jotashield'], std: 'Nippon Weatherbond', codes: ['ext_paint'] },
+      extPaint: { label: '外墙漆品牌', opts: ['Nippon Weatherbond', 'Dulux Weathershield', 'Jotun Jotashield', 'Seamaster'], std: 'Nippon Weatherbond', codes: ['ext_paint'] },
       cctvRes: { label: 'CCTV 摄像头', opts: ['2MP 普通', '4MP 高清', '4MP 彩色夜视 + 人形侦测'], std: '2MP 普通', codes: ['cctv'] },
       cctvBrand: { label: 'CCTV 品牌', opts: ['Hikvision', 'Dahua', 'Ezviz（萤石）'], std: 'Hikvision', codes: ['cctv'] },
       doorbell: { label: '可视门铃', opts: ['普通可视门铃', 'Wi-Fi 手机可视门铃'], std: '普通可视门铃', codes: ['doorbell'] },
@@ -299,7 +299,7 @@
       frame: { label: '五金颜色', opts: ['不锈钢本色', '哑黑', '枪灰', '拉丝金'], std: '不锈钢本色', codes: ['screen', 'screen_l', 'screen_diamond'] }
     } },
     switch: { label: '开关面板 / 智能开关', icon: '🔘', keys: {
-      brand:    { label: '开关面板品牌', opts: ['普通品牌（示范价）', 'Bull 公牛', 'Panasonic 松下', 'Schneider 施耐德', 'Legrand 罗格朗', 'MK'], std: '普通品牌（示范价）', codes: ['panel'] },
+      brand:    { label: '开关面板品牌', opts: ['普通品牌（示范价）', 'LWD（马来西亚制造）', 'PLK（马来西亚制造）', 'reTOUCH（马来西亚品牌）', 'UMS / neiken（马来西亚制造）', 'Bull 公牛', 'Panasonic 松下', 'Schneider 施耐德', 'Legrand 罗格朗', 'MK'], std: '普通品牌（示范价）', codes: ['panel'] },
       color:    { label: '面板颜色', opts: ['白色', '黑色', '灰色', '香槟金'], std: '白色', codes: ['panel', 'smart_switch'], noPrice: true },
       smartType:{ label: '智能开关类型', opts: ['单火智能开关（旧房免拉零线）', '零火智能开关（更稳定）', '智能触屏场景面板'], std: '单火智能开关（旧房免拉零线）', codes: ['smart_switch'] },
       platform: { label: '智能系统', opts: ['Tuya / Smart Life', '小米米家', 'Aqara（支持 Apple Home）', 'Schneider Wiser'], std: 'Tuya / Smart Life', codes: ['smart_switch', 'curtain_motor', 'smart_sensor', 'smart_ir'] }
@@ -537,6 +537,9 @@
     { k: 'extension', landed: true, grp: 'out', label: '加建/扩建（地基+砌墙+屋顶）', icon: '🏗️', why: '会自动加上扩建图纸及市政局申请；已经按房间加了「加建空间」的不要在这里重复', inputs: [{ k: 'area', label: '加建面积', unit: '平方尺', def: () => 100 }], lines: v => [['extension', v.area, '加建面积']] },
     { k: 'awning', landed: true, grp: 'out', label: '雨棚', icon: '⛱️', inputs: [{ k: 'area', label: '雨棚面积', unit: '平方尺', def: () => 200 }], lines: v => [['awning', v.area, '雨棚面积']] },
     { k: 'roof_fix', landed: true, grp: 'out', label: '屋顶补漏', icon: '🏠', inputs: [{ k: 'n', label: '漏点', unit: '处', def: () => 1 }], lines: v => [['roof_fix', v.n, '漏点处数']] },
+    { k: 'outdoor_paving', landed: true, grp: 'out', label: '户外地坪', icon: '🪨', why: '按实际地坪做法核价；户外瓷砖请另选「户外贴瓷砖」，避免重复计算面层', inputs: [{ k: 'area', label: '地坪面积', unit: '平方尺', def: () => 100 }], lines: v => [['outdoor_paving', v.area, '户外地坪面积']] },
+    { k: 'outdoor_tile', landed: true, grp: 'out', label: '户外贴瓷砖', icon: '🟫', why: '参考现有户外防滑砖单价；若同一区域已在后院/车廊房间选「防滑地砖」，请勿重复选择', inputs: [{ k: 'area', label: '铺贴面积', unit: '平方尺', def: () => 100 }], lines: v => [['outdoor_tile', v.area, '户外瓷砖面积']] },
+    { k: 'outdoor_planter', landed: true, grp: 'out', label: '户外花坛与造型', icon: '🌿', why: '按花坛长度、材料和造型详图核价；植物及灌溉另计', inputs: [{ k: 'len', label: '花坛长度', unit: '延尺', def: () => 20 }], lines: v => [['outdoor_planter', v.len, '花坛长度']] },
     { k: 'ext_paint', specs: [['outer', 'extPaint']], landed: true, grp: 'out', label: '外墙油漆', icon: '🎨', inputs: [{ k: 'area', label: '外墙面积', unit: '平方尺', def: () => 1500 }], lines: v => [['ext_paint', v.area, '外墙面积']] },
     { k: 'downpipe', landed: true, grp: 'out', label: '换雨水管', icon: '🌧️', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['downpipe', v.len, '雨水管长度']] },
     { k: 'fence', landed: true, grp: 'out', label: '围墙/栏杆', icon: '🧱', inputs: [{ k: 'len', label: '长度', unit: '尺', def: () => 40 }], lines: v => [['fence', v.len, '围墙长度']] },

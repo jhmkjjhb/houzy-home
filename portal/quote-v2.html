@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>新版报价器 · HOUZY</title>
+<title>HOUZY HOME · 报价器 / Quote Studio</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600;700&family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #F7F6F3; --surface: #FFFFFF; --line: #DEDAD1;
@@ -52,6 +52,12 @@
   h2 { font-size: 17px; margin: 22px 0 6px; }
   .hint { color: var(--ink-dim); font-size: 12.5px; margin: 0 0 12px; line-height: 1.5; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .quote-actions { position: relative; }
+  .quote-actions > summary { list-style: none; cursor: pointer; }
+  .quote-actions > summary::-webkit-details-marker { display: none; }
+  .quote-actions[open] > summary { border-color: var(--navy); }
+  .quote-actions-menu { position: absolute; z-index: 12; right: 0; top: calc(100% + 6px); width: min(230px, 80vw); display: grid; gap: 5px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px #0002; }
+  .quote-actions-menu .btn { width: 100%; text-align: left; justify-content: flex-start; }
 
   /* ① 房屋类型 */
   .houses { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
@@ -202,6 +208,12 @@
   .pack.on .h .rm2 { color: var(--accent); font-weight: 700; }
   .pack.opt { width: auto; padding: 8px 12px; min-width: 110px; }
   .pack.opt .tick { vertical-align: -3px; }
+  .brand-sources { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; }
+  .brand-sources button { border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink-dim); padding:5px 10px; font-size:11px; }
+  .brand-sources button.on { background:var(--navy); border-color:var(--navy); color:var(--on-navy); }
+  .brand-meta { display:block; margin-top:5px; max-width:260px; color:var(--ink-dim); font-size:10px; line-height:1.45; font-weight:400; }
+  .brand-references { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:6px; font-size:10px; }
+  .brand-references a { color:var(--navy); text-decoration:underline; }
   .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
   .pack.on .tick { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .pkbody { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
@@ -215,6 +227,14 @@
   .issue.r { background: var(--red-soft); } .issue.r b { color: var(--red); }
   .issue.y { background: var(--yellow-soft); } .issue.y b { color: var(--yellow); }
   .issue.g { background: var(--ok-soft); } .issue.g b { color: var(--ok); }
+  .issue-target { outline: 3px solid var(--accent) !important; outline-offset: 3px; border-radius: 6px; }
+  .issue-edit { padding: 12px; border-radius: 9px; margin-bottom: 8px; background: var(--red-soft); }
+  .issue-edit.y { background: var(--yellow-soft); }
+  .issue-edit .issue-title { font-size: 13px; font-weight: 600; line-height: 1.5; }
+  .issue-edit .issue-fields { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 8px; }
+  .issue-edit label { font-size: 12px; color: var(--ink-dim); display: grid; gap: 3px; }
+  .issue-edit input { width: 85px; padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+  .issue-edit select { max-width: min(280px, 80vw); padding: 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); }
   .ok { background: var(--ok-soft); color: var(--ok); padding: 10px 12px; border-radius: 9px; font-weight: 600; }
   .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 8px 0 6px; background: var(--line); }
   .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--ink-dim); }
@@ -274,7 +294,137 @@
   .cmp > div { background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 16px; }
   .cmp > div.on { border-color: var(--navy); }
   .exl li { padding: 4px 0; }
+  .craft-note { margin:10px 0 2px; padding:12px; border:1px solid #d9c69f; border-left:3px solid #c8a96e; border-radius:9px; background:linear-gradient(135deg,#fbf8f1,#f4efe5); }
+  .craft-note h4 { margin:0 0 6px; color:#153927; font-family:'Playfair Display','Noto Serif SC',serif; font-size:15px; }
+  .craft-note svg { display:block; width:100%; max-height:150px; margin:2px 0 8px; }
+  .craft-note .craft-columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .craft-note ol,.craft-note ul { margin:4px 0 0; padding-left:19px; color:var(--ink-dim); font-size:12px; line-height:1.65; }
+  .craft-note .craft-source { margin-top:8px; padding-top:7px; border-top:1px solid var(--line); color:var(--ink-dim); font-size:10px; }
+  .craft-note .craft-source a { color:var(--navy); text-decoration:underline; }
+  .craft-note .craft-status { float:right; padding:3px 7px; background:#eee5d3; border-radius:20px; color:#735d32; font:10px Inter,sans-serif; }
+  @media(max-width:640px){.craft-note .craft-columns{grid-template-columns:1fr}.craft-note svg{max-height:120px}}
+  .handbook-intro{margin:0 0 18px;max-width:850px;line-height:1.7}
+  .handbook-section{margin:12px 0;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+  .handbook-section summary{cursor:pointer;list-style:none;padding:15px 18px;color:var(--ink);font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .handbook-section summary::-webkit-details-marker{display:none}
+  .handbook-section summary:after{content:'＋';color:var(--accent);font-size:18px}
+  .handbook-section[open] summary:after{content:'－'}
+  .handbook-section summary small{display:block;color:var(--ink-dim);font-size:11px;font-weight:400;margin-top:4px;line-height:1.5}
+  .handbook-pages{padding:0 14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .handbook-pages figure{margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#f5f2eb}
+  .handbook-pages img{display:block;width:100%;height:auto;cursor:zoom-in}
+  .handbook-pages figcaption{padding:7px 9px;color:var(--ink-dim);font-size:11px}
+  @media(max-width:640px){.handbook-pages{grid-template-columns:1fr}.handbook-section summary{padding:13px}}
+  .work-anim{margin:0 14px 16px;border:1px solid #d9cfbd;border-radius:12px;overflow:hidden;background:#f5f1e8}
+  .work-anim-head{padding:13px 15px 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .work-anim-head b{font:600 12px Inter,'Noto Sans SC',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#70634d}
+  .work-anim-head span{font-size:11px;color:var(--ink-dim)}
+  .work-scene{display:block;width:100%;height:auto;background:#efe9dc}
+  .work-scene .layer{opacity:0;transform:translateY(8px);transition:opacity .55s ease,transform .55s ease}
+  .work-scene .layer.visible{opacity:1;transform:translateY(0)}
+  .work-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid #ded4c2;background:#fff}
+  .work-controls button{border:1px solid #d8cdb9;border-radius:20px;background:#fff;color:#514b40;padding:7px 11px;font:600 11px Inter,'Noto Sans SC',sans-serif;cursor:pointer}
+  .work-controls button[aria-current="step"]{background:#173d32;border-color:#173d32;color:#fff}
+  .work-controls button:focus-visible,.handbook-section summary:focus-visible{outline:3px solid #c19b54;outline-offset:2px}
+  .work-controls .play{margin-left:auto;border-radius:7px;background:#c5a46a;border-color:#c5a46a;color:#172e26}
+  .work-caption{padding:0 15px 13px;background:#fff;color:#4e514b;font-size:12px;line-height:1.6;min-height:32px}
+  .work-stage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 14px 15px;background:#fff}
+  .work-stage-card{display:flex;flex-direction:column;gap:0;align-items:stretch;min-height:0;padding:11px;border:1px solid #ded6c8;border-radius:10px;background:#fffefa;transition:border-color .35s,box-shadow .35s,transform .35s}
+  .work-stage-card.is-active{border-color:#b9975d;box-shadow:0 7px 20px #173d3212;transform:translateY(-2px)}
+  .work-step-art{width:100%;height:176px;border-radius:8px;background:#f0ece2;overflow:hidden;display:grid;place-items:center}
+  .work-step-art svg{width:100%;height:100%;display:block}
+  .work-step-art .motion{transition:transform .5s ease,stroke-dashoffset .6s ease}
+  .work-stage-card.is-active .work-step-art .motion{transform:translateY(-3px)}
+  .work-step-copy .overline{color:#a9844b;font:700 9px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+  .work-step-copy h4{margin:4px 0 7px;color:#173d32;font-size:15px;line-height:1.35}
+  .work-step-copy p{margin:5px 0;color:#57584f;font-size:11px;line-height:1.55;white-space:pre-line}
+  .work-step-copy p b{color:#283e34;font-weight:700}
+  .work-step-copy .criterion{padding-top:5px;border-top:1px solid #eee8de}
+  .work-step-copy{padding:12px 2px 3px}
+  .work-extract{margin-top:9px;padding:10px 11px;border-left:3px solid #c5a46a;border-radius:0 7px 7px 0;background:linear-gradient(110deg,#f4f0e7,#fbfaf6)}
+  .work-extract-label{margin-bottom:6px;color:#8a7048;font-size:9px;font-weight:700;letter-spacing:.11em}
+  .work-source{margin-top:8px;color:#898477;font-size:9px;letter-spacing:.02em}
+  .work-more{margin-top:10px;border:1px solid #e3dccf;border-radius:8px;background:#fff}
+  .work-more summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;color:#173d32;font-size:11px;font-weight:700;list-style:none}
+  .work-more summary::-webkit-details-marker{display:none}
+  .work-more summary:after{content:'＋';color:#a9844b;font-size:16px}
+  .work-more[open] summary:after{content:'－'}
+  .work-more summary small{margin-left:auto;color:#97866a;font-size:9px;font-weight:500}
+  .work-more-body{padding:0 11px 12px;border-top:1px solid #eee8de}
+  .work-route{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;padding:11px 0}
+  .work-route-step{position:relative;flex:1 1 90px;min-width:84px;padding:8px 8px 8px 29px;border-radius:6px;background:#f2efe8;color:#4f5149;font-size:10px;line-height:1.45}
+  .work-route-step i{position:absolute;left:8px;top:8px;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:#173d32;color:#fff;font:700 8px Inter,sans-serif;font-style:normal}
+  .work-more-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .work-more-columns section{padding:9px 10px;border-radius:7px;background:#faf8f3}
+  .work-more-columns b{color:#8a7048;font-size:10px}
+  .work-more-columns p{margin:5px 0 0;color:#57584f;font-size:10px;line-height:1.55}
+  .work-more-source{margin-top:9px;padding-top:7px;border-top:1px solid #eee8de;color:#918a7e;font-size:9px}
+  .work-timeline{width:100%;height:4px;background:#e5dfd3;margin:2px 0 7px;border-radius:5px;overflow:hidden}
+  .work-timeline i{display:block;height:100%;width:0;background:linear-gradient(90deg,#173d32,#c5a46a);transition:width .45s ease}
+  .work-controls .step-nav{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .work-stage-card.is-active .work-step-art .pulse{animation:houzyPulse 1.3s ease-in-out infinite alternate}
+  @keyframes houzyPulse{from{opacity:.75}to{opacity:1}}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 15px;background:#fff}
+  .compare-panel{border:1px solid #ddd4c4;border-radius:9px;overflow:hidden;background:#f6f2ea}
+  .compare-panel h4{margin:0;padding:8px 10px;background:#ebe4d7;color:#4a473f;font-size:11px;letter-spacing:.08em}
+  .compare-panel.after h4{background:#dce7df;color:#173d32}
+  .compare-panel svg{display:block;width:100%;height:auto}
+  .manual-pages{margin:0 14px 16px;border-top:1px solid var(--line);padding-top:8px}
+  .manual-pages summary{cursor:pointer;color:var(--navy);font-size:12px;font-weight:600;padding:7px 0}
+  @media(max-width:640px){.compare-grid{gap:7px;padding:0 10px 12px}.compare-panel h4{font-size:10px;padding:7px}.work-controls{gap:5px}.work-controls button{padding:7px 9px}.work-controls .play{margin-left:0}.work-stage-grid{grid-template-columns:1fr;padding:0 10px 12px}.work-stage-card{padding:9px}.work-step-art{height:150px}.work-step-copy h4{font-size:14px}.work-step-copy p{font-size:11px}.work-more-columns{grid-template-columns:1fr}.work-route-step{flex-basis:calc(50% - 6px)}}
+  @media(prefers-reduced-motion:reduce){.work-scene .layer{transition:none}}
   @media (max-width: 640px) { .big { font-size: 36px; } .slide h1 { font-size: 24px; } .top .demoBtn { padding: 7px 12px; font-size: 13px; margin-left: auto; } }
+  /* HOUZY HOME brand system: pine, gold and editorial type. */
+  :root, :root:not([data-theme="light"]) {
+    --bg:#f4efe5; --surface:#fbf8f1; --line:#d7c9ad;
+    --ink:#1a1a1a; --ink-dim:#686258; --navy:#153927;
+    --navy-soft:#e8eee6; --on-navy:#fffdf7; --accent:#87652c;
+    --ok:#245640; --ok-soft:#e4eee4; --ok-line:#b6cdb9;
+    --accent-soft:#f5ebd8; --off:#b7ae9d; --yellow:#806028;
+    --yellow-soft:#fbf1dc; color-scheme:light;
+  }
+  body { font-family:Inter,'Noto Sans SC','PingFang SC',sans-serif; }
+  h1,h2,.slide h1 { font-family:'Playfair Display','Noto Serif SC','Songti SC',Georgia,serif; letter-spacing:.015em; }
+  .top { background:#153927; border-bottom:2px solid #c8a96e; box-shadow:0 8px 25px #1539271c; }
+  .top .in { min-height:76px; gap:16px; }
+  .brandmark { width:38px; height:38px; flex:none; display:grid; place-items:center; border:1px solid #c8a96e; color:#e4cf9b; font-family:'Playfair Display',Georgia,serif; font-size:23px; font-weight:700; line-height:1; }
+  .brandmark svg { width:28px; height:28px; fill:currentColor; }
+  .top .brandtitle { min-width:165px; color:#fffdf7; font-size:19px; line-height:1.08; letter-spacing:.09em; }
+  .top .brandtitle small { margin-top:4px; color:#e4cf9b; font-family:Inter,'Noto Sans SC',sans-serif; font-size:10px; font-weight:500; letter-spacing:.1em; }
+  .top .cust { max-width:250px; border-color:#c8a96e; background:#fbf8f1; }
+  .top .sum small { color:#e4cf9b; letter-spacing:.08em; }
+  .top .sum b { color:#fffdf7; font-family:'Playfair Display',Georgia,serif; }
+  .lang-switch { display:flex; gap:2px; padding:3px; border:1px solid #c8a96e88; border-radius:9px; flex:none; }
+  .lang-switch button { border:0; border-radius:6px; padding:6px 9px; background:transparent; color:#e4cf9b; font-size:12px; font-weight:600; }
+  .lang-switch button[aria-pressed="true"] { background:#c8a96e; color:#153927; }
+  .tabs { padding-top:2px; padding-bottom:11px; }
+  .tab { background:#245640; border-color:#486f55; color:#f3f1e9; border-radius:7px; }
+  .tab.on { background:#c8a96e; border-color:#c8a96e; color:#153927; }
+  .tab:hover:not(.on) { background:#315f42; }
+  .card,.dplace,.cmp>div { border-color:#d9c69f; box-shadow:0 1px 2px #15392709,0 8px 24px #1539270c; }
+  .card>h2:first-child { color:#153927; }
+  .btn.pri { background:#153927; color:#fffdf7; border-color:#153927; }
+  .btn.pri:hover { background:#245640; }
+  .pack.on,.house.on,.dopt button.on { border-color:#153927; }
+  .pack.on .tick { background:#153927; color:#fff; }
+  .pbox { border-color:#24564088; background:#24564014; }
+  .pbox span { color:#153927; }
+  .pbox:hover { background:#2456402d; }
+  .pbox.cur { border-color:#c8a96e; background:#c8a96e55; }
+  .pbox.cur span { background:#153927; color:#fff; }
+  .q th { letter-spacing:.06em; }
+  .quote-actions-menu { box-shadow:0 14px 40px #15392727; }
+  :is(button,input,select,textarea,summary):focus-visible { outline:2px solid #a67e39; outline-offset:2px; }
+  @media(max-width:700px) {
+    .top .in { gap:8px; }
+    .top .brandtitle { min-width:0; font-size:15px; }
+    .brandmark { width:32px; height:32px; font-size:20px; }
+    .top .cust { order:3; flex-basis:45%; min-width:110px; }
+    .top .sum { order:4; margin-left:auto; }
+    .top .demoBtn { order:5; }
+    .tabs { overflow-x:auto; display:flex; }
+    .tab { min-width:74px; flex:1 0 auto; }
+  }
   @media print {
     body.demo-on .dbar, body.demo-on .dnav, body.demo-on .dots, body.demo-on .dopt button:not(.on) { display: none !important; }
     body.demo-on .slide { page-break-after: always; padding-bottom: 20px; animation: none; }
@@ -287,8 +437,9 @@
 <body>
 <div class="top">
   <div class="in">
-    <h1>新版报价器<small>瓷砖分项版 · 价格沿用公司价目表</small></h1>
+    <div class="brandmark" aria-hidden="true"><svg viewBox="0 0 320 240"><rect x="64" y="22" width="54" height="14"/><rect x="64" y="204" width="54" height="14"/><rect x="64" y="22" width="17" height="90"/><rect x="101" y="22" width="17" height="90"/><rect x="64" y="120" width="17" height="98"/><rect x="101" y="120" width="17" height="98"/><path d="M128 106 L194 78 L194 132 L128 160 Z"/><rect x="202" y="22" width="54" height="14"/><rect x="202" y="204" width="54" height="14"/><rect x="202" y="22" width="17" height="90"/><rect x="239" y="22" width="17" height="90"/><rect x="202" y="120" width="17" height="98"/><rect x="239" y="120" width="17" height="98"/></svg></div><h1 class="brandtitle">HOUZY HOME<small>报价器 · QUOTE STUDIO</small></h1>
     <input class="cust" data-info="name" placeholder="客户姓名">
+    <div class="lang-switch" role="group" aria-label="Language / 语言"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
     <button class="btn pri demoBtn" data-demo="open"><span id="playIc"></span> 演示给客户</button>
     <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
   </div>
@@ -298,17 +449,28 @@
 <div id="demo" hidden></div>
 <div id="viewer"></div>
 
-<script src="quote-v2-price.js?v=20261117mat"></script>
+<script src="quote-v2-price.js?v=20261120outdoor2"></script>
 <script src="quote-v2-market-20261116.js?v=1"></script>
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261116tlab"></script>
-<script src="quote-v2-rules.js?v=20261117cls"></script>
-<script src="quote-v2-plan.js?v=20261115m"></script>
+<script src="quote-v2-rules.js?v=20261120brandcatalog1"></script>
+<script src="quote-v2-plan.js?v=20261120restore"></script>
+<script src="html2pdf.bundle.min.js?v=0.14.0"></script>
+<script src="quote-v2-i18n.js?v=20261120priceconfirm"></script>
+<script src="quote-v2-workmanship.js?v=20261120-houzy-redraw"></script>
 <script>
 (function () {
   const Q = window.QV2, { ROOMS, PACKS, GROUPS, HOUSES, HOUSE_ITEMS, PRICE, STAGES, num, r2 } = Q;
   const STORE = 'houzy-quote-v2';
+  let uiLang = localStorage.getItem('houzy-quote-v2-lang') === 'en' ? 'en' : 'zh';
+  const applyLanguage = () => {
+    document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
+    document.title = uiLang === 'en' ? 'HOUZY HOME · Quote Studio' : 'HOUZY HOME · 报价器';
+    document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === uiLang)));
+    window.HOUZY_QUOTE_I18N.apply(document.querySelectorAll('.top,#app,#demo,#viewer'), uiLang);
+    document.querySelectorAll('.house[data-house]').forEach(b => { const h = HOUSES[b.dataset.house]; if (!h) return; b.querySelector('b').textContent = uiLang === 'en' ? h.en : h.label; b.querySelector('span').textContent = uiLang === 'en' ? h.label + (h.landed ? ' · 有地' : '') : h.en + (h.landed ? ' · 有地' : ''); });
+  };
   const ic = (code, cls) => window.QV2_ICON(code, cls);
   document.getElementById('playIc').outerHTML = ic('play');
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -330,7 +492,7 @@
       ];
     });
   }
-  const STAGE_COLORS = ['#7A8B99', '#2F6FA3', '#3E8E7E', '#C4501C', '#B28A2E', '#6B4FA0', '#2F6B4F', '#8A5A3C', '#A0496B'];
+  const STAGE_COLORS = ['#153927', '#245640', '#3d6b4d', '#67815b', '#9a9a70', '#c8a96e', '#917c52', '#667960', '#af9a76'];
 
   let P = load();
   let tab = P.houseType ? 'room' : 'house';
@@ -352,6 +514,106 @@
     } catch (e) {}
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} backupNow(); }
+  const quoteFilename = ext => `HOUZY-${uiLang === 'en' ? 'Quote' : '报价'}-${String(P.info?.name || (uiLang === 'en' ? 'Client' : '未命名客户')).replace(/[\\/:*?"<>|\r\n]/g, '_').slice(0, 40)}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  function downloadQuote(content, filename, type) {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const link = document.createElement('a'); link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  const xml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[char]));
+  function zipFiles(files) {
+    const enc = new TextEncoder(), parts = [], central = [], table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) { let c = n; for (let j = 0; j < 8; j++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; table[n] = c >>> 0; }
+    const crc = bytes => { let c = 0xffffffff; for (const b of bytes) c = table[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+    const u16 = (b, i, v) => new DataView(b.buffer).setUint16(i, v, true), u32 = (b, i, v) => new DataView(b.buffer).setUint32(i, v, true);
+    let offset = 0;
+    for (const [name, content] of Object.entries(files)) {
+      const n = enc.encode(name), d = enc.encode(content), sum = crc(d), local = new Uint8Array(30 + n.length);
+      u32(local, 0, 0x04034b50); u16(local, 4, 20); u32(local, 14, sum); u32(local, 18, d.length); u32(local, 22, d.length); u16(local, 26, n.length); local.set(n, 30);
+      parts.push(local, d);
+      const cd = new Uint8Array(46 + n.length); u32(cd, 0, 0x02014b50); u16(cd, 4, 20); u16(cd, 6, 20); u32(cd, 16, sum); u32(cd, 20, d.length); u32(cd, 24, d.length); u16(cd, 28, n.length); u32(cd, 42, offset); cd.set(n, 46); central.push(cd);
+      offset += local.length + d.length;
+    }
+    const size = central.reduce((sum, entry) => sum + entry.length, 0), end = new Uint8Array(22);
+    u32(end, 0, 0x06054b50); u16(end, 8, central.length); u16(end, 10, central.length); u32(end, 12, size); u32(end, 16, offset);
+    return new Blob([...parts, ...central, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  function exportQuoteTable() {
+    const C = compute(), rows = [['HOUZY HOME · PROJECT QUOTATION'], ['方案', Q.activePlan(P).name, '客户', P.info?.name || '', '房屋类型', HOUSES[P.houseType]?.label || ''], ['报价日期', new Date().toLocaleDateString('en-CA'), '报价模式', P.quoteMode === 'formal' ? '正式报价' : '预估报价'], [], ['工序', '项目', '空间', '数量', '单位', '单价(RM)', '金额(RM)', '说明']];
+    quoteDisplayLines(C.lines).forEach(l => rows.push([STAGES.find(s => s.id === l.stage)?.name || l.stage, l.name, l.room, l.qty, l.unitName, l.unit, l.total, l.formula || '']));
+    rows.push([], ['工程直接费', '', '', '', '', '', C.T.direct], ['设计费', '', '', '', '', '', C.T.design], ['管理费', '', '', '', '', '', C.T.mgmt], ['不可预见费', '', '', '', '', '', C.T.cont], ['优惠', '', '', '', '', '', -C.T.discount], ['SST', '', '', '', '', '', C.T.sst], ['合计', '', '', '', '', '', C.T.total]);
+    const letters = 'ABCDEFGH', sheetRows = rows.map((row, ri) => `<row r="${ri + 1}"${ri === 1 ? ' ht="32" customHeight="1"' : ''}>${row.map((value, ci) => { const ref = letters[ci] + (ri + 1), style = ri === 0 ? 1 : ri === 4 ? 2 : ri === rows.length - 1 ? 4 : ci === 6 && typeof value === 'number' ? 3 : 0; return typeof value === 'number' ? `<c r="${ref}" s="${style}"><v>${value}</v></c>` : `<c r="${ref}" s="${style}" t="inlineStr"><is><t>${xml(uiLang === 'en' ? window.HOUZY_QUOTE_I18N.translate(value) : value)}</t></is></c>`; }).join('')}</row>`).join('');
+    const files = {
+      '[Content_Types].xml': '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+      '_rels/.rels': '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+      'xl/workbook.xml': '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="HOUZY 报价单" sheetId="1" r:id="rId1"/></sheets></workbook>',
+      'xl/_rels/workbook.xml.rels': '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+      'xl/styles.xml': '<?xml version="1.0"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;RM &quot;#,##0.00"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="18"/><color rgb="FFFFFFFF"/><name val="Aptos"/></font><font><b/><color rgb="FFFFFFFF"/><name val="Aptos"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF17324F"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="2" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/></cellXfs></styleSheet>',
+      'xl/worksheets/sheet1.xml': `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>${[20,42,30,12,12,16,18,48].map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${sheetRows}</sheetData><mergeCells count="1"><mergeCell ref="A1:H1"/></mergeCells><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>`
+    };
+    files['xl/styles.xml'] = files['xl/styles.xml'].replaceAll('FF17324F', 'FF153927').replace('<font><b/><color rgb="FFFFFFFF"/><name val="Aptos"/></font>', '<font><b/><color rgb="FFE4CF9B"/><name val="Aptos"/></font>');
+    if (uiLang === 'en') files['xl/workbook.xml'] = files['xl/workbook.xml'].replace('HOUZY 报价单', 'HOUZY Quote');
+    const url = URL.createObjectURL(zipFiles(files)), link = document.createElement('a'); link.href = url; link.download = quoteFilename('xlsx'); document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  function exportQuoteProject() {
+    downloadQuote(JSON.stringify({ format: 'houzy-quote-v2', version: 1, exportedAt: new Date().toISOString(), project: P, images: IMG }, null, 2), quoteFilename('houzy-quote.json'), 'application/json;charset=utf-8');
+  }
+  async function exportQuotePdf(summary) {
+    const C = compute(), title = summary ? (C.K?.red?.length ? '预估项目方案' : '项目方案报价') : '详细工程报价', groups = new Map();
+    for (const line of summary ? C.lines : quoteDisplayLines(C.lines)) {
+      const group = line.room || '全屋工程';
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(line);
+    }
+    let rows = '';
+    const grouped = [...groups.entries()];
+    if (summary && !grouped.length) grouped.push(['整体方案', []]);
+    const direct = grouped.reduce((sum, [, lines]) => sum + lines.reduce((n, line) => n + line.total, 0), 0);
+    let allocated = 0, cumulative = 0;
+    for (const [index, [group, lines]] of grouped.entries()) {
+      cumulative += lines.reduce((sum, line) => sum + line.total, 0);
+      const target = index === grouped.length - 1 ? C.T.total : direct > 0 ? Math.round(C.T.total * cumulative / direct) : Math.round(C.T.total * (index + 1) / grouped.length);
+      const spacePrice = target - allocated; allocated = target;
+      rows += summary ? `<tr class="group"><td>${esc(group)}</td><td class="money">${rm(spacePrice)}</td></tr>` : `<tr class="group"><td colspan="6">${esc(group)}</td></tr>`;
+      const shown = summary ? [...lines.reduce((map, line) => { const key = line.pack || line.code, name = PACKS[line.pack]?.label || HOUSE_ITEMS.find(item => item.k === line.pack)?.label || (line.custom ? '现场增项' : PRICE[line.code]?.name || '工程项目'); const old = map.get(key); map.set(key, { name, total: (old?.total || 0) + line.total }); return map; }, new Map()).values()] : lines;
+      rows += shown.map(line => summary ? `<tr><td class="scope" colspan="2">${esc(line.name)}</td></tr>` : `<tr><td>${esc(line.name)}</td><td>${esc(group)}</td><td class="money">${nf(line.qty)} ${esc(line.unitName)}</td><td class="money">${rm(line.unit)}</td><td class="money">${rm(line.total)}</td><td class="note">${esc([line.spec, line.formula].filter(Boolean).join(' · '))}</td></tr>`).join('');
+    }
+    const fees = C.T.total - C.T.direct;
+    if (fees && !summary) rows += `<tr class="group"><td colspan="6">综合服务</td></tr><tr><td>设计、项目管理、税费及优惠调整</td><td></td><td></td><td></td><td class="money">${rm(fees)}</td><td></td></tr>`;
+    const head = summary ? '<th>空间与包含项目</th><th>空间包价</th>' : '<th>项目</th><th>空间</th><th>数量</th><th>单价</th><th>金额</th><th>做法与尺寸</th>';
+    const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>HOUZY HOME · ${title}</title><style>@page{size:A4;margin:15mm}*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#17324f;margin:0;background:#fff}.mast{background:#17324f;color:#fff;padding:25px 28px;border-bottom:5px solid #c4501c}.brand{font-size:25px;font-weight:800;letter-spacing:.08em}.tag{font-size:10px;letter-spacing:.24em;color:#d4e1e8;margin-top:5px}.intro{padding:24px 28px 13px;display:flex;justify-content:space-between;gap:20px}.intro h1{font-size:20px;margin:0 0 10px}.meta{font-size:11px;color:#68747c;line-height:1.8}.totalbox{text-align:right;background:#e7edf3;padding:10px 16px;min-width:160px;border-radius:8px}.totalbox span{font-size:10px;color:#68747c;display:block}.totalbox strong{font-size:20px;white-space:nowrap}.body{padding:0 28px}table{border-collapse:collapse;width:100%;font-size:10px}th{background:#17324f;color:#fff;text-align:left;padding:9px 7px}th:last-child{text-align:right}td{padding:8px 7px;border-bottom:1px solid #e3e8eb;vertical-align:top}.group td{background:#e7edf3;font-weight:700;color:#17324f;padding:8px 7px;border-bottom:0}.money{text-align:right;white-space:nowrap}.note{color:#68747c;font-size:9px}.grand td{background:#17324f;color:#fff;font-size:14px;font-weight:700;border:0}.footer{margin:25px 28px 0;border-top:2px solid #c4501c;padding-top:10px;color:#68747c;font-size:9px;display:flex;justify-content:space-between;gap:18px}tr{break-inside:avoid}@media print{.mast,th,.group td,.grand td,.totalbox{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="mast"><div class="brand">HOUZY HOME</div><div class="tag">SPACE · CRAFT · LIVING</div></div><div class="intro"><div><h1>${title}</h1><div class="meta">客户：${esc(P.info?.name || '未填写')}<br>方案：${esc(Q.activePlan(P).name)} · ${esc(HOUSES[P.houseType]?.label || '')}<br>日期：${new Date().toLocaleDateString('zh-CN')}</div></div><div class="totalbox"><span>报价总额</span><strong>${rm(C.T.total)}</strong></div></div><div class="body"><table><thead><tr>${head}</tr></thead><tbody>${rows}<tr class="grand"><td colspan="${summary ? 1 : 4}">报价合计</td><td class="money">${rm(C.T.total)}</td>${summary ? '' : '<td></td>'}</tr></tbody></table></div><div class="footer"><span>HOUZY HOME · 为每一个家精心规划</span><span>${summary ? '本版仅展示项目内容与总价；具体规格以双方确认文件为准。' : '具体施工范围与材料以最终确认方案为准。'}</span></div></body></html>`;
+    const mark = '<svg viewBox="0 0 320 240" aria-hidden="true"><g fill="currentColor"><rect x="64" y="22" width="54" height="14"/><rect x="64" y="204" width="54" height="14"/><rect x="64" y="22" width="17" height="90"/><rect x="101" y="22" width="17" height="90"/><rect x="64" y="120" width="17" height="98"/><rect x="101" y="120" width="17" height="98"/><path d="M128 106 L194 78 L194 132 L128 160 Z"/><rect x="202" y="22" width="54" height="14"/><rect x="202" y="204" width="54" height="14"/><rect x="202" y="22" width="17" height="90"/><rect x="239" y="22" width="17" height="90"/><rect x="202" y="120" width="17" height="98"/><rect x="239" y="120" width="17" height="98"/></g></svg>';
+    const brandCss = '.mast{background:#153927;border-bottom:2px solid #c8a96e;display:flex;align-items:center;gap:15px;padding:20px 28px}.mast svg{width:42px;height:42px;color:#c8a96e;flex:none}.brand{font-family:Georgia,"Songti SC",serif;font-size:23px;letter-spacing:.1em}.tag{color:#e4cf9b;font-size:9px}.intro{background:#fbf8f1;border-bottom:1px solid #e4cf9b;padding-top:22px;padding-bottom:20px}.intro h1{font-family:Georgia,"Songti SC",serif;color:#153927;letter-spacing:.08em}.totalbox{background:#f4efe5;border:1px solid #c8a96e;border-radius:0;color:#153927}.totalbox strong{font-family:Georgia,"Songti SC",serif}.body{padding-top:18px}th{background:#153927;color:#e4cf9b;letter-spacing:.08em}.group td{background:#f4efe5;color:#153927;border-top:1px solid #c8a96e}.grand td{background:#153927;color:#fff;border-top:2px solid #c8a96e}.scope{padding-left:18px}.scope:before{content:"◆";color:#c8a96e;font-size:8px;margin-right:9px}.footer{border-color:#c8a96e}.intro .meta{color:#7c776e}@media print{.intro,.totalbox{print-color-adjust:exact;-webkit-print-color-adjust:exact}}';
+    let branded = html.replace('</style>', brandCss + '</style>').replace('<div class="mast"><div class="brand">', `<div class="mast">${mark}<div><div class="brand">`).replace('<div class="tag">SPACE · CRAFT · LIVING</div></div>', '<div class="tag">SPACE · CRAFT · LIVING</div></div></div>')
+      .replace(summary ? '本版仅展示项目内容与总价；具体规格以双方确认文件为准。' : 'never-match', summary ? '各空间包价含设计、管理、税费与优惠的分摊；具体规格以双方确认的技术附件为准。' : 'never-match');
+    if (summary && C.K?.red?.length) branded = branded.replace('<div class="body"><table>', '<div class="body"><p style="padding:9px 12px;background:#f4efe5;color:#7c5e2a;border-left:3px solid #c8a96e;font-size:11px">此版为预估方案：部分尺寸、材料或价格尚待确认，最终施工范围及金额以双方确认的正式文件为准。</p><table>');
+    if (!window.html2pdf) { alert('PDF 生成组件未加载，请刷新页面后重试。'); return; }
+    const parsed = new DOMParser().parseFromString(branded, 'text/html');
+    const style = document.createElement('style'); style.textContent = parsed.querySelector('style')?.textContent || '';
+    const page = document.createElement('div'); page.className = 'pdf-export-page'; page.style.cssText = 'position:relative;width:794px;background:#fff'; page.innerHTML = parsed.body.innerHTML;
+    document.head.append(style); document.body.append(page);
+    if (uiLang === 'en') window.HOUZY_QUOTE_I18N.apply([page], uiLang);
+    try {
+      await document.fonts?.ready;
+      const filename = quoteFilename('pdf').replace(/\.pdf$/, summary ? (uiLang === 'en' ? '-Client-Proposal.pdf' : '-客户方案.pdf') : (uiLang === 'en' ? '-Detailed-Quote.pdf' : '-详细报价.pdf'));
+      await window.html2pdf().set({ margin: 0, filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } }).from(page).save();
+    } catch (error) { alert('PDF 下载失败：' + (error?.message || error)); }
+    finally { page.remove(); style.remove(); }
+  }
+  async function importQuoteProject(file) {
+    if (!file) return;
+    try {
+      if (file.size > 30 * 1024 * 1024) throw new Error('文件超过 30 MB，请检查是否选错文件');
+      const data = JSON.parse(await file.text());
+      if (data.format !== 'houzy-quote-v2' || data.version !== 1 || !data.project || !Array.isArray(data.project.rooms) || !Array.isArray(data.project.plans) || !data.project.info || typeof data.project.info !== 'object') throw new Error('文件不是有效的 HOUZY 报价器专属文件');
+      if (!confirm(`导入「${data.project.info.name || '未命名客户'}」的报价？当前报价会先自动备份，再由导入内容替换。`)) return;
+      backupNow(true);
+      P = Q.migrate({ ...blank(), ...data.project });
+      IMG = data.images && Array.isArray(data.images.drawings) && data.images.rooms && typeof data.images.rooms === 'object' ? data.images : { drawings: [], rooms: {} };
+      if (!saveImg()) alert('报价已导入，但图片超出浏览器存储容量，图片可能无法保留。');
+      roomId = P.rooms[0]?.id || null; syncNote = null; tab = 'quote'; render(); window.scrollTo(0, 0);
+    } catch (error) { alert('导入失败：' + error.message); }
+  }
   // 同一份报价开在两个窗口时：另一个窗口保存后，这里马上换成最新的，免得旧窗口一操作就把新内容盖掉
   let syncNote = null;
   window.addEventListener('storage', e => {
@@ -953,6 +1215,101 @@
     const d = Q.totals(clone, L).total - base;
     return `<span class="desc mono" style="color:${d > 0 ? 'var(--accent)' : d < 0 ? 'var(--ok)' : 'var(--ink-dim)'}">${d === 0 ? '不加价' : (d > 0 ? '+' : '−') + rm(Math.abs(d))}</span>`;
   }
+  const MY_BRAND_CHOICES = {
+    'base.wire': ['Southern Cable', 'Tai Sin', 'Power Cables Malaysia', 'Sindutch Cable（Prysmian）'],
+    'switch.brand': ['LWD（马来西亚制造）', 'PLK（马来西亚制造）', 'reTOUCH（马来西亚品牌）', 'UMS / neiken（马来西亚制造）'],
+    'soft2.fanBrand': ['Deka'], 'outer.extPaint': ['Seamaster'], 'wall.brand': ['Seamaster']
+  };
+  const CN_BRAND_CHOICES = { 'switch.brand': ['Bull 公牛'], 'outer.cctvBrand': ['Hikvision', 'Dahua', 'Ezviz（萤石）'], 'cabinet.hardware': ['悍高（HIGOLD）', 'DTC（东泰）'] };
+  const INTL_BRAND_CHOICES = {
+    'base.wire': ['Fujikura'], 'switch.brand': ['Panasonic 松下', 'Schneider 施耐德', 'Legrand 罗格朗', 'MK'],
+    'wall.brand': ['Nippon Paint', 'Dulux', 'Jotun'], 'outer.extPaint': ['Nippon Weatherbond', 'Dulux Weathershield', 'Jotun Jotashield'],
+    'bathkit.sanBrand': ['Johnson Suisse', 'American Standard', 'TOTO', 'Kohler'], 'soft2.fanBrand': ['KDK', 'Panasonic', 'Fanco'],
+    'cabinet.hardware': ['Blum', 'Hettich']
+  };
+  const BRAND_INFO = {
+    'base.wire': {
+      '普通 SIRIM 认证电线': '质保：按线缆型号/合同｜价格：标配价',
+      'Southern Cable': '质保：商家未列｜参考 RM93.35 / 100m（1.5mm²）',
+      'Tai Sin': '质保：需按型号确认｜参考 RM145 / 100m（1.5mm²，平台卖家）',
+      'Power Cables Malaysia': '质保：需询供货商｜价格：工程询价',
+      'Sindutch Cable（Prysmian）': '质保：需询供货商｜价格：工程询价',
+      'Fujikura': '质保：需按型号确认｜价格：工程询价'
+    },
+    'switch.brand': {
+      '普通品牌（示范价）': '质保：按实际供货型号｜标准价',
+      'LWD（马来西亚制造）': '质保：未查到品牌统一年限｜参考零售 RM5.90 起（单键款）',
+      'PLK（马来西亚制造）': '质保：未查到品牌统一年限｜参考 RM15（13A 金属面插座款）',
+      'reTOUCH（马来西亚品牌）': '质保：部分系列商家标示 1 年（机芯）｜参考 RM4.70–24.80（Ultra Rimless）',
+      'UMS / neiken（马来西亚制造）': '质保：依商家/型号｜参考 RM3.40 起（单键开关）',
+      'Bull 公牛': '质保：需核实马来西亚授权渠道｜价格：按型号询价',
+      'Panasonic 松下': '质保：马来西亚保修政策通常 12 个月（按型号/授权渠道）｜价格：按型号询价',
+      'Schneider 施耐德': '质保：需按马来西亚具体系列确认｜价格：按型号询价',
+      'Legrand 罗格朗': '质保：销售条款通常 12 个月（适用条款为准）｜参考 RM30.80（20A 单键款）',
+      'MK': '质保：按当地型号/经销商书面条款｜参考 RM25.90 起（金属面款）'
+    },
+    'outer.extPaint': {
+      'Nippon Weatherbond': '质保：按系列及施工条件确认｜价格：按桶装/色号询价',
+      'Dulux Weathershield': '质保：按系列及施工条件确认｜价格：按桶装/色号询价',
+      'Jotun Jotashield': '质保：按系列及施工条件确认｜价格：按桶装/色号询价',
+      'Seamaster': '质保：Weather Pro 7900G 3 年；Weathersheen Plus 8900P 经销商标示 8 年｜参考 RM267.83–269.95 / 15L（Weather Pro，色号/门店不同）'
+    },
+    'wall.brand': {
+      'Nippon Paint': '质保：按系列及施工条件确认｜价格：按桶装/色号询价', 'Dulux': '质保：按系列及施工条件确认｜价格：按桶装/色号询价', 'Jotun': '质保：按系列及施工条件确认｜价格：按桶装/色号询价',
+      'Seamaster': '质保：按内墙系列确认｜价格：按桶装/色号询价'
+    },
+    'bathkit.sanBrand': { '普通品牌（示范价）': '质保：按实际供货型号｜标准价', 'Johnson Suisse': '质保/价格：按具体系列与授权商确认', 'American Standard': '质保/价格：按具体系列与授权商确认', 'TOTO': '质保/价格：按具体系列与授权商确认', 'Kohler': '质保/价格：按具体系列与授权商确认' },
+    'outer.cctvBrand': { 'Hikvision': '质保/价格：按马来西亚型号与授权商确认', 'Dahua': '质保/价格：按马来西亚型号与授权商确认', 'Ezviz（萤石）': '质保/价格：按马来西亚型号与授权商确认' },
+    'cabinet.hardware': { '阻尼铰链+缓冲滑轨': '质保：按标配五金型号｜标准价', 'Blum': '质保/价格：按系列与经销商确认', 'Hettich': '质保/价格：按系列与经销商确认', '悍高（HIGOLD）': '质保/价格：按系列与经销商确认', 'DTC（东泰）': '质保/价格：按系列与经销商确认' },
+    'soft2.fanBrand': { 'KDK': '质保/价格：按马来西亚型号和授权商确认', 'Panasonic': '质保：马来西亚保修政策通常 12 个月（按型号/授权渠道）｜价格：询价', 'Fanco': '质保/价格：按马来西亚型号和授权商确认', 'Deka': '质保/价格：按马来西亚型号和经销商确认' }
+  };
+  const BRAND_SOURCE_LINKS = {
+    'Southern Cable': ['零售价格样本', 'https://eezee.com.my/product/southern-1-5mm-pvc-cable-black-1-meter-badd4986e1'],
+    'Tai Sin': ['零售价格样本', 'https://www.lazada.com.my/tag/tai-sin/'],
+    'Power Cables Malaysia': ['马来西亚电缆制造商名录', 'https://mcma.org.my/member/'],
+    'Sindutch Cable（Prysmian）': ['马来西亚电缆制造商名录', 'https://mcma.org.my/member/'],
+    'LWD（马来西亚制造）': ['零售价格样本', 'https://mrdiy.com.my/products/lwd-push-button-wall-switch-9300430-001001'],
+    'PLK（马来西亚制造）': ['零售价格样本', 'https://www.samajaya.com.my/ourproducts/cid/557369/cat/metal-clad-switch/pn/1/'],
+    'reTOUCH（马来西亚品牌）': ['零售价格与系列保修', 'https://www.gluckhardware.com.my/showproducts/productid/6056878/cid/0/'],
+    'UMS / neiken（马来西亚制造）': ['零售价格样本', 'https://eezee.com.my/brands/ums?menuOption=all-products&p=1'],
+    'Seamaster': ['产品规格/质保与零售价格', 'https://colourmakers.com.my/product/seamaster-weather-pro-7900-sm-6m1-5-wise-owl'],
+    'Deka': ['品牌/本地服务信息', 'https://deka.my/about/'],
+    'Panasonic 松下': ['马来西亚保修政策', 'https://www.panasonic.com/content/dam/Panasonic/my/en/ewarranty/PM-warranty-policy-FY2025.pdf'],
+    'Legrand 罗格朗': ['销售条款/保修', 'https://www.legrand.com.my/sites/g/files/ocwmcr596/files/2023-04/Legrand%20Manufacturing_General%20Terms%20and%20Conditions%20of%20Sale.pdf']
+  };
+  const brandFilter = {};
+  const brandSourceOf = (cat, k, value) => {
+    const key = cat + '.' + k;
+    if (value === Q.SPEC_CATS[cat]?.keys[k]?.std || value === '普通 SIRIM 认证电线' || value === '普通品牌（示范价）') return 'standard';
+    if ((MY_BRAND_CHOICES[key] || []).includes(value)) return 'my';
+    if ((CN_BRAND_CHOICES[key] || []).includes(value)) return 'cn';
+    if ((INTL_BRAND_CHOICES[key] || []).includes(value)) return 'intl';
+    return null;
+  };
+  function brandSourceTabs(cat, k) {
+    const key = cat + '.' + k, filter = brandFilter[key] || 'my';
+    if (!MY_BRAND_CHOICES[key] && !CN_BRAND_CHOICES[key] && !INTL_BRAND_CHOICES[key]) return '';
+    const tabs = [['my','马来西亚 MY'],['cn','中国 CN'],['intl','国际 Global']];
+    return `<div class="brand-sources" aria-label="品牌来源分类">${tabs.map(([v,label]) => `<button type="button" class="${filter === v ? 'on' : ''}" data-brand-source="${v}" data-brand-key="${key}">${label}</button>`).join('')}</div>`;
+  }
+  function brandMeta(cat, k, value) {
+    const info = BRAND_INFO[cat + '.' + k]?.[value];
+    return info ? `<small class="brand-meta">${esc(info)}</small>` : '';
+  }
+  function brandReferences(opts) {
+    const refs = [...new Set(opts)].filter(value => BRAND_SOURCE_LINKS[value]);
+    return refs.length ? `<div class="brand-references">${refs.map(value => { const [label, href] = BRAND_SOURCE_LINKS[value]; return `<a href="${href}" target="_blank" rel="noopener noreferrer">${esc(value)} · ${esc(label)} ↗</a>`; }).join('')}</div>` : '';
+  }
+  function brandOriginTag(cat, k, value) {
+    const key = cat + '.' + k, local = MY_BRAND_CHOICES[key] || [];
+    const localTag = {
+      'Southern Cable': '马来西亚品牌', 'Tai Sin': '新加坡集团 · 马来西亚制造', 'Power Cables Malaysia': '马来西亚本地供应', 'Sindutch Cable（Prysmian）': '马来西亚制造 · 国际集团',
+      'LWD（马来西亚制造）': '马来西亚制造', 'PLK（马来西亚制造）': '马来西亚制造', 'reTOUCH（马来西亚品牌）': '马来西亚品牌', 'UMS / neiken（马来西亚制造）': '马来西亚制造', 'Deka': '马来西亚品牌', 'Seamaster': '马来西亚品牌'
+    }[value];
+    if (local.includes(value) || localTag || (key === 'outer.extPaint' && value === 'Seamaster')) return `<span class="desc" style="display:inline-block;margin-left:5px;padding:1px 6px;border-radius:99px;background:#e6efe9;color:#245c45;font-size:10px">${esc(localTag || '马来西亚品牌')}</span>`;
+    if ((CN_BRAND_CHOICES[key] || []).includes(value)) return '<span class="desc" style="display:inline-block;margin-left:5px;padding:1px 6px;border-radius:99px;background:#f8eadf;color:#80502b;font-size:10px">中国品牌</span>';
+    return '';
+  }
   function specCard(G, it, C) {
     const { c, have, keys, label } = it, ek = 's:' + G.id + ':' + c;
     const rows = keys.map(([cat, k]) => { const rs = have.filter(x => matKeys(x, c, C).some(([a, b]) => a === cat && b === k)), cur = rs.map(x => Q.specOf(P, x, cat, k, null, c)); return { cat, k, rs, cur, same: cur.every(v => v.v === cur[0].v && v.decided === cur[0].decided) }; });
@@ -964,7 +1321,14 @@
     }
     rows.forEach(({ cat, k, rs, cur, same }) => {
       const K = Q.SPEC_CATS[cat].keys[k], std = Q.stdOf(K, rs[0]);
-      h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${K.label}${rs.length < have.length ? ` <span class="desc">（${rs.map(x => esc(x.name)).join('、')}）</span>` : ''}${same ? '' : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div><div class="adds" style="margin:0">${K.opts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-splace="${c}" data-sg="${G.id}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${o === std ? ' <span class="desc">标准</span>' : ''}<br>${groupDelta(rs, c, cat, k, o, C.T.total)}</button>`; }).join('')}</div></div>`;
+      const filterKey = cat + '.' + k;
+      const isBrandRow = !!(MY_BRAND_CHOICES[filterKey] || CN_BRAND_CHOICES[filterKey] || INTL_BRAND_CHOICES[filterKey]);
+      const selectedSource = brandSourceOf(cat, k, cur[0]?.v);
+      const filter = brandFilter[filterKey] || (selectedSource && selectedSource !== 'standard' ? selectedSource : 'my');
+      if (isBrandRow && !brandFilter[filterKey]) brandFilter[filterKey] = filter;
+      const visibleOpts = isBrandRow ? K.opts.filter(o => brandSourceOf(cat, k, o) === filter || brandSourceOf(cat, k, o) === 'standard') : K.opts;
+      const emptyBrandSource = isBrandRow && !visibleOpts.some(o => brandSourceOf(cat, k, o) === filter) ? `<div class="hint" style="margin:0 0 7px">这个分类暂未收录已核实的${filter === 'cn' ? '中国' : filter === 'intl' ? '国际' : '马来西亚'}品牌；标准档仍可用于预算。需要新增品牌时应先核验马来西亚适用认证与本地售后。</div>` : '';
+      h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${K.label}${rs.length < have.length ? ` <span class="desc">（${rs.map(x => esc(x.name)).join('、')}）</span>` : ''}${same ? '' : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div>${brandSourceTabs(cat, k)}${emptyBrandSource}<div class="adds" style="margin:0">${visibleOpts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-splace="${c}" data-sg="${G.id}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${brandOriginTag(cat, k, o)}${o === std ? ' <span class="desc">标准</span>' : ''}<br>${groupDelta(rs, c, cat, k, o, C.T.total)}${brandMeta(cat, k, o)}</button>`; }).join('')}</div>${brandReferences(visibleOpts)}<div class="hint" style="margin-top:5px">价格为马来西亚零售/公开页面抽样参考，不是工程价；同品牌因系列、规格、色号和供货渠道差异较大。质保以所选型号、授权渠道及书面条款为准。</div></div>`;
     });
     // 各间不同时默认展开逐间；点按钮切换
     const one = have.length > 1 && (specOne.has(ek) !== diff);
@@ -979,6 +1343,8 @@
     let h = `<h2>④ 选材</h2><p class="hint">先在「② 房间」定好每个空间做什么，这里按空间类型统一选材料和选品：点一个选项，这一类空间都用它；某一间要不同，点「某间要不同」单独改。选项下面是换成它以后总价的变化，没想好的先按标准档估价。</p>${planBar()}`;
     const groups = Q.SPACE_GROUPS.map(G => { const rs = Q.sortRooms(P.rooms).filter(r => Q.roomGroup(r) === G.id); return { G, rs, items: specItems(rs, C) }; }).filter(x => x.items.length);
     if (!groups.length) return h + `<p class="hint">先在「② 房间」选要做的项目。</p>`;
+    const pendingRooms = P.rooms.filter(r => Q.placesOf(P, r, C.lines).some(pl => pl.open));
+    if (pendingRooms.length) h += `<div class="issue-edit y"><b>还有 ${pendingRooms.length} 个空间的材料未定</b><div class="hint" style="margin:5px 0 0">${pendingRooms.map(r => esc(Q.roomLabel(r, P))).join('、')}。下面标“未定”的卡片可直接选；也能在「⑤ 报价单」检查区逐间处理。</div></div>`;
     if (!groups.some(x => x.G.id === specGroup)) specGroup = (groups.find(x => x.items.some(i => i.open)) || groups[0]).G.id;
     h += `<div class="roombar noprint">${groups.map(x => { const n = x.items.filter(i => i.open).length; return `<button class="rchip ${x.G.id === specGroup ? 'on' : ''}" data-specgroup="${x.G.id}">${ic(x.G.icon)} ${esc(x.G.label)}<small style="color:${n ? 'var(--yellow)' : 'var(--ok)'}">${n ? n + ' 项未定' : '已定'}</small></button>`; }).join('')}</div>`;
     const cur = groups.find(x => x.G.id === specGroup), n = new Set(cur.items.flatMap(i => i.have.map(x => x.id))).size;
@@ -990,6 +1356,7 @@
   }
 
   // ---------- ⑤ 检查与报价单 ----------
+  let issueCursor = 0;
   function viewQuote(C) {
     const { lines, T, K } = C;
     const mode = P.quoteMode || 'estimate';
@@ -1002,15 +1369,36 @@
     h += `<h3 style="font-size:13px;margin:10px 0 6px">检查</h3><div class="noprint">`;
     if (!K.red.length && !K.yellow.length) h += `<div class="ok">✓ 全部检查通过，可以出${mode === 'formal' ? '正式' : '预估'}报价单</div>`;
     const fx = m => /尺寸还是默认值|长和宽/.test(m) ? 'dims' : /樘窗/.test(m) ? 'win' : /樘门/.test(m) ? 'door' : /墙面要现场确认/.test(m) ? 'wall' : '';
-    h += K.red.map(x => `<button class="issue r" data-go="${x.go}" data-fx="${fx(x.m)}"><b>必须处理</b><span>${esc(x.m)} <u>去改 →</u></span></button>`).join('');
-    h += K.yellow.map(x => `<button class="issue y" data-go="${x.go}"><b>请确认</b><span>${esc(x.m)}</span></button>`).join('');
+    const issueRow = (x, kind) => {
+      if (x.go.startsWith('spec:')) {
+        const r = room(x.go.slice(5));
+        if (r) {
+          const missing = Q.placesOf(P, r, lines).flatMap(pl => pl.keys.filter(([cat, k]) => !Q.specOf(P, r, cat, k, null, pl.pack).decided).map(([cat, k]) => ({ pack: pl.pack, cat, k, key: Q.SPEC_CATS[cat].keys[k] })));
+          if (missing.length) { const item = missing[0], current = Q.specOf(P, r, item.cat, item.k, null, item.pack).v; return `<div class="issue-edit ${kind}"><div class="issue-title">${esc(Q.roomLabel(r, P))} · ${esc(PACKS[item.pack].label)} · ${esc(item.key.label)}</div><div class="issue-fields"><label>选择材料或做法<select data-issue-spec data-issue-pack="${esc(item.pack)}" data-issue-cat="${esc(item.cat)}" data-issue-key="${esc(item.k)}">${item.key.opts.map(option => `<option value="${esc(option)}" ${option === current ? 'selected' : ''}>${esc(option)}</option>`).join('')}</select></label><button type="button" class="btn pri" data-issue-spec-save="${esc(r.id)}">确认这一项</button></div><div class="hint" style="margin:7px 0 0">此房间还有 ${missing.length} 项未定；当前显示标准档，核对后再确认。</div></div>`; }
+        }
+      }
+      const r = room(x.go), target = fx(x.m), index = +(x.m.match(/第\s*(\d+)\s*樘窗/)?.[1] || 0) - 1;
+      if (r && (target === 'dims' || (target === 'win' && r.windows?.[index]))) {
+        const values = target === 'dims' ? { L: r.L, W: r.W } : r.windows[index];
+        const keys = target === 'dims' ? [['L', '长'], ['W', '宽']] : [['w', '宽'], ['h', '高']];
+        return `<div class="issue-edit ${kind}"><div class="issue-title">${esc(x.m)}</div><div class="issue-fields">${keys.map(([key, label]) => `<label>${label}（尺）<input type="number" min="0.01" step="0.1" data-issue-field="${key}" value="${esc(values[key] ?? '')}"></label>`).join('')}<button type="button" class="btn pri" data-issue-save="${esc(r.id)}" data-issue-type="${target}" data-issue-index="${index}">${target === 'dims' ? '确认尺寸' : '保存窗户尺寸'}</button></div></div>`;
+      }
+      return `<button class="issue ${kind}" data-go="${esc(x.go)}" data-fx="${target}"><b>${kind === 'r' ? '必须处理' : '请确认'}</b><span>${esc(x.m)} <u>去改 →</u></span></button>`;
+    };
+    const issues = [...K.red.map(x => ({ ...x, kind: 'r' })), ...K.yellow.map(x => ({ ...x, kind: 'y' }))];
+    if (issues.length) {
+      issueCursor = Math.min(issueCursor, issues.length - 1);
+      h += `<div class="adds" style="align-items:center;justify-content:space-between"><b>逐项处理 · ${issueCursor + 1} / ${issues.length}</b><div class="adds" style="margin:0"><button class="chip" data-issue-prev ${issueCursor ? '' : 'disabled'}>上一项</button><button class="chip" data-issue-next ${issueCursor < issues.length - 1 ? '' : 'disabled'}>下一项</button></div></div>`;
+      h += issueRow(issues[issueCursor], issues[issueCursor].kind);
+    }
     h += `</div>`;
     h += `<div class="card noprint"><b>有不确定的项目？</b><p class="hint" style="margin:4px 0 8px">价目表没有的、现场还要再看的，先人工增加一项，写清名称和暂定单价。</p>${extrasEditor('')}</div>`;
     const unpriced = [...new Set(lines.filter(l => PRICE[l.code].unpriced).map(l => l.code))];
     if (unpriced.length) h += `<div class="card noprint" id="price"><b>待核定单价（本单先填，公司价目表补好后自动带出）</b>${unpriced.map(c => `<div class="priceRow"><span>${esc(PRICE[c].name)}</span>${field('综合单价', 'RM/' + PRICE[c].unit, stepper(`data-price="${c}"`, P.prices[c]?.lab ?? 0, 10))}</div>`).join('')}</div>`;
     h += `<h2>费用构成</h2><div class="bar">${T.byStage.map((s, i) => `<span title="${s.name}" style="width:${(s.total / Math.max(1, T.direct)) * 100}%;background:${STAGE_COLORS[(s.no - 1) % 9]}"></span>`).join('')}</div>
       <div class="legend">${T.byStage.map(s => `<span><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${s.name} <span class="mono">${rm(s.total)}</span></span>`).join('')}</div>`;
-    h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${mode === 'formal' ? '正式报价单' : '预估报价单'} · ${esc(plan().name || '')}</h2><button class="btn pri noprint" data-print ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `还有 ${K.red.length} 项要处理` : '打印 / 存 PDF'}</button></div>
+    h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${mode === 'formal' ? '正式报价单' : '预估报价单'} · ${esc(plan().name || '')}</h2><details class="quote-actions noprint"><summary class="btn pri">导出 / 导入 ▾</summary><div class="quote-actions-menu"><button class="btn" data-print="detail" ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `PDF：还有 ${K.red.length} 项待处理` : '导出详细 PDF'}</button><button class="btn" data-print="summary">导出客户方案 PDF${K.red.length ? '（预估）' : '（按空间包价）'}</button><button class="btn" data-export-table>导出品牌表格 XLSX</button><button class="btn" data-export-project>导出专属文件</button><label class="btn" style="cursor:pointer">导入专属文件<input type="file" accept=".json,.houzy-quote.json,application/json" data-import-project hidden></label></div></details></div>
+      <p class="hint noprint">点击 PDF 按钮会直接下载文件。客户方案版每个空间一个包价，项目不拆单价，也不显示尺寸和材料品牌。品牌表格可在 Excel 编辑；专属文件可导回本报价器继续修改。</p>
       ${mode === 'estimate' && lines.some(l => l.tbd.length) ? '<p class="hint" style="color:var(--yellow)">标「暂定」的项目材料还没定，暂按标准档估价，定好后金额可能变化。</p>' : ''}
       <p class="hint">客户：${esc(P.info.name) || '（未填）'} · ${HOUSES[P.houseType]?.label || ''} · 施工面积 ${nf(T.floorSum)} 平方尺</p>
       <div class="adds noprint" style="margin:6px 0;align-items:center"><span class="hint" style="margin:0">报价单排法：</span>${[['stage', '按施工工序'], ['room', '按房间'], ['cls', '按硬装 / 材料 / 软装']].map(([k, l]) => `<button class="chip ${(P.quoteView || 'stage') === k ? 'on' : ''}" data-qview="${k}">${l}</button>`).join('')}</div>
@@ -1047,7 +1435,7 @@
     document.getElementById('viewer').innerHTML = viewerHtml();
     const dm = document.getElementById('demo');
     document.body.classList.toggle('demo-on', demoOn); dm.hidden = !demoOn;
-    if (demoOn) { const y0 = window.scrollY; dm.innerHTML = viewDemo(C); demoShown = demoIdx; window.scrollTo(0, y0); const el = document.getElementById('dTotal'); if (el) countTo(el, C.T.total); return; }
+    if (demoOn) { const y0 = window.scrollY; dm.innerHTML = viewDemo(C); demoShown = demoIdx; window.scrollTo(0, y0); const el = document.getElementById('dTotal'); if (el) countTo(el, C.T.total); applyLanguage(); return; }
     lastTotal = null;
     const a = document.activeElement, app = document.getElementById('app');
     let sel = null, top = null, caret = null;
@@ -1057,15 +1445,17 @@
     window.scrollTo(0, y);
     if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
     document.querySelector('[data-info="name"]').value = P.info.name || '';
+    applyLanguage();
   }
 
   // ---------- 客户演示模式：只给客户看结果，不显示成本构成和内部检查 ----------
-  let demoOn = false, demoIdx = 0, demoShown = null, demoPrint = false;
+  let demoOn = false, demoIdx = 0, demoShown = null, workAnimTimer = null;
   const EXCLUDE = ['清单里没有列出的项目都不包含', '物业装修押金（由客户直接交给物业，完工后退还）', '家具、家电、窗帘以外的软装，除非清单里列明', '施工中客户要求的设计变更，按增减项单另计'];
   function demoSlides(C) {
     const S = [{ k: 'cover' }, { k: 'cost' }];
     P.rooms.forEach(r => { if (C.lines.some(l => l.roomId === r.id)) S.push({ k: 'room', r }); });
     if (C.lines.some(l => !l.roomId)) S.push({ k: 'whole' });
+    if (C.lines.length) S.push({ k: 'craft' });
     if (Q.plans(P).length > 1) S.push({ k: 'cmp' });
     S.push({ k: 'pay' });
     return S;
@@ -1093,6 +1483,264 @@
     });
     return h;
   }
+  function workFlow(section, en) {
+    const content = {
+      start: { steps:['现场交底与成品保护','核对施工范围和进场条件','材料、工具进场并分区摆放','开工前检查与记录'], en:['Brief the team and protect retained finishes','Confirm scope and site conditions','Bring in and organize materials and tools','Record the pre-start condition'], note:'开工保护与现场记录可在后续验收时对照。' },
+      demolition: { steps:['保护保留区域并标清拆改边界','按区域分段拆除','清运并检查暴露基层','记录隐蔽问题，确认后续处理'], en:['Protect retained areas and mark boundaries','Remove finishes in controlled sections','Clear debris and inspect the exposed substrate','Record hidden conditions before proceeding'], note:'发现结构或隐蔽问题时，先记录并确认处理范围。' },
+      'water-electric': { steps:['按图放样，确认点位与走向','敷设管线并固定、标识','隐蔽前完成相应测试','安装面板与设备并逐点检查'], en:['Set out points and service routes','Install, secure and identify conduits and pipes','Complete required tests before concealment','Install devices and check each point'], note:'测试项目和数值按所选系统及本项目确认文件执行。' },
+      carpentry: { steps:['复核现场尺寸、墙地垂直度','按确认图核对板材与饰面','柜体组装、找平并固定','安装五金，调门缝和抽屉'], en:['Recheck site dimensions and plumb','Match boards and finishes to the approved drawing','Assemble, level and secure the carcass','Fit hardware and adjust doors and drawers'], note:'板材、封边、五金型号以客户确认的选材和图纸为准。' },
+      'wet-area': { steps:['清理基层，处理阴阳角和管根','按区域要求施工防水层','养护后做蓄水检查并记录','保护防水层，找坡、铺贴和填缝','检查排水、平整、空鼓与收口'], en:['Prepare the substrate, corners and pipe penetrations','Apply the waterproofing system for the area','Cure, pond-test and record the result','Protect the membrane, form falls, tile and grout','Inspect drainage, level, adhesion and edges'], note:'卫生间、厨房和阳台的防水范围与高度不同，请展开手册页查看；项目具体尺寸以确认单为准。' },
+      'pipe-noise': { steps:['检查管道与检修位置','按系统包覆隔音材料','固定接缝并连续收口','复核排水与检修可达性'], en:['Inspect pipes and access points','Wrap pipes with the selected acoustic system','Secure joints and close gaps continuously','Check drainage and service access'], note:'设备检修口和阀门位置需保持可开启。' },
+      'plaster-paint': { steps:['固定板材并确认接缝位置','接缝贴带、分层批嵌','干燥后打磨并检查平整','按产品系统上底漆和面漆','检查色差、边角与表面'], en:['Fix boards and check joint placement','Tape joints and apply compound in layers','Allow to dry, sand and check flatness','Apply primer and finish coats to the selected system','Inspect color, corners and surface'], note:'涂料品牌、色号、遍数和干燥时间按选定产品及手册工艺页确认。' },
+      materials: { steps:['确认用途与基层条件','核对品牌、型号和技术资料','查看实物样板与颜色','把选定材料写入项目确认单'], en:['Confirm use and substrate conditions','Check brand, model and technical data','Review the physical sample and color','Record the selected product in the project schedule'], note:'本章节为手册材料展示，不表示报价已包含或已选定这些品牌。' },
+      'six-system': { steps:['按系统图复核管网和控制分区','安装毛细管网及连接组件','完成固定、连接和系统检查','按系统要求测试后再覆盖'], en:['Check the network layout and control zones','Install the capillary network and connectors','Secure connections and inspect the system','Test before covering the installation'], note:'系统参数、测试要求和控制分区依项目设计及设备资料确认。' },
+      'whole-house-sop': { steps:['原房复核与方案确认','现场布置与保护','拆改、新建与基层施工','水电放线与隐蔽验收','木作放线与吊顶施工','防水、闭水与瓦工','墙面基层与油漆','主材复尺与分类安装','全面检查、修复与保护','资料整理与竣工交付'], en:['Survey and approve the scope','Set up and protect the site','Demolition, new walls and substrate work','Set out services and inspect before concealment','Set out carpentry and install ceiling framing','Waterproofing, pond test and tiling','Prepare and paint walls','Measure, deliver and install main products','Inspect, repair and protect finishes','Organize documents and hand over'], note:'按手册 SOP 重新整理；每个项目会按实际施工范围调整先后及责任分工。' }
+    };
+    const base = content[section.id] || content['whole-house-sop'];
+    return { steps: en ? base.en : base.steps, note: base.note };
+  }
+  function workStepInfo(id, i, en) {
+    const data = {
+      'whole-house-sop': [
+        ['现场复核墙地平整、垂直及原结构状况；与客户核对方案和施工边界。','记录空鼓、裂缝、平整度和垂直度；未确认的问题先列入处理清单。','Survey wall/floor level, plumb and existing structure; confirm the plan and work boundaries.','Record hollowness, cracks and deviations; list unresolved items before work.','plan'],
+        ['设置临时办公、仓储和卫生间；划分作业区，保护保留门窗与地面。','通道、保留成品和临时设施清晰；保护破损及时记录。','Set up temporary office, storage and washroom; zone the site and protect retained finishes.','Check access, retained items and protection before trades enter.','protect'],
+        ['按确认图放线后拆改；新建墙体及修补按方案施工，再复核基层。','拆改边界与图纸一致；结构及隐蔽问题未经确认不擅自处理。','Set out from approved drawings, complete demolition and build new walls as agreed.','Confirm boundaries; document structural or concealed issues before proceeding.','masonry'],
+        ['复核灯位、插座、给水、排水及设备点位；完成管线敷设和隐蔽前检查。','水电线路逐项测试，位置与确认图一致；封闭前完成客户/项目验收。','Confirm lighting, sockets, water, drainage and appliance points; install services and inspect before concealment.','Test each service and verify locations against the approved layout before closing.','services'],
+        ['按基准线施工墙面基层和天花龙骨；内检合格后再封板。','龙骨位置、水平和固定完成检查；检修口与设备位置可用。','Set out wall bases and ceiling framing from control lines; close boards only after inspection.','Check framing, level, fixing and access panels before closing.','ceiling'],
+        ['按空间施工防水，完成闭水检查后保护防水层；再找平、铺贴墙地砖。','防水节点、闭水结果、排水坡向、砖缝及收口逐项检查。','Apply waterproofing by area and complete the pond test before protecting the membrane and tiling.','Check junctions, test results, falls, grout joints and edges.','waterproof'],
+        ['处理锈点、裂缝和墙面基层；挂网、批嵌、打磨后按选定系统涂装。','基层干燥平整；颜色、光泽、边角和表面观感按样板确认。','Treat rust and cracks, prepare the wall, reinforce where required, fill and sand before painting.','Check dry, even surfaces, color, sheen, corners and the approved sample.','paint'],
+        ['按类别复尺、核对品牌型号和颜色；安排送货安装及分项交接。','产品与确认清单一致；厨房、卫浴、灯具、柜体等逐类检查并签收。','Remeasure, confirm product details and arrange delivery, installation and trade handovers.','Match products to the approved schedule; inspect and sign off each category.','install'],
+        ['完成整体内检和二次复检；修补缺陷并保护已完成的地面和饰面。','问题项逐条销项；成品保护完整，设备功能检查正常。','Complete first and second inspections, repair defects and protect finished surfaces.','Close each punch-list item and verify protection and operation.','inspect'],
+        ['整理材料资料、设备说明和保修资料；与客户共同验收、交接和结算。','交付清单完整；客户确认验收记录、保修资料和未完事项。','Prepare product, equipment and warranty documents; complete the joint handover and account closeout.','Confirm the handover record, warranty documents and any remaining items.','handover']
+      ],
+      start: [
+        ['核对设计方案、施工范围和现场条件。','疑问及原有问题先记录并确认。','Review the design, work scope and site conditions.','Record existing issues and resolve open questions first.','plan'],
+        ['标出保留项目和施工区域，铺设地面及门窗保护。','保留成品无损伤，通道和保护范围清晰。','Mark retained items and work zones; protect floors, doors and windows.','Retained finishes and access routes are protected.','protect'],
+        ['安排临时用水、用电、仓储及垃圾暂存位置。','临时设施安全可用，材料分类摆放。','Arrange temporary power, water, storage and debris areas.','Temporary facilities are safe and materials are organized.','site'],
+        ['进场前拍照记录现状，完成施工交底。','施工方与客户确认记录、边界和开工条件。','Photograph existing conditions and complete the site briefing.','Both parties confirm records, boundaries and readiness.','inspect']
+      ],
+      demolition: [
+        ['确认拆改图、保留物和管线位置，做好周边保护。','拆改边界已确认，水电隔离和保护到位。','Confirm demolition drawings, retained items and service routes; protect adjacent areas.','Boundaries, service isolation and protection are confirmed.','plan'],
+        ['按区域有序拆除饰面和非保留构件。','不碰结构及保留管线；过程控制扬尘和碎料。','Remove finishes and non-retained elements in controlled sections.','Protect structural elements and retained services; control dust and debris.','masonry'],
+        ['分类清运，清理暴露基层并检查空鼓、裂缝和渗漏。','隐藏问题拍照记录，确认处理范围后再继续。','Sort debris and inspect exposed substrates for hollowness, cracks and leaks.','Photograph concealed issues and agree the repair scope before proceeding.','inspect']
+      ],
+      'water-electric': [
+        ['按确认图放出开关、插座、灯具及给排水点位。','点位高度、方向及设备尺寸先复核。','Mark switches, sockets, lights and plumbing points from approved drawings.','Recheck heights, orientation and appliance clearances.','plan'],
+        ['按线路图开槽并敷设电管、水管和排水管。','线路分区清晰，管线固定，交叉和转弯处可检查。','Route electrical conduits, supply pipes and drains to the service plan.','Keep routes identifiable, secured and inspectable at crossings and bends.','services'],
+        ['封闭前完成线路检查、通水/排水检查及要求的测试。','测试结果留档；发现问题修复后复测。','Inspect wiring and test water supply and drainage before concealment.','Keep records; repair and retest any failed item.','inspect'],
+        ['按定位图封槽修补，后续安装面板和设备并通电通水。','面板位置平直，回路和设备逐点确认。','Repair chases, then install devices and commission power and water.','Check aligned plates, circuits and each connected fixture.','install']
+      ],
+      carpentry: [
+        ['复核现场尺寸、墙面垂直度和设备/管线位置。','尺寸与批准图纸一致，开门和检修空间足够。','Verify site dimensions, wall plumb and service locations.','Match approved drawings and preserve door and service clearances.','plan'],
+        ['按基准线定位墙面基层及天花龙骨。','龙骨间距、水平和连接按选定系统检查。','Set out wall framing and ceiling members from control lines.','Check spacing, level and connections against the selected system.','ceiling'],
+        ['内检后封板或安装柜体，按图固定并找平找直。','封闭前留存隐蔽记录；柜体稳固，边缝均匀。','Inspect concealed framing, then close boards or install cabinetry to the approved layout.','Record concealed work; check secure fixing, level and consistent gaps.','cabinet'],
+        ['安装门板、抽屉、台面及五金，完成调试。','开合顺畅、无碰撞；饰面和收口与样板一致。','Fit doors, drawers, countertops and hardware; adjust and commission.','Check smooth operation, no collisions and finishes against samples.','install']
+      ],
+      'wet-area': [
+        ['清理基层，处理阴阳角、管根、地漏和门槛节点。','基层牢固干净；所有转角和穿管点已加强处理。','Prepare the substrate and treat corners, pipe penetrations, floor traps and thresholds.','Substrate is sound and clean; junctions and penetrations are reinforced.','waterproof'],
+        ['卫生间：地面全做，墙面2–3遍至1.8m；门外0.5m、门两侧外墙0.3m。\n厨房：地面全做，墙面0.3m，台盆面1.2m。\n阳台：地面全做，墙面0.3m，防水层厚度≥1.6mm且不露底。','不同空间分别核对涂刷范围、高度、遍数和厚度；产品与基层适配。','Bathroom: full floor; 2–3 wall coats to 1.8 m; extend 0.5 m outside the doorway and 0.3 m on the outer wall at both sides.\nKitchen: full floor; 0.3 m wall upstand and 1.2 m at the sink wall.\nBalcony: full floor; 0.3 m wall upstand; membrane at least 1.6 mm with no substrate showing.','Check coverage, height, coats and thickness for each area; confirm product compatibility.','waterproof'],
+        ['防水层完成并养护后进行闭水检查，记录结果。','相邻区域无渗漏；异常先修补并复测。','Allow the membrane to cure, then pond-test and record the result.','No leakage to adjacent areas; repair and retest any failure.','inspect'],
+        ['保护防水层，地面找坡找平后按排版铺贴墙地砖。','坡向地漏，砖缝均匀；检查空鼓、平整和边口。','Protect the membrane, form falls and lay wall and floor tiles to the approved layout.','Falls drain to the trap; joints, flatness, adhesion and edges are checked.','tile'],
+        ['完成填缝、清洁和成品保护，办理瓦工/防水验收。','验收记录齐全，地面保护覆盖到位。','Grout, clean, protect the finish and complete trade sign-off.','Inspection records and floor protection are in place.','inspect']
+      ],
+      'pipe-noise': [
+        ['确认管道走向、接头、阀门和检修口。','阀门及需要维护的位置保持可达。','Locate pipe routes, joints, valves and access points.','Keep valves and service points accessible.','services'],
+        ['按选定系统包覆管道并处理接口。','包覆连续，转弯和接缝无明显空缺。','Wrap the pipes with the selected acoustic system and treat joints.','Coverage is continuous around bends and connections.','protect'],
+        ['固定包覆层，再施工外层保护或封闭。','固定可靠，不压损管道及连接件。','Secure the wrap before installing the outer protection or enclosure.','Fixings are secure without damaging pipes or joints.','masonry'],
+        ['完成通水检查并确认检修条件后交接。','排水正常，无异常渗漏或明显松动。','Test water flow and verify service access before handover.','Flow is normal with no visible leakage or loose wrapping.','inspect']
+      ],
+      'plaster-paint': [
+        ['固定板材或处理墙面基层，检查接缝和转角。','基层牢固、干燥，接缝位置符合系统做法。','Fix boards or prepare wall substrates; check joints and corners.','Substrates are sound and dry; joints suit the selected system.','ceiling'],
+        ['接缝贴带、分层批嵌，修补裂缝并按需挂网。','接缝覆盖完整，避免漏贴、起泡和突起。','Tape joints, apply compound in layers, repair cracks and reinforce where required.','Tape coverage is complete with no bubbles or proud edges.','wall'],
+        ['干燥后打磨除尘，检查墙面平整度。','侧光下无明显波浪、砂痕和接缝痕迹。','Allow to dry, sand and remove dust; check wall flatness.','No visible waves, sanding marks or joint lines under side light.','paint'],
+        ['按选定产品上底漆和面漆，控制干燥和重涂时间。','品牌、色号、遍数按样板及产品资料核对。','Apply primer and finish coats to the selected product system.','Verify brand, color and coats against the approved sample and product data.','paint'],
+        ['完成边角修饰、清洁和油工验收。','色泽均匀，边角完整，污染和漏涂已处理。','Finish corners, clean the area and complete painting inspection.','Color is even, edges are complete and missed or stained areas are corrected.','inspect']
+      ],
+      materials: [
+        ['按工程类别确定主材品类和使用位置。','型号与空间功能、尺寸及基层条件相符。','Select product categories and locations by work scope.','Products fit the room use, dimensions and substrate.','plan'],
+        ['确认品牌、型号、规格、颜色及样板。','客户确认记录完整，替代品需再次确认。','Confirm brand, model, specification, color and sample.','Keep client approval records; reconfirm substitutions.','inspect'],
+        ['约定采购责任、复尺、送货和安装安排。','到货核对型号、数量、外观和批次。','Agree who purchases, remeasures, delivers and installs.','Check model, quantity, appearance and batch on arrival.','install'],
+        ['产品资料、说明书和保修信息随交付整理。','清单与实际安装产品一致。','Collect product documents, manuals and warranty information for handover.','Handover records match the installed products.','handover']
+      ],
+      'six-system': [
+        ['按系统设计复核分区、管网走向和控制点。','确认机电接口及检修位置。','Review zones, network routes and control points against the system design.','Confirm service interfaces and access locations.','plan'],
+        ['安装毛细管网及连接组件，按图固定。','管网无扭折，固定和连接完整。','Install and secure the capillary network and connectors to the layout.','No kinks; connections and fixings are complete.','services'],
+        ['完成系统检查和规定测试，记录结果。','异常在覆盖前处理并复检。','Inspect and test the system as specified; record results.','Resolve and recheck faults before concealment.','inspect'],
+        ['确认隐蔽验收后再覆盖并进入饰面施工。','隐蔽记录、检修条件和交接清楚。','Obtain concealed-work sign-off before covering and finishing.','Keep concealed-work records and service access.','handover']
+      ]
+    };
+    const row = (data[id] || data['whole-house-sop'])[i] || (data[id] || data['whole-house-sop'])[0];
+    const source = {
+      'whole-house-sop':'SOP 全案施工落地标准流程', start:'开工准备与现场保护', demolition:'墙体拆改施工工艺',
+      'water-electric':'水电施工工艺', carpentry:'木工施工工艺', 'wet-area':'瓦工施工工艺 · 防水及铺贴',
+      'pipe-noise':'管道隔音施工工艺', 'plaster-paint':'石膏板接缝及油漆施工工艺',
+      materials:'精工辅材标准与材料说明', 'six-system':'六恒系统施工流程'
+    }[id] || '精工施工标准化体系手册';
+    return { action:row[en?2:0], check:row[en?3:1], icon:row[4], source };
+  }
+  function workIcon(icon, index, en) {
+    const drawings = {
+      plan:`<path d="M42 36h116v75H42zM99 36v75M42 74h116M58 48h25v15H58zM115 85h29v16h-29z" fill="none" stroke="#173d32" stroke-width="4"/><path d="M42 23h116M33 36v75" stroke="#c5a46a" stroke-width="2"/><path d="M38 20l4 6 4-6M155 20l4 6 4-6M28 40l6-4-6-4M28 105l6 4-6 4" fill="none" stroke="#c5a46a" stroke-width="2"/><circle class="pulse" cx="142" cy="44" r="6" fill="#b8583b"/>`,
+      protect:`<path d="M48 111V40h60v71M112 111V57h42v54" fill="none" stroke="#173d32" stroke-width="5"/><path d="M39 112h122v10H39z" fill="#c5a46a"/><path d="M51 87h55M114 91h37" stroke="#d8d0c1" stroke-width="10"/><path d="M66 76l12 12 22-27" fill="none" stroke="#286d59" stroke-width="5"/><path d="M41 33h69" stroke="#c5a46a" stroke-width="3" stroke-dasharray="6 4"/>`,
+      masonry:`<path d="M45 35h112v80H45z" fill="#e0d7c6" stroke="#173d32" stroke-width="4"/><path d="M45 55h112M45 76h112M45 96h112M72 35v20M126 35v20M58 55v21M111 55v21M83 76v20M140 76v20M70 96v19" stroke="#b28b56" stroke-width="3"/><path class="motion" d="M125 35h32v41h-32z" fill="#f0ece2" stroke="#b8583b" stroke-width="3"/>`,
+      services:`<path d="M65 118V42h67v76M65 77h67" fill="none" stroke="#d04f46" stroke-width="7"/><path d="M48 45h32v34H48z" fill="#e9e3d8" stroke="#173d32" stroke-width="3"/><circle cx="64" cy="62" r="5" fill="#c5a46a"/><path d="M143 45v50h18V68h-18" fill="none" stroke="#397b9b" stroke-width="6"/><circle class="pulse" cx="151" cy="107" r="10" fill="#286d59"/>`,
+      ceiling:`<path d="M40 37h120M48 52h104M52 52v61M101 52v61M150 52v61M45 78h110M45 104h110" fill="none" stroke="#173d32" stroke-width="4"/><path d="M70 37v15M128 37v15" stroke="#c5a46a" stroke-width="4"/><circle cx="70" cy="37" r="5" fill="#c5a46a"/><circle cx="128" cy="37" r="5" fill="#c5a46a"/>`,
+      waterproof:`<path d="M49 111V40h16v55h99v16z" fill="#d9d0bf" stroke="#173d32" stroke-width="3"/><path d="M66 93h95" stroke="#286d59" stroke-width="8"/><path d="M66 83h95" stroke="#c5a46a" stroke-width="5"/><path class="pulse" d="M115 42c0 11-15 11-15 0 0-7 7-15 7-15s8 8 8 15z" fill="#397b9b"/><path d="M68 87v-25" stroke="#286d59" stroke-width="5"/>`,
+      tile:`<path d="M48 40h108v72H48z" fill="#d9d0bf" stroke="#173d32" stroke-width="3"/><path d="M84 40v72M120 40v72M48 76h108" stroke="#fffdf8" stroke-width="4"/><path d="M55 104l13-18M95 104l13-18M132 104l13-18" stroke="#c5a46a" stroke-width="3"/><path d="M148 29l-19 19" stroke="#b8583b" stroke-width="5"/>`,
+      paint:`<path d="M47 44h75v68H47z" fill="#f8f5ee" stroke="#173d32" stroke-width="3"/><path d="M49 80h71" stroke="#c5a46a" stroke-width="3" stroke-dasharray="5 4"/><path d="M128 39h28v23h-28zM142 62v39h-9" fill="none" stroke="#286d59" stroke-width="6"/><rect x="122" y="34" width="40" height="12" rx="3" fill="#b8583b"/><path class="motion" d="M55 99h52" stroke="#286d59" stroke-width="5"/>`,
+      cabinet:`<rect x="48" y="33" width="108" height="83" rx="2" fill="#c9ae82" stroke="#173d32" stroke-width="4"/><path d="M102 35v78M51 75h102" stroke="#f8f5ee" stroke-width="4"/><circle cx="91" cy="71" r="3" fill="#173d32"/><circle cx="112" cy="71" r="3" fill="#173d32"/><path d="M42 119h120" stroke="#c5a46a" stroke-width="4"/>`,
+      install:`<path d="M60 42h78v8H60zM82 50v18M116 50v18" stroke="#173d32" stroke-width="5" fill="none"/><path d="M70 69h58v8H70zM78 77v34M120 77v34" stroke="#c5a46a" stroke-width="4" fill="none"/><circle cx="99" cy="91" r="5" fill="#b8583b"/>`,
+      inspect:`<path d="M58 31h68l18 18v68H58z" fill="#fffdf8" stroke="#173d32" stroke-width="4"/><path d="M126 31v20h18M75 64l6 6 11-13M100 65h27M75 88l6 6 11-13M100 89h27" fill="none" stroke="#286d59" stroke-width="4"/><path class="pulse" d="M80 111l12 12 26-28" fill="none" stroke="#b8583b" stroke-width="5"/>`,
+      handover:`<path d="M47 40h73l22 20v58H47z" fill="#fffdf8" stroke="#173d32" stroke-width="4"/><path d="M120 40v22h22M63 77h59M63 91h43" stroke="#c5a46a" stroke-width="4"/><circle cx="129" cy="104" r="17" fill="#286d59"/><path d="M121 104l6 6 11-13" fill="none" stroke="#fff" stroke-width="3"/>`,
+      site:`<path d="M52 48h103v68H52z" fill="#e1d9c9" stroke="#173d32" stroke-width="4"/><path d="M63 105V71l41-24 40 24v34" fill="none" stroke="#b28b56" stroke-width="4"/><path d="M89 116V87h27v29" fill="#fffdf8" stroke="#173d32" stroke-width="3"/><circle cx="60" cy="48" r="8" fill="#b8583b"/>`,
+      wall:`<path d="M48 35h111v80H48z" fill="#dfd7c8" stroke="#173d32" stroke-width="3"/><path d="M48 55h111M48 76h111M48 96h111M76 35v20M132 35v20M61 55v21M118 55v21M90 76v20M145 76v20M76 96v19" stroke="#b28b56" stroke-width="3"/>`
+    };
+    const art = drawings[icon] || drawings.inspect;
+    return `<svg viewBox="0 0 200 145" role="img" aria-label="${en?'HOUZY construction illustration':'HOUZY施工步骤图解'}"><rect x="0" y="0" width="200" height="145" rx="8" fill="#f0ece2"/><path d="M15 128H185" stroke="#d4cab8" stroke-width="2"/><text x="16" y="21" fill="#9d8153" font-size="8" letter-spacing="1.5">HOUZY · ${en?'CRAFT':'精工工艺'}</text><text x="184" y="22" text-anchor="end" fill="#173d32" font-size="10" font-weight="700">${String(index+1).padStart(2,'0')}</text>${art}</svg>`;
+  }
+  function workStepMore(id, index, en, title, info) {
+    const sop = [
+      ['归方基准线施工|检查原结构空鼓和裂缝|复核墙面垂直、地面平整|形成现状问题记录','施工方做墙固、基准线和全屋原结构检测，整理平整度、垂直度和空鼓问题。','客户确认方案、施工边界及原结构问题的处理方式。','Set control lines|Check existing hollowness and cracks|Check wall plumb and floor level|Record existing conditions','The contractor applies wall consolidant, sets control lines and records existing defects.','The client confirms the plan, work boundaries and treatment of existing defects.'],
+      ['布置临时办公室、仓库和卫生间|安排临时水电|划分施工区和通道|保护保留门窗、地面及设备','施工方安排分区板、成品保护和材料/垃圾动线。','客户告知保留物品，并确认物业进场与施工时间要求。','Set up temporary office, storage and washroom|Arrange temporary utilities|Zone work areas and access|Protect retained doors, floors and equipment','The contractor arranges site zoning, finish protection and material/debris routes.','The client identifies retained belongings and confirms building access and work hours.'],
+      ['按确认图放拆改线|拆除并清理基层|砌筑新墙、修补线槽|复核尺寸、垂直和平整','施工方按确认图拆改和新建，不擅自改动结构；隐蔽问题先拍照记录。','客户确认墙体、门洞和变更项目后继续。','Mark approved demolition lines|Remove and clear substrates|Build new walls and repair chases|Recheck dimensions, plumb and flatness','The contractor follows approved drawings and records concealed issues; structural changes need approval.','The client confirms walls, openings and variations before work proceeds.'],
+      ['复核灯、插座、开关点位|放样给水、排水和设备线路|完成水电施工与内检|测试、验收并留存隐蔽位置','施工方完成电路、给水、排水及设备开孔；封槽封板前完成测试和隐蔽验收。','客户复核各点位并参加隐蔽验收；确认后才封闭。','Confirm lights, sockets and switch points|Set out water, drainage and equipment routes|Install and inspect services|Test, sign off and record concealed routes','The contractor completes electrical, supply and drainage works and tests before concealment.','The client checks locations and attends concealed-work sign-off before closure.'],
+      ['木作放线和尺寸复核|墙面基层与天花龙骨施工|龙骨内检、复核设备管线|确认后封板并完成木作内检','施工方按基准线施工；龙骨和隐蔽管线检查通过后再封板。','客户确认天花造型、标高、灯槽和检修口位置。','Set out and recheck dimensions|Build wall bases and ceiling framing|Inspect framing and services|Close boards after sign-off','The contractor follows control lines and closes boards only after framing inspection.','The client confirms ceiling forms, levels, light coves and access panels.'],
+      ['按空间确定防水区域|施工并养护防水层|闭水试验和防水内验|找平、铺墙地砖、检查及保护','施工方按手册分区做防水和闭水；验收后保护膜层，再找平、铺贴和检查。','客户确认砖排版、颜色和收口，并参与闭水及瓦工验收。','Set waterproofing zones by room|Apply and cure the membrane|Pond-test and inspect|Level, tile, inspect and protect','The contractor waterproofs and tests each area; tiling follows sign-off and membrane protection.','The client approves tile layout, color and edges and attends inspections.'],
+      ['除尘、墙固和防裂处理|需要处挂网、修补裂缝|分层批刮并打磨|底漆、面漆和油工内验','施工方按手册处理锈点、裂缝、墙固、挂网、批刮和打磨，再按选定系统涂装。','客户确认色板和样板；完工后检查颜色与表面。','Remove dust and treat cracks|Reinforce where needed|Fill in layers and sand|Prime, paint and inspect','The contractor treats rust/cracks, reinforces where required, fills and sands before painting.','The client approves color and samples, then reviews the finished surface.'],
+      ['确认品牌、型号、规格和颜色|按类别复尺并下单|核对到货产品|厨房、卫浴、灯具、柜体分类安装交接','施工方按确认清单协调复尺、送货、安装，核对型号、规格及现场接口。','客户确认采购责任、样板、到货产品和分项验收。','Confirm brand, model, specification and color|Remeasure and order by category|Check delivered products|Install and hand over kitchen, bathroom, lights and cabinetry','The contractor coordinates measurement, delivery and installation against the approved schedule.','The client confirms purchasing responsibility, samples, deliveries and trade sign-offs.'],
+      ['全屋内部检查|逐项修补并二次复检|成品精细保护与清洁|整理问题关闭记录','施工方完成整体内验、修复、二次内验和精细保护，问题逐项销项。','客户按房间和工序复核，记录仍需跟进事项。','Inspect the whole home|Repair and reinspect each item|Protect and clean finishes|Close out the punch list','The contractor inspects, repairs, reinspects and protects finishes; each item is closed out.','The client reviews each room and trade and notes remaining follow-up items.'],
+      ['整体内验与修复|整体二次内验|精细保护|全案交付资料、全景记录与售后说明','施工方完成整体内验、修复、二次内验和精细保护；整理主材资料、交付记录及售后说明。','客户确认交付清单、验收记录、保修资料、售后说明及最终结算。','Whole-home inspection and repairs|Second inspection|Detailed protection|Handover documents, visual record and after-sales guide','The contractor completes inspections, repairs and protection, then organizes product records, handover documentation and after-sales guidance.','The client confirms the handover checklist, inspection record, warranties, after-sales guide and final account.']
+    ];
+    const trade = {
+      'water-electric': [
+        ['点位复核|墙面/地面放线|套管与线槽定位|图纸复盘','复核开关、插座、灯具、给水、排水和设备位置；所有点位与图纸对齐。','客户确认点位高度、方向及设备接口后再开槽。','Confirm fixture points|Mark wall/floor routes|Locate conduits and chases|Review drawings','Confirm switches, sockets, lights, water, drains and equipment positions against drawings.','The client approves heights, orientation and equipment connections before chasing.'],
+        ['电路分路敷设|给水管定位施工|排水管按坡向施工|线管与水管固定标识','施工方分项敷设电路、给水和排水；转弯、交叉和接口位置可检查。','确认新增设备、冷热水及排水点位。','Route electrical circuits|Install water-supply pipes|Set drain routes and falls|Secure and identify services','Install electrical, supply and drainage routes separately; keep joints and crossings inspectable.','Confirm appliance, hot/cold water and drainage locations.'],
+        ['逐路检查线路|检查给水接口|通水检查排水|隐蔽前测试和记录','施工方按系统要求测试，缺陷修复后复测；封闭前留存管线定位记录。','客户参加隐蔽验收，确认后才封槽封板。','Inspect circuits|Check water connections|Flow-test drains|Test and record before concealment','Test services to system requirements; repair and retest defects and record concealed routes.','The client joins the concealed-work inspection before closure.'],
+        ['修补线槽|安装开关插座和灯具|接通设备接口|逐点功能验收','施工方安装面板和设备，逐点通电、通水，完成清洁交接。','按点位清单验收数量、位置和功能。','Repair chases|Install switches, sockets and lights|Connect equipment|Commission each point','Install devices and test electrical and water functions point by point.','Check quantity, location and operation against the approved schedule.']
+      ],
+      'wet-area': [
+        ['检查基层牢固与清洁|清理地漏和管根|处理阴阳角与门槛|节点加强','防水前完成基层处理；地漏、穿管、阴阳角和门槛先做节点加强。','确认湿区边界、门槛及地漏位置。','Check substrate strength and cleanliness|Prepare floor traps and pipe roots|Treat corners and thresholds|Reinforce junctions','Prepare the substrate before waterproofing; reinforce traps, penetrations, corners and thresholds.','Confirm wet-area boundaries, thresholds and floor-trap positions.'],
+        ['卫生间：地面全做，墙面2–3遍至1.8m|门外0.5m、两侧外墙0.3m|厨房：地面全做，墙面0.3m、台盆面1.2m|阳台：地面全做，墙面0.3m，厚度≥1.6mm不露底','按手册所列空间范围施工，记录所用产品、遍数和厚度；墙面用刚性防水，地面用柔性防水。','逐空间核对范围和高度；产品型号及确认标准写入项目文件。','Bathroom: full floor, 2–3 wall coats to 1.8 m|Extend 0.5 m outside the door and 0.3 m at both outer sides|Kitchen: full floor, 0.3 m wall and 1.2 m at sink wall|Balcony: full floor, 0.3 m wall, ≥1.6 mm without exposed substrate','Follow the handbook coverage by room and record product, coats and thickness; rigid waterproofing on walls and flexible waterproofing on floors.','Check coverage room by room and record the approved product and specification.'],
+        ['防水层按产品要求养护|封堵地漏|按项目要求做闭水|检查相邻区域并记录','闭水前检查膜层连续；发现渗漏先修补并重新测试，合格后才覆盖。','客户可现场见证闭水结果并确认记录。','Cure the membrane|Seal the floor trap|Pond-test to project requirements|Inspect adjacent rooms and record','Check membrane continuity before testing; repair and repeat any failed test before covering.','The client may witness the pond test and approve the record.'],
+        ['保护已验收防水层|按地漏方向找坡|按排版铺墙地砖|检查缝线、空鼓和平整','瓦工按确认排版施工，检查坡向地漏、砖缝、空鼓、门槛和收边。','确认砖的排版、缝宽、颜色和收边方案。','Protect approved waterproofing|Form falls to the drain|Lay wall/floor tiles to layout|Check joints, adhesion and flatness','Tile to the approved layout and inspect falls, grout joints, hollow spots, thresholds and edges.','Approve tile layout, joint width, color and edge details.'],
+        ['填缝并清洁|排水复查|逐项验收记录|铺设地面成品保护','问题修复后复检，记录瓦工/防水验收并保护完工面。','确认问题清单关闭后进入下一工序。','Grout and clean|Recheck drainage|Record inspection|Protect finished floors','Repair and reinspect defects, record trade acceptance and protect finished surfaces.','Confirm the punch list is closed before the next trade begins.']
+      ],
+      carpentry: [
+        ['复核尺寸和墙面垂直|确认管线与检修位置|核对施工图和饰面样板','木作放线前核对现场尺寸、基面和设备位置，图纸与样板保持一致。','确认柜体尺寸、门扇开启及内部布局。','Recheck dimensions and wall plumb|Confirm services and access points|Match drawings and finish sample','Check site dimensions, substrate and services before setting out; align drawings with samples.','Approve cabinet dimensions, door swing and internal layout.'],
+        ['墙面基层施工|顶面龙骨放线|安装龙骨并固定|龙骨内检','按归方基准线做墙基层和顶面龙骨；封板前检查水平、连接和设备点位。','确认天花标高、造型、灯槽及检修口。','Prepare wall base|Set out ceiling framing|Install and secure framing|Inspect framing','Build wall bases and ceiling framing from control lines; inspect level, fixings and service points before closing.','Confirm ceiling level, form, light coves and access panels.'],
+        ['按确认图封板或组装柜体|柜体找平找直并固定|核对板材、封边与五金|隐蔽及木作内检','施工方按确认图安装，检查固定、拼缝、接口及隐蔽记录。','确认材料型号、饰面、五金品牌和颜色。','Close boards or assemble cabinetry to approved drawings|Level and secure cabinets|Check boards, edging and hardware|Inspect concealed and carpentry work','Install to approved drawings and inspect fixings, joints, interfaces and concealed records.','Confirm board, finish, hardware brand and color.'],
+        ['安装门板和抽屉|安装台面及五金|调整缝隙与开合|清洁保护并交接','检查柜门抽屉开合、台面接口、边口收缝和表面保护。','按样板验收颜色、纹理、开合和收口。','Fit doors and drawers|Install countertops and hardware|Adjust gaps and operation|Clean, protect and hand over','Check operation, countertop joints, edge details and surface protection.','Approve color, texture, operation and junctions against the sample.']
+      ],
+      start: [
+        ['复核进场条件|拍照记录原始状态|标记保留与施工范围|完成开工交底','施工方核对现场、基准线和保护范围，形成施工前记录。','客户确认原有问题、保留物及施工边界。','Confirm site readiness|Photograph existing conditions|Mark retained items and work areas|Complete the site briefing','The contractor checks the site, control lines and protection boundaries and records the starting condition.','The client confirms existing issues, retained items and work boundaries.'],
+        ['铺设地面保护|保护门窗及固定设备|划分材料与垃圾区域|标注施工通道','施工方按区域铺设保护并设置分区，避免材料运输损伤成品。','客户确认需要特别保护的物品和通行路线。','Protect floors|Cover doors, windows and fixed equipment|Zone material and debris areas|Mark access routes','The contractor installs area protection and zones to prevent handling damage.','The client identifies items needing extra care and confirms access routes.'],
+        ['准备临时办公室、卫生间和仓储|接通临时水电|确认垃圾暂存与清运|检查消防及安全通道','临时设施就位后核对用电、用水和现场安全。','确认物业施工规定和设备使用位置。','Set up temporary office, washroom and storage|Arrange temporary utilities|Plan debris storage and removal|Check safety routes','Inspect temporary utilities and site safety after setup.','Confirm building rules and temporary facility locations.'],
+        ['清点材料和工具|复核保护措施|确认图纸与人员交底|记录开工检查结果','确认施工资料、人员安排和安全保护后开工。','双方确认开工条件和待处理事项。','Check materials and tools|Recheck protection|Brief the crew on drawings and scope|Record the pre-start check','Start only after documents, staffing and safety measures are ready.','Both parties confirm readiness and outstanding items.']
+      ],
+      demolition: [
+        ['核对拆改图|探查水电管线|标记保留墙体与门洞|隔离相关水电','施工方确认拆除边界和管线后再动工，保护相邻成品。','客户确认拆改范围及结构/隐蔽问题处理方式。','Review demolition drawings|Locate service routes|Mark retained walls and openings|Isolate affected utilities','Confirm boundaries and services before work; protect adjacent finishes.','The client confirms scope and treatment of structural or concealed issues.'],
+        ['分区拆除饰面|控制拆除顺序|分类装袋清运|清理暴露基层','按批准范围施工，避免损伤结构和保留管线；发现隐蔽问题先记录。','新增拆改或修复项目先确认再施工。','Remove finishes by zone|Control demolition sequence|Sort and remove debris|Clean exposed substrate','Stay within scope and protect structure and retained services; record concealed issues.','Approve additional demolition or repairs before they proceed.'],
+        ['按放线砌筑新墙|门洞及转角按图施工|完成墙面基层处理|复核垂直、平整和连接','砌体错缝、拉结和抹灰按手册工艺执行，完工检查墙面垂直与平整。','客户确认新墙位置、开口尺寸及交接。','Set out and build new walls|Form openings and corners to drawings|Prepare wall surfaces|Check plumb, flatness and junctions','Follow the handbook masonry and plastering method; inspect wall alignment and junctions.','The client confirms wall locations, opening sizes and handover.']
+      ],
+      'plaster-paint': [
+        ['检查墙面基层|处理锈点和裂缝|除尘、墙固|按需挂防裂网','基层问题先处理；裂缝、墙体交接和开槽处按工艺加强。','确认修补范围及墙面样板。','Inspect the substrate|Treat rust and cracks|Remove dust and apply wall consolidant|Reinforce where required','Resolve substrate issues first; reinforce cracks, junctions and service chases as required.','Confirm repair scope and wall sample.'],
+        ['分层批刮腻子|干燥后打磨|清洁浮灰|复核平整度','施工方按手册完成批刮和砂纸打磨，确保基层干燥、平顺。','侧光检查平整度和接缝痕迹。','Apply putty in layers|Sand after drying|Remove dust|Check flatness','Complete filling and sanding; keep the substrate dry and even.','Review flatness and joint marks under side lighting.'],
+        ['确认底漆和面漆产品|按产品说明施工|控制干燥及重涂时间|记录颜色批次','按选定产品体系施工，避免不同产品不兼容或未干透重涂。','确认品牌、色号、光泽和施工样板。','Confirm primer and topcoat|Apply to product instructions|Allow drying and recoating time|Record color batch','Use the approved product system and observe drying/recoat times.','Approve brand, color, sheen and sample.'],
+        ['完成面漆施工|处理边角与收口|清理污染和漏涂|油工内验','表面颜色均匀，边角完整，无明显流挂、漏涂和砂痕。','按样板检查颜色、光泽和整体观感。','Apply finish coats|Complete corners and edges|Remove stains and missed areas|Inspect painting','Check even color, complete edges and absence of runs, misses or sanding marks.','Review color, sheen and appearance against the sample.'],
+        ['修补验收问题|复检墙面|清理并保护饰面|完成油工交接','问题逐项关闭后清洁现场，保护已完成墙面和设备。','确认问题清单关闭并签认分项验收。','Repair inspection items|Recheck walls|Clean and protect finishes|Complete trade handover','Close issues, clean the area and protect completed walls and fixtures.','Confirm the punch list is closed and sign the trade acceptance.']
+      ],
+      'pipe-noise': [
+        ['确认管道走向|清洁管壁|标记阀门和检修位置|准备包覆材料','施工前确认管道及检修口，清洁表面并备齐匹配材料。','客户确认检修空间和设备可达性。','Confirm pipe routes|Clean pipe surfaces|Mark valves and access points|Prepare wrapping materials','Locate pipes and access points, clean surfaces and prepare compatible materials.','Confirm service access and maintenance clearance.'],
+        ['管道表面清理|按要求粘贴隔音片|搭接包覆接口|弯头和三通连续处理','包覆紧密连续，接口按手册做法搭接，不遮挡阀门检修位置。','检查可见接头和检修口是否保留。','Clean pipe surfaces|Apply acoustic sheet|Overlap joints|Wrap bends and branches continuously','Wrap tightly and continuously; overlap joints and keep valves accessible.','Check visible joints and retained access points.'],
+        ['安装固定箍|外层包覆收口|检查松动和缺口|按要求封闭管槽','固定牢靠、不压损管道；封闭前拍照记录隐蔽位置。','隐蔽验收后再封槽或安装外饰面。','Install fixing bands|Close the outer wrap|Check for gaps and movement|Enclose chases after approval','Secure without damaging pipes; photograph concealed work before closing.','Approve concealed work before closing chases or finishing.'],
+        ['通水检查|检查渗漏与排水声|复核检修可达性|清理交接','检查管路运行、接头和包覆状态，完成记录后交接。','共同确认运行和检修条件。','Run water|Check leaks, flow and noise|Verify service access|Clean and hand over','Check operation, joints and wrap condition and record results.','Jointly confirm operation and future maintenance access.']
+      ],
+      materials: [
+        ['按工程类别列主材|确认使用空间|核对尺寸和基层条件|建立选材清单','根据手册材料分类逐项确定品类，未确认的项目标为待选。','客户确认品牌、型号、规格、颜色和样板。','List products by trade|Confirm room use|Check dimensions and substrate|Create a selection schedule','Select product categories by scope and mark undecided items clearly.','The client approves brand, model, specification, color and sample.'],
+        ['确认采购责任|安排复尺|确认下单信息|记录交期和安装方','明确自购、设计代购或施工方代购，避免漏单和重复采购。','确认采购人、预算、送货地址和时间。','Assign purchasing responsibility|Arrange remeasurement|Confirm order details|Record delivery and installer','Clarify who purchases each item to prevent missing or duplicate orders.','Confirm purchaser, budget, delivery location and timing.'],
+        ['到货核对品牌型号|检查数量与外观|核对色号和批次|妥善存放并保护','产品与确认清单不一致时先隔离并记录，不直接安装。','客户确认替代品及外观异常处理。','Check brands and models on delivery|Inspect quantity and condition|Verify color and batch|Store and protect products','Quarantine and record mismatched products before installation.','The client approves substitutions and resolves visible defects.'],
+        ['按类别安装|完成设备调试|整理说明书和保修资料|产品清单随交付','安装后逐项核对运行和表面状态，资料对应实际安装产品。','客户按清单分项验收并接收保修资料。','Install by category|Commission equipment|Collect manuals and warranties|Include product list at handover','Check operation and finish; match documents to installed products.','The client inspects by category and receives warranty records.']
+      ],
+      'six-system': [
+        ['复核系统图和分区|确认机电接口|核对控制及检修位置|准备材料工具','施工方按系统图复核管网、接口和设备位置。','客户确认控制区域、检修位置和设备方案。','Review system drawings and zones|Confirm service interfaces|Check controls and access|Prepare materials and tools','The contractor verifies networks, interfaces and equipment locations against drawings.','The client approves control zones, access and equipment selections.'],
+        ['检查基层|放线定位|安装管网|连接分集水组件','按图固定管网，弯折和连接处按系统要求处理。','客户确认施工边界及设备位置。','Inspect substrate|Set out routes|Install network|Connect distribution components','Fix the network to drawings and treat bends and joints to the system requirements.','The client confirms work boundaries and equipment locations.'],
+        ['固定管网|检查间距与连接|系统测试|记录隐蔽位置','测试完成并记录后再覆盖；问题修复后复测。','客户参加系统隐蔽验收。','Secure the network|Check spacing and joints|Test the system|Record concealed routes','Test and record before covering; repair and retest faults.','The client attends concealed-system inspection.'],
+        ['隐蔽验收|分层覆盖保护|复核检修条件|交接控制说明','覆盖后保留系统资料、控制方式和检修说明。','客户接收系统使用和维护信息。','Approve concealed work|Cover and protect in layers|Verify access|Hand over control guidance','Retain system records, control settings and maintenance guidance.','The client receives operation and maintenance information.']
+      ]
+    };
+    const row = id === 'whole-house-sop' ? sop[index] : (trade[id] || [])[index] || null;
+    const route = row ? (en ? row[3] : row[0]) : `${title}|${info.action}|${info.check}`;
+    const contractor = row ? (en ? row[4] : row[1]) : info.action;
+    const client = row ? (en ? row[5] : row[2]) : info.check;
+    const routeItems = route.split('|');
+    return `<details class="work-more"><summary><span>${en?'Open detailed steps and responsibilities':'展开查看详细工序与责任分工'}</span><small>${en?'HOUZY illustrated guide':'手册内容 · HOUZY 品牌重绘'}</small></summary><div class="work-more-body"><div class="work-route">${routeItems.map((item,i)=>`<div class="work-route-step"><i>${String(i+1).padStart(2,'0')}</i>${esc(item)}</div>`).join('')}</div><div class="work-more-columns"><section><b>${en?'CONTRACTOR · WORK SEQUENCE':'施工方 · 执行内容'}</b><p>${esc(contractor)}</p></section><section><b>${en?'CLIENT / MATERIAL PURCHASER · CONFIRMATION':'客户 / 主材采购方 · 确认内容'}</b><p>${esc(client)}</p></section></div><div class="work-more-source">${en?'Adapted from ':'依据手册章节整理：'}${esc(info.source)} · ${en?'Redrawn in HOUZY style; no original page image used':'内容及流程图按 HOUZY 品牌重新整理绘制，不直接使用原图'}</div></div></details>`;
+  }
+  function workScene(section, phase, en, stepCount) {
+    const id = section.id, label = en ? section.en : section.title;
+    const cls = (n) => `layer layer-at-${n}${phase >= n ? ' visible' : ''}`;
+    let art = '';
+    if (id === 'wet-area') {
+      art = `<rect x="92" y="216" width="564" height="39" rx="3" fill="#77786f"/><text x="390" y="242" text-anchor="middle" fill="#fff" font-size="13">${en?'STRUCTURAL SLAB':'结构楼板'}</text><rect class="${cls(1)}" x="124" y="205" width="520" height="7" fill="#286d59"/><path class="${cls(1)}" d="M124 207 V115 h8" fill="none" stroke="#286d59" stroke-width="7"/><rect class="${cls(2)}" x="132" y="176" width="496" height="26" fill="#d9c8a5"/><path class="${cls(2)}" d="M132 202 L628 176" fill="none" stroke="#bf985b" stroke-width="2"/><rect class="${cls(3)}" x="132" y="147" width="496" height="25" fill="#eee7d8"/><path class="${cls(3)}" d="M132 173 L628 147" fill="none" stroke="#988d7b" stroke-width="2"/><rect class="${cls(4)}" x="132" y="119" width="496" height="24" fill="#c9d8d1"/><path class="${cls(4)}" d="M132 145 L628 119" fill="none" stroke="#788a7e" stroke-width="2"/><g class="${cls(4)}"><path d="M214 119v24M296 119v24M378 119v24M460 119v24M542 119v24" stroke="#fff" stroke-width="3"/><rect x="606" y="176" width="20" height="26" fill="#466b62"/><text x="100" y="92" fill="#286d59" font-size="13">${en?'WALL UPSTAND':'墙面上翻'}</text><path d="M150 96 L135 115" stroke="#286d59"/></g>`;
+    } else if (id === 'carpentry') {
+      art = `<rect x="175" y="80" width="400" height="178" fill="#e7e0d3"/><g class="${cls(1)}"><rect x="260" y="95" width="220" height="145" fill="#b88f5a"/><path d="M270 105h200v125H270zM370 105v125M270 165h200" fill="none" stroke="#76583a" stroke-width="7"/><text x="370" y="255" text-anchor="middle" font-size="13" fill="#5b4934">${en?'CARCASS & SHELVES':'柜体与层板'}</text></g><g class="${cls(2)}"><rect x="275" y="108" width="91" height="112" fill="#d7bd91" stroke="#76583a" stroke-width="3"/><rect x="374" y="108" width="91" height="112" fill="#d7bd91" stroke="#76583a" stroke-width="3"/><circle cx="354" cy="166" r="3" fill="#403b32"/><circle cx="386" cy="166" r="3" fill="#403b32"/></g><g class="${cls(3)}"><path d="M281 111v106M460 111v106" stroke="#f8f3e9" stroke-width="2"/><text x="370" y="72" text-anchor="middle" fill="#76583a" font-size="13">${en?'DOORS + HARDWARE':'柜门与五金'}</text></g>`;
+    } else if (id === 'water-electric') {
+      art = `<rect x="240" y="62" width="300" height="203" rx="2" fill="#ddd8cc"/><path class="${cls(1)}" d="M330 250V100h118v150M330 142h118" fill="none" stroke="#c94f43" stroke-width="9" stroke-linejoin="round"/><rect class="${cls(1)}" x="385" y="132" width="42" height="38" rx="3" fill="#eee" stroke="#79786e" stroke-width="3"/><g class="${cls(2)}"><circle cx="475" cy="170" r="32" fill="#fff" stroke="#173d32" stroke-width="4"/><path d="M475 170l15-18" stroke="#c94f43" stroke-width="4"/><text x="475" y="218" text-anchor="middle" fill="#173d32" font-size="12">${en?'TEST':'测试'}</text></g><rect class="${cls(3)}" x="240" y="62" width="300" height="203" fill="#d8cdb8" opacity=".78"/><g class="${cls(3)}"><rect x="352" y="118" width="75" height="50" rx="5" fill="#f5f2ea" stroke="#173d32" stroke-width="3"/><circle cx="375" cy="143" r="6" fill="#c5a46a"/><circle cx="404" cy="143" r="6" fill="#c5a46a"/></g>`;
+    } else if (id === 'plaster-paint') {
+      art = `<rect x="240" y="55" width="300" height="210" fill="#a59883"/><rect class="${cls(1)}" x="253" y="68" width="274" height="184" fill="#d8d2c6"/><path class="${cls(1)}" d="M253 125h274M253 190h274" stroke="#b8ad9b" stroke-width="2"/><path class="${cls(2)}" d="M253 125h274M253 190h274" stroke="#c5a46a" stroke-width="8"/><rect class="${cls(2)}" x="253" y="68" width="274" height="184" fill="none" stroke="#eee7d8" stroke-width="5"/><rect class="${cls(3)}" x="253" y="68" width="274" height="184" fill="#e9e2d4"/><rect class="${cls(4)}" x="253" y="68" width="274" height="184" fill="#f5f2ea"/><g class="${cls(4)}"><path d="M550 82l28 42h-56z" fill="#173d32"/><text x="550" y="115" text-anchor="middle" fill="#fff" font-size="12">✓</text></g>`;
+    } else if (id === 'demolition') {
+      art = `<rect x="110" y="65" width="540" height="190" fill="#ded8cb"/><g class="${cls(1)}"><rect x="128" y="78" width="504" height="166" fill="#d8cdb8" stroke="#a4957a" stroke-width="2"/><path d="M150 80v162M615 80v162" stroke="#fff" stroke-width="7" stroke-dasharray="8 6"/><text x="380" y="100" text-anchor="middle" fill="#6b5c43" font-size="13">${en?'PROTECTED ZONE':'成品保护区'}</text></g><g class="${cls(2)}"><path d="M270 125l35 36-35 36M378 125l-35 36 35 36" fill="none" stroke="#a75539" stroke-width="8"/><circle cx="326" cy="161" r="25" fill="#f3e6d2" stroke="#a75539" stroke-width="3"/><path d="M314 161h24M326 149v24" stroke="#a75539" stroke-width="4"/></g><g class="${cls(3)}"><rect x="128" y="78" width="504" height="166" fill="#c9c3b7"/><path d="M128 244h504" stroke="#8f887a" stroke-width="5"/><path d="M180 210l20-18 18 18M500 225l25-24 28 24" fill="none" stroke="#a89f8f" stroke-width="3"/><text x="380" y="130" text-anchor="middle" fill="#173d32" font-size="14">${en?'CLEARED · SUBSTRATE EXPOSED':'拆除完成 · 基层已露出'}</text><text x="380" y="155" text-anchor="middle" fill="#57564f" font-size="11">${en?'Inspect and record before new work':'检查并记录后再进入新工序'}</text></g>`;
+    } else if (id === 'whole-house-sop') {
+      const finished = phase > 0;
+      art = `<rect x="150" y="66" width="460" height="178" fill="${finished?'#f5f1e8':'#d8d2c7'}"/><path d="M150 244H610M150 66v178M610 66v178" fill="none" stroke="#776f61" stroke-width="8"/><path d="M172 88h105v75H172z" fill="${finished?'#c9d8d1':'#c9c3b7'}" stroke="#173d32" stroke-width="4"/><path d="M224 88v75M172 126h105" stroke="#f5f1e8" stroke-width="4"/><path d="M312 99h72v145h-72z" fill="${finished?'#d4bb93':'#b9b1a4'}" stroke="#76583a" stroke-width="4"/><path d="M348 99v145M312 167h72" stroke="#f5f1e8" stroke-width="4"/><path d="M408 244v-72h98v72" fill="${finished?'#c5a46a':'#aaa397'}" stroke="#76583a" stroke-width="4"/><path d="M423 190h68M456 172v72" stroke="#f5f1e8" stroke-width="3"/><path d="M145 244h470v16H145z" fill="${finished?'#b88f5a':'#8f887a'}"/><path d="M190 72h100M320 72h100M450 72h100" stroke="${finished?'#c5a46a':'#b8583b'}" stroke-width="4" stroke-dasharray="${finished?'0':'8 6'}"/><circle cx="360" cy="61" r="9" fill="${finished?'#c5a46a':'#b8583b'}"/><text x="380" y="283" text-anchor="middle" fill="#173d32" font-size="13">${finished?(en?'FINISHED HOME · CHECKED & HANDED OVER':'完工空间 · 检查后交付'):(en?'EXISTING SHELL · WORKS NOT STARTED':'原始空间 · 尚未施工')}</text>`;
+    } else {
+      const gap = 12, boxW = Math.min(132, (600 - gap * (stepCount - 1)) / stepCount), totalW = boxW * stepCount + gap * (stepCount - 1), x0 = (760 - totalW) / 2;
+      art = `<text x="380" y="95" text-anchor="middle" fill="#173d32" font-size="15">${esc(label)}</text>${Array.from({length:stepCount},(_,i)=>{const x=x0+i*(boxW+gap);return `<g class="${cls(i)}"><rect x="${x}" y="128" width="${boxW}" height="94" rx="8" fill="#fffdf8" stroke="#b9ad99" stroke-width="2"/><circle cx="${x+boxW/2}" cy="158" r="17" fill="#286d59"/><text x="${x+boxW/2}" y="163" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">${i+1}</text><path d="M${x+boxW/2} 184v18" stroke="#c5a46a" stroke-width="3"/><path d="M${x+boxW/2-5} 197l5 6 5-6" fill="none" stroke="#c5a46a" stroke-width="2"/></g>`}).join('')}`;
+    }
+    phase = Math.max(0, Math.min(stepCount - 1, phase));
+    return `<svg class="work-scene" data-stage="${phase}" viewBox="0 0 760 300" role="img" aria-label="${esc(label)} ${en?'construction process diagram':'施工过程工艺示意图'}"><rect width="760" height="300" fill="#efe9dc"/><path d="M45 266H715" stroke="#c8bda9" stroke-width="2"/>${art}<text x="60" y="35" fill="#7d6b4e" font-size="12" letter-spacing="2">${en?'PROCESS CUTAWAY · SCHEMATIC':'施工节点剖面 · 示意图'}</text><text data-step-counter x="700" y="35" text-anchor="end" fill="#173d32" font-size="12">${phase+1} / ${stepCount}</text></svg>`;
+  }
+  function workAnimation(section, en) {
+    const flow = workFlow(section, en), n = flow.steps.length;
+    const note = en ? 'The steps below are redrawn in HOUZY style from the workmanship handbook. Confirm project-specific products and dimensions in the approved documents.' : '以下步骤根据施工手册重新整理，并以 HOUZY 品牌图解呈现。项目材料和尺寸以确认文件为准。';
+    const buttons = flow.steps.map((step, i) => `<button type="button" class="step-nav" data-work-step="${i}" data-copy="${esc(step)}" aria-current="${i===0?'step':'false'}">${String(i+1).padStart(2,'0')} · ${esc(step)}</button>`).join('');
+    const cards = flow.steps.map((step,i) => {
+      const info = workStepInfo(section.id,i,en);
+      return `<article class="work-stage-card ${i===0?'is-active':''}" data-stage-card="${i}"><div class="work-step-art">${workIcon(info.icon,i,en)}</div><div class="work-step-copy"><span class="overline">${en?`HOUZY PROCESS · STEP ${String(i+1).padStart(2,'0')}`:`HOUZY 工序 · 第 ${String(i+1).padStart(2,'0')} 步`}</span><h4>${esc(step)}</h4><div class="work-extract"><div class="work-extract-label">${en?'HANDBOOK METHOD · REDRAWN FOR HOUZY':'手册工艺提取 · HOUZY 品牌图文'}</div><p><b>${en?'HOW IT IS DONE':'施工做法'}</b><br>${esc(info.action)}</p><p class="criterion"><b>${en?'WHAT TO CHECK':'检查要点'}</b><br>${esc(info.check)}</p><div class="work-source">${en?'Adapted from: ':'依据手册：'}${esc(info.source)} · ${en?'Content and diagram redrawn':'内容整理，图示重新绘制'}</div>${workStepMore(section.id,i,en,step,info)}</div></div></article>`;
+    }).join('');
+    const compare = ['whole-house-sop','demolition','water-electric','carpentry','wet-area','pipe-noise','plaster-paint'].includes(section.id)
+      ? `<div class="compare-grid"><div class="compare-panel"><h4>${en?'BEFORE · EXISTING CONDITION':'施工前 · 基层状态'}</h4>${workScene(section,0,en,n)}</div><div class="compare-panel after"><h4>${en?'AFTER · COMPLETED WORK':'施工后 · 完成效果'}</h4>${workScene(section,n-1,en,n)}</div></div>` : '';
+    return `<div class="work-anim" data-work-anim="${section.id}" data-step-count="${n}" data-current="0" data-note="${esc(note)}"><div class="work-anim-head"><b>${en?'HOUZY WORKFLOW':'HOUZY 工艺流程'}</b><span>${en?`${n} illustrated steps`:`${n} 个工序 · 每步含施工做法和检查要点`}</span></div><div class="work-timeline"><i data-work-progress style="width:${100/n}%"></i></div><div class="work-controls">${buttons}<button type="button" class="play" data-work-play>${en?'▶ Play steps':'▶ 逐步演示'}</button></div><div class="work-caption" data-work-caption>${esc(flow.steps[0])} · ${esc(note)}</div><div class="work-stage-grid">${cards}</div>${compare}<p class="hint" style="margin:0;padding:0 15px 13px;font-size:10px">${en?'Original manual scans are not used in this presentation. Diagrams and bilingual explanations are redrawn for HOUZY; project-specific requirements remain subject to the approved documents.':'演示页不直接展示原手册图片，图文已按 HOUZY 视觉重新绘制与整理；项目具体要求以双方确认的施工文件为准。'}</p></div>`;
+  }
+  function setWorkStep(root, index) {
+    if (!root) return;
+    const count = +root.dataset.stepCount || 1, step = Math.max(0, Math.min(count - 1, index));
+    root.dataset.current = String(step);
+    root.querySelectorAll('[data-stage-card]').forEach(card => card.classList.toggle('is-active', +card.dataset.stageCard === step));
+    const progress = root.querySelector('[data-work-progress]'); if (progress) progress.style.width = `${((step + 1) / count) * 100}%`;
+    const canvas = root.querySelector('[data-work-canvas]'), svg = canvas && canvas.querySelector('.work-scene');
+    if (svg) {
+      svg.dataset.stage = String(step);
+      svg.querySelectorAll('.layer').forEach(layer => {
+        const m = [...layer.classList].find(c => /^layer-at-\d+$/.test(c));
+        layer.classList.toggle('visible', !!m && +m.slice(9) <= step);
+      });
+      const counter = svg.querySelector('[data-step-counter]'); if (counter) counter.textContent = `${step + 1} / ${count}`;
+    }
+    root.querySelectorAll('[data-work-step]').forEach(b => b.setAttribute('aria-current', +b.dataset.workStep === step ? 'step' : 'false'));
+    const active = root.querySelector(`[data-work-step="${step}"]`), caption = root.querySelector('[data-work-caption');
+    if (caption && active) caption.textContent = `${active.dataset.copy} · ${root.dataset.note}`;
+  }
+  function demoCraft(C) {
+    const sections = window.HOUZY_WORKMANSHIP.manualSections(C.lines);
+    const en = uiLang === 'en';
+    let h = `<div class="kick">${en ? 'PROJECT GUIDE · HOUZY WORKMANSHIP' : '项目说明 · HOUZY 精工施工'}</div><h1>${en ? 'Workmanship & Standards' : '施工工艺与标准'}</h1><p class="hint handbook-intro">${en ? 'Each selected work item is explained with original HOUZY diagrams, a clear sequence, and a visible inspection point. The company handbook informs the content but is not pasted into this presentation. Project-specific products and dimensions follow the approved quotation and construction documents.' : '每个报价工序都用 HOUZY 原创图解直接说明施工顺序和检查要点。内容依据公司施工手册重新整理，演示区不再直接放入手册原图。项目材料、尺寸和验收值以双方确认的报价与施工文件为准。'}</p>`;
+    sections.forEach((section, index) => {
+      const count = workFlow(section,en).steps.length;
+      h += `<details class="handbook-section" ${index === 0 ? 'open' : ''}><summary><span>${esc(en ? section.en : section.title)}<small>${esc(en ? section.descEn : section.desc)}</small></span><small>${en ? `${count} illustrated steps` : `${count} 步图文讲解`}</small></summary>${workAnimation(section,en)}</details>`;
+    });
+    h += `<p class="craft-source">${en ? 'Content adapted from the HOUZY Workmanship Standardization Handbook and redrawn for this client presentation.' : '工艺内容依据 HOUZY《精工施工标准化体系手册》重新整理，并按客户演示重新绘制。'}</p>`;
+    return h;
+  }
   function viewDemo(C) {
     const S = demoSlides(C), T = C.T; demoIdx = Math.min(demoIdx, S.length - 1);
     const pl = Q.activePlan(P), floorAll = P.rooms.reduce((t, r) => t + Q.geo(r, P).floor, 0);
@@ -1106,14 +1754,13 @@
       if (sl.k === 'cost') return `<div class="kick">钱花在哪里</div><h1>费用构成</h1><div class="donutWrap">${donut(T)}<div class="dleg">${T.byStage.map(s => `<div><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${esc(s.name)}<span class="mono">${rm(s.total)}</span></div>`).join('')}
         ${T.design ? `<div><i style="background:var(--off)"></i>设计费<span class="mono">${rm(T.design)}</span></div>` : ''}${T.mgmt ? `<div><i style="background:var(--off)"></i>工程管理费<span class="mono">${rm(T.mgmt)}</span></div>` : ''}${T.cont ? `<div><i style="background:var(--off)"></i>不可预见费<span class="mono">${rm(T.cont)}</span></div>` : ''}${T.discount ? `<div><i style="background:var(--ok)"></i>优惠<span class="mono">−${rm(T.discount)}</span></div>` : ''}</div></div>`;
       if (sl.k === 'room') return demoRoom(sl.r, C);
+      if (sl.k === 'craft') return demoCraft(C);
       if (sl.k === 'whole') { const ls = C.lines.filter(l => !l.roomId), ws = [...new Set(ls.map(l => l.from))]; return `<div class="kick">全屋</div><h1>${ic('home')} 全屋项目</h1><div class="facts"><div><b class="mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</b><span>全屋项目费用</span></div></div><div class="works">${ws.map(w => `<span>${esc(w === '自动' || w === '全屋' ? '' : w)}</span>`).filter(x => x !== '<span></span>').join('')}</div><table class="q"><tbody>${ls.map(l => `<tr><td>${esc(l.name)}</td><td class="r mono">${rm(l.total)}</td></tr>`).join('')}</tbody></table>`; }
       if (sl.k === 'cmp') { const ps = Q.plans(P).map(p => { const L = Q.buildLines(P, p.id); return { p, t: Q.totals(P, L).total }; }); return `<div class="kick">方案对比</div><h1>选哪一套？</h1><div class="cmp">${ps.map(x => `<div class="${x.p.id === pl.id ? 'on' : ''}"><div class="hint">${esc(x.p.name)}</div><div class="big mono" style="font-size:32px">${rm(x.t)}</div>${x.p.id !== ps[0].p.id ? `<div class="mono" style="color:${x.t > ps[0].t ? 'var(--accent)' : 'var(--ok)'}">${x.t >= ps[0].t ? '+' : '−'}${rm(Math.abs(x.t - ps[0].t))}</div>` : '<div class="hint">基准</div>'}<button class="btn ${x.p.id === pl.id ? 'pri' : ''}" style="margin-top:10px" data-plan="${x.p.id}">${x.p.id === pl.id ? '正在看这套' : '看这套'}</button></div>`).join('')}</div>`; }
       return `<div class="kick">付款与说明</div><h1>付款安排</h1><table class="q"><tbody>${T.pay.map((x, i) => `<tr><td>第 ${i + 1} 期 · ${esc(x.name)}</td><td class="r">${x.pct}%</td><td class="r mono">${rm(x.amt)}</td></tr>`).join('')}<tr><td><b>合计</b></td><td></td><td class="r mono"><b>${rm(T.total)}</b></td></tr></tbody></table>
-        <h3 style="margin-top:22px">不包含</h3><ul class="exl hint">${EXCLUDE.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-        <div class="adds" style="margin-top:18px"><button class="btn pri" data-demo="print">生成 PDF / 打印</button></div>`;
+        <h3 style="margin-top:22px">不包含</h3><ul class="exl hint">${EXCLUDE.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
     };
     const bar = `<div class="dbar"><div class="in"><span class="brand">HOUZY HOME</span><button class="btn" data-demo="close">✕ 退出演示</button><div class="tot"><small>${esc(pl.name || '')} 总价</small><b class="mono" id="dTotal">${rm(T.total)}</b></div></div></div>`;
-    if (demoPrint) return bar + S.map(one).map(x => `<section class="slide">${x}</section>`).join('');
     const dots = `<div class="dots">${S.map((x, i) => `<button class="${i === demoIdx ? 'on' : ''}" data-demogo="${i}" aria-label="第 ${i + 1} 页"></button>`).join('')}</div>`;
     const nav = `<div class="dnav"><div class="in"><button class="btn" data-demo="prev" ${demoIdx ? '' : 'disabled'}>← 上一页</button><span class="pg">${demoIdx + 1} / ${S.length}</span><button class="btn pri" data-demo="next" ${demoIdx < S.length - 1 ? '' : 'disabled'}>下一页 →</button></div></div>`;
     return bar + dots + `<section class="slide" ${demoShown === demoIdx ? 'style="animation:none"' : ''}>${one(S[demoIdx])}</section>` + nav;
@@ -1137,7 +1784,12 @@
   // ---------- 公司价目表 ----------
   let bookMsg = null, tileCatalog = null;
   const priceConfirmKey = 'houzy-quote-v2-price-confirmations';
-  function priceConfirmations() { try { return JSON.parse(localStorage.getItem(priceConfirmKey) || '{}'); } catch (e) { return {}; } }
+  function priceConfirmations() {
+    try {
+      const marks = JSON.parse(localStorage.getItem(priceConfirmKey) || '{}'), book = window.QV2_BOOK.load() || {};
+      return Object.fromEntries(Object.entries(marks).filter(([id]) => book.items?.[id] || book.tiles?.[id] !== undefined || book.options?.[id.split('@')[0]]?.[bkOptCode(id)]));
+    } catch (e) { return {}; }
+  }
   async function syncTileCatalog() {
     bookMsg = { ok: true, lines: ['正在读取 HOUZY 商品档案的瓷砖售价…'] }; render();
     try {
@@ -1295,7 +1947,7 @@
       const dt = bookDraft[id] && bookDraft[id].tot !== undefined, tv = bkStdTot(id);
       return `<tr data-bkrow="${esc(id)}" class="${trClass}"><td class="bkname">${esc(r[2])}${PRICE[id].ref && !bookDraft[id] ? REFTAG : ''}${stds.length ? `<br><span class="desc">标准规格：${esc(stds.join('，'))}</span>` : ''}${['floor_tile','wall_tile','porch_tile'].includes(id) ? '<br><span class="desc">铺贴辅料／人工按面积填在本行；砖材按下方“尺寸＋表面”每片单独填价。</span>' : ''}</td><td class="bkunit">${esc(bkUnit(r[3]))}</td>${cells}<td class="r" data-l="合计单价"><input class="bkin ${dt ? 'chg' : ''}" inputmode="decimal" data-bk="${esc(id)}" data-bkf="tot" data-bku="${esc(r[3])}" value="${tv == null ? '' : bkShow(tv, r[3])}" placeholder="待定"><div class="desc bksum" style="text-align:right">${bookSum(id, r)}</div></td><td><button class="confirm-price" data-confirm-price="${esc(id)}">${conf ? '✓ 已确认' : '确认此价格'}</button></td></tr>`;
     }).join('') || `<tr><td colspan="7" class="hint">${bookFilter === 'unpriced' ? '全部都定好价了 ✓' : '没有符合的项目'}</td></tr>`;
-    return h + `</tbody></table></div><p class="hint">瓷砖材料按“尺寸＋表面”填写 RM/片；铺贴辅料与人工在上方项目行按面积填写，报价单分两行。旧通用片价及旧面积价仅供旧报价沿用。其他规格可分别填写材料、辅料、人工或直接填综合价。改后点「保存」才生效。</p></div>`;
+    return h + `</tbody></table></div><p class="hint">瓷砖材料按“尺寸＋表面”填写 RM/片；铺贴辅料与人工在上方项目行按面积填写，报价单分两行。旧通用片价及旧面积价仅供旧报价沿用。其他规格可分别填写材料、辅料、人工或直接填综合价。逐项点「确认此价格」会立即保存并用于报价；批量修改可点上方「保存」。</p></div>`;
   }
   function bookVal(id, r, f, j) { const d = bookDraft[id] && bookDraft[id][f]; return d !== undefined ? d : r[4 + j]; }
   function bookSum(id, r) {
@@ -1342,6 +1994,13 @@
       if (isItem) { delete dr.tot; const ti = tr.querySelector('input[data-bkf="tot"]'), tv = bkStdTot(t.dataset.bk); ti.value = tv == null ? '' : bkShow(tv, u); }
     }
     t.classList.add('chg');
+    const confirmed = priceConfirmations();
+    if (confirmed[t.dataset.bk]) {
+      delete confirmed[t.dataset.bk];
+      try { localStorage.setItem(priceConfirmKey, JSON.stringify(confirmed)); } catch (error) {}
+      tr.classList.remove('price-confirmed');
+      const button = tr.querySelector('.confirm-price'); if (button) button.textContent = '确认此价格';
+    }
     const B = window.QV2_BOOK, row = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES, Q.TILE_PIECE_PRICES)).find(r => r[1] === t.dataset.bk);
     t.closest('tr').querySelector('.bksum').innerHTML = bookSum(t.dataset.bk, row);
     // 标准价改了：下面各规格的「比标准」刷新；参考价的规格按百分比跟着变
@@ -1384,6 +2043,41 @@
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = `新版报价器价目表-${at.slice(0, 10).replace(/\//g, '')}.csv`; a.click();
     setTimeout(() => location.reload(), 800);
+  }
+  function confirmBookPrice(id) {
+    const B = window.QV2_BOOK, row = bkRow(id);
+    if (!row) return '找不到这条价格，请刷新后重试。';
+    const book = B.load() || { items: {}, options: {}, tiles: {}, tileSources: {} };
+    const next = { ...book, items: { ...(book.items || {}) }, options: { ...(book.options || {}) }, tiles: { ...(book.tiles || {}) } };
+    if (row[0] === '瓷砖片价') {
+      const raw = String(bookDraft[id]?.piece ?? (String(row[4] ?? '').trim() || (Q.TILE_PIECE_REF[id] ?? ''))).trim();
+      const value = Number(raw);
+      if (raw === '' || !Number.isFinite(value) || value < 0) return '请先填写有效的每片瓷砖价格。';
+      next.tiles[id] = value;
+    } else if (row[0] === '项目单价') {
+      const fields = bkStdF(id);
+      if (!fields || fields.mat < 0 || fields.aux < 0 || fields.lab < 0 || fields.w < 0 || fields.mat + fields.aux + fields.lab <= 0) return '请先填写大于 0 的有效单价。';
+      next.items[id] = { mat: fields.mat, aux: fields.aux, lab: fields.lab, waste: fields.w, unit: PRICE[id].unit };
+    } else if (row[0] === '选材价差') {
+      const code = bkOptCode(id), base = bkStdF(code), fields = bkOptF(id, row);
+      if (bookDraft[code]) return '标准项目价格还有未保存的修改，请先保存标准价，再确认此规格。';
+      if (!base) return '请先填写并保存标准项目价格。';
+      const n = OF.map(k => bkN(fields[k]));
+      if (n.some(value => !Number.isFinite(value) || value < 0) || n.every(value => value === 0)) return '请先填写有效的规格价格。';
+      const diff = { mat: bkTileSize(id) ? 0 : +(n[0] - base.mat).toFixed(4) * (1 + base.w / 100), aux: n[1] - base.aux, lab: n[2] - base.lab };
+      const option = id.split('@')[0];
+      next.options[option] = { ...(next.options[option] || {}), [code]: diff };
+    } else return '这条价格类型无法确认。';
+    const at = new Date().toISOString();
+    next.info = { ...(book.info || {}), file: '逐项确认价格', at };
+    if (!B.save(next)) return '价格没有保存成功，请检查浏览器存储空间。';
+    B.apply(next, PRICE, Q.OPTION_PRICES, Q.TILE_PIECE_PRICES);
+    applyBookPricesToQuote([PRICE[id] ? id : bkOptCode(id)], at);
+    delete bookDraft[id];
+    const confirms = priceConfirmations(); confirms[id] = { confirmed: true, at };
+    try { localStorage.setItem(priceConfirmKey, JSON.stringify(confirms)); }
+    catch (error) { return '价格已保存，但确认标记未保存；请检查浏览器存储空间。'; }
+    return '';
   }
   document.addEventListener('change', e => {
     const f = e.target.files && e.target.files[0], ds = e.target.dataset;
@@ -1482,16 +2176,52 @@
   document.addEventListener('pointerdown', () => { pressing = true; }, true);
   document.addEventListener('pointerup', () => setTimeout(() => { pressing = false; if (pending) { pending = false; render(); } }, 0), true);
   document.addEventListener('change', e => { const ds = e.target.dataset; if (ds.extra !== undefined && (ds.ek === 'unit' || ds.ek === 'stage')) { P.extras[+ds.extra][ds.ek] = e.target.value; render(); return; } if (e.target.closest('.stp') || ds.rname) renderSoon(); if (e.target.hasAttribute('data-design')) { P.design = e.target.checked; render(); } });
+  document.addEventListener('change', e => { if (e.target.hasAttribute('data-import-project')) { importQuoteProject(e.target.files?.[0]); e.target.value = ''; } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-work-step')) {
+      if (workAnimTimer) { clearInterval(workAnimTimer); workAnimTimer = null; }
+      const root = b.closest('[data-work-anim]'); setWorkStep(root, +b.dataset.workStep);
+      const play = root && root.querySelector('[data-work-play]'); if (play) play.textContent = uiLang === 'en' ? '▶ Play steps' : '▶ 逐步演示';
+      return;
+    }
+    if (b.hasAttribute('data-work-play')) {
+      const root = b.closest('[data-work-anim]'); if (!root) return;
+      if (workAnimTimer) { clearInterval(workAnimTimer); workAnimTimer = null; b.textContent = uiLang === 'en' ? '▶ Play steps' : '▶ 逐步演示'; return; }
+      if (+root.dataset.current >= (+root.dataset.stepCount || 1) - 1) setWorkStep(root, 0);
+      b.textContent = uiLang === 'en' ? 'Ⅱ Pause' : 'Ⅱ 暂停';
+      workAnimTimer = setInterval(() => {
+        if (!document.body.contains(root)) { clearInterval(workAnimTimer); workAnimTimer = null; return; }
+        const next = (+root.dataset.current || 0) + 1;
+        if (next >= (+root.dataset.stepCount || 1)) {
+          setWorkStep(root, next - 1); clearInterval(workAnimTimer); workAnimTimer = null;
+          b.textContent = uiLang === 'en' ? '↺ Replay steps' : '↺ 重播步骤'; return;
+        }
+        setWorkStep(root, next);
+      }, 1350);
+      return;
+    }
     const ds = b.dataset;
+    if (ds.lang) { uiLang = ds.lang; localStorage.setItem('houzy-quote-v2-lang', uiLang); render(); return; }
+    if (b.hasAttribute('data-issue-prev')) { issueCursor = Math.max(0, issueCursor - 1); render(); return; }
+    if (b.hasAttribute('data-issue-next')) { issueCursor++; render(); return; }
+    if (ds.issueSpecSave) {
+      const r = room(ds.issueSpecSave); if (!r) return;
+      b.closest('.issue-edit').querySelectorAll('[data-issue-spec]').forEach(select => placeSet(plan(), r.id, select.dataset.issuePack, select.dataset.issueCat, select.dataset.issueKey, select.value));
+      render(); return;
+    }
+    if (ds.issueSave) {
+      const r = room(ds.issueSave), fields = Object.fromEntries([...b.closest('.issue-edit').querySelectorAll('[data-issue-field]')].map(input => [input.dataset.issueField, num(input.value)]));
+      if (!r || Object.values(fields).some(value => !(value > 0))) { alert('请填写大于 0 的实际尺寸。'); return; }
+      if (ds.issueType === 'dims') { r.L = fields.L; r.W = fields.W; r.measured = true; }
+      else if (ds.issueType === 'win' && r.windows?.[+ds.issueIndex]) Object.assign(r.windows[+ds.issueIndex], fields);
+      render(); return;
+    }
+    if (b.hasAttribute('data-export-table')) { exportQuoteTable(); return; }
+    if (b.hasAttribute('data-export-project')) { exportQuoteProject(); return; }
     if (ds.confirmPrice) {
-      const id = ds.confirmPrice, row = bkRow(id);
-      if (row?.[0] === '瓷砖片价' && String(row[4] ?? '').trim() === '' && bookDraft[id]?.piece === undefined && Q.TILE_PIECE_REF[id] !== undefined) bookDraft[id] = { piece: String(Q.TILE_PIECE_REF[id]) };
-      const raw = row?.[0] === '瓷砖片价' ? String(bookDraft[id]?.piece ?? row[4] ?? '').trim() : row?.[0] === '项目单价' ? [4,5,6].some(i => String(bookDraft[id]?.[BK_F[i][0]] ?? row[i] ?? '').trim() !== '') : [4,5,6].some(i => String(row?.[i] ?? '').trim() !== '');
-      if (!raw) { bookMsg = { ok:false, lines:['请先填写价格，再确认。'] }; render(); return; }
-      const c = priceConfirmations(); c[id] = { confirmed:true, at:new Date().toISOString() };
-      try { localStorage.setItem(priceConfirmKey, JSON.stringify(c)); bookMsg={ok:true,lines:['价格已确认；已从“只看没核定的”列表移除。']}; } catch(e) { bookMsg={ok:false,lines:['保存确认状态失败，请检查浏览器存储空间。']}; }
+      const error = confirmBookPrice(ds.confirmPrice);
+      bookMsg = error ? { ok: false, lines: [error] } : { ok: true, lines: ['价格已保存并用于当前报价；这一项已从“只看没核定的”列表移除。'] };
       render(); return;
     }
     if (ds.book === 'sync-tiles') { syncTileCatalog(); return; }
@@ -1562,7 +2292,6 @@
       if (ds.demo === 'open') { demoOn = true; demoIdx = 0; demoShown = null; window.scrollTo(0, 0); }
       else if (ds.demo === 'close') demoOn = false;
       else if (ds.demo === 'next' || ds.demo === 'prev') { demoIdx += ds.demo === 'next' ? 1 : -1; window.scrollTo(0, 0); }
-      else if (ds.demo === 'print') { demoPrint = true; render(); window.print(); demoPrint = false; }
       render(); return;
     }
     if (ds.demogo !== undefined) { demoIdx = +ds.demogo; window.scrollTo(0, 0); render(); return; }
@@ -1658,6 +2387,7 @@
     if (ds.lqreset) { const r = room(ds.wroom); if (r.lineQty) delete r.lineQty[ds.lqreset]; render(); return; }
     if (ds.sdetail) { specDetail.has(ds.sdetail) ? specDetail.delete(ds.sdetail) : specDetail.add(ds.sdetail); render(); return; }
     if (ds.sone) { specOne.has(ds.sone) ? specOne.delete(ds.sone) : specOne.add(ds.sone); render(); return; }
+    if (ds.brandSource && ds.brandKey) { brandFilter[ds.brandKey] = ds.brandSource; render(); return; }
     if (ds.splace) { P.rooms.filter(r => Q.roomGroup(r) === ds.sg && (r.packs || []).includes(ds.splace)).forEach(r => placeSet(plan(), r.id, ds.splace, ds.specCat, ds.specK, ds.specV)); render(); return; }
     if (ds.sstd !== undefined) {
       const C = compute();
@@ -1688,15 +2418,16 @@
       if (room(ds.go)) {
         roomId = ds.go; tab = 'room'; roomPicked = true; groupId = null; render();
         // 跳到要改的地方并把光标放进去
-        const sel = { dims: 'input[data-rf="L"]', win: 'input[data-wk="w"]', door: 'input[data-dk="w"]', wall: 'input[data-pk="wall"]' }[ds.fx];
-        const el = (sel && document.querySelector(sel)) || document.querySelector('.donebar .issue') || document.querySelector('.card');
-        if (el) { el.scrollIntoView({ block: 'center' }); if (el.focus) el.focus(); if (ds.fx === 'dims') { const mb = document.querySelector('[data-measured]'); if (mb) mb.style.boxShadow = '0 0 0 3px var(--accent)'; } } else window.scrollTo(0, 0);
+        const sel = { dims: '[data-measured], input[data-rf="L"]', win: 'input[data-wk="w"]', door: 'input[data-dk="w"]', wall: 'input[data-pk="wall"]' }[ds.fx];
+        const target = (sel && document.querySelector(sel)) || document.querySelector('.dims') || document.querySelector('.card');
+        if (target) requestAnimationFrame(() => { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); target.focus?.({ preventScroll: true }); target.classList.add('issue-target'); setTimeout(() => target.classList.remove('issue-target'), 3000); });
+        else window.scrollTo(0, 0);
         return;
       }
       if (ds.go.startsWith('spec:')) { tab = 'spec'; specGroup = room(ds.go.slice(5)) ? Q.roomGroup(room(ds.go.slice(5))) : null; } else if (ds.go === 'house') tab = 'house'; else if (ds.go === 'price') { document.getElementById('price')?.scrollIntoView({ behavior: 'smooth' }); return; } else { roomId = ds.go; tab = 'room'; roomPicked = true; groupId = null; }
       render(); window.scrollTo(0, 0); return;
     }
-    if (b.hasAttribute('data-print')) { if (!b.disabled) window.print(); return; }
+    if (b.hasAttribute('data-print')) { if (!b.disabled) exportQuotePdf(ds.print === 'summary'); return; }
     if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); IMG = { drawings: [], rooms: {} }; saveImg(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
   });
   render();
