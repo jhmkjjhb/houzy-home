@@ -34,6 +34,11 @@ try{
  ok(!asked.some(u=>/xlsx|html2pdf|html5-qrcode/.test(u)),'heavy tools are not downloaded when the backend opens: '+asked.filter(u=>/xlsx|html2pdf|qrcode/.test(u)).join(','));
  ok(asked.some(u=>/supabase-js@2\.49\.8/.test(u)),'database library is pinned to a fixed version');
  ok(await page.evaluate(()=>typeof needLib==='function'&&typeof XLSX==='undefined'),'tools load on demand');
+ // 秒开：首页数据存在手机上，下次先显示；换了账号不显示；退出登录清掉
+ {const c=await page.evaluate(()=>JSON.parse(localStorage.getItem('houzy-staff-cache-v1')||'null'));ok(c&&c.uid&&Array.isArray(c.orders),'first visit saves the dashboard data on this device');
+  ok(await page.evaluate(()=>readStaffCache('00000000-0000-4000-8000-000000000000')===null),'another account never sees this cache');
+  ok(!(await page.locator('#cache-banner').count()),'no stale-data notice once fresh data is in');
+  ok(await page.evaluate(()=>{const before=allOrders.length;allOrders=[];const c=readStaffCache(profile.id);allOrders=c.orders;renderDashboard();return allOrders.length===before;}),'the saved copy can redraw the dashboard on its own');}
  await page.evaluate(()=>goto('create'));await page.locator('#c-phone').waitFor({state:'visible'});
  ok(await page.locator('input[name="bill-to"][value="individual"]').isChecked(),'individual is the default');ok(!(await page.locator('#b-company').isVisible()),'company fields stay out of the way');
  // Company chosen but incomplete: stops before any order exists.
@@ -75,6 +80,8 @@ try{
  await pdf.setContent('<!doctype html><meta charset="utf-8"><body></body>');await pdf.addScriptTag({url:base+'/portal/order-pdf-company.js'});await pdf.addScriptTag({url:base+'/portal/order-pdf.js'});
  await pdf.evaluate(s=>{document.body.innerHTML=HouzyOrderPDF.render({id:'1',order_no:'001-20261104-0001',amount:100,currency:'MYR',status:'pending_payment',payment_status:'unpaid',created_at:'2026-11-04',customers:{name:'王先生',phone:'60167475446',address:'配送 Jalan A'},order_billing:s},[{product_name:'衣柜',quantity:1,unit_price:100,total_price:100}],[],window.HOUZY_PDF_COMPANY);},SPACE);
  const text=await pdf.locator('body').innerText();ok(text.includes('SpaceMade Interior Design Sdn Bhd')&&text.includes('202501014187 (1615601-X)')&&text.includes('016-7475446'),'PDF prints every company field');await pdf.screenshot({path:out+'/pdf.png'});
+ // 退出登录要把手机上存的数据清掉（客户姓名电话不能留在手机里）
+ await page.evaluate(()=>logout()).catch(()=>{});await page.waitForTimeout(800);ok(await page.evaluate(()=>localStorage.getItem('houzy-staff-cache-v1'))===null,'logging out wipes the saved copy');
  ok(errors.length===0,'no page errors: '+errors.join(' | '));
  console.log(`PASS ${checks} order billing browser checks`);
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);process.exit(1);});

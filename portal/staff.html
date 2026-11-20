@@ -906,7 +906,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
 <script src="staff-i18n-phrases.js?v=bill-to-20261104"></script>
-<script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=slim-20261120"></script>
+<script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=seed-20261120"></script>
 <script>
 // Excel、PDF、扫码这几个大工具很少用，用到时才下载，不拖慢打开后台
 const HZ_LIBS={xlsx:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',pdf:'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',qr:'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'};
@@ -2412,9 +2412,54 @@ function restoreLastView() {
   if (['orders', 'create', 'customers', 'registrations', 'users', 'pricing', 'designers', 'settle', 'reports'].includes(last.v)) goto(last.v);
 }
 
+// 秒开：上次读到的首页数据存在这台手机上，下次打开先显示，同时在后台读最新的，读完再换上
+const STAFF_CACHE = 'houzy-staff-cache-v1';
+function readStaffCache(uid) {
+  try {
+    const c = JSON.parse(localStorage.getItem(STAFF_CACHE) || 'null');
+    if (!c || c.uid !== uid || Date.now() - c.at > 7 * 864e5) return null;
+    return c;
+  } catch (e) { return null; }
+}
+function saveStaffCache() {
+  try {
+    if (!profile?.id) return;
+    localStorage.setItem(STAFF_CACHE, JSON.stringify({ uid: profile.id, at: Date.now(), profile, stores, orders: allOrders, referrers, reno: RenoOrderList.projects }));
+  } catch (e) { try { localStorage.removeItem(STAFF_CACHE); } catch (e2) {} }
+}
+function unlockNav() {
+  [['registrations','nav_registrations'],['users','nav_users'],['pricing','nav_pricing'],['designers','nav_designers'],['settle','nav_settle'],['reports','nav_reports']].forEach(([perm, key]) => {
+    document.querySelectorAll(`.admin-nav[data-perm="${perm}"]`).forEach(el => { if (canDo(FIELD_MIN_LEVEL[key])) el.classList.remove('hidden'); });
+  });
+}
+function rerenderCurrentView() {
+  if (!document.getElementById('v-dashboard').classList.contains('hidden')) renderDashboard();
+  else if (!document.getElementById('v-orders').classList.contains('hidden')) renderOrdersTable(filterGetCurrent());
+  else if (!document.getElementById('v-customers').classList.contains('hidden')) renderCustomersTable(allCustomers);
+}
+function cacheBanner(show) {
+  let b = document.getElementById('cache-banner');
+  if (!show) { b?.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'cache-banner'; b.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60;background:#153927;color:#fff;font-size:12px;padding:6px 12px;border-radius:999px;opacity:.9;pointer-events:none'; b.textContent = '显示的是上次的数据，正在更新…'; document.body.appendChild(b); }
+}
+function startView() {
+  const requestedView = new URLSearchParams(window.location.search).get('view');
+  if (['orders','create'].includes(requestedView)) goto(requestedView);
+  else if (!new URLSearchParams(window.location.search).get('hitpay')) restoreLastView();
+}
+
 async function init() {
   const session = await getSessionPatiently();
   if (!session) { window.location.href = 'login.html?next=staff.html'; return; }
+
+  // 有上次的数据就先显示（只用这个账号自己的，7 天内）
+  const cached = readStaffCache(session.user?.id);
+  if (cached) {
+    profile = cached.profile; stores = cached.stores || []; allOrders = cached.orders || []; referrers = cached.referrers || [];
+    _ordersLoaded = true; RenoOrderList.seed(cached.reno);
+    const m = document.getElementById('user-info'); if (m) m.innerHTML = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>`;
+    unlockNav(); setLang(currentLang); renderDashboard(); startView(); cacheBanner(true);
+  }
 
   profile = await getProfilePatiently();
   // 门店名和下面的数据同时读，不再排队
@@ -2442,34 +2487,15 @@ async function init() {
     if (!document.getElementById('v-customers')?.classList.contains('hidden')) renderCustomersTable(allCustomers);
   }).catch(e => console.warn('[background load]', e));
   await Promise.all([loadStores().then(loadOrders), loadReferrers(), loadDesigners(), storeNameP]);
-  renderDashboard();
+  if (cached) rerenderCurrentView(); else renderDashboard();
   checkOverdueAlerts();
-  // 按权限级别解锁导航菜单
-  document.querySelectorAll('.admin-nav[data-perm="registrations"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_registrations)) el.classList.remove('hidden');
-  });
+  unlockNav();
   if (canDo(FIELD_MIN_LEVEL.approve_reg)) {
     loadRegistrations(); // show badge count on startup
   }
-  document.querySelectorAll('.admin-nav[data-perm="users"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_users)) el.classList.remove('hidden');
-  });
-  document.querySelectorAll('.admin-nav[data-perm="pricing"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_pricing)) el.classList.remove('hidden');
-  });
-  document.querySelectorAll('.admin-nav[data-perm="designers"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_designers)) el.classList.remove('hidden');
-  });
-  document.querySelectorAll('.admin-nav[data-perm="settle"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_settle)) el.classList.remove('hidden');
-  });
-  document.querySelectorAll('.admin-nav[data-perm="reports"]').forEach(el => {
-    if (canDo(FIELD_MIN_LEVEL.nav_reports)) el.classList.remove('hidden');
-  });
-  setLang(currentLang);
-  const requestedView = new URLSearchParams(window.location.search).get('view');
-  if (['orders','create'].includes(requestedView)) goto(requestedView);
-  else if (!new URLSearchParams(window.location.search).get('hitpay')) restoreLastView();
+  if (!cached) { setLang(currentLang); startView(); }
+  cacheBanner(false);
+  saveStaffCache();
   const hitpayReturn = new URLSearchParams(window.location.search);
   const hitpayOrder = hitpayReturn.get('order');
   if (hitpayReturn.get('hitpay') === 'success' && hitpayOrder) {
@@ -8190,6 +8216,7 @@ async function toggleUserActive(uid, current) {
 
 // ── Auth ──
 async function logout() {
+  try { localStorage.removeItem(STAFF_CACHE); } catch (e) {}
   await sb.auth.signOut();
   window.location.href = 'login.html';
 }

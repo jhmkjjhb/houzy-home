@@ -19,5 +19,5 @@ window.RenoOrderList=(()=>{
   if(mobile)return `<a href="${link}" class="block p-4" style="border-left:4px solid #633899;background:#fcfaff"><div class="flex justify-between gap-2"><div><b style="color:#633899">${escape(p.contract_no)}</b><div class="text-xs" style="color:#633899">🏠 整装订单</div></div>${status}</div><div class="flex justify-between mt-2"><div>${escape(p.customer_name)}<div class="text-xs text-gray-500">${escape(store)}</div></div><div class="text-right">${formatMoney(p.current_total??(p.net??p.snapshot?.net)??0)}<div class="text-xs text-gray-400">${formatDate(p.created_at)}</div></div></div></a>`;
   return `<tr style="background:#fcfaff;border-left:4px solid #633899" class="border-t border-gray-100"><td class="px-4 py-3">${title}</td><td class="px-4 py-3">${escape(p.customer_name)}</td><td class="px-4 py-3 text-xs">${escape(store)}</td><td class="px-4 py-3 font-semibold">${formatMoney(p.current_total??(p.net??p.snapshot?.net)??0)}</td><td class="px-4 py-3">${status}</td><td class="px-4 py-3 text-xs text-gray-400">${formatDate(p.created_at)}</td></tr>`;
  }
- return {load,filtered,content,get error(){return error;}};
+ return {load,filtered,content,get error(){return error;},get projects(){return projects;},seed(list){if(Array.isArray(list)){projects=list;error='';}}};
 })();
