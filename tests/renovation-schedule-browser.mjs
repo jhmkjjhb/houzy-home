@@ -60,10 +60,11 @@ const openCard=async(page,name)=>{const card=page.locator('details.work',{hasTex
 
 const plans=async()=>Object.fromEntries((await sys('SELECT group_name,planned_start::text s,planned_end::text e FROM renovation_work_orders WHERE project_id=$1',[id])).map(r=>[r.group_name,r]));
 const dow=s=>new Date(s+'T00:00:00Z').getUTCDay();const days=(a,b)=>Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/864e5);
-const planTab=async p=>{await p.locator('.fx-tabs [role=tab][data-fxtab="plan"]').click();};
+// 施工计划是单独的栏目（在「收款进度」和「履约子单」之间），不再是子单里的标签
+const planTab=async p=>{await p.locator('.steps a[href="#project-plan"]').click();await p.locator('#project-plan').waitFor();};
 try{
  const page=await open(staff,`/portal/renovation.html#${id}`);await page.locator('#work-orders details.work').first().waitFor();
- assert(await page.locator('#schedule').isHidden(),'opens on 子单执行 by default');await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor();
+await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor();
  assert((await sch.innerText()).includes('还没有排期'),'empty state explains what to do');
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();

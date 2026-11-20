@@ -14,6 +14,8 @@ const fixture=()=>{
   // Fulfilment tracking (11-03) loads with the list and with every project.
   if(name==='renovation_my_todos')return {data:{items:[],handovers:[]}};
   if(name==='renovation_handover_people')return {data:[]};
+  // Site supervision (11-20) loads with every project.
+  if(name==='renovation_supervisor_candidates')return {data:[]};
   throw new Error('Unexpected RPC '+name);
  };
  window.supabase={createClient:()=>({rpc,auth:{getSession:async()=>({data:{session:{user:{id:'manager'}}}})},from(table){let id;const q={select(){return q},eq(k,v){if(k==='id')id=v;return q},order(){return q},limit(){return q},single(){return Promise.resolve({data:projects.find(p=>p.id===id)})},then(resolve,reject){let data=table==='stores'?[{id:'store',name:'Austin 门店'}]:table==='renovation_projects'?projects:table==='renovation_audit'?[{action:'confirm',created_at:'2026-10-24T10:00:00Z'}]:[{id:'work',group_name:'橱柜安装',line_ids:['01'],status:'draft',assignee:''}];return Promise.resolve({data}).then(resolve,reject)}};return q}})};

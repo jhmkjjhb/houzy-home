@@ -292,3 +292,7 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .site-staff-cand{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid #e3e8e4;border-radius:10px;background:#fff}
 .site-staff-cand small{color:#5b6a62}.site-staff-cand em{font-style:normal;font-size:12px;color:#15803d}
 .site-staff-ext{margin-top:8px}.site-staff-ext summary{color:#633899;cursor:pointer}
+.fx-plan-link{display:block;width:100%;text-align:left;margin:0 0 12px;padding:10px 12px;border:1px solid #e3e8e4;border-radius:10px;background:#f6f9f7;color:#3d4d45;font-size:14px;cursor:pointer}
+.fx-plan-link:empty{display:none}.fx-plan-link::before{content:"施工计划：";font-weight:700;color:#153927}.fx-plan-link::after{content:" ›";color:#633899}
+.fx-plan-link .bad{color:#b42318}
+#site-badge{font-size:14px;font-weight:500;color:#9a6700}
