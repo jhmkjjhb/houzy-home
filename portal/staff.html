@@ -16,8 +16,6 @@
 <meta name="apple-mobile-web-app-title" content="HOUZY HOME">
 <script>if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(e){console.warn('[PWA] SW reg failed:',e);});});}</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700;900&family=Playfair+Display:wght@600;700&family=Noto+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{'hg':'#153927','gg':'#245640','gd':'#c8a96e','gc':'#fbf8f1'}}}}</script>
 <link rel="stylesheet" href="houzy-brand.css?v=5">
 <script src="houzy-icons.js?v=5"></script>
 <style>
@@ -68,6 +66,8 @@
 <script src="order-pdf-company.js"></script>
 <script src="order-pdf.js?v=product-code-20261104"></script>
 <script async src="https://hit-pay.com/hitpay.js"></script>
+<!-- 样式提前生成好（scripts/tailwind/staff.config.cjs），不再在手机上现场生成；放在 head 最后，和原来现场生成的样式顺序一样 -->
+<link rel="stylesheet" href="staff-tw.css?v=20261120">
 </head>
 <body class="bg-gc min-h-screen" style="font-family:Inter,'Noto Sans SC',sans-serif">
 
@@ -3051,6 +3051,10 @@ function renderMonthlyStats(orders, period, specificDate) {
   `;
 }
 
+// 订单列表先显示 50 张，滑到底再显示下一批（筛选条件不变时，刷新不会跳回前 50 张）
+const ORDERS_PAGE = 50;
+let _ordersShown = ORDERS_PAGE, _ordersFilterKey = '', _ordersMoreObserver = null;
+function showMoreOrders() { _ordersShown += ORDERS_PAGE; renderOrdersTable(filterGetCurrent()); }
 function renderOrdersTable(orders) {
   const errorEl=document.getElementById('renovation-list-error');
   errorEl.textContent=RenoOrderList.error;errorEl.hidden=!RenoOrderList.error;
@@ -3091,6 +3095,9 @@ function renderOrdersTable(orders) {
       : '';
     return { o, cd, cdHtml, alarmBadge, alarming };
   });
+  const fkey = ['f-search','f-status','f-store','f-date','f-month'].map(id => document.getElementById(id)?.value || '').join('|');
+  if (fkey !== _ordersFilterKey) { _ordersFilterKey = fkey; _ordersShown = ORDERS_PAGE; }
+  const shownRows = rowsData.slice(0, _ordersShown), moreLeft = rowsData.length - shownRows.length;
 
   // Desktop: table (hidden on mobile)
   const tableHtml = `<div class="ord-desktop overflow-x-auto">
@@ -3098,7 +3105,7 @@ function renderOrdersTable(orders) {
       <th class="px-4 py-3">${t('th_order_no')}</th><th class="px-4 py-3">${t('th_customer')}</th>
       <th class="px-4 py-3">${t('th_store')}</th><th class="px-4 py-3">${t('th_amount')}</th>
       <th class="px-4 py-3">${t('th_status')}</th><th class="px-4 py-3">${t('th_time')}</th>
-    </tr></thead><tbody>${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
+    </tr></thead><tbody>${shownRows.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
       if(o.__renovation)return RenoOrderList.content(o,false,fmtAmt,fmtDate,stores);
       const rowBg = alarming ? 'background:#fef2f2;border-left:3px solid #ef4444;' : cd?.warn ? 'background:#fffbeb;border-left:3px solid #f59e0b;' : 'border-left:3px solid #245ea6;';
       return `<tr class="border-t border-gray-100 cursor-pointer hover:opacity-90" style="${rowBg}" onclick="openDetail('${o.id}')">
@@ -3117,7 +3124,7 @@ function renderOrdersTable(orders) {
   </div>`;
 
   // Mobile: card list (hidden on md+)
-  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${rowsData.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
+  const cardsHtml = `<div class="ord-mobile divide-y divide-gray-100">${shownRows.map(({ o, cd, cdHtml, alarmBadge, alarming }) => {
     if(o.__renovation)return RenoOrderList.content(o,true,fmtAmt,fmtDate,stores);
     const borderColor = alarming ? 'border-l-4 border-red-400' : cd?.warn ? 'border-l-4 border-amber-400' : 'border-l-4 border-blue-500';
     return `<div class="p-4 active:bg-gray-50 cursor-pointer ${borderColor}" onclick="openDetail('${o.id}')">
@@ -3143,7 +3150,17 @@ function renderOrdersTable(orders) {
     </div>`;
   }).join('')}</div>`;
 
-  document.getElementById('orders-table').innerHTML = banner + tableHtml + cardsHtml;
+  const moreHtml = moreLeft > 0
+    ? `<div id="orders-more" class="p-4 text-center"><button type="button" onclick="showMoreOrders()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:border-gray-400">显示更多（还有 ${moreLeft} 张）</button></div>`
+    : (rowsData.length > ORDERS_PAGE ? `<p class="p-4 text-center text-xs text-gray-400">已显示全部 ${rowsData.length} 张</p>` : '');
+  document.getElementById('orders-table').innerHTML = banner + tableHtml + cardsHtml + moreHtml;
+  // 滑到「显示更多」附近时自动显示下一批
+  _ordersMoreObserver?.disconnect();
+  const more = document.getElementById('orders-more');
+  if (more && 'IntersectionObserver' in window) {
+    _ordersMoreObserver = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { _ordersMoreObserver.disconnect(); showMoreOrders(); } }, { rootMargin: '400px' });
+    _ordersMoreObserver.observe(more);
+  }
 }
 
 // ── Create Order ──
