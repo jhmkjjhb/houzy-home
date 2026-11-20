@@ -1339,7 +1339,15 @@
   let issueCursor = 0;
   function viewQuote(C) {
     const { lines, T, K } = C;
-    const quoteText = value => uiLang === 'en' ? window.HOUZY_QUOTE_I18N.translate(value) : value;
+    const paymentLabelsEn = {
+      '签约定金': 'Contract signing deposit',
+      '水电隐蔽验收通过': 'After concealed electrical and plumbing inspection approval',
+      '泥水瓷砖验收通过': 'After masonry and tiling inspection approval',
+      '竣工验收交付': 'Upon final inspection and handover'
+    };
+    const quoteText = value => uiLang === 'en'
+      ? (paymentLabelsEn[value] || window.HOUZY_QUOTE_I18N.translate(value))
+      : value;
     const mode = P.quoteMode || 'estimate';
     let h = `<h2>⑤ 报价单</h2>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
     const ps = Q.plans(P);
