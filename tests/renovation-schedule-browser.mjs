@@ -131,9 +131,20 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await page.locator('#schedule').screenshot({path:out+'/staff-plan.png'});
  // 全局：整个工期一屏放下，不用左右滑；近 4 周：放大、可以左右滑；记住上次的选择
  {const fit=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth<=s.clientWidth+1;});assert(fit,'全局 shows the whole schedule without sideways scrolling');
-  await page.locator('[data-sch-view="near"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'近 4 周 zooms in and scrolls');
+  await page.locator('[data-sch-view="near"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'近 4 周 zooms in and scrolls');await page.locator('#schedule').screenshot({path:out+'/staff-plan-near.png'});
+  // 每个工种一种颜色，横条上写天数
+  {const info=await page.evaluate(()=>[...document.querySelectorAll('#schedule .sch-bar')].map(b=>[[...b.classList].find(c=>c.startsWith('tr-')),b.textContent+(b.nextElementSibling?.classList.contains('sch-days')?b.nextElementSibling.textContent:'')]));
+   assert(new Set(info.map(x=>x[0])).size>=3&&info.every(x=>x[0]&&/\d+天/.test(x[1])),'bars are coloured by trade and say how many days: '+JSON.stringify(info));}
   assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'near','choice remembered');
   await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});}
+ // 手机横屏 / 竖屏：「全局」从开工到完工都在一屏内，不用左右滑（转屏后自动按新宽度重画）
+ for(const [w,h,name] of [[844,390,'landscape'],[390,844,'portrait']]){
+  await page.setViewportSize({width:w,height:h});await page.waitForTimeout(500);
+  const r=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll'),box=s.getBoundingClientRect(),bars=[...s.querySelectorAll('.sch-bar')].map(b=>b.getBoundingClientRect());return {fit:s.scrollWidth<=s.clientWidth+1,inside:bars.every(b=>b.left>=box.left-1&&b.right<=box.right+1),n:bars.length,page:document.documentElement.scrollWidth-innerWidth};});
+  assert(r.fit&&r.inside&&r.n>0&&r.page<=1,`phone ${name}: whole schedule visible on one screen `+JSON.stringify(r));
+  await page.locator('#schedule .sch-scroll').screenshot({path:out+`/phone-${name}-global.png`});
+ }
+ await page.setViewportSize({width:1280,height:1000});
  // 5) 业主看到简版：有名称和日期，没有厂家、价格、执行人
  const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
  const cu=await open(null,`/portal/renovation-customer.html#${token}`,{width:390,height:844});

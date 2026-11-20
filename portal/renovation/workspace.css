@@ -322,3 +322,20 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-compact .sch-bar{height:14px}
 .sch-compact .sch-bar span{display:none}
 .sch-tiny .sch-sun{display:none}
+/* 甘特图：工种颜色 + 天数 */
+.sch-bar.tr-mep{background:#dbeafe;border-color:#93c5fd}.sch-key.tr-mep{background:#93c5fd}
+.sch-bar.tr-mason{background:#fde7d3;border-color:#f4a76b}.sch-key.tr-mason{background:#f4a76b}
+.sch-bar.tr-wood{background:#fef3c7;border-color:#e8c25a}.sch-key.tr-wood{background:#e8c25a}
+.sch-bar.tr-paint{background:#ccfbf1;border-color:#5ecdb8}.sch-key.tr-paint{background:#5ecdb8}
+.sch-bar.tr-cab{background:#ede9fe;border-color:#a78bfa}.sch-key.tr-cab{background:#a78bfa}
+.sch-bar.tr-fac{background:#fce7f3;border-color:#f08cc0}.sch-key.tr-fac{background:#f08cc0}
+.sch-bar.tr-clean{background:#dcfce7;border-color:#6fd394}.sch-key.tr-clean{background:#6fd394}
+.sch-bar.tr-misc{background:#e5e7eb;border-color:#a3a8b0}.sch-key.tr-misc{background:#a3a8b0}
+.sch-bar.tr-other{background:#eef1ef;border-color:#c3cbc6}.sch-key.tr-other{background:#c3cbc6}
+.sch-bar[class*="tr-"] i{background:rgba(21,57,39,.18)}
+.sch-bar.wait i{display:none}
+.sch-bar.done{opacity:.55}
+.sch-bar.late{border:2px solid #d92d20}.sch-key.late{background:#fff;border:2px solid #d92d20}.sch-key.active{background:rgba(21,57,39,.25)}
+.sch-days{position:absolute;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:#3d4d45;white-space:nowrap;pointer-events:none}
+.sch-days.bad{color:#b42318}
+.sch-compact .sch-bar{top:50%;transform:translateY(-50%)}
