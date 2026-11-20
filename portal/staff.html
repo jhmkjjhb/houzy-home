@@ -65,10 +65,9 @@
   .ord-mobile  { display:block; }
   @media (min-width:768px) { .ord-desktop { display:block; } .ord-mobile { display:none; } }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="order-pdf-company.js"></script>
 <script src="order-pdf.js?v=product-code-20261104"></script>
-<script src="https://hit-pay.com/hitpay.js"></script>
+<script async src="https://hit-pay.com/hitpay.js"></script>
 </head>
 <body class="bg-gc min-h-screen" style="font-family:Inter,'Noto Sans SC',sans-serif">
 
@@ -905,12 +904,19 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
 <script src="staff-i18n-phrases.js?v=bill-to-20261104"></script>
-<script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=additions-20261025"></script>
+<script src="renovation/store-performance.js?v=store-performance-20261025"></script><script src="renovation/order-list.js?v=slim-20261120"></script>
 <script>
+// Excel、PDF、扫码这几个大工具很少用，用到时才下载，不拖慢打开后台
+const HZ_LIBS={xlsx:'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',pdf:'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js',qr:'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js'};
+const _hzLibWait={};
+function needLib(name){
+  const ready={xlsx:()=>typeof XLSX!=='undefined',pdf:()=>typeof html2pdf!=='undefined',qr:()=>typeof Html5Qrcode!=='undefined'}[name];
+  if(ready())return Promise.resolve(true);
+  if(!_hzLibWait[name])_hzLibWait[name]=new Promise(ok=>{const sc=document.createElement('script');sc.src=HZ_LIBS[name];sc.onload=()=>ok(ready());sc.onerror=()=>{delete _hzLibWait[name];ok(false);};document.head.appendChild(sc);});
+  return _hzLibWait[name].then(v=>{if(!v)alert('组件下载失败，请检查网络后再试 / Component failed to load, please check the network and try again');return v;});
+}
 // ── i18n ──
 const LANG_LABELS = { 'zh-CN':'简体中文', 'zh-TW':'繁体中文', 'en':'English', 'ms':'Bahasa Melayu', 'th':'ภาษาไทย' };
 const STAFF_I18N = {
@@ -2411,25 +2417,31 @@ async function init() {
   if (!session) { window.location.href = 'login.html?next=staff.html'; return; }
 
   profile = await getProfilePatiently();
-  let storeName = '';
-  if (profile?.store_id) {
-    const { data: sd } = await sb.from('stores').select('name').eq('id', profile.store_id).single();
-    storeName = sd?.name || '';
-    profile._storeName = storeName;
-  }
+  // 门店名和下面的数据同时读，不再排队
+  const storeNameP = profile?.store_id
+    ? sb.from('stores').select('name').eq('id', profile.store_id).single().then(r => r.data?.name || '', () => '')
+    : Promise.resolve('');
   const roleLabel = {
     staff:'店员', warehouse:'仓库管理员', store_manager:'店长', regional_manager:'区域负责人',
     general_manager:'总经理', superadmin:'超级管理员', admin:'管理员',
     supplier:'厂家', logistics:'物流', customer:'客户'
   }[profile?.role] || profile?.role || '';
-  const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
+  const showUser = storeName => {
+    if (storeName) profile._storeName = storeName;
+    const userHtml = `<div class="font-medium text-white text-sm">${profile?.name || 'User'}</div>
      <div class="text-gray-500 text-xs">${roleLabel}${storeName ? ' · ' + storeName : ''}</div>`;
-  document.getElementById('user-info').innerHTML = userHtml;
-  const mobileInfo = document.getElementById('mobile-user-info');
-  if (mobileInfo) mobileInfo.innerHTML = userHtml;
+    document.getElementById('user-info').innerHTML = userHtml;
+    const mobileInfo = document.getElementById('mobile-user-info');
+    if (mobileInfo) mobileInfo.innerHTML = userHtml;
+  };
+  showUser('');
+  storeNameP.then(showUser);
 
-  await loadStores(); // 必须先完成，buildOrdersQuery 的区域过滤依赖 stores 数组
-  await Promise.all([loadReferrers(), loadOrders(), loadCustomers(), loadStaffProducts(), loadDesigners()]);
+  // 首页要用的先读（订单要等门店表做区域过滤）；客户和产品名单在后台读，读完再补上
+  Promise.all([loadCustomers(), loadStaffProducts()]).then(() => {
+    if (!document.getElementById('v-customers')?.classList.contains('hidden')) renderCustomersTable(allCustomers);
+  }).catch(e => console.warn('[background load]', e));
+  await Promise.all([loadStores().then(loadOrders), loadReferrers(), loadDesigners(), storeNameP]);
   renderDashboard();
   checkOverdueAlerts();
   // 按权限级别解锁导航菜单
@@ -2582,6 +2594,7 @@ async function loadReferrers() {
 }
 
 async function loadOrders() {
+  const renoP = RenoOrderList.load(sb); // 整装订单和普通订单同时读
   const { data, error } = await buildOrdersQuery();
   if (error) {
     console.error('[loadOrders] Supabase error:', error.message, error);
@@ -2597,7 +2610,7 @@ async function loadOrders() {
     !o.parent_order_id && !(o.description && o.description.startsWith('补件单'))
   );
   _ordersLoaded = true;
-  await RenoOrderList.load(sb);
+  await renoP;
 }
 
 async function loadCustomers() {
@@ -3122,7 +3135,7 @@ function parseSkuFromScan(text) {
   return String(text).trim();
 }
 async function openScanModal() {
-  if (typeof Html5Qrcode === 'undefined') { alert(t('scan_lib_loading')); return; }
+  if (!(await needLib('qr'))) return;
   const modal = document.getElementById('scan-modal');
   if (!modal) return;
   _scanHandled = false;
@@ -3308,7 +3321,7 @@ async function importRenovationQuote(input) {
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
-  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
+  if (!(await needLib('xlsx'))) return;
   let wb;
   try { wb = XLSX.read(await file.arrayBuffer(), { type: 'array' }); }
   catch (e) { alert((t('reno_read_fail') || '报价单读取失败') + '：' + e.message); return; }
@@ -4618,6 +4631,7 @@ async function openDetail(id, backView) {
 }
 
 async function downloadOrderPDF(orderId) {
+  if (!(await needLib('pdf'))) return;
   const btn = document.querySelector(`button[onclick="downloadOrderPDF('${orderId}')"]`);
   const previous = btn?.innerHTML;
   let wrapper;
@@ -7039,8 +7053,8 @@ async function onPricingEdit(input) {
   renderPricingTable();
 }
 
-function downloadPricingTemplate() {
-  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
+async function downloadPricingTemplate() {
+  if (!(await needLib('xlsx'))) return;
   const head = ['SKU','产品名称','分类','单位','当前零售价','建议零售价(改这里)'];
   const rows = [head];
   _pricingAll.forEach(p => {
@@ -7066,7 +7080,7 @@ async function uploadPricingXlsx(input) {
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
-  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
+  if (!(await needLib('xlsx'))) return;
   const box = document.getElementById('pricing-upload-result');
   box.style.color = '#6b7280';
   box.textContent = '正在读取文件…';
@@ -7498,8 +7512,8 @@ async function batchMarkSettled() {
   alert(`✓ 已标记 ${ids.length} 单为已结算。`);
 }
 
-function exportSettleXlsx() {
-  if (typeof XLSX === 'undefined') { alert(t('err_xlsx_loading')); return; }
+async function exportSettleXlsx() {
+  if (!(await needLib('xlsx'))) return;
   const rows = _settleRows();
   if (!rows.length) { alert(t('err_no_export_data')); return; }
   const month = document.getElementById('settle-month')?.value || '';

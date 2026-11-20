@@ -12,7 +12,7 @@ let saved=false, captured='', filename='', removed=false, alertText='';
 const button={innerHTML:'Download PDF',disabled:false};
 const document={querySelector:()=>button,fonts:{ready:Promise.resolve()},body:{appendChild(node){captured=node.innerHTML}},createElement:()=>({style:{},firstElementChild:{},remove(){removed=true}})};
 const sb={from(table){return {select(){return {eq(){return {single:async()=>({data:order}),order:async()=>({data:table==='order_items'?[]:payments})}}}}}}};
-const ctx={window:co,document,sb,console,alert:v=>{alertText=v},HouzyOrderPDF:require('../portal/order-pdf.js'),html2pdf:()=>({set(options){filename=options.filename;return this},from(){return this},async save(){saved=true}})};
+const ctx={window:co,document,sb,console,needLib:async()=>true,alert:v=>{alertText=v},HouzyOrderPDF:require('../portal/order-pdf.js'),html2pdf:()=>({set(options){filename=options.filename;return this},from(){return this},async save(){saved=true}})};
 vm.runInNewContext(source.slice(start,end),ctx);
 (async()=>{
  await ctx.downloadOrderPDF('1');

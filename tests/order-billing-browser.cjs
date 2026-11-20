@@ -28,7 +28,12 @@ try{
  const page=await browser.newPage({viewport:{width:1280,height:1000}});page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
  await page.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname==='127.0.0.1')return r.continue();if(u.pathname.includes('supabase'))return r.fulfill({contentType:'application/javascript',body:stub});if(u.hostname==='cdn.tailwindcss.com')return r.fulfill({contentType:'application/javascript',body:'window.tailwind={}'});return r.abort();});
  await page.addInitScript(()=>{addEventListener('DOMContentLoaded',()=>{const st=document.createElement('style');st.textContent='.hidden{display:none!important}';document.head.append(st);});});
+ const asked=[];page.on('request',r=>asked.push(r.url()));
  await page.goto(base+'/portal/staff.html');await page.waitForFunction(()=>typeof goto==='function'&&window.__calls?.some(c=>c.rpc==='get_my_profile'));await page.waitForTimeout(600);
+ // 打开后台时不下载 Excel / PDF / 扫码这些大工具（用到时才下载），数据库组件固定版本方便缓存
+ ok(!asked.some(u=>/xlsx|html2pdf|html5-qrcode/.test(u)),'heavy tools are not downloaded when the backend opens: '+asked.filter(u=>/xlsx|html2pdf|qrcode/.test(u)).join(','));
+ ok(asked.some(u=>/supabase-js@2\.49\.8/.test(u)),'database library is pinned to a fixed version');
+ ok(await page.evaluate(()=>typeof needLib==='function'&&typeof XLSX==='undefined'),'tools load on demand');
  await page.evaluate(()=>goto('create'));await page.locator('#c-phone').waitFor({state:'visible'});
  ok(await page.locator('input[name="bill-to"][value="individual"]').isChecked(),'individual is the default');ok(!(await page.locator('#b-company').isVisible()),'company fields stay out of the way');
  // Company chosen but incomplete: stops before any order exists.
