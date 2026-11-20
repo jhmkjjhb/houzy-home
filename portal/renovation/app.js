@@ -113,6 +113,7 @@ async function openProject(id){
  const actionNames={fulfillment_request_signature:'发起业主签名',fulfillment_customer_signed:'业主签名确认',fulfillment_void_signature:'撤销确认单',fulfillment_submit_paper:'提交纸质确认单',fulfillment_review_paper:'审核纸质确认单',fulfillment_place_order:'下单',fulfillment_legacy_order:'登记上线前已下单',fulfillment_correct_batch:'更正下单记录',fulfillment_arrive:'登记到货',fulfillment_schedule:'施工排期',fulfillment_start_work:'开工',fulfillment_finish:'登记完成',fulfillment_flag_issue:'标记问题',fulfillment_resolve_issue:'解决问题',handover:'项目交接',save:'保存合同核对版本',confirm:'确认并锁定合同',split:'生成子订单',work:'更新履约进度',accept:'确认竣工验收',rotate_link:'撤销旧客户链接',payment_add:'登记实际收退款',payment_verify:'核对现金到账',payment_void:'作废收退款记录',payment_assign:'调整收退款所属期数',addition_add:'新增工项／材料',addition_void:'撤销增项',addition_customer_signed:'客户电子签署新增单',deduction_add:'登记原合同减项',deduction_void:'撤销待签减项',deduction_customer_signed:'客户电子签署减项'};
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
  await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);loadList().catch(()=>{});},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()&&!RenoDeductions.isDirty()});
+ window.RenoSiteStaff?.load({sb,project,actor}).catch(()=>{});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
  if(resetScroll)window.scrollTo(0,0);
 }
@@ -248,11 +249,12 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  if(sr.error)throw sr.error;stores=sr.data;
  $('store').innerHTML=stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');if(actor.store_id)$('store').value=actor.store_id;
  // 履约子订单：两个标签（子单执行 / 施工计划），记住上次看的是哪个
- const fxTab=name=>{document.querySelectorAll('[data-fxpane]').forEach(p=>p.hidden=p.dataset.fxpane!==name);document.querySelectorAll('.fx-tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.fxtab===name)));try{sessionStorage.setItem('reno-fx-tab',name);}catch(e){}};
+ const fxTab=name=>{if(name==='site'&&project)window.RenoSiteStaff?.load({sb,project,actor}).catch(()=>{});document.querySelectorAll('[data-fxpane]').forEach(p=>p.hidden=p.dataset.fxpane!==name);document.querySelectorAll('.fx-tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.fxtab===name)));try{sessionStorage.setItem('reno-fx-tab',name);}catch(e){}};
  document.querySelector('.fx-tabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-fxtab]');if(b)fxTab(b.dataset.fxtab);});
  try{fxTab(sessionStorage.getItem('reno-fx-tab')||'exec');}catch(e){fxTab('exec');}
  if(window.RenoSchedule)RenoSchedule.crewAdmin($('crew-admin'),{sb,manager:()=>['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await refreshWork(project.id);},message:(m,err)=>message(m,err)});
+ window.RenoSiteStaff?.bind($('site-staff'));
  RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await refreshWork(project.id);setTimeout(()=>loadList().catch(()=>{}),1500);},message});
  const refreshHome=async()=>{await RenoFulfillmentHome.load({sb,openProject,refresh:async()=>{await loadList();await refreshHome();}});};
  // 有项目编号时先开项目，列表和待办在后台同时读，不用等

@@ -339,3 +339,13 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.renovation_site_review(uuid,text,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.renovation_site_review(uuid,text,text) TO authenticated;
+
+-- 员工指定内部监理时可选的账号：角色是「施工监理」的在职账号（员工不能直接读账号表）
+CREATE OR REPLACE FUNCTION public.renovation_supervisor_candidates()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM profiles WHERE id=auth.uid() AND coalesce(active,true) AND role IN ('staff','store_manager','regional_manager','general_manager','admin','superadmin')) THEN RAISE EXCEPTION '请登录后重试'; END IF;
+ RETURN coalesce((SELECT jsonb_agg(jsonb_build_object('id',id,'name',name,'phone',coalesce(phone,'')) ORDER BY name) FROM profiles WHERE role='supervisor' AND coalesce(active,true)),'[]'::jsonb);
+END $$;
+REVOKE ALL ON FUNCTION public.renovation_supervisor_candidates() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.renovation_supervisor_candidates() TO authenticated;

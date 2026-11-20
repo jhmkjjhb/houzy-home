@@ -282,3 +282,9 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 @media(max-width:600px){.fx-st{padding-left:36px}.fx-st-body{padding:10px}.fx-actions button{flex:1 1 100%}}
 .fx-idx{color:#8a968f;font-weight:600;margin-right:2px}
 .fx-kind{margin-top:12px;font-size:14px}.fx-kind summary{color:#633899}.fx-kind .check{margin:6px 0}
+/* 施工监理标签 */
+.site-staff-pay{margin:6px 0 12px;padding:10px 12px;border-radius:10px;background:#e7f5ec;color:#14532d;font-size:14px}
+.site-staff-list,.site-staff-log{list-style:none;margin:6px 0;padding:0}.site-staff-list>li,.site-staff-log>li{padding:8px 0;border-bottom:1px dashed #e3e8e4;font-size:14px}
+.site-staff-log>li span{color:#5b6a62}
+.site-staff-photos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}.site-staff-photos img{width:72px;height:72px;object-fit:cover;border-radius:6px;display:block}
+.warning-chip{font-size:12px;padding:2px 8px;border-radius:999px;background:#fff3d6;color:#8a5a00}

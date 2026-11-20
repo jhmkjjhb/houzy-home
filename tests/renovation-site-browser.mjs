@@ -105,6 +105,11 @@ try{
  // 5) 开工
  await pg.locator('.site-task',{hasText:'开工：泥水'}).click();await sheet.locator('[data-shot="camera"]').setInputFiles({name:'c.jpg',mimeType:'image/jpeg',buffer:photo});await sheet.locator('[data-thumbs] img').waitFor();
  await sheet.locator('[data-submit]').click();await pg.getByText('开工已保存').waitFor();assert((await stages()).W1==='working','start moves work to 施工中');
+ // 5b) 验收：全部打勾 + 照片
+ await pg.locator('[data-act="inspection"]').click();await sheet.locator('[data-f="milestone"]').selectOption('防水闭水验收');
+ for(const c of await sheet.locator('[data-check]').all())await c.check();
+ await sheet.locator('[data-shot="camera"]').setInputFiles({name:'e.jpg',mimeType:'image/jpeg',buffer:photo});await sheet.locator('[data-thumbs] img').waitFor();
+ await sheet.locator('[data-submit]').click();await pg.getByText('验收已保存').waitFor();
  const ofl=await pg.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'no sideways scroll on phone: '+ofl);
  // 6) 外部监理：链接 + 验证码
  const ext=await asQ(staff,'SELECT renovation_supervisor_save($1,$2::jsonb) v',[id,JSON.stringify({name:'Ahmad',phone:'013'})]);
@@ -116,6 +121,23 @@ try{
  await xs.locator('[data-shot="camera"]').setInputFiles({name:'d.jpg',mimeType:'image/jpeg',buffer:photo});await xs.locator('[data-thumbs] img').waitFor();
  await xs.locator('[data-submit]').click();await xp.getByText('工地日志已保存').waitFor();
  assert((await sys(`SELECT count(*)::int n FROM renovation_site_entries e JOIN renovation_site_supervisors s ON s.id=e.supervisor_id WHERE s.kind='external'`))[0].n===1,'outside supervisor log saved with their own photo');
+ // 7) 门店：整装订单里的「施工监理」标签——指定监理、看记录和照片、店长确认延误、看到可收款提示
+ await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('20000000-0000-4000-8000-000000000010','林监理',true,'supervisor',null,null,'014')`);
+ const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('details.work').first().waitFor();
+ await mp.locator('.fx-tabs [data-fxtab="site"]').click();const ss=mp.locator('#site-staff');await ss.getByText('施工监理').first().waitFor();
+ await mp.waitForFunction(()=>document.querySelector('#site-staff [data-sf="profile_id"]')?.options[0]?.textContent.includes('林监理'));
+ const tx=await ss.innerText();
+ assert(tx.includes('陈监理')&&tx.includes('Ahmad')&&tx.includes(ext.code),'both supervisors listed, outside one with the code');
+ assert(tx.includes('监理已验收：防水闭水验收'),'passed inspection reminds the store it can collect the next payment');
+ assert((await mp.locator('#site-badge').innerText()).includes('待确认 1'),'tab shows how many need confirming');
+ assert(await ss.locator('.site-staff-photos img').count()>0,'site photos are visible to the store');
+ await ss.locator('[data-sact="add_internal"]').click();await ss.getByText('已指定').waitFor();
+ assert((await ss.innerText()).includes('林监理'),'store assigns an internal supervisor');
+ const rf=ss.locator('.fx-form',{has:mp.locator('[data-sact="reject"]')}).first();await rf.locator('[data-sact="reject"]').click();
+ assert((await rf.innerText()).includes('驳回原因'),'reject needs a reason');
+ await rf.locator('[data-sact="confirm"]').click();await mp.waitForFunction(()=>!document.getElementById('site-badge').textContent);
+ assert.equal((await sys(`SELECT status FROM renovation_site_entries WHERE kind='delay'`))[0].status,'confirmed','store manager confirmed the delay');
+ await mp.locator('[data-fxpane="site"]').screenshot({path:out+'/staff-site-tab.png'});
  assert.deepEqual(errors,[],'no page errors');
  console.log('PASS site supervision browser flow');
 }finally{await browser.close();server.close();}
