@@ -212,8 +212,6 @@
   .brand-sources button { border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink-dim); padding:5px 10px; font-size:11px; }
   .brand-sources button.on { background:var(--navy); border-color:var(--navy); color:var(--on-navy); }
   .brand-meta { display:block; margin-top:5px; max-width:260px; color:var(--ink-dim); font-size:10px; line-height:1.45; font-weight:400; }
-  .brand-references { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:6px; font-size:10px; }
-  .brand-references a { color:var(--navy); text-decoration:underline; }
   .pack .tick { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--off); display: inline-grid; place-items: center; font-size: 12px; flex: none; }
   .pack.on .tick { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
   .pkbody { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
@@ -1263,20 +1261,6 @@
     'cabinet.hardware': { '阻尼铰链+缓冲滑轨': '质保：按标配五金型号｜标准价', 'Blum': '质保/价格：按系列与经销商确认', 'Hettich': '质保/价格：按系列与经销商确认', '悍高（HIGOLD）': '质保/价格：按系列与经销商确认', 'DTC（东泰）': '质保/价格：按系列与经销商确认' },
     'soft2.fanBrand': { 'KDK': '质保/价格：按马来西亚型号和授权商确认', 'Panasonic': '质保：马来西亚保修政策通常 12 个月（按型号/授权渠道）｜价格：询价', 'Fanco': '质保/价格：按马来西亚型号和授权商确认', 'Deka': '质保/价格：按马来西亚型号和经销商确认' }
   };
-  const BRAND_SOURCE_LINKS = {
-    'Southern Cable': ['零售价格样本', 'https://eezee.com.my/product/southern-1-5mm-pvc-cable-black-1-meter-badd4986e1'],
-    'Tai Sin': ['零售价格样本', 'https://www.lazada.com.my/tag/tai-sin/'],
-    'Power Cables Malaysia': ['马来西亚电缆制造商名录', 'https://mcma.org.my/member/'],
-    'Sindutch Cable（Prysmian）': ['马来西亚电缆制造商名录', 'https://mcma.org.my/member/'],
-    'LWD（马来西亚制造）': ['零售价格样本', 'https://mrdiy.com.my/products/lwd-push-button-wall-switch-9300430-001001'],
-    'PLK（马来西亚制造）': ['零售价格样本', 'https://www.samajaya.com.my/ourproducts/cid/557369/cat/metal-clad-switch/pn/1/'],
-    'reTOUCH（马来西亚品牌）': ['零售价格与系列保修', 'https://www.gluckhardware.com.my/showproducts/productid/6056878/cid/0/'],
-    'UMS / neiken（马来西亚制造）': ['零售价格样本', 'https://eezee.com.my/brands/ums?menuOption=all-products&p=1'],
-    'Seamaster': ['产品规格/质保与零售价格', 'https://colourmakers.com.my/product/seamaster-weather-pro-7900-sm-6m1-5-wise-owl'],
-    'Deka': ['品牌/本地服务信息', 'https://deka.my/about/'],
-    'Panasonic 松下': ['马来西亚保修政策', 'https://www.panasonic.com/content/dam/Panasonic/my/en/ewarranty/PM-warranty-policy-FY2025.pdf'],
-    'Legrand 罗格朗': ['销售条款/保修', 'https://www.legrand.com.my/sites/g/files/ocwmcr596/files/2023-04/Legrand%20Manufacturing_General%20Terms%20and%20Conditions%20of%20Sale.pdf']
-  };
   const brandFilter = {};
   const brandSourceOf = (cat, k, value) => {
     const key = cat + '.' + k;
@@ -1295,10 +1279,6 @@
   function brandMeta(cat, k, value) {
     const info = BRAND_INFO[cat + '.' + k]?.[value];
     return info ? `<small class="brand-meta">${esc(info)}</small>` : '';
-  }
-  function brandReferences(opts) {
-    const refs = [...new Set(opts)].filter(value => BRAND_SOURCE_LINKS[value]);
-    return refs.length ? `<div class="brand-references">${refs.map(value => { const [label, href] = BRAND_SOURCE_LINKS[value]; return `<a href="${href}" target="_blank" rel="noopener noreferrer">${esc(value)} · ${esc(label)} ↗</a>`; }).join('')}</div>` : '';
   }
   function brandOriginTag(cat, k, value) {
     const key = cat + '.' + k, local = MY_BRAND_CHOICES[key] || [];
@@ -1328,7 +1308,7 @@
       if (isBrandRow && !brandFilter[filterKey]) brandFilter[filterKey] = filter;
       const visibleOpts = isBrandRow ? K.opts.filter(o => brandSourceOf(cat, k, o) === filter || brandSourceOf(cat, k, o) === 'standard') : K.opts;
       const emptyBrandSource = isBrandRow && !visibleOpts.some(o => brandSourceOf(cat, k, o) === filter) ? `<div class="hint" style="margin:0 0 7px">这个分类暂未收录已核实的${filter === 'cn' ? '中国' : filter === 'intl' ? '国际' : '马来西亚'}品牌；标准档仍可用于预算。需要新增品牌时应先核验马来西亚适用认证与本地售后。</div>` : '';
-      h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${K.label}${rs.length < have.length ? ` <span class="desc">（${rs.map(x => esc(x.name)).join('、')}）</span>` : ''}${same ? '' : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div>${brandSourceTabs(cat, k)}${emptyBrandSource}<div class="adds" style="margin:0">${visibleOpts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-splace="${c}" data-sg="${G.id}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${brandOriginTag(cat, k, o)}${o === std ? ' <span class="desc">标准</span>' : ''}<br>${groupDelta(rs, c, cat, k, o, C.T.total)}${brandMeta(cat, k, o)}</button>`; }).join('')}</div>${brandReferences(visibleOpts)}<div class="hint" style="margin-top:5px">价格为马来西亚零售/公开页面抽样参考，不是工程价；同品牌因系列、规格、色号和供货渠道差异较大。质保以所选型号、授权渠道及书面条款为准。</div></div>`;
+      h += `<div style="padding:10px 0 4px;border-top:1px dashed var(--line);margin-top:10px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">${K.label}${rs.length < have.length ? ` <span class="desc">（${rs.map(x => esc(x.name)).join('、')}）</span>` : ''}${same ? '' : ' <span class="desc" style="color:var(--yellow)">· 各间不同</span>'}</div>${brandSourceTabs(cat, k)}${emptyBrandSource}<div class="adds" style="margin:0">${visibleOpts.map(o => { const all = same && cur[0].decided && cur[0].v === o; return `<button class="pack opt ${all ? 'on' : ''}" data-splace="${c}" data-sg="${G.id}" data-spec-cat="${cat}" data-spec-k="${k}" data-spec-v="${esc(o)}"><span class="tick">${all ? '✓' : ''}</span> <b>${esc(o)}</b>${brandOriginTag(cat, k, o)}${o === std ? ' <span class="desc">标准</span>' : ''}<br>${groupDelta(rs, c, cat, k, o, C.T.total)}${brandMeta(cat, k, o)}</button>`; }).join('')}</div></div>`;
     });
     // 各间不同时默认展开逐间；点按钮切换
     const one = have.length > 1 && (specOne.has(ek) !== diff);
