@@ -650,10 +650,17 @@ CCTV 监控摄像头（含布线+主机分摊）	CCTV camera (wiring and recorde
   const specTermsExtra = [
     ['地面与瓷砖','Flooring and tiles'],['浴室柜','Bathroom vanity'],['防水与墙砖','Waterproofing and wall tiles'],['踏步灯做法','Stair-light method'],['阳光棚/阳光房','Canopy / sunroom'],['推拉门 / 玻璃隔断 / 浴缸','Sliding doors / glass screens / bathtub'],['门窗选材','Doors and windows'],['卫浴 / 厨房选品','Bathroom and kitchen fittings'],['热水器类型','Water-heater type'],['泥水 / 水电辅材','Masonry / M&E consumables'],['门槛石 / 窗台石材质','Threshold / window-sill stone'],['石膏线材料','Cornice material'],['窗帘 / 晾衣架 / 吊扇','Curtains / drying racks / ceiling fans'],['大门 / 外墙 / 安防','Entrance gate / exterior / security'],['自动大门款式','Automatic gate style'],['其他工艺做法','Other methods and finishes'],['飘窗台面材料','Bay-window countertop material'],['马赛克材料','Mosaic material'],['岩板 / 护墙板','Sintered stone / wall panelling'],['护墙板材料','Wall-panelling material'],['淋浴区','Shower area'],['开关面板 / 智能开关','Switch plates / smart switches']
   ];
-  const allTerms = [...pairs, ...catalog, ...exportTerms, ...specTerms, ...specTermsExtra, ...descriptionTerms, ...optionTerms, ...nameTerms];
+  const tileTerms = [
+    ['铺贴辅料及人工','Tiling consumables and labour'],['瓷砖材料','Tile material'],['瓷砖片价','Tile price per piece'],['片价待定','Tile rate pending'],['旧面积价','Legacy area rate'],['砖材规格','Tile specification'],['砖材规格：','Tile specification: '],['砖材见统一规格价','Tile material priced by standard size and finish'],['尺寸＋表面','size + finish'],['尺寸+表面','size + finish'],['含损耗','including waste'],['未计损耗','excluding waste'],['损耗','waste'],['RM/片','RM/piece'],['RM / 片','RM/piece'],['每片砖材价','Tile price per piece'],['统一规格价','standard size-and-finish rate'],['铺贴辅料／人工','Tiling consumables/labour'],['铺贴辅料与人工','Tiling consumables and labour'],['铺贴辅料／人工另按面积计','Tiling consumables/labour priced separately by area'],['辅料和人工按面积计费','consumables and labour charged by area'],['旧通用片价','legacy general per-piece rate'],['分表面片价','per-piece rate by finish'],['铺贴另计','installation priced separately'],['选此表面时须补价','a rate is required when this finish is selected'],['请输入非负的每片价格','Enter a non-negative price per piece'],['标准规格','Standard specification'],['面积单价按：','Area unit price: '],['报价单分两行','shown as separate quote lines'],['瓷砖材料按“尺寸＋表面”填写 RM/片；铺贴辅料与人工在上方项目行按面积填写，报价单分两行。旧通用片价及旧面积价仅供旧报价沿用。其他规格可分别填写材料、辅料、人工或直接填综合价。逐项点「确认此价格」会立即保存并用于报价；批量修改可点上方「保存」。','Enter tile material rates per piece by size and finish. Enter tiling consumables and labour by area in the project row above; they appear as separate lines in the quotation. Legacy general per-piece and area rates are retained for older quotes only. For other specifications, enter material, consumables and labour separately or enter an all-in rate. Confirming a row saves and applies it immediately; use Save above for batch changes.'],['铺贴辅料／人工按面积填在本行；砖材按下方“尺寸＋表面”每片单独填价。','Enter tiling consumables/labour by area in this row; enter tile material per piece by size and finish below.'],['铺贴辅料／人工按面积填在本行；砖材按下方“尺寸＋表面”每片单独填价','Enter tiling consumables/labour by area in this row; enter tile material per piece by size and finish below.'],['瓷砖材料按“尺寸＋表面”填写 RM/片','Enter tile material rates per piece by size and finish'],[' RM/片；',' RM/piece; '],['㎡（未计损耗）','m² (excluding waste)'],['瓷砖材料按','Tile material rates are entered by'],['片价未填：','Tile rate missing: '],['旧报价按面积材料价','Legacy quotes use an area-based material rate'],['请补录分表面片价','Enter the per-piece rate for each finish'],['请在价目表填写所选表面的 RM/片价格','Enter the RM/piece rate for the selected finish in the price book'],['净面积','Net area'],['按面积计费','charged by area']
+  ];
+  const tileExtra = [
+    ['铺贴辅料／人工按面积填在本行','Enter tiling consumables/labour by area in this row'],['砖材按下方','Enter tile material rates below by'],['每片单独填价','enter a separate rate per piece'],['报价单分两行。','The quotation shows these as separate lines.'],['铺贴辅料／人工按面积填在本行；砖材按下方“尺寸＋表面”每片单独填价','Enter tiling consumables/labour by area in this row; enter tile material rates below by size and finish.'],['片价未填：选此表面时须补价','Tile rate missing: a rate is required when this finish is selected']
+  ];
+  const allTerms = [...pairs, ...catalog, ...exportTerms, ...specTerms, ...specTermsExtra, ...descriptionTerms, ...optionTerms, ...nameTerms, ...tileTerms, ...tileExtra];
   const dict = new Map(allTerms);
   const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(allTerms.filter(([zh]) => zh.length >= 3).map(([zh]) => escapeRegExp(zh)).sort((a, b) => b.length - a.length).join('|'), 'g');
+  const patternTerms = [...allTerms.filter(([zh]) => zh.length >= 3), ...optionTerms.filter(([zh]) => zh.length >= 2), ...tileTerms.filter(([zh]) => zh.length >= 2)];
+  const pattern = new RegExp(patternTerms.map(([zh]) => escapeRegExp(zh)).sort((a, b) => b.length - a.length).join('|'), 'g');
   const originalText = new WeakMap(), originalAttr = new WeakMap();
   function translate(value) {
     if (!/[\u3400-\u9fff]/.test(value)) return value;
@@ -668,6 +675,20 @@ CCTV 监控摄像头（含布线+主机分摊）	CCTV camera (wiring and recorde
       .replace(pattern, match => dict.get(match)).replace(/「([^」]+)」/g, (_, label) => `“${dict.get(label) || label}”`).replace(/^\s*已选\s*(\d+) items/, (_, n) => `Selected ${n} items`).replace(/这间完成/g, 'Complete space').replace(/一起选/g, 'Select together').replace(/下一间/g, 'Next space').replace(/(\d+) spaces\b/g, (_, n) => `${n} ${n === '1' ? 'space' : 'spaces'}`)
       .replace(/^\s*长\s*(\d+)/, 'Length $1').replace(/^\s*宽\s*(\d+)/, 'Width $1').replace(/^\s*墙面\s*(\d+)/, 'Wall area $1').replace(/周长\s*(\d+)/g, 'Perimeter $1')
       .replace(/（/g, ' (').replace(/）/g, ')').replace(/，/g, ', ').replace(/。/g, '.').replace(/；/g, '; ').replace(/：/g, ': ').replace(/”(?=[A-Z])/g, '” ').replace(/([A-Za-z])\(/g, '$1 (');
+  }
+  function auditCatalog() {
+    const q = root.QV2;
+    if (!q) return [];
+    const source = [];
+    Object.values(q.PRICE || {}).forEach(item => source.push(item.name, item.desc));
+    (q.STAGES || []).forEach(item => source.push(item.name));
+    Object.values(q.PACKS || {}).forEach(item => source.push(item.label));
+    (q.HOUSE_ITEMS || []).forEach(item => source.push(item.label));
+    Object.values(q.SPEC_CATS || {}).forEach(cat => {
+      source.push(cat.label);
+      Object.values(cat.keys || {}).forEach(key => source.push(key.label, ...(key.opts || [])));
+    });
+    return [...new Set(source.filter(value => value && /[\u3400-\u9fff]/.test(translate(value))))];
   }
   function apply(roots, lang) {
     for (const rootNode of roots) {
@@ -688,5 +709,7 @@ CCTV 监控摄像头（含布线+主机分摊）	CCTV camera (wiring and recorde
       }
     }
   }
-  root.HOUZY_QUOTE_I18N = { apply, translate };
+  root.HOUZY_QUOTE_I18N = { apply, translate, auditCatalog };
+  const missing = auditCatalog();
+  if (missing.length && root.console?.warn) root.console.warn('[HOUZY Quote] Missing English translations:', missing);
 })(window);
