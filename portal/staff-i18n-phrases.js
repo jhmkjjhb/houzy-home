@@ -22,6 +22,7 @@
     '新建订单': ['新建訂單', 'New Order', 'Pesanan Baru', 'สร้างคำสั่งซื้อ'],
     '客户管理': ['客戶管理', 'Customers', 'Pelanggan', 'ลูกค้า'],
     '需求雷达': ['需求雷達', 'Lead Radar', 'Radar Prospek', 'เรดาร์ลูกค้า'],
+    '报价器': ['報價器', 'Quote Tool', 'Alat Sebut Harga', 'เครื่องมือเสนอราคา'],
     '经营': ['經營', 'Business', 'Perniagaan', 'ธุรกิจ'],
     '商品价目': ['商品價目', 'Price List', 'Senarai Harga', 'ราคาสินค้า'],
     '合作设计师': ['合作設計師', 'Partner Designers', 'Pereka Rakan', 'นักออกแบบพันธมิตร'],
