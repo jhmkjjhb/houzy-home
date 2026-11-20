@@ -38,8 +38,10 @@ const items=async(p=id)=>Object.fromEntries((await sys('SELECT * FROM renovation
 async function run(who,action,data,p=id){const r=await rev(p);await actor(who);return (await db.query('SELECT renovation_fulfillment_command($1,$2,$3,$4::jsonb) v',[p,r,action,JSON.stringify(data)])).rows[0].v;}
 
 
+await sys(`ALTER TABLE profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('customer','staff','store_manager','regional_manager','general_manager','superadmin','admin','supplier','logistics','warehouse'))`);
 for(const f of ['renovation_schedule','renovation_planning','renovation_site_supervision']){const sql=fs.readFileSync(`supabase/${f}_migration.sql`,'utf8');await db.exec('RESET ROLE');await db.exec(sql);if(f.includes('site'))await db.exec(sql);}checks++;
 const custom=await wo('全屋定制'),mud=await wo('泥水');
+ok(/'supervisor'/.test((await sys(`SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='profiles_role_check'`))[0].d)&&/'warehouse'/.test((await sys(`SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='profiles_role_check'`))[0].d),'accounts can now have the 监理 role; existing roles kept');
 const anonQ=async(sql,args)=>{await actor(staff,'anon');return (await db.query(sql,args)).rows[0]?.v;};
 const as=async(who,sql,args)=>{await actor(who);return (await db.query(sql,args)).rows[0]?.v;};
 await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('${supplierUser}','Sup',true,'supplier',null,null,null) ON CONFLICT (id) DO UPDATE SET role='supervisor',name='陈监理'`);

@@ -2,6 +2,19 @@
 -- 监理只能通过下面的函数看到自己负责的工地，看不到任何金额；员工按原有项目权限可以看全部记录。
 -- 依赖 renovation_fulfillment_migration.sql、renovation_schedule_migration.sql、renovation_planning_migration.sql。可重复运行。
 
+-- 员工账号新增「监理」角色（supervisor）：保留现有全部角色，只多加这一个
+DO $role$
+DECLARE c record;vals text[];
+BEGIN
+ FOR c IN SELECT conname,pg_get_constraintdef(oid) def FROM pg_constraint WHERE conrelid='public.profiles'::regclass AND contype='c' AND pg_get_constraintdef(oid) ~ '\mrole\M' LOOP
+  IF c.def ~ '''supervisor''' THEN CONTINUE; END IF;
+  SELECT array_agg(DISTINCT m[1]) INTO vals FROM regexp_matches(c.def,'''([a-z_]+)''','g') m;
+  IF vals IS NULL OR NOT 'staff'=ANY(vals) THEN RAISE EXCEPTION '账号角色限制的格式和预期不同，未修改：%',c.def; END IF;
+  EXECUTE format('ALTER TABLE public.profiles DROP CONSTRAINT %I',c.conname);
+  EXECUTE format('ALTER TABLE public.profiles ADD CONSTRAINT %I CHECK (role IN (%s))',c.conname,(SELECT string_agg(quote_literal(v),',') FROM unnest(vals||'supervisor'::text) v));
+ END LOOP;
+END $role$;
+
 CREATE TABLE IF NOT EXISTS public.renovation_site_supervisors (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  project_id uuid NOT NULL REFERENCES public.renovation_projects(id),

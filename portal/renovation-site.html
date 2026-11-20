@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><meta name="theme-color" content="#153927"><title>HOUZY HOME · 施工监理</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+:root{--green:#153927;--gold:#c8a96e;--purple:#633899;--ink:#1f2d26;--muted:#5b6a62;--line:#e3ddd0;--bg:#f4f1ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif}
+main{max-width:560px;margin:0 auto;padding:0 0 40px}
+#message{padding:24px 16px}#message.error,.site-msg.error{color:#b42318}
+.site-head{background:var(--green);color:#fff;padding:18px 16px 16px}.site-head h1{margin:2px 0;font-size:21px}.site-head p{margin:0;color:#d6e2da;font-size:13px}
+.site-eyebrow{color:var(--gold)!important;font-weight:700;letter-spacing:1px;font-size:12px!important}
+.site-back{background:none;border:0;color:var(--gold);font:inherit;font-size:13px;padding:0 0 6px;cursor:pointer}
+.site-card{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;margin:12px;padding:14px 14px 12px}
+.site-card h2{margin:0 0 10px;font-size:16px}
+button{font:inherit;cursor:pointer}
+.site-pick{width:calc(100% - 24px);text-align:left;color:inherit}.site-pick b{display:block;font-size:16px}.site-pick span{font-size:13px;color:var(--muted)}.site-pick em{color:#b42318;font-style:normal;font-weight:700}
+.site-task{display:block;width:100%;text-align:left;background:#fbf9fe;border:1px solid #e6dcf2;border-radius:10px;padding:11px 12px;margin:0 0 8px;color:inherit}
+.site-task b{display:block;color:var(--purple)}.site-task span{font-size:13px;color:var(--muted)}
+.site-task.bad{background:#fdf1f1;border-color:#f3c9c9}.site-task.bad b{color:#b42318}.site-task.ok{background:#eef7f1;border-color:#cfe6d7}.site-task.ok b{color:#15803d}
+.site-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.site-grid button,.site-row button{min-height:46px;border-radius:10px;border:1px solid #d0c8b8;background:#fff;color:var(--ink)}
+.site-grid button.on{border:2px solid var(--green);background:#e7f0ea;font-weight:700}
+.site-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.site-row>*{flex:1 1 120px}
+.site-wo{border-top:1px dashed var(--line);padding:8px 0}.site-wo:first-of-type{border-top:0}
+.site-wo summary{display:flex;justify-content:space-between;gap:8px;cursor:pointer;list-style:none}.site-wo summary span{font-size:13px;color:var(--muted);white-space:nowrap}
+.site-wo ul{list-style:none;margin:8px 0 0;padding:0}.site-wo li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:14px;border-bottom:1px solid #f1ede4}
+.site-wo li small{color:var(--muted)}.site-wo li em{font-style:normal;font-size:12px;white-space:nowrap;color:var(--muted)}
+.st-ordered{color:#9a6700!important}.st-arrived,.st-working{color:var(--purple)!important}.st-done{color:#15803d!important}
+.site-log{list-style:none;margin:0;padding:0}.site-log li{padding:7px 0;border-bottom:1px solid #f1ede4;font-size:14px}.site-log small{color:var(--muted)}
+.site-msg{margin:6px 12px;font-size:14px;color:var(--muted)}.site-msg:empty{display:none}
+.site-sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.site-sheet[hidden]{display:none}
+.site-sheet-box{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom))}
+.site-sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.site-sheet-head b{font-size:18px}.site-sheet-head button{width:44px;height:44px;border:0;background:none;font-size:20px}
+.site-sheet-box label{display:block;font-size:13px;color:var(--muted);margin:8px 0}
+.site-sheet-box input:not([type=checkbox]),.site-sheet-box select,.site-sheet-box textarea{display:block;width:100%;margin-top:4px;padding:10px;border:1px solid #d0c8b8;border-radius:8px;font:inherit;color:var(--ink);background:#fff}
+.site-sheet-box .check{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:15px;margin:6px 0}
+.site-sheet-box small{display:block;color:var(--muted);font-size:12px}
+.site-photos{margin:8px 0}.site-thumbs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.site-thumbs figure{position:relative;margin:0}.site-thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.site-thumbs button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff}
+.site-shot{position:relative;display:flex!important;align-items:center;justify-content:center;min-height:48px;border-radius:10px;background:var(--green);color:#fff!important;font-size:15px!important;margin:0!important}
+.site-shot.ghost{background:#fff;color:var(--ink)!important;border:1px solid #d0c8b8}
+.site-shot input{position:absolute;inset:0;opacity:0;width:100%!important;height:100%;margin:0!important}
+.site-primary{display:block;width:100%;min-height:50px;margin-top:12px;border:0;border-radius:12px;background:var(--purple);color:#fff;font-size:16px;font-weight:700}
+.site-primary:disabled{opacity:.5}
+.site-card label input[data-code]{display:block;width:100%;margin:6px 0 10px;padding:12px;font-size:22px;letter-spacing:6px;border:1px solid #d0c8b8;border-radius:10px}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script><script defer src="renovation/site.js?v=site-20261120"></script>
+</head><body>
+<main><p id="message" role="status">正在读取…</p><div id="site" hidden></div></main>
+</body></html>
