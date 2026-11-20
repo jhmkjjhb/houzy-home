@@ -51,24 +51,36 @@ window.RenoSchedule=(()=>{
   // 一句话说清现在的状况（最严重的那条用颜色），细节放在下面的「要处理」里
   const slack=state.handover&&lastEnd?diff(add(parse(lastEnd),1),parse(state.handover)):null;
   const matIssues=(P?.materials||[]).filter(m=>['late','soon'].includes(m.status));
-  const issues=[];
-  if(slack!=null&&slack<0)issues.push(`比交房日 ${md(state.handover)} 晚 ${-slack} 天：要提前开工、加派人手，或和业主改交房日`);
-  rows.forEach(r=>clash(r).forEach(b=>issues.push(`撞期 ${b.contract_no}：${short(r.w.group_name)}（${String(r.w.assignee).trim()}）${md(r.plan.start)}–${md(r.plan.end)}，那边 ${b.group_name} ${md(b.start)}–${md(b.end)}`)));
-  late.forEach(r=>issues.push(`超期：${short(r.w.group_name)} 计划 ${md(r.plan.end)} 完成，还有 ${r.p.total-r.p.done} 项没做完`));
-  matIssues.forEach(m=>issues.push(`${m.status==='late'?'已过':'快到'}最晚下单日：${m.name} 最晚 ${md(m.orderBy)} 下单${m.signNeeded?'（业主还没签名）':''}`));
+  const issues=[],tags=[];const push=(tag,x)=>{issues.push(x);tags.push(tag);};
+  if(slack!=null&&slack<0)push('晚于交房',`比交房日 ${md(state.handover)} 晚 ${-slack} 天：要提前开工、加派人手，或和业主改交房日`);
+  rows.forEach(r=>clash(r).forEach(b=>push('撞期',`撞期 ${b.contract_no}：${short(r.w.group_name)}（${String(r.w.assignee).trim()}）${md(r.plan.start)}–${md(r.plan.end)}，那边 ${b.group_name} ${md(b.start)}–${md(b.end)}`)));
+  late.forEach(r=>push('超期',`超期：${short(r.w.group_name)} 计划 ${md(r.plan.end)} 完成，还有 ${r.p.total-r.p.done} 项没做完`));
+  matIssues.forEach(m=>push('要下单',`${m.status==='late'?'已过':'快到'}最晚下单日：${m.name} 最晚 ${md(m.orderBy)} 下单${m.signNeeded?'（业主还没签名）':''}`));
   const headline=!lastEnd?'还没有排期':slack!=null?(slack<0?`<b class="bad">⚠ 计划 ${E(md(lastEnd))} 完工，比交房日晚 ${-slack} 天</b>`:`<b class="ok">计划 ${E(md(lastEnd))} 完工，交房前余 ${slack} 天</b>${slack>0&&parse(state.startOn)>=t?`，最晚 ${E(md(iso(add(parse(state.startOn),slack))))} 开工还来得及`:''}`):`<b>计划 ${E(md(lastEnd))} 完工</b>（填交房日可以算余量）`;
   state.summary={lastEnd,slack,issues:issues.length};
   const sumEl=document.getElementById('plan-summary');
   if(sumEl)sumEl.innerHTML=lastEnd?`计划 ${E(md(lastEnd))} 完工${slack!=null?(slack<0?` · <b class="bad">晚 ${-slack} 天</b>`:` · 余 ${slack} 天`):''}${issues.length?` · <b class="bad">⚠ ${issues.length} 件要处理</b>`:''}`:'还没排期';
-  let html=`<div class="sch"><div class="sch-head"><div class="sch-sum"><span class="sch-headline">${headline}</span><span class="muted">已完成 ${doneCount}/${rows.length} 张</span>${state.dirty.size||state.handoverDirty?`<span class="fx-chip now">有改动还没保存</span>`:''}</div>`;
+  // 最上面三个数字：计划完工（比交房早或晚）、交房日、进度
+  const toHand=state.handover?diff(t,parse(state.handover)):null;
+  let html=`<div class="sch"><div class="sch-kpis">
+   <div class="sch-kpi ${slack==null?'':slack<0?'bad':'ok'}"><small>计划完工</small><b>${lastEnd?E(md(lastEnd)):'未排期'}</b><span class="sch-headline">${slack==null?'':slack<0?`<b class="bad">⚠ 比交房日 ${E(md(state.handover))} 晚 ${-slack} 天</b>`:`<b class="ok">交房前余 ${slack} 天</b>`}</span></div>
+   <div class="sch-kpi"><small>交房日</small><b>${state.handover?E(md(state.handover)):'未定'}</b><span>${toHand==null?'在右边填交房日':toHand>=0?`还有 ${toHand} 天`:`已过 ${-toHand} 天`}</span></div>
+   <div class="sch-kpi"><small>进度</small><b>${doneCount} / ${rows.length}</b><span>张子单已完成</span></div>
+  </div><div class="sch-head">${state.dirty.size||state.handoverDirty?`<span class="fx-chip now">有改动还没保存</span>`:'<span></span>'}`;
   if(!ctx.locked)html+=`<div class="sch-tools"><label>开工日<input type="date" data-sch-start value="${E(state.startOn)}"></label><label>交房日<input type="date" data-sch-handover value="${E(state.handover)}"></label><button type="button" class="secondary" data-sch-auto>${planned.length?'按工程量重新排':'按工程量自动排期'}</button><button type="button" data-sch-save ${state.dirty.size||state.handoverDirty?'':'disabled'}>保存计划</button></div>`;
   html+='</div>';
-  if(issues.length)html+=`<div class="sch-issues"><b>要处理（${issues.length}）</b><ul>${issues.map(x=>`<li>${E(x)}</li>`).join('')}</ul></div>`;
+  // 要处理：最重要的 3 条先显示，其余收起
+  const it=(x,i)=>`<li><span class="sch-tag">${E(tags[i])}</span>${E(x)}</li>`;
+  if(issues.length)html+=`<div class="sch-issues"><b>要处理（${issues.length}）</b><ul>${issues.slice(0,3).map(it).join('')}</ul>${issues.length>3?`<details><summary>还有 ${issues.length-3} 条</summary><ul>${issues.slice(3).map((x,i)=>it(x,i+3)).join('')}</ul></details>`:''}</div>`;
   if(!planned.length){html+=`<p class="muted sch-empty">还没有排期。填开工日（和交房日），点「按工程量自动排期」：系统按合同工程量算每道工序要几天，按 拆除 → 水电 → 泥水 → 天花木作 → 油漆 → 定制柜 → 台面门窗玻璃 → 洁具灯具 → 清洁 排好；定制和门窗会等生产 / 复尺。排好后可以拖动调整。</p>${extras(P,ctx,rows)}</div>`;el.innerHTML=html;afterRender(el,ctx);return;}
   const ms=(P?.milestones||[]).filter(m=>m.on);
+  // 赠品、设计这类不用排期的，不占甘特图的行，写在图下面一行
+  const skip=rows.filter(r=>!r.info&&!r.plan),chart=rows.filter(r=>r.info||r.plan);
   const from=add([...planned.map(r=>parse(r.plan.start)),t,...ms.map(m=>parse(m.on))].reduce((a,b)=>a<b?a:b),-2);
   const to=add([...planned.map(r=>parse(r.plan.end)),t,...(state.handover?[parse(state.handover)]:[]),...ms.map(m=>parse(m.on))].reduce((a,b)=>a>b?a:b),5);
-  const days=diff(from,to)+1,dw=Math.max(14,Math.min(30,Math.floor(760/days)));
+  const days=diff(from,to)+1,phone=innerWidth<=600,avail=(el.clientWidth||900)-(phone?108:160)-12;
+  // 电脑上整个工期一屏放下（不用左右拖）；手机上每天至少 14px，可以左右滑
+  const dw=phone?Math.max(14,Math.min(30,Math.floor(760/days))):Math.max(9,Math.min(30,Math.floor(avail/days)));
   const monthAt=new Set();for(let i=0;i<days;i++){const d=add(from,i);if(d.getUTCDate()===1||i===0)monthAt.add(i);}
   const nearMonth=i=>[...monthAt].some(m=>m!==i&&Math.abs(m-i)*dw<34);
   let ticks='';for(let i=0;i<days;i++){const d=add(from,i);const first=monthAt.has(i);if((d.getUTCDay()===1&&!nearMonth(i))||first)ticks+=`<span class="sch-tick${first?' m':''}" style="left:${i*dw}px">${first?`${d.getUTCMonth()+1}月`:''}${d.getUTCDate()}</span>`;}
@@ -79,7 +91,7 @@ window.RenoSchedule=(()=>{
    const cls=r.p.finished?'done':(e<t?'late':r.p.started?'active':'wait');
    const pct=r.p.total?Math.round(100*r.p.done/r.p.total):0;
    const tip=`${short(r.w.group_name)}：${r.plan.start} → ${r.plan.end}`+(r.info?`（${r.info.days} 个工作日，${r.info.trade}${r.info.why?`；${r.info.why}`:''}）`:'');
-   return `<div class="sch-bar ${cls}${state.dirty.has(r.w.id)?' dirty':''}${r.info?.critical&&!r.p.finished?' crit':''}" data-sch-bar="${r.w.id}" style="left:${left}px;width:${width}px" title="${E(tip)}"><i style="width:${pct}%"></i><span>${E(md(r.plan.start))}–${E(md(r.plan.end))}</span>${ctx.locked?'':'<b data-sch-end aria-hidden="true"></b>'}</div>`;
+   return `<div class="sch-bar ${cls}${width<70?' tight':''}${state.dirty.has(r.w.id)?' dirty':''}${r.info?.critical&&!r.p.finished?' crit':''}" data-sch-bar="${r.w.id}" style="left:${left}px;width:${width}px" title="${E(tip)}"><i style="width:${pct}%"></i><span>${E(md(r.plan.start))}–${E(md(r.plan.end))}</span>${ctx.locked?'':'<b data-sch-end aria-hidden="true"></b>'}</div>`;
   };
   const sub=r=>{const who=String(r.w.assignee||'').trim();
    if(!r.info&&!r.plan)return '<small class="muted">不用排期</small>';
@@ -89,9 +101,9 @@ window.RenoSchedule=(()=>{
   const msRow=ms.length?`<div class="sch-row sch-ms"><div class="sch-label"><span>验收节点</span><small>$ = 可收款</small></div><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${ms.map((m,k)=>`<span class="sch-dia${m.pay?' pay':''}${k%2?' low':''}" style="left:${diff(from,parse(m.on))*dw+dw/2}px" title="${E(m.on+' '+m.name+(m.pay?`；收款：${m.pay.name} ${money(m.pay.amount)}`:''))}">◆<em>${E(m.short||'')}${m.pay?' $':''}</em></span>`).join('')}</div></div>`:'';
   const hx=state.handover?`<div class="sch-hand" style="left:calc(var(--label) + ${diff(from,parse(state.handover))*dw+dw/2}px)" title="交房日 ${E(state.handover)}"><span>交房</span></div>`:'';
   html+=`<div class="sch-scroll"><div class="sch-grid" style="--w:${days*dw}px"><div class="sch-row sch-axis"><div class="sch-label"></div><div class="sch-lane">${ticks}</div></div>
-   ${rows.map(r=>`<div class="sch-row"><button type="button" class="sch-label" data-sch-name="${r.w.id}" ${ctx.locked?'disabled':''}><span>${E(short(r.w.group_name))}${dot(r)}</span>${sub(r)}</button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${bar(r)}</div></div>${editor(r)}`).join('')}${msRow}
-   <div class="sch-today" style="left:calc(var(--label) + ${diff(from,t)*dw+dw/2}px)" title="今天"></div>${hx}</div></div>
-   <p class="muted sch-hint">${ctx.locked?'':'拖动横条整体改日期，拖右端改完成日；手机上点子单名称改日期。'}<span class="sch-key wait"></span>未开始 <span class="sch-key active"></span>进行中 <span class="sch-key done"></span>已完成 <span class="sch-key late"></span>超期 <span class="sch-key crit"></span>卡完工的工序（它晚一天，交房就晚一天）</p>${extras(P,ctx,rows)}</div>`;
+   ${chart.map(r=>`<div class="sch-row"><button type="button" class="sch-label" data-sch-name="${r.w.id}" ${ctx.locked?'disabled':''}><span>${E(short(r.w.group_name))}${dot(r)}</span>${sub(r)}</button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${bar(r)}</div></div>${editor(r)}`).join('')}${msRow}
+   <div class="sch-today" style="left:calc(var(--label) + ${diff(from,t)*dw+dw/2}px)" title="今天"><span>今天</span></div>${hx}</div></div>
+   ${skip.length?`<p class="muted sch-skip">不用排期：${skip.map(r=>E(short(r.w.group_name))).join('、')}</p>`:''}<p class="muted sch-hint">${ctx.locked?'':'拖动横条整体改日期，拖右端改完成日；手机上点子单名称改日期。'}<span class="sch-key wait"></span>未开始 <span class="sch-key active"></span>进行中 <span class="sch-key done"></span>已完成 <span class="sch-key late"></span>超期 <span class="sch-key crit"></span>卡完工的工序（它晚一天，交房就晚一天）</p>${extras(P,ctx,rows)}</div>`;
   const keep=el.querySelector('.sch-scroll')?.scrollLeft;
   el.innerHTML=html;el.dataset.dw=dw;
   // 打开时自动滚到「今天」附近；重新画图时保持原来的位置

@@ -296,3 +296,18 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .fx-plan-link:empty{display:none}.fx-plan-link::before{content:"施工计划：";font-weight:700;color:#153927}.fx-plan-link::after{content:" ›";color:#633899}
 .fx-plan-link .bad{color:#b42318}
 #site-badge{font-size:14px;font-weight:500;color:#9a6700}
+/* 施工计划看板：三个大数字 + 一行工具 + 要处理（前 3 条）+ 一屏甘特图 + 上下排列的三栏 */
+.sch-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.sch-kpi{border:1px solid #e3e7e4;border-radius:12px;padding:10px 14px;background:#fff;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sch-kpi small{color:#68766e;font-size:12.5px}.sch-kpi>b{font-size:24px;line-height:1.2;color:#153927}.sch-kpi>span{font-size:13px;color:#5b6a62}
+.sch-kpi.bad{border-color:#f1c5c0;background:#fdf6f5}.sch-kpi.bad>b{color:#b42318}.sch-kpi.ok>b{color:#157a3c}
+.sch-kpi .sch-headline{font-size:13px}
+.sch-tag{display:inline-block;margin-right:6px;padding:0 7px;border-radius:999px;background:#fff;border:1px solid #f1c5c0;color:#b42318;font-size:12px;font-weight:600}
+.sch-issues ul{list-style:none;padding-left:0}.sch-issues details summary{cursor:pointer;color:#b42318;font-size:13px;margin-top:4px}
+.sch-bar.tight span{display:none}
+.sch-today span{position:absolute;top:-2px;left:4px;font-size:11px;color:#b42318;font-weight:700;white-space:nowrap;background:#fff;padding:0 2px}
+.sch-skip{margin:6px 0 0;font-size:12.5px}
+.sch-extras{grid-template-columns:1fr}
+@media(min-width:760px){.sch-extras>.sch-box:first-child{grid-column:auto}}
+.sch-box>summary{display:flex;align-items:center;gap:8px}
+@media(max-width:600px){.sch-kpis{grid-template-columns:1fr 1fr}.sch-kpi:first-child{grid-column:1/-1}.sch-kpi>b{font-size:20px}}

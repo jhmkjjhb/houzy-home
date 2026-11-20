@@ -124,7 +124,7 @@ try{
  // 7) 门店：整装订单里的「施工监理」标签——指定监理、看记录和照片、店长确认延误、看到可收款提示
  await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('20000000-0000-4000-8000-000000000010','林监理',true,'supervisor',null,null,'014')`);
  const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('details.work').first().waitFor();
- assert.deepEqual(await mp.locator('.steps a').allInnerTexts(),['客户资料','合同清单','合同金额','增减项','收款进度','施工计划','履约子单','施工监理','验收质保'],'plan and supervision are their own sections, in working order');
+ assert.deepEqual(await mp.locator('.steps a').allInnerTexts(),['客户资料','合同清单','合同金额','增减项','收款进度','履约子单','验收质保','施工计划','施工监理'],'plan and supervision are their own sections, in working order');
  await mp.locator('.steps a[href="#project-site"]').click();const ss=mp.locator('#site-staff');await ss.getByText('施工监理').first().waitFor();
  const cand=ss.locator('.site-staff-cand',{hasText:'林监理'});await cand.waitFor();
  assert((await cand.innerText()).includes('正在管 0 个工地')&&(await ss.locator('.site-staff-cand',{hasText:'陈监理'}).innerText()).includes('已是本工地监理'),'company supervisors listed with their workload; the current one is marked');
