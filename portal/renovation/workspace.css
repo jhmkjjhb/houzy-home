@@ -311,3 +311,14 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 @media(min-width:760px){.sch-extras>.sch-box:first-child{grid-column:auto}}
 .sch-box>summary{display:flex;align-items:center;gap:8px}
 @media(max-width:600px){.sch-kpis{grid-template-columns:1fr 1fr}.sch-kpi:first-child{grid-column:1/-1}.sch-kpi>b{font-size:20px}}
+/* 施工计划：全局 / 近 4 周 */
+.sch-views{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 6px}
+.sch-views button{min-height:34px;padding:0 14px;border-radius:999px;border:1px solid #d6ddcf;background:#fff;color:#22362e;font-size:13px;cursor:pointer}
+.sch-views button[aria-pressed="true"]{background:#153927;border-color:#153927;color:#fff;font-weight:600}
+.sch-views .muted{font-size:12.5px;margin-left:4px}
+.sch-fit{overflow-x:hidden}
+.sch-compact .sch-row:not(.sch-axis){min-height:32px}
+.sch-compact .sch-label small{display:none}
+.sch-compact .sch-bar{height:14px}
+.sch-compact .sch-bar span{display:none}
+.sch-tiny .sch-sun{display:none}

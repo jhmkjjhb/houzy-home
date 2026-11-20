@@ -129,6 +129,11 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  assert((await sch.innerText()).includes('撞期 JALAN-9'),'crew clash with the other site shown');
  assert.equal(await page.locator('input[id^="assignee-"]').first().getAttribute('list'),'crew-list','worker field suggests names from the list');
  await page.locator('#schedule').screenshot({path:out+'/staff-plan.png'});
+ // 全局：整个工期一屏放下，不用左右滑；近 4 周：放大、可以左右滑；记住上次的选择
+ {const fit=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth<=s.clientWidth+1;});assert(fit,'全局 shows the whole schedule without sideways scrolling');
+  await page.locator('[data-sch-view="near"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'近 4 周 zooms in and scrolls');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'near','choice remembered');
+  await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});}
  // 5) 业主看到简版：有名称和日期，没有厂家、价格、执行人
  const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
  const cu=await open(null,`/portal/renovation-customer.html#${token}`,{width:390,height:844});

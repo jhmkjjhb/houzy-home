@@ -78,11 +78,12 @@ window.RenoSchedule=(()=>{
   const skip=rows.filter(r=>!r.info&&!r.plan),chart=rows.filter(r=>r.info||r.plan);
   const from=add([...planned.map(r=>parse(r.plan.start)),t,...ms.map(m=>parse(m.on))].reduce((a,b)=>a<b?a:b),-2);
   const to=add([...planned.map(r=>parse(r.plan.end)),t,...(state.handover?[parse(state.handover)]:[]),...ms.map(m=>parse(m.on))].reduce((a,b)=>a>b?a:b),5);
-  const days=diff(from,to)+1,phone=innerWidth<=600,avail=(el.clientWidth||900)-(phone?108:160)-12;
-  // 电脑上整个工期一屏放下（不用左右拖）；手机上每天至少 14px，可以左右滑
-  const dw=phone?Math.max(14,Math.min(30,Math.floor(760/days))):Math.max(9,Math.min(30,Math.floor(avail/days)));
+  const days=diff(from,to)+1,phone=innerWidth<=600,avail=(el.clientWidth||900)-(phone?108:160)-36;
+  // 「全局」：整个工期压进一屏（手机也一样，不用左右滑）；「近 4 周」：放大看今天前后，可以拖动改期
+  let view='all';try{view=localStorage.getItem('reno-plan-view')||'all';}catch(e){}
+  const dw=view==='all'?Math.min(30,Math.max(0.5,(avail-4)/days)):Math.max(phone?16:20,Math.min(34,Math.floor(avail/28)));
   const monthAt=new Set();for(let i=0;i<days;i++){const d=add(from,i);if(d.getUTCDate()===1||i===0)monthAt.add(i);}
-  const nearMonth=i=>[...monthAt].some(m=>m!==i&&Math.abs(m-i)*dw<34);
+  const nearMonth=i=>dw*7<30||[...monthAt].some(m=>m!==i&&Math.abs(m-i)*dw<34);
   let ticks='';for(let i=0;i<days;i++){const d=add(from,i);const first=monthAt.has(i);if((d.getUTCDay()===1&&!nearMonth(i))||first)ticks+=`<span class="sch-tick${first?' m':''}" style="left:${i*dw}px">${first?`${d.getUTCMonth()+1}月`:''}${d.getUTCDate()}</span>`;}
   const sundays=[];for(let i=0;i<days;i++)if(add(from,i).getUTCDay()===0)sundays.push(`<i style="left:${i*dw}px;width:${dw}px"></i>`);
   const bar=r=>{
@@ -100,7 +101,7 @@ window.RenoSchedule=(()=>{
   const editor=r=>state.editing===r.w.id&&!ctx.locked?`<div class="sch-edit"><label>开始<input type="date" data-sch-es value="${E(r.plan?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(r.plan?.end||'')}"></label><button type="button" data-sch-ok="${r.w.id}">确定</button><button type="button" class="secondary" data-sch-cancel>取消</button></div>`:'';
   const msRow=ms.length?`<div class="sch-row sch-ms"><div class="sch-label"><span>验收节点</span><small>$ = 可收款</small></div><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${ms.map((m,k)=>`<span class="sch-dia${m.pay?' pay':''}${k%2?' low':''}" style="left:${diff(from,parse(m.on))*dw+dw/2}px" title="${E(m.on+' '+m.name+(m.pay?`；收款：${m.pay.name} ${money(m.pay.amount)}`:''))}">◆<em>${E(m.short||'')}${m.pay?' $':''}</em></span>`).join('')}</div></div>`:'';
   const hx=state.handover?`<div class="sch-hand" style="left:calc(var(--label) + ${diff(from,parse(state.handover))*dw+dw/2}px)" title="交房日 ${E(state.handover)}"><span>交房</span></div>`:'';
-  html+=`<div class="sch-scroll"><div class="sch-grid" style="--w:${days*dw}px"><div class="sch-row sch-axis"><div class="sch-label"></div><div class="sch-lane">${ticks}</div></div>
+  html+=`<div class="sch-views" role="group" aria-label="看板范围"><button type="button" data-sch-view="all" aria-pressed="${view==='all'}">全局</button><button type="button" data-sch-view="near" aria-pressed="${view!=='all'}">近 4 周</button><span class="muted">${E(md(iso(from)))} – ${E(md(iso(to)))} · 共 ${days} 天</span></div><div class="sch-scroll${view==='all'?' sch-fit':''}"><div class="sch-grid${view==='all'?' sch-compact':''}${dw<6?' sch-tiny':''}" style="--w:${days*dw}px"><div class="sch-row sch-axis"><div class="sch-label"></div><div class="sch-lane">${ticks}</div></div>
    ${chart.map(r=>`<div class="sch-row"><button type="button" class="sch-label" data-sch-name="${r.w.id}" ${ctx.locked?'disabled':''}><span>${E(short(r.w.group_name))}${dot(r)}</span>${sub(r)}</button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${bar(r)}</div></div>${editor(r)}`).join('')}${msRow}
    <div class="sch-today" style="left:calc(var(--label) + ${diff(from,t)*dw+dw/2}px)" title="今天"><span>今天</span></div>${hx}</div></div>
    ${skip.length?`<p class="muted sch-skip">不用排期：${skip.map(r=>E(short(r.w.group_name))).join('、')}</p>`:''}<p class="muted sch-hint">${ctx.locked?'':'拖动横条整体改日期，拖右端改完成日；手机上点子单名称改日期。'}<span class="sch-key wait"></span>未开始 <span class="sch-key active"></span>进行中 <span class="sch-key done"></span>已完成 <span class="sch-key late"></span>超期 <span class="sch-key crit"></span>卡完工的工序（它晚一天，交房就晚一天）</p>${extras(P,ctx,rows)}</div>`;
@@ -145,6 +146,7 @@ window.RenoSchedule=(()=>{
   el.addEventListener('click',async e=>{
    const b=e.target.closest('button');if(!b||!el.contains(b))return;const d=b.dataset;
    try{
+    if('schView' in d){try{localStorage.setItem('reno-plan-view',d.schView);}catch(err){}state.scrolled=false;rerender();return;}
     if('schAuto' in d){
      const data=ctx.data(),inp=planInput(data);
      inp.work=inp.work.map(w=>progress(w,data.tracking).finished?w:{...w,planned_start:null,planned_end:null});
