@@ -299,7 +299,7 @@ window.RenoFulfillment=(()=>{
     e.preventDefault();e.stopPropagation();const card=go.closest('details.work');
     if(go.dataset.fxcopy){const [cid,tok]=go.dataset.fxcopy.split(':');const url=new URL('renovation-custom-sign.html',location.href);url.searchParams.set('confirmation',cid);url.searchParams.set('sign',tok);
      try{await navigator.clipboard.writeText(url.href);ctx.message('业主签名链接已复制，发给业主即可。业主要输入登记手机号后四位才能查看。');}catch(err){ctx.message('浏览器不让自动复制，请打开子单后点「复制签名链接」。',true);}return;}
-    card.open=true;const now=card.querySelector('.fx-st.now')||card.querySelector('.fulfillment');
+    card.open=true;window.RenoWorkView?.fill?.(card);const now=card.querySelector('.fx-st.now')||card.querySelector('.fulfillment');
     if(now){now.scrollIntoView({block:'center',behavior:'smooth'});now.classList.remove('fx-flash');void now.offsetWidth;now.classList.add('fx-flash');const f=now.querySelector('input:not([type=checkbox]):not([disabled]),button:not([disabled])');if(f)f.focus({preventScroll:true});}
     return;
    }

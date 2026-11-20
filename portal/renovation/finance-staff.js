@@ -5,7 +5,8 @@ window.RenoFinance=(()=>{
   const current=++version,el=document.getElementById('actual-payments');
   if(!project||project.state==='draft'){el.innerHTML='<p>确认合同后可登记实际收款，付款计划不会自动算作已收款。</p>';return;}
   el.innerHTML='<p>正在读取收款记录…</p>';
-  const {data,error}=await sb.rpc('renovation_payment_view',{p_id:project.id});
+  const pre=window.__renoPrefetch;const usePre=pre&&pre.id===project.id&&pre.pay;if(usePre)pre.pay=null;
+  const {data,error}=await (usePre||sb.rpc('renovation_payment_view',{p_id:project.id}));
   if(current!==version)return;
   if(error||!data){el.textContent='收款记录暂时无法读取，请刷新或联系管理员。';return;}
   const V=RenoFinanceView,E=V.esc,manager=['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor.role);

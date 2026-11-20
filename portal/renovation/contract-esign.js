@@ -16,7 +16,8 @@ window.RenoContractEsign=(()=>{
   const el=document.getElementById('contract-esign');if(!el)return;
   const id=++loadId;record=null;strokes=[];canvas=null;
   if(!project){el.innerHTML='';return;}
-  const {data,error}=await sb.rpc('renovation_contract_esign_view',{p_id:project.id});
+  const pre=window.__renoPrefetch;const usePre=pre&&pre.id===project.id&&pre.esign;if(usePre)pre.esign=null;
+  const {data,error}=await (usePre||sb.rpc('renovation_contract_esign_view',{p_id:project.id}));
   if(id!==loadId)return;
   if(error){el.innerHTML='<p class="warning">电子签署状态暂时无法读取，请刷新重试。</p>';return;}
   record=data;
