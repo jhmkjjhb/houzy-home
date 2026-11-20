@@ -33,8 +33,8 @@ window.RenoSiteStaff=(()=>{
     ${active.length?`<ul class="site-staff-list">${active.map(s=>`<li><b>${E(s.name)}</b> · ${s.kind==='internal'?'内部账号':'外部监理'}${s.phone?' · '+E(s.phone):''} · ${E(s.started_on)} 起
      ${s.kind==='external'&&!locked?`<div class="actions"><span>验证码 <b class="mono" style="letter-spacing:2px">${E(s.access_code)}</b></span><button type="button" class="secondary" data-sact="copy" data-link="${E(link(s))}">复制链接</button><button type="button" class="secondary" data-sact="copycode" data-code="${E(s.access_code)}">复制验证码</button></div>`:''}
      ${locked?'':`<details><summary>结束这位监理</summary><button type="button" class="secondary" data-sact="end" data-id="${s.id}">结束（链接 / 账号不再能看这个工地）</button></details>`}</li>`).join('')}</ul>`:'<p class="muted">还没有指定监理。</p>'}
-    ${locked?'':`<div class="fx-form"><div class="fx-fields"><label>内部监理（账号角色是「施工监理」）<select data-sf="profile_id"><option value="">正在读取…</option></select></label></div><div class="fx-actions"><button type="button" data-sact="add_internal">指定内部监理</button></div></div>
-    <div class="fx-form"><div class="fx-fields"><label>外部监理名字<input data-sf="name" maxlength="80"></label><label>电话<input data-sf="phone" maxlength="40" type="tel"></label></div><div class="fx-actions"><button type="button" class="secondary" data-sact="add_external">生成外部监理链接</button></div></div>`}
+    ${locked?'':`<div class="site-staff-pick"><b>公司的施工监理</b><div data-candidates class="site-staff-cands"><span class="muted">正在读取…</span></div></div>
+    <details class="site-staff-ext"${active.length?'':' open'}><summary>或者用外部监理（不用开账号，发链接 + 验证码）</summary><div class="fx-form"><div class="fx-fields"><label>外部监理名字<input data-sf="name" maxlength="80"></label><label>电话<input data-sf="phone" maxlength="40" type="tel"></label></div><div class="fx-actions"><button type="button" class="secondary" data-sact="add_external">生成外部监理链接</button></div></div></details>`}
     <p class="muted" data-sfeedback role="status"></p>
    </div>
    ${waiting.length?`<div class="work-terms"><b>等${manager?'你':'店长'}确认（${waiting.length}）</b><ul class="site-staff-log">${waiting.map(e=>`${line(e)}${manager?`<div class="fx-form" data-sid="${e.id}"><div class="fx-fields"><label>说明（驳回必填）<input data-sf="review_note"></label></div><div class="fx-actions"><button type="button" data-sact="confirm" data-id="${e.id}">属实，确认</button><button type="button" class="secondary" data-sact="reject" data-id="${e.id}">驳回</button></div></div>`:''}`).join('')}</ul><p class="muted">只有确认为「施工方」原因的延误才扣监理工期分；确认的停工期间不算延误、不用交日志。</p></div>`:''}
@@ -42,12 +42,13 @@ window.RenoSiteStaff=(()=>{
    <div class="work-terms"><b>工地记录</b>${data.entries.length?`<ul class="site-staff-log">${data.entries.filter(e=>!(['delay','pause'].includes(e.kind)&&e.status==='open')).slice(0,40).map(e=>`${line(e)}${manager&&e.kind==='inspection'&&e.data?.pass&&e.status!=='rejected'?`<details><summary>抽查：这个验收不算通过</summary><div class="fx-form" data-sid="${e.id}"><div class="fx-fields"><label>原因<input data-sf="review_note"></label></div><div class="fx-actions"><button type="button" class="secondary" data-sact="reject" data-id="${e.id}">抽查不通过</button></div></div></details>`:''}`).join('')}</ul>`:'<p class="muted">监理还没有交记录。</p>'}</div>`;
   if(!locked)candidates(el);
  }
+ // 打开标签就列出公司所有施工监理：名字、电话、正在管几个工地，点「指定」即可
  async function candidates(el){
-  const sel=el.querySelector('[data-sf="profile_id"]');if(!sel)return;
+  const box=el.querySelector('[data-candidates]');if(!box)return;
   const {data:list,error}=await ctx.sb.rpc('renovation_supervisor_candidates');
   const taken=new Set(data.sups.filter(s=>s.active&&s.profile_id).map(s=>s.profile_id));
-  const ok=(list||[]).filter(p=>!taken.has(p.id));
-  sel.innerHTML=error?'<option value="">读取失败</option>':ok.length?ok.map(p=>`<option value="${E(p.id)}">${E(p.name)}${p.phone?' · '+E(p.phone):''}</option>`).join(''):'<option value="">还没有「施工监理」账号，请在员工后台「用户管理」里建</option>';
+  if(error){box.innerHTML='<span class="muted">读取失败，请刷新重试。</span>';return;}
+  box.innerHTML=(list||[]).length?list.map(p=>`<div class="site-staff-cand"><span><b>${E(p.name)}</b>${p.phone?' · '+E(p.phone):''}<br><small>正在管 ${E(p.sites??0)} 个工地</small></span>${taken.has(p.id)?'<em>已是本工地监理</em>':`<button type="button" data-sact="add_internal" data-pid="${E(p.id)}">指定</button>`}</div>`).join(''):'<span class="muted">公司还没有「施工监理」账号。请在员工后台「用户管理」里，把监理的账号角色设为「施工监理」。</span>';
  }
  function bind(el){
   el.addEventListener('click',async e=>{
@@ -60,8 +61,7 @@ window.RenoSiteStaff=(()=>{
     if(act==='copycode'){await navigator.clipboard.writeText(b.dataset.code);tell(`验证码 ${b.dataset.code} 已复制。`);return;}
     b.disabled=true;
     if(act==='add_internal'||act==='add_external'){
-     const payload=act==='add_internal'?{profile_id:v('profile_id')}:{name:v('name'),phone:v('phone')};
-     if(act==='add_internal'&&!payload.profile_id)throw new Error('请先选一个「施工监理」账号');
+     const payload=act==='add_internal'?{profile_id:b.dataset.pid}:{name:v('name'),phone:v('phone')};
      const {data:r,error}=await ctx.sb.rpc('renovation_supervisor_save',{p_project:ctx.project.id,p_data:payload});if(error)throw error;
      await load(ctx);const msg=r.kind==='external'?`外部监理链接已生成，验证码 ${r.code}。点「复制链接」发给对方，验证码另外发。`:'已指定。监理用自己的账号登录就能看到这个工地。';
      const f=document.querySelector('#site-staff [data-sfeedback]');if(f)f.textContent=msg;return;

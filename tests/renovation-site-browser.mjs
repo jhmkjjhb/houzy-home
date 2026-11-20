@@ -125,13 +125,14 @@ try{
  await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('20000000-0000-4000-8000-000000000010','林监理',true,'supervisor',null,null,'014')`);
  const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('details.work').first().waitFor();
  await mp.locator('.fx-tabs [data-fxtab="site"]').click();const ss=mp.locator('#site-staff');await ss.getByText('施工监理').first().waitFor();
- await mp.waitForFunction(()=>document.querySelector('#site-staff [data-sf="profile_id"]')?.options[0]?.textContent.includes('林监理'));
+ const cand=ss.locator('.site-staff-cand',{hasText:'林监理'});await cand.waitFor();
+ assert((await cand.innerText()).includes('正在管 0 个工地')&&(await ss.locator('.site-staff-cand',{hasText:'陈监理'}).innerText()).includes('已是本工地监理'),'company supervisors listed with their workload; the current one is marked');
  const tx=await ss.innerText();
  assert(tx.includes('陈监理')&&tx.includes('Ahmad')&&tx.includes(ext.code),'both supervisors listed, outside one with the code');
  assert(tx.includes('监理已验收：防水闭水验收'),'passed inspection reminds the store it can collect the next payment');
  assert((await mp.locator('#site-badge').innerText()).includes('待确认 1'),'tab shows how many need confirming');
  assert(await ss.locator('.site-staff-photos img').count()>0,'site photos are visible to the store');
- await ss.locator('[data-sact="add_internal"]').click();await ss.getByText('已指定').waitFor();
+ await cand.locator('[data-sact="add_internal"]').click();await ss.getByText('已指定').waitFor();
  assert((await ss.innerText()).includes('林监理'),'store assigns an internal supervisor');
  const rf=ss.locator('.fx-form',{has:mp.locator('[data-sact="reject"]')}).first();await rf.locator('[data-sact="reject"]').click();
  assert((await rf.innerText()).includes('驳回原因'),'reject needs a reason');
