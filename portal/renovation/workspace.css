@@ -339,3 +339,10 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-days{position:absolute;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:#3d4d45;white-space:nowrap;pointer-events:none}
 .sch-days.bad{color:#b42318}
 .sch-compact .sch-bar{top:50%;transform:translateY(-50%)}
+/* 施工计划按工序 */
+.sch-phase-row{background:#fff}.sch-phase-row .sch-label span{font-weight:700}
+.sch-sub .sch-label{padding-left:14px!important}.sch-sub .sch-label span{font-weight:400;font-size:13px}
+.sch-sub{background:#fbfcfb}
+.sch-mat{position:absolute;top:50%;width:9px;height:9px;margin:-5px 0 0 -4px;transform:rotate(45deg);background:#8a968f;border:1px solid #fff;z-index:2;pointer-events:auto}
+.sch-mat.soon{background:#d99a00}.sch-mat.bad{background:#d92d20}
+.sch-phase-edit{display:grid;gap:8px}.sch-edit-row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.sch-edit-row>span{min-width:120px;font-size:13px;color:#3d4d45}

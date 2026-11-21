@@ -35,7 +35,7 @@ async function handle(user,req){
   const sql=`SELECT public.${req.name}(${keys.map((k,i)=>`${k}=>$${i+1}::${t.t[t.n.indexOf(k)]}`).join(',')}) v`;
   const vals=keys.map(k=>{const v=req.args[k];return v!==null&&typeof v==='object'?JSON.stringify(v):v;});
   await asUser(user);return (await db.query(sql,vals)).rows[0].v;}
- if(req.kind==='select'){await asUser(user);const w=req.eq.map(([k],i)=>`${k}=$${i+1}`).join(' AND ');return (await db.query(`SELECT to_jsonb(t) v FROM public.${req.table} t ${w?'WHERE '+w:''} ${req.limit?'LIMIT '+Number(req.limit):''}`,req.eq.map(e=>e[1]))).rows.map(r=>r.v);}
+ if(req.kind==='select'){await asUser(user);const conds=req.eq.map(([k],i)=>`${k}=$${i+1}`);const vals=req.eq.map(e=>e[1]);if(req.inn){conds.push(`${req.inn[0]}=ANY($${vals.length+1})`);vals.push(req.inn[1]);}const w=conds.join(' AND ');return (await db.query(`SELECT to_jsonb(t) v FROM public.${req.table} t ${w?'WHERE '+w:''} ${req.limit?'LIMIT '+Number(req.limit):''}`,vals)).rows.map(r=>r.v);}
  if(req.kind==='upload'){await db.exec('RESET ROLE');await db.query('INSERT INTO storage.objects(bucket_id,name) VALUES($1,$2)',[req.bucket,req.path]);files.set(req.path,req.base64);return true;}
  if(req.kind==='download'){await asUser(user);const allowed=user?true:(await db.query('SELECT public._reno_custom_doc_readable($1) OR public._reno_signoff_doc_readable($1) v',[req.path])).rows[0].v;if(!allowed)throw new Error('无权读取文件');return files.get(req.path);}
  throw new Error('unknown');
@@ -45,7 +45,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.
 const stub=`window.supabase={createClient:(u,k,o)=>{const call=async r=>{const x=JSON.parse(await window.__db(JSON.stringify(r)));return x;};
  const b64=async f=>{const a=new Uint8Array(await f.arrayBuffer());let s='';for(const c of a)s+=String.fromCharCode(c);return btoa(s);};
  return {rpc:async(name,args)=>call({kind:'rpc',name,args}),auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{}}:null}})},
- from(table){const r={kind:'select',table,eq:[]};let one=false;const q={select(){return q},eq(k,v){r.eq.push([k,v]);return q},order(){return q},limit(n){r.limit=n;return q},single(){one=true;return q},then(ok,no){return call(r).then(x=>x.error?x:({data:one?(x.data||[])[0]:x.data,error:null})).then(ok,no);}};return q;},
+ from(table){const r={kind:'select',table,eq:[]};let one=false;const q={select(){return q},eq(k,v){r.eq.push([k,v]);return q},in(k,v){r.inn=[k,v];return q},order(){return q},limit(n){r.limit=n;return q},single(){one=true;return q},then(ok,no){return call(r).then(x=>x.error?x:({data:one?(x.data||[])[0]:x.data,error:null})).then(ok,no);}};return q;},
  storage:{from:bucket=>({upload:async(path,file)=>call({kind:'upload',bucket,path,base64:await b64(file)}),download:async path=>{const x=await call({kind:'download',bucket,path});if(x.error)return x;const s=atob(x.data),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return {data:new Blob([a],{type:'image/png'}),error:null};},createSignedUrl:async()=>({data:{signedUrl:'about:blank'},error:null})})}};}};`;
 const browser=await chromium.launch({channel:'chrome',headless:true});const errors=[];
 const open=async(user,url,viewport={width:1280,height:1000})=>{const c=await browser.newContext({viewport});await c.grantPermissions(['clipboard-read','clipboard-write'],{origin:base});const page=await c.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
@@ -61,6 +61,7 @@ const openCard=async(page,name)=>{const card=page.locator('details.work',{hasTex
 const plans=async()=>Object.fromEntries((await sys('SELECT group_name,planned_start::text s,planned_end::text e FROM renovation_work_orders WHERE project_id=$1',[id])).map(r=>[r.group_name,r]));
 const dow=s=>new Date(s+'T00:00:00Z').getUTCDay();const days=(a,b)=>Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/864e5);
 // 施工计划是单独的栏目（在「收款进度」和「履约子单」之间），不再是子单里的标签
+const openPhases=async p=>{const c=p.locator('#schedule [data-sch-phase][aria-expanded="false"]');for(let i=0;i<20&&await c.count();i++)await c.first().click();};
 const planTab=async p=>{await p.locator('.steps a[href="#project-plan"]').click();await p.locator('#project-plan').waitFor();};
 try{
  const page=await open(staff,`/portal/renovation.html#${id}`);await page.locator('#work-orders details.work').first().waitFor();
@@ -68,7 +69,10 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  assert((await sch.innerText()).includes('还没有排期'),'empty state explains what to do');
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();
- assert.equal(await sch.locator('.sch-bar').count(),6,'every sub-order except the gift gets a bar');
+ // 按工序走：一行一道工序，按施工顺序编号；同一道工序的子单合在一行
+ assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 水电','2. 泥水','3. 油漆','4. 定制柜安装','5. 洁具灯具设备'],'rows are construction phases in working order');
+ assert.equal(await sch.locator('.sch-phase').count(),5,'one bar per phase (the gift is not scheduled)');
+ await openPhases(page);assert.equal(await sch.locator('.sch-sub .sch-bar').count(),6,'opening a phase shows its sub-orders');
  assert((await sch.innerText()).includes('有改动还没保存'),'unsaved changes are flagged');
  assert.equal((await plans())['泥水'].s,null,'nothing saved before 保存');
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
@@ -82,18 +86,26 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  assert.equal(P['赠品与设计'].s,null,'gift not scheduled');
  await page.screenshot({path:out+'/staff-schedule.png',fullPage:false,clip:await sch.boundingBox()});
  // 2) 拖动：泥水整条往后挪 2 天；拖右端让油漆多 1 天
- const dw=+(await page.locator('#schedule').getAttribute('data-dw'));
+ await openPhases(page);const dw=+(await page.locator('#schedule').getAttribute('data-dw'));
  const bar=sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^泥水$/})}).locator('.sch-bar');const b=await bar.boundingBox();
  await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width/2+dw*2+2,b.y+b.height/2,{steps:6});await page.mouse.up();
  const end=sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^油漆$/})}).locator('[data-sch-end]');const eb=await end.boundingBox();
  await page.mouse.move(eb.x+eb.width/2,eb.y+eb.height/2);await page.mouse.down();await page.mouse.move(eb.x+eb.width/2+dw+1,eb.y+eb.height/2,{steps:4});await page.mouse.up();
- assert.equal(await sch.locator('.sch-bar.dirty').count(),2,'both dragged bars marked unsaved');
+ assert.equal(await sch.locator('.sch-sub .sch-bar.dirty').count(),2,'both dragged bars marked unsaved');
  await sch.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
  const Q=await plans();
  assert(days(P['泥水'].s,Q['泥水'].s)===2&&days(P['泥水'].e,Q['泥水'].e)===2,'move keeps length, shifts 2 days');
  assert(Q['油漆'].s===P['油漆'].s&&days(P['油漆'].e,Q['油漆'].e)===1,'end handle adds 1 day');
+ // 2b) 点工序横条：弹出这道工序所有子单的日期，改了保存，留下调整记录（谁、改了什么、从几号到几号）
+ await sch.locator('[data-sch-bar="phase:定制柜安装"]').click();const pe=sch.locator('.sch-phase-edit');await pe.waitFor();
+ assert.equal(await pe.locator('[data-sch-pe]').count(),2,'phase editor lists both cabinet sub-orders');
+ const oldS=Q['全屋定制'].s;await pe.locator('[data-sch-pe] [data-sch-es]').first().fill('2027-01-04');await pe.locator('[data-sch-pe] [data-sch-ee]').first().fill('2027-01-08');
+ await pe.locator('[data-sch-pok]').click();await sch.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
+ const R=await plans();assert(Object.values(R).some(x=>x.s==='2027-01-04'),'phase edit saved');
+ await sch.locator('#sch-log summary').click();await page.waitForFunction(()=>document.querySelector('#schedule [data-sch-log]')?.textContent.includes('→'));
+ const lg=await sch.locator('[data-sch-log]').innerText();assert(lg.includes('Ali')&&lg.includes('01/04–01/08')&&lg.includes('→'),'change log says who changed what from when to when: '+lg.slice(0,200));
  // 3) 手机：点名称改日期
- const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});await ph.locator('#work-orders details.work').first().waitFor();await planTab(ph);const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();
+ const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});await ph.locator('#work-orders details.work').first().waitFor();await planTab(ph);const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();await openPhases(ph);
  await ps.locator('[data-sch-name]',{has:ph.locator('span',{hasText:/^水电$/})}).click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-ok]').click();
  await ps.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
  assert((await plans())['水电'].s==='2026-11-20','phone date edit saved');
@@ -101,7 +113,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await ph.screenshot({path:out+'/phone-schedule.png',clip:await ps.boundingBox()});
  // 4) 超期：水电计划已过（今天之后的测试日期除外），且没完成 → 红色
  await sys(`UPDATE renovation_work_orders SET planned_start='2026-01-05',planned_end='2026-01-09' WHERE project_id=$1 AND group_name='水电'`,[id]);
- await page.reload();await sch.locator('.sch-bar').first().waitFor();
+ await page.reload();await sch.locator('.sch-bar').first().waitFor();await openPhases(page);
  assert(await sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^水电$/})}).locator('.sch-bar.late').count()===1&&(await sch.locator('.sch-issues').innerText()).includes('超期：水电'),'overdue shows red and is listed under 要处理');
  assert((await page.locator('#plan-summary').innerText()).includes('件要处理'),'tab summary says there is something to handle');
  // 4b) 施工计划：交房日太早 → 红色提醒；材料最晚下单日；验收节点对上收款；漏项检查
