@@ -441,6 +441,7 @@
     <input class="cust" data-info="name" placeholder="客户姓名 *" aria-label="客户姓名" aria-required="true" required>
     <input class="cust" data-info="phone" type="tel" placeholder="联系电话 *" aria-label="联系电话" aria-required="true" required>
     <input class="cust" data-info="address" placeholder="住宅地址 *" aria-label="住宅地址" aria-required="true" required>
+    <button type="button" class="btn" data-save-client>保存客户资料</button><span class="hint" data-client-save-status role="status" aria-live="polite" style="margin:0"></span>
     <div class="lang-switch" role="group" aria-label="Language / 语言"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
     <button class="btn pri demoBtn" data-demo="open"><span id="playIc"></span> 演示给客户</button>
     <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
@@ -478,6 +479,8 @@
       input.placeholder = clientPlaceholders[input.dataset.info];
       input.setAttribute('aria-label', clientPlaceholders[input.dataset.info]);
     });
+    const saveClientButton = document.querySelector('[data-save-client]');
+    if (saveClientButton) saveClientButton.textContent = uiLang === 'en' ? 'Save client details' : '保存客户资料';
     document.querySelectorAll('.house[data-house]').forEach(b => { const h = HOUSES[b.dataset.house]; if (!h) return; b.querySelector('b').textContent = uiLang === 'en' ? h.en : h.label; b.querySelector('span').textContent = uiLang === 'en' ? h.label + (h.landed ? ' · 有地' : '') : h.en + (h.landed ? ' · 有地' : ''); });
   };
   const ic = (code, cls) => window.QV2_ICON(code, cls);
@@ -2221,6 +2224,13 @@
       return;
     }
     const ds = b.dataset;
+    if (b.hasAttribute('data-save-client')) {
+      P.info = { name: '', phone: '', address: '', ...(P.info || {}) };
+      save();
+      const status = document.querySelector('[data-client-save-status]');
+      if (status) status.textContent = uiLang === 'en' ? 'Client details saved' : '客户资料已保存';
+      return;
+    }
     if (ds.lang) { uiLang = ds.lang; localStorage.setItem('houzy-quote-v2-lang', uiLang); render(); return; }
     if (b.hasAttribute('data-issue-prev')) { issueCursor = Math.max(0, issueCursor - 1); render(); return; }
     if (b.hasAttribute('data-issue-next')) { issueCursor++; render(); return; }
