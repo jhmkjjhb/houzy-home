@@ -1,6 +1,6 @@
 'use strict';
 // 施工计划引擎（纯计算，不读写数据库）：
-//  1) 按合同工程量算每张子单要几天（有平方尺 / 尺的按工效算，「1 lot」按工种默认天数）；
+//  1) 按工序排：合同里同一道工序的项目合成一个任务（一个工种一次进场），按合计工程量算天数（有平方尺 / 尺的按工效算，「1 lot」按工种默认天数）；
 //  2) 按工序先后排：同一工种默认一队人、一张接一张做；不同执行人可以同时做；
 //  3) 材料：按「到货天数」和「复尺」倒推最晚下单日；定制要等生产，安装不能早于到货；
 //  4) 验收节点：水电隐蔽、防水闭水、泥水瓷砖、竣工，能对上合同收款期数的一起显示；
@@ -25,7 +25,7 @@ window.RenoPlan=(()=>{
   {key:'ceiling',name:'天花木作',re:/天花|石膏|吊顶|灯槽|木作|隔墙|木工/,area:150,length:60,lot:3,trade:'木工'},
   {key:'paint',name:'油漆',re:/油漆|涂料|乳胶|漆/,area:800,lot:7,trade:'油漆工'},
   {key:'cabinet',name:'定制柜安装',re:/定制|铝柜|衣柜|橱柜|地柜|吊柜|书柜|鞋柜|电视柜|玄关柜|隐形柜|书吧|柜体/,area:60,length:15,lot:1,trade:'柜体安装队'},
-  {key:'fit',name:'台面门窗玻璃',re:/台面|岩板|石英|大理石|玻璃|隔断|门窗|窗|折叠门|移门|木门|房门|门/,area:80,length:25,lot:1,trade:'厂家安装',parallel:true},
+  {key:'fit',name:'台面门窗玻璃',re:/台面|岩板|石英|大理石|玻璃|隔断|门窗|窗(?!帘)|折叠门|移门|木门|房门|门(?!锁|铃|把)/,area:80,length:25,lot:1,trade:'厂家安装',parallel:true},
   {key:'fixture',name:'洁具灯具设备',re:/卫浴|洁具|浴室柜|马桶|花洒|龙头|灯|开关|插座|电器|热水器|窗帘|智能|锁|雨棚|车棚|五金/,pc:8,lot:2,trade:'水电工'},
   {key:'clean',name:'清洁交付',re:/清洁|开荒|保护清洁/,lot:2,trade:'清洁'}
  ];
@@ -49,6 +49,12 @@ window.RenoPlan=(()=>{
   const txt=lines.map(l=>l.name).join(' ');const byItems=PHASES.findIndex(p=>p.re.test(txt));if(byItems>=0)return byItems;
   if(lines.some(l=>l.kind==='custom'))return 5;if(lines.some(l=>l.kind==='stock'))return 7;return 2;
  }
+ // 每个清单项属于哪道工序：先看项目名称，看不出再看所在子单的名称，最后按类型
+ function phaseOfLine(l,group){
+  const byName=PHASES.findIndex(p=>p.re.test(String(l.name||'')));if(byName>=0)return byName;
+  const byGroup=PHASES.findIndex(p=>p.re.test(short(group)));if(byGroup>=0)return byGroup;
+  return l.kind==='custom'?5:l.kind==='stock'?7:2;
+ }
  function duration(p,lines){
   let days=0;
   for(const l of lines){if(p.key==='clean'&&/保护/.test(l.name))continue; // 地面保护在开工时做，不占收尾天数
@@ -71,21 +77,23 @@ window.RenoPlan=(()=>{
   return Object.fromEntries(keys.map(k=>[k,{after:near(k).filter(d=>!near(k).some(e=>e!==d&&A[e].has(d))),parallel:keys.filter(o=>o!==k&&!A[k].has(o)&&!A[o].has(k))}]));
  }
  // 主计算
- function build({work:wos,lines,tracking,payments,start,handover,today}){
+ function build({work:wos,lines,tracking,payments,start,handover,today,fixed}){
   const T=parse(today)||parse(new Date().toISOString()),S=work(parse(start)||T);
   const byId=new Map((lines||[]).map(l=>[String(l.id),l]));
-  const items=w=>(tracking?.items||[]).filter(i=>i.work_order_id===w.id&&i.stage!=='cancelled');
-  const tasks=[];
+  // 按工序 → 工种 → 流程：合同里同一道工序的项目（不管在哪张子单）合成一个任务，一个工种一次进场做完
+  const allItems=(tracking?.items||[]).filter(i=>i.stage!=='cancelled');
+  const groups=new Map();
   for(const w of wos||[]){
    if(w.cancelled_at)continue;
-   const ls=(w.line_ids||[]).map(id=>byId.get(String(id))).filter(Boolean);
-   if(!ls.length||ls.every(l=>l.kind==='gift'))continue;
-   const its=items(w),done=its.length>0&&its.every(i=>i.stage==='done');
-   const k=phaseIndex(w.group_name,ls),p=PHASES[k];
-   tasks.push({id:w.id,name:short(w.group_name),phase:k,phaseName:p.name,trade:p.trade,crew:String(w.assignee||'').trim()||(p.parallel?short(w.group_name):p.trade),days:duration(p,ls),lines:ls,items:its,done,material:materialOf(ls),fixed:done&&w.planned_start?{start:parse(w.planned_start),end:parse(w.planned_end)}:null});
+   for(const id of w.line_ids||[]){const l=byId.get(String(id));if(!l||l.kind==='gift')continue;
+    const k=phaseOfLine(l,w.group_name);const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
+    g.lines.push({...l,group:short(w.group_name),work_order_id:w.id});g.wos.add(w.id);
+    const it=allItems.find(i=>i.work_order_id===w.id&&String(i.line_id)===String(id));if(it)g.items.push(it);}
   }
-  // 按工序、同工序里工期长的先排
-  tasks.sort((a,b)=>a.phase-b.phase||b.days-a.days||a.name.localeCompare(b.name,'zh'));
+  const tasks=[];
+  for(const [k,g] of groups){const p=PHASES[k],done=g.items.length>0&&g.items.every(i=>i.stage==='done'),f=fixed?.[p.key];
+   tasks.push({id:p.key,name:p.name,phase:k,phaseName:p.name,trade:p.trade,crew:p.trade,days:duration(p,g.lines),lines:g.lines,items:g.items,workOrders:[...g.wos],done,material:materialOf(g.lines),fixed:done&&f?.start?{start:parse(f.start),end:parse(f.end)}:null});}
+  tasks.sort((a,b)=>a.phase-b.phase);
   const phaseEnd={},crewFree={},batches=tracking?.batches||[];
   // 工序之间的先后关系：没有先后关系的工序同期施工；没有这道工序时，顺着它的前一道往前找
   const depEnd=key=>{if(phaseEnd[key])return {end:phaseEnd[key],names:[PHASES.find(p=>p.key===key).name]};let best={end:add(S,-1),names:[]};for(const d of DEPS[key]||[]){const r=depEnd(d);if(r.end>best.end)best=r;}return best;};
@@ -96,7 +104,7 @@ window.RenoPlan=(()=>{
    for(const t of inPhase){
     if(t.fixed){t.start=t.fixed.start;t.end=t.fixed.end;t.why='已完成';if(t.end>end)end=t.end;continue;}
     let s=next(prevEnd),why=prevName?`等「${prevName}」做完`:'开工日';
-    const free=crewFree[t.crew];if(free&&next(free)>s){s=next(free);why=`同一队（${t.crew}）先做完前一张`;}
+    const free=crewFree[t.crew];if(free&&next(free)>s){s=next(free);why=`同一工种（${t.crew}）先做完前一道工序`;}
     const m=t.material;
     if(m&&t.lines.some(l=>['custom','stock'].includes(l.kind))){
      const ordered=t.items.filter(i=>['custom','stock'].includes(i.kind)).every(i=>['ordered','arrived','done'].includes(i.stage))&&t.items.length>0;
@@ -111,7 +119,7 @@ window.RenoPlan=(()=>{
    }
    phaseEnd[PHASES[k].key]=end;
    // GB 50327 第 14.1.2 条：地面铺砖要在天花完成后做。天花比泥水晚结束时，泥水最后一段（地面）顺延到天花之后
-   if(PHASES[k].key==='ceiling'&&phaseEnd.masonry&&phaseEnd.masonry<=end){const m=tasks.filter(t=>PHASES[t.phase].key==='masonry'&&!t.fixed);for(const t of m){const ne=endAfter(next(end),Math.max(1,Math.ceil(t.days/3)));if(ne>t.end){t.end=ne;t.why=(t.why||'')+'；地面铺砖排在天花完成后（GB 50327 14.1.2）';}}phaseEnd.masonry=m.reduce((a,t)=>t.end>a?t.end:a,phaseEnd.masonry);}
+   if(PHASES[k].key==='ceiling'&&phaseEnd.masonry&&phaseEnd.masonry<=end){const m=tasks.filter(t=>t.id==='masonry'&&!t.fixed);for(const t of m){const ne=endAfter(next(end),Math.max(1,Math.ceil(t.days/3)));if(ne>t.end){t.end=ne;t.why=(t.why||'')+'；地面铺砖排在天花完成后（GB 50327 14.1.2）';}}phaseEnd.masonry=m.reduce((a,t)=>t.end>a?t.end:a,phaseEnd.masonry);}
   }
   const finish=tasks.length?tasks.reduce((m,t)=>t.end>m?t.end:m,tasks[0].end):null;
   // 关键路线：从最后完工的一张往回找「谁决定了它的开始」
@@ -130,14 +138,14 @@ window.RenoPlan=(()=>{
   const pay=re=>(payments||[]).find(p=>re.test(p.name||''));
   const ms=[];const pe=k=>phaseEnd[k];
   if(pe('mep'))ms.push({key:'mep',short:'水电验收',name:'水电隐蔽工程验收（打压测试、拍照）',on:iso(next(pe('mep'))),pay:pay(/水电|隐蔽/)});
-  const wet=tasks.find(t=>t.phase===2&&/浴|卫生间|厕|防水|厨房/.test(t.name+' '+t.lines.map(l=>l.name).join(' ')));
+  const wet=tasks.find(t=>t.id==='masonry'&&/浴|卫生间|厕|防水|厨房/.test(t.lines.map(l=>l.name+' '+l.group).join(' ')));
   if(wet)ms.push({key:'water',short:'闭水',name:'防水闭水试验 48 小时',on:iso(endAfter(wet.start,Math.min(3,wet.days))),pay:null});
   if(pe('masonry'))ms.push({key:'masonry',short:'泥水验收',name:'泥水瓷砖工程验收',on:iso(next(pe('masonry'))),pay:pay(/泥水|瓷砖/)});
   if(finish)ms.push({key:'final',short:'竣工',name:'竣工验收交付',on:iso(next(finish)),pay:pay(/竣工|交付/)});
   // 交房日
   const H=parse(handover);let handoverInfo=null;
   if(H&&finish){const slack=diff(next(finish),H);handoverInfo={slack,latestStart:slack>=0?iso(work(add(S,slack))):null,late:slack<0};}
-  return {start:iso(S),finish:finish&&iso(finish),handover:handoverInfo,tasks:tasks.map(t=>({id:t.id,name:t.name,phase:t.phaseName,trade:t.trade,crew:t.crew,days:t.days,start:iso(t.start),end:iso(t.end),why:t.why,critical:t.critical,done:t.done})),materials,milestones:ms,checks:checklist(lines||[])};
+  return {start:iso(S),finish:finish&&iso(finish),handover:handoverInfo,tasks:tasks.map(t=>({id:t.id,key:t.id,name:t.name,phase:t.phaseName,trade:t.trade,crew:t.crew,days:t.days,start:iso(t.start),end:iso(t.end),why:t.why,critical:t.critical,done:t.done,workOrders:t.workOrders,lines:t.lines.map(l=>({id:String(l.id),name:l.name,spec:l.spec||'',qty:l.qty,unit:l.unit||'',kind:l.kind,group:l.group,work_order_id:l.work_order_id,stage:(t.items.find(i=>i.work_order_id===l.work_order_id&&String(i.line_id)===String(l.id))||{}).stage||'pending'}))})),materials,milestones:ms,checks:checklist(lines||[])};
  }
  // 防漏项：有 A 没有 B 就提醒（只提醒，不拦）
  const RULES=[
@@ -164,5 +172,5 @@ window.RenoPlan=(()=>{
   if(!each.length)return [];const all=each.join('｜');
   return RULES.filter(r=>each.some(t=>r.when.test(t))&&!r.need.test(all)).map(r=>({msg:r.msg,level:r.level||'必查',items:each.filter(t=>r.when.test(t)&&r.when.source!=='.').slice(0,3).map(t=>t.split(' ')[0])}));
  }
- return {build,checklist,PHASES,MATERIALS,DEPS,relations,duration,unitType,phaseIndex};
+ return {build,checklist,PHASES,MATERIALS,DEPS,relations,duration,unitType,phaseIndex,phaseOfLine};
 })();

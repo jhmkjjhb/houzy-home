@@ -367,3 +367,9 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-mclick{cursor:zoom-in;border-radius:3px}.sch-mclick:hover{background:#eef4f0;color:#153927}
 .sch-axis .sch-lane{cursor:ew-resize}
 .sch-views button:disabled{opacity:.4;cursor:default}
+/* 工序展开：这个工种一次进场要做的项目 */
+.sch-items{margin:0 0 8px calc(var(--label) - 150px);padding:10px 12px;border:1px solid #e3e8e4;border-radius:10px;background:#fbfcfb;position:sticky;left:0;max-width:min(720px,calc(100vw - 80px))}
+.sch-items b{font-size:13px;color:#22362e}.sch-items ul{list-style:none;margin:6px 0 0;padding:0}
+.sch-items li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:4px 0;border-bottom:1px dashed #e3e8e4;font-size:13px}
+.sch-items li small{color:#68766e}.sch-items li em{margin-left:auto;font-style:normal;font-size:12px;color:#68766e}
+.sch-items .st-done{color:#157a3c}.sch-items .st-working,.sch-items .st-arrived{color:#633899}.sch-items .st-ordered{color:#9a6700}

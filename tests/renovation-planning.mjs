@@ -64,4 +64,23 @@ ok(busy.length===1&&busy[0].contract_no==='OTHER-1'&&busy[0].start==='2026-12-03
 ok(!/customer|phone|address|Owner|X'/.test(JSON.stringify(busy).replace('OTHER-1','')),'only contract no, sub-order and dates');
 ok((await call(staff,'SELECT renovation_crew_busy($1::jsonb,$2) v',[JSON.stringify(['阿强']),p2])).length===0,'own project excluded');
 await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::int n FROM renovation_crews'))[0].n===1,'re-run keeps crews');
+// 按工序保存：一道工序一个日期；第一次保存的成为原计划，之后不变；子单日期按工序推算；每次改动记录前后日期和谁改的
+{const ph=fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(ph);await db.exec(ph);
+ const save=(who,plan,work)=>call(who,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb) v',[id,JSON.stringify(plan),JSON.stringify(work||[])]);
+ const w=(await sys(`SELECT id FROM renovation_work_orders WHERE project_id=$1 AND group_name='泥水'`,[id]))[0].id;
+ await reject(()=>save(outsider,{mep:{start:'2026-12-01',end:'2026-12-05'}}),/无此项目权限/);
+ await reject(()=>save(staff,{roof:{start:'2026-12-01',end:'2026-12-05'}}),/不认识的工序/);
+ await reject(()=>save(staff,{mep:{start:'2026-12-05',end:'2026-12-01'}}),/结束不能早于开始/);
+ await save(staff,{mep:{start:'2026-12-01',end:'2026-12-05'},masonry:{start:'2026-12-07',end:'2026-12-12'}},[{work_order_id:w,start:'2026-12-07',end:'2026-12-12'}]);
+ let r=(await sys('SELECT phase_plan,phase_baseline FROM renovation_projects WHERE id=$1',[id]))[0];
+ ok(r.phase_plan.masonry.start==='2026-12-07'&&r.phase_baseline.masonry.end==='2026-12-12','first save is also the original plan');
+ ok((await sys('SELECT planned_start::text s FROM renovation_work_orders WHERE id=$1',[w]))[0].s==='2026-12-07','sub-order dates follow the phase');
+ await save(staff,{masonry:{start:'2026-12-09',end:'2026-12-14'},paint:{start:'2026-12-15',end:'2026-12-20'}});
+ r=(await sys('SELECT phase_plan,phase_baseline FROM renovation_projects WHERE id=$1',[id]))[0];
+ ok(r.phase_baseline.masonry.end==='2026-12-12'&&r.phase_plan.masonry.end==='2026-12-14','later changes keep the original plan');
+ ok(r.phase_baseline.paint?.start==='2026-12-15','a phase planned for the first time is added to the original plan');
+ const lg=(await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='phase_plan_saved' ORDER BY created_at DESC LIMIT 1`,[id]))[0].payload;
+ ok(lg.by==='Ali'&&lg.changes.some(x=>x.phase==='masonry'&&x.before_end==='2026-12-12'&&x.end==='2026-12-14'),'the change log keeps who and from-to dates: '+JSON.stringify(lg));
+ await save(staff,{mep:{start:'2026-12-01',end:'2026-12-05'}});
+ ok((await sys(`SELECT count(*)::int n FROM renovation_audit WHERE project_id=$1 AND action='phase_plan_saved'`,[id]))[0].n===2,'saving without a change adds no log line');}
 console.log(`PASS ${checks} planning checks`);
