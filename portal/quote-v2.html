@@ -46,6 +46,7 @@
   .top .sum b { font-size: 20px; color: var(--accent); }
   .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 6px; }
   .tab[data-tab="book"] { padding: 8px 10px; font-size: 15px !important; }
+  .supplier-quote-frame { display:block; width:100%; height:calc(100vh - 210px); min-height:760px; border:0; background:transparent; }
   .card > h2:first-child { margin-top: 0; }
   .tab { border: 1px solid var(--line); background: var(--surface); color: var(--ink-dim); border-radius: 10px; padding: 8px 4px; font-weight: 600; font-size: 13px; position: relative; }
   .tab.on { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
@@ -1451,7 +1452,7 @@
     P.info = { name: '', phone: '', address: '', ...(P.info || {}) };
     const C = compute(); save();
     document.getElementById('grand').textContent = rm(C.T.total);
-    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
+    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['supplier', '供应商询价'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     document.getElementById('viewer').innerHTML = viewerHtml();
     const dm = document.getElementById('demo');
@@ -1462,7 +1463,7 @@
     let sel = null, top = null, caret = null;
     if (a && app.contains(a) && a.tagName === 'INPUT') { sel = 'input' + [...a.attributes].filter(x => x.name.startsWith('data-')).map(x => `[${x.name}="${CSS.escape(x.value)}"]`).join(''); top = a.getBoundingClientRect().top; try { caret = a.selectionStart; } catch (e) {} }
     const y = window.scrollY;
-    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : tab === 'spec' ? viewSpec(C) : tab === 'book' ? viewBook() : viewQuote(C);
+    app.innerHTML = tab === 'house' ? viewHouse(C) : tab === 'room' ? viewRoom(C) : tab === 'all' ? viewHouseItems(C) : tab === 'spec' ? viewSpec(C) : tab === 'supplier' ? viewSupplier() : tab === 'book' ? viewBook() : viewQuote(C);
     window.scrollTo(0, y);
     if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
     document.querySelectorAll('[data-info]').forEach(input => { if (input !== document.activeElement) input.value = P.info[input.dataset.info] || ''; });
@@ -1832,13 +1833,16 @@
     } catch (e) { bookMsg = { ok: false, lines: [`读取商品档案失败：${e.message || e}。请先在同一网址登录员工账号，再重试。`] }; }
     render();
   }
+  function viewSupplier() {
+    return `<div class="card" style="padding:8px;overflow:hidden"><iframe class="supplier-quote-frame" src="/portal/supplier-price-quote.html?embed=1" title="供应商询价与成本比价" loading="lazy"></iframe></div>`;
+  }
   function viewBook() {
     const B = window.QV2_BOOK, info = window.QV2_BOOK_INFO;
     const rows = B.parseCsv(B.template(PRICE, Q.SPEC_CATS, Q.OPTION_PRICES, Q.TILE_PIECE_PRICES)).slice(1);
     const itemsLeft = rows.filter(r => r[0] === '项目单价' && r[4] === '').length;
     const refN = rows.filter(r => r[0] === '项目单价' && PRICE[r[1]].ref).length + rows.filter(r => r[0] === '选材价差' && [4, 5, 6].every(i => r[i] === '') && Q.OPTION_REF[r[1].split('@')[0]] !== undefined).length;
     const optAll = rows.filter(r => r[0] === '选材价差'), optLeft = optAll.filter(r => r[4] === '' && r[5] === '' && r[6] === '').length;
-    let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">公司价目表</h2><a class="btn" href="/portal/supplier-price-quote.html">供应商成本询价</a></div>
+    let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">公司价目表</h2><button type="button" class="btn" data-tab="supplier">打开供应商询价</button></div>
       <p class="hint">所有报价单的单价和选材价差都从这里来。当前其他项目优先采用 2026-11-16 新山市场调查表的建议价；原表注明多数为估算，签约前仍需核定。瓷砖砖材按规格和表面全屋共用一套 RM/片价格，铺贴另计。改价格的方法：下载模板 → 用 Excel 填好 → 上传。</p>
       <div class="bookStat"><div><b class="mono">${itemsLeft}</b><span>个项目还没有单价</span></div><div><b class="mono">${optLeft}</b><span>/ ${optAll.length} 个选材价差还没填</span></div><div><b class="mono" style="color:var(--yellow)">${refN}</b><span>个用的是参考价，等公司核定</span></div></div>
       ${info ? `<p class="hint">已上传：${esc(info.file)} · ${esc(info.at)} · ${info.items} 个单价、${info.options} 个价差</p>` : '<p class="hint">还没上传过，现在用的是系统自带的参考价。</p>'}
