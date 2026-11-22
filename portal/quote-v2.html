@@ -508,7 +508,7 @@
   const STAGE_COLORS = ['#153927', '#245640', '#3d6b4d', '#67815b', '#9a9a70', '#c8a96e', '#917c52', '#667960', '#af9a76'];
 
   let P = load();
-  let tab = P.houseType ? 'room' : 'house';
+  let tab = new URLSearchParams(location.search).get('tab') === 'supplier' ? 'supplier' : P.houseType ? 'room' : 'house';
   let roomId = P.rooms[0]?.id || null;
   let confirmReset = false;
 
