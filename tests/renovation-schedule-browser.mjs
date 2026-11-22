@@ -116,6 +116,14 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await page.reload();await sch.locator('.sch-bar').first().waitFor();await openPhases(page);
  assert(await sch.locator('.sch-row',{has:page.locator('.sch-label>span',{hasText:/^水电$/})}).locator('.sch-bar.late').count()===1&&(await sch.locator('.sch-issues').innerText()).includes('超期：水电'),'overdue shows red and is listed under 要处理');
  assert((await page.locator('#plan-summary').innerText()).includes('件要处理'),'tab summary says there is something to handle');
+ // 4a) 智能排期：每道工序写明「等谁做完」；手动把油漆排到泥水完工之前 → 顺序冲突提醒
+ assert((await sch.locator('[data-sch-phase="油漆"]').innerText()).includes('等 泥水 做完'),'phase says what it waits for');
+ {const m=(await sys(`SELECT planned_start::text s,planned_end::text e FROM renovation_work_orders WHERE project_id=$1 AND group_name='泥水'`,[id]))[0];
+  await sys(`UPDATE renovation_work_orders SET planned_start=$2::date,planned_end=$2::date+3 WHERE project_id=$1 AND group_name='油漆'`,[id,m.s]);
+  await page.reload();await sch.locator('.sch-bar').first().waitFor();
+  const iss=await sch.locator('.sch-issues').innerText();if(!iss.includes('顺序冲突'))await sch.locator('.sch-issues details summary').click();
+  assert((await sch.locator('.sch-issues').innerText()).includes('顺序冲突')&&(await sch.locator('.sch-issues').innerText()).includes('油漆'),'painting before masonry is done is flagged');
+  await sys(`UPDATE renovation_work_orders SET planned_start=$2::date,planned_end=$3::date WHERE project_id=$1 AND group_name='油漆'`,[id,Q['油漆'].s,Q['油漆'].e]);await page.reload();await sch.locator('.sch-bar').first().waitFor();await openPhases(page);}
  // 4b) 施工计划：交房日太早 → 红色提醒；材料最晚下单日；验收节点对上收款；漏项检查
  await sch.locator('[data-sch-handover]').fill('2026-12-20');await sch.locator('[data-sch-handover]').dispatchEvent('change');
  let st=await sch.innerText();assert(/比交房日 12\/20 晚 \d+ 天/.test(st),'too-early handover is flagged: '+st.slice(0,200));

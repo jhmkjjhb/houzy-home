@@ -56,6 +56,13 @@ window.RenoSchedule=(()=>{
   rows.forEach(r=>clash(r).forEach(b=>push('撞期',`撞期 ${b.contract_no}：${short(r.w.group_name)}（${String(r.w.assignee).trim()}）${md(r.plan.start)}–${md(r.plan.end)}，那边 ${b.group_name} ${md(b.start)}–${md(b.end)}`)));
   late.forEach(r=>push('超期',`超期：${short(r.w.group_name)} 计划 ${md(r.plan.end)} 完成，还有 ${r.p.total-r.p.done} 项没做完`));
   matIssues.forEach(m=>push('要下单',`${m.status==='late'?'已过':'快到'}最晚下单日：${m.name} 最晚 ${md(m.orderBy)} 下单${m.signNeeded?'（业主还没签名）':''}`));
+  // 工序先后：手动改过日期后，前一道还没做完就开始的，提醒「顺序冲突」
+  const KEY=Object.fromEntries((window.RenoPlan?.PHASES||[]).map(p=>[p.name,p.key])),NAME=Object.fromEntries(Object.entries(KEY).map(([n,k])=>[k,n]));
+  const span={};for(const r of rows){const k=KEY[r.info?.phase];if(!k||!r.plan)continue;const sp=span[k]||(span[k]={s:r.plan.start,e:r.plan.end,done:true});if(r.plan.start<sp.s)sp.s=r.plan.start;if(r.plan.end>sp.e)sp.e=r.plan.end;if(!r.p.finished)sp.done=false;}
+  const rel=window.RenoPlan?.relations?RenoPlan.relations(Object.keys(span)):{};
+  // GB 50327 第 14.1.2 条：地面铺装宜在吊顶、墙面抹灰完成并验收后进行 —— 泥水（含地面铺砖）要晚于天花结束
+  if(span.masonry&&span.ceiling&&!span.masonry.done&&span.masonry.e<=span.ceiling.e)push('顺序冲突',`泥水 ${md(span.masonry.e)} 就做完，但天花 ${md(span.ceiling.e)} 才做完：地面铺砖要等天花完成（GB 50327 第 14.1.2 条），泥水要排到天花之后结束`);
+  for(const [k,v] of Object.entries(rel))for(const d of v.after){if(span[k]&&span[d]&&!span[k].done&&span[k].s<=span[d].e)push('顺序冲突',`${NAME[k]} ${md(span[k].s)} 开始，但「${NAME[d]}」${md(span[d].e)} 才做完：要等它做完，或者把「${NAME[k]}」往后挪`);}
   const headline=!lastEnd?'还没有排期':slack!=null?(slack<0?`<b class="bad">⚠ 计划 ${E(md(lastEnd))} 完工，比交房日晚 ${-slack} 天</b>`:`<b class="ok">计划 ${E(md(lastEnd))} 完工，交房前余 ${slack} 天</b>${slack>0&&parse(state.startOn)>=t?`，最晚 ${E(md(iso(add(parse(state.startOn),slack))))} 开工还来得及`:''}`):`<b>计划 ${E(md(lastEnd))} 完工</b>（填交房日可以算余量）`;
   state.summary={lastEnd,slack,issues:issues.length};
   const sumEl=document.getElementById('plan-summary');
@@ -119,7 +126,7 @@ window.RenoSchedule=(()=>{
     const txt=width>=120?`${n}天 · ${md(iso(s0))}–${md(iso(e0))}`:`${n}天`,dirty=g.rows.some(r=>state.dirty.has(r.w.id));
     barHtml=`<div class="sch-bar sch-phase ${cls} tr-${TRADE[trade]||'other'}${dirty?' dirty':''}${g.rows.some(r=>r.info?.critical&&!r.p.finished)?' crit':''}" data-sch-bar="phase:${E(g.name)}" style="left:${left}px;width:${width}px" title="${E(g.name)}：${iso(s0)} → ${iso(e0)}（点一下调整日期，拖动整道工序一起挪）"><i style="width:${pct}%"></i>${inside?`<span>${fin?'✓ ':''}${E(txt)}</span>`:''}</div>${inside?'':`<span class="sch-days${cls==='late'?' bad':''}" style="left:${left+width+4}px">${fin?'✓ ':''}${n}天</span>`}`;}
    const mk=g.rows.map(r=>matsBy.get(r.w.id)).filter(m=>m&&m.orderBy&&!['ordered','arrived'].includes(m.status)).map(m=>`<span class="sch-mat ${m.status==='late'?'bad':m.status==='soon'?'soon':''}" style="left:${diff(from,parse(m.orderBy))*dw}px" title="材料：${E(m.name)} 最晚 ${E(m.orderBy)} 下单（${E(m.label)}，到货约 ${m.lead} 天）"></span>`).join('');
-   return `<div class="sch-row sch-phase-row"><button type="button" class="sch-label" data-sch-phase="${E(g.name)}" aria-expanded="${state.open.has(g.name)}"><span>${k+1}. ${E(g.name)}${g.rows.some(r=>dot(r))?'<i class="sch-dot"></i>':''}</span><small>${E(trade)} · ${g.rows.length} 张子单 ${state.open.has(g.name)?'▾':'▸'}</small></button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${barHtml}${mk}</div></div>`;
+   return `<div class="sch-row sch-phase-row"><button type="button" class="sch-label" data-sch-phase="${E(g.name)}" aria-expanded="${state.open.has(g.name)}"><span>${k+1}. ${E(g.name)}${g.rows.some(r=>dot(r))?'<i class="sch-dot"></i>':''}</span><small>${E(trade)} · ${(()=>{const k=KEY[g.name],r=rel[k];if(!r)return `${g.rows.length} 张子单`;const par=r.parallel.filter(x=>span[x]).map(x=>NAME[x]);return par.length?`<b class="sch-par" title="${k==='masonry'||k==='ceiling'?'墙面、防水可与天花同期；地面铺砖要等天花完成（GB 50327 第 14.1.2 条）':''}">可与 ${E(par.join('、'))} 同期${k==='masonry'?'（地面铺砖等天花完）':''}</b>`:r.after.length?`等 ${E(r.after.map(x=>NAME[x]).join('、'))} 做完`:'先做';})()} ${state.open.has(g.name)?'▾':'▸'}</small></button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${barHtml}${mk}</div></div>`;
   };
   const phaseEditor=g=>state.editingPhase===g.name&&!ctx.locked?`<div class="sch-edit sch-phase-edit"><b>调整「${E(g.name)}」的日期</b>${g.rows.map(r=>`<div class="sch-edit-row" data-sch-pe="${r.w.id}"><span>${E(short(r.w.group_name))}</span><label>开始<input type="date" data-sch-es value="${E(r.plan?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(r.plan?.end||'')}"></label></div>`).join('')}<div class="sch-edit-row"><button type="button" data-sch-pok="${E(g.name)}">确定</button><button type="button" class="secondary" data-sch-cancel>取消</button><span class="muted">改好后点上面的「保存计划」才会保存，并记入调整记录</span></div></div>`:'';
   const editor=r=>state.editing===r.w.id&&!ctx.locked?`<div class="sch-edit"><label>开始<input type="date" data-sch-es value="${E(r.plan?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(r.plan?.end||'')}"></label><button type="button" data-sch-ok="${r.w.id}">确定</button><button type="button" class="secondary" data-sch-cancel>取消</button></div>`:'';
@@ -197,7 +204,7 @@ window.RenoSchedule=(()=>{
      const P=RenoPlan.build(inp),todo=P.tasks.filter(x=>!x.done);
      if(!todo.length){ctx.message('没有可以排期的子单（都已完成或只有赠品）。',true);return;}
      todo.forEach(x=>setPlan(x.id,x.start,x.end));rerender();
-     ctx.message(`已按工程量排好：计划 ${P.finish} 完工${P.handover?(P.handover.late?`，比交房日晚 ${-P.handover.slack} 天`:`，比交房日早 ${P.handover.slack} 天`):''}。看一下再点「保存计划」。`,!!P.handover?.late);
+     ctx.message(`已按工序先后和工程量排好（能同期的同时开工）：计划 ${P.finish} 完工${P.handover?(P.handover.late?`，比交房日晚 ${-P.handover.slack} 天`:`，比交房日早 ${P.handover.slack} 天`):''}。看一下再点「保存计划」。`,!!P.handover?.late);
     }else if('schSave' in d){
      b.disabled=true;const data=ctx.data();
      if(state.dirty.size){const nameOf=id=>short((data.work||[]).find(w=>w.id===id)?.group_name||'');const plans=[...state.dirty].map(id=>({work_order_id:id,start:state.plans[id]?.start||null,end:state.plans[id]?.end||null,name:nameOf(id),before_start:state.base[id]?.start||null,before_end:state.base[id]?.end||null,by:data.actorName||''}));

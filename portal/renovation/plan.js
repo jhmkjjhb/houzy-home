@@ -61,6 +61,15 @@ window.RenoPlan=(()=>{
  const materialOf=lines=>{const g=lines.filter(l=>['custom','stock'].includes(l.kind));if(!g.length)return null;
   const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
   return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
+ // 工序先后：每道工序要等哪几道做完（完工后才能开始）。没有先后关系的可以同期
+ const DEPS={prep:[],mep:['prep'],masonry:['mep'],ceiling:['mep'],paint:['masonry','ceiling'],cabinet:['paint'],fit:['paint'],fixture:['cabinet','fit'],clean:['fixture','cabinet','fit','paint','masonry','ceiling','mep','prep']};
+ // 给出现的工序算：等谁（最近的前一道，跳过没有的工序）、可以和谁同期（彼此没有先后关系）
+ function relations(keys){
+  const has=new Set(keys),anc=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(!out.has(d)){out.add(d);walk(d);}}};walk(k);return out;};
+  const near=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(has.has(d))out.add(d);else walk(d);}};walk(k);return [...out];};
+  const A=Object.fromEntries(keys.map(k=>[k,anc(k)]));
+  return Object.fromEntries(keys.map(k=>[k,{after:near(k).filter(d=>!near(k).some(e=>e!==d&&A[e].has(d))),parallel:keys.filter(o=>o!==k&&!A[k].has(o)&&!A[o].has(k))}]));
+ }
  // 主计算
  function build({work:wos,lines,tracking,payments,start,handover,today}){
   const T=parse(today)||parse(new Date().toISOString()),S=work(parse(start)||T);
@@ -78,9 +87,11 @@ window.RenoPlan=(()=>{
   // 按工序、同工序里工期长的先排
   tasks.sort((a,b)=>a.phase-b.phase||b.days-a.days||a.name.localeCompare(b.name,'zh'));
   const phaseEnd={},crewFree={},batches=tracking?.batches||[];
-  let prevEnd=add(S,-1),prevName='';
+  // 工序之间的先后关系：没有先后关系的工序同期施工；没有这道工序时，顺着它的前一道往前找
+  const depEnd=key=>{if(phaseEnd[key])return {end:phaseEnd[key],names:[PHASES.find(p=>p.key===key).name]};let best={end:add(S,-1),names:[]};for(const d of DEPS[key]||[]){const r=depEnd(d);if(r.end>best.end)best=r;}return best;};
   for(let k=0;k<PHASES.length;k++){
    const inPhase=tasks.filter(t=>t.phase===k);if(!inPhase.length)continue;
+   let prevEnd=add(S,-1),prevName='';for(const d of DEPS[PHASES[k].key]||[]){const r=depEnd(d);if(r.end>prevEnd){prevEnd=r.end;prevName=r.names.join('」和「');}}
    let end=prevEnd;
    for(const t of inPhase){
     if(t.fixed){t.start=t.fixed.start;t.end=t.fixed.end;t.why='已完成';if(t.end>end)end=t.end;continue;}
@@ -98,7 +109,9 @@ window.RenoPlan=(()=>{
     }
     t.start=s;t.end=endAfter(s,t.days);t.why=why;crewFree[t.crew]=t.end;if(t.end>end)end=t.end;
    }
-   phaseEnd[PHASES[k].key]=end;prevEnd=end;prevName=PHASES[k].name;
+   phaseEnd[PHASES[k].key]=end;
+   // GB 50327 第 14.1.2 条：地面铺砖要在天花完成后做。天花比泥水晚结束时，泥水最后一段（地面）顺延到天花之后
+   if(PHASES[k].key==='ceiling'&&phaseEnd.masonry&&phaseEnd.masonry<=end){const m=tasks.filter(t=>PHASES[t.phase].key==='masonry'&&!t.fixed);for(const t of m){const ne=endAfter(next(end),Math.max(1,Math.ceil(t.days/3)));if(ne>t.end){t.end=ne;t.why=(t.why||'')+'；地面铺砖排在天花完成后（GB 50327 14.1.2）';}}phaseEnd.masonry=m.reduce((a,t)=>t.end>a?t.end:a,phaseEnd.masonry);}
   }
   const finish=tasks.length?tasks.reduce((m,t)=>t.end>m?t.end:m,tasks[0].end):null;
   // 关键路线：从最后完工的一张往回找「谁决定了它的开始」
@@ -151,5 +164,5 @@ window.RenoPlan=(()=>{
   if(!each.length)return [];const all=each.join('｜');
   return RULES.filter(r=>each.some(t=>r.when.test(t))&&!r.need.test(all)).map(r=>({msg:r.msg,level:r.level||'必查',items:each.filter(t=>r.when.test(t)&&r.when.source!=='.').slice(0,3).map(t=>t.split(' ')[0])}));
  }
- return {build,checklist,PHASES,MATERIALS,duration,unitType,phaseIndex};
+ return {build,checklist,PHASES,MATERIALS,DEPS,relations,duration,unitType,phaseIndex};
 })();
