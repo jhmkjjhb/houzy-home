@@ -102,6 +102,8 @@ window.RenoSchedule=(()=>{
   const nearMonth=i=>dw*7<30||[...monthAt].some(m=>m!==i&&Math.abs(m-i)*dw<46);
   let ticks='';for(let i=0;i<days;i++){const d=add(from,i);const first=monthAt.has(i);if(((d.getUTCDay()===1&&!nearMonth(i))||first)&&(i*dw<days*dw-26||i===0))ticks+=first&&d.getUTCDate()===1?`<span class="sch-tick m sch-mclick" style="left:${i*dw}px" data-sch-month="${i}" data-sch-mdays="${new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()}" role="button" tabindex="0" title="点一下放大看 ${d.getUTCMonth()+1} 月">${d.getUTCMonth()+1}月${d.getUTCDate()}</span>`:`<span class="sch-tick${first?' m':''}" style="left:${i*dw}px">${first?`${d.getUTCMonth()+1}月`:''}${d.getUTCDate()}</span>`;}
   const sundays=[];for(let i=0;i<days;i++)if(add(from,i).getUTCDay()===0)sundays.push(`<i style="left:${i*dw}px;width:${dw}px"></i>`);
+  // 表格虚线：每周一一条细虚线，每月 1 号一条深一点的虚线
+  for(let i=1;i<days;i++){const d=add(from,i);if(d.getUTCDate()===1)sundays.push(`<b class="m" style="left:${i*dw}px"></b>`);else if(d.getUTCDay()===1&&dw*7>=14)sundays.push(`<b style="left:${i*dw}px"></b>`);}
   const matsBy=new Map((P.materials||[]).map(m=>[m.id,m]));
   const relText=tk=>{const r=rel[tk.key];if(!r)return '';const par=r.parallel.filter(x=>span[x]).map(x=>NAME[x]);return par.length?`<b class="sch-par" title="${tk.key==='masonry'||tk.key==='ceiling'?'墙面、防水可与天花同期；地面铺砖要等天花完成（GB 50327 第 14.1.2 条）':''}">可与 ${E(par.join('、'))} 同期${tk.key==='masonry'?'（地面铺砖等天花完）':''}</b>`:r.after.length?`等 ${E(r.after.map(x=>NAME[x]).join('、'))} 做完`:'先做';};
   // 一行一道工序：横条是这道工序的计划（一个工种一次进场）；展开看这道工序要做的全部项目和来自哪张子单

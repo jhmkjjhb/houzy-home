@@ -373,3 +373,9 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-items li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:4px 0;border-bottom:1px dashed #e3e8e4;font-size:13px}
 .sch-items li small{color:#68766e}.sch-items li em{margin-left:auto;font-style:normal;font-size:12px;color:#68766e}
 .sch-items .st-done{color:#157a3c}.sch-items .st-working,.sch-items .st-arrived{color:#633899}.sch-items .st-ordered{color:#9a6700}
+/* 看板表格化：行、标签列、每周、每月都用虚线隔开 */
+.sch-grid .sch-row{border-top:1px dashed #d6ddd8}.sch-grid .sch-row:last-of-type{border-bottom:1px dashed #d6ddd8}.sch-grid .sch-axis{border-top:0;border-bottom:1px dashed #b9c3bd}
+.sch-grid .sch-label{border-right:1px dashed #c9d1cc!important}
+.sch-sun b{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #e1e6e3}.sch-sun b.m{border-left-color:#aab5af}
+.sch-tiny .sch-sun{display:block}.sch-tiny .sch-sun i{display:none}
+.sch-items{border-style:dashed}
