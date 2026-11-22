@@ -364,3 +364,6 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-hand.flip span{left:auto;right:5px}
 .sch-axis .sch-lane,.sch-axis .sch-label{min-height:40px}.sch-axis .sch-tick{top:22px}
 .sch-today span,.sch-hand span{line-height:14px}
+.sch-mclick{cursor:zoom-in;border-radius:3px}.sch-mclick:hover{background:#eef4f0;color:#153927}
+.sch-axis .sch-lane{cursor:ew-resize}
+.sch-views button:disabled{opacity:.4;cursor:default}

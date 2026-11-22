@@ -160,13 +160,21 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await page.locator('#schedule').screenshot({path:out+'/staff-plan.png'});
  // 全局：整个工期一屏放下，不用左右滑；近 4 周：放大、可以左右滑；记住上次的选择
  {const fit=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth<=s.clientWidth+1;});assert(fit,'全局 shows the whole schedule without sideways scrolling');
-  await page.locator('[data-sch-view="zoom"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'放大 is still the whole schedule, just wider and scrollable');await page.locator('#schedule').screenshot({path:out+'/staff-plan-near.png'});
+  await page.locator('[data-sch-zoom="in"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'放大 is still the whole schedule, just wider and scrollable');await page.locator('#schedule').screenshot({path:out+'/staff-plan-near.png'});
   // 每个工种一种颜色，横条上写天数
   {const info=await page.evaluate(()=>[...document.querySelectorAll('#schedule .sch-bar')].map(b=>[[...b.classList].find(c=>c.startsWith('tr-')),b.textContent+(b.nextElementSibling?.classList.contains('sch-days')?b.nextElementSibling.textContent:'')]));
    assert(new Set(info.map(x=>x[0])).size>=3&&info.every(x=>x[0]&&/\d+天/.test(x[1])),'bars are coloured by trade and say how many days: '+JSON.stringify(info));}
-  assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'zoom','choice remembered');
+  // 点月份：放大到那个月（一屏一个月左右），那个月的 1 号在左边
+  {const m=page.locator('#schedule .sch-mclick').nth(1);const i=+(await m.getAttribute('data-sch-month'));await m.click();await page.waitForTimeout(200);
+   const r=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll'),lab=s.querySelector('.sch-label').offsetWidth,dw=+document.getElementById('schedule').dataset.dw;return {dw,left:s.scrollLeft,days:(s.clientWidth-lab)/dw};});
+   assert(r.days>=27&&r.days<=33&&Math.abs(r.left-i*r.dw)<=r.dw+1,'clicking a month zooms to that month: '+JSON.stringify(r));}
+  // 滚轮：鼠标在日期那一行上滚，缩小 / 放大
+  {const before=+(await page.locator('#schedule').getAttribute('data-dw'));await page.evaluate(()=>document.querySelector('#schedule .sch-axis').scrollIntoView({block:'center'}));await page.waitForTimeout(100);const ax=await page.locator('#schedule .sch-axis .sch-lane').boundingBox();
+   const scb=await page.locator('#schedule .sch-scroll').boundingBox();await page.mouse.move(scb.x+scb.width*0.6,ax.y+ax.height/2);await page.mouse.wheel(0,400);await page.waitForTimeout(250);
+   const after=+(await page.locator('#schedule').getAttribute('data-dw'));assert(after<before,'wheel down on the dates zooms out: '+before+' → '+after);
+   await page.mouse.wheel(0,-300);await page.waitForTimeout(250);assert(+(await page.locator('#schedule').getAttribute('data-dw'))>after,'wheel up zooms in');}
   {const r=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return {range:document.querySelector('#schedule .sch-views .muted').textContent};});assert(/共 \d+ 天/.test(r.range),'range covers the whole schedule: '+r.range);}
-  await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});
+  await page.locator('[data-sch-zoom="fit"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});
   // 时间轴上的字不能互相压住：日期之间、日期和「今天 / 交房」之间
   {const hit=await page.evaluate(()=>{const R=e=>e.getBoundingClientRect(),a=[...document.querySelectorAll('#schedule .sch-axis .sch-tick')].map(R),m=[...document.querySelectorAll('#schedule .sch-today span,#schedule .sch-hand span')].map(R);
     const x=(p,q)=>p.left<q.right-1&&q.left<p.right-1&&p.top<q.bottom-1&&q.top<p.bottom-1;const out=[];
