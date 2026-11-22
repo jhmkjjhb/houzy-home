@@ -1838,7 +1838,7 @@
     const itemsLeft = rows.filter(r => r[0] === '项目单价' && r[4] === '').length;
     const refN = rows.filter(r => r[0] === '项目单价' && PRICE[r[1]].ref).length + rows.filter(r => r[0] === '选材价差' && [4, 5, 6].every(i => r[i] === '') && Q.OPTION_REF[r[1].split('@')[0]] !== undefined).length;
     const optAll = rows.filter(r => r[0] === '选材价差'), optLeft = optAll.filter(r => r[4] === '' && r[5] === '' && r[6] === '').length;
-    let h = `<div class="card"><h2>公司价目表</h2>
+    let h = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="margin:0">公司价目表</h2><a class="btn" href="/portal/supplier-price-quote.html">供应商成本询价</a></div>
       <p class="hint">所有报价单的单价和选材价差都从这里来。当前其他项目优先采用 2026-11-16 新山市场调查表的建议价；原表注明多数为估算，签约前仍需核定。瓷砖砖材按规格和表面全屋共用一套 RM/片价格，铺贴另计。改价格的方法：下载模板 → 用 Excel 填好 → 上传。</p>
       <div class="bookStat"><div><b class="mono">${itemsLeft}</b><span>个项目还没有单价</span></div><div><b class="mono">${optLeft}</b><span>/ ${optAll.length} 个选材价差还没填</span></div><div><b class="mono" style="color:var(--yellow)">${refN}</b><span>个用的是参考价，等公司核定</span></div></div>
       ${info ? `<p class="hint">已上传：${esc(info.file)} · ${esc(info.at)} · ${info.items} 个单价、${info.options} 个价差</p>` : '<p class="hint">还没上传过，现在用的是系统自带的参考价。</p>'}
