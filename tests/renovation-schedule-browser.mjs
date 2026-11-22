@@ -166,7 +166,12 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
    assert(new Set(info.map(x=>x[0])).size>=3&&info.every(x=>x[0]&&/\d+天/.test(x[1])),'bars are coloured by trade and say how many days: '+JSON.stringify(info));}
   assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'zoom','choice remembered');
   {const r=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return {range:document.querySelector('#schedule .sch-views .muted').textContent};});assert(/共 \d+ 天/.test(r.range),'range covers the whole schedule: '+r.range);}
-  await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});}
+  await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});
+  // 时间轴上的字不能互相压住：日期之间、日期和「今天 / 交房」之间
+  {const hit=await page.evaluate(()=>{const R=e=>e.getBoundingClientRect(),a=[...document.querySelectorAll('#schedule .sch-axis .sch-tick')].map(R),m=[...document.querySelectorAll('#schedule .sch-today span,#schedule .sch-hand span')].map(R);
+    const x=(p,q)=>p.left<q.right-1&&q.left<p.right-1&&p.top<q.bottom-1&&q.top<p.bottom-1;const out=[];
+    a.forEach((p,i)=>a.slice(i+1).forEach(q=>{if(x(p,q))out.push('tick/tick');}));a.forEach(p=>m.forEach(q=>{if(x(p,q))out.push('tick/marker');}));if(m.length===2&&x(m[0],m[1]))out.push('today/handover');return out;});
+   assert.deepEqual(hit,[],'axis labels do not overlap');}}
  // 手机横屏 / 竖屏：「全局」从开工到完工都在一屏内，不用左右滑（转屏后自动按新宽度重画）
  for(const [w,h,name] of [[844,390,'landscape'],[390,844,'portrait']]){
   await page.setViewportSize({width:w,height:h});await page.waitForTimeout(500);
