@@ -58,7 +58,7 @@
   const from=Math.min(...rows.map(x=>d(x.planned_start))),to=Math.max(...rows.map(x=>d(x.planned_end)))+86400000,span=to-from;
   const pct=v=>Math.max(0,Math.min(100,(v-from)/span*100));
   const box=document.createElement('div');box.className='cs-schedule';
-  box.innerHTML=`<h3>进度计划</h3><p class="mini-note">门店排定的计划日期，实际以现场为准；计划完工 <b>${E(md(rows.reduce((m,x)=>x.planned_end>m?x.planned_end:m,'')))}</b>。</p><div class="cs-rows">${rows.map(x=>{const fin=x.total>0&&x.done===x.total,st=fin?'已完成':x.started||x.done?`进行中 ${x.done}/${x.total}`:'未开始';
+  box.innerHTML=`<h3>施工进度计划</h3><p class="mini-note">门店确认的预计计划；每道工序做完会打 ✓。预计完工 <b>${E(md(rows.reduce((m,x)=>x.planned_end>m?x.planned_end:m,'')))}</b>。</p><div class="cs-rows">${rows.map(x=>{const fin=x.total>0&&x.done===x.total,st=fin?'已完成':x.started||x.done?`进行中 ${x.done}/${x.total}`:'未开始';
    return `<div class="cs-row"><div class="cs-name"><strong>${E(x.name)}</strong><small>${E(md(x.planned_start))} – ${E(md(x.planned_end))} · ${E(st)}</small></div><div class="cs-track">${now>=from&&now<=to?`<i class="cs-now" style="left:${pct(now)}%"></i>`:''}<span class="cs-bar ${fin?'done':x.started||x.done?'active':''}" style="left:${pct(d(x.planned_start))}%;width:${Math.max(2,pct(d(x.planned_end)+86400000)-pct(d(x.planned_start)))}%"><span style="width:${x.total?Math.round(100*x.done/x.total):0}%"></span></span></div></div>`;}).join('')}</div>`;
   el.querySelector('.cs-schedule')?.remove();el.prepend(box);
  }

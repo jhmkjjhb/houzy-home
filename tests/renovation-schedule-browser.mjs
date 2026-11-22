@@ -25,7 +25,7 @@ const lines=[L('18','主卧 A 衣柜 Master Wardrobe A','E0 板 白色 2.4m',1,8
  L('50','客厅铺砖','600x1200',650,9,'work','泥水','sqft'),L('51','卫生间防水','',2,850,'work','泥水','间'),L('60','全屋电线更换','',1,6500,'work','水电'),L('61','全屋墙面油漆','Nippon',1,7800,'work','油漆'),L('70','设计服务','',1,0,'gift','赠品与设计','项')];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-2026-031','陈先生','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) SELECT $1,g,jsonb_agg(x->>'id') FROM (SELECT x,x->>'group' g FROM jsonb_array_elements($2::jsonb) x) t GROUP BY g`,[id,JSON.stringify(lines)]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -81,6 +81,10 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
  await page.waitForFunction(async()=>true);await new Promise(r=>setTimeout(r,800));
  let P=await plans();
+ // 预计计划没确认前：提示要店长确认（员工没有确认按钮）；业主链接还看不到计划。这里模拟店长已确认（店长确认的按钮在后面测）
+ await page.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('预计计划还没确认'));
+ assert((await sch.innerText()).includes('请店长确认')&&await sch.locator('[data-sch-confirm]').count()===0,'staff are told the store manager must confirm the forecast');
+ await sys('UPDATE renovation_projects SET phase_baseline_locked_at=now() WHERE id=$1',[id]);
  assert(P['水电'].s==='2026-12-01','first trade starts on the start day: '+P['水电'].s);
  assert(P['泥水'].s>P['水电'].e&&P['油漆'].s>P['泥水'].e,'trades follow one after another');
  assert(days('2026-12-01',P['全屋定制'].s)>=25&&P['全屋定制'].s>P['油漆'].e,'custom waits for the factory and for painting');
@@ -105,8 +109,8 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   assert((await row.innerText()).includes('晚2天'),'masonry shows it is 2 days behind the original plan');
   assert(await row.locator('.sch-base').count()===1,'original plan drawn as a thin grey line');
   const iss=await sch.locator('.sch-issues').innerText().catch(()=>'');const more=await sch.locator('.sch-issues details').count();if(more)await sch.locator('.sch-issues details summary').click();
-  assert((await sch.locator('.sch-issues').innerText()).includes('比原计划晚'),'delay against the original plan is listed under 要处理');
-  assert((await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="mep"]')}).innerText()).includes('按原计划'),'unchanged phases say they are on the original plan');}
+  assert((await sch.locator('.sch-issues').innerText()).includes('比预计晚'),'delay against the original plan is listed under 要处理');
+  assert((await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="mep"]')}).innerText()).includes('按预计'),'unchanged phases say they are on the original plan');}
  // 2b) 点工序横条：弹出这道工序所有子单的日期，改了保存，留下调整记录（谁、改了什么、从几号到几号）
  await sch.locator('[data-sch-bar="cabinet"]').click();const pe=sch.locator('.sch-phase-edit');await pe.waitFor();
  assert.equal(await pe.locator('[data-sch-pe]').count(),1,'one start and one end for the whole cabinet visit');
@@ -191,12 +195,30 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   await page.locator('#schedule .sch-scroll').screenshot({path:out+`/phone-${name}-global.png`});
  }
  await page.setViewportSize({width:1280,height:1000});
+ // 4d) 店长改预计计划：切到「预计计划」，点横条，写原因保存；员工只能看
+ {const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('#work-orders details.work').first().waitFor();await planTab(mp);const ms=mp.locator('#schedule .sch');await ms.locator('.sch-bar').first().waitFor();
+  await ms.locator('[data-sch-view="forecast"]').click();await ms.locator('[data-sch-bar="paint"]').click();const fe=ms.locator('.sch-fc-edit');await fe.waitFor();
+  await fe.locator('[data-sch-es]').fill('2027-02-01');await fe.locator('[data-sch-ee]').fill('2027-02-05');await fe.locator('[data-sch-reason]').fill('业主要求延期');await fe.locator('[data-sch-bok]').click();
+  await mp.waitForFunction(()=>!document.querySelector('#schedule .sch-fc-edit'));
+  const pb=(await sys('SELECT phase_baseline FROM renovation_projects WHERE id=$1',[id]))[0].phase_baseline;assert.equal(pb.paint.start,'2027-02-01','manager changed the forecast');
+  await ms.locator('#sch-log summary').click();await mp.waitForFunction(()=>document.querySelector('#schedule [data-sch-log]')?.textContent.includes('业主要求延期'));
+  await mp.locator('#schedule').screenshot({path:out+'/manager-forecast.png'});await mp.context().close();}
+ // 4e) 监理报泥水延误 3 天 → 实时计划自动顺延：泥水晚 3 天完成，油漆和后面的工序跟着往后挪，自动保存
+ {const before=await phasePlan(),w=(await sys(`SELECT id FROM renovation_work_orders WHERE project_id=$1 AND group_name='泥水'`,[id]))[0].id;
+  const sup=(await sys(`INSERT INTO renovation_site_supervisors(project_id,kind,name,access_code,created_by) VALUES($1,'external','外部监理','1234',$2) RETURNING id`,[id,staff]))[0].id;
+  await sys(`INSERT INTO renovation_site_entries(project_id,supervisor_id,work_order_id,kind,on_date,data,status) VALUES($1,$2,$3,'delay',$4::date,'{"days":3,"reason":"crew"}','open')`,[id,sup,w,before.masonry.start]);
+  await page.reload();await sch.locator('.sch-bar').first().waitFor();await page.waitForFunction(()=>document.querySelector('#schedule .sch-autonote'),null,{timeout:15000});
+  const after=await phasePlan(),dd=(a,b)=>days(a,b);
+  assert(dd(before.masonry.end,after.masonry.end)>=3&&after.paint.start>after.masonry.end&&after.cabinet.start>after.paint.end,'delay pushes masonry and the phases after it: '+JSON.stringify({before,after}));
+  assert((await sch.locator('.sch-autonote').innerText()).includes('泥水 延误 3 天'),'board says what was pushed');
+  await page.reload();await sch.locator('.sch-bar').first().waitFor();await page.waitForTimeout(1200);
+  assert.deepEqual(await phasePlan(),after,'the same delay is not applied twice');}
  // 5) 业主看到简版：有名称和日期，没有厂家、价格、执行人
  const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
  const cu=await open(null,`/portal/renovation-customer.html#${token}`,{width:390,height:844});
  await cu.locator('#customer-progress .cs-schedule').waitFor({state:'attached'});
  const ct=await cu.locator('#customer-progress .cs-schedule').evaluate(e=>e.textContent);
- assert(ct.includes('泥水')&&ct.includes('计划完工')&&!ct.includes('赠品与设计'),'owner sees planned trades: '+ct.slice(0,120));
+ assert(ct.includes('泥水')&&ct.includes('预计完工')&&!ct.includes('赠品与设计'),'owner sees planned trades: '+ct.slice(0,120));
  assert(!/8800|广州|雷霆|阿强|PO-/.test(ct),'no price, supplier or worker');
  assert.deepEqual(errors,[],'no page errors');
  console.log('PASS schedule browser flow');

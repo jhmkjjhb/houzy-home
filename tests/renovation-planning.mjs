@@ -83,4 +83,38 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  ok(lg.by==='Ali'&&lg.changes.some(x=>x.phase==='masonry'&&x.before_end==='2026-12-12'&&x.end==='2026-12-14'),'the change log keeps who and from-to dates: '+JSON.stringify(lg));
  await save(staff,{mep:{start:'2026-12-01',end:'2026-12-05'}});
  ok((await sys(`SELECT count(*)::int n FROM renovation_audit WHERE project_id=$1 AND action='phase_plan_saved'`,[id]))[0].n===2,'saving without a change adds no log line');}
+// 预计 / 实时：确认前预计跟着实时走；店长确认后锁定，实时再改预计不变；改预计只有店长、必须写原因；业主只看到确认后的预计 + 完成情况
+{const fm=fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8');await db.exec('RESET ROLE');await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fm);await db.exec(fm);
+ const w=(await sys(`SELECT id FROM renovation_work_orders WHERE project_id=$1 AND group_name='泥水'`,[id]))[0].id;
+ const live=(who,plan,extra={})=>call(who,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify(plan),'[]',extra.lines?JSON.stringify(extra.lines):null,extra.delays?JSON.stringify(extra.delays):null]);
+ const proj=async()=>(await sys('SELECT phase_plan,phase_baseline,phase_baseline_locked_at,phase_delays_applied FROM renovation_projects WHERE id=$1',[id]))[0];
+ const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
+ const owner=async()=>{await actor(staff,'anon');return (await db.query('SELECT renovation_customer_schedule($1) v',[token])).rows[0].v;};
+ await live(staff,{masonry:{start:'2026-12-10',end:'2026-12-16'}},{lines:{masonry:[[w,'W1']]}});
+ let r=await proj();ok(r.phase_baseline.masonry.end==='2026-12-16','before confirmation the forecast follows the live plan');
+ ok((await owner()).length===0,'owner sees no schedule until the store manager confirms it');
+ await reject(()=>call(staff,'SELECT renovation_phase_baseline_confirm($1) v',[id]),/只有店长/);
+ await call(manager,'SELECT renovation_phase_baseline_confirm($1) v',[id]);
+ await reject(()=>call(manager,'SELECT renovation_phase_baseline_confirm($1) v',[id]),/已经确认过/);
+ await live(staff,{masonry:{start:'2026-12-10',end:'2026-12-19'}});
+ r=await proj();ok(r.phase_plan.masonry.end==='2026-12-19'&&r.phase_baseline.masonry.end==='2026-12-16','after confirmation live changes leave the forecast alone');
+ let o=await owner();const om=o.find(x=>x.name==='泥水');
+ ok(om&&om.planned_end==='2026-12-16'&&om.total===1&&om.done===0,'owner sees the confirmed forecast per phase: '+JSON.stringify(o));
+ ok(!/supplier|order_no|rate|amount|assignee|note|reason/.test(JSON.stringify(o)),'owner sees no supplier, price, worker or internal notes');
+ await sys(`UPDATE renovation_work_items SET stage='done' WHERE project_id=$1 AND line_id='W1'`,[id]);
+ ok((await owner()).find(x=>x.name==='泥水').done===1,'owner sees the phase as done when its items are done');
+ const change=(who,plan,why)=>call(who,'SELECT renovation_phase_baseline_change($1,$2::jsonb,$3) v',[id,JSON.stringify(plan),why]);
+ await reject(()=>change(staff,{masonry:{start:'2026-12-10',end:'2026-12-20'}},'业主加项'),/只有店长/);
+ await reject(()=>change(manager,{masonry:{start:'2026-12-10',end:'2026-12-20'}},' '),/原因/);
+ await change(manager,{masonry:{start:'2026-12-10',end:'2026-12-20'}},'业主加项');
+ ok((await proj()).phase_baseline.masonry.end==='2026-12-20','manager changes the forecast');
+ const lg=(await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='phase_baseline_changed'`,[id]))[0].payload;
+ ok(lg.reason==='业主加项'&&lg.by==='Mei'&&lg.changes[0].before_end==='2026-12-16','forecast change log keeps who, why and from-to');
+ // 监理延误自动顺延：同一条延误只顺延一次（两个页面同时打开也不会重复推）
+ const sup=(await sys(`INSERT INTO renovation_site_supervisors(project_id,kind,name,access_code,created_by) VALUES($1,'external','外部监理','1234','${staff}') RETURNING id`,[id]))[0].id;
+ const dl=(await sys(`INSERT INTO renovation_site_entries(project_id,supervisor_id,work_order_id,kind,data,status) VALUES($1,$2,$3,'delay','{"days":3,"reason":"crew"}','open') RETURNING id`,[id,sup,w]))[0].id;
+ await live(staff,{masonry:{start:'2026-12-10',end:'2026-12-22'}},{delays:[dl]});
+ const again=await live(staff,{masonry:{start:'2026-12-10',end:'2026-12-25'}},{delays:[dl]});
+ r=await proj();ok(again.skipped&&r.phase_plan.masonry.end==='2026-12-22'&&r.phase_delays_applied.includes(dl),'a delay is applied once only');
+ ok((await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='phase_plan_saved' ORDER BY created_at DESC LIMIT 1`,[id]))[0].payload.auto_delay?.length===1,'auto shift is marked in the change log');}
 console.log(`PASS ${checks} planning checks`);
