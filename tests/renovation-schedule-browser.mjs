@@ -96,6 +96,15 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  const Q=await plans();
  assert(days(P['泥水'].s,Q['泥水'].s)===2&&days(P['泥水'].e,Q['泥水'].e)===2,'move keeps length, shifts 2 days');
  assert(Q['油漆'].s===P['油漆'].s&&days(P['油漆'].e,Q['油漆'].e)===1,'end handle adds 1 day');
+ // 2a) 原计划对比：第一次保存的就是原计划；泥水往后挪 2 天后，显示「晚2天」、细灰线是原计划，并列入要处理
+ await page.reload();await sch.locator('.sch-bar').first().waitFor();await page.waitForFunction(()=>document.querySelector('#schedule .sch-base'));
+ {const row=sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="泥水"]')});
+  assert((await row.innerText()).includes('晚2天'),'masonry shows it is 2 days behind the original plan');
+  assert(await row.locator('.sch-base').count()===1,'original plan drawn as a thin grey line');
+  const iss=await sch.locator('.sch-issues').innerText().catch(()=>'');const more=await sch.locator('.sch-issues details').count();if(more)await sch.locator('.sch-issues details summary').click();
+  assert((await sch.locator('.sch-issues').innerText()).includes('比原计划晚'),'delay against the original plan is listed under 要处理');
+  assert((await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="水电"]')}).innerText()).includes('按原计划'),'unchanged phases say they are on the original plan');}
+ await openPhases(page);
  // 2b) 点工序横条：弹出这道工序所有子单的日期，改了保存，留下调整记录（谁、改了什么、从几号到几号）
  await sch.locator('[data-sch-bar="phase:定制柜安装"]').click();const pe=sch.locator('.sch-phase-edit');await pe.waitFor();
  assert.equal(await pe.locator('[data-sch-pe]').count(),2,'phase editor lists both cabinet sub-orders');
@@ -151,11 +160,12 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await page.locator('#schedule').screenshot({path:out+'/staff-plan.png'});
  // 全局：整个工期一屏放下，不用左右滑；近 4 周：放大、可以左右滑；记住上次的选择
  {const fit=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth<=s.clientWidth+1;});assert(fit,'全局 shows the whole schedule without sideways scrolling');
-  await page.locator('[data-sch-view="near"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'近 4 周 zooms in and scrolls');await page.locator('#schedule').screenshot({path:out+'/staff-plan-near.png'});
+  await page.locator('[data-sch-view="zoom"]').click();assert(await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return s.scrollWidth>s.clientWidth;}),'放大 is still the whole schedule, just wider and scrollable');await page.locator('#schedule').screenshot({path:out+'/staff-plan-near.png'});
   // 每个工种一种颜色，横条上写天数
   {const info=await page.evaluate(()=>[...document.querySelectorAll('#schedule .sch-bar')].map(b=>[[...b.classList].find(c=>c.startsWith('tr-')),b.textContent+(b.nextElementSibling?.classList.contains('sch-days')?b.nextElementSibling.textContent:'')]));
    assert(new Set(info.map(x=>x[0])).size>=3&&info.every(x=>x[0]&&/\d+天/.test(x[1])),'bars are coloured by trade and say how many days: '+JSON.stringify(info));}
-  assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'near','choice remembered');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('reno-plan-view')),'zoom','choice remembered');
+  {const r=await page.evaluate(()=>{const s=document.querySelector('#schedule .sch-scroll');return {range:document.querySelector('#schedule .sch-views .muted').textContent};});assert(/共 \d+ 天/.test(r.range),'range covers the whole schedule: '+r.range);}
   await page.locator('[data-sch-view="all"]').click();await page.locator('#schedule').screenshot({path:out+'/staff-plan-global.png'});}
  // 手机横屏 / 竖屏：「全局」从开工到完工都在一屏内，不用左右滑（转屏后自动按新宽度重画）
  for(const [w,h,name] of [[844,390,'landscape'],[390,844,'portrait']]){

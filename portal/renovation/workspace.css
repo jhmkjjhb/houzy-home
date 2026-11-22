@@ -348,3 +348,11 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-phase-edit{display:grid;gap:8px}.sch-edit-row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.sch-edit-row>span{min-width:120px;font-size:13px;color:#3d4d45}
 .sch-par{font-weight:600;color:#157a3c}
 .sch-compact .sch-phase-row .sch-label small{display:block}
+/* 原计划对比实际 */
+.sch-base{position:absolute;top:2px;height:4px;border-radius:2px;background:#b9c2bd;pointer-events:auto;z-index:1}
+.sch-act{position:absolute;bottom:2px;height:4px;border-radius:2px;background:#153927;pointer-events:auto;z-index:1}
+.sch-act.done{background:#157a3c}
+.sch-key.base{background:#b9c2bd;height:4px}.sch-key.act{background:#153927;height:4px}
+.sch-vpos{position:absolute;top:50%;transform:translateY(-50%);white-space:nowrap;pointer-events:none}
+.sch-var{font-style:normal;font-size:11.5px;font-weight:700;color:#5b6a62}.sch-var.bad{color:#b42318}.sch-var.ok{color:#157a3c}
+.sch-phase-row .sch-lane{min-height:36px}
