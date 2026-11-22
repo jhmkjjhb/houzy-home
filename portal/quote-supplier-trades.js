@@ -21,6 +21,24 @@
     ['special', '其他定制项目']
   ].map(([id, name], order) => ({ id, name, order }));
   const byId = Object.fromEntries(GROUPS.map(x => [x.id, x]));
+  // Only product/material choices belong to manufacturer price requests.
+  // Work-method choices (for example tile installation size or wall prep)
+  // remain with the construction contractor.
+  const MATERIAL_SPEC_KEYS = {
+    tile: ['supply', 'stone', 'solidWood', 'woodGrade'], wall: ['brand'],
+    ceiling: ['board', 'slat', 'alu'],
+    cabinet: ['body', 'grade', 'door', 'doorStyle', 'handle', 'edge', 'back', 'top', 'kick', 'hardware', 'wardrobeDoor', 'light', 'counter'],
+    vanity: ['kind', 'body', 'top', 'mirror'], stairs: ['wood', 'stone', 'paint', 'nosing'],
+    canopy: ['roof', 'frame', 'wall', 'glass'], door2: ['slide', 'glass', 'frame', 'tub'],
+    doorwin: ['doorMat', 'winType', 'winOpen', 'screen'],
+    bathkit: ['toiletKind', 'sanBrand', 'shower', 'heater', 'sink', 'tap', 'exhaust', 'acc', 'drain'],
+    base: ['stone', 'skirting', 'grout', 'wp', 'pipe', 'wire', 'cornice'],
+    soft2: ['curtain', 'rack', 'fanBrand'],
+    outer: ['mainDoor', 'grille', 'extPaint', 'cctvRes', 'cctvBrand', 'doorbell', 'gateType', 'gateMotor'],
+    craft: ['toilet', 'casing', 'bay', 'tatami', 'bar', 'softPanel', 'mirror', 'stone', 'gblock', 'mosaic', 'border', 'raise', 'deck', 'purifier'],
+    panel: ['slab', 'board'], soft: ['grade'], shower: ['glass', 'frame'],
+    switch: ['brand', 'smartType', 'platform'], lighting: ['grade']
+  };
   const MAP = {};
   const assign = (trade, codes) => codes.trim().split(/\s+/).forEach(code => { MAP[code] = trade; });
 
@@ -45,6 +63,15 @@
     if (type === '瓷砖片价' || /^tile\.size\./.test(id)) return 'floor_tile';
     return String(id).includes('@') ? String(id).split('@').pop() : id;
   }
+  function isMaterialItem(id, type, materialValue) {
+    if (type === '瓷砖片价') return true;
+    if (type === '项目单价') return Number(materialValue) > 0 && baseCode(id, type) !== 'struct';
+    if (type !== '选材价差') return false;
+    const first = String(id).indexOf('.'), second = String(id).indexOf('.', first + 1);
+    if (first < 0 || second < 0 || !String(id).includes('@')) return false;
+    const category = String(id).slice(0, first), key = String(id).slice(first + 1, second);
+    return (MATERIAL_SPEC_KEYS[category] || []).includes(key);
+  }
   function resolve(id, type) {
     const code = baseCode(id, type), group = byId[MAP[code]];
     return group ? { ...group, code } : { ...byId.special, id: 'unassigned', name: '工种待确认', code };
@@ -52,7 +79,7 @@
   function audit(price) {
     return Object.keys(price || {}).filter(code => !MAP[code]);
   }
-  const api = { GROUPS, MAP, baseCode, resolve, audit };
+  const api = { GROUPS, MAP, MATERIAL_SPEC_KEYS, baseCode, resolve, isMaterialItem, audit };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.QV2_SUPPLIER_TRADES = api;
 })(typeof window !== 'undefined' ? window : globalThis);

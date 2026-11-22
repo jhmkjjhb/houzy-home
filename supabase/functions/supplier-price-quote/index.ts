@@ -33,17 +33,24 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'GET') return reply(200, { supplier: invite.supplier_name, status: invite.status, round: { title: round.title, trade: round.trade, status: round.status, items: round.items, closes_at: round.closes_at }, quote: invite.quote, note: invite.note, validity: invite.validity });
     if (round.status !== 'open' || (round.closes_at && Date.now() > Date.parse(round.closes_at))) return reply(409, { error: '此询价单已截止，无法修改报价。' });
     const incoming = Array.isArray(body.quote) ? body.quote : [];
-    const allowed = new Set((round.items || []).map((x: any) => x.id));
-    if (incoming.length > allowed.size || incoming.some((x: any) => !allowed.has(x.id)) || new Set(incoming.map((x: any) => x.id)).size !== incoming.length) return reply(400, { error: '报价项目与询价单不一致，请重新打开链接。' });
+    const itemMap = new Map((round.items || []).map((x: any) => [x.id, x]));
+    if (incoming.length > itemMap.size || incoming.some((x: any) => !itemMap.has(x.id)) || new Set(incoming.map((x: any) => x.id)).size !== incoming.length) return reply(400, { error: '报价项目与询价单不一致，请重新打开链接。' });
     let quote: any[];
     try {
       quote = incoming.map((x: any) => {
-        const vals = ['material', 'auxiliary', 'labour', 'waste'].map(k => x[k] === '' || x[k] == null ? null : Number(x[k]));
-        if (vals.some(v => v !== null && (!Number.isFinite(v) || v < 0))) throw new Error('报价必须为非负数字');
-        return { id: x.id, material: vals[0], auxiliary: vals[1], labour: vals[2], waste: vals[3] };
+        const item: any = itemMap.get(x.id), fields: string[] = item.quote_fields || (item.type === '瓷砖片价' ? ['material'] : ['material', 'auxiliary', 'labour', 'waste']);
+        const values: Record<string, number | null> = {};
+        for (const key of ['material', 'auxiliary', 'labour', 'waste']) {
+          if (!fields.includes(key)) { if (x[key] !== '' && x[key] != null) throw new Error('该询价不接受此成本类别'); continue; }
+          const value = x[key] === '' || x[key] == null ? null : Number(x[key]);
+          const allowDifference = item.type === '选材价差' && key === 'material';
+          if (value !== null && (!Number.isFinite(value) || (!allowDifference && value < 0))) throw new Error('报价必须为有效金额；主材价差可为负数。');
+          values[key] = value;
+        }
+        return { id: x.id, ...values };
       });
-    } catch { return reply(400, { error: '报价必须为有效的非负数字。' }); }
-    if (!quote.some((x: any) => x.material != null || x.auxiliary != null || x.labour != null)) return reply(400, { error: '请至少填写一个项目的成本价。' });
+    } catch (e) { return reply(400, { error: e instanceof Error ? e.message : '报价必须为有效金额；主材差额可为负数。' }); }
+    if (!quote.some((x: any) => ['material', 'auxiliary', 'labour'].some(k => x[k] != null))) return reply(400, { error: '请至少填写一个项目的成本价。' });
     const validity = safe(body.validity, 80), note = safe(body.note, 1200);
     const up = await db(`supplier_price_invites?id=eq.${invite.id}`, { method: 'PATCH', body: JSON.stringify({ quote, note, validity, status: 'submitted', submitted_at: new Date().toISOString() }) });
     return up.ok ? reply(200, { ok: true, message: '成本报价已提交。' }) : reply(500, { error: '提交失败，请稍后重试。' });
@@ -64,6 +71,8 @@ Deno.serve(async (req: Request) => {
     const suppliers = Array.isArray(body.suppliers) ? body.suppliers.slice(0, 30) : [];
     if (!title || !trade || !items.length || !suppliers.length) return reply(400, { error: '请填写询价名称、工种、项目和供应商。' });
     if (items.some((x: any) => !safe(x.id, 240) || !safe(x.name, 240) || !safe(x.unit, 60))) return reply(400, { error: '询价项目缺少编号、名称或单位。' });
+    const scopes = new Set(items.map((x: any) => x.quote_scope).filter(Boolean)), scope = items[0]?.quote_scope;
+    if (scopes.size && (scopes.size !== 1 || !['material', 'work'].includes(scope) || items.some((x: any) => x.quote_scope !== scope || !Array.isArray(x.quote_fields) || x.quote_fields.some((f: string) => !['material', 'auxiliary', 'labour'].includes(f)) || (scope === 'material' ? x.quote_fields.join(',') !== 'material' : x.quote_fields.join(',') !== 'auxiliary,labour')))) return reply(400, { error: '主材采购与施工报价必须分开创建，且只能填写对应成本类别。' });
     if (suppliers.some((x: any) => !safe(x, 100))) return reply(400, { error: '供应商名称不能为空。' });
     const created = await db('supplier_price_rounds?select=id', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ title, trade, items, created_by: who.id, closes_at: body.closes_at || null }) });
     if (!created.ok) return reply(500, { error: '创建询价单失败。' });
@@ -91,17 +100,35 @@ Deno.serve(async (req: Request) => {
     const roundId = safe(body.round_id, 50), inviteId = safe(body.invite_id, 50);
     const ir = await db(`supplier_price_invites?id=eq.${inviteId}&round_id=eq.${roundId}&select=id,supplier_name,status,quote`);
     const invite = ir.ok ? (await ir.json())[0] : null;
-    const rr = await db(`supplier_price_rounds?id=eq.${roundId}&select=id,status,items`);
+    const rr = await db(`supplier_price_rounds?id=eq.${roundId}&select=id,status,trade,items`);
     const round = rr.ok ? (await rr.json())[0] : null;
     if (!invite || invite.status !== 'submitted' || !round || round.status !== 'open') return reply(409, { error: '只能从开放询价单的已提交报价中选择供应商。' });
     const info = new Map((round.items || []).map((x: any) => [x.id, x]));
-    const rows = (invite.quote || []).filter((q: any) => {
+    const quotedItems = (invite.quote || []).filter((q: any) => {
       const item: any = info.get(q.id);
-      return item && (item.type === '瓷砖片价' ? q.material != null : q.material != null && q.auxiliary != null && q.labour != null);
-    }).map((q: any) => {
-      const item: any = info.get(q.id); if (!item) return null;
-      return { item_id: q.id, item_type: item.type, item_name: item.name, unit: item.unit, material: q.material ?? 0, auxiliary: q.auxiliary ?? 0, labour: q.labour ?? 0, waste_pct: q.waste ?? 0, supplier_name: invite.supplier_name, source_round_id: roundId, updated_by: who.id, updated_at: new Date().toISOString() };
-    }).filter(Boolean);
+      const fields: string[] = item?.quote_fields || (item?.type === '瓷砖片价' ? ['material'] : ['material', 'auxiliary', 'labour', 'waste']);
+      return item && fields.every((k: string) => q[k] != null);
+    });
+    const ids = [...new Set(quotedItems.map((q: any) => q.id))];
+    const existingRows: any[] = [];
+    for (let i = 0; i < ids.length; i += 60) {
+      const filter = `in.(${ids.slice(i, i + 60).map(id => `"${String(id).replace(/"/g, '\\"')}"`).join(',')})`;
+      const result = await db(`quote_company_costbook?select=*&item_id=${encodeURIComponent(filter)}`);
+      if (!result.ok) return reply(500, { error: '读取已有成本价失败，请稍后重试。' });
+      existingRows.push(...await result.json());
+    }
+    const existing = new Map(existingRows.map(x => [x.item_id, x]));
+    const now = new Date().toISOString();
+    const rows = quotedItems.map((q: any) => {
+      const item: any = info.get(q.id), prev: any = existing.get(q.id) || {}, fields: string[] = item.quote_fields || (item.type === '瓷砖片价' ? ['material'] : ['material', 'auxiliary', 'labour', 'waste']);
+      const row: any = { item_id: q.id, item_type: item.type, item_name: item.name, unit: item.unit, material: prev.material ?? 0, auxiliary: prev.auxiliary ?? 0, labour: prev.labour ?? 0, waste_pct: prev.waste_pct ?? 0, supplier_name: invite.supplier_name, source_round_id: roundId, updated_by: who.id, updated_at: now };
+      if (fields.includes('material')) { row.material = q.material; row.material_supplier_name = invite.supplier_name; row.material_source_round_id = roundId; row.material_updated_at = now; }
+      if (fields.includes('auxiliary')) row.auxiliary = q.auxiliary;
+      if (fields.includes('labour')) row.labour = q.labour;
+      if (fields.includes('auxiliary') || fields.includes('labour')) { row.work_supplier_name = invite.supplier_name; row.work_source_round_id = roundId; row.work_updated_at = now; }
+      if (fields.includes('waste')) row.waste_pct = q.waste ?? 0;
+      return row;
+    });
     if (!rows.length) return reply(400, { error: '该供应商没有可同步的成本项目。' });
     const up = await db('quote_company_costbook?on_conflict=item_id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
     if (!up.ok) return reply(500, { error: '同步成本价失败，请稍后重试。' });
@@ -109,7 +136,7 @@ Deno.serve(async (req: Request) => {
     return reply(200, { ok: true, count: rows.length, skipped: Math.max(0, (round.items || []).length - rows.length), supplier: invite.supplier_name });
   }
   if (action === 'costbook') {
-    const r = await db('quote_company_costbook?select=item_id,item_type,item_name,unit,material,auxiliary,labour,waste_pct,supplier_name,updated_at');
+    const r = await db('quote_company_costbook?select=item_id,item_type,item_name,unit,material,auxiliary,labour,waste_pct,supplier_name,material_supplier_name,work_supplier_name,updated_at');
     return r.ok ? reply(200, { rows: await r.json() }) : reply(500, { error: '读取成本价目表失败。' });
   }
   return reply(400, { error: '未知操作。' });
