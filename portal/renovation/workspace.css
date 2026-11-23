@@ -385,3 +385,10 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-fc.warn{background:#fff8e6;border-color:#e8c66a;color:#6b4e00;font-size:13px}.sch-fc.warn>span{flex:1 1 320px}
 .sch-autonote{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#eef6ff;color:#1d4f86;font-size:13px}
 .sch-fc-edit .sch-reason{flex:1 1 220px}.sch-fc-edit .sch-reason input{width:100%}
+/* 工厂定做段：安装横条前面的斜纹 */
+.sch-prod{position:absolute;top:11px;height:14px;box-sizing:border-box;border:1px dashed #9a8fc4;border-right:0;border-radius:7px 0 0 7px;background:repeating-linear-gradient(135deg,#ece8f8 0 5px,#fff 5px 9px);display:flex;align-items:center;overflow:hidden;pointer-events:auto}
+.sch-prod em{font-style:normal;font-size:11px;color:#5b4e8c;padding-left:6px;white-space:nowrap}
+.sch-prod.bad{border-color:#c0392b;background:repeating-linear-gradient(135deg,#fbe3e0 0 5px,#fff 5px 9px)}.sch-prod.bad em{color:#a32d1f}
+.sch-prod.done{opacity:.5}
+.sch-compact .sch-prod{top:50%;height:10px;transform:translateY(-50%)}
+.sch-key.prod{background:repeating-linear-gradient(135deg,#cfc6ee 0 3px,#fff 3px 6px);border:1px dashed #9a8fc4}

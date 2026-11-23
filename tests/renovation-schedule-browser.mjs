@@ -81,6 +81,12 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
  await page.waitForFunction(async()=>true);await new Promise(r=>setTimeout(r,800));
  let P=await plans();
+ // 定制柜：安装前画一段「工厂定做」（下单到到货），名称下写「工厂定做 25天 → 柜体安装队安装」；水电这种现场活没有
+ {const cab=sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="cabinet"]')});
+  assert.equal(await cab.locator('.sch-prod').count(),1,'custom cabinets show the factory production part before install');
+  assert((await cab.locator('.sch-label').innerText()).includes('工厂定做 25天'),'label says made in the factory, then installed');
+  const pr=await cab.locator('.sch-prod').boundingBox(),br=await cab.locator('.sch-bar').boundingBox();assert(Math.abs(pr.x+pr.width-br.x)<=2,'production ends where install starts');
+  assert.equal(await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="mep"]')}).locator('.sch-prod').count(),0,'site-only trades have no factory part');}
  // 预计计划没确认前：提示要店长确认（员工没有确认按钮）；业主链接还看不到计划。这里模拟店长已确认（店长确认的按钮在后面测）
  await page.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('预计计划还没确认'));
  assert((await sch.innerText()).includes('请店长确认')&&await sch.locator('[data-sch-confirm]').count()===0,'staff are told the store manager must confirm the forecast');
