@@ -117,4 +117,14 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  const again=await live(staff,{masonry:{start:'2026-12-10',end:'2026-12-25'}},{delays:[dl]});
  r=await proj();ok(again.skipped&&r.phase_plan.masonry.end==='2026-12-22'&&r.phase_delays_applied.includes(dl),'a delay is applied once only');
  ok((await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='phase_plan_saved' ORDER BY created_at DESC LIMIT 1`,[id]))[0].payload.auto_delay?.length===1,'auto shift is marked in the change log');}
+// 子单固定总天数：有权限的员工才能改；1–365 天或留空；每次改动记下谁、从几天改到几天
+{await db.exec('RESET ROLE');const dm=fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8');await db.exec(dm);await db.exec(dm);
+ const w=(await sys(`SELECT id FROM renovation_work_orders WHERE project_id=$1 AND group_name='全屋定制'`,[id]))[0].id;
+ const days=(who,n)=>call(who,'SELECT renovation_work_order_days_save($1,$2) v',[w,n]);
+ await reject(()=>days(outsider,45),/无此项目权限/);await reject(()=>days(staff,0),/1 到 365/);await reject(()=>days(staff,400),/1 到 365/);
+ await days(staff,45);ok((await sys('SELECT fixed_days FROM renovation_work_orders WHERE id=$1',[w]))[0].fixed_days===45,'staff set 45 days');
+ ok((await days(staff,45)).changed===false,'saving the same number again changes nothing');
+ await days(staff,null);ok((await sys('SELECT fixed_days FROM renovation_work_orders WHERE id=$1',[w]))[0].fixed_days===null,'cleared back to not fixed');
+ const lg=(await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='work_order_days_saved' ORDER BY created_at`,[id])).map(r=>r.payload);
+ ok(lg.length===2&&lg[0].days===45&&lg[0].by==='Ali'&&lg[1].before===45&&lg[1].days===null,'days changes are logged: '+JSON.stringify(lg));}
 console.log(`PASS ${checks} planning checks`);

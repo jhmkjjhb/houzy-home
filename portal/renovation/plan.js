@@ -94,6 +94,10 @@ window.RenoPlan=(()=>{
   for(const [k,g] of groups){const p=PHASES[k],done=g.items.length>0&&g.items.every(i=>i.stage==='done'),f=fixed?.[p.key];
    tasks.push({id:p.key,name:p.name,phase:k,phaseName:p.name,trade:p.trade,crew:p.trade,days:duration(p,g.lines),lines:g.lines,items:g.items,workOrders:[...g.wos],done,material:materialOf(g.lines),fixed:done&&f?.start?{start:parse(f.start),end:parse(f.end)}:null});}
   tasks.sort((a,b)=>a.phase-b.phase);
+  // 子单定了总天数（设计 + 定做 + 安装，从开始设计下单算到装好）：工厂定做天数 = 总天数 − 这道工序的现场安装天数
+  for(const t of tasks){const fx=Math.max(0,...(wos||[]).filter(w=>!w.cancelled_at&&t.workOrders.includes(w.id)).map(w=>+w.fixed_days||0));
+   if(fx&&!t.material){t.fixedDays=fx;t.days=fx;} // 现场活：总天数就是这道工序的工期
+   if(fx&&t.material){t.fixedDays=fx;t.material={...t.material,lead:Math.max(1,fx-t.days),label:`${t.material.label.replace(/（.*）$/,'')}（子单定 ${fx} 天，含安装）`,fixedDays:fx};}}
   const phaseEnd={},crewFree={},batches=tracking?.batches||[];
   // 工序之间的先后关系：没有先后关系的工序同期施工；没有这道工序时，顺着它的前一道往前找
   const depEnd=key=>{if(phaseEnd[key])return {end:phaseEnd[key],names:[PHASES.find(p=>p.key===key).name]};let best={end:add(S,-1),names:[]};for(const d of DEPS[key]||[]){const r=depEnd(d);if(r.end>best.end)best=r;}return best;};
@@ -132,7 +136,7 @@ window.RenoPlan=(()=>{
    const signNeeded=gi.some(i=>i.kind==='custom'&&i.stage==='pending');
    const orderBy=add(t.start,-m.lead),measureOn=m.measure?next(phaseEnd[m.measure]||S):null;
    const status=arrived?'arrived':ordered?'ordered':T>orderBy?'late':diff(T,orderBy)<=7?'soon':'later';
-   return {id:t.id,name:t.name,label:m.label,lead:m.lead,needBy:iso(t.start),orderBy:iso(orderBy),measureOn:measureOn&&iso(measureOn),status,signNeeded,items:t.lines.filter(l=>['custom','stock'].includes(l.kind)).map(l=>l.name)};
+   return {id:t.id,name:t.name,label:m.label,lead:m.lead,fixedDays:m.fixedDays||null,needBy:iso(t.start),orderBy:iso(orderBy),measureOn:measureOn&&iso(measureOn),status,signNeeded,items:t.lines.filter(l=>['custom','stock'].includes(l.kind)).map(l=>l.name)};
   }).sort((a,b)=>a.orderBy.localeCompare(b.orderBy));
   // 验收节点（对上合同收款期数）
   const pay=re=>(payments||[]).find(p=>re.test(p.name||''));
@@ -145,7 +149,7 @@ window.RenoPlan=(()=>{
   // 交房日
   const H=parse(handover);let handoverInfo=null;
   if(H&&finish){const slack=diff(next(finish),H);handoverInfo={slack,latestStart:slack>=0?iso(work(add(S,slack))):null,late:slack<0};}
-  return {start:iso(S),finish:finish&&iso(finish),handover:handoverInfo,tasks:tasks.map(t=>({id:t.id,key:t.id,name:t.name,phase:t.phaseName,trade:t.trade,crew:t.crew,days:t.days,start:iso(t.start),end:iso(t.end),why:t.why,critical:t.critical,done:t.done,workOrders:t.workOrders,lines:t.lines.map(l=>({id:String(l.id),name:l.name,spec:l.spec||'',qty:l.qty,unit:l.unit||'',kind:l.kind,group:l.group,work_order_id:l.work_order_id,stage:(t.items.find(i=>i.work_order_id===l.work_order_id&&String(i.line_id)===String(l.id))||{}).stage||'pending'}))})),materials,milestones:ms,checks:checklist(lines||[])};
+  return {start:iso(S),finish:finish&&iso(finish),handover:handoverInfo,tasks:tasks.map(t=>({id:t.id,key:t.id,fixedDays:t.fixedDays||null,name:t.name,phase:t.phaseName,trade:t.trade,crew:t.crew,days:t.days,start:iso(t.start),end:iso(t.end),why:t.why,critical:t.critical,done:t.done,workOrders:t.workOrders,lines:t.lines.map(l=>({id:String(l.id),name:l.name,spec:l.spec||'',qty:l.qty,unit:l.unit||'',kind:l.kind,group:l.group,work_order_id:l.work_order_id,stage:(t.items.find(i=>i.work_order_id===l.work_order_id&&String(i.line_id)===String(l.id))||{}).stage||'pending'}))})),materials,milestones:ms,checks:checklist(lines||[])};
  }
  // 防漏项：有 A 没有 B 就提醒（只提醒，不拦）
  const RULES=[

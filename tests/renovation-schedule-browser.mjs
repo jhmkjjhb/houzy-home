@@ -25,7 +25,7 @@ const lines=[L('18','主卧 A 衣柜 Master Wardrobe A','E0 板 白色 2.4m',1,8
  L('50','客厅铺砖','600x1200',650,9,'work','泥水','sqft'),L('51','卫生间防水','',2,850,'work','泥水','间'),L('60','全屋电线更换','',1,6500,'work','水电'),L('61','全屋墙面油漆','Nippon',1,7800,'work','油漆'),L('70','设计服务','',1,0,'gift','赠品与设计','项')];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-2026-031','陈先生','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) SELECT $1,g,jsonb_agg(x->>'id') FROM (SELECT x,x->>'group' g FROM jsonb_array_elements($2::jsonb) x) t GROUP BY g`,[id,JSON.stringify(lines)]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -75,7 +75,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 水电','2. 泥水','3. 油漆','4. 定制柜安装','5. 洁具灯具设备'],'rows are construction phases in working order');
  assert.equal(await sch.locator('.sch-phase').count(),5,'one bar per phase (the gift is not scheduled)');
  await openPhases(page);assert.equal(await sch.locator('.sch-items').count(),5,'opening a phase lists what that trade does in one visit');
- {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装'}).innerText();assert(pi.includes('来自「全屋定制」')&&pi.includes('来自「厨房及洗衣区柜体」'),'one cabinet visit covers items from both sub-orders: '+pi.slice(0,160));}
+ {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装'}).innerText();assert(pi.includes('涉及 2 张子单')&&pi.includes('全屋定制')&&pi.includes('厨房及洗衣区柜体')&&pi.includes('履约')&&pi.includes('打开子单'),'one cabinet visit lists both sub-orders with their fulfilment: '+pi.slice(0,200));}
  assert((await sch.innerText()).includes('有改动还没保存'),'unsaved changes are flagged');
  assert.equal((await plans())['泥水'].s,null,'nothing saved before 保存');
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
@@ -201,6 +201,16 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   await page.locator('#schedule .sch-scroll').screenshot({path:out+`/phone-${name}-global.png`});
  }
  await page.setViewportSize({width:1280,height:1000});
+ // 4c2) 工序展开 → 子单：定总天数 45 天（设计 + 定做 + 安装），工厂定做段和最晚下单日按 45 天重算；点「打开子单」跳到那张子单
+ {await openPhases(page);const wo=sch.locator('.sch-wo',{hasText:'全屋定制'});const woId=(await sys(`SELECT id FROM renovation_work_orders WHERE project_id=$1 AND group_name='全屋定制'`,[id]))[0].id;
+  await wo.locator('[data-sch-days]').fill('45');await wo.locator('[data-sch-dsave]').click();
+  await page.waitForFunction(()=>document.querySelector('#schedule .sch-wo')?.closest('.sch')?.innerText.includes('定 45 天'),null,{timeout:10000}).catch(async()=>{await openPhases(page);});
+  assert.equal((await sys('SELECT fixed_days FROM renovation_work_orders WHERE id=$1',[woId]))[0].fixed_days,45,'fixed days saved on the sub-order');
+  await openPhases(page);const txt=await sch.locator('.sch-wo',{hasText:'全屋定制'}).innerText();assert(/定 45 天：最晚 \d\d\/\d\d 开始设计 \/ 下单/.test(txt),'sub-order says when design / ordering must start: '+txt.slice(0,200));
+  const lab=await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="cabinet"]')}).locator('.sch-label').innerText();assert(/工厂定做 \d+天/.test(lab),'factory days recalculated: '+lab);
+  await sch.locator('#sch-log summary').click().catch(()=>{});await page.waitForFunction(()=>document.querySelector('#schedule [data-sch-log]')?.textContent.includes('总天数'));
+  await sch.locator('.sch-wo',{hasText:'全屋定制'}).locator('[data-sch-gowo]').click();await page.waitForFunction(id=>document.querySelector(`#work-orders details.work[data-wid="${id}"]`)?.open,woId);
+  await page.locator('.steps a[href="#project-plan"]').click();await sch.locator('.sch-bar').first().waitFor();}
  // 4d) 店长改预计计划：切到「预计计划」，点横条，写原因保存；员工只能看
  {const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('#work-orders details.work').first().waitFor();await planTab(mp);const ms=mp.locator('#schedule .sch');await ms.locator('.sch-bar').first().waitFor();
   await ms.locator('[data-sch-view="forecast"]').click();await ms.locator('[data-sch-bar="paint"]').click();const fe=ms.locator('.sch-fc-edit');await fe.waitFor();

@@ -97,6 +97,9 @@ window.RenoSchedule=(()=>{
   const rel=RenoPlan.relations?RenoPlan.relations(Object.keys(span)):{};
   if(span.masonry&&span.ceiling&&!span.masonry.done&&span.masonry.e<=span.ceiling.e)push('顺序冲突',`泥水 ${md(span.masonry.e)} 就做完，但天花 ${md(span.ceiling.e)} 才做完：地面铺砖要等天花完成（GB 50327 第 14.1.2 条），泥水要排到天花之后结束`);
   for(const [k,v] of Object.entries(rel))for(const d of v.after){if(span[k]&&span[d]&&!span[k].done&&span[k].s<=span[d].e)push('顺序冲突',`${NAME[k]} ${md(span[k].s)} 开始，但「${NAME[d]}」${md(span[d].e)} 才做完：要等它做完，或者把「${NAME[k]}」往后挪`);}
+  phases.forEach(tk=>{const pl=state.plans[tk.key];if(!pl)return;for(const id of tk.workOrders||[]){const w=work.find(x=>x.id===id),fx=+w?.fixed_days||0;if(!fx)continue;
+   const ls=tk.lines.filter(l=>l.work_order_id===id);if(ls.some(l=>['ordered','arrived','scheduled','working','done'].includes(l.stage)))continue;
+   const fs=iso(add(parse(pl.end),-(fx-1)));if(fs<=iso(add(t,7)))push('子单天数',`${short(w.group_name)} 定 ${fx} 天（设计 + 定做 + 安装）：要在 ${md(pl.end)} 装好，最晚 ${md(fs)} 就要开始设计下单${fs<iso(t)?'，已经过了':''}`);}});
   // 预计对比：预计 = 店长确认的预计计划（没确认前跟实时一样）；实际 = 监理开工记录 / 这道工序全部做完的日期
   const cmp={};for(const tk of phases){const b=state.baseline?.[tk.key],g=prog(tk),its=(ctx.tracking?.items||[]).filter(i=>(tk.lines||[]).some(l=>l.work_order_id===i.work_order_id&&String(l.id)===String(i.line_id)));
    const siteS=(tk.workOrders||[]).map(id=>state.siteActual?.[id]?.start).filter(Boolean).sort()[0];
@@ -159,7 +162,14 @@ window.RenoSchedule=(()=>{
    let prod='';if(m&&pl&&m.lead){const ps=add(parse(pl.start),-m.lead),pw=m.lead*dw,arr=m.status==='arrived';
     const ptxt=arr?'已到货':m.status==='ordered'?`已下单 · 生产中`:`工厂定做 ${m.lead}天`;
     prod=`<span class="sch-prod${arr?' done':m.status==='late'?' bad':''}" style="left:${diff(from,ps)*dw}px;width:${pw}px" title="${E(m.label)}：${arr?'已到货':m.status==='ordered'?'已下单，工厂生产中':`最晚 ${E(iso(ps))} 下单`}，工厂定做 / 到货约 ${m.lead} 天，到货后现场安装">${pw>=86?`<em>${E(ptxt)}</em>`:''}</span>`;}
-   const open=state.open.has(tk.key),subs=open?`<div class="sch-items"><b>${E(tk.name)} · ${E(tk.trade)}一次进场要做的 ${tk.lines.length} 项</b><ul>${tk.lines.map(l=>`<li><span>${E(l.name)}${l.spec?` <small>${E(l.spec)}</small>`:''}</span><small>${E(l.qty??'')} ${E(l.unit)} · 来自「${E(l.group)}」</small><em class="st-${l.stage}">${E(STAGE[l.stage]||l.stage)}</em></li>`).join('')}</ul></div>`:'';
+   // 展开：这道工序涉及的每张子单——履约进度、执行人、子单日期、固定总天数（设计 + 定做 + 安装）
+   const open=state.open.has(tk.key),subs=open?`<div class="sch-items"><b>${E(tk.name)} · ${E(tk.trade)}一次进场 · 涉及 ${tk.workOrders.length} 张子单</b>${tk.workOrders.map(id=>{const w=work.find(x=>x.id===id);if(!w)return '';
+     const ls=tk.lines.filter(l=>l.work_order_id===id),dn=ls.filter(l=>l.stage==='done').length,cnt={};ls.forEach(l=>cnt[l.stage]=(cnt[l.stage]||0)+1);
+     const fx=+w.fixed_days||0,fs=fx&&pl?iso(add(parse(pl.end),-(fx-1))):null,started=ls.some(l=>['ordered','arrived','scheduled','working','done'].includes(l.stage));
+     const fxTxt=fx&&!(m&&m.lead)?`定 ${fx} 天施工`:fx?(pl?`定 ${fx} 天：最晚 <b class="${!started&&fs<iso(t)?'bad':''}">${E(md(fs))}</b> 开始设计 / 下单 → ${E(md(pl.end))} 装好${!started&&fs<iso(t)?'（已过）':''}`:`定 ${fx} 天`):(m&&m.lead?`按常规：工厂定做约 ${m.lead} 天 + 安装 ${tk.days} 天`:`按工程量：约 ${tk.days} 天`);
+     return `<div class="sch-wo"><div class="sch-wo-head"><b>${E(short(w.group_name))}</b><span>执行人 ${E(w.assignee||'未指定')}</span><span class="${dn===ls.length&&ls.length?'ok':''}">履约 ${dn}/${ls.length} 完成${Object.entries(cnt).filter(([k])=>k!=='done').map(([k,n])=>` · ${E(STAGE[k]||k)} ${n}`).join('')}</span>${w.planned_start?`<span>子单 ${E(md(String(w.planned_start).slice(0,10)))}–${E(md(String(w.planned_end).slice(0,10)))}</span>`:''}<button type="button" class="secondary sch-go" data-sch-gowo="${E(id)}">打开子单 ›</button></div>
+      <div class="sch-wo-days"><span>${fxTxt}</span>${ctx.locked?'':`<label>${m&&m.lead?'总天数（设计 + 定做 + 安装）':'施工天数'}<input type="number" min="1" max="365" inputmode="numeric" data-sch-days="${E(id)}" value="${fx||''}" placeholder="不固定"> 天</label><button type="button" class="secondary" data-sch-dsave="${E(id)}">保存天数</button>`}</div>
+      <ul>${ls.map(l=>`<li><span>${E(l.name)}${l.spec?` <small>${E(l.spec)}</small>`:''}</span><small>${E(l.qty??'')} ${E(l.unit)}</small><em class="st-${l.stage}">${E(STAGE[l.stage]||l.stage)}</em></li>`).join('')}</ul></div>`;}).join('')}</div>`:'';
    return `<div class="sch-row sch-phase-row"><button type="button" class="sch-label" data-sch-phase="${tk.key}" aria-expanded="${open}"><span>${k+1}. ${E(tk.name)}${bad?'<i class="sch-dot"></i>':''}</span><small>${m&&m.lead?`工厂定做 ${m.lead}天 → `:''}${E(tk.trade)}${m&&m.lead?'安装':''} · ${relText(tk)} ${open?'▾':'▸'}</small></button><div class="sch-lane"><div class="sch-sun">${sundays.join('')}</div>${baseLine}${prod}${barHtml}${actLine}${mk}${vtxt&&pl?`<span class="sch-vpos" style="left:${(diff(from,parse(pl.end))+1)*dw+46}px">${vtxt}</span>`:''}</div></div>${subs}${editor(tk)}`;
   };
   const editor=tk=>fv?(state.editingPhase===tk.key&&ctx.manager&&!ctx.locked?`<div class="sch-edit sch-phase-edit sch-fc-edit"><b>改「${E(tk.name)}」的预计计划（业主看到的日期）</b><div class="sch-edit-row" data-sch-pe="${tk.key}"><label>开始<input type="date" data-sch-es value="${E(state.baseline[tk.key]?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(state.baseline[tk.key]?.end||'')}"></label><label class="sch-reason">原因（必填）<input data-sch-reason maxlength="300" placeholder="如：业主加项 / 业主要求延期"></label><button type="button" data-sch-bok="${tk.key}">保存预计计划</button><button type="button" class="secondary" data-sch-cancel>取消</button></div><span class="muted">保存后业主链接马上更新，并记入调整记录（谁、为什么、从几号到几号）</span></div>`:''):state.editingPhase===tk.key&&!ctx.locked?`<div class="sch-edit sch-phase-edit"><b>调整「${E(tk.name)}」的日期（${E(tk.trade)}一次进场）</b><div class="sch-edit-row" data-sch-pe="${tk.key}"><label>开始<input type="date" data-sch-es value="${E(state.plans[tk.key]?.start||'')}"></label><label>完成<input type="date" data-sch-ee value="${E(state.plans[tk.key]?.end||'')}"></label><button type="button" data-sch-pok="${tk.key}">确定</button><button type="button" class="secondary" data-sch-cancel>取消</button></div><span class="muted">改好后点上面的「保存计划」才会保存，并记入调整记录</span></div>`:'';
@@ -186,6 +196,7 @@ window.RenoSchedule=(()=>{
   const f=d=>d?md(String(d).slice(0,10)):'未排';
   return `<ul class="sch-list">${state.log.map(a=>{const at=new Date(a.created_at).toLocaleString('zh-CN',{timeZone:'Asia/Kuala_Lumpur',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),pl=a.payload||{};
    if(a.action==='handover_date_saved')return `<li><b>${E(at)}</b>${pl.by?' · '+E(pl.by):''} · 交房日 ${E(f(pl.before))} → <b>${E(f(pl.on))}</b></li>`;
+   if(a.action==='work_order_days_saved')return `<li><b>${E(at)}</b>${pl.by?' · '+E(pl.by):''} · 子单「${E(String(pl.name||'').replace(/^增项-[0-9a-f-]{36} · ?/i,'增项 · '))}」总天数 ${pl.before?E(pl.before)+' 天':'不固定'} → <b>${pl.days?E(pl.days)+' 天':'不固定'}</b></li>`;
    if(a.action==='phase_baseline_confirmed')return `<li><b>${E(at)}</b>${pl.by?' · '+E(pl.by):''} · <b>确认预计计划</b>（锁定，业主链接显示）</li>`;
    if(a.action==='phase_baseline_changed'){const nm=k=>(window.RenoPlan?.PHASES||[]).find(p=>p.key===k)?.name||k;const items=(pl.changes||[]).map(x=>`${E(nm(x.phase))}：${x.before_start?`${E(f(x.before_start))}–${E(f(x.before_end))} → `:''}<b>${x.start?`${E(f(x.start))}–${E(f(x.end))}`:'取消'}</b>`);
     return `<li><b>${E(at)}</b>${pl.by?' · '+E(pl.by):''} · <b>改预计计划</b>，原因：${E(pl.reason||'')}<br><small>${items.join('；')}</small></li>`;}
@@ -197,7 +208,7 @@ window.RenoSchedule=(()=>{
  }
  async function loadLog(ctx){
   if(!state||state.log||state.logLoading||!ctx.sb||!ctx.project?.id)return;state.logLoading=true;
-  try{const {data}=await ctx.sb.from('renovation_audit').select('action,created_at,payload').eq('project_id',ctx.project.id).in('action',['phase_plan_saved','phase_baseline_confirmed','phase_baseline_changed','schedule_saved','handover_date_saved']).order('created_at',{ascending:false}).limit(300);
+  try{const {data}=await ctx.sb.from('renovation_audit').select('action,created_at,payload').eq('project_id',ctx.project.id).in('action',['work_order_days_saved','phase_plan_saved','phase_baseline_confirmed','phase_baseline_changed','schedule_saved','handover_date_saved']).order('created_at',{ascending:false}).limit(300);
    const all=(data||[]).slice().sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));state.log=all.slice(0,30);
   }
   catch(e){state.log=[];}
@@ -279,6 +290,11 @@ window.RenoSchedule=(()=>{
     }else if(d.schPhase){const n=d.schPhase;state.open.has(n)?state.open.delete(n):state.open.add(n);rerender();}
     else if(d.schPok){const row=b.closest('[data-sch-pe]'),s=row.querySelector('[data-sch-es]').value,en=row.querySelector('[data-sch-ee]').value;
      if(!s||!en)throw new Error('请把开始和完成日期都填上');if(en<s)throw new Error('完成日期不能早于开始日期');const o=state.plans[d.schPok];if(!o||o.start!==s||o.end!==en)setPlan(d.schPok,s,en);state.editingPhase=null;rerender();}
+    else if(d.schDsave){const inp=el.querySelector(`[data-sch-days="${d.schDsave}"]`),v=inp.value.trim(),n=v?Math.round(+v):null;
+     if(v&&!(n>=1&&n<=365))throw new Error('天数要在 1 到 365 之间，不固定就留空');
+     b.disabled=true;const {error}=await ctx.sb.rpc('renovation_work_order_days_save',{p_work_order:d.schDsave,p_days:n});if(error){b.disabled=false;throw new Error(/function|schema cache/i.test(error.message)?'要先在 Supabase 运行 renovation_work_order_days_migration.sql':error.message);}
+     state.log=null;await ctx.onChange();ctx.message(n?`已定 ${n} 天（设计 + 定做 + 安装）。工厂定做那段和「最晚开始设计下单」已按 ${n} 天重新算；要整体重排请点「按工序重新排」。`:'已改回不固定天数。');}
+    else if(d.schGowo){const id=d.schGowo;document.querySelector('.steps a[href="#work-orders"]')?.click();setTimeout(()=>{const c=document.querySelector(`#work-orders details.work[data-wid="${CSS.escape(id)}"]`);if(c){c.open=true;c.scrollIntoView({behavior:'smooth',block:'start'});}},80);}
     else if(d.schView){state.view=d.schView;state.editingPhase=null;rerender();}
     else if('schConfirm' in d){b.disabled=true;const {error}=await ctx.sb.rpc('renovation_phase_baseline_confirm',{p_id:ctx.data().project.id});if(error)throw new Error(/function|schema cache/i.test(error.message)?'要先在 Supabase 运行 renovation_phase_forecast_migration.sql':error.message);state.log=null;await ctx.onChange();ctx.message('预计计划已确认锁定：业主链接显示这份计划。之后现场调整只改实时计划。');}
     else if(d.schBok){const row=b.closest('[data-sch-pe]'),s=row.querySelector('[data-sch-es]').value,en=row.querySelector('[data-sch-ee]').value,why=row.querySelector('[data-sch-reason]').value.trim();

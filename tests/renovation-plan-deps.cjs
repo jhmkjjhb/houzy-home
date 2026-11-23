@@ -40,4 +40,13 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(T3['泥水'].days===Math.ceil(380/120),'days come from the combined quantity');
  ok(T3['油漆'].start>T3['泥水'].end&&T3['油漆'].start>T3['天花木作'].end,'paint after tiling and ceiling');
  ok(P.phaseOfLine({name:'窗帘',kind:'stock'},'软装')===7&&P.phaseOfLine({name:'智能门锁',kind:'stock'},'五金')===7,'curtains and smart locks are fixtures, not doors / windows');}
+// 子单定了总天数（设计 + 定做 + 安装，从开始下单算到装好）：工厂定做天数 = 总天数 − 安装天数；没下单时，柜子最早要等这么多天才能装
+{const its=items.map(i=>i.work_order_id==='w5'?{...i,stage:'pending'}:i);
+ const base=P.build({work,lines,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ const fx=P.build({work:work.map(w=>w.id==='w5'?{...w,fixed_days:45}:w),lines,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ const cb=base.tasks.find(x=>x.key==='cabinet'),cf=fx.tasks.find(x=>x.key==='cabinet'),mf=fx.materials.find(m=>m.id==='cabinet');
+ ok(cf.fixedDays===45&&mf.lead===45-cf.days&&mf.fixedDays===45,'45 days = factory part + install days: '+JSON.stringify(mf));
+ ok(cf.start>cb.start&&mf.label.includes('45'),'a longer fixed total pushes the cabinet install later and is named in the material list');
+ const sit=P.build({work:work.map(w=>w.id==='w2'?{...w,fixed_days:12}:w),lines,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ ok(sit.tasks.find(x=>x.key==='masonry').days===12,'for site work the fixed total is the phase length');}
 console.log(`PASS ${n} plan dependency checks`);
