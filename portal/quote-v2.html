@@ -399,6 +399,13 @@
   .cloud-slot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 0; border-top:1px solid #d9c69f; }
   .cloud-slot small { display:block; color:#6b6860; margin-top:3px; }
   .cloud-slot-actions { display:flex; gap:6px; }
+  .cloud-library { margin:12px 0 16px; }
+  .cloud-library-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .cloud-library-list { display:grid; gap:7px; margin:10px 0; }
+  .cloud-library-record { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 12px; text-align:left; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ink); cursor:pointer; }
+  .cloud-library-record:hover,.cloud-library-record:focus-visible { border-color:var(--navy); background:var(--navy-soft); }
+  .cloud-library-record small { display:block; margin-top:3px; color:var(--ink-dim); }
+  .cloud-library-record .cloud-arrow { flex:none; font-weight:700; color:var(--navy); }
   [data-cloud-status]:not(:empty) { position:fixed; z-index:40; left:12px; right:12px; bottom:12px; max-width:560px; margin:auto; padding:12px 16px; border:1px solid #c8a96e; border-radius:9px; background:#153927; color:#fffdf7; box-shadow:0 10px 30px #0004; }
   .top .cust { max-width:250px; border-color:#c8a96e; background:#fbf8f1; }
   .top .sum small { color:#e4cf9b; letter-spacing:.08em; }
@@ -525,6 +532,8 @@
   let P = load();
   let cloudCurrent = null; // { slot, revision }; archives themselves never enter browser storage.
   let cloudRecords = [];
+  let cloudListState = 'idle';
+  let cloudListError = '';
   let cloudBusy = false;
   let tab = new URLSearchParams(location.search).get('tab') === 'supplier' ? 'supplier' : P.houseType ? 'room' : 'house';
   let roomId = P.rooms[0]?.id || null;
@@ -907,7 +916,30 @@
       .select('slot,revision,customer_name,customer_phone,updated_at').order('slot');
     if (error) throw error;
     cloudRecords = data || [];
+    cloudListState = 'ready';
+    updateCloudList();
     return cloudRecords;
+  }
+  function cloudListHtml() {
+    if (cloudListState === 'loading' || cloudListState === 'idle') return '<span class="hint">正在读取云端报价…</span>';
+    if (cloudListState === 'error') return `<span class="hint">${esc(cloudListError)}</span>`;
+    if (!cloudRecords.length) return '<span class="hint">还没有云端报价。保存后会显示在这里。</span>';
+    return cloudRecords.map(record => {
+      const slot = +record.slot;
+      const date = new Date(record.updated_at).toLocaleString('zh-MY', { hour12: false });
+      const current = cloudCurrent?.slot === slot && cloudCurrent?.revision === record.revision;
+      return `<button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}</small></span><span class="cloud-arrow">打开 →</span></button>`;
+    }).join('');
+  }
+  function updateCloudList() {
+    const node = document.getElementById('cloud-quote-list');
+    if (node) node.innerHTML = cloudListHtml();
+  }
+  async function refreshCloudRecords() {
+    if (cloudListState === 'loading') return;
+    cloudListState = 'loading'; updateCloudList();
+    try { await listCloudRecords(await cloudSession()); }
+    catch (error) { cloudListError = '读取失败：' + (error.message || error); cloudListState = 'error'; updateCloudList(); }
   }
   function showCloudDialog(records, choosingOverwrite = false) {
     const rows = [1, 2, 3].map(slot => {
@@ -945,6 +977,8 @@
       cloudCurrent = { slot, revision: data[0].revision, phone: P.info.phone };
       document.getElementById('cloud-dialog').close();
       cloudStatus(`轻量报价已保存到云端第 ${slot} 份（${Math.max(1, Math.ceil(bytes / 1024))} KB，不含图片）。`, true);
+      cloudListState = 'idle';
+      refreshCloudRecords();
     } catch (error) { cloudStatus('云端报价保存失败：' + (error.message || error)); }
     finally { cloudBusy = false; }
   }
@@ -1545,7 +1579,7 @@
       ? (paymentLabelsEn[value] || window.HOUZY_QUOTE_I18N.translate(value))
       : value;
     const mode = P.quoteMode || 'estimate';
-    let h = `<h2>⑤ 报价单</h2>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
+    let h = `<h2>⑤ 报价单</h2><section class="card cloud-library noprint" aria-label="我的云端报价"><div class="cloud-library-head"><b>我的云端报价（最多 3 份）</b><button type="button" class="chip" data-cloud-refresh>刷新</button></div><div id="cloud-quote-list" class="cloud-library-list">${cloudListHtml()}</div><div class="adds" style="margin:8px 0 0"><button type="button" class="btn pri" data-cloud-save>保存当前报价到云端</button><span class="hint" style="align-self:center">轻量保存，不含图片；第 4 份须选择覆盖。</span></div></section>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
     const ps = Q.plans(P);
     if (ps.length > 1) {
       const rows = ps.map(p => { const L = Q.buildLines(P, p.id), T2 = Q.totals(P, L); return { p, total: T2.total, open: L.filter(l => l.tbd.length).length }; });
@@ -1583,7 +1617,6 @@
     h += `<h2>费用构成</h2><div class="bar">${T.byStage.map((s, i) => `<span title="${s.name}" style="width:${(s.total / Math.max(1, T.direct)) * 100}%;background:${STAGE_COLORS[(s.no - 1) % 9]}"></span>`).join('')}</div>
       <div class="legend">${T.byStage.map(s => `<span><i style="background:${STAGE_COLORS[(s.no - 1) % 9]}"></i>${s.name} <span class="mono">${rm(s.total)}</span></span>`).join('')}</div>`;
     h += `<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">${mode === 'formal' ? '正式报价单' : '预估报价单'} · ${esc(plan().name || '')}</h2><details class="quote-actions noprint"><summary class="btn pri">导出 / 导入 ▾</summary><div class="quote-actions-menu"><button class="btn" data-print="detail" ${K.red.length ? 'disabled title="先处理红色项目"' : ''}>${K.red.length ? `PDF：还有 ${K.red.length} 项待处理` : '导出详细 PDF'}</button><button class="btn" data-print="summary">导出客户方案 PDF${K.red.length ? '（预估）' : '（按空间包价）'}</button><button class="btn" data-export-table>导出品牌表格 XLSX</button><button class="btn" data-export-project>导出专属文件</button><label class="btn" style="cursor:pointer">导入专属文件<input type="file" accept=".json,.houzy-quote.json,application/json" data-import-project hidden></label></div></details></div>
-      <div class="adds noprint" style="margin:10px 0"><button type="button" class="btn pri" data-cloud-save>轻量云端保存报价</button><button type="button" class="btn" data-cloud-list>打开我的云端报价</button><span class="hint" style="margin:0;align-self:center">每位员工 3 份；不含图片；第 4 份须选择覆盖。</span></div>
       <p class="hint noprint">点击 PDF 按钮会直接下载文件。客户方案版每个空间一个包价，项目不拆单价，也不显示尺寸和材料品牌。品牌表格可在 Excel 编辑；专属文件可导回本报价器继续修改。</p>
       ${mode === 'estimate' && lines.some(l => l.tbd.length) ? '<p class="hint" style="color:var(--yellow)">标「暂定」的项目材料还没定，暂按标准档估价，定好后金额可能变化。</p>' : ''}
       <p class="hint">${uiLang === 'en' ? `Client: ${esc(P.info.name)} · Phone: ${esc(P.info.phone)} · Home address: ${esc(P.info.address)} · ${window.HOUZY_QUOTE_I18N.translate(HOUSES[P.houseType]?.en || HOUSES[P.houseType]?.label || '')} · Floor area ${nf(T.floorSum)} sq ft` : `客户：${esc(P.info.name) || '（未填）'} · 电话：${esc(P.info.phone)} · 住宅地址：${esc(P.info.address)} · ${HOUSES[P.houseType]?.label || ''} · 施工面积 ${nf(T.floorSum)} 平方尺`}</p>
@@ -1633,6 +1666,7 @@
     if (sel) { const el = app.querySelector(sel); if (el) { el.focus({ preventScroll: true }); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} const d = el.getBoundingClientRect().top - top; if (Math.abs(d) > 1) window.scrollBy(0, d); } }
     document.querySelectorAll('[data-info]').forEach(input => { if (input !== document.activeElement) input.value = P.info[input.dataset.info] || ''; });
     applyLanguage();
+    if (tab === 'quote' && cloudListState === 'idle') refreshCloudRecords();
   }
 
   // ---------- 客户演示模式：只给客户看结果，不显示成本构成和内部检查 ----------
@@ -2371,6 +2405,7 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.hasAttribute('data-cloud-save')) { saveCloudRecord(); return; }
+    if (b.hasAttribute('data-cloud-refresh')) { refreshCloudRecords(); return; }
     if (b.hasAttribute('data-cloud-list')) { openCloudRecords(); return; }
     if (b.hasAttribute('data-cloud-close')) { document.getElementById('cloud-dialog').close(); return; }
     if (b.hasAttribute('data-cloud-open')) { loadCloudRecord(+b.dataset.cloudOpen); return; }
@@ -2501,7 +2536,7 @@
       render(); return;
     }
     if (ds.demogo !== undefined) { demoIdx = +ds.demogo; window.scrollTo(0, 0); render(); return; }
-    if (ds.tab) { tab = ds.tab; confirmReset = false; roomPicked = false; render(); window.scrollTo(0, 0); return; }
+    if (ds.tab) { if (ds.tab === 'quote' && tab !== 'quote') cloudListState = 'idle'; tab = ds.tab; confirmReset = false; roomPicked = false; render(); window.scrollTo(0, 0); return; }
     if (ds.house) {
       if (P.houseType !== ds.house) { const keep = P.rooms.some(r => r.packs.length); P.houseType = ds.house; P.layout = null; layoutConfirm = false; if (!keep) P.rooms = Q.presetRooms(ds.house); }
       roomId = P.rooms[0]?.id; render(); return;
