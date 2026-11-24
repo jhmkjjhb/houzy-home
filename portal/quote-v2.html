@@ -445,7 +445,7 @@
     <input class="cust" data-info="name" placeholder="客户姓名 *" aria-label="客户姓名" aria-required="true" required>
     <input class="cust" data-info="phone" type="tel" placeholder="联系电话 *" aria-label="联系电话" aria-required="true" required>
     <input class="cust" data-info="address" placeholder="住宅地址 *" aria-label="住宅地址" aria-required="true" required>
-    <button type="button" class="btn" data-save-client>保存客户资料</button><span class="hint" data-client-save-status role="status" aria-live="polite" style="margin:0"></span>
+    <button type="button" class="btn" data-save-client>保存到云端客户档案</button><span class="hint" data-client-save-status role="status" aria-live="polite" style="margin:0"></span>
     <div class="lang-switch" role="group" aria-label="Language / 语言"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
     <button class="btn pri demoBtn" data-demo="open"><span id="playIc"></span> 演示给客户</button>
     <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
@@ -484,7 +484,7 @@
       input.setAttribute('aria-label', clientPlaceholders[input.dataset.info]);
     });
     const saveClientButton = document.querySelector('[data-save-client]');
-    if (saveClientButton) saveClientButton.textContent = uiLang === 'en' ? 'Save client details' : '保存客户资料';
+    if (saveClientButton && !saveClientButton.disabled) saveClientButton.textContent = uiLang === 'en' ? 'Save to cloud customer records' : '保存到云端客户档案';
     document.querySelectorAll('.house[data-house]').forEach(b => { const h = HOUSES[b.dataset.house]; if (!h) return; b.querySelector('b').textContent = uiLang === 'en' ? h.en : h.label; b.querySelector('span').textContent = uiLang === 'en' ? h.label + (h.landed ? ' · 有地' : '') : h.en + (h.landed ? ' · 有地' : ''); });
   };
   const ic = (code, cls) => window.QV2_ICON(code, cls);
@@ -830,6 +830,50 @@
       document.head.appendChild(sc);
     });
     return sbP;
+  }
+  async function saveClientToCloud(button) {
+    if (button.disabled) return;
+    const status = document.querySelector('[data-client-save-status]');
+    const report = (message, ok = false) => { if (status) { status.textContent = message; status.style.color = ok ? '#e4cf9b' : '#ffd2c7'; } };
+    const info = Object.fromEntries(['name', 'phone', 'address'].map(key => [key, document.querySelector(`[data-info="${key}"]`)?.value.trim() || '']));
+    P.info = info;
+    save(); // Keep the current quote locally even when the cloud is unavailable.
+    if (!requireClientInfo()) { report(uiLang === 'en' ? 'Complete the client details before saving to the cloud.' : '请先填完整客户资料。'); return; }
+    const rawPhone = info.phone.normalize('NFKC').replace(/[\s\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF().\-\u2010-\u2015]/g, '');
+    if (!/^\+?\d+$/.test(rawPhone)) { report(uiLang === 'en' ? 'Enter a valid phone number with country code.' : '手机号格式不正确，请填写国家区号。'); return; }
+    const digits = rawPhone.replace(/^\+/, '');
+    const phone = digits.startsWith('0') ? '60' + digits.replace(/^0+/, '') : digits;
+    if (phone.length < 9 || phone.length > 18) { report(uiLang === 'en' ? 'Check the phone number and country code.' : '请核对手机号及国家区号。'); return; }
+    button.disabled = true;
+    button.textContent = uiLang === 'en' ? 'Saving…' : '云端保存中…';
+    report(uiLang === 'en' ? 'Connecting to cloud customer records…' : '正在连接云端客户档案…', true);
+    try {
+      const sb = await sbClient();
+      const { data: { session }, error: sessionError } = await sb.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!session) throw new Error(uiLang === 'en' ? 'Sign in to the staff system, then save again.' : '请先登录员工系统，再点云端保存。');
+      const { data: existing, error: lookupError } = await sb.rpc('find_customer_by_phone', { p_phone: phone });
+      if (lookupError) throw lookupError;
+      if (existing?.length) {
+        const customer = existing[0];
+        const unchanged = customer.name === info.name && (customer.address || '') === info.address;
+        report(unchanged
+          ? (uiLang === 'en' ? 'This customer is already saved in the cloud.' : '该客户已保存在云端客户档案。')
+          : (uiLang === 'en' ? 'This phone is already in cloud records. Details were not overwritten; edit them in Staff System → Customers.' : '该手机号已有云端档案，资料不同；未覆盖，请到员工系统「客户管理」修改。'), unchanged);
+        return;
+      }
+      const { data: customer, error: insertError } = await sb.from('customers')
+        .insert({ name: info.name, phone, address: info.address })
+        .select('id').single();
+      if (insertError) throw insertError;
+      if (!customer?.id) throw new Error(uiLang === 'en' ? 'Cloud save was not confirmed.' : '云端未确认保存成功。');
+      report(uiLang === 'en' ? 'Saved to Staff System → Customers.' : '已保存到员工系统「客户管理」。', true);
+    } catch (error) {
+      report((uiLang === 'en' ? 'Cloud save failed: ' : '云端保存失败：') + (error.message || String(error)));
+    } finally {
+      button.disabled = false;
+      button.textContent = uiLang === 'en' ? 'Save to cloud customer records' : '保存到云端客户档案';
+    }
   }
   async function aiRecognize(lv) {
     // 有几层图就一起发，AI 一次看全屋；最多 4 层
@@ -2232,10 +2276,7 @@
     }
     const ds = b.dataset;
     if (b.hasAttribute('data-save-client')) {
-      P.info = { name: '', phone: '', address: '', ...(P.info || {}) };
-      save();
-      const status = document.querySelector('[data-client-save-status]');
-      if (status) status.textContent = uiLang === 'en' ? 'Client details saved' : '客户资料已保存';
+      saveClientToCloud(b);
       return;
     }
     if (ds.lang) { uiLang = ds.lang; localStorage.setItem('houzy-quote-v2-lang', uiLang); render(); return; }
