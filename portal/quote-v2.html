@@ -674,11 +674,12 @@
       roomId = P.rooms[0]?.id || null; syncNote = null; tab = 'quote'; render(); window.scrollTo(0, 0);
     } catch (error) { alert('导入失败：' + error.message); }
   }
-  // 同一份报价开在两个窗口时：另一个窗口保存后，这里马上换成最新的，免得旧窗口一操作就把新内容盖掉
+  // 同一份报价开在两个窗口时同步空闲窗口；编辑中的输入框由当前窗口保留。
   let syncNote = null;
   window.addEventListener('storage', e => {
     if (e.key !== STORE || !e.newValue) return;
-    try { const x = JSON.parse(e.newValue); if (x && Array.isArray(x.rooms)) { P = Q.migrate({ ...blank(), ...x }); syncNote = '这份报价在另一个窗口改过，这里已经换成最新内容。建议只开一个窗口做报价。'; render(); } } catch (err) {}
+    if (document.activeElement?.matches('input, textarea, select, [contenteditable="true"]')) return;
+    try { const x = JSON.parse(e.newValue); if (x && Array.isArray(x.rooms)) { P = Q.migrate({ ...blank(), ...x }); syncNote = '这份报价在另一个窗口改过，这里已经换成最新内容。建议只开一个窗口做报价。'; render(false); } } catch (err) {}
   });
   // 公司价目表更新后，旧报价中同项目的“本单临时价”会遮住新公司价。
   // 只清除公司这次已核定项目的旧覆盖价，并先保留一份自动备份。
@@ -1665,9 +1666,9 @@
   }
 
   // ---------- 渲染（重画后让正在填的框留在原位，页面不跳） ----------
-  function render() {
+  function render(persist = true) {
     P.info = { name: '', phone: '', address: '', ...(P.info || {}) };
-    const C = compute(); save();
+    const C = compute(); if (persist) save();
     document.getElementById('grand').textContent = rm(C.T.total);
     const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['supplier', '供应商询价'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
