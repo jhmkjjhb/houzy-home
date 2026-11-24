@@ -25,9 +25,9 @@ window.RenoPlan=(()=>{
   // 旧项目（11-24 前已保存过「水电」一条计划）继续水电合一、洁具灯具合一，不改业主已看到的日期（mep、fixture 只给旧项目用）
   {key:'mep',name:'水电',re:/$^/,lot:6,trade:'水电工'},
   {key:'masonry',name:'泥水',re:/泥水|泥瓦|砌|批荡|地坪|混凝土|找平|防水|门柱|围墙/,area:120,length:40,lot:2,trade:'泥水工'},
-  {key:'ceiling',name:'天花木作',re:/天花|石膏|吊顶|灯槽|木作|隔墙|木工/,area:150,length:60,lot:3,trade:'木工'},
-  // 马来西亚泥水（砌墙、批荡、找平、防水）和铺瓷砖是两班人：先泥水和天花，再铺砖（排在天花后面，工序按先后排列才算得对）
+  // 马来西亚泥水（砌墙、批荡、找平、防水）和铺瓷砖是两班人：泥水做完接着铺砖，不用等天花
   {key:'tile',name:'铺瓷砖',re:/铺砖|贴砖|铺贴|地砖|墙砖|瓷砖|砖材/,area:120,length:40,lot:2,trade:'瓷砖工'},
+  {key:'ceiling',name:'天花木作',re:/天花|石膏|吊顶|灯槽|木作|隔墙|木工/,area:150,length:60,lot:3,trade:'木工'},
   {key:'paint',name:'油漆',re:/油漆|涂料|乳胶|漆/,area:800,lot:7,trade:'油漆工'},
   {key:'cabinet',name:'定制柜安装',re:/定制|铝柜|衣柜|橱柜|地柜|吊柜|书柜|鞋柜|电视柜|玄关柜|隐形柜|书吧|柜体/,area:60,length:15,lot:1,trade:'柜体安装队'},
   {key:'fit',name:'台面门窗玻璃',re:/台面|岩板|石英|大理石|玻璃|隔断|门窗|窗(?!帘)|折叠门|移门|木门|房门|门(?!锁|铃|把)/,area:80,length:25,lot:1,trade:'厂家安装',parallel:true},
@@ -78,7 +78,7 @@ window.RenoPlan=(()=>{
   const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
   return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
  // 工序先后：每道工序要等哪几道做完（完工后才能开始）。没有先后关系的可以同期
- const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],tile:['masonry','ceiling'],paint:['masonry','ceiling','tile'],cabinet:['paint'],fit:['paint'],fix_plumb:['cabinet','fit'],fix_elec:['cabinet','fit'],hardware:['cabinet','fit'],fixture:['cabinet','fit'],clean:['tile','fix_plumb','fix_elec','hardware','fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
+ const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],tile:['masonry'],paint:['masonry','ceiling','tile'],cabinet:['paint'],fit:['paint'],fix_plumb:['cabinet','fit'],fix_elec:['cabinet','fit'],hardware:['cabinet','fit'],fixture:['cabinet','fit'],clean:['tile','fix_plumb','fix_elec','hardware','fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
  // 给出现的工序算：等谁（最近的前一道，跳过没有的工序）、可以和谁同期（彼此没有先后关系）
  function relations(keys){
   const has=new Set(keys),anc=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(!out.has(d)){out.add(d);walk(d);}}};walk(k);return out;};

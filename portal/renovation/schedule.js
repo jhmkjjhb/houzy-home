@@ -21,7 +21,7 @@ window.RenoSchedule=(()=>{
  let crewCache=null;
  const getCrews=sb=>crewCache||(crewCache=sb.from('renovation_crews').select('*').order('trade').order('name').then(r=>{if(r.error)crewCache=null;return r;},e=>{crewCache=null;return {error:e};}));
  let state=null; // {project, plans:{工序:{start,end}}, dirty:Set(工序), startOn, handover, ...}
- const ORDER=['prep','plumb','elec','mep','masonry','ceiling','tile','paint','cabinet','fit','fix_plumb','fix_elec','hardware','fixture','clean'];
+ const ORDER=['prep','plumb','elec','mep','masonry','tile','ceiling','paint','cabinet','fit','fix_plumb','fix_elec','hardware','fixture','clean'];
  const TRADE={'水管工':'plumb','电工':'elec','瓷砖工':'tile','水电工':'mep','泥水工':'mason','木工':'wood','油漆工':'paint','柜体安装队':'cab','厂家安装':'fac','清洁':'clean','杂工':'misc'};
  const STAGE={pending:'待处理',confirmed:'待下单',ordered:'已下单',arrived:'已到货',scheduled:'已排期',working:'施工中',done:'已完成'};
  // 11-24 前保存过「水电」/「洁具灯具设备」计划的旧项目，继续合成一条
@@ -130,7 +130,7 @@ window.RenoSchedule=(()=>{
   if(!hasPhaseCol&&!ctx.locked)html+='<p class="warning">按工序保存要先在 Supabase 运行 renovation_phase_plan_migration.sql（现在显示的是按子单日期推算的计划）。</p>';
   const it=(x,i)=>`<li><span class="sch-tag">${E(tags[i])}</span>${E(x)}</li>`;
   if(issues.length)html+=`<div class="sch-issues"><b>要处理（${issues.length}）</b><ul>${issues.slice(0,3).map(it).join('')}</ul>${issues.length>3?`<details><summary>还有 ${issues.length-3} 条</summary><ul>${issues.slice(3).map((x,i)=>it(x,i+3)).join('')}</ul></details>`:''}</div>`;
-  if(!planned.length){html+=`<p class="muted sch-empty">还没有排期。填开工日（和交房日），点「按工序自动排期」：系统把合同项目按工序归类（同一工序一个工种一次进场），按 拆除 → 水路 / 电路预埋（同期） → 泥水 / 天花 → 铺瓷砖 → 油漆 → 定制柜 / 台面门窗 → 水路 / 电路安装、五金窗帘 → 清洁 的先后排好；定制和门窗会等生产 / 复尺。排好后可以拖动调整。</p>${extras(P)}</div>`;el.innerHTML=html;afterRender(el,ctx);return;}
+  if(!planned.length){html+=`<p class="muted sch-empty">还没有排期。填开工日（和交房日），点「按工序自动排期」：系统把合同项目按工序归类（同一工序一个工种一次进场），按 拆除 → 水路 / 电路预埋（同期） → 泥水 → 铺瓷砖（天花同期） → 油漆 → 定制柜 / 台面门窗 → 水路 / 电路安装、五金窗帘 → 清洁 的先后排好；定制和门窗会等生产 / 复尺。排好后可以拖动调整。</p>${extras(P)}</div>`;el.innerHTML=html;afterRender(el,ctx);return;}
   const ms=(P.milestones||[]).filter(m=>m.on);
   const bl=Object.values(state.baseline||{}).filter(x=>x?.start);
   const from=add([...planned.map(tk=>parse(state.plans[tk.key].start)),...(P.materials||[]).filter(m=>m.orderBy).map(m=>parse(m.orderBy)),...bl.map(x=>parse(x.start)),t,...ms.map(m=>parse(m.on))].reduce((a,b)=>a<b?a:b),-2);
@@ -147,7 +147,7 @@ window.RenoSchedule=(()=>{
   // 表格虚线：每周一一条细虚线，每月 1 号一条深一点的虚线
   for(let i=1;i<days;i++){const d=add(from,i);if(d.getUTCDate()===1)sundays.push(`<b class="m" style="left:${i*dw}px"></b>`);else if(d.getUTCDay()===1&&dw*7>=14)sundays.push(`<b style="left:${i*dw}px"></b>`);}
   const matsBy=new Map((P.materials||[]).map(m=>[m.id,m]));
-  const relText=tk=>{const r=rel[tk.key];if(!r)return '';const par=r.parallel.filter(x=>span[x]).map(x=>NAME[x]);return par.length?`<b class="sch-par" title="${tk.key==='masonry'||tk.key==='ceiling'?'砌墙、批荡、防水可与天花同期；铺瓷砖要等泥水和天花都完成（GB 50327 第 14.1.2 条）':''}">可与 ${E(par.join('、'))} 同期${tk.key==='masonry'&&!span.tile?'（地面铺砖等天花完）':''}</b>`:r.after.length?`等 ${E(r.after.map(x=>NAME[x]).join('、'))} 做完`:'先做';};
+  const relText=tk=>{const r=rel[tk.key];if(!r)return '';const par=r.parallel.filter(x=>span[x]).map(x=>NAME[x]);return par.length?`<b class="sch-par" title="${tk.key==='masonry'||tk.key==='ceiling'?'砌墙、批荡、防水可与天花同期；铺瓷砖接在泥水后面':''}">可与 ${E(par.join('、'))} 同期${tk.key==='masonry'&&!span.tile?'（地面铺砖等天花完）':''}</b>`:r.after.length?`等 ${E(r.after.map(x=>NAME[x]).join('、'))} 做完`:'先做';};
   // 一行一道工序：横条是这道工序的计划（一个工种一次进场）；展开看这道工序要做的全部项目和来自哪张子单
   const row=(tk,k)=>{
    const pl=(fv?state.baseline:state.plans)[tk.key],g=prog(tk),c=cmp[tk.key]||{};

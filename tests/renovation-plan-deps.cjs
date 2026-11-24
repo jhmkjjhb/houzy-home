@@ -9,14 +9,14 @@ const work=groups.map(([g,l],i)=>({id:'w'+i,group_name:g,line_ids:[l],assignee:'
 // 材料都已到货，不受生产等待影响，只看工序关系
 const items=work.map(w=>({work_order_id:w.id,line_id:w.line_ids[0],kind:lines.find(l=>l.id===w.line_ids[0]).kind,stage:['custom','stock'].includes(lines.find(l=>l.id===w.line_ids[0]).kind)?'arrived':'pending'}));
 const R=P.build({work,lines,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
-const T=Object.fromEntries(R.tasks.map(t=>[t.name,t]));let n=0;const ok=(v,m)=>{assert(v,m);n++;};
+const T=Object.fromEntries(R.tasks.map(t=>[t.name,t]));const next=d=>{let x=new Date(d+'T00:00:00Z');do x=new Date(+x+864e5);while(x.getUTCDay()===0);return x.toISOString().slice(0,10);};let n=0;const ok=(v,m)=>{assert(v,m);n++;};
 ok(T['电路预埋'].start>T['拆除保护'].end,'电路预埋 after 拆除');
 ok(T['泥水'].start>T['电路预埋'].end&&T['天花木作'].start>T['电路预埋'].end,'泥水 and 天花 both wait for 电路预埋');
 ok(T['泥水'].start===T['天花木作'].start,'泥水 and 天花 run at the same time (different trades, no dependency): '+T['泥水'].start+' / '+T['天花木作'].start);
 ok(T['油漆'].start>T['泥水'].end&&T['油漆'].start>T['天花木作'].end,'油漆 waits for both 泥水 and 天花');
-// 马来西亚泥水和铺砖是两班人：防水归泥水，铺砖单独一道「铺瓷砖」，等泥水（防水、批荡）和天花都完（GB 50327 14.1.2 地面铺装在吊顶后）
+// 马来西亚泥水和铺砖是两班人：防水归泥水，铺砖单独一道「铺瓷砖」，紧接泥水，不等天花
 ok(T['泥水'].lines.map(l=>l.name).join()==='卫生间防水'&&T['铺瓷砖'].lines.map(l=>l.name).join()==='客厅铺砖','waterproofing stays with 泥水, tiling is its own phase');
-ok(T['铺瓷砖'].trade==='瓷砖工'&&T['铺瓷砖'].start>T['泥水'].end&&T['铺瓷砖'].start>T['天花木作'].end,'tiling waits for 泥水 and 天花');
+ok(T['铺瓷砖'].trade==='瓷砖工'&&T['铺瓷砖'].start>T['泥水'].end,'tiling comes after 泥水');
 ok(T['油漆'].start>T['铺瓷砖'].end,'油漆 after tiling');
 ok(T['定制柜安装'].start===T['台面门窗玻璃'].start&&T['定制柜安装'].start>T['油漆'].end,'定制柜 and 门窗 run together after 油漆');
 ok(T['水路安装'].start>T['定制柜安装'].end&&T['水路安装'].start>T['台面门窗玻璃'].end,'水路安装 (toilets) waits for cabinets and windows');
@@ -29,7 +29,8 @@ ok(rel.cabinet.parallel.includes('fit')&&!rel.paint.parallel.length,'relations: 
 ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing phases are skipped: 油漆 directly after 水电 when there is no 泥水 / 天花');
 // GB 50327 第 14.1.2 条：地面铺装宜在吊顶完成后进行 —— 天花工期比泥水长时，泥水（地面铺砖）顺延到天花之后结束
 {const lines2=lines.map(l=>l.id==='4'?{...l,qty:1500}:l);const N2=P.build({work,lines:lines2,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
- const n2=Object.fromEntries(N2.tasks.map(t=>[t.key,t]));ok(n2.tile.start>n2.ceiling.end&&!/14\.1\.2/.test(n2.masonry.why),'new projects: a long ceiling delays the tiling phase, 泥水 itself is not stretched');
+ const n2=Object.fromEntries(N2.tasks.map(t=>[t.key,t]));ok(n2.tile.start<=n2.ceiling.end&&n2.tile.start===next(n2.masonry.end)&&!/14\.1\.2/.test(n2.masonry.why),'new projects: tiling follows 泥水 straight away, a long ceiling does not hold it up');
+ ok(n2.paint.start>n2.ceiling.end&&n2.paint.start>n2.tile.end,'painting still waits for both the ceiling and the tiles');
  // 旧项目（瓷砖还在泥水里）：沿用原来的做法，泥水最后一段顺延到天花之后
  const R2=P.build({work,lines:lines2,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
  const T2=Object.fromEntries(R2.tasks.map(t=>[t.name,t]));
