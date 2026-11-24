@@ -25,7 +25,7 @@ const lines=[L('18','主卧 A 衣柜 Master Wardrobe A','E0 板 白色 2.4m',1,8
  L('50','客厅铺砖','600x1200',650,9,'work','泥水','sqft'),L('51','卫生间防水','',2,850,'work','泥水','间'),L('60','全屋电线更换','',1,6500,'work','水电'),L('61','全屋墙面油漆','Nippon',1,7800,'work','油漆'),L('70','设计服务','',1,0,'gift','赠品与设计','项')];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-2026-031','陈先生','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) SELECT $1,g,jsonb_agg(x->>'id') FROM (SELECT x,x->>'group' g FROM jsonb_array_elements($2::jsonb) x) t GROUP BY g`,[id,JSON.stringify(lines)]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_split_mep_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -72,7 +72,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();
  // 按工序走：一行一道工序，按施工顺序编号；同一道工序的子单合在一行
- assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 水电','2. 泥水','3. 油漆','4. 定制柜安装','5. 洁具灯具设备'],'rows are construction phases in working order');
+ assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 电路','2. 泥水','3. 油漆','4. 定制柜安装','5. 洁具灯具设备'],'rows are construction phases in working order');
  assert.equal(await sch.locator('.sch-phase').count(),5,'one bar per phase (the gift is not scheduled)');
  await openPhases(page);assert.equal(await sch.locator('.sch-items').count(),5,'opening a phase lists what that trade does in one visit');
  {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装'}).innerText();assert(pi.includes('涉及 2 张子单')&&pi.includes('全屋定制')&&pi.includes('厨房及洗衣区柜体')&&pi.includes('履约')&&pi.includes('打开子单'),'one cabinet visit lists both sub-orders with their fulfilment: '+pi.slice(0,200));}
@@ -86,7 +86,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   assert.equal(await cab.locator('.sch-prod').count(),1,'custom cabinets show the factory production part before install');
   assert((await cab.locator('.sch-label').innerText()).includes('工厂定做 25天'),'label says made in the factory, then installed');
   const pr=await cab.locator('.sch-prod').boundingBox(),br=await cab.locator('.sch-bar').boundingBox();assert(Math.abs(pr.x+pr.width-br.x)<=2,'production ends where install starts');
-  assert.equal(await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="mep"]')}).locator('.sch-prod').count(),0,'site-only trades have no factory part');}
+  assert.equal(await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="elec"]')}).locator('.sch-prod').count(),0,'site-only trades have no factory part');}
  // 预计计划没确认前：提示要店长确认（员工没有确认按钮）；业主链接还看不到计划。这里模拟店长已确认（店长确认的按钮在后面测）
  await page.waitForFunction(()=>document.querySelector('#schedule')?.innerText.includes('预计计划还没确认'));
  assert((await sch.innerText()).includes('请店长确认')&&await sch.locator('[data-sch-confirm]').count()===0,'staff are told the store manager must confirm the forecast');
@@ -116,7 +116,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   assert(await row.locator('.sch-base').count()===1,'original plan drawn as a thin grey line');
   const iss=await sch.locator('.sch-issues').innerText().catch(()=>'');const more=await sch.locator('.sch-issues details').count();if(more)await sch.locator('.sch-issues details summary').click();
   assert((await sch.locator('.sch-issues').innerText()).includes('比预计晚'),'delay against the original plan is listed under 要处理');
-  assert((await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="mep"]')}).innerText()).includes('按预计'),'unchanged phases say they are on the original plan');}
+  assert((await sch.locator('.sch-phase-row',{has:page.locator('[data-sch-phase="elec"]')}).innerText()).includes('按预计'),'unchanged phases say they are on the original plan');}
  // 2b) 点工序横条：弹出这道工序所有子单的日期，改了保存，留下调整记录（谁、改了什么、从几号到几号）
  await sch.locator('[data-sch-bar="cabinet"]').click();const pe=sch.locator('.sch-phase-edit');await pe.waitFor();
  assert.equal(await pe.locator('[data-sch-pe]').count(),1,'one start and one end for the whole cabinet visit');
@@ -128,15 +128,15 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  const lg=await sch.locator('[data-sch-log]').innerText();assert(lg.includes('Ali')&&lg.includes('定制柜安装')&&lg.includes('01/04–01/08')&&lg.includes('→'),'change log says who changed what from when to when: '+lg.slice(0,200));
  // 3) 手机：点名称改日期
  const ph=await open(staff,`/portal/renovation.html#${id}`,{width:390,height:844});await ph.locator('#work-orders details.work').first().waitFor();await planTab(ph);const ps=ph.locator('#schedule .sch');await ps.locator('.sch-bar').first().waitFor();await openPhases(ph);
- await ps.locator('[data-sch-bar="mep"]').click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-pok]').click();
+ await ps.locator('[data-sch-bar="elec"]').click();await ps.locator('[data-sch-es]').fill('2026-11-20');await ps.locator('[data-sch-ee]').fill('2026-11-26');await ps.locator('[data-sch-pok]').click();
  await ps.locator('[data-sch-save]').click();await new Promise(r=>setTimeout(r,900));
  assert((await plans())['水电'].s==='2026-11-20','phone date edit saved');
  const ofl=await ph.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'page does not scroll sideways on phone (chart scrolls inside): '+ofl);
  await ph.screenshot({path:out+'/phone-schedule.png',clip:await ps.boundingBox()});
- // 4) 超期：水电计划已过（今天之后的测试日期除外），且没完成 → 红色
- await setPhase('mep','2026-01-05','2026-01-09');
+ // 4) 超期：电路计划已过（今天之后的测试日期除外），且没完成 → 红色
+ await setPhase('elec','2026-01-05','2026-01-09');
  await page.reload();await sch.locator('.sch-bar').first().waitFor();await openPhases(page);
- assert(await sch.locator('[data-sch-bar="mep"].late').count()===1&&(await sch.locator('.sch-issues').innerText()).includes('超期：水电'),'overdue shows red and is listed under 要处理');
+ assert(await sch.locator('[data-sch-bar="elec"].late').count()===1&&(await sch.locator('.sch-issues').innerText()).includes('超期：电路'),'overdue shows red and is listed under 要处理');
  assert((await page.locator('#plan-summary').innerText()).includes('件要处理'),'tab summary says there is something to handle');
  // 4a) 智能排期：每道工序写明「等谁做完」；手动把油漆排到泥水完工之前 → 顺序冲突提醒
  assert((await sch.locator('[data-sch-phase="paint"]').innerText()).includes('等 泥水 做完'),'phase says what it waits for');

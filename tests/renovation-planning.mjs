@@ -127,4 +127,16 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  await days(staff,null);ok((await sys('SELECT fixed_days FROM renovation_work_orders WHERE id=$1',[w]))[0].fixed_days===null,'cleared back to not fixed');
  const lg=(await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='work_order_days_saved' ORDER BY created_at`,[id])).map(r=>r.payload);
  ok(lg.length===2&&lg[0].days===45&&lg[0].by==='Ali'&&lg[1].before===45&&lg[1].days===null,'days changes are logged: '+JSON.stringify(lg));}
+// 水路、电路分开：新工序名能保存；旧项目的「水电」(mep) 照样能存；师傅名单能选水管工、电工
+{await db.exec('RESET ROLE');const sm=fs.readFileSync('supabase/renovation_phase_split_mep_migration.sql','utf8');await db.exec(sm);await db.exec(sm);
+ const lv=plan=>call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify(plan),'[]',null,null]);
+ await lv({plumb:{start:'2026-12-01',end:'2026-12-04'},elec:{start:'2026-12-01',end:'2026-12-03'}});
+ const pp=(await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan;
+ ok(pp.plumb?.end==='2026-12-04'&&pp.elec?.end==='2026-12-03','水路 and 电路 save as two phases');
+ await lv({mep:{start:'2026-12-01',end:'2026-12-05'}});ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.mep?.end==='2026-12-05','old 水电 key still accepted');
+ await reject(()=>lv({water:{start:'2026-12-01',end:'2026-12-02'}}),/不认识的工序/);
+ ok((await sys(`SELECT _reno_phase_name('plumb') a,_reno_phase_name('elec') b`))[0].a==='水路','owner page names: 水路 / 电路');
+ for(const t of ['水管工','电工'])await call(manager,'SELECT renovation_crew_save(NULL,$1::jsonb) v',[JSON.stringify({name:'师傅'+t,trade:t})]);
+ ok((await sys(`SELECT count(*)::int n FROM renovation_crews WHERE trade IN ('水管工','电工')`))[0].n===2,'crew list accepts 水管工 and 电工');
+ await reject(()=>call(manager,'SELECT renovation_crew_save(NULL,$1::jsonb) v',[JSON.stringify({name:'乱填',trade:'厨师'})]),/./);}
 console.log(`PASS ${checks} planning checks`);

@@ -10,8 +10,8 @@ const work=groups.map(([g,l],i)=>({id:'w'+i,group_name:g,line_ids:[l],assignee:'
 const items=work.map(w=>({work_order_id:w.id,line_id:w.line_ids[0],kind:lines.find(l=>l.id===w.line_ids[0]).kind,stage:['custom','stock'].includes(lines.find(l=>l.id===w.line_ids[0]).kind)?'arrived':'pending'}));
 const R=P.build({work,lines,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
 const T=Object.fromEntries(R.tasks.map(t=>[t.name,t]));let n=0;const ok=(v,m)=>{assert(v,m);n++;};
-ok(T['水电'].start>T['拆除保护'].end,'水电 after 拆除');
-ok(T['泥水'].start>T['水电'].end&&T['天花木作'].start>T['水电'].end,'泥水 and 天花 both wait for 水电');
+ok(T['电路'].start>T['拆除保护'].end,'电路 after 拆除');
+ok(T['泥水'].start>T['电路'].end&&T['天花木作'].start>T['电路'].end,'泥水 and 天花 both wait for 电路');
 ok(T['泥水'].start===T['天花木作'].start,'泥水 and 天花 run at the same time (different trades, no dependency): '+T['泥水'].start+' / '+T['天花木作'].start);
 ok(T['油漆'].start>T['泥水'].end&&T['油漆'].start>T['天花木作'].end,'油漆 waits for both 泥水 and 天花');
 ok(T['定制柜安装'].start===T['台面门窗玻璃'].start&&T['定制柜安装'].start>T['油漆'].end,'定制柜 and 门窗 run together after 油漆');
@@ -39,7 +39,7 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(T3['泥水'].lines.length===2&&R3.tasks.filter(t=>t.name==='泥水').length===1,'tiling from two sub-orders is one 泥水 phase (one visit): '+T3['泥水'].lines.map(l=>l.group).join(','));
  ok(T3['泥水'].days===Math.ceil(380/120),'days come from the combined quantity');
  ok(T3['油漆'].start>T3['泥水'].end&&T3['油漆'].start>T3['天花木作'].end,'paint after tiling and ceiling');
- ok(P.phaseOfLine({name:'窗帘',kind:'stock'},'软装')===7&&P.phaseOfLine({name:'智能门锁',kind:'stock'},'五金')===7,'curtains and smart locks are fixtures, not doors / windows');}
+ ok(P.PHASES[P.phaseOfLine({name:'窗帘',kind:'stock'},'软装')].key==='fixture'&&P.PHASES[P.phaseOfLine({name:'智能门锁',kind:'stock'},'五金')].key==='fixture','curtains and smart locks are fixtures, not doors / windows');}
 // 子单定了总天数（设计 + 定做 + 安装，从开始下单算到装好）：工厂定做天数 = 总天数 − 安装天数；没下单时，柜子最早要等这么多天才能装
 {const its=items.map(i=>i.work_order_id==='w5'?{...i,stage:'pending'}:i);
  const base=P.build({work,lines,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
@@ -49,4 +49,19 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(cf.start>cb.start&&mf.label.includes('45'),'a longer fixed total pushes the cabinet install later and is named in the material list');
  const sit=P.build({work:work.map(w=>w.id==='w2'?{...w,fixed_days:12}:w),lines,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
  ok(sit.tasks.find(x=>x.key==='masonry').days===12,'for site work the fixed total is the phase length');}
+// 水路、电路分两道工序：水管工和电工不是同一批人，拆除后同期进场；泥水、天花要等两样都做完（封槽前要水电隐蔽验收）
+{const ln=[L('1','拆除旧地砖','work'),L('2','给排水管改造','work','点位',8),L('3','水管打压测试','work'),L('4','电路开槽穿管布线','work','点位',30),L('5','配电箱更换','work'),L('6','卫生间铺砖','work','sqft',120),L('7','石膏板天花','work','sqft',150),L('8','热水管保温','work')];
+ const wk=[{id:'a',group_name:'拆除',line_ids:['1']},{id:'b',group_name:'水电改造',line_ids:['2','3','4','5','8']},{id:'c',group_name:'泥水',line_ids:['6']},{id:'d',group_name:'天花',line_ids:['7']}];
+ const R=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[{name:'第二期 水电隐蔽验收后'}],start:'2026-12-01',today:'2026-11-21'});
+ const T=Object.fromEntries(R.tasks.map(t=>[t.key,t]));
+ ok(T.plumb&&T.elec&&!T.mep,'one 水电 sub-order becomes two phases, 水路 and 电路: '+R.tasks.map(t=>t.name).join(','));
+ ok(T.plumb.lines.map(l=>l.id).join()==='2,3,8'&&T.elec.lines.map(l=>l.id).join()==='4,5','pipes and pressure test go to 水路, wiring and the DB box to 电路');
+ ok(T.plumb.trade!==T.elec.trade&&T.plumb.start===T.elec.start,'different trades start together after demolition: '+T.plumb.start+' / '+T.elec.start);
+ ok(T.plumb.end>T.elec.end,'this case has 水路 finishing later than 电路');const mepDone=T.plumb.end;
+ ok(T.masonry.start>mepDone&&T.ceiling.start>mepDone,'泥水 and 天花 wait for the later of 水路 / 电路');
+ const ms=R.milestones.find(m=>m.key==='mep');ok(ms&&ms.on>mepDone&&ms.pay,'one 水电隐蔽验收 after both, still tied to the payment stage');
+ const rel=P.relations(Object.keys(T));ok(rel.plumb.parallel.includes('elec'),'relations: 水路 ∥ 电路');
+ // 旧项目（已经保存过「水电」一条计划，业主可能已看到）：继续合成一条，不打乱已确认的日期
+ const old=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
+ ok(old.tasks.filter(t=>['plumb','elec'].includes(t.key)).length===0&&old.tasks.find(t=>t.key==='mep').lines.length===5,'mepCombined keeps a single 水电 phase for projects already planned that way');}
 console.log(`PASS ${n} plan dependency checks`);

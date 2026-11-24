@@ -20,7 +20,10 @@ window.RenoPlan=(()=>{
  // 工序：key、名称、识别关键词、工效（area 平方尺/天，length 尺/天，lot 每个 lot 天数，pc 每天装几件）、工种
  const PHASES=[
   {key:'prep',name:'拆除保护',re:/拆除|拆旧|敲|清运|保护(?!清洁)/,lot:2,trade:'杂工'},
-  {key:'mep',name:'水电',re:/水电|电气|电位|布线|电线|电路|水管|管道|空调|冷气|弱电|网线/,lot:6,trade:'水电工'},
+  {key:'plumb',name:'水路',re:/水管|水路|给排水|PPR|管道|打压|燃气|热水管/i,lot:3,trade:'水管工'},
+  {key:'elec',name:'电路',re:/水电|电气|电位|布线|电线|电路|回路|配电|空调|冷气|弱电|网线/i,lot:3,trade:'电工'},
+  // 旧项目（11-24 前已保存过「水电」一条计划）继续水路电路合一，不改业主已看到的日期
+  {key:'mep',name:'水电',re:/$^/,lot:6,trade:'水电工'},
   {key:'masonry',name:'泥水',re:/泥水|泥瓦|砌|批荡|地坪|混凝土|找平|铺砖|地砖|墙砖|瓷砖|防水|门柱|围墙/,area:120,length:40,lot:2,trade:'泥水工'},
   {key:'ceiling',name:'天花木作',re:/天花|石膏|吊顶|灯槽|木作|隔墙|木工/,area:150,length:60,lot:3,trade:'木工'},
   {key:'paint',name:'油漆',re:/油漆|涂料|乳胶|漆/,area:800,lot:7,trade:'油漆工'},
@@ -43,17 +46,18 @@ window.RenoPlan=(()=>{
   {re:/窗帘/,lead:14,measure:'paint',label:'窗帘（油漆后量尺）'},
   {re:/灯|开关|插座|电器|热水器|马桶|花洒|龙头|洁具|五金|锁/,lead:7,label:'洁具灯具'}
  ];
+ const IDX=Object.fromEntries(PHASES.map((p,i)=>[p.key,i]));
  const unitType=u=>{u=String(u||'').toLowerCase();if(/sq\s*ft|sqft|平方尺|ft²|front sq/.test(u))return 'area';if(/linear|^ft$|\bft\b|尺|^m$|米/.test(u))return 'length';if(/pc|pcs|set|套|个|盏|只|件|台|面|把/.test(u))return 'pc';return 'lot';};
  function phaseIndex(name,lines){
   const byName=PHASES.findIndex(p=>p.re.test(short(name)));if(byName>=0)return byName;
   const txt=lines.map(l=>l.name).join(' ');const byItems=PHASES.findIndex(p=>p.re.test(txt));if(byItems>=0)return byItems;
-  if(lines.some(l=>l.kind==='custom'))return 5;if(lines.some(l=>l.kind==='stock'))return 7;return 2;
+  return IDX[lines.some(l=>l.kind==='custom')?'cabinet':lines.some(l=>l.kind==='stock')?'fixture':'masonry'];
  }
  // 每个清单项属于哪道工序：先看项目名称，看不出再看所在子单的名称，最后按类型
  function phaseOfLine(l,group){
   const byName=PHASES.findIndex(p=>p.re.test(String(l.name||'')));if(byName>=0)return byName;
   const byGroup=PHASES.findIndex(p=>p.re.test(short(group)));if(byGroup>=0)return byGroup;
-  return l.kind==='custom'?5:l.kind==='stock'?7:2;
+  return IDX[l.kind==='custom'?'cabinet':l.kind==='stock'?'fixture':'masonry'];
  }
  function duration(p,lines){
   let days=0;
@@ -68,7 +72,7 @@ window.RenoPlan=(()=>{
   const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
   return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
  // 工序先后：每道工序要等哪几道做完（完工后才能开始）。没有先后关系的可以同期
- const DEPS={prep:[],mep:['prep'],masonry:['mep'],ceiling:['mep'],paint:['masonry','ceiling'],cabinet:['paint'],fit:['paint'],fixture:['cabinet','fit'],clean:['fixture','cabinet','fit','paint','masonry','ceiling','mep','prep']};
+ const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],paint:['masonry','ceiling'],cabinet:['paint'],fit:['paint'],fixture:['cabinet','fit'],clean:['fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
  // 给出现的工序算：等谁（最近的前一道，跳过没有的工序）、可以和谁同期（彼此没有先后关系）
  function relations(keys){
   const has=new Set(keys),anc=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(!out.has(d)){out.add(d);walk(d);}}};walk(k);return out;};
@@ -77,7 +81,7 @@ window.RenoPlan=(()=>{
   return Object.fromEntries(keys.map(k=>[k,{after:near(k).filter(d=>!near(k).some(e=>e!==d&&A[e].has(d))),parallel:keys.filter(o=>o!==k&&!A[k].has(o)&&!A[o].has(k))}]));
  }
  // 主计算
- function build({work:wos,lines,tracking,payments,start,handover,today,fixed}){
+ function build({work:wos,lines,tracking,payments,start,handover,today,fixed,mepCombined}){
   const T=parse(today)||parse(new Date().toISOString()),S=work(parse(start)||T);
   const byId=new Map((lines||[]).map(l=>[String(l.id),l]));
   // 按工序 → 工种 → 流程：合同里同一道工序的项目（不管在哪张子单）合成一个任务，一个工种一次进场做完
@@ -86,7 +90,7 @@ window.RenoPlan=(()=>{
   for(const w of wos||[]){
    if(w.cancelled_at)continue;
    for(const id of w.line_ids||[]){const l=byId.get(String(id));if(!l||l.kind==='gift')continue;
-    const k=phaseOfLine(l,w.group_name);const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
+    let k=phaseOfLine(l,w.group_name);if(mepCombined&&(k===IDX.plumb||k===IDX.elec))k=IDX.mep;const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
     g.lines.push({...l,group:short(w.group_name),work_order_id:w.id});g.wos.add(w.id);
     const it=allItems.find(i=>i.work_order_id===w.id&&String(i.line_id)===String(id));if(it)g.items.push(it);}
   }
@@ -141,7 +145,8 @@ window.RenoPlan=(()=>{
   // 验收节点（对上合同收款期数）
   const pay=re=>(payments||[]).find(p=>re.test(p.name||''));
   const ms=[];const pe=k=>phaseEnd[k];
-  if(pe('mep'))ms.push({key:'mep',short:'水电验收',name:'水电隐蔽工程验收（打压测试、拍照）',on:iso(next(pe('mep'))),pay:pay(/水电|隐蔽/)});
+  const mepEnd=['plumb','elec','mep'].map(pe).filter(Boolean).reduce((a,b)=>b>a?b:a,null); // 水路、电路都做完才验收隐蔽工程
+  if(mepEnd)ms.push({key:'mep',short:'水电验收',name:'水电隐蔽工程验收（打压测试、拍照）',on:iso(next(mepEnd)),pay:pay(/水电|隐蔽/)});
   const wet=tasks.find(t=>t.id==='masonry'&&/浴|卫生间|厕|防水|厨房/.test(t.lines.map(l=>l.name+' '+l.group).join(' ')));
   if(wet)ms.push({key:'water',short:'闭水',name:'防水闭水试验 48 小时',on:iso(endAfter(wet.start,Math.min(3,wet.days))),pay:null});
   if(pe('masonry'))ms.push({key:'masonry',short:'泥水验收',name:'泥水瓷砖工程验收',on:iso(next(pe('masonry'))),pay:pay(/泥水|瓷砖/)});
