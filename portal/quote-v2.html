@@ -976,7 +976,8 @@
   async function writeCloudRecord(slot, expectedRevision) {
     if (cloudBusy) return;
     if (!requireClientInfo()) return;
-    const documentData = { format: 'houzy-quote-v2', version: 1, project: P };
+    const projectSnapshot = JSON.stringify(P);
+    const documentData = { format: 'houzy-quote-v2', version: 1, project: JSON.parse(projectSnapshot) };
     const bytes = new TextEncoder().encode(JSON.stringify(documentData)).length;
     if (bytes > 8 * 1024 * 1024) { cloudStatus('这份报价数据超过 8 MB，暂时无法保存。'); return; }
     cloudBusy = true;
@@ -989,9 +990,9 @@
       if (error) throw error;
       if (!data?.[0]?.revision) throw new Error('服务器未确认保存成功');
       const saved = data[0];
-      cloudCurrent = { slot, revision: saved.revision, phone: P.info.phone };
-      cloudSavedSnapshot = JSON.stringify(P);
-      cloudRecords = [...cloudRecords.filter(item => item.slot !== slot), { slot, revision: saved.revision, customer_name: P.info.name, customer_phone: P.info.phone, updated_at: saved.updated_at }].sort((a, b) => a.slot - b.slot);
+      cloudCurrent = P.info.phone === documentData.project.info.phone ? { slot, revision: saved.revision, phone: documentData.project.info.phone } : null;
+      cloudSavedSnapshot = projectSnapshot;
+      cloudRecords = [...cloudRecords.filter(item => item.slot !== slot), { slot, revision: saved.revision, customer_name: documentData.project.info.name, customer_phone: documentData.project.info.phone, updated_at: saved.updated_at }].sort((a, b) => a.slot - b.slot);
       cloudListState = 'ready'; updateCloudList();
       document.getElementById('cloud-dialog').close();
       cloudStatus(`轻量报价已保存到云端第 ${slot} 份（${Math.max(1, Math.ceil(bytes / 1024))} KB，不含图片）。`, true);
