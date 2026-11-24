@@ -45,8 +45,19 @@ button{font:inherit;cursor:pointer}
 .site-primary{display:block;width:100%;min-height:50px;margin-top:12px;border:0;border-radius:12px;background:var(--purple);color:#fff;font-size:16px;font-weight:700}
 .site-primary:disabled{opacity:.5}
 .site-card label input[data-code]{display:block;width:100%;margin:6px 0 10px;padding:12px;font-size:22px;letter-spacing:6px;border:1px solid #d0c8b8;border-radius:10px}
+/* 施工计划（按工序）：≡ 拖动改顺序 */
+.sp-hint{font-size:13px;color:var(--muted,#68766e);margin:0 0 8px}.sp-list{list-style:none;margin:0;padding:0}
+.sp-row{display:flex;flex-wrap:wrap;align-items:stretch;border:1px solid #e3e8e4;border-radius:10px;margin:0 0 6px;background:#fff;touch-action:pan-y}
+.sp-row.done{opacity:.6}.sp-row.late{border-color:#e5a3a3}.sp-row.dragging{box-shadow:0 6px 18px rgba(0,0,0,.15);border-color:#1f5c45;position:relative;z-index:2}
+.sp-grip{display:flex;align-items:center;justify-content:center;width:44px;font-size:22px;color:#68766e;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.sp-main{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px 10px 0;background:none;border:0;text-align:left;font:inherit;color:inherit;min-height:44px}
+.sp-main span{font-size:13px;color:#68766e}.sp-row:not(:has(.sp-grip)) .sp-main{padding-left:12px}
+.sp-body{flex-basis:100%;padding:0 12px 10px 12px}.sp-body ul{list-style:none;margin:0 0 8px;padding:0}
+.sp-body li{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed #e3e8e4;font-size:14px}
+.sp-body select{font-size:13px;max-width:60%;min-height:36px}.sp-manual{font-style:normal;font-size:11px;color:#9a6700;background:#fff4d6;border-radius:4px;padding:0 4px}
+.sp-add{margin-top:10px}.sp-add summary{min-height:44px;display:flex;align-items:center;font-weight:600}.sp-add label{display:flex;flex-direction:column;font-size:13px;margin:6px 0}
 </style>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script><script defer src="renovation/site.js?v=site-20261120"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script><script defer src="renovation/plan.js?v=order-20261124"></script><script defer src="renovation/site-plan.js?v=siteplan-20261124"></script><script defer src="renovation/site.js?v=siteplan-20261124"></script>
 </head><body>
 <main><p id="message" role="status">正在读取…</p><div id="site" hidden></div></main>
 </body></html>

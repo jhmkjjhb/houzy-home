@@ -144,6 +144,7 @@
    <section class="site-card"><h2>记录</h2><div class="site-grid">
     <button type="button" data-act="inspection">验收节点</button><button type="button" data-act="issue">记问题</button>
     <button type="button" data-act="delay">进度延误</button><button type="button" data-act="pause">停工申报</button></div></section>
+   ${window.RenoSitePlan?RenoSitePlan.section(site,!auth&&site.supervisor?.kind==='internal'):''}
    <section class="site-card"><h2>子单与清单</h2>${site.work_orders.map(wo).join('')||'<p>还没有子单。</p>'}</section>
    <section class="site-card"><h2>最近记录</h2><ul class="site-log">${site.entries.slice(0,30).map(e=>`<li><b>${E(KIND[e.kind])}</b> · ${E(e.on_date.slice(5))}${e.photo_count?` · 📷${e.photo_count}`:''}${e.kind==='delay'?` · ${E(REASON[e.data?.reason]||'')} ${e.data?.days||''} 天`:''}${e.kind==='inspection'?` · ${E(e.data?.milestone)} ${e.data?.pass?'通过':'不合格'}`:''}${['delay','pause'].includes(e.kind)?` · ${e.status==='confirmed'?'店长已确认':e.status==='rejected'?'店长已驳回':'等店长确认'}`:''}${e.kind==='issue'?` · ${e.status==='open'?'未处理':'已处理'}`:''}${e.note?`<br><small>${E(e.note)}</small>`:''}</li>`).join('')||'<li>还没有记录。</li>'}</ul></section>
    <div id="sheet" class="site-sheet" hidden></div>`;
@@ -190,6 +191,7 @@
   }catch(e){msg.textContent=e.message||String(e);}finally{busy=false;btn.disabled=false;}
  }
  function bind(){
+  window.RenoSitePlan?.bind(el,{get sb(){return sb;},site:()=>site,reload,render,say});
   el.addEventListener('click',async e=>{
    const b=e.target.closest('button');if(!b)return;
    if(b.dataset.open){site={project:{id:b.dataset.open}};try{await reload();}catch(err){say(err.message,true);}return;}

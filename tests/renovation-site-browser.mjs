@@ -23,6 +23,7 @@ await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'全屋定制','["C1","C2","S1"]'::jsonb),($1,'泥水','["W1"]'::jsonb)`,[id]);
 await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));
 for(const f of ['renovation_schedule','renovation_planning','renovation_site_supervision'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
+for(const f of ['renovation_phase_plan','renovation_phase_forecast','renovation_work_order_days','renovation_phase_split_mep','renovation_phase_tile','renovation_phase_window','renovation_phase_setup','renovation_phase_site'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -111,12 +112,40 @@ try{
  await sheet.locator('[data-shot="camera"]').setInputFiles({name:'e.jpg',mimeType:'image/jpeg',buffer:photo});await sheet.locator('[data-thumbs] img').waitFor();
  await sheet.locator('[data-submit]').click();await pg.getByText('验收已保存').waitFor();
  const ofl=await pg.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl<=1,'no sideways scroll on phone: '+ofl);
+ // 5c) 施工计划（按工序）：内部监理按住 ≡ 拖动改先后（拖到谁下面就等谁做完，日期自动重排）、换工序、加工序
+ {const setup=async()=>(await sys('SELECT phase_setup FROM renovation_projects WHERE id=$1',[id]))[0].phase_setup,pp=async()=>(await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan;
+  const sp=pg.locator('.sp-list');await sp.waitFor();const keys=async()=>sp.locator('.sp-row').evaluateAll(r=>r.map(x=>x.dataset.spKey));
+  assert.deepEqual(await keys(),['tile','cabinet','fit'],'phases listed in working order');
+  await sp.locator('.sp-row[data-sp-key="cabinet"] [data-sp-grip]').focus();await pg.keyboard.press('ArrowUp');
+  await pg.waitForFunction(()=>document.querySelector('.sp-row')?.dataset.spKey==='cabinet');
+  assert.deepEqual((await setup()).order,['cabinet','tile','fit'],'keyboard move saves the new order');
+  // 手指 / 鼠标拖：把定制柜拖回铺瓷砖下面 → 定制柜等铺瓷砖做完
+  const g=await sp.locator('.sp-row[data-sp-key="cabinet"] [data-sp-grip]').boundingBox(),last=await sp.locator('.sp-row[data-sp-key="tile"]').boundingBox();
+  await pg.mouse.move(g.x+g.width/2,g.y+g.height/2);await pg.mouse.down();await pg.mouse.move(g.x+g.width/2,last.y+last.height-4,{steps:8});await pg.mouse.up();
+  await pg.waitForFunction(()=>document.querySelector('.sp-row')?.dataset.spKey==='tile');await new Promise(r=>setTimeout(r,400));
+  const s1=await setup(),p1=await pp();
+  assert(s1.order.join()==='tile,cabinet,fit'&&s1.after.cabinet[0]==='tile','dragging below 铺瓷砖 makes the cabinets wait for it: '+JSON.stringify(s1));
+  assert(p1.cabinet&&p1.tile&&p1.cabinet.start>p1.tile.end,'dates re-planned in the new order: '+JSON.stringify(p1));
+  assert((await pg.locator('#site-msg').innerText()).includes('等「铺瓷砖」做完'),'the supervisor is told what changed');
+  // 换工序
+  await sp.locator('[data-sp-open="tile"]').click();await sp.locator('select[data-sp-move$=":W1"]').selectOption('masonry');
+  await pg.waitForFunction(()=>document.querySelector('.sp-row[data-sp-key="masonry"]'));
+  assert.equal(Object.values((await setup()).assign)[0],'masonry','item moved to 泥水 from the site page');
+  assert((await pp()).masonry,'泥水 had no dates, so moving an item in gives it dates');
+  // 加工序
+  await pg.locator('.sp-add summary').click();await pg.locator('[data-sp-cname]').fill('防白蚁');await pg.locator('[data-sp-cdays]').fill('2');await pg.locator('[data-sp-cadd]').click();
+  await pg.waitForFunction(()=>[...document.querySelectorAll('.sp-row')].some(r=>r.textContent.includes('防白蚁')));
+  const ck=(await setup()).custom[0].key;assert((await pp())[ck],'the added phase gets dates straight away');
+  const ofl2=await pg.evaluate(()=>document.documentElement.scrollWidth-innerWidth);assert(ofl2<=1,'plan section fits the phone width: '+ofl2);
+  assert(!/RM|8800|5100/.test(await sp.innerText()),'no prices in the plan section');
+  await pg.locator('.sp-list').screenshot({path:out+'/site-plan-phone.png'});}
  // 6) 外部监理：链接 + 验证码
  const ext=await asQ(staff,'SELECT renovation_supervisor_save($1,$2::jsonb) v',[id,JSON.stringify({name:'Ahmad',phone:'013'})]);
  const xp=await open(null,`/portal/renovation-site.html?site=${ext.id}&t=${ext.token}`,{width:390,height:844});
  await xp.locator('[data-code]').fill(ext.code==='0000'?'1111':'0000');await xp.locator('[data-verify]').click();await xp.getByText('验证码不正确').waitFor();
  await xp.locator('[data-code]').fill(ext.code);await xp.locator('[data-verify]').click();await xp.getByText('今天要做').waitFor();
  assert((await xp.locator('.site-head').innerText()).includes('Ahmad'),'outside supervisor sees their name');
+ assert(await xp.locator('.sp-list .sp-row').count()>0&&await xp.locator('[data-sp-grip],[data-sp-move],.sp-add').count()===0,'outside supervisor sees the phases but cannot change them');
  await xp.locator('.site-task',{hasText:'交今天的工地日志'}).click();const xs=xp.locator('#sheet');
  await xs.locator('[data-shot="camera"]').setInputFiles({name:'d.jpg',mimeType:'image/jpeg',buffer:photo});await xs.locator('[data-thumbs] img').waitFor();
  await xs.locator('[data-submit]').click();await xp.getByText('工地日志已保存').waitFor();

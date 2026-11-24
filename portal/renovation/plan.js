@@ -98,6 +98,11 @@ window.RenoPlan=(()=>{
   for(const c of cust){let i=PH.findIndex(p=>p.key===c.after);if(i<0)i=PH.findIndex(p=>p.key==='clean')-1;while(PH[i+1]?.custom)i++;
    PH.splice(i+1,0,{key:c.key,name:String(c.name).slice(0,30),re:/$^/,trade:String(c.trade||'其他').slice(0,20),custom:true,fixedLen:Math.max(1,Math.min(365,Math.round(+c.days||1)))});
    DP[c.key]=c.after&&DP[c.after]?[c.after]:[];DP.clean=[...DP.clean,c.key];}
+  // 现场拖动改顺序（setup.order = 现场排的先后）：按这个顺序重排；每道工序只等排在它前面的工序，拖到谁下面就等谁做完
+  const ord=Array.isArray(setup?.order)?setup.order.filter((k,i,a)=>PH.some(p=>p.key===k)&&a.indexOf(k)===i):[];
+  if(ord.length>1){const slots=PH.map((p,i)=>ord.includes(p.key)?i:-1).filter(i=>i>=0),moved=ord.map(k=>PH.find(p=>p.key===k));slots.forEach((i,j)=>PH[i]=moved[j]);
+   const pos=Object.fromEntries(PH.map((p,i)=>[p.key,i]));for(const k of Object.keys(DP))if(pos[k]!==undefined)DP[k]=DP[k].filter(d=>pos[d]!==undefined&&pos[d]<pos[k]);
+   for(const [k,v] of Object.entries(setup.after||{}))if(pos[k]!==undefined&&Array.isArray(v))DP[k]=[...new Set([...DP[k],...v.filter(d=>pos[d]!==undefined&&pos[d]<pos[k])])];}
   const IX=Object.fromEntries(PH.map((p,i)=>[p.key,i])),assign=setup?.assign||{};
   const byId=new Map((lines||[]).map(l=>[String(l.id),l]));
   // 按工序 → 工种 → 流程：合同里同一道工序的项目（不管在哪张子单）合成一个任务，一个工种一次进场做完

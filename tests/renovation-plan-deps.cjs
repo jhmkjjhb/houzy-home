@@ -114,4 +114,17 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(P.relations(Object.keys(T),R.deps).c_termite.after.join()==='prep','relations know what the new phase waits for');
  const bad=P.build({...base,setup:{assign:{'b:2':'nonsense'},custom:[{key:'prep',name:'x',after:'prep'},{key:'BAD KEY',name:'x'}]}});
  ok(bad.tasks.find(t=>t.key==='fit'||t.key==='masonry')&&!bad.tasks.some(t=>t.name==='x'),'unknown phases and malformed custom phases are ignored');}
+// 现场拖动改顺序：监理把「天花木作」拖到「铺瓷砖」下面 → 天花等铺砖做完；原来的规则里排在它后面的不再算（不会互相等成死循环）
+{const ln=[L('1','全屋电线更换','work'),L('2','卫生间防水','work'),L('3','客厅铺砖','work','sqft',240),L('4','石膏板天花','work','sqft',150),L('5','全屋油漆','work')];
+ const wk=[{id:'a',group_name:'水电',line_ids:['1']},{id:'b',group_name:'泥水',line_ids:['2','3']},{id:'c',group_name:'天花',line_ids:['4']},{id:'d',group_name:'油漆',line_ids:['5']}];
+ const base={work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'};
+ const A=Object.fromEntries(P.build(base).tasks.map(t=>[t.key,t]));ok(A.ceiling.start===A.masonry.start,'by default 天花 runs alongside 泥水');
+ const order=['elec','masonry','tile','ceiling','paint'];
+ const R=P.build({...base,setup:{order,after:{ceiling:['tile']}}});const T=Object.fromEntries(R.tasks.map(t=>[t.key,t]));
+ ok(T.ceiling.start>T.tile.end,'dragged below 铺瓷砖, 天花 now waits for it: '+T.ceiling.start+' > '+T.tile.end);
+ ok(T.paint.start>T.ceiling.end&&T.tile.start>T.masonry.end,'the rest still follows its rules');
+ ok(R.phases.map(p=>p.key).filter(k=>order.includes(k)).join()===order.join(),'phases are listed in the dragged order');
+ // 拖到前面：铺瓷砖拖到泥水上面 → 不再等泥水（现场说了算），也不会死循环
+ const R2=P.build({...base,setup:{order:['elec','tile','masonry','ceiling','paint']}});const T2=Object.fromEntries(R2.tasks.map(t=>[t.key,t]));
+ ok(T2.tile.start<=T2.masonry.start&&T2.paint.start>T2.tile.end,'moving 铺瓷砖 above 泥水 drops that wait, painting still waits for both');}
 console.log(`PASS ${n} plan dependency checks`);

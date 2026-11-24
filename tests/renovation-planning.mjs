@@ -172,4 +172,18 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  const cs=(await sys('SELECT renovation_customer_schedule($1) v',[tok]))[0].v;
  ok(cs.some(x=>x.name==='防白蚁')&&cs.some(x=>x.name==='铺瓷砖'),'owner page shows the custom phase by its name: '+cs.map(x=>x.name).join(','));
  await reject(()=>call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify({'c_BAD':{start:'2026-12-03',end:'2026-12-04'}}),'[]',null,null]),/不认识的工序/);}
+// 第二步：被指派的内部监理能存工序日期和现场顺序；现场页拿得到工序计划；顺序格式不对拒收；没指派的监理不行
+{await db.exec('RESET ROLE');const sm=fs.readFileSync('supabase/renovation_phase_site_migration.sql','utf8');await db.exec(sm);await db.exec(sm);
+ const sup='20000000-0000-4000-8000-0000000000a1',sup2='20000000-0000-4000-8000-0000000000a2';
+ await sys(`UPDATE renovation_site_supervisors SET active=true WHERE profile_id=$1`,[sup]);
+ const plan=(who,x)=>call(who,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify(x),'[]',null,null]);
+ await plan(sup,{ceiling:{start:'2026-12-20',end:'2026-12-22'}});ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.ceiling.end==='2026-12-22','the assigned internal supervisor can move phase dates');
+ await reject(()=>plan(sup2,{ceiling:{start:'2026-12-20',end:'2026-12-23'}}),/无此项目权限/);await reject(()=>plan(outsider,{ceiling:{start:'2026-12-20',end:'2026-12-23'}}),/无此项目权限/);
+ const setup=(who,x)=>call(who,'SELECT renovation_phase_setup_save($1,$2::jsonb) v',[id,JSON.stringify(x)]);
+ await setup(sup,{order:['elec','masonry','tile','ceiling','paint'],after:{ceiling:['tile']}});
+ ok((await sys('SELECT phase_setup FROM renovation_projects WHERE id=$1',[id]))[0].phase_setup.order[3]==='ceiling','the dragged order is saved');
+ await reject(()=>setup(sup,{order:['elec','DROP TABLE']}),/顺序不对/);await reject(()=>setup(sup,{order:'elec'}),/顺序不对/);
+ const v=await call(sup,'SELECT renovation_site_view($1) v',[id]);
+ ok(v.project.phase_plan.ceiling&&v.project.phase_setup.order.length===5&&'phase_locked' in v.project,'the site page gets the phase plan and on-site setup');
+ ok(!/8800|amount|price/.test(JSON.stringify(v.project)),'no prices in what the site page gets');}
 console.log(`PASS ${checks} planning checks`);
