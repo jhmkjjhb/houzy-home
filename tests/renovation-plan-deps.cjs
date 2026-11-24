@@ -3,8 +3,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const ctx={window:{}};vm.runInNewContext(fs.readFileSync('portal/renovation/plan.js','utf8'),ctx);const P=ctx.window.RenoPlan;
 const L=(id,name,kind,unit='lot',qty=1)=>({id,name,spec:'',qty,unit,kind});
-const lines=[L('1','拆除旧地砖','work'),L('2','全屋电线更换','work'),L('3','客厅铺砖','work','sqft',300),L('4','石膏板天花','work','sqft',200),L('5','全屋墙面油漆','work'),L('6','厨房地柜','custom'),L('7','铝窗','custom'),L('8','马桶','stock','pc',2),L('9','开荒清洁','work'),L('10','卫生间防水','work')];
-const groups=[['拆除','1'],['水电','2'],['泥水','3'],['天花','4'],['油漆','5'],['全屋定制','6'],['门窗','7'],['卫浴洁具','8'],['清洁','9'],['卫生间','10']];
+const lines=[L('1','拆除旧地砖','work'),L('2','全屋电线更换','work'),L('3','客厅铺砖','work','sqft',300),L('4','石膏板天花','work','sqft',200),L('5','全屋墙面油漆','work'),L('6','厨房地柜','custom'),L('7','卧室木门','custom'),L('8','马桶','stock','pc',2),L('9','开荒清洁','work'),L('10','卫生间防水','work')];
+const groups=[['拆除','1'],['水电','2'],['泥水','3'],['天花','4'],['油漆','5'],['全屋定制','6'],['木门','7'],['卫浴洁具','8'],['清洁','9'],['卫生间','10']];
 const work=groups.map(([g,l],i)=>({id:'w'+i,group_name:g,line_ids:[l],assignee:''}));
 // 材料都已到货，不受生产等待影响，只看工序关系
 const items=work.map(w=>({work_order_id:w.id,line_id:w.line_ids[0],kind:lines.find(l=>l.id===w.line_ids[0]).kind,stage:['custom','stock'].includes(lines.find(l=>l.id===w.line_ids[0]).kind)?'arrived':'pending'}));
@@ -84,4 +84,19 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(T.clean.start>T.fix_plumb.end&&T.clean.start>T.fix_elec.end&&T.clean.start>T.hardware.end,'cleaning waits for every install');
  const old=P.build({work:wk,lines:ln,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
  ok(old.tasks.find(t=>t.key==='fixture')?.lines.length===5&&!old.tasks.some(t=>['fix_plumb','fix_elec','hardware'].includes(t.key)),'old projects keep one 洁具灯具设备 phase');}
+// 铝窗：同一班人拆旧装新一次装完，泥水再塞缝批荡 → 排在泥水之前，不用等拆除（可同期）；旧窗还在，开工前量尺下单，不等泥水复尺
+{const ln=[L('1','拆除旧地砖','work'),L('2','拆除旧窗+安装新铝窗','custom','pc',4),L('3','全屋电线更换','work'),L('4','卫生间防水','work'),L('5','卫生间铺砖','work','sqft',120),L('6','淋浴隔断','custom'),L('7','全屋油漆','work')];
+ const wk=[{id:'a',group_name:'拆除',line_ids:['1']},{id:'b',group_name:'铝窗',line_ids:['2']},{id:'c',group_name:'水电',line_ids:['3']},{id:'d',group_name:'卫生间',line_ids:['4','5','6']},{id:'e',group_name:'油漆',line_ids:['7']}];
+ const R=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ const T=Object.fromEntries(R.tasks.map(t=>[t.key,t]));
+ ok(T.window?.lines.map(l=>l.id).join()==='2'&&!T.fit?.lines.some(l=>l.id==='2'),'removing the old window and fitting the new one is one 铝窗拆装 phase');
+ ok(T.masonry.start>T.window.end,'泥水 waits for the windows (frame in before plastering, JGJ 214 7.3.2)');
+ const mw=R.materials.find(m=>m.id==='window');ok(mw&&!mw.measureOn&&mw.orderBy<'2026-12-01','windows are measured and ordered before work starts, not after 泥水: '+JSON.stringify(mw));
+ const ms=R.materials.find(m=>/淋浴/.test(m.label));ok(ms&&ms.measureOn===next(T.tile.end),'shower screen is measured after the tiles: '+JSON.stringify(ms));
+ // 不贴砖：淋浴隔断直接量直接做
+ const R2=P.build({work:wk.map(w=>w.id==='d'?{...w,line_ids:['4','6']}:w),lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ const ms2=R2.materials.find(m=>/淋浴/.test(m.label));ok(ms2&&!ms2.measureOn&&!R2.tasks.some(t=>t.key==='tile'),'no tiling: the shower screen is measured straight away');
+ // 旧项目：窗还在「台面门窗玻璃」里
+ const old=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
+ ok(!old.tasks.some(t=>t.key==='window')&&old.tasks.find(t=>t.key==='fit').lines.some(l=>l.id==='2'),'old projects keep windows in 台面门窗玻璃');}
 console.log(`PASS ${n} plan dependency checks`);

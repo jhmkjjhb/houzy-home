@@ -19,6 +19,9 @@ window.RenoPlan=(()=>{
  const short=n=>String(n||'').replace(/^增项-[0-9a-f-]{36} · ?/i,'增项 · ');
  // 工序：key、名称、识别关键词、工效（area 平方尺/天，length 尺/天，lot 每个 lot 天数，pc 每天装几件）、工种
  const PHASES=[
+  // 铝窗：同一班人拆旧装新一次做完，整窗装好后泥水再塞缝批荡（JGJ 214-2010 第 7.3.2 条：窗框在洞口抹灰湿作业前完成）。
+  // 不用等拆除，开工就能做；放在最前面，「拆除旧窗」也归这里
+  {key:'window',name:'铝窗拆装',re:/铝合金窗|铝窗|窗户|门窗|铝合金门|铝门|窗(?!帘|台)/,area:80,length:25,lot:1,trade:'厂家安装'},
   {key:'prep',name:'拆除保护',re:/拆除|拆旧|敲|清运|保护(?!清洁)/,lot:2,trade:'杂工'},
   {key:'plumb',name:'水路预埋',re:/水管|水路|给排水|PPR|管道|打压|燃气|热水管/i,lot:3,trade:'水管工'},
   {key:'elec',name:'电路预埋',re:/水电|电气|电位|布线|电线|电路|回路|配电|空调|冷气|弱电|网线/i,lot:3,trade:'电工'},
@@ -42,8 +45,9 @@ window.RenoPlan=(()=>{
  const MATERIALS=[
   {re:/铝柜|铝合金地柜|铝合金吊柜/,lead:21,label:'铝柜'},
   {re:/台面|岩板|石英|大理石/,lead:10,measure:'cabinet',label:'台面（柜装好后复尺）'},
-  {re:/淋浴.*(玻璃|隔断)|隔断/,lead:14,measure:'tile',label:'淋浴隔断（贴砖后复尺）'},
-  {re:/门窗|大玻璃|铝合金窗|窗户|铝窗/,lead:21,measure:'masonry',label:'门窗玻璃（墙做好后复尺）'},
+  {re:/淋浴.*(玻璃|隔断)|隔断/,lead:14,measure:'tile',label:'淋浴隔断（贴完砖复尺；不贴砖直接量）'},
+  {re:/门窗|铝合金窗|窗户|铝窗|铝合金门|铝门/,lead:21,early:true,label:'铝窗（旧窗还在，开工前量尺下单）'},
+  {re:/大玻璃/,lead:21,measure:'masonry',label:'大玻璃（墙做好后复尺）'},
   {re:/浴室柜/,lead:21,label:'浴室柜'},
   {re:/定制|衣柜|橱柜|书柜|鞋柜|电视柜|玄关柜|隐形柜|书吧|柜/,lead:25,label:'定制柜'},
   {re:/折叠门|移门|木门|房门/,lead:14,label:'门'},
@@ -78,7 +82,7 @@ window.RenoPlan=(()=>{
   const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
   return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
  // 工序先后：每道工序要等哪几道做完（完工后才能开始）。没有先后关系的可以同期
- const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],tile:['masonry'],paint:['masonry','ceiling','tile'],cabinet:['paint'],fit:['paint'],fix_plumb:['cabinet','fit'],fix_elec:['cabinet','fit'],hardware:['cabinet','fit'],fixture:['cabinet','fit'],clean:['tile','fix_plumb','fix_elec','hardware','fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
+ const DEPS={window:[],prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep','window'],ceiling:['plumb','elec','mep'],tile:['masonry'],paint:['masonry','ceiling','tile'],cabinet:['paint'],fit:['paint'],fix_plumb:['cabinet','fit'],fix_elec:['cabinet','fit'],hardware:['cabinet','fit'],fixture:['cabinet','fit'],clean:['window','tile','fix_plumb','fix_elec','hardware','fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
  // 给出现的工序算：等谁（最近的前一道，跳过没有的工序）、可以和谁同期（彼此没有先后关系）
  function relations(keys){
   const has=new Set(keys),anc=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(!out.has(d)){out.add(d);walk(d);}}};walk(k);return out;};
@@ -96,7 +100,7 @@ window.RenoPlan=(()=>{
   for(const w of wos||[]){
    if(w.cancelled_at)continue;
    for(const id of w.line_ids||[]){const l=byId.get(String(id));if(!l||l.kind==='gift')continue;
-    let k=phaseOfLine(l,w.group_name);if(mepCombined){if(k===IDX.plumb||k===IDX.elec)k=IDX.mep;else if(k===IDX.tile)k=IDX.masonry;else if(k===IDX.fix_plumb||k===IDX.fix_elec||k===IDX.hardware)k=IDX.fixture;}const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
+    let k=phaseOfLine(l,w.group_name);if(mepCombined){if(k===IDX.plumb||k===IDX.elec)k=IDX.mep;else if(k===IDX.tile)k=IDX.masonry;else if(k===IDX.window)k=IDX.fit;else if(k===IDX.fix_plumb||k===IDX.fix_elec||k===IDX.hardware)k=IDX.fixture;}const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
     g.lines.push({...l,group:short(w.group_name),work_order_id:w.id});g.wos.add(w.id);
     const it=allItems.find(i=>i.work_order_id===w.id&&String(i.line_id)===String(id));if(it)g.items.push(it);}
   }
@@ -109,6 +113,8 @@ window.RenoPlan=(()=>{
    if(fx&&!t.material){t.fixedDays=fx;t.days=fx;} // 现场活：总天数就是这道工序的工期
    if(fx&&t.material){t.fixedDays=fx;t.material={...t.material,lead:Math.max(1,fx-t.days),label:`${t.material.label.replace(/（.*）$/,'')}（子单定 ${fx} 天，含安装）`,fixedDays:fx};}}
   const phaseEnd={},crewFree={},batches=tracking?.batches||[];
+  // 复尺要等哪道工序做完：淋浴隔断等铺完砖；没有铺砖就不用等（旧项目瓷砖在泥水里，等泥水）
+  const measureEndOf=m=>m.measure?(phaseEnd[m.measure]||(m.measure==='tile'&&mepCombined&&phaseEnd.masonry)||null):null;
   // 工序之间的先后关系：没有先后关系的工序同期施工；没有这道工序时，顺着它的前一道往前找
   const depEnd=key=>{if(phaseEnd[key])return {end:phaseEnd[key],names:[PHASES.find(p=>p.key===key).name]};let best={end:add(S,-1),names:[]};for(const d of DEPS[key]||[]){const r=depEnd(d);if(r.end>best.end)best=r;}return best;};
   for(let k=0;k<PHASES.length;k++){
@@ -126,7 +132,7 @@ window.RenoPlan=(()=>{
      let ready;
      if(arrived)ready=null;
      else if(ordered){const exp=batches.filter(b=>t.items.some(i=>i.batch_id===b.id)).map(b=>parse(b.expected_on)).filter(Boolean);ready=exp.length?add(exp.reduce((a,b)=>a>b?a:b),1):null;}
-     else{const measureEnd=m.measure&&(phaseEnd[m.measure]||(m.measure==='tile'&&phaseEnd.masonry));const orderFrom=measureEnd?next(measureEnd):(T>S?T:S);ready=add(orderFrom,m.lead);}
+     else{const measureEnd=measureEndOf(m);const orderFrom=measureEnd?next(measureEnd):(T>S||m.early?T:S); /* 铝窗今天就能量尺下单，不用等开工 */ready=add(orderFrom,m.lead);}
      if(ready&&work(ready)>s){s=work(ready);why=ordered?'等已下单的材料到货':m.measure?`等复尺后生产 ${m.lead} 天`:`等材料生产 / 到货 ${m.lead} 天`;}
     }
     t.start=s;t.end=endAfter(s,t.days);t.why=why;crewFree[t.crew]=t.end;if(t.end>end)end=t.end;
@@ -144,7 +150,7 @@ window.RenoPlan=(()=>{
    const m=t.material,gi=t.items.filter(i=>['custom','stock'].includes(i.kind));
    const ordered=gi.length>0&&gi.every(i=>['ordered','arrived','done'].includes(i.stage)),arrived=gi.length>0&&gi.every(i=>['arrived','done'].includes(i.stage));
    const signNeeded=gi.some(i=>i.kind==='custom'&&i.stage==='pending');
-   const orderBy=add(t.start,-m.lead),measureOn=m.measure?next(phaseEnd[m.measure]||(m.measure==='tile'&&phaseEnd.masonry)||S):null;
+   const orderBy=add(t.start,-m.lead),mEnd=measureEndOf(m),measureOn=mEnd?next(mEnd):m.measure&&m.measure!=='tile'?next(S):null;
    const status=arrived?'arrived':ordered?'ordered':T>orderBy?'late':diff(T,orderBy)<=7?'soon':'later';
    return {id:t.id,name:t.name,label:m.label,lead:m.lead,fixedDays:m.fixedDays||null,needBy:iso(t.start),orderBy:iso(orderBy),measureOn:measureOn&&iso(measureOn),status,signNeeded,items:t.lines.filter(l=>['custom','stock'].includes(l.kind)).map(l=>l.name)};
   }).sort((a,b)=>a.orderBy.localeCompare(b.orderBy));

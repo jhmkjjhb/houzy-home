@@ -146,4 +146,8 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.tile?.end==='2026-12-24'&&(await sys(`SELECT _reno_phase_name('tile') n`))[0].n==='铺瓷砖','tile phase saves and is named 铺瓷砖');
  await call(manager,'SELECT renovation_crew_save(NULL,$1::jsonb) v',[JSON.stringify({name:'阿明瓷砖',trade:'瓷砖工'})]);
  ok((await sys(`SELECT count(*)::int n FROM renovation_crews WHERE trade='瓷砖工'`))[0].n===1,'crew list accepts 瓷砖工');}
+// 铝窗拆装：新工序 window 能保存，业主页名称
+{await db.exec('RESET ROLE');const wm=fs.readFileSync('supabase/renovation_phase_window_migration.sql','utf8');await db.exec(wm);await db.exec(wm);
+ await call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify({window:{start:'2026-12-02',end:'2026-12-03'}}),'[]',null,null]);
+ ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.window?.end==='2026-12-03'&&(await sys(`SELECT _reno_phase_name('window') n`))[0].n==='铝窗拆装','window phase saves and is named 铝窗拆装');}
 console.log(`PASS ${checks} planning checks`);
