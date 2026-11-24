@@ -392,6 +392,8 @@
   .brandmark svg { width:28px; height:28px; fill:currentColor; }
   .top .brandtitle { min-width:165px; color:#fffdf7; font-size:19px; line-height:1.08; letter-spacing:.09em; }
   .top .brandtitle small { margin-top:4px; color:#e4cf9b; font-family:Inter,'Noto Sans SC',sans-serif; font-size:10px; font-weight:500; letter-spacing:.1em; }
+  .return-system { flex:none; padding:8px 10px; border:1px solid #c8a96e; border-radius:7px; color:#fffdf7; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
+  .return-system:hover,.return-system:focus-visible { background:#245640; }
   .top .cust { max-width:250px; border-color:#c8a96e; background:#fbf8f1; }
   .top .sum small { color:#e4cf9b; letter-spacing:.08em; }
   .top .sum b { color:#fffdf7; font-family:'Playfair Display',Georgia,serif; }
@@ -415,7 +417,7 @@
   .pbox.cur span { background:#153927; color:#fff; }
   .q th { letter-spacing:.06em; }
   .quote-actions-menu { box-shadow:0 14px 40px #15392727; }
-  :is(button,input,select,textarea,summary):focus-visible { outline:2px solid #a67e39; outline-offset:2px; }
+  :is(button,input,select,textarea,summary,.return-system):focus-visible { outline:2px solid #a67e39; outline-offset:2px; }
   @media(max-width:700px) {
     .top .in { gap:8px; }
     .top .brandtitle { min-width:0; font-size:15px; }
@@ -439,6 +441,7 @@
 <div class="top">
   <div class="in">
     <div class="brandmark" aria-hidden="true"><svg viewBox="0 0 320 240"><rect x="64" y="22" width="54" height="14"/><rect x="64" y="204" width="54" height="14"/><rect x="64" y="22" width="17" height="90"/><rect x="101" y="22" width="17" height="90"/><rect x="64" y="120" width="17" height="98"/><rect x="101" y="120" width="17" height="98"/><path d="M128 106 L194 78 L194 132 L128 160 Z"/><rect x="202" y="22" width="54" height="14"/><rect x="202" y="204" width="54" height="14"/><rect x="202" y="22" width="17" height="90"/><rect x="239" y="22" width="17" height="90"/><rect x="202" y="120" width="17" height="98"/><rect x="239" y="120" width="17" height="98"/></svg></div><h1 class="brandtitle">HOUZY HOME<small>报价器 · QUOTE STUDIO</small></h1>
+    <a class="return-system" href="staff.html?view=dashboard">← 返回员工系统 / Staff System</a>
     <input class="cust" data-info="name" placeholder="客户姓名 *" aria-label="客户姓名" aria-required="true" required>
     <input class="cust" data-info="phone" type="tel" placeholder="联系电话 *" aria-label="联系电话" aria-required="true" required>
     <input class="cust" data-info="address" placeholder="住宅地址 *" aria-label="住宅地址" aria-required="true" required>
