@@ -531,6 +531,7 @@
 
   let P = load();
   let cloudCurrent = null; // { slot, revision }; archives themselves never enter browser storage.
+  let cloudSavedSnapshot = null;
   let cloudRecords = [];
   let cloudListState = 'idle';
   let cloudListError = '';
@@ -565,7 +566,7 @@
     first?.scrollIntoView({ block: 'center' }); first?.focus();
     return false;
   }
-  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} backupNow(); }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} backupNow(); updateCloudSaveInfo(); }
   const quoteFilename = ext => `HOUZY-${uiLang === 'en' ? 'Quote' : '报价'}-${String(P.info?.name || (uiLang === 'en' ? 'Client' : '未命名客户')).replace(/[\\/:*?"<>|\r\n]/g, '_').slice(0, 40)}-${new Date().toISOString().slice(0, 10)}.${ext}`;
   function downloadQuote(content, filename, type) {
     const url = URL.createObjectURL(new Blob([content], { type }));
@@ -667,6 +668,7 @@
       backupNow(true);
       P = Q.migrate({ ...blank(), ...data.project });
       cloudCurrent = null;
+      cloudSavedSnapshot = null;
       IMG = data.images && Array.isArray(data.images.drawings) && data.images.rooms && typeof data.images.rooms === 'object' ? data.images : { drawings: [], rooms: {} };
       if (!saveImg()) alert('报价已导入，但图片超出浏览器存储容量，图片可能无法保留。');
       roomId = P.rooms[0]?.id || null; syncNote = null; tab = 'quote'; render(); window.scrollTo(0, 0);
@@ -931,9 +933,21 @@
       return `<button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}</small></span><span class="cloud-arrow">打开 →</span></button>`;
     }).join('');
   }
+  function cloudSaveInfoText() {
+    if (!cloudRecords.length) return cloudListState === 'error' ? '无法读取最近保存时间。' : cloudListState === 'ready' ? '暂无云端保存记录。' : '正在读取最近保存时间…';
+    const latest = cloudRecords.reduce((a, b) => new Date(a.updated_at) > new Date(b.updated_at) ? a : b);
+    const date = new Date(latest.updated_at).toLocaleString('zh-MY', { hour12: false });
+    const changed = cloudSavedSnapshot !== null && JSON.stringify(P) !== cloudSavedSnapshot;
+    return `最近云端保存：${date}（第 ${latest.slot} 份）${changed ? ' · 当前内容有未保存修改' : ''}`;
+  }
+  function updateCloudSaveInfo() {
+    const node = document.querySelector('[data-cloud-save-info]');
+    if (node) node.textContent = cloudSaveInfoText();
+  }
   function updateCloudList() {
     const node = document.getElementById('cloud-quote-list');
     if (node) node.innerHTML = cloudListHtml();
+    updateCloudSaveInfo();
   }
   async function refreshCloudRecords() {
     if (cloudListState === 'loading') return;
@@ -974,10 +988,13 @@
       });
       if (error) throw error;
       if (!data?.[0]?.revision) throw new Error('服务器未确认保存成功');
-      cloudCurrent = { slot, revision: data[0].revision, phone: P.info.phone };
+      const saved = data[0];
+      cloudCurrent = { slot, revision: saved.revision, phone: P.info.phone };
+      cloudSavedSnapshot = JSON.stringify(P);
+      cloudRecords = [...cloudRecords.filter(item => item.slot !== slot), { slot, revision: saved.revision, customer_name: P.info.name, customer_phone: P.info.phone, updated_at: saved.updated_at }].sort((a, b) => a.slot - b.slot);
+      cloudListState = 'ready'; updateCloudList();
       document.getElementById('cloud-dialog').close();
       cloudStatus(`轻量报价已保存到云端第 ${slot} 份（${Math.max(1, Math.ceil(bytes / 1024))} KB，不含图片）。`, true);
-      cloudListState = 'idle';
       refreshCloudRecords();
     } catch (error) { cloudStatus('云端报价保存失败：' + (error.message || error)); }
     finally { cloudBusy = false; }
@@ -1005,7 +1022,7 @@
     try {
       const sb = await cloudSession();
       const { data, error } = await sb.from('quote_cloud_slots')
-        .select('slot,revision,document').eq('slot', slot).single();
+        .select('slot,revision,updated_at,document').eq('slot', slot).single();
       if (error) throw error;
       const doc = data?.document;
       if (doc?.format !== 'houzy-quote-v2' || doc.version !== 1 || !Array.isArray(doc.project?.rooms) || !Array.isArray(doc.project?.plans)) throw new Error('云端文件格式无效');
@@ -1016,6 +1033,7 @@
       const imgCached = saveImg();
       save();
       cloudCurrent = { slot, revision: data.revision, phone: P.info.phone };
+      cloudSavedSnapshot = JSON.stringify(P);
       roomId = P.rooms[0]?.id || null;
       tab = P.houseType ? 'quote' : 'house';
       document.getElementById('cloud-dialog').close();
@@ -1579,7 +1597,7 @@
       ? (paymentLabelsEn[value] || window.HOUZY_QUOTE_I18N.translate(value))
       : value;
     const mode = P.quoteMode || 'estimate';
-    let h = `<h2>⑤ 报价单</h2><section class="card cloud-library noprint" aria-label="我的云端报价"><div class="cloud-library-head"><b>我的云端报价（最多 3 份）</b><button type="button" class="chip" data-cloud-refresh>刷新</button></div><div id="cloud-quote-list" class="cloud-library-list">${cloudListHtml()}</div><div class="adds" style="margin:8px 0 0"><button type="button" class="btn pri" data-cloud-save>保存当前报价到云端</button><span class="hint" style="align-self:center">轻量保存，不含图片；第 4 份须选择覆盖。</span></div></section>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
+    let h = `<h2>⑤ 报价单</h2><section class="card cloud-library noprint" aria-label="我的云端报价"><div class="cloud-library-head"><b>我的云端报价（最多 3 份）</b><button type="button" class="chip" data-cloud-refresh>刷新</button></div><div id="cloud-quote-list" class="cloud-library-list">${cloudListHtml()}</div><div class="adds" style="margin:8px 0 0"><button type="button" class="btn pri" data-cloud-save>保存当前报价到云端</button><span class="hint" style="align-self:center">轻量保存，不含图片；第 4 份须选择覆盖。</span></div><div class="hint" data-cloud-save-info style="margin-top:8px">${cloudSaveInfoText()}</div></section>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
     const ps = Q.plans(P);
     if (ps.length > 1) {
       const rows = ps.map(p => { const L = Q.buildLines(P, p.id), T2 = Q.totals(P, L); return { p, total: T2.total, open: L.filter(l => l.tbd.length).length }; });
@@ -2669,7 +2687,7 @@
       render(); window.scrollTo(0, 0); return;
     }
     if (b.hasAttribute('data-print')) { if (!b.disabled && requireClientInfo()) exportQuotePdf(ds.print === 'summary'); return; }
-    if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); IMG = { drawings: [], rooms: {} }; cloudCurrent = null; saveImg(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
+    if (b.hasAttribute('data-reset')) { if (!confirmReset) { confirmReset = true; render(); return; } P = blank(); IMG = { drawings: [], rooms: {} }; cloudCurrent = null; cloudSavedSnapshot = null; saveImg(); confirmReset = false; tab = 'house'; roomId = null; render(); return; }
   });
   render();
   window.__qv2 = { get: () => P, compute };
