@@ -1,14 +1,15 @@
--- 施工计划「水电」拆成两道工序：水路（plumb，水管工）、电路（elec，电工），拆除后同期施工，泥水和天花等两样都做完。
--- 已保存过「水电」（mep）一条计划的旧项目不变，继续一条「水电」。
+-- 施工计划水、电分开，各自进场：前期「水路预埋」（plumb，水管工）、「电路预埋」（elec，电工），拆除后同期，泥水和天花等两样都做完；
+-- 后期「水路安装」（fix_plumb）、「电路安装」（fix_elec）、「五金窗帘」（hardware），定制柜和门窗之后同期。
+-- 已保存过「水电」（mep）计划的旧项目不变，继续「水电」「洁具灯具设备」（fixture）。
 -- 师傅名单可以选「水管工」「电工」。
 -- 依赖 renovation_phase_forecast_migration.sql、renovation_planning_migration.sql。可重复运行。
 CREATE OR REPLACE FUNCTION public._reno_phase_name(k text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
- SELECT CASE k WHEN 'prep' THEN '拆除保护' WHEN 'plumb' THEN '水路' WHEN 'elec' THEN '电路' WHEN 'mep' THEN '水电' WHEN 'masonry' THEN '泥水' WHEN 'ceiling' THEN '天花木作' WHEN 'paint' THEN '油漆'
+ SELECT CASE k WHEN 'prep' THEN '拆除保护' WHEN 'plumb' THEN '水路预埋' WHEN 'elec' THEN '电路预埋' WHEN 'fix_plumb' THEN '水路安装' WHEN 'fix_elec' THEN '电路安装' WHEN 'hardware' THEN '五金窗帘' WHEN 'mep' THEN '水电' WHEN 'masonry' THEN '泥水' WHEN 'ceiling' THEN '天花木作' WHEN 'paint' THEN '油漆'
   WHEN 'cabinet' THEN '定制柜安装' WHEN 'fit' THEN '台面门窗玻璃' WHEN 'fixture' THEN '洁具灯具设备' WHEN 'clean' THEN '清洁交付' ELSE k END $$;
 
 CREATE OR REPLACE FUNCTION public._reno_phase_merge(old jsonb,p_plan jsonb,OUT merged jsonb,OUT changes jsonb) LANGUAGE plpgsql IMMUTABLE AS $$
 DECLARE k text;v jsonb;s date;e date;
- keys constant text[]:=ARRAY['prep','plumb','elec','mep','masonry','ceiling','paint','cabinet','fit','fixture','clean'];
+ keys constant text[]:=ARRAY['prep','plumb','elec','mep','masonry','ceiling','paint','cabinet','fit','fix_plumb','fix_elec','hardware','fixture','clean'];
 BEGIN
  IF p_plan IS NULL OR jsonb_typeof(p_plan)<>'object' THEN RAISE EXCEPTION '计划格式不对'; END IF;
  merged:=coalesce(old,'{}'::jsonb);changes:='[]'::jsonb;

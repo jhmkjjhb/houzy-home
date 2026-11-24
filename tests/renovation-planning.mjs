@@ -135,7 +135,8 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  ok(pp.plumb?.end==='2026-12-04'&&pp.elec?.end==='2026-12-03','水路 and 电路 save as two phases');
  await lv({mep:{start:'2026-12-01',end:'2026-12-05'}});ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.mep?.end==='2026-12-05','old 水电 key still accepted');
  await reject(()=>lv({water:{start:'2026-12-01',end:'2026-12-02'}}),/不认识的工序/);
- ok((await sys(`SELECT _reno_phase_name('plumb') a,_reno_phase_name('elec') b`))[0].a==='水路','owner page names: 水路 / 电路');
+ {const nm=(await sys(`SELECT _reno_phase_name('plumb') a,_reno_phase_name('elec') b,_reno_phase_name('fix_plumb') c,_reno_phase_name('fix_elec') d,_reno_phase_name('hardware') e`))[0];ok(Object.values(nm).join()==='水路预埋,电路预埋,水路安装,电路安装,五金窗帘','owner page names: '+Object.values(nm).join());}
+ await lv({fix_plumb:{start:'2027-01-10',end:'2027-01-11'},fix_elec:{start:'2027-01-10',end:'2027-01-12'},hardware:{start:'2027-01-10',end:'2027-01-10'}});ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.fix_elec?.end==='2027-01-12','install phases save');
  for(const t of ['水管工','电工'])await call(manager,'SELECT renovation_crew_save(NULL,$1::jsonb) v',[JSON.stringify({name:'师傅'+t,trade:t})]);
  ok((await sys(`SELECT count(*)::int n FROM renovation_crews WHERE trade IN ('水管工','电工')`))[0].n===2,'crew list accepts 水管工 and 电工');
  await reject(()=>call(manager,'SELECT renovation_crew_save(NULL,$1::jsonb) v',[JSON.stringify({name:'乱填',trade:'厨师'})]),/./);}

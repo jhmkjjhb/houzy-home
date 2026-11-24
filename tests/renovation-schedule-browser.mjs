@@ -72,7 +72,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  // 1) 自动排期：开工日 2026-12-01（周二）
  await sch.locator('[data-sch-start]').fill('2026-12-01');await sch.locator('[data-sch-auto]').click();await sch.locator('.sch-bar').first().waitFor();
  // 按工序走：一行一道工序，按施工顺序编号；同一道工序的子单合在一行
- assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 电路','2. 泥水','3. 油漆','4. 定制柜安装','5. 洁具灯具设备'],'rows are construction phases in working order');
+ assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 电路预埋','2. 泥水','3. 油漆','4. 定制柜安装','5. 水路安装'],'rows are construction phases in working order');
  assert.equal(await sch.locator('.sch-phase').count(),5,'one bar per phase (the gift is not scheduled)');
  await openPhases(page);assert.equal(await sch.locator('.sch-items').count(),5,'opening a phase lists what that trade does in one visit');
  {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装'}).innerText();assert(pi.includes('涉及 2 张子单')&&pi.includes('全屋定制')&&pi.includes('厨房及洗衣区柜体')&&pi.includes('履约')&&pi.includes('打开子单'),'one cabinet visit lists both sub-orders with their fulfilment: '+pi.slice(0,200));}

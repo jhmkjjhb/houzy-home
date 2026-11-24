@@ -20,16 +20,20 @@ window.RenoPlan=(()=>{
  // 工序：key、名称、识别关键词、工效（area 平方尺/天，length 尺/天，lot 每个 lot 天数，pc 每天装几件）、工种
  const PHASES=[
   {key:'prep',name:'拆除保护',re:/拆除|拆旧|敲|清运|保护(?!清洁)/,lot:2,trade:'杂工'},
-  {key:'plumb',name:'水路',re:/水管|水路|给排水|PPR|管道|打压|燃气|热水管/i,lot:3,trade:'水管工'},
-  {key:'elec',name:'电路',re:/水电|电气|电位|布线|电线|电路|回路|配电|空调|冷气|弱电|网线/i,lot:3,trade:'电工'},
-  // 旧项目（11-24 前已保存过「水电」一条计划）继续水路电路合一，不改业主已看到的日期
+  {key:'plumb',name:'水路预埋',re:/水管|水路|给排水|PPR|管道|打压|燃气|热水管/i,lot:3,trade:'水管工'},
+  {key:'elec',name:'电路预埋',re:/水电|电气|电位|布线|电线|电路|回路|配电|空调|冷气|弱电|网线/i,lot:3,trade:'电工'},
+  // 旧项目（11-24 前已保存过「水电」一条计划）继续水电合一、洁具灯具合一，不改业主已看到的日期（mep、fixture 只给旧项目用）
   {key:'mep',name:'水电',re:/$^/,lot:6,trade:'水电工'},
   {key:'masonry',name:'泥水',re:/泥水|泥瓦|砌|批荡|地坪|混凝土|找平|铺砖|地砖|墙砖|瓷砖|防水|门柱|围墙/,area:120,length:40,lot:2,trade:'泥水工'},
   {key:'ceiling',name:'天花木作',re:/天花|石膏|吊顶|灯槽|木作|隔墙|木工/,area:150,length:60,lot:3,trade:'木工'},
   {key:'paint',name:'油漆',re:/油漆|涂料|乳胶|漆/,area:800,lot:7,trade:'油漆工'},
   {key:'cabinet',name:'定制柜安装',re:/定制|铝柜|衣柜|橱柜|地柜|吊柜|书柜|鞋柜|电视柜|玄关柜|隐形柜|书吧|柜体/,area:60,length:15,lot:1,trade:'柜体安装队'},
   {key:'fit',name:'台面门窗玻璃',re:/台面|岩板|石英|大理石|玻璃|隔断|门窗|窗(?!帘)|折叠门|移门|木门|房门|门(?!锁|铃|把)/,area:80,length:25,lot:1,trade:'厂家安装',parallel:true},
-  {key:'fixture',name:'洁具灯具设备',re:/卫浴|洁具|浴室柜|马桶|花洒|龙头|灯|开关|插座|电器|热水器|窗帘|智能|锁|雨棚|车棚|五金/,pc:8,lot:2,trade:'水电工'},
+  // 水、电前期预埋，后期各自再进场安装
+  {key:'fix_plumb',name:'水路安装',re:/卫浴|洁具|浴室柜|马桶|花洒|龙头|热水器/,pc:8,lot:2,trade:'水管工'},
+  {key:'fix_elec',name:'电路安装',re:/灯|开关|插座|电器|智能(?!.*锁)/,pc:8,lot:2,trade:'电工'},
+  {key:'hardware',name:'五金窗帘',re:/窗帘|锁|雨棚|车棚|五金/,pc:8,lot:2,trade:'杂工'},
+  {key:'fixture',name:'洁具灯具设备',re:/$^/,pc:8,lot:2,trade:'水电工'},
   {key:'clean',name:'清洁交付',re:/清洁|开荒|保护清洁/,lot:2,trade:'清洁'}
  ];
  // 材料：到货天数（日历天）和是否要等某道工序做完才能复尺下单
@@ -51,13 +55,13 @@ window.RenoPlan=(()=>{
  function phaseIndex(name,lines){
   const byName=PHASES.findIndex(p=>p.re.test(short(name)));if(byName>=0)return byName;
   const txt=lines.map(l=>l.name).join(' ');const byItems=PHASES.findIndex(p=>p.re.test(txt));if(byItems>=0)return byItems;
-  return IDX[lines.some(l=>l.kind==='custom')?'cabinet':lines.some(l=>l.kind==='stock')?'fixture':'masonry'];
+  return IDX[lines.some(l=>l.kind==='custom')?'cabinet':lines.some(l=>l.kind==='stock')?'hardware':'masonry'];
  }
  // 每个清单项属于哪道工序：先看项目名称，看不出再看所在子单的名称，最后按类型
  function phaseOfLine(l,group){
   const byName=PHASES.findIndex(p=>p.re.test(String(l.name||'')));if(byName>=0)return byName;
   const byGroup=PHASES.findIndex(p=>p.re.test(short(group)));if(byGroup>=0)return byGroup;
-  return IDX[l.kind==='custom'?'cabinet':l.kind==='stock'?'fixture':'masonry'];
+  return IDX[l.kind==='custom'?'cabinet':l.kind==='stock'?'hardware':'masonry'];
  }
  function duration(p,lines){
   let days=0;
@@ -72,7 +76,7 @@ window.RenoPlan=(()=>{
   const names=g.map(l=>l.name).join(' '),all=g.map(l=>l.name+' '+(l.spec||'')).join(' ');
   return MATERIALS.find(m=>m.re.test(names))||MATERIALS.find(m=>m.re.test(all))||{lead:7,label:'材料'};};
  // 工序先后：每道工序要等哪几道做完（完工后才能开始）。没有先后关系的可以同期
- const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],paint:['masonry','ceiling'],cabinet:['paint'],fit:['paint'],fixture:['cabinet','fit'],clean:['fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
+ const DEPS={prep:[],plumb:['prep'],elec:['prep'],mep:['prep'],masonry:['plumb','elec','mep'],ceiling:['plumb','elec','mep'],paint:['masonry','ceiling'],cabinet:['paint'],fit:['paint'],fix_plumb:['cabinet','fit'],fix_elec:['cabinet','fit'],hardware:['cabinet','fit'],fixture:['cabinet','fit'],clean:['fix_plumb','fix_elec','hardware','fixture','cabinet','fit','paint','masonry','ceiling','plumb','elec','mep','prep']};
  // 给出现的工序算：等谁（最近的前一道，跳过没有的工序）、可以和谁同期（彼此没有先后关系）
  function relations(keys){
   const has=new Set(keys),anc=k=>{const out=new Set();const walk=x=>{for(const d of DEPS[x]||[]){if(!out.has(d)){out.add(d);walk(d);}}};walk(k);return out;};
@@ -90,7 +94,7 @@ window.RenoPlan=(()=>{
   for(const w of wos||[]){
    if(w.cancelled_at)continue;
    for(const id of w.line_ids||[]){const l=byId.get(String(id));if(!l||l.kind==='gift')continue;
-    let k=phaseOfLine(l,w.group_name);if(mepCombined&&(k===IDX.plumb||k===IDX.elec))k=IDX.mep;const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
+    let k=phaseOfLine(l,w.group_name);if(mepCombined){if(k===IDX.plumb||k===IDX.elec)k=IDX.mep;else if(k===IDX.fix_plumb||k===IDX.fix_elec||k===IDX.hardware)k=IDX.fixture;}const g=groups.get(k)||groups.set(k,{lines:[],items:[],wos:new Set()}).get(k);
     g.lines.push({...l,group:short(w.group_name),work_order_id:w.id});g.wos.add(w.id);
     const it=allItems.find(i=>i.work_order_id===w.id&&String(i.line_id)===String(id));if(it)g.items.push(it);}
   }

@@ -10,13 +10,13 @@ const work=groups.map(([g,l],i)=>({id:'w'+i,group_name:g,line_ids:[l],assignee:'
 const items=work.map(w=>({work_order_id:w.id,line_id:w.line_ids[0],kind:lines.find(l=>l.id===w.line_ids[0]).kind,stage:['custom','stock'].includes(lines.find(l=>l.id===w.line_ids[0]).kind)?'arrived':'pending'}));
 const R=P.build({work,lines,tracking:{items,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
 const T=Object.fromEntries(R.tasks.map(t=>[t.name,t]));let n=0;const ok=(v,m)=>{assert(v,m);n++;};
-ok(T['电路'].start>T['拆除保护'].end,'电路 after 拆除');
-ok(T['泥水'].start>T['电路'].end&&T['天花木作'].start>T['电路'].end,'泥水 and 天花 both wait for 电路');
+ok(T['电路预埋'].start>T['拆除保护'].end,'电路预埋 after 拆除');
+ok(T['泥水'].start>T['电路预埋'].end&&T['天花木作'].start>T['电路预埋'].end,'泥水 and 天花 both wait for 电路预埋');
 ok(T['泥水'].start===T['天花木作'].start,'泥水 and 天花 run at the same time (different trades, no dependency): '+T['泥水'].start+' / '+T['天花木作'].start);
 ok(T['油漆'].start>T['泥水'].end&&T['油漆'].start>T['天花木作'].end,'油漆 waits for both 泥水 and 天花');
 ok(T['定制柜安装'].start===T['台面门窗玻璃'].start&&T['定制柜安装'].start>T['油漆'].end,'定制柜 and 门窗 run together after 油漆');
-ok(T['洁具灯具设备'].start>T['定制柜安装'].end&&T['洁具灯具设备'].start>T['台面门窗玻璃'].end,'洁具 waits for cabinets and windows');
-ok(T['清洁交付'].start>T['洁具灯具设备'].end,'清洁 last');
+ok(T['水路安装'].start>T['定制柜安装'].end&&T['水路安装'].start>T['台面门窗玻璃'].end,'水路安装 (toilets) waits for cabinets and windows');
+ok(T['清洁交付'].start>T['水路安装'].end,'清洁 last');
 ok(/天花木作/.test(T['油漆'].why)||/泥水/.test(T['油漆'].why),'the reason names what it waited for: '+T['油漆'].why);
 const rel=P.relations(['mep','masonry','ceiling','paint','cabinet','fit','fixture']);
 ok(rel.masonry.parallel.includes('ceiling')&&rel.ceiling.parallel.includes('masonry'),'relations: 泥水 ∥ 天花');
@@ -39,7 +39,7 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  ok(T3['泥水'].lines.length===2&&R3.tasks.filter(t=>t.name==='泥水').length===1,'tiling from two sub-orders is one 泥水 phase (one visit): '+T3['泥水'].lines.map(l=>l.group).join(','));
  ok(T3['泥水'].days===Math.ceil(380/120),'days come from the combined quantity');
  ok(T3['油漆'].start>T3['泥水'].end&&T3['油漆'].start>T3['天花木作'].end,'paint after tiling and ceiling');
- ok(P.PHASES[P.phaseOfLine({name:'窗帘',kind:'stock'},'软装')].key==='fixture'&&P.PHASES[P.phaseOfLine({name:'智能门锁',kind:'stock'},'五金')].key==='fixture','curtains and smart locks are fixtures, not doors / windows');}
+ ok(P.PHASES[P.phaseOfLine({name:'窗帘',kind:'stock'},'软装')].key==='hardware'&&P.PHASES[P.phaseOfLine({name:'智能门锁',kind:'stock'},'五金')].key==='hardware','curtains and smart locks are fixtures, not doors / windows');}
 // 子单定了总天数（设计 + 定做 + 安装，从开始下单算到装好）：工厂定做天数 = 总天数 − 安装天数；没下单时，柜子最早要等这么多天才能装
 {const its=items.map(i=>i.work_order_id==='w5'?{...i,stage:'pending'}:i);
  const base=P.build({work,lines,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
@@ -64,4 +64,16 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  // 旧项目（已经保存过「水电」一条计划，业主可能已看到）：继续合成一条，不打乱已确认的日期
  const old=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
  ok(old.tasks.filter(t=>['plumb','elec'].includes(t.key)).length===0&&old.tasks.find(t=>t.key==='mep').lines.length===5,'mepCombined keeps a single 水电 phase for projects already planned that way');}
+// 后期水、电各自再进场安装：洁具归水路安装（水管工），灯具开关归电路安装（电工），窗帘门锁归五金；都在柜子、门窗之后，彼此同期
+{const ln=[L('1','厨房地柜','custom'),L('2','马桶','stock','pc',2),L('3','龙头','stock','pc',3),L('4','LED 筒灯','stock','pc',12),L('5','开关插座面板','stock','pc',20),L('6','窗帘','stock','pc',4),L('7','开荒清洁','work')];
+ const wk=[{id:'a',group_name:'全屋定制',line_ids:['1']},{id:'b',group_name:'卫浴洁具',line_ids:['2','3']},{id:'c',group_name:'灯具',line_ids:['4','5','6']},{id:'d',group_name:'清洁',line_ids:['7']}];
+ const its=ln.filter(l=>l.kind!=='work').map(l=>({work_order_id:wk.find(w=>w.line_ids.includes(l.id)).id,line_id:l.id,kind:l.kind,stage:'arrived'}));
+ const R=P.build({work:wk,lines:ln,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'});
+ const T=Object.fromEntries(R.tasks.map(t=>[t.key,t]));
+ ok(T.fix_plumb?.lines.map(l=>l.id).join()==='2,3'&&T.fix_elec?.lines.map(l=>l.id).join()==='4,5'&&T.hardware?.lines.map(l=>l.id).join()==='6','toilets/taps → 水路安装, lights/switches → 电路安装, curtains → 五金 (even inside one 灯具 sub-order)');
+ ok(T.fix_plumb.trade==='水管工'&&T.fix_elec.trade==='电工','install is done by the same trades as the rough-in');
+ ok(T.fix_plumb.start>T.cabinet.end&&T.fix_elec.start>T.cabinet.end&&T.fix_plumb.start===T.fix_elec.start,'both installs come after the cabinets and go in together');
+ ok(T.clean.start>T.fix_plumb.end&&T.clean.start>T.fix_elec.end&&T.clean.start>T.hardware.end,'cleaning waits for every install');
+ const old=P.build({work:wk,lines:ln,tracking:{items:its,batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
+ ok(old.tasks.find(t=>t.key==='fixture')?.lines.length===5&&!old.tasks.some(t=>['fix_plumb','fix_elec','hardware'].includes(t.key)),'old projects keep one 洁具灯具设备 phase');}
 console.log(`PASS ${n} plan dependency checks`);
