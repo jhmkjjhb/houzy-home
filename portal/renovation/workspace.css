@@ -401,3 +401,10 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-wo-head .sch-go{margin-left:auto;padding:3px 10px;min-height:28px;font-size:12.5px}
 .sch-wo-days{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 2px;font-size:12.5px;color:#4b5a52}.sch-wo-days>span{flex:1 1 240px}.sch-wo-days .bad{color:#a32d1f}
 .sch-wo-days label{display:flex;align-items:center;gap:6px;font-size:12.5px}.sch-wo-days input{width:70px;min-height:30px;padding:2px 6px}.sch-wo-days button{padding:3px 10px;min-height:30px;font-size:12.5px}
+
+/* 现场手动调整：换工序、手动标签、加工序 */
+.sch-items .sch-move{font-size:12px;padding:2px 4px;max-width:150px;border:1px solid #cfd8d2;border-radius:6px;background:#fff}
+.sch-manual{font-style:normal;font-size:11px;color:#9a6700;background:#fff4d6;border-radius:4px;padding:0 4px}
+.sch-custom{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:6px;font-size:13px;color:#4c5a52}
+.sch-addphase .sch-edit-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:8px 0}
+.sch-addphase label{display:flex;flex-direction:column;font-size:12px;gap:2px}

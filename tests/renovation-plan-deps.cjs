@@ -99,4 +99,19 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  // 旧项目：窗还在「台面门窗玻璃」里
  const old=P.build({work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21',mepCombined:true});
  ok(!old.tasks.some(t=>t.key==='window')&&old.tasks.find(t=>t.key==='fit').lines.some(l=>l.id==='2'),'old projects keep windows in 台面门窗玻璃');}
+// 现场手动调整：监理 / 店里把清单项改到别的工序，自动规则不再改回去；手动加的工序接在选定工序后面开工
+{const ln=[L('1','拆除旧地砖','work'),L('2','窗台石','work'),L('3','卫生间防水','work'),L('4','卫生间铺砖','work','sqft',120),L('5','全屋油漆','work'),L('6','开荒清洁','work')];
+ const wk=[{id:'a',group_name:'拆除',line_ids:['1']},{id:'b',group_name:'卫生间',line_ids:['2','3','4']},{id:'c',group_name:'油漆',line_ids:['5']},{id:'d',group_name:'清洁',line_ids:['6']}];
+ const base={work:wk,lines:ln,tracking:{items:[],batches:[]},payments:[],start:'2026-12-01',today:'2026-11-21'};
+ const auto=P.build(base);ok(!auto.tasks.find(t=>t.key==='masonry').lines.some(l=>l.id==='2'),'by default 窗台石 is not 泥水 work');
+ const R=P.build({...base,setup:{assign:{'b:2':'masonry'},custom:[{key:'c_termite',name:'防白蚁',trade:'杂工',days:2,after:'prep'}]}});
+ const T=Object.fromEntries(R.tasks.map(t=>[t.key,t]));
+ ok(T.masonry.lines.some(l=>l.id==='2'&&l.manual),'a manually moved item sits in the chosen phase and is marked manual');
+ ok(T.c_termite&&T.c_termite.name==='防白蚁'&&T.c_termite.days===2&&T.c_termite.custom,'a hand-added phase appears with its own name and days, even with no items');
+ ok(T.c_termite.start>T.prep.end,'it starts after the phase it was put behind');
+ ok(T.clean.start>T.c_termite.end,'cleaning still waits for it');
+ ok(R.phases.findIndex(p=>p.key==='c_termite')===R.phases.findIndex(p=>p.key==='prep')+1,'listed right after its anchor phase');
+ ok(P.relations(Object.keys(T),R.deps).c_termite.after.join()==='prep','relations know what the new phase waits for');
+ const bad=P.build({...base,setup:{assign:{'b:2':'nonsense'},custom:[{key:'prep',name:'x',after:'prep'},{key:'BAD KEY',name:'x'}]}});
+ ok(bad.tasks.find(t=>t.key==='fit'||t.key==='masonry')&&!bad.tasks.some(t=>t.name==='x'),'unknown phases and malformed custom phases are ignored');}
 console.log(`PASS ${n} plan dependency checks`);

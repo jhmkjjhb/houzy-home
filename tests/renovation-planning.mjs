@@ -150,4 +150,26 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
 {await db.exec('RESET ROLE');const wm=fs.readFileSync('supabase/renovation_phase_window_migration.sql','utf8');await db.exec(wm);await db.exec(wm);
  await call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify({window:{start:'2026-12-02',end:'2026-12-03'}}),'[]',null,null]);
  ok((await sys('SELECT phase_plan FROM renovation_projects WHERE id=$1',[id]))[0].phase_plan.window?.end==='2026-12-03'&&(await sys(`SELECT _reno_phase_name('window') n`))[0].n==='铝窗拆装','window phase saves and is named 铝窗拆装');}
+// 现场手动调整（phase_setup）：员工和被指派到工地的内部监理能改；其他门店、没指派的监理、外部人员不行；格式不对拒收；每次改动有记录；业主页显示自定义工序名称
+{await db.exec('RESET ROLE');const sm=fs.readFileSync('supabase/renovation_phase_setup_migration.sql','utf8');await db.exec(sm);await db.exec(sm);
+ const sup='20000000-0000-4000-8000-0000000000a1',sup2='20000000-0000-4000-8000-0000000000a2';
+ await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES($1,'监理阿德',true,'supervisor',$3,'JB',''),($2,'监理别处',true,'supervisor',$3,'JB','') ON CONFLICT DO NOTHING`,[sup,sup2,store]);
+ await sys(`INSERT INTO renovation_site_supervisors(project_id,profile_id,name,kind,access_code,created_by) VALUES($1,$2,'监理阿德','internal','1234',$3)`,[id,sup,manager]);
+ const setup=(who,x)=>call(who,'SELECT renovation_phase_setup_save($1,$2::jsonb) v',[id,JSON.stringify(x)]);
+ const good={assign:{'w1:L1':'masonry'},custom:[{key:'c_termite',name:'防白蚁',trade:'杂工',days:2,after:'prep'}]};
+ await reject(()=>setup(outsider,good),/无此项目权限/);await reject(()=>setup(sup2,good),/无此项目权限/);
+ await setup(sup,good);ok((await sys('SELECT phase_setup FROM renovation_projects WHERE id=$1',[id]))[0].phase_setup.custom[0].name==='防白蚁','the assigned internal supervisor can add a phase');
+ ok((await setup(sup,good)).changed===false,'saving the same setup again changes nothing');
+ await setup(staff,{...good,assign:{'w1:L1':'tile'}});
+ const lg=(await sys(`SELECT payload FROM renovation_audit WHERE project_id=$1 AND action='phase_setup_saved' ORDER BY created_at`,[id])).map(r=>r.payload);
+ ok(lg.length===2&&lg[0].by==='监理阿德'&&lg[1].before.assign['w1:L1']==='masonry'&&lg[1].after.assign['w1:L1']==='tile','every change is logged with who and before / after');
+ for(const [bad,re] of [[{custom:[{key:'prep',name:'x',days:1}]},/编号/],[{custom:[{key:'c_a',name:'',days:1}]},/名称/],[{custom:[{key:'c_a',name:'x',days:0}]},/天数/],[{assign:{'a:b':'nonsense'}},/工序不对/],[{hack:1},/格式/],[{custom:[{key:'c_a',name:'x',days:1},{key:'c_a',name:'y',days:1}]},/编号/]])await reject(()=>setup(staff,bad),re);
+ await sys(`UPDATE renovation_site_supervisors SET active=false WHERE profile_id=$1`,[sup]);await reject(()=>setup(sup,good),/无此项目权限/);
+ // 自定义工序能排期保存，业主页显示它的名称
+ await call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify({c_termite:{start:'2026-12-03',end:'2026-12-04'}}),'[]',null,null]);
+ await sys(`UPDATE renovation_projects SET phase_baseline=phase_plan,phase_baseline_locked_at=now() WHERE id=$1`,[id]);
+ const tok=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
+ const cs=(await sys('SELECT renovation_customer_schedule($1) v',[tok]))[0].v;
+ ok(cs.some(x=>x.name==='防白蚁')&&cs.some(x=>x.name==='铺瓷砖'),'owner page shows the custom phase by its name: '+cs.map(x=>x.name).join(','));
+ await reject(()=>call(staff,'SELECT renovation_phase_plan_save($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb) v',[id,JSON.stringify({'c_BAD':{start:'2026-12-03',end:'2026-12-04'}}),'[]',null,null]),/不认识的工序/);}
 console.log(`PASS ${checks} planning checks`);

@@ -25,7 +25,7 @@ const lines=[L('18','主卧 A 衣柜 Master Wardrobe A','E0 板 白色 2.4m',1,8
  L('50','客厅铺砖','600x1200',650,9,'work','泥水','sqft'),L('51','卫生间防水','',2,850,'work','泥水','间'),L('60','全屋电线更换','',1,6500,'work','水电'),L('61','全屋墙面油漆','Nippon',1,7800,'work','油漆'),L('70','设计服务','',1,0,'gift','赠品与设计','项')];
 await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_no,customer_name,customer_phone,address,state,snapshot) VALUES($1,$2,$3,'HZ-2026-031','陈先生','60101234567','Jalan Test','executing',$4::jsonb)`,[id,store,staff,JSON.stringify({net:14300,discount:0,payments:[{name:'全款',amount:14300}],lines,warnings:[],source_text:''})]);
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) SELECT $1,g,jsonb_agg(x->>'id') FROM (SELECT x,x->>'group' g FROM jsonb_array_elements($2::jsonb) x) t GROUP BY g`,[id,JSON.stringify(lines)]);
-await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_split_mep_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_tile_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_window_migration.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_planning_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_plan_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_site_supervision_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_forecast_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_work_order_days_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_split_mep_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_tile_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_window_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_phase_setup_migration.sql','utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -75,7 +75,7 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
  assert.deepEqual(await sch.locator('[data-sch-phase] span').allInnerTexts(),['1. 电路预埋','2. 泥水','3. 铺瓷砖','4. 油漆','5. 定制柜安装','6. 水路安装'],'rows are construction phases in working order');
  assert.equal(await sch.locator('.sch-phase').count(),6,'one bar per phase (the gift is not scheduled)');
  await openPhases(page);assert.equal(await sch.locator('.sch-items').count(),6,'opening a phase lists what that trade does in one visit');
- {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装'}).innerText();assert(pi.includes('涉及 2 张子单')&&pi.includes('全屋定制')&&pi.includes('厨房及洗衣区柜体')&&pi.includes('履约')&&pi.includes('打开子单'),'one cabinet visit lists both sub-orders with their fulfilment: '+pi.slice(0,200));}
+ {const pi=await sch.locator('.sch-items',{hasText:'定制柜安装 · 柜体安装队一次进场'}).innerText();assert(pi.includes('涉及 2 张子单')&&pi.includes('全屋定制')&&pi.includes('厨房及洗衣区柜体')&&pi.includes('履约')&&pi.includes('打开子单'),'one cabinet visit lists both sub-orders with their fulfilment: '+pi.slice(0,200));}
  assert((await sch.innerText()).includes('有改动还没保存'),'unsaved changes are flagged');
  assert.equal((await plans())['泥水'].s,null,'nothing saved before 保存');
  await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>!document.querySelector('#schedule [data-sch-save]')?.disabled===false||document.querySelector('#schedule [data-sch-save]')?.disabled);
@@ -230,6 +230,28 @@ await planTab(page);const sch=page.locator('#schedule .sch');await sch.waitFor()
   assert((await sch.locator('.sch-autonote').innerText()).includes('泥水 延误 3 天'),'board says what was pushed');
   await page.reload();await sch.locator('.sch-bar').first().waitFor();await page.waitForTimeout(1200);
   assert.deepEqual(await phasePlan(),after,'the same delay is not applied twice');}
+ // 4f) 现场手动调整：项目换工序（标「手动」、可恢复自动）；加一道「防白蚁」，重排后有日期；删除后计划里也去掉
+ {const setup=async()=>(await sys('SELECT phase_setup FROM renovation_projects WHERE id=$1',[id]))[0].phase_setup;
+  if(await sch.locator('[data-sch-phase="masonry"][aria-expanded="false"]').count())await sch.locator('[data-sch-phase="masonry"]').click();
+  const sel=sch.locator('select[data-sch-move$=":51"]');await sel.waitFor();await sel.selectOption('tile');
+  await page.waitForFunction(()=>document.querySelector('#schedule [data-sch-phase="tile"]'));await new Promise(r=>setTimeout(r,500));
+  assert.equal(Object.values((await setup()).assign||{})[0],'tile','moving 卫生间防水 to 铺瓷砖 is saved');
+  if(await sch.locator('[data-sch-phase="tile"][aria-expanded="false"]').count())await sch.locator('[data-sch-phase="tile"]').click();
+  assert(await sch.locator('select[data-sch-move$=":51"]').evaluate(e=>e.closest('li').textContent.includes('手动')),'the moved item is tagged 手动 under 铺瓷砖');
+  await sch.locator('select[data-sch-move$=":51"]').selectOption('__auto');await page.waitForFunction(()=>!document.querySelector('#schedule .sch-manual'));
+  assert.deepEqual((await setup()).assign||{},{},'restore puts it back to automatic');
+  await sch.locator('.sch-addphase summary').click();const ap=sch.locator('.sch-addphase');
+  await ap.locator('[data-sch-cname]').fill('防白蚁');await ap.locator('[data-sch-cdays]').fill('2');await ap.locator('[data-sch-cafter]').selectOption('elec');await ap.locator('[data-sch-cadd]').click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#schedule [data-sch-phase]')].some(b=>b.textContent.includes('防白蚁')));
+  const ck=(await setup()).custom[0].key;assert(/^c_/.test(ck)&&(await setup()).custom[0].after==='elec','custom phase saved behind 电路预埋');
+  await sch.locator('[data-sch-auto]').click();await sch.locator('[data-sch-save]').click();await page.waitForFunction(()=>document.querySelector('#schedule [data-sch-save]')?.disabled);await new Promise(r=>setTimeout(r,600));
+  const pp=await phasePlan();assert(pp[ck]&&pp[ck].start>pp.elec.end,'re-planning gives 防白蚁 dates after 电路预埋: '+JSON.stringify(pp[ck]));
+  await sch.locator(`[data-sch-phase="${ck}"]`).click();await sch.locator(`[data-sch-cdel="${ck}"]`).click();
+  await page.waitForFunction(k=>!document.querySelector(`#schedule [data-sch-phase="${k}"]`),ck);await new Promise(r=>setTimeout(r,500));
+  assert(!((await setup()).custom||[]).length&&!(await phasePlan())[ck],'deleting removes the phase and its dates');
+  await sch.locator('#sch-log summary').click().catch(()=>{});await page.waitForFunction(()=>document.querySelector('#schedule [data-sch-log]')?.textContent.includes('加工序「防白蚁」'));
+  assert(!/c_[a-z0-9]{6,}/.test(await sch.locator('[data-sch-log]').innerText()),'the log names deleted custom phases, never their internal code');
+  await page.locator('#schedule').screenshot({path:out+'/staff-phase-setup.png'});}
  // 5) 业主看到简版：有名称和日期，没有厂家、价格、执行人
  const token=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
  const cu=await open(null,`/portal/renovation-customer.html#${token}`,{width:390,height:844});
