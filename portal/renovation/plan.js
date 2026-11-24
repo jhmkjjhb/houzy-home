@@ -207,5 +207,12 @@ window.RenoPlan=(()=>{
   if(!each.length)return [];const all=each.join('｜');
   return RULES.filter(r=>each.some(t=>r.when.test(t))&&!r.need.test(all)).map(r=>({msg:r.msg,level:r.level||'必查',items:each.filter(t=>r.when.test(t)&&r.when.source!=='.').slice(0,3).map(t=>t.split(' ')[0])}));
  }
- return {build,checklist,PHASES,MATERIALS,DEPS,relations,duration,unitType,phaseIndex,phaseOfLine};
+ // 改顺序后：按顺序检查 keys 里的工序，开始日早于它要等的工序（按现在的实际计划）完成日，就整段往后挪，工期不变
+ function pushAfter(plan,keys,deps){
+  const out=JSON.parse(JSON.stringify(plan||{})),rel=relations(Object.keys(out).filter(k=>out[k]),deps);
+  for(const k of keys){const q=out[k];if(!q)continue;let need=null;for(const d of rel[k]?.after||[]){const e=out[d]?.end;if(e&&(!need||e>need))need=e;}
+   if(need&&q.start<=need){const len=diff(parse(q.start),parse(q.end));let s0=next(parse(need));q.start=iso(s0);q.end=iso(add(s0,len));}}
+  return out;
+ }
+ return {build,checklist,PHASES,MATERIALS,DEPS,relations,pushAfter,duration,unitType,phaseIndex,phaseOfLine};
 })();

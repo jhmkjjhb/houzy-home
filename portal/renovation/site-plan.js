@@ -32,6 +32,7 @@ window.RenoSitePlan=(()=>{
   const r=await sb.rpc('renovation_phase_setup_save',{p_id:site.project.id,p_setup:setup});if(r.error)throw new Error(/function|schema cache/i.test(r.error.message)?'门店还没开通这个功能（要先运行 renovation_phase_site_migration.sql）':r.error.message);
   if(keys?.length){const P=build(site,setup),plan={},ww={};
    for(const t of P.tasks)if(keys.includes(t.key)&&!t.done)plan[t.key]={start:t.start,end:t.end};
+   const pushed=RenoPlan.pushAfter({...(site.project.phase_plan||{}),...plan},keys,P.deps);for(const k of Object.keys(plan))plan[k]=pushed[k];
    const all={...(site.project.phase_plan||{}),...plan};
    for(const t of P.tasks){const pl=all[t.key];if(!pl)continue;for(const id of t.workOrders){const w=ww[id]||(ww[id]={start:pl.start,end:pl.end});if(pl.start<w.start)w.start=pl.start;if(pl.end>w.end)w.end=pl.end;}}
    if(Object.keys(plan).length){const q=await sb.rpc('renovation_phase_plan_save',{p_id:site.project.id,p_plan:plan,p_work:Object.entries(ww).map(([id,v])=>({work_order_id:id,...v})),p_lines:Object.fromEntries(P.tasks.map(t=>[t.key,t.lines.map(l=>[l.work_order_id,String(l.id)])]))});if(q.error)throw new Error(q.error.message);}}

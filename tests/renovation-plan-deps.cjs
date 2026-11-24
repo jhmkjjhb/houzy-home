@@ -127,4 +127,9 @@ ok(JSON.stringify(P.relations(['mep','paint']).paint.after)==='["mep"]','missing
  // 拖到前面：铺瓷砖拖到泥水上面 → 不再等泥水（现场说了算），也不会死循环
  const R2=P.build({...base,setup:{order:['elec','tile','masonry','ceiling','paint']}});const T2=Object.fromEntries(R2.tasks.map(t=>[t.key,t]));
  ok(T2.tile.start<=T2.masonry.start&&T2.paint.start>T2.tile.end,'moving 铺瓷砖 above 泥水 drops that wait, painting still waits for both');}
+// 改顺序后按「现在的实际日期」往后推：前面的工序被手动拉长过，后面要等它的跟着往后挪，工期不变
+{const plan={paint:{start:'2026-12-10',end:'2026-12-20'},tile:{start:'2026-12-15',end:'2026-12-18'}};
+ const out=P.pushAfter(plan,['tile'],{...P.DEPS,tile:['paint']});
+ ok(out.tile.start>out.paint.end&&out.tile.start==='2026-12-21'&&out.tile.end==='2026-12-24','tile moves to start after the real end of painting, same length: '+JSON.stringify(out.tile));
+ ok(out.paint.end==='2026-12-20'&&plan.tile.start==='2026-12-15','earlier phases and the input are not changed');}
 console.log(`PASS ${n} plan dependency checks`);

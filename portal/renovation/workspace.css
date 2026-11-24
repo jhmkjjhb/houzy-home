@@ -408,3 +408,9 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-custom{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:6px;font-size:13px;color:#4c5a52}
 .sch-addphase .sch-edit-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:8px 0}
 .sch-addphase label{display:flex;flex-direction:column;font-size:12px;gap:2px}
+
+/* 看板：≡ 拖动改工序先后 */
+.renovation-workspace .sch button.sch-label.has-grip,.sch button.sch-label.has-grip{padding-left:22px}
+.sch-grip{position:absolute;left:2px;top:50%;transform:translateY(-50%);width:18px;text-align:center;font-style:normal;font-size:17px;color:#8a978f;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.sch-grip:hover{color:#1f5c45}.sch-dragging{background:#f2f7f4}.sch-dragging .sch-label{background:#f2f7f4!important}
+.sch-dropline{position:absolute;left:0;right:0;height:3px;background:#1f5c45;border-radius:2px;z-index:6;pointer-events:none}
