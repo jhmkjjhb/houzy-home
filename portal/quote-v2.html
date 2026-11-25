@@ -919,9 +919,14 @@
       button.textContent = uiLang === 'en' ? 'Save to cloud customer records' : '保存到云端客户档案';
     }
   }
-  const cloudStatus = (message, ok = false) => {
+  let cloudStatusTimer;
+  const cloudStatus = (message, ok = false, duration = ok ? 5000 : 9000) => {
     const node = document.querySelector('[data-cloud-status]');
-    if (node) { node.textContent = message; node.style.color = ok ? '#e4cf9b' : '#ffd2c7'; }
+    if (!node) return;
+    clearTimeout(cloudStatusTimer);
+    node.textContent = message;
+    node.style.color = ok ? '#e4cf9b' : '#ffd2c7';
+    if (message && duration > 0) cloudStatusTimer = setTimeout(() => { node.textContent = ''; }, duration);
   };
   async function cloudSession() {
     const sb = await sbClient();
@@ -998,7 +1003,7 @@
     const bytes = new TextEncoder().encode(JSON.stringify(documentData)).length;
     if (bytes > 8 * 1024 * 1024) { cloudStatus('这份报价数据超过 8 MB，暂时无法保存。'); return; }
     cloudBusy = true;
-    cloudStatus('正在保存云端报价…', true);
+    cloudStatus('正在保存云端报价…', true, 0);
     try {
       const sb = await cloudSession();
       const { data, error } = await sb.rpc('save_quote_cloud_slot', {
@@ -1073,7 +1078,12 @@
       const { data, error } = await sb.functions.invoke('quote-plan-ai', { body: { images: ds.map(d => ({ level: d.level, data: d.img })), house: P.houseType ? HOUSES[P.houseType].label : '' } });
       if (error) {
         let m = 'AI 识别失败，请稍后再试';
-        try { m = (await error.context.json()).error || m; } catch (e) {}
+        if (error.context?.status === 404) m = 'AI 识别服务尚未部署，请联系管理员开通。';
+        else if (error.name === 'FunctionsFetchError') m = '无法连接 AI 识别服务，请检查网络后重试。';
+        else try {
+          const detail = await error.context?.json();
+          m = detail?.error || detail?.message || m;
+        } catch (e) {}
         if (/登录/.test(m)) recog.login = true;
         throw new Error(m);
       }
