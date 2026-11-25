@@ -23,7 +23,7 @@ await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'全屋定制','["C1","C2","S1"]'::jsonb),($1,'泥水','["W1"]'::jsonb)`,[id]);
 await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));
 for(const f of ['renovation_schedule','renovation_planning','renovation_site_supervision'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
-for(const f of ['renovation_phase_plan','renovation_phase_forecast','renovation_work_order_days','renovation_phase_split_mep','renovation_phase_tile','renovation_phase_window','renovation_phase_setup','renovation_phase_site'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
+for(const f of ['renovation_phase_plan','renovation_phase_forecast','renovation_work_order_days','renovation_phase_split_mep','renovation_phase_tile','renovation_phase_window','renovation_phase_setup','renovation_phase_site','renovation_design_files'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -33,7 +33,7 @@ async function handle(user,req){
   const sql=`SELECT public.${req.name}(${keys.map((k,i)=>`${k}=>$${i+1}::${t.t[t.n.indexOf(k)]}`).join(',')}) v`;
   const vals=keys.map(k=>{const v=req.args[k];return v!==null&&typeof v==='object'?JSON.stringify(v):v;});
   await asUser(user);return (await db.query(sql,vals)).rows[0].v;}
- if(req.kind==='select'){await asUser(user);const w=req.eq.map(([k],i)=>`${k}=$${i+1}`).join(' AND ');return (await db.query(`SELECT to_jsonb(t) v FROM public.${req.table} t ${w?'WHERE '+w:''} ${req.limit?'LIMIT '+Number(req.limit):''}`,req.eq.map(e=>e[1]))).rows.map(r=>r.v);}
+ if(req.kind==='select'){await asUser(user);const w=[...req.eq.map(([k],i)=>`${k}=$${i+1}`),...(req.isnull||[]).map(k=>`${k} IS NULL`)].join(' AND ');return (await db.query(`SELECT to_jsonb(t) v FROM public.${req.table} t ${w?'WHERE '+w:''} ${req.limit?'LIMIT '+Number(req.limit):''}`,req.eq.map(e=>e[1]))).rows.map(r=>r.v);}
  if(req.kind==='upload'){if(req.path.includes('/site/')){await asUser(user);if(!(await db.query('SELECT public._reno_site_upload_ok($1) v',[req.path])).rows[0].v)throw new Error('new row violates row-level security policy');}await db.exec('RESET ROLE');await db.query('INSERT INTO storage.objects(bucket_id,name) VALUES($1,$2)',[req.bucket,req.path]);files.set(req.path,req.base64);return true;}
  if(req.kind==='download'){await asUser(user);const allowed=user?true:(await db.query('SELECT public._reno_custom_doc_readable($1) OR public._reno_signoff_doc_readable($1) v',[req.path])).rows[0].v;if(!allowed)throw new Error('无权读取文件');return files.get(req.path);}
  throw new Error('unknown');
@@ -43,7 +43,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.
 const stub=`window.supabase={createClient:(u,k,o)=>{const call=async r=>{const x=JSON.parse(await window.__db(JSON.stringify(r)));return x;};
  const b64=async f=>{const a=new Uint8Array(await f.arrayBuffer());let s='';for(const c of a)s+=String.fromCharCode(c);return btoa(s);};
  return {rpc:async(name,args)=>call({kind:'rpc',name,args}),auth:{getSession:async()=>({data:{session:window.__signedIn?{user:{}}:null}})},
- from(table){const r={kind:'select',table,eq:[]};let one=false;const q={select(){return q},eq(k,v){r.eq.push([k,v]);return q},order(){return q},limit(n){r.limit=n;return q},single(){one=true;return q},then(ok,no){return call(r).then(x=>x.error?x:({data:one?(x.data||[])[0]:x.data,error:null})).then(ok,no);}};return q;},
+ from(table){const r={kind:'select',table,eq:[]};let one=false;const q={select(){return q},eq(k,v){r.eq.push([k,v]);return q},is(k){(r.isnull=r.isnull||[]).push(k);return q},order(){return q},limit(n){r.limit=n;return q},single(){one=true;return q},then(ok,no){return call(r).then(x=>x.error?x:({data:one?(x.data||[])[0]:x.data,error:null})).then(ok,no);}};return q;},
  storage:{from:bucket=>({upload:async(path,file)=>call({kind:'upload',bucket,path,base64:await b64(file)}),download:async path=>{const x=await call({kind:'download',bucket,path});if(x.error)return x;const s=atob(x.data),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return {data:new Blob([a],{type:'image/png'}),error:null};},createSignedUrl:async path=>({data:{signedUrl:'${base}/portal/renovation.html?signed='+encodeURIComponent(path)},error:null}),createSignedUrls:async paths=>({data:paths.map(path=>({path,signedUrl:'${base}/portal/renovation.html?signed='+encodeURIComponent(path),error:null})),error:null})})}};}};`;
 const browser=await chromium.launch({channel:'chrome',headless:true});const errors=[];
 const open=async(user,url,viewport={width:1280,height:1000})=>{const c=await browser.newContext({viewport,geolocation:{latitude:1.4927,longitude:103.7414,accuracy:12},permissions:['geolocation']});await c.grantPermissions(['clipboard-read','clipboard-write','geolocation'],{origin:base});const page=await c.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
@@ -153,7 +153,7 @@ try{
  // 7) 门店：整装订单里的「施工监理」标签——指定监理、看记录和照片、店长确认延误、看到可收款提示
  await sys(`INSERT INTO profiles(id,name,active,role,store_id,region,phone) VALUES('20000000-0000-4000-8000-000000000010','林监理',true,'supervisor',null,null,'014')`);
  const mp=await open(manager,`/portal/renovation.html#${id}`);await mp.locator('details.work').first().waitFor();
- assert.deepEqual(await mp.locator('.steps a').allInnerTexts(),['客户资料','合同清单','合同金额','增减项','收款进度','履约子单','验收质保','施工计划','施工监理'],'plan and supervision are their own sections, in working order');
+ assert.deepEqual(await mp.locator('.steps a').allInnerTexts(),['客户资料','合同清单','合同金额','增减项','收款进度','履约子单','验收质保','施工计划','设计图纸','施工监理'],'plan, drawings and supervision are their own sections, in working order');
  await mp.locator('.steps a[href="#project-site"]').click();const ss=mp.locator('#site-staff');await ss.getByText('施工监理').first().waitFor();
  const cand=ss.locator('.site-staff-cand',{hasText:'林监理'});await cand.waitFor();
  assert((await cand.innerText()).includes('正在管 0 个工地')&&(await ss.locator('.site-staff-cand',{hasText:'陈监理'}).innerText()).includes('已是本工地监理'),'company supervisors listed with their workload; the current one is marked');
@@ -169,6 +169,24 @@ try{
  await rf.locator('[data-sact="confirm"]').click();await mp.waitForFunction(()=>!document.getElementById('site-badge').textContent);
  assert.equal((await sys(`SELECT status FROM renovation_site_entries WHERE kind='delay'`))[0].status,'confirmed','store manager confirmed the delay');
  await mp.locator('#project-site').screenshot({path:out+'/staff-site-tab.png'});
+ // 设计图纸：店员上传效果图、换新版（旧版进历史）；监理现场页只看到最新版
+ const png=n=>({name:n,mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64')});
+ const df=mp.locator('#design-files');await df.getByText('上传图纸').waitFor();
+ await df.locator('[data-df="title"]').fill('厨房效果图');await df.locator('[data-df="file"]').setInputFiles(png('k.png'));await df.locator('[data-dact="upload"]').click();
+ await df.getByText('第 1 版').waitFor();
+ await df.locator('[data-df="kind"]').selectOption('drawing');await df.locator('[data-df="title"]').fill('');await df.locator('[data-df="file"]').setInputFiles({name:'水电点位图.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')});await df.locator('[data-dact="upload"]').click();
+ await df.getByText('水电点位图').waitFor();
+ await df.locator('.design-item',{hasText:'厨房效果图'}).locator('[data-dreplace]').setInputFiles(png('k2.png'));await df.getByText('第 2 版').waitFor();
+ assert((await df.innerText()).includes('历史版本（1）'),'the replaced version is kept in history');
+ await df.locator('[data-df="file"]').setInputFiles({name:'plan.dwg',mimeType:'application/acad',buffer:Buffer.from('x')});await df.locator('[data-dact="upload"]').click();
+ await df.getByText('格式不支持').waitFor();
+ const cur=await sys(`SELECT kind,title,version FROM renovation_design_files WHERE superseded_at IS NULL AND removed_at IS NULL ORDER BY kind`);
+ assert.deepEqual(cur.map(r=>`${r.kind}:${r.title}:${r.version}`),['drawing:水电点位图:1','render:厨房效果图:2'],'one current render (v2) and one drawing named from the file');
+ await mp.locator('#project-design').screenshot({path:out+'/staff-design.png'});
+ const dp=await open(sup,'/portal/renovation-site.html',{width:390,height:844});await dp.getByText('设计图纸（最新版）').waitFor();
+ const dtx=await dp.locator('[data-design]').innerText();
+ assert(/厨房效果图\s*效果图 · 第 2 版/.test(dtx)&&dtx.includes('水电点位图')&&(dtx.match(/厨房效果图/g)||[]).length===1,'the supervisor sees only the latest version of each drawing: '+dtx);
+ assert(await dp.locator('[data-design] a[href]').count()===2,'each drawing opens');
  assert.deepEqual(errors,[],'no page errors');
  console.log('PASS site supervision browser flow');
 }finally{await browser.close();server.close();}

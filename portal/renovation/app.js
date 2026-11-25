@@ -114,6 +114,7 @@ async function openProject(id){
  $('audit').innerHTML=results[1].data.map(a=>`<p>${esc(new Date(a.created_at).toLocaleString())} · ${esc(actionNames[a.action]||a.action)}</p>`).join('')||'<p>尚无操作记录</p>';
  await RenoFinance.load({sb,project,actor,onChange:async()=>{await openProject(id);loadList().catch(()=>{});},canSave:()=>!dirty&&!busy&&!RenoAdditions.isDirty()&&!RenoDeductions.isDirty()});
  window.RenoSiteStaff?.load({sb,project,actor}).catch(()=>{});
+ window.RenoDesign?.load({sb,project,actor}).catch(()=>{});
  history.replaceState(null,'','#'+id);message('已读取云端项目，版本 '+project.revision);
  if(resetScroll)window.scrollTo(0,0);
 }
@@ -251,6 +252,7 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  if(window.RenoSchedule)RenoSchedule.crewAdmin($('crew-admin'),{sb,manager:()=>['store_manager','regional_manager','general_manager','admin','superadmin'].includes(actor?.role)});
  if(window.RenoSchedule)RenoSchedule.bind($('schedule'),{sb,data:scheduleData,onChange:async()=>{await refreshWork(project.id);},message:(m,err)=>message(m,err)});
  window.RenoSiteStaff?.bind($('site-staff'));
+ window.RenoDesign?.bind($('design-files'));
  // 履约子单上方的一行「施工计划」摘要：点了跳到施工计划栏目（不改网址里的项目编号）
  $('plan-summary')?.addEventListener('click',()=>$('project-plan')?.scrollIntoView({behavior:'smooth',block:'start'}));
  RenoFulfillment.bind($('work-orders'),{sb,project:()=>project,onChange:async()=>{await refreshWork(project.id);setTimeout(()=>loadList().catch(()=>{}),1500);},message});

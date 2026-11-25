@@ -186,4 +186,37 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  const v=await call(sup,'SELECT renovation_site_view($1) v',[id]);
  ok(v.project.phase_plan.ceiling&&v.project.phase_setup.order.length===5&&'phase_locked' in v.project,'the site page gets the phase plan and on-site setup');
  ok(!/8800|amount|price/.test(JSON.stringify(v.project)),'no prices in what the site page gets');}
+// 设计图纸：店员上传效果图/施工图，换新版旧版留底；监理（内部登录 / 外部验证码有效期内）只能看自己工地登记过的最新图
+{await db.exec('RESET ROLE');const dm=fs.readFileSync('supabase/renovation_design_files_migration.sql','utf8');await db.exec(dm);await db.exec(dm);checks++;
+ const sup='20000000-0000-4000-8000-0000000000a1',sup2='20000000-0000-4000-8000-0000000000a2';
+ const objs=async(who,role='authenticated')=>{await actor(who,role);const r=(await db.query(`SELECT name FROM storage.objects WHERE name LIKE '%/design/%'`)).rows.map(x=>x.name);await db.exec('RESET ROLE');return r;};
+ const upload=async(who,name)=>{await actor(who);try{await db.query(`INSERT INTO storage.objects(bucket_id,name) VALUES('renovation-fulfillment',$1)`,[name]);}finally{await db.exec('RESET ROLE');}};
+ const save=(who,d,p=id)=>call(who,'SELECT renovation_design_file_save($1,$2::jsonb) v',[p,JSON.stringify(d)]);
+ await upload(staff,`${id}/design/k1.png`);await upload(staff,`${id}/design/k2.png`);await upload(staff,`${id}/design/w1.pdf`);
+ await reject(()=>upload(outsider,`${id}/design/x.png`),/row-level security|policy/);
+ const k1=await save(staff,{kind:'render',title:'厨房效果图',path:`${id}/design/k1.png`,mime:'image/png',size:10});
+ await save(staff,{kind:'drawing',title:'水电点位图',path:`${id}/design/w1.pdf`,mime:'application/pdf',size:10});
+ await reject(()=>save(outsider,{kind:'render',title:'x',path:`${id}/design/k2.png`}),/权限/);
+ await reject(()=>save(staff,{kind:'render',title:'x',path:`${id}/design/none.png`}),/没上传好/);
+ await reject(()=>save(staff,{kind:'render',title:'x',path:`${id}/d1.pdf`}),/没上传好/);
+ const k2=await save(staff,{kind:'render',path:`${id}/design/k2.png`,mime:'image/png',replaces:k1.id});
+ ok(k2.version===2,'replacing a drawing makes version 2');
+ const rows=await sys('SELECT id,title,superseded_at,replaces FROM renovation_design_files WHERE project_id=$1 ORDER BY version',[id]);
+ ok(rows.find(r=>r.id===k1.id).superseded_at&&rows.find(r=>r.id===k2.id).title==='厨房效果图','the old version is kept but marked replaced; the new one keeps the title');
+ await reject(()=>save(staff,{kind:'render',path:`${id}/design/k2.png`,replaces:k1.id}),/新版/);
+ const v=await call(sup,'SELECT renovation_site_view($1) v',[id]);
+ ok(v.design.length===2&&v.design[0].kind==='render'&&v.design[0].version===2&&!v.design.some(f=>f.id===k1.id),'the site page shows only the latest version of each drawing');
+ let seen=await objs(sup);ok(seen.includes(`${id}/design/k2.png`)&&seen.includes(`${id}/design/k1.png`),'the assigned internal supervisor can open the drawings');
+ ok((await objs(sup2)).length===0,'a supervisor of another site cannot open them');
+ ok((await objs('','anon')).length===0,'nobody without a verified link can open them');
+ const ext=await call(staff,'SELECT renovation_supervisor_save($1,$2::jsonb) v',[id,JSON.stringify({name:'Ext',phone:'01'})]);
+ await sys(`UPDATE renovation_site_supervisors SET verified_until=now()+interval '1 hour' WHERE id=$1`,[ext.id]);
+ ok((await objs('','anon')).includes(`${id}/design/w1.pdf`),'an external supervisor who entered the code can open them');
+ await sys(`UPDATE renovation_site_supervisors SET verified_until=now()-interval '1 minute' WHERE id=$1`,[ext.id]);
+ ok((await objs('','anon')).length===0,'after the code expires they cannot');
+ await reject(()=>save(staff,{remove_id:k1.id}),/新版/);
+ await save(staff,{remove_id:k2.id});
+ ok((await call(sup,'SELECT renovation_site_view($1) v',[id])).design.length===1,'a deleted drawing disappears from the site page');
+ ok(!(await objs(sup)).includes(`${id}/design/k2.png`),'and the supervisor can no longer open it');
+ await actor(outsider);ok((await db.query('SELECT count(*)::int n FROM renovation_design_files')).rows[0].n===0,'other stores do not see the drawing list');await db.exec('RESET ROLE');}
 console.log(`PASS ${checks} planning checks`);

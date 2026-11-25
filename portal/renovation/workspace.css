@@ -414,3 +414,6 @@ details.work>summary::-webkit-details-marker{margin-right:2px}
 .sch-grip{position:absolute;left:2px;top:50%;transform:translateY(-50%);width:18px;text-align:center;font-style:normal;font-size:17px;color:#8a978f;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .sch-grip:hover{color:#1f5c45}.sch-dragging{background:#f2f7f4}.sch-dragging .sch-label{background:#f2f7f4!important}
 .sch-dropline{position:absolute;left:0;right:0;height:3px;background:#1f5c45;border-radius:2px;z-index:6;pointer-events:none}
+.design-list{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:10px}.design-item{display:flex;gap:10px;align-items:flex-start}
+.design-thumb{flex:0 0 84px;width:84px;height:64px;border-radius:6px;border:1px solid var(--line,#ddd);display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:600;color:inherit;text-decoration:none;background:#f6f6f4}
+.design-thumb img{width:100%;height:100%;object-fit:cover;display:block}

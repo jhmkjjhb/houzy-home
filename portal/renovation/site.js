@@ -84,6 +84,18 @@
 
  // ── 读数据 ──
  const rpcAuth=()=>auth?{sid:auth.sid,token:auth.token,code:auth.code}:null;
+ // 设计图纸：只显示每张图的最新版；签名链接 1 小时有效，按需取
+ const designUrls={};
+ function designList(){
+  const KIND={render:'效果图',drawing:'施工图'};
+  return (site.design||[]).map(f=>{const u=designUrls[f.path],img=/^image\//.test(f.mime||'');
+   return `<a class="site-design" ${u?`href="${E(u)}" target="_blank" rel="noopener"`:''}>${img&&u?`<img src="${E(u)}" alt="${E(f.title)}" loading="lazy">`:`<span class="site-design-ico">${img?'🖼':'PDF'}</span>`}<span><b>${E(f.title)}</b><small>${KIND[f.kind]||''} · 第 ${E(f.version)} 版</small></span></a>`;}).join('');
+ }
+ async function fillDesign(){
+  const need=(site?.design||[]).map(f=>f.path).filter(p=>!designUrls[p]);if(!need.length)return;
+  try{const {data}=await sb.storage.from(BUCKET).createSignedUrls(need,3600);let got=0;for(const x of data||[])if(x.signedUrl){designUrls[x.path]=x.signedUrl;got++;}
+   const box=document.querySelector('[data-design]');if(got&&box)box.innerHTML=designList();}catch(e){}
+ }
  async function reload(){
   if(auth){const {data,error}=await sb.rpc('renovation_site_open',{p_sid:auth.sid,p_token:auth.token,p_code:auth.code});if(error||!data||data.status!=='ok')return gate(data?.status==='ended'?'这个链接已停用，请联系门店。':'验证已过期，请重新输入验证码。');site=data.site;}
   else{const {data,error}=await sb.rpc('renovation_site_view',{p_project:site.project.id});if(error)throw error;site=data;}
@@ -145,9 +157,11 @@
     <button type="button" data-act="inspection">验收节点</button><button type="button" data-act="issue">记问题</button>
     <button type="button" data-act="delay">进度延误</button><button type="button" data-act="pause">停工申报</button></div></section>
    ${window.RenoSitePlan?RenoSitePlan.section(site,!auth&&site.supervisor?.kind==='internal'):''}
+   ${(site.design||[]).length?`<section class="site-card"><h2>设计图纸（最新版）</h2><div data-design>${designList()}</div></section>`:''}
    <section class="site-card"><h2>子单与清单</h2>${site.work_orders.map(wo).join('')||'<p>还没有子单。</p>'}</section>
    <section class="site-card"><h2>最近记录</h2><ul class="site-log">${site.entries.slice(0,30).map(e=>`<li><b>${E(KIND[e.kind])}</b> · ${E(e.on_date.slice(5))}${e.photo_count?` · 📷${e.photo_count}`:''}${e.kind==='delay'?` · ${E(REASON[e.data?.reason]||'')} ${e.data?.days||''} 天`:''}${e.kind==='inspection'?` · ${E(e.data?.milestone)} ${e.data?.pass?'通过':'不合格'}`:''}${['delay','pause'].includes(e.kind)?` · ${e.status==='confirmed'?'店长已确认':e.status==='rejected'?'店长已驳回':'等店长确认'}`:''}${e.kind==='issue'?` · ${e.status==='open'?'未处理':'已处理'}`:''}${e.note?`<br><small>${E(e.note)}</small>`:''}</li>`).join('')||'<li>还没有记录。</li>'}</ul></section>
    <div id="sheet" class="site-sheet" hidden></div>`;
+  fillDesign();
  }
 
  // ── 填写面板（拍照 + 表单）──
