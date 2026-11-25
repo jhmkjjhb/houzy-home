@@ -394,6 +394,9 @@
   .top .brandtitle small { margin-top:4px; color:#e4cf9b; font-family:Inter,'Noto Sans SC',sans-serif; font-size:10px; font-weight:500; letter-spacing:.1em; }
   .return-system { flex:none; padding:8px 10px; border:1px solid #c8a96e; border-radius:7px; color:#fffdf7; font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; }
   .return-system:hover,.return-system:focus-visible { background:#245640; }
+  .top .newQuote { flex:none; padding:9px 13px; border:1px solid #c8a96e; border-radius:7px; background:#c8a96e; color:#153927; font-size:13px; font-weight:700; white-space:nowrap; }
+  .top .newQuote:hover { background:#e4cf9b; }
+  .top .newQuote.confirm { border-color:#f0b4a7; background:#fff0ec; color:#9a2718; }
   .cloud-dialog { width:min(560px,calc(100vw - 24px)); max-height:80vh; border:1px solid #c8a96e; border-radius:12px; padding:20px; background:#fbf8f1; color:#153927; box-shadow:0 22px 70px #0005; }
   .cloud-dialog::backdrop { background:#0b2119aa; }
   .cloud-slot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 0; border-top:1px solid #d9c69f; }
@@ -433,11 +436,14 @@
   :is(button,input,select,textarea,summary,.return-system):focus-visible { outline:2px solid #a67e39; outline-offset:2px; }
   @media(max-width:700px) {
     .top .in { gap:8px; }
-    .top .brandtitle { min-width:0; font-size:15px; }
-    .brandmark { width:32px; height:32px; font-size:20px; }
-    .top .cust { order:3; flex-basis:45%; min-width:110px; }
-    .top .sum { order:4; margin-left:auto; }
-    .top .demoBtn { order:5; }
+    .top .brandtitle { min-width:0; font-size:15px; flex:1; order:1; }
+    .brandmark { width:32px; height:32px; font-size:20px; order:0; }
+    .top .newQuote { order:2; }
+    .return-system { order:3; }
+    .top .cust { order:4; flex-basis:45%; min-width:110px; }
+    .top .sum { order:5; margin-left:auto; }
+    .top .demoBtn { order:6; }
+    .top [data-save-client],.top [data-client-save-status],.top .lang-switch { order:4; }
     .tabs { overflow-x:auto; display:flex; }
     .tab { min-width:74px; flex:1 0 auto; }
   }
@@ -455,6 +461,7 @@
   <div class="in">
     <div class="brandmark" aria-hidden="true"><svg viewBox="0 0 320 240"><rect x="64" y="22" width="54" height="14"/><rect x="64" y="204" width="54" height="14"/><rect x="64" y="22" width="17" height="90"/><rect x="101" y="22" width="17" height="90"/><rect x="64" y="120" width="17" height="98"/><rect x="101" y="120" width="17" height="98"/><path d="M128 106 L194 78 L194 132 L128 160 Z"/><rect x="202" y="22" width="54" height="14"/><rect x="202" y="204" width="54" height="14"/><rect x="202" y="22" width="17" height="90"/><rect x="239" y="22" width="17" height="90"/><rect x="202" y="120" width="17" height="98"/><rect x="239" y="120" width="17" height="98"/></svg></div><h1 class="brandtitle">HOUZY HOME<small>报价器 · QUOTE STUDIO</small></h1>
     <a class="return-system" href="staff.html?view=dashboard">← 返回员工系统 / Staff System</a>
+    <button type="button" class="newQuote noprint" data-reset id="newQuote">＋ 新建报价</button>
     <input class="cust" data-info="name" placeholder="客户姓名 *" aria-label="客户姓名" aria-required="true" required>
     <input class="cust" data-info="phone" type="tel" placeholder="联系电话 *" aria-label="联系电话" aria-required="true" required>
     <input class="cust" data-info="address" placeholder="住宅地址 *" aria-label="住宅地址" aria-required="true" required>
@@ -504,6 +511,15 @@
     });
     const saveClientButton = document.querySelector('[data-save-client]');
     if (saveClientButton && !saveClientButton.disabled) saveClientButton.textContent = uiLang === 'en' ? 'Save to cloud customer records' : '保存到云端客户档案';
+    const newQuoteButton = document.getElementById('newQuote');
+    if (newQuoteButton) {
+      const label = confirmReset
+        ? (uiLang === 'en' ? 'Confirm clear & new' : '确认清空并新建')
+        : (uiLang === 'en' ? '+ New quotation' : '＋ 新建报价');
+      newQuoteButton.textContent = label;
+      newQuoteButton.setAttribute('aria-label', label);
+      newQuoteButton.classList.toggle('confirm', confirmReset);
+    }
     document.querySelectorAll('.house[data-house]').forEach(b => { const h = HOUSES[b.dataset.house]; if (!h) return; b.querySelector('b').textContent = uiLang === 'en' ? h.en : h.label; b.querySelector('span').textContent = uiLang === 'en' ? h.label + (h.landed ? ' · 有地' : '') : h.en + (h.landed ? ' · 有地' : ''); });
   };
   const ic = (code, cls) => window.QV2_ICON(code, cls);
@@ -1660,8 +1676,7 @@
       ${T.discount ? `<div><span>优惠</span><span class="mono">− ${rm(T.discount)}</span></div>` : ''}${T.gift ? `<div><span>赠送产品（材料免收，人工安装照收）</span><span class="mono" style="color:var(--ok)">价值 ${rm(T.gift)}</span></div>` : ''}
       ${T.sst ? `<div><span>SST</span><span class="mono">${rm(T.sst)}</span></div>` : ''}
       <div class="grand"><span>合计</span><span class="mono">${rm(T.total)}</span></div></div>
-      <h3 style="font-size:13px;margin:16px 0 6px">付款节点</h3><div class="totals">${T.pay.map(p => `<div><span>${esc(quoteText(p.name))}${uiLang === 'en' ? ` (${p.pct}%)` : `（${p.pct}%）`}</span><span class="mono">${rm(p.amt)}</span></div>`).join('')}</div></div>
-      <div class="noprint" style="margin-top:20px"><button class="btn warn" data-reset>${confirmReset ? '再点一次确认清空' : '新建报价（清空当前）'}</button></div>`;
+      <h3 style="font-size:13px;margin:16px 0 6px">付款节点</h3><div class="totals">${T.pay.map(p => `<div><span>${esc(quoteText(p.name))}${uiLang === 'en' ? ` (${p.pct}%)` : `（${p.pct}%）`}</span><span class="mono">${rm(p.amt)}</span></div>`).join('')}</div></div>`;
     return h;
   }
 
