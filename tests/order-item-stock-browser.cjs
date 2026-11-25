@@ -1,11 +1,11 @@
 // 开单选产品：开单页每次打开都重新读产品档案（仓库后来新建的产品要搜得到）；
-// 选中后显示实时可用库存；没定零售价的不能拿成本价顶替（否则会按进货价卖出去），只提示手填。
+// 商品价目的成本是最新一批入库价（不是任意一条、也不是最低价）；选中后显示实时可用库存；没定零售价的不能拿成本价顶替（否则会按进货价卖出去），只提示手填。
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const stub=`(()=>{const calls=window.__calls=[];
 const profile={id:'u1',name:'Amy',role:'store_manager',store_id:'s1',active:true,region:'JB'};
 const rows=window.__rows={stores:[{id:'s1',name:'Austin',code:'001',active:true,region:'JB'}],
  products:[{id:'p1',sku:'HH-B01-0001',name:'熔岩白',unit:'片',category:'CZ',price:12},{id:'p2',sku:'HH-WJ-0002',name:'铰链',unit:'个',category:'WJ',price:null}],
- inventory:[{product_id:'p1',qty_on_hand:8,qty_reserved:3,unit_cost:5},{product_id:'p2',qty_on_hand:0,qty_reserved:0,unit_cost:7}]};
+ inventory:[{product_id:'p1',qty_on_hand:8,qty_reserved:3,unit_cost:5,cost_at:'2026-10-01T00:00:00Z'},{product_id:'p1',warehouse_id:'w3',qty_on_hand:2,qty_reserved:0,unit_cost:6,cost_at:null},{product_id:'p1',warehouse_id:'w2',qty_on_hand:0,qty_reserved:0,unit_cost:4,cost_at:'2026-11-20T00:00:00Z'},{product_id:'p2',qty_on_hand:0,qty_reserved:0,unit_cost:7}]};
 function q(table){const eqs={};const f={select(){return f},eq(k,v){eqs[k]=v;return f},neq(){return f},in(){return f},is(){return f},gte(){return f},lte(){return f},lt(){return f},gt(){return f},not(){return f},or(){return f},ilike(){return f},order(){return f},limit(){return f},range(){return f},
  single(){f.s=1;return f},maybeSingle(){f.s=1;return f},insert(){return f},update(){return f},delete(){return f},upsert(){return f},
  then(ok,no){let data=(rows[table]||[]).filter(r=>Object.entries(eqs).every(([k,v])=>!(k in r)||r[k]===v));if(f.s)data=data[0]||null;return Promise.resolve({data,error:null,count:0}).then(ok,no);}};return f;}
@@ -29,7 +29,7 @@ try{
   await page.fill(`#item-name-${id}`,sku);await page.waitForFunction(i=>!document.getElementById('item-stock-'+i).classList.contains('hidden'),id);
   return {id,stock:await page.textContent(`#item-stock-${id}`),price:await page.inputValue(`#item-price-${id}`)};};
  const a=await pick('HH-B01-0001');
- ok(/可用库存 5 片/.test(a.stock),'shows available stock (on hand minus reserved): '+a.stock);
+ ok(/可用库存 7 片/.test(a.stock),'shows available stock across warehouses (8-3 + 0 + 2): '+a.stock);
  ok(a.price==='12.00'&&!/未定价/.test(a.stock),'priced product fills its retail price');
  const b=await pick('HH-WJ-0002');
  ok(b.price==='','unpriced product is NOT filled with the cost price (got '+b.price+')');
@@ -38,6 +38,9 @@ try{
  ok(c.price==='899.00','newly created product can be ordered with its price');
  await page.fill(`#item-name-${a.id}`,'随便手写的东西');await page.waitForTimeout(300);
  ok(await page.locator(`#item-stock-${a.id}`).evaluate(e=>e.classList.contains('hidden')),'stock line clears when the name is no longer a catalogue product');
+ await page.evaluate(()=>goto('pricing'));await page.waitForFunction(()=>_pricingAll.length>0);
+ ok(await page.evaluate(()=>_pricingAll.find(p=>p.sku==='HH-B01-0001')._cost)===4,'pricing page shows the latest stock-in cost (4, Nov 20), not the first row or an undated one');
+ ok(/4\.00/.test(await page.locator('#pricing-table').innerText()),'latest cost is what the table prints');
  ok(!errors.length,'no page errors: '+errors.join(' | '));
  console.log('order item stock: '+checks+' checks passed');
 }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);process.exit(1);});
