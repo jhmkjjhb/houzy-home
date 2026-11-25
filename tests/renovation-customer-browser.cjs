@@ -11,9 +11,10 @@ function fixture(){
   if(name==='renovation_customer_progress_view')return f.progressError?{error:{message:'PGRST202'}}:{data:{state:project().state,work_orders:[{group_name:'定制产品',status:'done',updated_at:'2026-10-25T00:00:00Z'},{group_name:'硬装施工',status:'working',updated_at:'2026-10-25T01:00:00Z'}]}};
   if(name==='renovation_customer_additions')return {data:[{id:'33333333-3333-4333-8333-333333333333',category:'material',name:'台面升级',qty:1,unit:'项',rate:3200,amount:3200,payment_node:'确认后',signature_status:'pending'}]};
   if(name==='renovation_customer_addition_sign_view')return {data:{status:'pending',terms:terms(),terms_hash:'a'.repeat(64)}};
+  if(name==='renovation_customer_design')return {data:[{id:'d1',kind:'render',title:'客厅效果图<img src=x onerror=alert(2)>',path:'p/design/a.png',mime:'image/png',version:2}]};
   if(name==='renovation_customer_sign_addition'){f.writes++;return {error:{message:'测试网络错误，未保存签署'}};}
   throw new Error('Unexpected RPC: '+name);
- },functions:{invoke:async()=>({data:{url:'https://wrong.invalid/contract.pdf'}})}})};
+ },storage:{from:()=>({createSignedUrls:async paths=>({data:paths.map(path=>({path,signedUrl:'/favicon.svg?'+encodeURIComponent(path)})),error:null})})},functions:{invoke:async()=>({data:{url:'https://wrong.invalid/contract.pdf'}})}})};
 }
 (async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
  const page=await browser.newPage({viewport:{width:1440,height:1080},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
@@ -22,6 +23,7 @@ function fixture(){
  page.setDefaultTimeout(15000);await page.goto(base+'?invalid=1#bad');await page.waitForFunction(()=>document.querySelector('#message').textContent.includes('完整项目链接'));assert(await page.locator('#customer-workspace').isHidden());
  await page.goto(base+'#'+token);await page.waitForFunction(()=>document.querySelector('#payment-sync').textContent.includes('已与门店同步'));await page.screenshot({path:out+'/desktop-contract.png',fullPage:true});
  const hash=new URL(page.url()).hash;
+ await page.locator('#customer-design .cs-design-item').waitFor();assert.match(await page.locator('#customer-design').innerText(),/我的设计效果图（1）/);assert.equal(await page.locator('#customer-design img[src=x]').count(),0,'render titles are escaped');assert.match(await page.locator('#customer-design a').getAttribute('href'),/design%2Fa\.png/);
  await page.locator('#view-signed-contract').click();assert.match(await page.locator('#contract-message').innerText(),/链接无效/);
  await page.locator('#customer-checklist').evaluate(el=>el.open=true);assert.equal(await page.locator('#lines img').count(),0);
  for(const i of [1,2,3,4]){await page.locator(`#customer-journey [data-step="${i}"]`).click();assert.equal(new URL(page.url()).hash,hash);}

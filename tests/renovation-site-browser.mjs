@@ -23,7 +23,7 @@ await db.query(`INSERT INTO renovation_projects(id,store_id,created_by,contract_
 await db.query(`INSERT INTO renovation_work_orders(project_id,group_name,line_ids) VALUES($1,'全屋定制','["C1","C2","S1"]'::jsonb),($1,'泥水','["W1"]'::jsonb)`,[id]);
 await db.exec(fs.readFileSync('supabase/renovation_party_signoffs_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_owner_proof_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_signoff_schedule_migration.sql','utf8'));await db.exec(fs.readFileSync('supabase/renovation_schedule_migration.sql','utf8'));
 for(const f of ['renovation_schedule','renovation_planning','renovation_site_supervision'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
-for(const f of ['renovation_phase_plan','renovation_phase_forecast','renovation_work_order_days','renovation_phase_split_mep','renovation_phase_tile','renovation_phase_window','renovation_phase_setup','renovation_phase_site','renovation_design_files'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
+for(const f of ['renovation_phase_plan','renovation_phase_forecast','renovation_work_order_days','renovation_phase_split_mep','renovation_phase_tile','renovation_phase_window','renovation_phase_setup','renovation_phase_site','renovation_design_files','renovation_design_share'])await db.exec(fs.readFileSync(`supabase/${f}_migration.sql`,'utf8'));
 // Every browser request runs one at a time as the logged-in person, under row-level security.
 let queue=Promise.resolve();const files=new Map();
 const argTypes=async fn=>{await db.exec('RESET ROLE');const r=(await db.query(`SELECT proargnames n,(SELECT array_agg(format_type(t,NULL) ORDER BY o) FROM unnest(proargtypes::oid[]) WITH ORDINALITY u(t,o)) t FROM pg_proc WHERE proname=$1 AND pronamespace='public'::regnamespace`,[fn])).rows[0];if(!r)throw new Error('函数不存在 '+fn);return r;};
@@ -187,6 +187,23 @@ try{
  const dtx=await dp.locator('[data-design]').innerText();
  assert(/厨房效果图\s*效果图 · 第 2 版/.test(dtx)&&dtx.includes('水电点位图')&&(dtx.match(/厨房效果图/g)||[]).length===1,'the supervisor sees only the latest version of each drawing: '+dtx);
  assert(await dp.locator('[data-design] a[href]').count()===2,'each drawing opens');
+ // 看图链接：店员生成 → 师傅输验证码看全部最新图；停用后看不到
+ await df.locator('[data-df="share"]').fill('木工 张师傅');await df.locator('[data-dact="share"]').click();
+ await df.getByText('已生成「木工 张师傅」的看图链接').waitFor();
+ const sh=(await sys(`SELECT id,token,access_code FROM renovation_design_shares WHERE kind='share'`))[0];
+ await df.locator('[data-dact="copylink"]').click();const copied=await mp.evaluate(()=>navigator.clipboard.readText());
+ assert(copied.includes(`renovation-design.html?share=${sh.id}&t=${sh.token}`)&&!copied.includes(sh.access_code),'the copied link has no code in it');
+ await mp.locator('#project-design').screenshot({path:out+'/staff-design-share.png'});
+ const wp=await open(null,`/portal/renovation-design.html?share=${sh.id}&t=${sh.token}`,{width:390,height:844});
+ await wp.locator('[data-code]').fill(sh.access_code==='0000'?'1111':'0000');await wp.locator('[data-verify]').click();await wp.getByText('验证码不正确').waitFor();
+ await wp.locator('[data-code]').fill(sh.access_code);await wp.locator('[data-verify]').click();await wp.getByText('查看人：').waitFor();
+ const wtx=await wp.locator('#design-view').innerText();
+ assert(wtx.includes('水电点位图')&&(wtx.match(/厨房效果图/g)||[]).length===1&&wtx.includes('第 2 版'),'the worker sees each drawing once, latest version: '+wtx);
+ assert(!/RM|电话/.test(wtx.replace('业主电话','')),'no prices on the worker page');
+ await wp.screenshot({path:out+'/worker-design.png',fullPage:true});
+ await wp.reload();await wp.getByText('查看人：').waitFor();
+ await df.locator('[data-dact="revoke"]').click();await df.getByText('已停用。').waitFor();
+ await wp.locator('[data-refresh]').click();await wp.getByText('这个看图链接已停用').waitFor();
  assert.deepEqual(errors,[],'no page errors');
  console.log('PASS site supervision browser flow');
 }finally{await browser.close();server.close();}

@@ -4,13 +4,15 @@ window.RenoDesign=(()=>{
  const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const BUCKET='renovation-fulfillment',KIND={render:'效果图',drawing:'施工图'},MAX=20*1024*1024;
  const OK_TYPE=['application/pdf','image/jpeg','image/png','image/webp'];
- let ctx=null,files=[],urls={},ver=0;
+ let ctx=null,files=[],urls={},ver=0,shares=[];
+ const link=a=>{const u=new URL('renovation-design.html',location.href);u.searchParams.set('share',a.id);u.searchParams.set('t',a.token);return u.href;};
  async function load(c){
   ctx=c;const id=++ver,el=document.getElementById('design-files');if(!el)return;
   const {data,error}=await c.sb.from('renovation_design_files').select('*').eq('project_id',c.project.id).is('removed_at',null).order('created_at');
   if(id!==ver)return;
   if(error){el.innerHTML='<p class="muted">设计图纸功能需要先在 Supabase 运行 renovation_design_files_migration.sql。</p>';return;}
   files=data||[];urls={};
+  try{const r=await c.sb.from('renovation_design_shares').select('*').eq('project_id',c.project.id).is('revoked_at',null).order('created_at');shares=r.error?null:(r.data||[]);}catch(e){shares=null;}
   const paths=files.map(f=>f.path);
   if(paths.length){try{const {data:u}=await c.sb.storage.from(BUCKET).createSignedUrls(paths,3600);for(const x of u||[])if(x.signedUrl)urls[x.path]=x.signedUrl;}catch(e){}}
   if(id!==ver)return;render();
@@ -33,7 +35,15 @@ window.RenoDesign=(()=>{
     <label>文件（PDF / 图片，≤20MB）<input type="file" data-df="file" accept="${OK_TYPE.join(',')}" multiple></label></div>
     <div class="fx-actions"><button type="button" data-dact="upload">上传</button></div></div>
     <p class="muted">改图时请点那张图的「换新版」，监理和现场只会看到最新版；旧版留在「历史版本」里。</p>
-    <p class="muted" data-dfeedback role="status"></p></div>`;
+    <p class="muted" data-dfeedback role="status"></p></div>${shareBox()}`;
+ }
+ function shareBox(){
+  if(shares===null)return '<div class="work-terms"><b>发给师傅 / 厂家看图</b><p class="muted">需要先在 Supabase 运行 renovation_design_share_migration.sql。</p></div>';
+  return `<div class="work-terms"><b>发给师傅 / 厂家看图（${shares.length}）</b>
+   <p class="muted">对方打开链接、输入验证码后，12 小时内能看本项目所有图纸的最新版（看不到价格和业主电话）。不用了就点「停用」。</p>
+   ${shares.length?`<ul class="design-list">${shares.map(a=>`<li class="design-item"><div><b>${E(a.label)}</b><br><small>${E(day(a.created_at))} 建 · ${a.opened_at?`最近打开 ${E(day(a.opened_at))}`:'还没打开过'}</small>
+    <div class="actions"><span>验证码 <b class="mono" style="letter-spacing:2px">${E(a.access_code)}</b></span><button type="button" class="secondary" data-dact="copylink" data-link="${E(link(a))}">复制链接</button><button type="button" class="secondary" data-dact="copycode" data-code="${E(a.access_code)}">复制验证码</button><button type="button" class="secondary" data-dact="revoke" data-id="${a.id}">停用</button></div></div></li>`).join('')}</ul>`:''}
+   <div class="fx-form"><div class="fx-fields"><label>给谁看<input data-df="share" maxlength="60" placeholder="例如：木工 张师傅、橱柜厂"></label></div><div class="fx-actions"><button type="button" data-dact="share">生成看图链接</button></div></div></div>`;
  }
  async function put(f){
   if(!OK_TYPE.includes(f.type))throw new Error(`「${f.name}」格式不支持，只能传 PDF、JPG、PNG、WEBP`);
@@ -57,6 +67,18 @@ window.RenoDesign=(()=>{
      const kind=form.querySelector('[data-df="kind"]').value,title=form.querySelector('[data-df="title"]').value.trim();
      for(const f of list){say(`正在上传 ${f.name}…`);const up=await put(f);await save({kind,title:list.length>1||!title?(title?`${title} · `:'')+f.name.replace(/\.[^.]+$/,''):title,...up});}
      await load(ctx);say(`已上传 ${list.length} 个文件。`);return;
+    }
+    if(b.dataset.dact==='copylink'){await navigator.clipboard.writeText(b.dataset.link);say('链接已复制。验证码请另外单独发给对方。');return;}
+    if(b.dataset.dact==='copycode'){await navigator.clipboard.writeText(b.dataset.code);say(`验证码 ${b.dataset.code} 已复制。`);return;}
+    if(b.dataset.dact==='share'){
+     const label=el.querySelector('[data-df="share"]').value.trim();if(!label)throw new Error('请写给谁看，例如：木工 张师傅');
+     const {data,error}=await ctx.sb.rpc('renovation_design_share_save',{p_project:ctx.project.id,p_data:{label}});if(error)throw error;
+     await load(ctx);say(`已生成「${label}」的看图链接，验证码 ${data.code}。先复制链接发给对方，再单独发验证码。`);return;
+    }
+    if(b.dataset.dact==='revoke'){
+     if(!confirm('停用这个看图链接？对方马上就看不到了。'))return;
+     const {error}=await ctx.sb.rpc('renovation_design_share_save',{p_project:ctx.project.id,p_data:{revoke_id:b.dataset.id}});if(error)throw error;
+     await load(ctx);say('已停用。');return;
     }
     if(b.dataset.dact==='remove'){
      if(!confirm('删除这张图？删除后监理也看不到了。'))return;

@@ -71,6 +71,16 @@
   el.innerHTML=`<div class="progress-summary"><span>执行分组完成</span><strong>${done} <small>/ ${work.length}</small></strong></div><div class="progress-track" role="progressbar" aria-label="已完成执行分组数量" aria-valuemin="0" aria-valuemax="${work.length}" aria-valuenow="${done}"><span style="width:${done/work.length*100}%"></span></div><p class="mini-note">按已完成分组数量展示，不代表工程量或施工时间占比。</p><div class="execution-list">${work.map(w=>`<article class="execution-item ${w.status==='done'?'done':''}"><span class="execution-icon" aria-hidden="true">${w.status==='done'?'✓':'◷'}</span><div class="execution-copy"><strong>${E(String(w.group_name||'').replace(/^增项-[0-9a-f-]{36} · ?/i,'增项 · '))}</strong><small>${w.updated_at?'最近更新 '+E(new Date(w.updated_at).toLocaleDateString('zh-CN',{timeZone:'Asia/Kuala_Lumpur'})):'等待门店更新'}</small></div><span class="status-badge">${E(status[w.status]||'待门店核对')}</span></article>`).join('')}</div><div class="callout">完成全部执行分组后，仍须单独完成竣工验收，质保才开始起算。</div>`;
   loadSchedule(el);
  }
+ // 设计效果图：门店上传的最新版；还没有就不显示
+ async function loadDesign(){
+  const box=$('customer-design');let list=[];
+  try{const r=await sb.rpc('renovation_customer_design',{p_token:token});if(r.error||!Array.isArray(r.data))return;list=r.data;}catch(e){return;}
+  if(!list.length){box.hidden=true;return;}
+  const urls={};try{const r=await sb.storage.from('renovation-fulfillment').createSignedUrls(list.map(f=>f.path),3600);for(const x of r.data||[])if(x.signedUrl)urls[x.path]=x.signedUrl;}catch(e){}
+  box.innerHTML=`<h3>我的设计效果图（${list.length}）</h3><p class="mini-note">门店上传的最新版，改图后会自动更新。点图片看大图。</p><div class="cs-design-grid">${list.map(f=>{const u=urls[f.path],img=/^image\//.test(f.mime||'');
+   return `<a class="cs-design-item" ${u?`href="${E(u)}" target="_blank" rel="noopener"`:''}>${img&&u?`<img src="${E(u)}" alt="${E(f.title)}" loading="lazy">`:`<span class="cs-design-ico">${img?'🖼':'PDF'}</span>`}<span>${E(f.title)}</span></a>`;}).join('')}</div>`;
+  box.hidden=false;
+ }
  function lockUnavailable(text){stopTour();clearInterval(refreshTimer);$('customer-workspace').hidden=true;$('customer-controls').hidden=true;$('customer-guide').hidden=true;$('message').textContent=text;$('message').classList.add('error');}
  try{
   if(!uuid(token))throw new Error('请使用HOUZY发送的完整项目链接，或返回手机号查询。');
@@ -81,6 +91,7 @@
   if(!initial.data)throw new Error('项目尚未确认或链接已失效，请联系HOUZY。');
   project=initial.data;renderProject(project);$('customer-workspace').hidden=false;$('customer-guide').hidden=false;selectStep(step);
   $('message').textContent='项目档案已读取。请按章节查看合同、款项、工程与质保。';
+  loadDesign();
   const viewButton=$('view-signed-contract');viewButton.hidden=false;
   viewButton.onclick=async()=>{
    stopTour();if(viewButton.disabled)return;viewButton.disabled=true;$('contract-message').textContent='正在准备临时合同链接…';

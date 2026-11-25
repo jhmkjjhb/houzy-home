@@ -219,4 +219,37 @@ await db.exec('RESET ROLE');await db.exec(pm);ok((await sys('SELECT count(*)::in
  ok((await call(sup,'SELECT renovation_site_view($1) v',[id])).design.length===1,'a deleted drawing disappears from the site page');
  ok(!(await objs(sup)).includes(`${id}/design/k2.png`),'and the supervisor can no longer open it');
  await actor(outsider);ok((await db.query('SELECT count(*)::int n FROM renovation_design_files')).rows[0].n===0,'other stores do not see the drawing list');await db.exec('RESET ROLE');}
+// 第 2 批：看图链接（师傅 / 厂家输验证码后看全部最新图）+ 业主档案页只看效果图
+{await db.exec('RESET ROLE');const sm=fs.readFileSync('supabase/renovation_design_share_migration.sql','utf8');await db.exec(sm);await db.exec(sm);checks++;
+ const objs=async()=>{await actor('','anon');const r=(await db.query(`SELECT name FROM storage.objects WHERE name LIKE '%/design/%'`)).rows.map(x=>x.name);await db.exec('RESET ROLE');return r;};
+ const anon=async(sql,args)=>{await actor('','anon');try{return (await db.query(sql,args)).rows[0].v;}finally{await db.exec('RESET ROLE');}};
+ await actor(staff);await db.query(`INSERT INTO storage.objects(bucket_id,name) VALUES('renovation-fulfillment',$1)`,[`${id}/design/k3.png`]);await db.exec('RESET ROLE');
+ await call(staff,'SELECT renovation_design_file_save($1,$2::jsonb) v',[id,JSON.stringify({kind:'render',title:'客厅效果图',path:`${id}/design/k3.png`,mime:'image/png'})]);
+ const share=(who,d)=>call(who,'SELECT renovation_design_share_save($1,$2::jsonb) v',[id,JSON.stringify(d)]);
+ await reject(()=>share(outsider,{label:'木工'}),/权限/);
+ await reject(()=>share(staff,{label:' '}),/给谁看/);
+ const a=await share(staff,{label:'木工 张师傅'});ok(/^\d{4}$/.test(a.code)&&a.token,'staff get a link and a 4-digit code');
+ ok((await objs()).length===0,'having only the link (no code entered) opens nothing');
+ const open=c=>anon('SELECT renovation_design_share_open($1,$2,$3) v',[a.id,a.token,c]);
+ const wrong=a.code==='0000'?'1111':'0000';
+ ok((await open(wrong)).status==='wrong_code','a wrong code is refused');
+ ok(await anon('SELECT renovation_design_share_open($1,$2,$3) v',[a.id,'00000000-0000-4000-8000-000000000000',a.code])===null,'a forged link token gets nothing');
+ const v=await open(a.code);
+ ok(v.status==='ok'&&v.files.length===2&&v.files.every(f=>[`${id}/design/w1.pdf`,`${id}/design/k3.png`].includes(f.path)),'with the code the worker sees the latest drawing and render, not old or deleted ones');
+ ok(!/8800|amount|price|phone/.test(JSON.stringify(v)),'the worker page gets no prices or phone numbers');
+ let seen=await objs();ok(seen.includes(`${id}/design/w1.pdf`)&&seen.includes(`${id}/design/k3.png`)&&!seen.includes(`${id}/design/k1.png`),'the worker can open the latest files but not replaced versions');
+ await actor(outsider);ok((await db.query('SELECT count(*)::int n FROM renovation_design_shares')).rows[0].n===0,'other stores cannot see the share links or codes');await db.exec('RESET ROLE');
+ await share(staff,{revoke_id:a.id});
+ ok((await objs()).length===0,'after staff stop the link the worker cannot open anything');
+ ok((await open(a.code)).status==='revoked','and the page says the link is stopped');
+ const b=await share(staff,{label:'橱柜厂'}),bad=b.code==='0000'?'1111':'0000';let last;
+ for(let n=0;n<8;n++)last=await anon('SELECT renovation_design_share_open($1,$2,$3) v',[b.id,b.token,bad]);
+ ok(last.status==='locked'&&(await anon('SELECT renovation_design_share_open($1,$2,$3) v',[b.id,b.token,b.code])).status==='locked','8 wrong codes lock the link even for the right code');
+ const tok=(await sys('SELECT customer_token FROM renovation_projects WHERE id=$1',[id]))[0].customer_token;
+ const mine=await anon('SELECT renovation_customer_design($1) v',[tok]);
+ ok(mine.length===1&&mine[0].kind==='render'&&mine[0].path===`${id}/design/k3.png`,'the owner page lists only the latest renders, not construction drawings');
+ seen=await objs();ok(seen.includes(`${id}/design/k3.png`)&&!seen.includes(`${id}/design/w1.pdf`),'the owner can open renders but not construction drawings');
+ ok((await anon('SELECT renovation_customer_design($1) v',['00000000-0000-4000-8000-000000000000'])).length===0,'a wrong customer link gets nothing');
+ await sys(`UPDATE renovation_design_shares SET verified_until=now()-interval '1 minute' WHERE kind='owner'`);
+ ok((await objs()).length===0,'the owner window closes after it expires');}
 console.log(`PASS ${checks} planning checks`);
