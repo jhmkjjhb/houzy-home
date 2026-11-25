@@ -150,4 +150,23 @@ await db.exec('RESET ROLE');
 await reject(()=>deduct('13',8000),/超过项目总额/);
 await db.exec('RESET ROLE');
 ok(JSON.stringify(await amounts())===JSON.stringify([30000,30000,31000,7344.76]),'refused deduction leaves the installments unchanged');
+
+// 增项显示打折：店员手填原价 + 折后单价；金额按折后算，客户签署内容里带原价；没填原价的旧链接不受影响
+await db.exec('RESET ROLE');await actor('','anon');const linkHash=async a=>(await db.query('SELECT renovation_signing_link_view($1,$2) value',[a.id,a.signing_token])).rows[0].value;
+const oldHash=(await linkHash(add3)).terms_hash;await db.exec('RESET ROLE');
+const lr=fs.readFileSync('supabase/renovation_addition_list_rate_migration.sql','utf8');await db.exec(lr);await db.exec(lr);checks++;
+await actor('','anon');const unchanged=await linkHash(add3);await db.exec('RESET ROLE');
+ok(unchanged.terms.list_rate===undefined&&unchanged.terms_hash===oldHash,'an addition without an original price keeps the same signing content (links already sent stay valid)');
+await actor(staff);
+const tile=await addition(crypto.randomUUID(),{category:'work',name:'车廊防滑砖',qty:1,rate:2860,unit:'项',group_name:'泥水',payment_node:'增项确认后'});
+await reject(()=>db.query('SELECT renovation_addition_list_rate($1,$2)',[tile.id,2860]),/高于折后/);
+await db.query('SELECT renovation_addition_list_rate($1,$2)',[tile.id,3250]);
+await db.exec('RESET ROLE');const ctok=await token();await actor('','anon');const lt=await linkHash(tile);
+ok(Number(lt.terms.list_rate)===3250&&Number(lt.terms.list_amount)===3250&&Number(lt.terms.amount)===2860,'the customer signs seeing original RM 3,250 and pays the discounted RM 2,860');
+const cust=(await db.query('SELECT renovation_customer_additions($1) value',[ctok])).rows[0].value;
+ok(Number(cust.find(a=>a.id===tile.id).list_rate)===3250,'the customer page list shows the original price too');
+await reject(()=>db.query('SELECT renovation_addition_list_rate($1,$2)',[tile.id,4000]),/permission denied/);await db.exec('RESET ROLE');
+const v2=await signAddition(tile);ok(Number(v2.terms.list_rate)===3250,'the signed record keeps the original price');
+ok(Number((await db.query('SELECT amount FROM renovation_additions WHERE id=$1',[tile.id])).rows[0].amount)===2860,'receivable counts the discounted amount, not the original price');
+await actor(staff);await reject(()=>db.query('SELECT renovation_addition_list_rate($1,$2)',[tile.id,3500]),/待客户签署/);await db.exec('RESET ROLE');
 console.log(`PASS ${checks} installment proration checks`);

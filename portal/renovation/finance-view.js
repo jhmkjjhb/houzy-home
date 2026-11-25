@@ -31,5 +31,7 @@ window.RenoFinanceView=(()=>{
   const input=el.querySelector('[data-last4]'),go=()=>{const v=input.value.trim();if(!/^\d{4}$/.test(v)){el.querySelector('[data-feedback]').textContent='请输入4位数字。';return;}el.querySelector('[data-verify]').disabled=true;onOk(v);};
   el.querySelector('[data-verify]').onclick=go;input.onkeydown=e=>{if(e.key==='Enter')go();};
  }
- return {esc,money,percent,methods,summary,plan,customer,planChange,phoneGate};
+ // 增项打折：折后单价 ÷ 原价 → 「88 折」「9 折」
+ const discount=(rate,list)=>{const r=Math.round(Number(rate)/Number(list)*1000)/10;return (r%10===0?r/10:r)+' 折';};
+ return {esc,money,percent,methods,summary,plan,customer,planChange,phoneGate,discount};
 })();
