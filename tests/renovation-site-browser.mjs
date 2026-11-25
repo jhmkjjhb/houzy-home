@@ -190,13 +190,12 @@ try{
  // 看图链接：店员生成 → 师傅输验证码看全部最新图；停用后看不到
  await df.locator('[data-df="share"]').fill('木工 张师傅');await df.locator('[data-dact="share"]').click();
  await df.getByText('已生成「木工 张师傅」的看图链接').waitFor();
- const sh=(await sys(`SELECT id,token,access_code FROM renovation_design_shares WHERE kind='share'`))[0];
+ const sh=(await sys(`SELECT id,token FROM renovation_design_shares WHERE kind='share'`))[0];
  await df.locator('[data-dact="copylink"]').click();const copied=await mp.evaluate(()=>navigator.clipboard.readText());
- assert(copied.includes(`renovation-design.html?share=${sh.id}&t=${sh.token}`)&&!copied.includes(sh.access_code),'the copied link has no code in it');
+ assert(copied.includes(`renovation-design.html?share=${sh.id}&t=${sh.token}`),'the copied link opens the worker page');
  await mp.locator('#project-design').screenshot({path:out+'/staff-design-share.png'});
  const wp=await open(null,`/portal/renovation-design.html?share=${sh.id}&t=${sh.token}`,{width:390,height:844});
- await wp.locator('[data-code]').fill(sh.access_code==='0000'?'1111':'0000');await wp.locator('[data-verify]').click();await wp.getByText('验证码不正确').waitFor();
- await wp.locator('[data-code]').fill(sh.access_code);await wp.locator('[data-verify]').click();await wp.getByText('查看人：').waitFor();
+ await wp.getByText('查看人：').waitFor();assert.equal(await wp.locator('[data-code]').count(),0,'no code box: the worker sees drawings straight away');
  const wtx=await wp.locator('#design-view').innerText();
  assert(wtx.includes('水电点位图')&&(wtx.match(/厨房效果图/g)||[]).length===1&&wtx.includes('第 2 版'),'the worker sees each drawing once, latest version: '+wtx);
  assert(!/RM|电话/.test(wtx.replace('业主电话','')),'no prices on the worker page');

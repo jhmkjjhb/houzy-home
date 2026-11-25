@@ -1,6 +1,7 @@
 -- renovation_design_share_migration.sql
 -- 2026-11-25 设计图纸第 2 批：
---  1) 店员给施工师傅 / 厂家发「看图链接」（链接 + 4 位验证码），对方输码后 12 小时内能看这个项目所有图纸的最新版；店员可随时停用。
+--  1) 店员给施工师傅 / 厂家发「看图链接」，不用验证码，打开就能看这个项目所有图纸的最新版；
+--     项目竣工验收后自动失效，店员也可随时停用。
 --  2) 业主在自己的整装档案页（客户链接）能看效果图的最新版（打开时放行 2 小时）。
 -- 依赖：renovation_design_files_migration.sql 已运行。
 -- 可重复执行。运行：Supabase SQL Editor → 粘贴全部 → Run
@@ -37,7 +38,8 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_t
    AND ((s.kind='internal' AND s.profile_id=auth.uid()) OR (s.kind='external' AND s.verified_until>now())))
  OR EXISTS(SELECT 1 FROM renovation_design_files f JOIN renovation_design_shares a ON a.project_id=f.project_id
   WHERE f.path=p_name AND f.removed_at IS NULL AND f.superseded_at IS NULL AND a.revoked_at IS NULL AND a.verified_until>now()
-   AND (a.kind='share' OR f.kind='render'));
+   AND (a.kind='share' OR f.kind='render')
+   AND (a.kind='owner' OR EXISTS(SELECT 1 FROM renovation_projects p WHERE p.id=f.project_id AND p.state<>'accepted')));
 $$;
 REVOKE ALL ON FUNCTION public._reno_design_readable(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public._reno_design_readable(text) TO anon,authenticated;
@@ -50,7 +52,7 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_tem
 $$;
 REVOKE ALL ON FUNCTION public._reno_design_current(uuid,boolean) FROM PUBLIC,anon,authenticated;
 
--- 店员：新建看图链接 {label} → {id,token,code}；停用 {revoke_id}
+-- 店员：新建看图链接 {label} → {id,token}；停用 {revoke_id}
 CREATE OR REPLACE FUNCTION public.renovation_design_share_save(p_project uuid,p_data jsonb)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE p renovation_projects; a renovation_design_shares; v_label text:=btrim(coalesce(p_data->>'label',''));
@@ -63,33 +65,29 @@ BEGIN
   RETURN jsonb_build_object('ok',true,'revoked',a.id);
  END IF;
  IF v_label='' OR length(v_label)>60 THEN RAISE EXCEPTION '请写给谁看（例如：木工 张师傅、橱柜厂）'; END IF;
- INSERT INTO renovation_design_shares(project_id,kind,label,access_code)
- VALUES(p.id,'share',v_label,lpad(((('x'||substr(replace(gen_random_uuid()::text,'-',''),1,8))::bit(32)::bigint)%10000)::text,4,'0'))
- RETURNING * INTO a;
- RETURN jsonb_build_object('ok',true,'id',a.id,'token',a.token,'code',a.access_code);
+ IF p.state='accepted' THEN RAISE EXCEPTION '项目已竣工验收，看图链接不再开放'; END IF;
+ INSERT INTO renovation_design_shares(project_id,kind,label) VALUES(p.id,'share',v_label) RETURNING * INTO a;
+ RETURN jsonb_build_object('ok',true,'id',a.id,'token',a.token);
 END $$;
 REVOKE ALL ON FUNCTION public.renovation_design_share_save(uuid,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.renovation_design_share_save(uuid,jsonb) TO authenticated;
 
--- 师傅 / 厂家打开看图链接：验证码对了放行 12 小时，返回各图最新版（不含价格、业主电话）
-CREATE OR REPLACE FUNCTION public.renovation_design_share_open(p_id uuid,p_token uuid,p_code text)
+-- 师傅 / 厂家打开看图链接：不用验证码；没停用、项目没竣工验收就能看，每次打开放行 12 小时读文件。返回各图最新版（不含价格、业主电话）
+DROP FUNCTION IF EXISTS public.renovation_design_share_open(uuid,uuid,text);
+CREATE OR REPLACE FUNCTION public.renovation_design_share_open(p_id uuid,p_token uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE a renovation_design_shares; p renovation_projects;
 BEGIN
  SELECT * INTO a FROM renovation_design_shares WHERE id=p_id AND token=p_token AND kind='share' FOR UPDATE;
  IF NOT FOUND THEN RETURN NULL; END IF;
  IF a.revoked_at IS NOT NULL THEN RETURN jsonb_build_object('status','revoked'); END IF;
- IF a.failed_checks>=8 THEN RETURN jsonb_build_object('status','locked'); END IF;
- IF p_code IS DISTINCT FROM a.access_code THEN
-  UPDATE renovation_design_shares SET failed_checks=failed_checks+1 WHERE id=a.id RETURNING * INTO a;
-  RETURN jsonb_build_object('status',CASE WHEN a.failed_checks>=8 THEN 'locked' ELSE 'wrong_code' END,'remaining',greatest(0,8-a.failed_checks));
- END IF;
- UPDATE renovation_design_shares SET failed_checks=0,verified_until=now()+interval '12 hours',opened_at=now() WHERE id=a.id RETURNING * INTO a;
  SELECT * INTO p FROM renovation_projects WHERE id=a.project_id;
+ IF p.state='accepted' THEN RETURN jsonb_build_object('status','finished'); END IF;
+ UPDATE renovation_design_shares SET verified_until=now()+interval '12 hours',opened_at=now() WHERE id=a.id;
  RETURN jsonb_build_object('status','ok','label',a.label,'contract_no',p.contract_no,'address',p.address,'files',_reno_design_current(p.id,false));
 END $$;
-REVOKE ALL ON FUNCTION public.renovation_design_share_open(uuid,uuid,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.renovation_design_share_open(uuid,uuid,text) TO anon,authenticated;
+REVOKE ALL ON FUNCTION public.renovation_design_share_open(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.renovation_design_share_open(uuid,uuid) TO anon,authenticated;
 
 -- 业主档案页：用客户链接读效果图最新版，放行 2 小时
 CREATE OR REPLACE FUNCTION public.renovation_customer_design(p_token uuid)

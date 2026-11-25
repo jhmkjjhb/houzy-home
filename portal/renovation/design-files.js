@@ -40,9 +40,9 @@ window.RenoDesign=(()=>{
  function shareBox(){
   if(shares===null)return '<div class="work-terms"><b>发给师傅 / 厂家看图</b><p class="muted">需要先在 Supabase 运行 renovation_design_share_migration.sql。</p></div>';
   return `<div class="work-terms"><b>发给师傅 / 厂家看图（${shares.length}）</b>
-   <p class="muted">对方打开链接、输入验证码后，12 小时内能看本项目所有图纸的最新版（看不到价格和业主电话）。不用了就点「停用」。</p>
+   <p class="muted">对方打开链接就能看本项目所有图纸的最新版（看不到价格和业主电话），不用验证码；项目竣工验收后自动失效。不用了就点「停用」。</p>
    ${shares.length?`<ul class="design-list">${shares.map(a=>`<li class="design-item"><div><b>${E(a.label)}</b><br><small>${E(day(a.created_at))} 建 · ${a.opened_at?`最近打开 ${E(day(a.opened_at))}`:'还没打开过'}</small>
-    <div class="actions"><span>验证码 <b class="mono" style="letter-spacing:2px">${E(a.access_code)}</b></span><button type="button" class="secondary" data-dact="copylink" data-link="${E(link(a))}">复制链接</button><button type="button" class="secondary" data-dact="copycode" data-code="${E(a.access_code)}">复制验证码</button><button type="button" class="secondary" data-dact="revoke" data-id="${a.id}">停用</button></div></div></li>`).join('')}</ul>`:''}
+    <div class="actions"><button type="button" class="secondary" data-dact="copylink" data-link="${E(link(a))}">复制链接</button><button type="button" class="secondary" data-dact="revoke" data-id="${a.id}">停用</button></div></div></li>`).join('')}</ul>`:''}
    <div class="fx-form"><div class="fx-fields"><label>给谁看<input data-df="share" maxlength="60" placeholder="例如：木工 张师傅、橱柜厂"></label></div><div class="fx-actions"><button type="button" data-dact="share">生成看图链接</button></div></div></div>`;
  }
  async function put(f){
@@ -68,12 +68,11 @@ window.RenoDesign=(()=>{
      for(const f of list){say(`正在上传 ${f.name}…`);const up=await put(f);await save({kind,title:list.length>1||!title?(title?`${title} · `:'')+f.name.replace(/\.[^.]+$/,''):title,...up});}
      await load(ctx);say(`已上传 ${list.length} 个文件。`);return;
     }
-    if(b.dataset.dact==='copylink'){await navigator.clipboard.writeText(b.dataset.link);say('链接已复制。验证码请另外单独发给对方。');return;}
-    if(b.dataset.dact==='copycode'){await navigator.clipboard.writeText(b.dataset.code);say(`验证码 ${b.dataset.code} 已复制。`);return;}
+    if(b.dataset.dact==='copylink'){await navigator.clipboard.writeText(b.dataset.link);say('链接已复制，直接发给对方就行。');return;}
     if(b.dataset.dact==='share'){
      const label=el.querySelector('[data-df="share"]').value.trim();if(!label)throw new Error('请写给谁看，例如：木工 张师傅');
-     const {data,error}=await ctx.sb.rpc('renovation_design_share_save',{p_project:ctx.project.id,p_data:{label}});if(error)throw error;
-     await load(ctx);say(`已生成「${label}」的看图链接，验证码 ${data.code}。先复制链接发给对方，再单独发验证码。`);return;
+     const {error}=await ctx.sb.rpc('renovation_design_share_save',{p_project:ctx.project.id,p_data:{label}});if(error)throw error;
+     await load(ctx);say(`已生成「${label}」的看图链接，点「复制链接」发给对方。`);return;
     }
     if(b.dataset.dact==='revoke'){
      if(!confirm('停用这个看图链接？对方马上就看不到了。'))return;
