@@ -209,6 +209,22 @@
   // 选材价差：键为「类别.选项.值」，内容为各项目在标准价上的加减（RM/单位）。公司核定后在这里登记。
   // 例：'tile.floorSize.600×1200 mm': { floor_tile: { mat: 2, lab: 0.5 } }
   root.QV2_OPTION_PRICES = {};
+  // 2026-11-26 粉刷与金属件油漆：师傅成本价取区间中间值 ×1.4（公司定价）
+  root.QV2_PRICE.fence_paint = { stage: 'outdoor', name: '围墙油漆', unit: '平方尺', mat: 0, aux: 0, lab: 5.95, waste: 0, desc: '清洗墙面→补裂缝→底漆→外墙面漆两遍' };
+  root.QV2_PRICE.grille_paint = { stage: 'custom', name: '窗户铁花翻新油漆', unit: '平方尺', mat: 0, aux: 0, lab: 4.9, waste: 0, desc: '铁花表面清洁后刷油漆两遍（打磨除锈另计）' };
+  root.QV2_PRICE.gate_paint = { stage: 'outdoor', name: '车库大铁门翻新油漆', unit: '平方尺', mat: 0, aux: 0, lab: 5.95, waste: 0, desc: '大铁门表面清洁后刷油漆两遍（打磨除锈另计）' };
+  root.QV2_PRICE.rail_paint = { stage: 'custom', name: '楼梯铁花扶手翻新油漆', unit: '平方尺', mat: 0, aux: 0, lab: 7.0, waste: 0, desc: '楼梯铁花/扶手表面清洁后刷油漆两遍（打磨除锈另计）' };
+  root.QV2_PRICE.balc_rail_paint = { stage: 'custom', name: '阳台防护栏杆翻新油漆', unit: '平方尺', mat: 0, aux: 0, lab: 6.3, waste: 0, desc: '阳台栏杆表面清洁后刷油漆两遍（打磨除锈另计）' };
+  root.QV2_PRICE.door_paint = { stage: 'custom', name: '木门 + 门框翻新油漆', unit: '套', mat: 0, aux: 0, lab: 210, waste: 0, desc: '卧室木门连门框一套：打磨、补钉眼、刷底漆和面漆' };
+  root.QV2_PRICE.metal_frame_paint = { stage: 'custom', name: '铁门框改色翻新', unit: '套', mat: 0, aux: 0, lab: 140, waste: 0, desc: '铁门框打磨后改色重刷' };
+  root.QV2_PRICE.metal_prep_light = { stage: 'custom', name: '金属件轻微打磨 + 面漆重刷', unit: '平方尺', mat: 0, aux: 0, lab: 4.9, waste: 0, desc: '表面状况良好：轻微打磨后重刷面漆' };
+  root.QV2_PRICE.metal_prep_primer = { stage: 'custom', name: '金属件机器打磨 + 红丹防锈底漆', unit: '平方尺', mat: 0, aux: 0, lab: 6.3, waste: 0, desc: '有锈点：机器打磨后涂红丹防锈底漆' };
+  root.QV2_PRICE.metal_prep_heavy = { stage: 'custom', name: '金属件深度机械除锈 + 除锈剂清洗', unit: '平方尺', mat: 0, aux: 0, lab: 9.1, waste: 0, desc: '锈蚀严重：深度机械除锈、特效除锈剂清洗（严重的现场另议）' };
+  Object.assign(root.QV2_PRICE.paint_wall, { mat: 0, aux: 0, lab: 4.20, waste: 0 }); // 室内墙面 RM2.5–3.5 成本
+  Object.assign(root.QV2_PRICE.paint_ceiling, { mat: 0, aux: 0, lab: 3.01, waste: 0 }); // 天花 RM1.8–2.5 成本
+  Object.assign(root.QV2_PRICE.ext_paint, { mat: 0, aux: 0, lab: 7.00, waste: 0 }); // 外墙 RM4–6 成本
+  // 公司已定价的项目：市场调查参考价（quote-v2-market）不能覆盖它们
+  root.QV2_FIXED = { plaster_ceiling: 1, ceiling_step: 1, paint_wall: 1, paint_ceiling: 1, ext_paint: 1, wp_bath: 1, led_cove: 1, led_cove_corner: 1, fence_paint: 1, grille_paint: 1, gate_paint: 1, rail_paint: 1, balc_rail_paint: 1, door_paint: 1, metal_frame_paint: 1, metal_prep_light: 1, metal_prep_primer: 1, metal_prep_heavy: 1 };
   // 2026-11-26 LED 发光铝合金天花线条（淘宝「弧形双面发光铝槽+220V 灯带」，人民币标价直接当马币，再加 30%（赚汇率差），按 1 米 = 3.28 尺折成每尺）
   // 标准 = 大号+单色灯带 ¥14.2/米；只含材料，安装人工在价目表「人工」栏另填
   root.QV2_PRICE.led_cove = { stage: 'ceil', name: 'LED 发光铝合金天花线条（含 220V 灯带）', unit: '延尺', mat: 5.63, aux: 0, lab: 0, waste: 0, desc: '铝合金发光线条贴天花与墙面交角，内置 220V 灯带；转角用阳角配件；预留灯带电源' };

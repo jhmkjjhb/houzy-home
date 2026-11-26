@@ -16,6 +16,8 @@ for (const [code, v] of Object.entries(context.QV2_MARKET_BOOK.items)) {
   assert.equal(context.QV2_PRICE[code].unit, v.unit, code);
   const total = v.mat * (1 + v.waste / 100) + v.aux + v.lab;
   assert.ok(Number.isFinite(total), code);
+  // 公司已定价的项目（QV2_FIXED）不被调查建议价覆盖，也不标参考价
+  if (context.QV2_FIXED?.[code]) { assert.notEqual(context.QV2_PRICE[code].ref, true, `${code} 公司已定价，不应标参考价`); assert.notDeepEqual([context.QV2_PRICE[code].mat, context.QV2_PRICE[code].aux, context.QV2_PRICE[code].lab], [v.mat, v.aux, v.lab], `${code} 不能被市场价覆盖`); continue; }
   assert.equal(context.QV2_PRICE[code].ref, true, '调查建议价须标为参考价');
 }
 storage.set('houzy-quote-v2-pricebook', JSON.stringify({ items: { demo_floor: { mat: 0, aux: 0, lab: 1, waste: 0, unit: '平方尺' } }, options: {}, tiles: { 'tile.size.600×1200 mm.亮光': 112 } }));
