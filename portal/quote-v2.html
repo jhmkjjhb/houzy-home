@@ -1410,7 +1410,7 @@
       ${doneBar(r, bad)}${copyPanel(r)}${(() => { const m = planMap(r.level || 1, P.rooms, r.id, 'data-goroom'); return m ? `<div style="margin-top:10px"><button class="chip" data-plantoggle>${planOpen ? '▾ 收起平面图' : '▸ 看这间在平面图上的位置'}</button>${planOpen ? m : ''}</div>` : ''; })()}${roomPics(r)}
       <div class="dims" style="margin-top:12px"><div>
         <div class="row">${field('长', '尺', stepper(`data-rf="L"`, r.L, 0.5))}${field('宽', '尺', stepper(`data-rf="W"`, r.W, 0.5))}${T.outdoor ? '' : field('层高', '尺', stepper(`data-rf="H"`, r.H ?? 9, 0.5))}</div>
-        <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}</div>
+        <div style="margin-top:12px">${r.measured ? '<span class="ok" style="display:inline-block">✓ 尺寸已确认</span>' : '<button class="btn okb" data-measured>尺寸已现场确认</button> <span class="hint">现在是默认尺寸，改过数字也会自动确认</span>'}${r.orig ? ` <button class="btn" data-dimreset>↺ 恢复原来尺寸（长 ${esc(r.orig.L)} × 宽 ${esc(r.orig.W)} × 层高 ${esc(r.orig.H ?? 9)}）</button>` : r.measured ? ' <button class="btn" data-dimunconfirm>取消确认</button>' : ''}</div>
       </div><div class="sketch">${sketch(r)}</div></div></div>`;
     h += `<h2>这间要做什么</h2><p class="hint">点卡片选择；已选的卡片点名字会跳到要填的数字，点左边的 ✓ 才是取消。数量按尺寸自动算，卡片里只有少数需要确认的数字。</p>`;
     // 这类房间常用的工项 + 从别的房间带过来的其他工项（也要显示，才能看到和取消）
@@ -2525,7 +2525,7 @@
   // ---------- 写入状态 ----------
   function setValue(el, v) {
     const ds = el.dataset, r = room(ds.wroom || roomId);
-    if (ds.rf) { r[ds.rf] = v; if (ds.rf === 'L' || ds.rf === 'W') r.measured = true; }
+    if (ds.rf) { if (!r.orig) r.orig = { L: r.L, W: r.W, H: r.H, measured: !!r.measured }; r[ds.rf] = v; if (ds.rf === 'L' || ds.rf === 'W') r.measured = true; }
     else if (ds.win !== undefined) { r.windows[+ds.win][ds.wk] = v; }
     else if (ds.door !== undefined) { r.doorList[+ds.door][ds.dk] = v; }
     else if (ds.pv) { r.vals = r.vals || {}; (r.vals[ds.pv] = r.vals[ds.pv] || {})[ds.pk] = v; }
@@ -2729,6 +2729,8 @@
     if (ds.confirmwall) { const r = room(roomId); r.vals = r.vals || {}; (r.vals[ds.confirmwall] = r.vals[ds.confirmwall] || {}).wall = Q.geo(r, P).wall; render(); return; }
     if (ds.resetpv) { const r = room(roomId); if (r.vals?.[ds.resetpv]) delete r.vals[ds.resetpv][ds.pk]; render(); return; }
     if (b.hasAttribute('data-measured')) { room(roomId).measured = true; render(); return; }
+    if (b.hasAttribute('data-dimreset')) { const r = room(roomId), o = r.orig; if (o) { r.L = o.L; r.W = o.W; if (o.H === undefined) delete r.H; else r.H = o.H; r.measured = o.measured; delete r.orig; } render(); return; }
+    if (b.hasAttribute('data-dimunconfirm')) { room(roomId).measured = false; render(); return; }
     if (ds.pack) {
       const r = room(roomId), c = ds.pack, pk = PACKS[c];
       // 已选的卡片：点名字是去填数量/尺寸，只有点左边的 ✓ 才是取消
