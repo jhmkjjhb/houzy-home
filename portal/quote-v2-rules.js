@@ -583,6 +583,12 @@
     return ps.find(p => p.id === id) || ps[0];
   }
   // 取某个房间某个位置的选材：位置（例如客厅·地面）> 房间 > 全屋 > 标准档；decided = 是否已明确选定
+  // 有些选项只对某种材料有意义：铝合金柜体没有板材环保等级（E0/E1）、封边、背板
+  const ALU_SKIP = ['grade', 'edge', 'back'];
+  function specApplies(project, room, cat, k, planId, pack) {
+    if (cat === 'cabinet' && ALU_SKIP.includes(k)) return specOf(project, room, 'cabinet', 'body', planId, pack).v !== '铝合金';
+    return true;
+  }
   function specOf(project, room, cat, k, planId, pack) {
     const pl = activePlan(project, planId), key = SPEC_CATS[cat].keys[k];
     // 全屋项目没有房间（room = null）：直接用全屋选材，不能把 null 当成「这间已选」
@@ -649,6 +655,7 @@
     const variantMode = TILE_CODES.includes(code); // 新报价一律按规格片价；缺价明确待定，避免套用旧面积砖材价
     if (P[code].ref && !(project.prices && project.prices[code])) ref.push(P[code].name);
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
+      if (!specApplies(project, room, cat, k, planId, pack)) return;
       const s = specOf(project, room, cat, k, planId, pack);
       spec.push(s.v);
       if (!s.decided && !key.scope) tbdKeys.push(cat);
@@ -806,7 +813,7 @@
       const ls = lines.filter(l => l.roomId === room.id && l.pack === pack);
       const set = new Set();
       ls.forEach(l => specKeysFor(l.code, l.pack).forEach(([cat, k]) => set.add(cat + '.' + k)));
-      const keys = order.filter(x => set.has(x)).map(x => x.split('.'));
+      const keys = order.filter(x => set.has(x)).map(x => x.split('.')).filter(([c, k]) => specApplies(project, room, c, k, undefined, pack));
       // 材料决定其他选项：地面先选材料，墙面先选做法，天花先选造型
       if (pack === 'floor' && !keys.some(([c, k]) => c === 'tile' && k === 'material')) keys.unshift(['tile', 'material']);
       return { pack, label: PLACE_LABEL[pack] || PACKS[pack].label, keys, open: ls.some(l => l.tbd.length) };
@@ -983,7 +990,7 @@
     return project;
   }
 
-  const api = { CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
