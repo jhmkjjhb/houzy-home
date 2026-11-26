@@ -158,6 +158,8 @@
   // 岩板背景墙 / 护墙板：新山市场参考价（含材料、安装），公司核定后在价目表改
   root.QV2_PRICE.slab_wall = { stage: 'custom', name: '岩板背景墙', unit: '平方尺', mat: 0, aux: 0, lab: 85, waste: 0, ref: true, desc: '岩板按墙面排版切割，专用胶 + 挂件/背板固定，对缝、磨边；预留开关插座孔位' };
   root.QV2_PRICE.wall_panel = { stage: 'custom', name: '护墙板', unit: '平方尺', mat: 0, aux: 0, lab: 45, waste: 0, ref: true, desc: '墙面找平后打底龙骨/卡扣安装，收口线条，预留开关插座孔位' };
+  // 2026-11-26 卫生间防水按间收（含地面满涂、墙面上翻、淋浴区墙面）；公司定价 RM 1500/间（2026-11-26）
+  root.QV2_PRICE.wp_bath = { stage: 'wp', name: '卫生间防水（按间）', unit: '间', mat: 0, aux: 0, lab: 1500, waste: 0, desc: '基层清理→刷界面剂→防水涂料两遍：地面满涂，墙面上翻 1 尺，淋浴区按选定高度；阴角、管根加贴网格布' };
   // 2026-11-16 新增工艺（参考价，含材料和安装，公司核定后在价目表改）
   Object.assign(root.QV2_PRICE, {
     slide_door: { stage: 'custom', name: '推拉门/移门', unit: '平方尺', mat: 0, aux: 0, lab: 45, waste: 0, ref: true, desc: '按洞口实测下单，含上下轨/吊轨、滑轮、锁扣与收口；门洞不平先修整' },

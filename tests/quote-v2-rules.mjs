@@ -25,14 +25,26 @@ ok('数据完整：每个工程包用到的项目都在价目表里', () => {
   for (const [t, d] of Object.entries(Q.ROOMS)) d.packs.forEach(c => assert.ok(Q.PACKS[c], `${t} 缺工程包 ${c}`));
 });
 
-ok('卫生间防水 = 地面 + 周长×上翻 1 尺 + 淋浴区 36，并且一定带闭水试验', () => {
+ok('卫生间防水按间收（店里一间一间做），说明里写清范围，并且一定带闭水试验', () => {
   const r = bath({ packs: ['bath_tile'] });
   const L = Q.buildLines(project([r]));
-  assert.equal(qty(L, 'wp', r.id), 40 + 26 + 36);
+  assert.equal(qty(L, 'wp_bath', r.id), 1);
+  assert.equal(qty(L, 'wp', r.id), 0, '卫生间不再按面积收防水');
+  assert.match(L.find(l => l.code === 'wp_bath').formula, /按间/);
   assert.equal(qty(L, 'flood_test', r.id), 1);
   // 墙砖 = 周长×层高 − 门洞 21（没有窗）
   assert.equal(qty(L, 'wall_tile', r.id), 26 * 9 - 21);
   assert.equal(qty(L, 'grout', r.id), 40 + 26 * 9 - 21);
+});
+
+ok('瓷砖铺贴价地面、墙面、门廊通用一份：改地砖铺贴价，墙砖、门廊砖跟着变（公司只想维护一份）', () => {
+  const r = bath({ packs: ['bath_tile'] });
+  const unitOf = (prj, code) => { const l = Q.buildLines(prj).find(x => x.code === code); return l.layUnit ?? (l.unit - l.matUnit); };
+  const p1 = project([r]);
+  assert.equal(unitOf(p1, 'wall_tile'), unitOf(p1, 'floor_tile'));
+  const p2 = project([r]); p2.prices = { floor_tile: { mat: 0, aux: 2, lab: 5, waste: 0 } };
+  assert.equal(unitOf(p2, 'wall_tile'), unitOf(p2, 'floor_tile'));
+  assert.notEqual(unitOf(p2, 'wall_tile'), unitOf(p1, 'wall_tile'), '改了通用铺贴价，墙砖要跟着变');
 });
 
 ok('窗帘、窗台石按每樘窗宽合计；换窗按每樘 宽×高 合计', () => {
@@ -750,8 +762,8 @@ ok('卫生间拆旧/防水/墙砖每间可不同：拆除范围、防水高度�
   const L = Q.buildLines(p), q = (r, code, pack) => L.filter(l => l.roomId === r.id && l.code === code && (!pack || l.pack === pack)).reduce((t, l) => t + l.qty, 0);
   const ga = Q.geo(a, p), gb = Q.geo(b, p);
   assert.equal(q(a, 'demo_wall_tile'), 0, '墙砖保留就不算拆墙砖'); assert.ok(q(b, 'demo_wall_tile') > 0, '另一间照常全拆');
-  assert.equal(q(a, 'wp'), Q.r2(ga.floor + ga.wall), '全墙防水 = 地面 + 全部墙面');
-  assert.equal(q(b, 'wp'), Q.r2(gb.floor + gb.perim + 36), '标准做法不变');
+  assert.equal(q(a, 'wp_bath'), 1, '防水按间，全墙到顶也是一间'); assert.equal(q(b, 'wp_bath'), 1);
+  assert.match(L.find(l => l.roomId === a.id && l.code === 'wp_bath').formula, /全部墙面/, '说明里写清做到全部墙面');
   assert.ok(Math.abs(q(a, 'wall_tile') - ga.wall * 4 / ga.H) < 0.02, '半墙只铺 4 尺');
   assert.ok(q(a, 'paint_wall', 'bath_tile') > 0, '半墙上面要刷漆，不能漏');
   assert.equal(q(a, 'niche'), 2); assert.equal(q(b, 'niche'), 0, '没填壁龛的不出这项');

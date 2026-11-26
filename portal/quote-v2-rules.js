@@ -196,7 +196,7 @@
       scope: { scope: true, label: '拆除范围', opts: ['地砖 + 墙砖全拆', '只拆地砖（墙砖保留）', '只拆墙砖（地砖保留）'], std: '地砖 + 墙砖全拆', codes: ['demo_floor', 'demo_wall_tile', 'demo_piece'], packs: ['bath_demo'], noPrice: true }
     } },
     wet: { label: '防水与墙砖', icon: '💧', keys: {
-      wpHeight: { scope: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp'], packs: ['bath_tile'], noPrice: true },
+      wpHeight: { scope: true, label: '防水高度', opts: ['淋浴区 1.8 m + 其余上翻 30 cm', '淋浴区到顶 + 其余上翻 30 cm', '全部墙面到顶'], std: '淋浴区 1.8 m + 其余上翻 30 cm', codes: ['wp_bath'], packs: ['bath_tile'], noPrice: true },
       wallTile: { scope: true, label: '墙砖铺到', opts: ['满墙到顶', '到吊顶下（约 8 尺）', '半墙 4 尺（上面刷漆）'], std: '满墙到顶', codes: ['wall_tile'], packs: ['bath_tile'], noPrice: true }
     } },
     stairs: { label: '楼梯', icon: '🪜', keys: {
@@ -245,7 +245,7 @@
       stone: { label: '门槛石 / 窗台石材质', opts: ['人造石', '大理石', '花岗岩', '石英石'], std: '人造石', codes: ['threshold', 'window_sill'] },
       skirting: { label: '踢脚线', opts: ['瓷砖踢脚', 'PVC 踢脚', '铝合金/不锈钢踢脚', '实木踢脚', '隐形踢脚（与墙面齐平）'], std: '瓷砖踢脚', codes: ['skirting'] },
       grout: { label: '美缝', opts: ['环氧彩砂美缝', '普通填缝剂', '聚脲美缝'], std: '环氧彩砂美缝', codes: ['grout'] },
-      wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp'] },
+      wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp', 'wp_bath'] },
       pipe: { label: '水管', opts: ['PPR 水管', 'PEX 水管', '不锈钢水管'], std: 'PPR 水管', codes: ['water_pt'] },
       wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Tai Sin', 'Power Cables Malaysia', 'Sindutch Cable（Prysmian）', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
       cornice: { label: '天花线条材料', opts: ['石膏线', 'PU 线条', '铝合金线条'], std: '石膏线', codes: ['cornice'] }
@@ -394,7 +394,7 @@
                         const wpH = sp('wet', 'wpHeight'), wt = sp('wet', 'wallTile'), H = g.H || 9;
                         const wp = wpH === '全部墙面到顶' ? [r2(g.floor + g.wall), '地面 + 全部墙面'] : wpH === '淋浴区到顶 + 其余上翻 30 cm' ? [r2(g.floor + g.perim + 6 * H), `地面 + 周长×上翻1尺 + 淋浴区墙 6×${H} 到顶`] : [r2(g.floor + g.perim + 36), '地面 + 周长×上翻1尺 + 淋浴区墙 6×6'];
                         const tileH = wt === '半墙 4 尺（上面刷漆）' ? 4 : wt === '到吊顶下（约 8 尺）' ? Math.min(8, H) : H, wallTile = r2(g.wall * Math.min(1, tileH / H));
-                        return [['wp', wp[0], wp[1]], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['wall_tile', wallTile, tileH >= H ? '满墙到顶' : `铺到 ${tileH} 尺高`], ['grout', r2(g.floor + wallTile), '地砖+墙砖'],
+                        return [['wp_bath', 1, `按间：${wp[1]}`], ['flood_test', 1, '做防水就要闭水'], ['slope', g.floor, '往地漏找坡'], ['floor_tile', g.floor, '地面'], ['wall_tile', wallTile, tileH >= H ? '满墙到顶' : `铺到 ${tileH} 尺高`], ['grout', r2(g.floor + wallTile), '地砖+墙砖'],
                           ...(wt === '半墙 4 尺（上面刷漆）' ? [['paint_wall', r2(g.wall - wallTile), '4 尺以上墙面刷防潮漆']] : []),
                           ['drain', 2, '淋浴区 + 干区'], ['threshold', g.doors, '每个门口一条挡水'], ['niche', v.niche, '淋浴区墙内壁龛'], ['tile_border', v.border, '腰线/花砖'], ...tileExtra(sp, g.floor)]; } },
     wet_tile:       { g: 'wet', area: ['floor'], label: '防水+地砖', icon: '🧱',
@@ -628,7 +628,9 @@
   }
   // 单价 = 价目表标准价 + 选材价差；已知的变化直接算，未登记价差的标记 priceTbd
   function pricedLine(project, room, code, pack, planId) {
-    const p = { ...P[code], ...((project.prices && project.prices[code]) || {}) };
+    // 瓷砖铺贴辅料/人工地面、墙面、门廊通用一份（按「地砖铺贴」的价）
+    const pc = TILE_CODES.includes(code) ? 'floor_tile' : code;
+    const p = { ...P[pc], ...((project.prices && project.prices[pc]) || {}) };
     let mat = num(p.mat) * (1 + num(p.waste) / 100), aux = num(p.aux), lab = num(p.lab);
     const base = mat + aux + lab, spec = [], tbdKeys = [], priceTbd = [], ref = [];
     let tile = null, supplied = false;
@@ -640,7 +642,7 @@
       if (!s.decided && !key.scope) tbdKeys.push(cat);
       if (TILE_CODES.includes(code) && cat === 'tile' && (k === 'floorSize' || k === 'wallSize')) {
         // 砖材只按「尺寸＋表面」片价算；尺寸行只管铺贴：大砖辅料/人工比标准多多少（公司填了才加）
-        if (variantMode) { if (s.v !== stdOf(key, room)) { const add = OPTION_PRICES[`${cat}.${k}.${s.v}`]?.[code]; if (add) { aux += num(add.aux); lab += num(add.lab); } } return; }
+        if (variantMode) { if (s.v !== stdOf(key, room)) { const add = OPTION_PRICES[`tile.floorSize.${s.v}`]?.floor_tile; if (add) { aux += num(add.aux); lab += num(add.lab); } } return; }
         const id = `${cat}.${k}.${s.v}@${code}`, price = TILE_PIECE_PRICES[id];
         const dims = s.v.match(/^(\d+)×(\d+) mm$/);
         if (dims && price !== undefined && Number.isFinite(Number(price))) {

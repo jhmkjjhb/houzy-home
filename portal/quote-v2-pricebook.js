@@ -12,10 +12,12 @@
   // specCats 来自 QV2.SPEC_CATS；只为会影响价格的选项出行
   function template(price, specCats, optPrices, tilePrices = {}) {
     const rows = [HEAD];
+    // 2026-11-26 瓷砖铺贴不分地面／墙面／门廊：只出「地砖铺贴」一行（通用），墙砖、门廊砖跟着它
     Object.entries(price).forEach(([code, p]) => {
+      if (code === 'wall_tile' || code === 'porch_tile') return;
       const un = p.unpriced;
       const tileLay = ['floor_tile', 'wall_tile', 'porch_tile'].includes(code);
-      rows.push([ITEM, code, p.name, p.unit, un || tileLay ? '' : p.mat, un ? '' : p.aux, un ? '' : p.lab, un ? '' : p.waste, un ? '单价待公司核定' : tileLay ? '本行只填铺贴辅料及人工；砖材统一规格片价另填' : '']);
+      rows.push([ITEM, code, code === 'floor_tile' ? '瓷砖铺贴（地／墙／门廊通用）' : p.name, p.unit, un || tileLay ? '' : p.mat, un ? '' : p.aux, un ? '' : p.lab, un ? '' : p.waste, un ? '单价待公司核定' : tileLay ? '本行只填铺贴辅料及人工；砖材统一规格片价另填' : '']);
     });
     const sizes = [...new Set([...specCats.tile.keys.floorSize.opts, ...specCats.tile.keys.wallSize.opts])];
     const finishes = [...new Set([...specCats.tile.keys.finish.opts, ...specCats.tile.keys.wallFinish.opts])];
@@ -30,6 +32,7 @@
         if (v === std || (key.mod && key.mod[v])) return;
         key.codes.forEach(code => {
           if (!price[code]) return;
+          if (cat === 'tile' && (k === 'wallSize' || code === 'wall_tile' || code === 'porch_tile')) return; // 尺寸加价也只填一份（按地砖那行，通用）
           const o = (optPrices[`${cat}.${k}.${v}`] || {})[code];
           // 旧面积价差要能在再次保存时保留；新规格只显示独立的 RM/片输入。
           rows.push([OPT, `${cat}.${k}.${v}@${code}`, `${c.label}·${key.label}：${v} → ${price[code].name}`, price[code].unit,
