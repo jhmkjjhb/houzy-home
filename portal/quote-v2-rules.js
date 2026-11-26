@@ -598,6 +598,37 @@
     const ps = plans(project), id = planId || project.planId;
     return ps.find(p => p.id === id) || ps[0];
   }
+  // 把另一份同布局报价的当前方案加入本单；先验证，失败时不改动现有方案。
+  function importPlan(project, sourceProject) {
+    if (!sourceProject || !Array.isArray(sourceProject.rooms) || !Array.isArray(sourceProject.plans) || !sourceProject.plans.length) throw new Error('文件没有可导入的报价方案');
+    if (!project.rooms.length || project.houseType !== sourceProject.houseType) throw new Error('房屋类型不同，请先打开同一套房屋的报价');
+    const sourcePhone = String(sourceProject.info?.phone || '').replace(/\D/g, ''), targetPhone = String(project.info?.phone || '').replace(/\D/g, '');
+    if (sourcePhone && targetPhone && sourcePhone !== targetPhone) throw new Error('客户电话不同，请确认选的是同一位客户的报价');
+    if (project.rooms.length !== sourceProject.rooms.length) throw new Error('房间数量不同，无法作为同一套房屋的 B 方案导入');
+    const layout = r => JSON.stringify([r.level || 1, r.type, String(r.name || '').trim().toLowerCase(), +r.L || 0, +r.W || 0, +r.H || 0, r.ext || false, r.doorList || [], r.windows || []]);
+    const used = new Set(), ids = {};
+    for (const src of sourceProject.rooms) {
+      const matches = project.rooms.filter(dst => !used.has(dst.id) && layout(dst) === layout(src));
+      const dst = matches.find(x => x.id === src.id) || (matches.length === 1 ? matches[0] : null);
+      if (!dst) throw new Error('房间名称、尺寸或门窗布局不同，请先核对两份报价的房间');
+      ids[src.id] = dst.id; used.add(dst.id);
+    }
+    if (JSON.stringify(project.house || {}) !== JSON.stringify(sourceProject.house || {})) throw new Error('全屋工程不同；目前方案共用全屋工程，请先核对后再导入');
+    const clone = value => JSON.parse(JSON.stringify(value));
+    const sourceExtras = (sourceProject.extras || []).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId }));
+    if (JSON.stringify(project.extras || []) !== JSON.stringify(sourceExtras)) throw new Error('人工增加项不同；目前方案共用这些项目，请先核对后再导入');
+    const srcPlan = activePlan(sourceProject), active = srcPlan.id === sourceProject.planId;
+    const states = active ? roomSnapshot(sourceProject) : (srcPlan.roomState || roomSnapshot(sourceProject));
+    const remap = obj => Object.fromEntries(Object.entries(obj || {}).filter(([id]) => ids[id]).map(([id, value]) => [ids[id], clone(value)]));
+    const remapKeys = obj => Object.fromEntries(Object.entries(obj || {}).filter(([key]) => !key.split('|')[0] || ids[key.split('|')[0]]).map(([key, value]) => { const parts = key.split('|'); if (parts[0]) parts[0] = ids[parts[0]]; return [parts.join('|'), clone(value)]; }));
+    const id = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(x => !plans(project).some(p => p.id === x));
+    if (!id) throw new Error('方案数量已达上限');
+    const imported = { id, name: '方案 ' + id, roomState: remap(states), specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: { ...clone(sourceProject.prices || {}), ...clone(srcPlan.prices || {}) }, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
+    for (const key of ['waive', 'feeQty', 'settings', 'design', 'discount']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    project.plans.push(imported);
+    switchPlan(project, id);
+    return id;
+  }
   // 取某个房间某个位置的选材：位置（例如客厅·地面）> 房间 > 全屋 > 标准档；decided = 是否已明确选定
   // 有些选项只对某种材料有意义：铝合金柜体没有板材环保等级（E0/E1）、封边、背板
   const ALU_SKIP = ['grade', 'edge', 'back'];
@@ -1032,7 +1063,7 @@
     return project;
   }
 
-  const api = { switchPlan, roomSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { importPlan, switchPlan, roomSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
