@@ -578,6 +578,22 @@
     if (!Array.isArray(project.plans) || !project.plans.length) project.plans = [{ id: 'A', name: '方案 A', specs: {}, roomSpecs: {} }];
     return project.plans;
   }
+  // 每个方案各自的房间工程（勾了哪些项目、项目里的数量、送产品、定制小件）：当前方案的放在房间上，其他方案的存在 plan.roomState
+  const ROOM_STATE = ['packs', 'vals', 'gift', 'items'];
+  function viewFor(project, planId) {
+    const ps = plans(project), cur = ps.find(p => p.id === project.planId) || ps[0], pl = planId ? ps.find(p => p.id === planId) : null;
+    if (!pl || pl === cur || !pl.roomState) return project;
+    return { ...project, rooms: project.rooms.map(r => { const st = pl.roomState[r.id]; if (!st) return r; const x = { ...r }; ROOM_STATE.forEach(k => { if (st[k] === undefined) delete x[k]; else x[k] = st[k]; }); return x; }) };
+  }
+  const roomSnapshot = project => Object.fromEntries(project.rooms.map(r => [r.id, JSON.parse(JSON.stringify(Object.fromEntries(ROOM_STATE.map(k => [k, r[k]]))))]));
+  // 切换方案：把当前方案的房间工程存起来，换上目标方案的
+  function switchPlan(project, id) {
+    const ps = plans(project), cur = ps.find(p => p.id === project.planId) || ps[0], next = ps.find(p => p.id === id);
+    if (!next || next === cur) return;
+    cur.roomState = roomSnapshot(project);
+    if (next.roomState) project.rooms.forEach(r => { const st = next.roomState[r.id]; if (st) ROOM_STATE.forEach(k => { if (st[k] === undefined) delete r[k]; else r[k] = JSON.parse(JSON.stringify(st[k])); }); });
+    project.planId = id;
+  }
   function activePlan(project, planId) {
     const ps = plans(project), id = planId || project.planId;
     return ps.find(p => p.id === id) || ps[0];
@@ -707,6 +723,7 @@
   const levelsOf = project => Math.max(1, ...project.rooms.map(r => r.level || 1));
 
   function buildLines(project, planId) {
+    project = viewFor(project, planId);
     const lines = [];
     // 报价单上的调整（去掉 / 改数量 / 复制一组）按方案分开记，A、B 方案互不影响
     const qp = activePlan(project, planId) || {};
@@ -807,6 +824,7 @@
   // 方案自己的设置优先（管理费率、设计费、优惠、免收等），没设过就用整单的
   const planVal = (project, planId, k) => { const pl = activePlan(project, planId); return pl && pl[k] !== undefined ? pl[k] : project[k]; };
   function totals(project, lines, planId) {
+    project = viewFor(project, planId);
     const direct = lines.reduce((t, l) => t + l.total, 0);
     const s = { ...SETTINGS, ...(project.settings || {}), ...(activePlan(project, planId)?.settings || {}) };
     // 设计费只按「有施工的室内房间」面积算：只做客厅就不收全屋设计费
@@ -1014,7 +1032,7 @@
     return project;
   }
 
-  const api = { specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { switchPlan, roomSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

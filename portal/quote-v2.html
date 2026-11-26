@@ -520,7 +520,7 @@
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261126onelay"></script>
-<script src="quote-v2-rules.js?v=20261127perplan"></script>
+<script src="quote-v2-rules.js?v=20261127planrooms"></script>
 <script src="quote-v2-plan.js?v=20261120restore"></script>
 <script src="html2pdf.bundle.min.js?v=0.14.0"></script>
 <script src="quote-v2-i18n.js?v=20261127counter"></script>
@@ -2977,14 +2977,15 @@
       render(); return;
     }
     if (ds.place && ds.specV !== undefined) { placeSet(plan(), ds.room, ds.place, ds.specCat, ds.specK, ds.specV); render(); return; }
-    if (ds.plan) { P.planId = ds.plan; render(); return; }
+    if (ds.plan) { Q.switchPlan(P, ds.plan); render(); return; }
     if (b.hasAttribute('data-copyplan')) {
       const ps = Q.plans(P), cur = plan(), id = String.fromCharCode(65 + ps.length);
       const cp = k => JSON.parse(JSON.stringify(cur[k] || (k === 'dups' ? [] : {}))), keep = k => cur[k] !== undefined ? JSON.parse(JSON.stringify(cur[k])) : (P[k] !== undefined ? JSON.parse(JSON.stringify(P[k])) : undefined);
-      ps.push({ id, name: '方案 ' + id, specs: cp('specs'), roomSpecs: cp('roomSpecs'), prices: cp('prices'), qtyFix: cp('qtyFix'), drop: cp('drop'), dups: cp('dups'), waive: keep('waive'), feeQty: keep('feeQty'), settings: keep('settings'), design: keep('design'), discount: keep('discount') });
-      P.planId = id; render(); return;
+      Q.plans(P); const snap = Q.roomSnapshot(P);
+      ps.push({ id, roomState: snap, name: '方案 ' + id, specs: cp('specs'), roomSpecs: cp('roomSpecs'), prices: cp('prices'), qtyFix: cp('qtyFix'), drop: cp('drop'), dups: cp('dups'), waive: keep('waive'), feeQty: keep('feeQty'), settings: keep('settings'), design: keep('design'), discount: keep('discount') });
+      Q.switchPlan(P, id); render(); return;
     }
-    if (b.hasAttribute('data-delplan')) { const ps = Q.plans(P); if (ps.length > 1) { P.plans = ps.filter(p => p.id !== plan().id); P.planId = P.plans[0].id; } render(); return; }
+    if (b.hasAttribute('data-delplan')) { const ps = Q.plans(P); if (ps.length > 1) { const gone = plan().id, to = ps.find(p => p.id !== gone).id; Q.switchPlan(P, to); P.plans = ps.filter(p => p.id !== gone); } render(); return; }
     if (ds.mode) { if (ds.mode === 'formal' && !requireClientInfo()) return; P.quoteMode = ds.mode; render(); return; }
     if (ds.qview) { P.quoteView = ds.qview; render(); return; }
     // 全屋项目的款式（大门、铁花、CCTV 等）：存为方案的全屋选材
