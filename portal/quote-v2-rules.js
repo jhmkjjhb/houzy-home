@@ -683,6 +683,10 @@
     const push = (room, code, qty, formula, from, pack, item) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
+      // 报价单上点「去掉」的项目（project.drop：'房间id|编号'，全屋项目房间id为空）；人工增加项另有删除
+      if (!item && (project.drop || {})[`${room ? room.id : ''}|${code}`]) return;
+      // 报价单上手动改的数量（project.qtyFix，键同上）：整单都按改后的数量算（房间页、报价单、PDF 一致）
+      { const fx = !item && (project.qtyFix || {})[`${room ? room.id : ''}|${code}|${pack || ''}`]; if (fx !== undefined && fx !== false && fx !== null && fx !== '') { const n = r2(num(fx)); if (n !== qty) formula = `手动改数量（原 ${qty}）`; qty = n; if (!(qty > 0)) return; } }
       let unit, lab = 0, matUnit = 0, layUnit = 0, customerSupplied = false, tile = null, splitPricing = false, spec = '', tbd = [], priceTbd = [], ref = [];
       if (item) unit = r2(num(item.price));
       else ({ unit, lab, matUnit, layUnit, customerSupplied, tile, splitPricing, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));

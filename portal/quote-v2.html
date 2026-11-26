@@ -244,6 +244,8 @@
   table.q th { text-align: left; font-size: 11px; color: var(--ink-dim); border-bottom: 1px solid var(--line); padding: 6px 4px; }
   table.q td { border-bottom: 1px dashed var(--line); padding: 6px 4px; vertical-align: top; }
   table.q td.r, table.q th.r { text-align: right; }
+  table.q .qdrop { margin-top: 4px; font-size: 11px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-dim); cursor: pointer; }
+  table.q .qdrop:hover { border-color: #b42318; color: #b42318; }
   table.q input.qunit { width: 78px; text-align: right; font: inherit; padding: 2px 4px; border: 1px dashed var(--line); border-radius: 5px; background: transparent; color: inherit; }
   table.q input.qunit:hover, table.q input.qunit:focus { border-style: solid; border-color: var(--navy); background: var(--surface); }
   @media print { table.q input.qunit { border: 0; width: auto; } }
@@ -490,7 +492,7 @@
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261126onelay"></script>
-<script src="quote-v2-rules.js?v=20261126onelay"></script>
+<script src="quote-v2-rules.js?v=20261126qqty"></script>
 <script src="quote-v2-plan.js?v=20261120restore"></script>
 <script src="html2pdf.bundle.min.js?v=0.14.0"></script>
 <script src="quote-v2-i18n.js?v=20261121-quote-summary-en"></script>
@@ -574,7 +576,14 @@
     if (!String(t.value).trim() || Math.abs(typed - cur) < 0.005) { t.value = nf(cur); return; }
     askUnitSave(t.dataset.qunit, cur, typed, t);
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t.matches?.('input[data-qqty]')) return;
+    const cur = num(t.dataset.cur), raw = String(t.value).replace(/[^\d.]/g, ''), typed = num(raw);
+    if (!raw.trim() || Math.abs(typed - cur) < 0.005) { t.value = nf(cur); return; }
+    if (!(typed > 0)) { alert('数量要大于 0；这单不要这一项请点「× 去掉」。'); t.value = nf(cur); return; }
+    (P.qtyFix = P.qtyFix || {})[t.dataset.qqty] = typed; render();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit], input[data-qqty]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
   function quoteDisplayLines(lines) {
     return lines.flatMap(l => {
       if (!['floor_tile', 'wall_tile', 'porch_tile'].includes(l.code) || l.custom || l.gift) return [l];
@@ -1832,9 +1841,10 @@
     qGroups.forEach(({ name, ls }) => {
       if (!ls.length) return;
       h += `<tr class="st"><td colspan="4">${esc(name)}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
+      h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}${!l.custom && l.tilePart !== 'laying' ? `<button type="button" class="qdrop noprint" data-qdrop="${esc((l.roomId || '') + '|' + l.code)}" title="这单不需要，去掉这一项">× 去掉</button>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : !l.custom && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qqty="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" data-cur="${l.qty}" value="${nf(l.qty)}" title="点这里直接改数量" aria-label="${esc(l.name)} 数量"> ${l.unitName}${(P.qtyFix || {})[(l.roomId || '') + '|' + l.code + '|' + (l.pack || '')] !== undefined ? `<br><button type="button" class="qdrop noprint" data-qqtyreset="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" title="恢复按尺寸自动算的数量">↺ 自动算</button>` : ''}` : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
-    h += `</tbody></table></div><div class="totals" style="margin-top:12px">
+    const dropped = Object.keys(P.drop || {});
+    h += `</tbody></table></div>${dropped.length ? `<div class="card noprint" style="margin-top:10px"><b>已去掉 ${dropped.length} 项</b>（不计入报价）<div class="adds" style="margin-top:6px">${dropped.map(k => { const [rid, code] = k.split('|'), r = rid && P.rooms.find(x => x.id === rid); return `<button type="button" class="chip" data-qundrop="${esc(k)}">↺ ${esc(PRICE[code]?.name || code)} · ${esc(r ? Q.roomLabel(r, P) : '全屋')}</button>`; }).join('')}</div><p class="hint" style="margin:6px 0 0">点一下就恢复。</p></div>` : ''}<div class="totals" style="margin-top:12px">
       <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>${(() => { const sub = k => DL.filter(l => clsLine(l) === k).reduce((t, l) => t + l.total, 0); return `<div class="desc" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>${uiLang === 'en' ? `Breakdown: Build ${rm(sub('hard'))} · Materials ${rm(sub('mat'))} · Furnishings ${rm(sub('soft'))}` : `其中 硬装 ${rm(sub('hard'))} · 材料 ${rm(sub('mat'))} · 软装 ${rm(sub('soft'))}`}</span>${T.soft ? `<span>${uiLang === 'en' ? 'Management fee excludes furnishings' : '管理费不算软装'}</span>` : ''}</div>`; })()}
       ${T.design ? `<div><span>设计费</span><span class="mono">${rm(T.design)}</span></div>` : ''}
       <div><span>管理费（${T.settings.mgmtRate}%）</span><span class="mono">${rm(T.mgmt)}</span></div>${T.cont ? `<div><span>不可预见费（${T.settings.contRate}%）</span><span class="mono">${rm(T.cont)}</span></div>` : ''}
@@ -2604,6 +2614,9 @@
   document.addEventListener('change', e => { if (e.target.hasAttribute('data-import-project')) { importQuoteProject(e.target.files?.[0]); e.target.value = ''; } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-qqtyreset')) { if (P.qtyFix) delete P.qtyFix[b.dataset.qqtyreset]; render(); return; }
+    if (b.hasAttribute('data-qdrop')) { (P.drop = P.drop || {})[b.dataset.qdrop] = true; render(); return; }
+    if (b.hasAttribute('data-qundrop')) { if (P.drop) delete P.drop[b.dataset.qundrop]; render(); return; }
     if (b.hasAttribute('data-cloud-save')) { saveCloudRecord(); return; }
     if (b.hasAttribute('data-cloud-refresh')) { refreshCloudRecords(); return; }
     if (b.hasAttribute('data-cloud-list')) { openCloudRecords(); return; }
