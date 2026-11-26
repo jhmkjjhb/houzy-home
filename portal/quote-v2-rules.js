@@ -589,6 +589,13 @@
     if (cat === 'cabinet' && ALU_SKIP.includes(k)) return specOf(project, room, 'cabinet', 'body', planId, pack).v !== '铝合金';
     return true;
   }
+  // 名称跟着选的材料变：例如台面选了岩板，就叫「厨房台面 · 岩板」，客户一看就知道
+  const NAME_BY_SPEC = { counter: ['cabinet', 'counter', v => `厨房台面 · ${v}`], cornice: ['base', 'cornice', v => `天花线条 · ${v}`], bar_counter: ['craft', 'bar', v => `吧台 · ${v}`] };
+  function nameBySpec(project, room, code, pack, planId) {
+    const m = NAME_BY_SPEC[code];
+    if (!m || !SPEC_CATS[m[0]]?.keys[m[1]]) return P[code].name;
+    return m[2](specOf(project, room, m[0], m[1], planId, pack).v);
+  }
   function specOf(project, room, cat, k, planId, pack) {
     const pl = activePlan(project, planId), key = SPEC_CATS[cat].keys[k];
     // 全屋项目没有房间（room = null）：直接用全屋选材，不能把 null 当成「这间已选」
@@ -722,7 +729,7 @@
         total = Math.round(tile.materialTotal + tile.areaTotal);
         unit = r2((tile.materialTotal + tile.areaTotal) / qty);
       }
-      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : P[code].name, unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total, tile, splitPricing, matUnit, layUnit, customerSupplied, spec, tbd, priceTbd, ref, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
+      lines.push({ roomId: room ? room.id : null, room: room ? roomLabel(room, project) : '全屋', code, pack, name: item ? (String(item.name || '').trim() || P[code].name) : nameBySpec(project, room, code, pack, planId), unitName: (item && item.unit) || P[code].unit, stage: (item && item.stage) || P[code].stage, qty, formula, from, unit, total, tile, splitPricing, matUnit, layUnit, customerSupplied, spec, tbd, priceTbd, ref, custom: !!item, unpriced: item ? !(unit > 0) : !!P[code].unpriced && !(unit > 0) });
       // 赠送：这间这一项照常列出、写明原价，但不收钱
       const last = lines[lines.length - 1];
       // 送产品不送人工：材料+辅料（含损耗）免收，人工安装照收
