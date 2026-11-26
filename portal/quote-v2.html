@@ -252,6 +252,9 @@
   table.q .qspec-grid select { font: inherit; padding: 3px 4px; }
   table.q .qmove { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; color: var(--ink-dim); }
   table.q .qmove select { font: inherit; padding: 1px 4px; max-width: 180px; }
+  table.q tr.qgrp { cursor: pointer; }
+  table.q tr.qgrp:hover td { background: var(--navy-soft); }
+  table.q .qcaret { display: inline-block; width: 1em; color: var(--navy); }
   table.q .qdrop { margin-top: 4px; font-size: 11px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-dim); cursor: pointer; }
   table.q .qdrop:hover { border-color: #b42318; color: #b42318; }
   table.q input.qunit { width: 78px; text-align: right; font: inherit; padding: 2px 4px; border: 1px dashed var(--line); border-radius: 5px; background: transparent; color: inherit; }
@@ -630,6 +633,12 @@
   document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit], input[data-qqty], input[data-qdupqty]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
   // 报价单里直接换材料：每行「换材料」展开，选了就只改这一间这一处（全屋项目改全屋）
   let qspecOpen = null;
+  // 报价单分组（按工序 / 房间 / 分类）默认收起，只看各组合计；点组标题展开明细。展开了哪些记在本机
+  const qOpen = new Set((() => { try { return JSON.parse(localStorage.getItem('houzy-quote-v2-qopen') || '[]'); } catch (e) { return []; } })());
+  const saveQOpen = () => { try { localStorage.setItem('houzy-quote-v2-qopen', JSON.stringify([...qOpen].slice(-200))); } catch (e) {} };
+  function toggleQGroup(gk) { qOpen.has(gk) ? qOpen.delete(gk) : qOpen.add(gk); saveQOpen(); render(); }
+  document.addEventListener('click', e => { const tr = e.target.closest?.('tr[data-qgrp]'); if (tr) toggleQGroup(tr.dataset.qgrp); });
+  document.addEventListener('keydown', e => { const tr = e.target.closest?.('tr[data-qgrp]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleQGroup(tr.dataset.qgrp); } });
   function specPicker(l) {
     if (!l.spec || l.custom || l.tilePart === 'laying') return '';
     const room = l.roomId ? P.rooms.find(x => x.id === l.roomId) : null;
@@ -1920,9 +1929,13 @@
     const qGroups = qv === 'room' ? [...Q.sortRooms(P.rooms).map(r => ({ name: Q.roomLabel(r, P), ls: DL.filter(l => l.roomId === r.id) })), { name: '全屋', ls: DL.filter(l => !l.roomId) }]
       : qv === 'cls' ? Object.entries(Q.CLS).map(([k, name], i) => ({ name: `${i + 1}. ${name}`, ls: DL.filter(l => clsLine(l) === k) }))
       : STAGES.map(st => ({ name: `${st.no}. ${st.name}`, ls: DL.filter(l => l.stage === st.id) }));
+    const shown = qGroups.filter(g => g.ls.length), allOpen = shown.every(g => qOpen.has(qv + ':' + g.name));
+    h = h.replace('<div class="scroll-x"><table class="q">', `<div class="adds noprint" style="margin:0 0 6px"><button type="button" class="chip" data-qopenall="${allOpen ? '0' : '1'}">${allOpen ? '全部收起' : '全部展开'}</button><span class="hint" style="margin:0;align-self:center">点每一组的标题看明细</span></div><div class="scroll-x"><table class="q">`);
     qGroups.forEach(({ name, ls }) => {
       if (!ls.length) return;
-      h += `<tr class="st"><td colspan="4">${esc(name)}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
+      const gk = qv + ':' + name, open = qOpen.has(gk);
+      h += `<tr class="st qgrp" data-qgrp="${esc(gk)}" tabindex="0" role="button" aria-expanded="${open}"><td colspan="4"><span class="qcaret">${open ? '▾' : '▸'}</span> ${esc(name)} <span class="desc" style="display:inline">· ${ls.length} 项</span></td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
+      if (!open) return;
       h += ls.map(l => `<tr><td>${esc(l.name)}${l.dupId ? ' <span class="exttag">加一组</span>' : ''}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}${specPicker(l)}${!l.custom && l.tilePart !== 'laying' ? (l.dupId ? `<button type="button" class="qdrop noprint" data-qdupdel="${esc(l.dupId)}" title="删掉复制的这一组">× 删掉这组</button> <label class="qmove noprint">移到 <select data-qdupmove="${esc(l.dupId)}">${Q.sortRooms(P.rooms).map(r => `<option value="${esc(r.id)}"${r.id === l.roomId ? ' selected' : ''}>${esc(Q.roomLabel(r, P))}</option>`).join('')}</select></label>` : `<button type="button" class="qdrop noprint" data-qdrop="${esc((l.roomId || '') + '|' + l.code)}" title="这单不需要，去掉这一项">× 去掉</button> <button type="button" class="qdrop noprint" data-qdup="${esc([l.roomId || '', l.pack || '', l.code, l.baseQty ?? l.qty].join('|'))}" title="同一间再加一组，数量自己改">＋ 复制一组</button>`) : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : l.dupId && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qdupqty="${esc(l.dupId)}" data-cur="${l.qty}" value="${nf(l.qty)}" title="这一组的数量"> ${l.unitName}` : !l.custom && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qqty="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" data-cur="${l.qty}" value="${nf(l.qty)}" title="点这里直接改数量" aria-label="${esc(l.name)} 数量"> ${l.unitName}${(P.qtyFix || {})[(l.roomId || '') + '|' + l.code + '|' + (l.pack || '')] !== undefined ? `<br><button type="button" class="qdrop noprint" data-qqtyreset="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" title="恢复按尺寸自动算的数量">↺ 自动算</button>` : ''}` : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-qline="${esc((l.roomId || '') + '|' + (l.pack || ''))}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     const dropped = Object.keys(P.drop || {});
@@ -2697,6 +2710,7 @@
   document.addEventListener('change', e => { if (e.target.hasAttribute('data-import-project')) { importQuoteProject(e.target.files?.[0]); e.target.value = ''; } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-qopenall')) { const qv = P.quoteView || 'stage'; document.querySelectorAll('tr[data-qgrp]').forEach(tr => b.dataset.qopenall === '1' ? qOpen.add(tr.dataset.qgrp) : qOpen.delete(tr.dataset.qgrp)); saveQOpen(); render(); return; }
     if (b.hasAttribute('data-qdup')) { const [roomId, pack, code, qty] = b.dataset.qdup.split('|'); (P.dups = P.dups || []).push({ id: 'd' + Date.now().toString(36), roomId, pack, code, qty: num(qty) }); render(); return; }
     if (b.hasAttribute('data-qdupdel')) { if (!confirm('删掉复制增加的这一组？')) return; P.dups = (P.dups || []).filter(d => d.id !== b.dataset.qdupdel); render(); return; }
     if (b.hasAttribute('data-qqtyreset')) { if (P.qtyFix) delete P.qtyFix[b.dataset.qqtyreset]; render(); return; }
