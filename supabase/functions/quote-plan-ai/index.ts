@@ -1,7 +1,7 @@
-// 报价器「AI 识别平面图」：员工上传的平面图（每层一张 JPEG）交给 Claude 看图，返回房间清单（名称、类型、楼层、长宽尺）。
+// 报价器「AI 识别平面图」：员工上传的平面图交给视觉模型，返回房间清单（名称、类型、楼层、长宽尺）。
 // 只给已登录、在职的员工用（每次调用要花 API 费用）。结果只是建议，页面上必须员工逐项核对后才加入报价。
-// 模型：设了 DEEPSEEK_API_KEY 就用 DeepSeek（deepseek-flash，能看图）；否则用 ANTHROPIC_API_KEY 走 Claude。
-// 部署：supabase secrets set DEEPSEEK_API_KEY=...；supabase functions deploy quote-plan-ai --no-verify-jwt
+// 模型：优先 DeepSeek、Claude；若未配置这两种密钥，则使用项目现有的 OpenAI 密钥。
+// 部署：supabase functions deploy quote-plan-ai --no-verify-jwt
 import Anthropic from 'npm:@anthropic-ai/sdk';
 
 const origins = new Set(['https://houzyhome.com', 'https://www.houzyhome.com', 'http://localhost:8799', 'http://127.0.0.1:8799']);
@@ -62,8 +62,8 @@ Deno.serve(async (req: Request) => {
     .then(r => r.ok ? r.json() : 0).catch(() => 0);
   if (!(Number(lv) >= 1)) return reply(403, { error: '只有在职员工可以使用 AI 识别，请重新登录' });
 
-  const dsKey = env('DEEPSEEK_API_KEY'), key = env('ANTHROPIC_API_KEY');
-  if (!dsKey && !key) return reply(503, { error: 'AI 识别还没开通：请在 Supabase 设置 DEEPSEEK_API_KEY' });
+  const dsKey = env('DEEPSEEK_API_KEY'), key = env('ANTHROPIC_API_KEY'), openaiKey = env('OPENAI_API_KEY');
+  if (!dsKey && !key && !openaiKey) return reply(503, { error: 'AI 识别还没开通：请配置 AI 服务密钥' });
 
   const body = await req.json().catch(() => null);
   const images = Array.isArray(body?.images) ? body.images : [];
@@ -80,6 +80,7 @@ Deno.serve(async (req: Request) => {
   content.push({ type: 'text', text: `房屋类型：${house || '未选'}。请列出所有空间。` });
 
   if (dsKey) return reply(...await deepseek(dsKey, content));
+  if (!key) return reply(...await openai(openaiKey, content));
 
   try {
     const client = new Anthropic({ apiKey: key, timeout: 140_000, maxRetries: 1 });
@@ -105,6 +106,43 @@ Deno.serve(async (req: Request) => {
     return reply(500, { error: 'AI 返回的结果读不懂，请再试一次' });
   }
 });
+
+// OpenAI Responses API：沿用同一房间结构，避免因未单独购买另一家模型密钥而无法识别。
+async function openai(apiKey: string, content: any[]): Promise<[number, unknown]> {
+  const parts = content.map(c => c.type === 'image'
+    ? { type: 'input_image', image_url: `data:${c.source.media_type};base64,${c.source.data}`, detail: 'original' }
+    : { type: 'input_text', text: c.text });
+  let r: Response;
+  try {
+    r = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST', signal: AbortSignal.timeout(140_000),
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: env('QUOTE_PLAN_OPENAI_MODEL') || 'gpt-6.1-terra',
+        reasoning: { effort: 'low' }, max_output_tokens: 12000, store: false,
+        input: [{ role: 'system', content: SYSTEM }, { role: 'user', content: parts }],
+        text: { format: { type: 'json_schema', name: 'quote_plan_rooms', schema: SCHEMA, strict: true } }
+      })
+    });
+  } catch (_) { return [504, { error: 'AI 识别超时，请一层一层分开识别' }]; }
+  if (r.status === 401) return [503, { error: 'OpenAI API Key 不对，请联系管理员' }];
+  if (r.status === 429) return [429, { error: 'AI 服务繁忙或额度不足，请联系管理员' }];
+  if (!r.ok) {
+    const detail = await r.json().catch(() => null);
+    const code = String(detail?.error?.code || '');
+    if (code === 'insufficient_quota') return [503, { error: 'AI 账户额度不足，请联系管理员' }];
+    return [502, { error: 'AI 服务出错，请稍后再试' }];
+  }
+  const response = await r.json().catch(() => null);
+  if (response?.status === 'incomplete') return [422, { error: '图太复杂，请一层一层分开识别' }];
+  const output = (response?.output || []).flatMap((item: any) => item.type === 'message' ? item.content || [] : []);
+  if (output.some((part: any) => part.type === 'refusal')) return [422, { error: 'AI 没有处理这张图，请换一张更清楚的平面图' }];
+  const text = output.filter((part: any) => part.type === 'output_text').map((part: any) => part.text).join('');
+  try {
+    const parsed = JSON.parse(text);
+    return [200, { ...parsed, engine: 'AI 看图（OpenAI）', usage: { input: response.usage?.input_tokens, output: response.usage?.output_tokens } }];
+  } catch (_) { return [500, { error: 'AI 返回的结果读不懂，请再试一次' }]; }
+}
 
 // DeepSeek：OpenAI 兼容的 chat/completions，图片用 image_url（data URL），要求只回 JSON
 const JSON_SHAPE = `只输出一个 JSON 对象，不要任何其他文字，格式：{"rooms":[{"name":"","type":"","level":1,"length_ft":null,"width_ft":null,"size_source":"图上标注|按比例估算|读不出","note":"","box":[0.1,0.2,0.4,0.5]}],"notes":""}。type 只能是：${TYPES.join('、')}。`;
