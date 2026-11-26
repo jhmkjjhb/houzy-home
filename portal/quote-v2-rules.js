@@ -762,7 +762,14 @@
     if (project.rooms.some(r => r.ext) || (hs.extension && hs.extension.on)) push(null, 'ext_permit', 1, '有加建就要先申请批准（整单一次）', '加建');
     (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
     // 报价单上「＋ 复制一组」：同一间同一项目再加一组（同样的材料，数量单独填）
-    (project.dups || []).forEach(d => { const room = d.roomId ? project.rooms.find(r => r.id === d.roomId) : null; if (d.roomId && !room) return; const n = lines.length; push(room, d.code, d.qty, '复制增加一组', '复制增加', d.pack, null, d); if (lines.length > n) lines[lines.length - 1].dupId = d.id; });
+    (project.dups || []).forEach(d => { const room = d.roomId ? project.rooms.find(r => r.id === d.roomId) : null; if (d.roomId && !room) return; const n = lines.length; push(room, d.code, d.qty, '复制增加一组', '复制增加', d.pack, null, d); if (lines.length <= n) return;
+      // 放回所在房间的位置：紧跟这间同一项目，没有就跟在这间（或排在它前面的房间）最后一行后面
+      const line = lines.pop(); line.dupId = d.id;
+      const order = new Map(project.rooms.map((r, i) => [r.id, i])), ri = order.has(d.roomId) ? order.get(d.roomId) : Infinity;
+      let at = -1;
+      lines.forEach((l, i) => { if (l.roomId === d.roomId && l.code === d.code) at = i; });
+      if (at < 0) lines.forEach((l, i) => { if (l.roomId && order.get(l.roomId) <= ri) at = i; });
+      lines.splice(at + 1, 0, line); });
     // 有工程 = 真的算出了要收钱的项目（勾了但数量全是 0 的不算），开工放线、成品保护、清运、开荒才跟着加
     const workedIds = new Set(lines.filter(l => l.roomId && l.qty > 0).map(l => l.roomId));
     const anyWork = lines.length > 0;
