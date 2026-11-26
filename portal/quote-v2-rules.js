@@ -248,7 +248,7 @@
       wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp'] },
       pipe: { label: '水管', opts: ['PPR 水管', 'PEX 水管', '不锈钢水管'], std: 'PPR 水管', codes: ['water_pt'] },
       wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Tai Sin', 'Power Cables Malaysia', 'Sindutch Cable（Prysmian）', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
-      cornice: { label: '石膏线材料', opts: ['石膏线', 'PU 线条'], std: '石膏线', codes: ['cornice'] }
+      cornice: { label: '天花线条材料', opts: ['石膏线', 'PU 线条', '铝合金线条'], std: '石膏线', codes: ['cornice'] }
     } },
     soft2: { label: '窗帘 / 晾衣架 / 吊扇', icon: '🎐', keys: {
       curtain: { label: '窗帘类型', opts: ['布帘 + 纱帘（双层）', '遮光布帘 + 纱帘', '卷帘', '斑马帘', '铝百叶', '木百叶', '电动窗帘（布帘）'], std: '布帘 + 纱帘（双层）', codes: ['curtain'] },
@@ -364,7 +364,8 @@
     ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '平顶、L-box、叠级、格栅、铝扣板等做法选上后在卡片里定；窗帘盒随「窗帘」自动加',
                       lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
     ceil_paint:     { g: 'ceil', area: ['floor'], label: '天花重刷（不吊顶）', icon: '🖌️', lines: (r, g) => [['paint_ceiling', g.floor, '天花面积']] },
-    cornice:        { g: 'ceil', label: '石膏线', icon: '〰️', lines: (r, g) => [['cornice', g.perim, '= 周长']] },
+    cornice:        { g: 'ceil', label: '石膏线 / 铝合金线条', icon: '〰️', hint: '不做吊顶也可以单独选；石膏线、PU、铝合金在「④ 选材」里定', inputs: [{ k: 'len', label: '线条长度', unit: '延尺', def: (r, g) => g.perim }],
+                      lines: (r, g, v) => [['cornice', v.len, num(v.len) === g.perim ? '= 周长' : '按实际做的长度']] },
     bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
 
     electric:       { g: 'mep', label: '插座开关+灯位', icon: '💡',
