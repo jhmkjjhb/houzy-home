@@ -421,7 +421,7 @@
     rack:           { g: 'fix', label: '晾衣架', icon: '👕', lines: () => [['rack', 1, '']] },
 
     cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️', hint: '合并空间请按实际柜长填写；水槽和烟机按需选择。',
-                      inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L) }, { k: 'sink', label: '水槽', unit: '个', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }, { k: 'hood', label: '烟机灶具安装', unit: '套', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }],
+                      inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度（不要吊柜填 0）', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L), opt: true }, { k: 'sink', label: '水槽', unit: '个', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }, { k: 'hood', label: '烟机灶具安装', unit: '套', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }],
                       lines: (r, g, v, picked, sp) => [['cab_low', v.low, '地柜长度'], ['counter', v.low, '= 地柜长度'], ['cab_up', v.up, '吊柜长度'], ['sink', num(v.sink), '水槽'], ['hood', num(v.hood), '烟机灶具安装'], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.up, '吊柜底灯带 = 吊柜长度']] : [])] },
     // 橱柜功能五金：每种填数量，0 = 不要；碗碟拉篮沿用原「拉篮」编号和数量
     cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d, opt: true })),
