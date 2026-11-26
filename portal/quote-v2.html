@@ -244,6 +244,9 @@
   table.q th { text-align: left; font-size: 11px; color: var(--ink-dim); border-bottom: 1px solid var(--line); padding: 6px 4px; }
   table.q td { border-bottom: 1px dashed var(--line); padding: 6px 4px; vertical-align: top; }
   table.q td.r, table.q th.r { text-align: right; }
+  table.q input.qunit { width: 78px; text-align: right; font: inherit; padding: 2px 4px; border: 1px dashed var(--line); border-radius: 5px; background: transparent; color: inherit; }
+  table.q input.qunit:hover, table.q input.qunit:focus { border-style: solid; border-color: var(--navy); background: var(--surface); }
+  @media print { table.q input.qunit { border: 0; width: auto; } }
   table.q tr.st td { font-weight: 700; color: var(--navy); border-bottom: 1px solid var(--line); padding-top: 12px; }
   .desc { font-size: 11px; color: var(--ink-dim); }
   .scroll-x { overflow-x: auto; }
@@ -528,6 +531,50 @@
   const rm = n => 'RM ' + Math.round(n).toLocaleString('en-MY');
   const nf = n => (Math.round(num(n) * 100) / 100).toLocaleString('en-MY', { maximumFractionDigits: 2 });
   const tileDetails = l => l.tile ? `砖材：${esc(l.tile.size)} · ${nf(l.tile.areaM2)} m² ÷ ${nf(l.tile.width * l.tile.height / 1000000)} m²/片 = ${nf(l.tile.theoretical)} 片；损耗 ${nf(l.tile.waste)}% → ${l.tile.pieces} 片 × RM ${nf(l.tile.price)}/片 = RM ${nf(l.tile.materialTotal)}；辅料+人工 RM ${nf(l.tile.areaTotal)}` : '';
+  // 报价单里直接改单价：改完问「存进公司价目表」还是「只改这份报价」。按比例改材料/辅料/人工，保留原来的拆分。
+  const unitEditable = l => !!PRICE[l.code] && !l.custom && !l.gift && !l.tilePart && !l.tile && !l.splitPricing && !['floor_tile', 'wall_tile', 'porch_tile'].includes(l.code);
+  function scaledPrice(code, delta) {
+    const p = { ...PRICE[code], ...((P.prices && P.prices[code]) || {}) };
+    const w = num(p.waste), base = num(p.mat) * (1 + w / 100) + num(p.aux) + num(p.lab), next = Math.round((base + delta) * 10000) / 10000;
+    if (!(next > 0)) return null;
+    const k = base > 0 ? next / base : 0, r4 = x => Math.round(x * 10000) / 10000;
+    return { base, next, price: base > 0 ? { mat: r4(num(p.mat) * k), aux: r4(num(p.aux) * k), lab: r4(num(p.lab) * k), waste: w } : { mat: 0, aux: 0, lab: next, waste: 0 } };
+  }
+  function askUnitSave(code, cur, typed, input) {
+    const res = scaledPrice(code, typed - cur);
+    if (!res) { alert('单价要大于 0。'); input.value = nf(cur); return; }
+    const d = document.createElement('dialog'); d.className = 'cloud-dialog';
+    const note = Math.abs(res.next - typed) > 0.005 ? `<p class="hint">这一行含选材价差，标准单价会从 RM ${nf(res.base)} 改成 RM ${nf(res.next)}，这一行变成 RM ${nf(typed)}。</p>` : '';
+    d.innerHTML = `<h2 style="margin:0 0 8px">「${esc(PRICE[code].name)}」单价改成 RM ${nf(typed)}</h2>${note}<p class="hint">这份报价里所有「${esc(PRICE[code].name)}」都会一起改。</p>
+      <div class="adds" style="margin-top:12px"><button type="button" class="btn pri" value="book">存进公司价目表（以后的报价都用）</button><button type="button" class="btn" value="quote" autofocus>只改这份报价</button><button type="button" class="btn" value="cancel">取消</button></div>`;
+    document.body.append(d);
+    d.addEventListener('click', e => {
+      const v = e.target.closest('button')?.value; if (!v) return;
+      d.close(); d.remove();
+      if (v === 'cancel') { input.value = nf(cur); return; }
+      if (v === 'quote') {
+        P.prices = P.prices || {}; P.prices[code] = res.price; (P.priceOverrideBookAt = P.priceOverrideBookAt || {})[code] = P.pricebookAppliedAt || '';
+        render(); return;
+      }
+      const B = window.QV2_BOOK, book = B.load() || { items: {}, options: {}, tiles: {}, tileSources: {} };
+      const at = new Date().toLocaleString('zh-CN', { hour12: false });
+      const next = { ...book, items: { ...(book.items || {}), [code]: { ...res.price, unit: PRICE[code].unit } }, info: { ...(book.info || {}), file: '报价单直接改价', at, items: Object.keys({ ...(book.items || {}), [code]: 1 }).length } };
+      if (!B.save(next)) { alert('浏览器不让保存（可能是无痕模式），已改为只改这份报价。'); P.prices = P.prices || {}; P.prices[code] = res.price; render(); return; }
+      backupNow(true);
+      try { const c = priceConfirmations(); if (c[code]) { delete c[code]; localStorage.setItem(priceConfirmKey, JSON.stringify(c)); } } catch (error) {} // 改了价要重新确认，和价目表页一样
+      applyBookPricesToQuote([code], at);
+      location.reload();
+    });
+    d.addEventListener('cancel', () => { input.value = nf(cur); d.remove(); });
+    d.showModal();
+  }
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t.matches?.('input[data-qunit]')) return;
+    const cur = num(t.dataset.cur), typed = num(String(t.value).replace(/[^\d.]/g, ''));
+    if (!String(t.value).trim() || Math.abs(typed - cur) < 0.005) { t.value = nf(cur); return; }
+    askUnitSave(t.dataset.qunit, cur, typed, t);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
   function quoteDisplayLines(lines) {
     return lines.flatMap(l => {
       if (!['floor_tile', 'wall_tile', 'porch_tile'].includes(l.code) || l.custom || l.gift) return [l];
@@ -1785,7 +1832,7 @@
     qGroups.forEach(({ name, ls }) => {
       if (!ls.length) return;
       h += `<tr class="st"><td colspan="4">${esc(name)}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
+      h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     h += `</tbody></table></div><div class="totals" style="margin-top:12px">
       <div><span>工程直接费</span><span class="mono">${rm(T.direct)}</span></div>${(() => { const sub = k => DL.filter(l => clsLine(l) === k).reduce((t, l) => t + l.total, 0); return `<div class="desc" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>${uiLang === 'en' ? `Breakdown: Build ${rm(sub('hard'))} · Materials ${rm(sub('mat'))} · Furnishings ${rm(sub('soft'))}` : `其中 硬装 ${rm(sub('hard'))} · 材料 ${rm(sub('mat'))} · 软装 ${rm(sub('soft'))}`}</span>${T.soft ? `<span>${uiLang === 'en' ? 'Management fee excludes furnishings' : '管理费不算软装'}</span>` : ''}</div>`; })()}
