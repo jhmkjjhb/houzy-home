@@ -655,12 +655,14 @@
   function pricedLine(project, room, code, pack, planId) {
     // 瓷砖铺贴辅料/人工地面、墙面、门廊通用一份（按「地砖铺贴」的价）
     const pc = TILE_CODES.includes(code) ? 'floor_tile' : code;
-    const p = { ...P[pc], ...((project.prices && project.prices[pc]) || {}) };
+    // 单价覆盖：整单共用的（③ 全屋收费里改的）+ 这个方案自己的（报价单里「只改这份报价」）
+    const planPrices = activePlan(project, planId)?.prices || {};
+    const p = { ...P[pc], ...((project.prices && project.prices[pc]) || {}), ...(planPrices[pc] || {}) };
     let mat = num(p.mat) * (1 + num(p.waste) / 100), aux = num(p.aux), lab = num(p.lab);
     const base = mat + aux + lab, spec = [], tbdKeys = [], priceTbd = [], ref = [];
     let tile = null, supplied = false;
     const variantMode = TILE_CODES.includes(code); // 新报价一律按规格片价；缺价明确待定，避免套用旧面积砖材价
-    if (P[code].ref && !(project.prices && project.prices[code])) ref.push(P[code].name);
+    if (P[code].ref && !(project.prices && project.prices[code]) && !planPrices[code]) ref.push(P[code].name);
     specKeysFor(code, pack).forEach(([cat, k, key]) => {
       if (!specApplies(project, room, cat, k, planId, pack)) return;
       const s = specOf(project, room, cat, k, planId, pack);
@@ -706,13 +708,15 @@
 
   function buildLines(project, planId) {
     const lines = [];
+    // 报价单上的调整（去掉 / 改数量 / 复制一组）按方案分开记，A、B 方案互不影响
+    const qp = activePlan(project, planId) || {};
     const push = (room, code, qty, formula, from, pack, item, dup) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
       // 报价单上点「去掉」的项目（project.drop：'房间id|编号'，全屋项目房间id为空）；人工增加项另有删除
-      if (!item && !dup && (project.drop || {})[`${room ? room.id : ''}|${code}`]) return;
+      if (!item && !dup && (qp.drop || {})[`${room ? room.id : ''}|${code}`]) return;
       // 报价单上手动改的数量（project.qtyFix，键同上）：整单都按改后的数量算（房间页、报价单、PDF 一致）
-      { const fx = !item && !dup && (project.qtyFix || {})[`${room ? room.id : ''}|${code}|${pack || ''}`]; if (fx !== undefined && fx !== false && fx !== null && fx !== '') { const n = r2(num(fx)); if (n !== qty) formula = `手动改数量（原 ${qty}）`; qty = n; if (!(qty > 0)) return; } }
+      { const fx = !item && !dup && (qp.qtyFix || {})[`${room ? room.id : ''}|${code}|${pack || ''}`]; if (fx !== undefined && fx !== false && fx !== null && fx !== '') { const n = r2(num(fx)); if (n !== qty) formula = `手动改数量（原 ${qty}）`; qty = n; if (!(qty > 0)) return; } }
       let unit, lab = 0, matUnit = 0, layUnit = 0, customerSupplied = false, tile = null, splitPricing = false, spec = '', tbd = [], priceTbd = [], ref = [];
       if (item) unit = r2(num(item.price));
       else ({ unit, lab, matUnit, layUnit, customerSupplied, tile, splitPricing, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));
@@ -738,8 +742,8 @@
     // 自动收的杂项：在「③ 全屋 → 收费」里逐项列出，员工可以对某单免收（project.waive）
     // 数量可手动改（project.feeQty），单价可手动改（project.prices，和价目表改价同一处）
     const auto = (code, qty, f, from) => {
-      if ((project.waive || {})[code]) return;
-      const mq = (project.feeQty || {})[code];
+      if ((planVal(project, planId, 'waive') || {})[code]) return;
+      const mq = (planVal(project, planId, 'feeQty') || {})[code];
       if (mq !== undefined && mq !== '') push(null, code, num(mq), `手动填写（自动算 ${r2(qty)}）`, from); else push(null, code, qty, f, from);
     };
     // 成品保护按施工房间地面面积算（平方尺）
@@ -769,7 +773,7 @@
     if (project.rooms.some(r => r.ext) || (hs.extension && hs.extension.on)) push(null, 'ext_permit', 1, '有加建就要先申请批准（整单一次）', '加建');
     (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
     // 报价单上「＋ 复制一组」：同一间同一项目再加一组（同样的材料，数量单独填）
-    (project.dups || []).forEach(d => { const room = d.roomId ? project.rooms.find(r => r.id === d.roomId) : null; if (d.roomId && !room) return; const n = lines.length; push(room, d.code, d.qty, '复制增加一组', '复制增加', d.pack, null, d); if (lines.length <= n) return;
+    (qp.dups || []).forEach(d => { const room = d.roomId ? project.rooms.find(r => r.id === d.roomId) : null; if (d.roomId && !room) return; const n = lines.length; push(room, d.code, d.qty, '复制增加一组', '复制增加', d.pack, null, d); if (lines.length <= n) return;
       // 放回所在房间的位置：紧跟这间同一项目，没有就跟在这间（或排在它前面的房间）最后一行后面
       const line = lines.pop(); line.dupId = d.id;
       const order = new Map(project.rooms.map((r, i) => [r.id, i])), ri = order.has(d.roomId) ? order.get(d.roomId) : Infinity;
@@ -800,17 +804,19 @@
     return lines;
   }
 
-  function totals(project, lines) {
+  // 方案自己的设置优先（管理费率、设计费、优惠、免收等），没设过就用整单的
+  const planVal = (project, planId, k) => { const pl = activePlan(project, planId); return pl && pl[k] !== undefined ? pl[k] : project[k]; };
+  function totals(project, lines, planId) {
     const direct = lines.reduce((t, l) => t + l.total, 0);
-    const s = { ...SETTINGS, ...(project.settings || {}) };
+    const s = { ...SETTINGS, ...(project.settings || {}), ...(activePlan(project, planId)?.settings || {}) };
     // 设计费只按「有施工的室内房间」面积算：只做客厅就不收全屋设计费
     const floorSum = project.rooms.filter(r => !ROOMS[r.type].outdoor && (r.packs || []).length).reduce((t, r) => t + geo(r, project).floor, 0);
-    const design = project.design === false ? 0 : Math.round(floorSum * num(s.designRate));
+    const design = planVal(project, planId, 'design') === false ? 0 : Math.round(floorSum * num(s.designRate));
     // 软装（stage soft：家具、灯饰、配饰、窗帘）按产品价收，不收管理费和不可预见费
     const soft = lines.filter(l => l.stage === 'soft').reduce((t, l) => t + l.total, 0), hard = direct - soft;
     const mgmt = Math.round(hard * num(s.mgmtRate) / 100), cont = Math.round(hard * num(s.contRate) / 100);
     const before = direct + design + mgmt + cont;
-    const discount = Math.min(Math.round(num(project.discount)), before);
+    const discount = Math.min(Math.round(num(planVal(project, planId, 'discount'))), before);
     const sst = Math.round((before - discount) * num(s.sst) / 100);
     const total = before - discount + sst;
     const byStage = STAGES.map(st => ({ ...st, total: lines.filter(l => l.stage === st.id).reduce((t, l) => t + l.total, 0) })).filter(x => x.total > 0);
@@ -1002,6 +1008,8 @@
       // 淋浴隔断从「洁具」里拆出来成为「淋浴区」：旧报价里选了洁具的卫生间补上淋浴区，金额不变（只迁移一次）
       if (!(project.mig || {}).shower && has('sanitary') && !has('shower_area')) r.packs.push('shower_area');
     });
+    // 报价单上的调整改成按方案分开（2026-11-27）：旧报价放在整单上的，复制给每个方案
+    ['drop', 'qtyFix', 'dups'].forEach(k => { if (project[k] === undefined) return; plans(project).forEach(x => { if (x[k] === undefined) x[k] = JSON.parse(JSON.stringify(project[k])); }); delete project[k]; });
     project.mig = { ...(project.mig || {}), shower: 1 };
     return project;
   }
