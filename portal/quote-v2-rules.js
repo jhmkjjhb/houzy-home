@@ -91,8 +91,8 @@
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
   const DRY = ['wall_work', 'demo_cab', 'demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'led_cove', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
   const ROOMS = {
-    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'soft_panel', 'bar_counter', 'floor_border', 'mosaic', 'culture_stone', 'glass_block', 'bay_window', 'audio_wire'] },
-    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel', 'wine_cab', 'bar_counter', 'floor_border'] },
+    living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'cabinets', 'cab_basket', 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'soft_panel', 'bar_counter', 'floor_border', 'mosaic', 'culture_stone', 'glass_block', 'bay_window', 'audio_wire'] },
+    dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'cabinets', 'cab_basket', 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel', 'wine_cab', 'bar_counter', 'floor_border'] },
     master:  { label: '主人房', icon: '🛏️', L: 14, W: 12, doors: 1, packs: [...DRY, 'wardrobe', 'headboard', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window', 'audio_wire'] },
     bedroom: { label: '卧室', icon: '🛏️', L: 11, W: 10, doors: 1, packs: [...DRY, 'wardrobe', 'desk', 'soft_bed', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
     study:   { label: '书房', icon: '📚', L: 10, W: 9, doors: 1, packs: [...DRY, 'bookcase', 'desk', 'soft_study', 'slab_wall', 'wall_panel', 'tatami', 'soft_panel', 'bay_window'] },
@@ -420,8 +420,8 @@
                         return [sp('vanity', 'kind') === '定制浴室柜' ? ['vanity_custom', r2(num(v.w) / 30.48), size + '，按柜宽计'] : ['vanity', 1, size], ['mirror', 1, '宽度配合浴室柜']]; } },
     rack:           { g: 'fix', label: '晾衣架', icon: '👕', lines: () => [['rack', 1, '']] },
 
-    cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️',
-                      inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => r2(g.L) }, { k: 'sink', label: '水槽', unit: '个', def: () => 1, opt: true }, { k: 'hood', label: '烟机灶具安装', unit: '套', def: () => 1, opt: true }],
+    cabinets:       { g: 'cab', label: '橱柜（地柜+吊柜+台面）', icon: '🗄️', hint: '合并空间请按实际柜长填写；水槽和烟机按需选择。',
+                      inputs: [{ k: 'low', label: '地柜长度', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L + g.W - 3) }, { k: 'up', label: '吊柜长度', unit: '尺', def: (r, g) => ['living', 'dining'].includes(r.type) ? 0 : r2(g.L) }, { k: 'sink', label: '水槽', unit: '个', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }, { k: 'hood', label: '烟机灶具安装', unit: '套', def: r => ['living', 'dining'].includes(r.type) ? 0 : 1, opt: true }],
                       lines: (r, g, v, picked, sp) => [['cab_low', v.low, '地柜长度'], ['counter', v.low, '= 地柜长度'], ['cab_up', v.up, '吊柜长度'], ['sink', num(v.sink), '水槽'], ['hood', num(v.hood), '烟机灶具安装'], ...(sp('cabinet', 'light') === '感应灯带' ? [['led_strip', v.up, '吊柜底灯带 = 吊柜长度']] : [])] },
     // 橱柜功能五金：每种填数量，0 = 不要；碗碟拉篮沿用原「拉篮」编号和数量
     cab_basket:     { g: 'cab', label: '橱柜功能五金', icon: '🧺', wide: true, inputs: HW.map(([k, label, unit, , d]) => ({ k, label, unit, def: () => d, opt: true })),
