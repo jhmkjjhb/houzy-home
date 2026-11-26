@@ -107,7 +107,7 @@
     ['灯槽内 LED 灯带，每约 15 尺配一个变压器，色温客户选定','Install LED strip lighting in the cove, with one driver for about every 15 ft. The client selects the colour temperature.'],
     ['抗碱底漆一遍+乳胶面漆两遍','Apply one coat of alkali-resistant primer and two coats of emulsion paint.'],
     ['防潮板柜体（示范规格），阻尼铰链、抽屉滑轨，踢脚板防水','Moisture-resistant cabinet carcass (sample specification), soft-close hinges and drawer runners, with a water-resistant plinth.'],
-    ['石英石台面（示范价），前沿倒角，水槽台下安装，接缝打胶','Quartz countertop (sample price), eased front edge, undermount sink and sealed joints.'],
+    ['厨房台面','Kitchen countertop'],['按选定材质制作（石英石 / 岩板 / 花岗岩），前沿倒角，水槽台下安装，接缝打胶','Made in the chosen material (quartz / sintered stone / granite), eased front edge, undermount sink and sealed joints.'],['石英石台面（示范价），前沿倒角，水槽台下安装，接缝打胶','Quartz countertop (sample price), eased front edge, undermount sink and sealed joints.'],
     ['到顶衣柜，含挂衣杆、层板、抽屉，板材及门板款式客户选定','Full-height wardrobe with hanging rails, shelves and drawers. The client selects the board and door finish.'],
     ['安装烟机、灶具，烟管接至外墙，燃气接口测漏','Install the range hood and hob, vent the duct outdoors, and leak-test the gas connection.'],
     ['安排基膜','Apply wallpaper primer.'],

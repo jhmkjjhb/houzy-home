@@ -49,7 +49,7 @@
     "ext_paint":{"stage":"ceil","name":"外墙防水漆","unit":"平方尺","mat":0.9,"aux":0.3,"lab":0.8,"waste":5,"desc":"外墙高压清洗、修补裂缝，外墙底漆+弹性防水面漆两遍；高处搭架另计"},
     "cab_low":{"stage":"custom","name":"橱柜 · 地柜","unit":"延尺","mat":100,"aux":16,"lab":30,"waste":0,"desc":"防潮板柜体（示范规格），阻尼铰链、抽屉滑轨，踢脚板防水"},
     "cab_up":{"stage":"custom","name":"橱柜 · 吊柜","unit":"延尺","mat":80,"aux":11,"lab":24,"waste":0,"desc":"柜体与墙体膨胀螺栓固定，柜门阻尼铰链"},
-    "counter":{"stage":"custom","name":"石英石台面","unit":"延尺","mat":75,"aux":7,"lab":12,"waste":0,"desc":"石英石台面（示范价），前沿倒角，水槽台下安装，接缝打胶"},
+    "counter":{"stage":"custom","name":"厨房台面","unit":"延尺","mat":75,"aux":7,"lab":12,"waste":0,"desc":"按选定材质制作（石英石 / 岩板 / 花岗岩），前沿倒角，水槽台下安装，接缝打胶"},
     "wardrobe":{"stage":"custom","name":"衣柜定制","unit":"延尺","mat":50,"aux":5,"lab":15,"waste":0,"desc":"到顶衣柜，含挂衣杆、层板、抽屉，板材及门板款式客户选定"},
     "shoe_cab":{"stage":"custom","name":"鞋柜","unit":"延尺","mat":60,"aux":8,"lab":15,"waste":0,"desc":"到顶或半高鞋柜，斜层板/平层板，预留换鞋凳位置"},
     "tv_cab":{"stage":"custom","name":"电视柜/电视背景墙","unit":"延尺","mat":55,"aux":8,"lab":15,"waste":0,"desc":"按设计图制作，预留电视、机顶盒线路孔位"},
