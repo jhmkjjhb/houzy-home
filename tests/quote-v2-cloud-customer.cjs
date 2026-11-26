@@ -4,7 +4,7 @@ const vm = require('node:vm');
 
 const html = fs.readFileSync(new URL('../portal/quote-v2.html', `file://${__filename}`), 'utf8');
 const start = html.indexOf('  async function saveClientToCloud(button) {');
-const end = html.indexOf('  async function aiRecognize(lv) {', start);
+const end = html.indexOf('  const cloudStatus = ', start);
 assert(start > 0 && end > start, 'cloud save handler exists');
 const source = html.slice(start, end) + '\nglobalThis.run = saveClientToCloud;';
 
