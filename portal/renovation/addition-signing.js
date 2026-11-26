@@ -10,7 +10,8 @@ window.RenoAdditionSigning=(()=>{
   if(!sb||refreshing)return;refreshing=true;
   const el=document.getElementById('customer-additions-list');
   try{const {data,error}=await sb.rpc('renovation_customer_additions',{p_token:token});if(error||!Array.isArray(data))throw new Error('新增单暂时无法读取，请刷新重试。');
-   el.innerHTML=data.map(a=>`<article class="customer-line"><b>${a.category==='work'?'工项':'材料'} · ${E(a.name)}</b><p>${E(a.qty)} ${E(a.unit)} × ${M(a.rate)} = ${M(a.amount)}${a.list_rate?` <span style="color:#b45309">（原价 <s>${M(a.list_rate)}</s>，${RenoFinanceView.discount(a.rate,a.list_rate)}）</span>`:''}</p><p>付款节点：${E(a.payment_node)}</p><p>${a.voided?'已撤销':a.signature_status==='signed'?`<span style="color:#15803d">已由客户电子签署 · ${E(a.signer_name)} · ${E(new Date(a.signed_at).toLocaleString('zh-CN'))}</span>`:'待客户电子签署，尚未计入项目应收。请打开门店提供的专属签署链接确认。'}</p></article>`).join('')||'<p>暂无新增工项或材料确认单。</p>';
+   const card=a=>`<article class="customer-line"><b>${a.category==='work'?'工项':'材料'} · ${E(a.name)}</b><p>${E(a.qty)} ${E(a.unit)} × ${M(a.rate)} = ${M(a.amount)}${a.list_rate?` <span style="color:#b45309">（原价 <s>${M(a.list_rate)}</s>，${RenoFinanceView.discount(a.rate,a.list_rate)}）</span>`:''}</p><p>付款节点：${E(a.payment_node)}</p><p>${a.voided?'已撤销':a.signature_status==='signed'?`<span style="color:#15803d">已由客户电子签署 · ${E(a.signer_name)} · ${E(new Date(a.signed_at).toLocaleString('zh-CN'))}</span>`:'待客户电子签署，尚未计入项目应收。请打开门店提供的专属签署链接确认。'}</p></article>`,live=data.filter(a=>!a.voided),dead=data.filter(a=>a.voided);
+   el.innerHTML=(live.map(card).join('')||(dead.length?'':'<p>暂无新增工项或材料确认单。</p>'))+(dead.length?`<details style="margin-top:16px"><summary>已撤销（${dead.length}）</summary>${dead.map(card).join('')}</details>`:'');
   }catch(e){el.textContent=e.message;}finally{refreshing=false;}
  }
  async function loadSigning(){
