@@ -498,7 +498,7 @@
 <script src="quote-v2-icons.js?v=20261115j"></script>
 <script src="quote-v2-tile-products.js?v=1"></script>
 <script src="quote-v2-pricebook.js?v=20261126onelay"></script>
-<script src="quote-v2-rules.js?v=20261126eco"></script>
+<script src="quote-v2-rules.js?v=20261127dup"></script>
 <script src="quote-v2-plan.js?v=20261120restore"></script>
 <script src="html2pdf.bundle.min.js?v=0.14.0"></script>
 <script src="quote-v2-i18n.js?v=20261121-quote-summary-en"></script>
@@ -600,7 +600,14 @@
     if (!(typed > 0)) { alert('数量要大于 0；这单不要这一项请点「× 去掉」。'); t.value = nf(cur); return; }
     (P.qtyFix = P.qtyFix || {})[t.dataset.qqty] = typed; render();
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit], input[data-qqty]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
+  document.addEventListener('change', e => {
+    const t = e.target; if (!t.matches?.('input[data-qdupqty]')) return;
+    const d = (P.dups || []).find(x => x.id === t.dataset.qdupqty); if (!d) return;
+    const typed = num(String(t.value).replace(/[^\d.]/g, ''));
+    if (!(typed > 0)) { alert('数量要大于 0；不要这一组请点「× 删掉这组」。'); t.value = nf(d.qty); return; }
+    d.qty = typed; render();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches?.('input[data-qunit], input[data-qqty], input[data-qdupqty]')) { e.preventDefault(); const t = e.target; setTimeout(() => t.blur(), 0); } });
   // 报价单里直接换材料：每行「换材料」展开，选了就只改这一间这一处（全屋项目改全屋）
   let qspecOpen = null;
   function specPicker(l) {
@@ -623,7 +630,7 @@
     qspecOpen = t.dataset.qspecId; render();
   });
   function quoteDisplayLines(lines) {
-    return lines.flatMap(l => {
+    return lines.map(l => ({ ...l, baseQty: l.qty })).flatMap(l => {
       if (!['floor_tile', 'wall_tile', 'porch_tile'].includes(l.code) || l.custom || l.gift) return [l];
       const materialTotal = l.tile ? Math.round(l.tile.materialTotal) : l.customerSupplied ? 0 : Math.round(l.qty * l.matUnit);
       const laying = { ...l, name: `${l.name} · 铺贴辅料及人工`, unit: l.qty ? Math.round((l.total - materialTotal) / l.qty * 10000) / 10000 : 0, total: l.total - materialTotal, tile: null, tilePart: 'laying', formula: `净面积 ${nf(l.qty)} 平方尺；辅料和人工按面积计费` };
@@ -1879,7 +1886,7 @@
     qGroups.forEach(({ name, ls }) => {
       if (!ls.length) return;
       h += `<tr class="st"><td colspan="4">${esc(name)}</td><td class="r mono">${rm(ls.reduce((t, l) => t + l.total, 0))}</td></tr>`;
-      h += ls.map(l => `<tr><td>${esc(l.name)}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}${specPicker(l)}${!l.custom && l.tilePart !== 'laying' ? `<button type="button" class="qdrop noprint" data-qdrop="${esc((l.roomId || '') + '|' + l.code)}" title="这单不需要，去掉这一项">× 去掉</button>` : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : !l.custom && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qqty="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" data-cur="${l.qty}" value="${nf(l.qty)}" title="点这里直接改数量" aria-label="${esc(l.name)} 数量"> ${l.unitName}${(P.qtyFix || {})[(l.roomId || '') + '|' + l.code + '|' + (l.pack || '')] !== undefined ? `<br><button type="button" class="qdrop noprint" data-qqtyreset="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" title="恢复按尺寸自动算的数量">↺ 自动算</button>` : ''}` : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-qline="${esc((l.roomId || '') + '|' + (l.pack || ''))}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
+      h += ls.map(l => `<tr><td>${esc(l.name)}${l.dupId ? ' <span class="exttag">加一组</span>' : ''}${/×/.test(l.formula || '') ? `<div class="desc" style="color:var(--ink)">尺寸：${esc(l.formula)}</div>` : ''}${l.spec ? `<div class="desc" style="color:var(--navy)">${esc(l.spec)}${l.tbd.length ? ' <b style="color:var(--yellow)">暂定</b>' : ''}${l.priceTbd.length ? ' <b style="color:var(--yellow)">价差待定</b>' : ''}</div>` : ''}${l.tile ? `<div class="desc" style="color:var(--ink)">${tileDetails(l)}</div>` : ''}${PRICE[l.code].desc && l.tilePart !== 'material' ? `<div class="desc">${esc(PRICE[l.code].desc)}</div>` : ''}${specPicker(l)}${!l.custom && l.tilePart !== 'laying' ? (l.dupId ? `<button type="button" class="qdrop noprint" data-qdupdel="${esc(l.dupId)}" title="删掉复制的这一组">× 删掉这组</button>` : `<button type="button" class="qdrop noprint" data-qdrop="${esc((l.roomId || '') + '|' + l.code)}" title="这单不需要，去掉这一项">× 去掉</button> <button type="button" class="qdrop noprint" data-qdup="${esc([l.roomId || '', l.pack || '', l.code, l.baseQty ?? l.qty].join('|'))}" title="同一间再加一组，数量自己改">＋ 复制一组</button>`) : ''}</td><td>${esc(l.room)}</td><td class="r mono">${l.tilePending ? '—' : l.dupId && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qdupqty="${esc(l.dupId)}" data-cur="${l.qty}" value="${nf(l.qty)}" title="这一组的数量"> ${l.unitName}` : !l.custom && l.tilePart !== 'material' ? `<input class="qunit" inputmode="decimal" data-qqty="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" data-cur="${l.qty}" value="${nf(l.qty)}" title="点这里直接改数量" aria-label="${esc(l.name)} 数量"> ${l.unitName}${(P.qtyFix || {})[(l.roomId || '') + '|' + l.code + '|' + (l.pack || '')] !== undefined ? `<br><button type="button" class="qdrop noprint" data-qqtyreset="${esc((l.roomId || '') + '|' + l.code + '|' + (l.pack || ''))}" title="恢复按尺寸自动算的数量">↺ 自动算</button>` : ''}` : `${nf(l.qty)} ${l.unitName}`}</td><td class="r mono">${l.tilePending ? '待定' : unitEditable(l) ? `<input class="qunit" inputmode="decimal" data-qunit="${esc(l.code)}" data-qline="${esc((l.roomId || '') + '|' + (l.pack || ''))}" data-cur="${l.unit}" value="${nf(l.unit)}" title="点这里直接改单价" aria-label="${esc(l.name)} 单价">` : nf(l.unit)}${l.tile ? '<div class="desc">等效面积单价</div>' : ''}</td><td class="r mono">${l.tilePending ? '<span style="color:var(--yellow)">待定价</span>' : l.gift ? `${rm(l.total)}<div class="desc" style="color:var(--ok)">产品赠送 −${rm(l.giftValue)}</div><div class="desc">只收人工安装 ${nf(l.labUnit)}/${esc(l.unitName)}</div>` : rm(l.total)}</td></tr>`).join('');
     });
     const dropped = Object.keys(P.drop || {});
     h += `</tbody></table></div>${dropped.length ? `<div class="card noprint" style="margin-top:10px"><b>已去掉 ${dropped.length} 项</b>（不计入报价）<div class="adds" style="margin-top:6px">${dropped.map(k => { const [rid, code] = k.split('|'), r = rid && P.rooms.find(x => x.id === rid); return `<button type="button" class="chip" data-qundrop="${esc(k)}">↺ ${esc(PRICE[code]?.name || code)} · ${esc(r ? Q.roomLabel(r, P) : '全屋')}</button>`; }).join('')}</div><p class="hint" style="margin:6px 0 0">点一下就恢复。</p></div>` : ''}<div class="totals" style="margin-top:12px">
@@ -2652,6 +2659,8 @@
   document.addEventListener('change', e => { if (e.target.hasAttribute('data-import-project')) { importQuoteProject(e.target.files?.[0]); e.target.value = ''; } });
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-qdup')) { const [roomId, pack, code, qty] = b.dataset.qdup.split('|'); (P.dups = P.dups || []).push({ id: 'd' + Date.now().toString(36), roomId, pack, code, qty: num(qty) }); render(); return; }
+    if (b.hasAttribute('data-qdupdel')) { if (!confirm('删掉复制增加的这一组？')) return; P.dups = (P.dups || []).filter(d => d.id !== b.dataset.qdupdel); render(); return; }
     if (b.hasAttribute('data-qqtyreset')) { if (P.qtyFix) delete P.qtyFix[b.dataset.qqtyreset]; render(); return; }
     if (b.hasAttribute('data-qdrop')) { const [rid, code] = b.dataset.qdrop.split('|'), r = rid && P.rooms.find(x => x.id === rid); if (!confirm(`去掉「${PRICE[code]?.name || code}」（${r ? Q.roomLabel(r, P) : '全屋'}）？\n去掉后不计入报价，可在报价单下面「已去掉」里恢复。`)) return; (P.drop = P.drop || {})[b.dataset.qdrop] = true; render(); return; }
     if (b.hasAttribute('data-qundrop')) { if (P.drop) delete P.drop[b.dataset.qundrop]; render(); return; }

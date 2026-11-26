@@ -699,13 +699,13 @@
 
   function buildLines(project, planId) {
     const lines = [];
-    const push = (room, code, qty, formula, from, pack, item) => {
+    const push = (room, code, qty, formula, from, pack, item, dup) => {
       qty = r2(num(qty));
       if (!(qty > 0) || !P[code]) return;
       // 报价单上点「去掉」的项目（project.drop：'房间id|编号'，全屋项目房间id为空）；人工增加项另有删除
-      if (!item && (project.drop || {})[`${room ? room.id : ''}|${code}`]) return;
+      if (!item && !dup && (project.drop || {})[`${room ? room.id : ''}|${code}`]) return;
       // 报价单上手动改的数量（project.qtyFix，键同上）：整单都按改后的数量算（房间页、报价单、PDF 一致）
-      { const fx = !item && (project.qtyFix || {})[`${room ? room.id : ''}|${code}|${pack || ''}`]; if (fx !== undefined && fx !== false && fx !== null && fx !== '') { const n = r2(num(fx)); if (n !== qty) formula = `手动改数量（原 ${qty}）`; qty = n; if (!(qty > 0)) return; } }
+      { const fx = !item && !dup && (project.qtyFix || {})[`${room ? room.id : ''}|${code}|${pack || ''}`]; if (fx !== undefined && fx !== false && fx !== null && fx !== '') { const n = r2(num(fx)); if (n !== qty) formula = `手动改数量（原 ${qty}）`; qty = n; if (!(qty > 0)) return; } }
       let unit, lab = 0, matUnit = 0, layUnit = 0, customerSupplied = false, tile = null, splitPricing = false, spec = '', tbd = [], priceTbd = [], ref = [];
       if (item) unit = r2(num(item.price));
       else ({ unit, lab, matUnit, layUnit, customerSupplied, tile, splitPricing, spec, tbd, priceTbd, ref } = pricedLine(project, room, code, pack, planId));
@@ -761,6 +761,8 @@
     // 人工增加项：挂在某个房间（roomId）或全屋
     if (project.rooms.some(r => r.ext) || (hs.extension && hs.extension.on)) push(null, 'ext_permit', 1, '有加建就要先申请批准（整单一次）', '加建');
     (project.extras || []).forEach(x => push(project.rooms.find(r => r.id === x.roomId) || null, 'custom_item', x.qty, '人工增加', '人工增加项', 'extra', x));
+    // 报价单上「＋ 复制一组」：同一间同一项目再加一组（同样的材料，数量单独填）
+    (project.dups || []).forEach(d => { const room = d.roomId ? project.rooms.find(r => r.id === d.roomId) : null; if (d.roomId && !room) return; const n = lines.length; push(room, d.code, d.qty, '复制增加一组', '复制增加', d.pack, null, d); if (lines.length > n) lines[lines.length - 1].dupId = d.id; });
     // 有工程 = 真的算出了要收钱的项目（勾了但数量全是 0 的不算），开工放线、成品保护、清运、开荒才跟着加
     const workedIds = new Set(lines.filter(l => l.roomId && l.qty > 0).map(l => l.roomId));
     const anyWork = lines.length > 0;
