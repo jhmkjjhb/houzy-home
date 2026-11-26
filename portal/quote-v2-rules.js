@@ -171,7 +171,7 @@
       alu:   { label: '铝扣板规格', opts: ['300×300 mm', '300×600 mm', '条形扣板'], std: '300×300 mm', codes: ['ceil_alu'] }
     } },
     cabinet: { label: '定制柜', icon: '🗄️', keys: {
-      body:     { label: '柜体板材', opts: ['多层实木板', '防潮颗粒板', '铝合金'], std: '多层实木板', codes: CAB_CODES },
+      body:     { label: '柜体板材', opts: ['多层实木板', '生态板', '防潮颗粒板', '铝合金'], std: '多层实木板', codes: CAB_CODES },
       grade:    { label: '板材环保等级', opts: ['E1 级', 'E0 级', 'ENF 级（无醛添加）'], std: 'E1 级', codes: CAB_CODES },
       door:     { label: '门板饰面', opts: ['双饰面', 'PET', '肤感（超哑）', '烤漆', '木皮', '实木'], std: '双饰面', codes: CAB_CODES },
       doorStyle:{ label: '门板造型', opts: ['平板门', '框式门（法式/美式线条）', '铝框玻璃门', '格栅门'], std: '平板门', codes: CAB_CODES },
