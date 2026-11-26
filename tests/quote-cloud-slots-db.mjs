@@ -23,6 +23,7 @@ await db.exec(`
 `);
 await db.exec(await readFile(new URL('../supabase/quote_cloud_slots_migration.sql', import.meta.url), 'utf8'));
 await db.exec(await readFile(new URL('../supabase/quote_cloud_slots_migration.sql', import.meta.url), 'utf8'));
+for (let i = 0; i < 2; i++) await db.exec(await readFile(new URL('../supabase/quote_cloud_slot_delete_migration.sql', import.meta.url), 'utf8'));
 await db.exec(`SET ROLE authenticated; SET request.jwt.claim.sub = '${userA}';`);
 const save = (slot, revision, name, phone) => db.query(
   'SELECT * FROM public.save_quote_cloud_slot($1,$2,$3::jsonb)',
@@ -44,5 +45,16 @@ await assert.rejects(db.query(`INSERT INTO public.quote_cloud_slots(owner_id,slo
 await db.exec(`SET request.jwt.claim.sub = '${userB}';`);
 assert.equal((await db.query('SELECT count(*)::int AS n FROM public.quote_cloud_slots')).rows[0].n, 0);
 assert.equal((await save(1, 0, 'Other staff', '60123456786')).rows[0].revision, 1);
+// 删除：只能删自己的、版本要对（别的窗口刚改过就不删）；删了空出位置可以再存
+const del = (slot, rev) => db.query('SELECT public.delete_quote_cloud_slot($1,$2) AS ok', [slot, rev]);
+await db.exec(`SET request.jwt.claim.sub = '${userA}';`);
+await assert.rejects(del(1, 1), /slot changed/i, '旧版本不能删');
+assert.equal((await del(1, 2)).rows[0].ok, true);
+assert.equal((await db.query('SELECT count(*)::int AS n FROM public.quote_cloud_slots')).rows[0].n, 2, 'A 只剩 2 份');
+assert.equal((await save(1, 0, 'Again', '60123456787')).rows[0].revision, 1, '删掉的位置可以再存');
+await db.exec(`SET request.jwt.claim.sub = '${userB}';`);
+await assert.rejects(del(2, 1), /slot changed/i, 'B 不能删 A 的第 2 份');
+await db.exec(`SET request.jwt.claim.sub = '${userA}';`);
+assert.equal((await db.query('SELECT count(*)::int AS n FROM public.quote_cloud_slots')).rows[0].n, 3, 'A 的报价没被 B 删掉');
 await db.close();
-console.log('quote cloud slots: repeat migration, 3-slot limit, confirmed overwrite, isolation and write protection passed');
+console.log('quote cloud slots: repeat migration, 3-slot limit, confirmed overwrite, isolation, write protection and delete passed');

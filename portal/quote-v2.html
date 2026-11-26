@@ -422,6 +422,10 @@
   .cloud-library-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .cloud-library-list { display:grid; gap:7px; margin:10px 0; }
   .cloud-library-record { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:10px 12px; text-align:left; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--ink); cursor:pointer; }
+  .cloud-library-row { display:flex; gap:8px; align-items:stretch; }
+  .cloud-library-row .cloud-library-record { flex:1; min-width:0; }
+  .cloud-library-row .cloud-del { flex:none; align-self:center; }
+  .cloud-library-row .cloud-del:hover { border-color:#b42318; color:#b42318; }
   .cloud-library-record:hover,.cloud-library-record:focus-visible { border-color:var(--navy); background:var(--navy-soft); }
   .cloud-library-record small { display:block; margin-top:3px; color:var(--ink-dim); }
   .cloud-library-record .cloud-arrow { flex:none; font-weight:700; color:var(--navy); }
@@ -1097,7 +1101,7 @@
       const slot = +record.slot;
       const date = new Date(record.updated_at).toLocaleString('zh-MY', { hour12: false });
       const current = cloudCurrent?.slot === slot && cloudCurrent?.revision === record.revision;
-      return `<button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}</small></span><span class="cloud-arrow">打开 →</span></button>`;
+      return `<div class="cloud-library-row"><button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}</small></span><span class="cloud-arrow">打开 →</span></button><button type="button" class="chip cloud-del" data-cloud-del="${slot}" aria-label="删除第 ${slot} 份云端报价">删除</button></div>`;
     }).join('');
   }
   function cloudSaveInfoText() {
@@ -1270,6 +1274,23 @@
       if (!auto) refreshCloudRecords();
       if (cloudCurrent && sigOf() !== snapSig) scheduleAutoSync();
     } catch (error) { if (!auto) cloudStatus('云端报价保存失败：' + (error.message || error)); else scheduleAutoSync(30000); }
+    finally { cloudBusy = false; }
+  }
+  // 删除一份云端报价：先确认；只删这一份存档，本机正在编辑的内容不动
+  async function deleteCloudRecord(slot) {
+    if (cloudBusy) return;
+    const record = cloudRecords.find(item => item.slot === slot);
+    if (!record) { cloudStatus('存档列表已变化，请点「刷新」。'); return; }
+    if (!confirm(`删除云端第 ${slot} 份「${record.customer_name}」（${record.customer_phone}）？\n删除后不能恢复；这台设备正在编辑的报价不会被删。`)) return;
+    cloudBusy = true;
+    try {
+      const sb = await cloudSession();
+      const { error } = await sb.rpc('delete_quote_cloud_slot', { p_slot: slot, p_expected_revision: record.revision });
+      if (error) throw new Error(/changed/i.test(error.message || '') ? '这份刚被别的设备改过，请点「刷新」后再删。' : /function|schema cache/i.test(error.message || '') ? '删除功能还没开通（需要先在 Supabase 运行 quote_cloud_slot_delete_migration.sql）。' : error.message);
+      if (cloudCurrent?.slot === slot) unlinkCloud();
+      cloudRecords = cloudRecords.filter(item => item.slot !== slot); updateCloudList();
+      cloudStatus(`已删除云端第 ${slot} 份。`, true);
+    } catch (error) { cloudStatus('删除失败：' + (error.message || error)); }
     finally { cloudBusy = false; }
   }
   async function saveCloudRecord() {
@@ -2720,6 +2741,7 @@
     if (b.hasAttribute('data-cloud-refresh')) { refreshCloudRecords(); return; }
     if (b.hasAttribute('data-cloud-list')) { openCloudRecords(); return; }
     if (b.hasAttribute('data-cloud-close')) { document.getElementById('cloud-dialog').close(); return; }
+    if (b.hasAttribute('data-cloud-del')) { deleteCloudRecord(+b.dataset.cloudDel); return; }
     if (b.hasAttribute('data-cloud-open')) { loadCloudRecord(+b.dataset.cloudOpen); return; }
     if (b.hasAttribute('data-cloud-overwrite')) {
       const slot = +b.dataset.cloudOverwrite;
