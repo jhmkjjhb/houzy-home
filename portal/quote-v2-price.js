@@ -209,6 +209,18 @@
   // 选材价差：键为「类别.选项.值」，内容为各项目在标准价上的加减（RM/单位）。公司核定后在这里登记。
   // 例：'tile.floorSize.600×1200 mm': { floor_tile: { mat: 2, lab: 0.5 } }
   root.QV2_OPTION_PRICES = {};
+  // 2026-11-26 LED 发光铝合金天花线条（淘宝「弧形双面发光铝槽+220V 灯带」，人民币标价直接当马币，再加 30%（赚汇率差），按 1 米 = 3.28 尺折成每尺）
+  // 标准 = 大号+单色灯带 ¥14.2/米；只含材料，安装人工在价目表「人工」栏另填
+  root.QV2_PRICE.led_cove = { stage: 'ceil', name: 'LED 发光铝合金天花线条（含 220V 灯带）', unit: '延尺', mat: 5.63, aux: 0, lab: 0, waste: 0, desc: '铝合金发光线条贴天花与墙面交角，内置 220V 灯带；转角用阳角配件；预留灯带电源' };
+  root.QV2_PRICE.led_cove_corner = { stage: 'ceil', name: 'LED 发光线条 90° 阳角配件', unit: '个', mat: 9.88, aux: 0, lab: 0, waste: 0, desc: '外转角（阳角）专用配件' };
+  root.QV2_OPTION_PRICES['base.ledCove.大号·三色光灯带'] = { led_cove: { mat: 1.5 } };
+  root.QV2_OPTION_PRICES['base.ledCove.小号·单色灯带（白/暖/中性光）'] = { led_cove: { mat: 0.0 } };
+  root.QV2_OPTION_PRICES['base.ledCove.小号·三色光灯带'] = { led_cove: { mat: 0.75 } };
+  root.QV2_OPTION_PRICES['base.ledCove.特大号·单色灯带（白/暖/中性光）'] = { led_cove: { mat: 1.5 } };
+  root.QV2_OPTION_PRICES['base.ledCove.特大号·三色光灯带'] = { led_cove: { mat: 2.69 } };
+  root.QV2_OPTION_PRICES['base.ledCove.大号·不含光源（白罩）'] = { led_cove: { mat: -2.62 } };
+  root.QV2_OPTION_PRICES['base.ledCove.大号·不含光源（黑罩）'] = { led_cove: { mat: -1.87 } };
+  root.QV2_OPTION_PRICES['base.ledCove.特大号·不含光源'] = { led_cove: { mat: -1.11 } };
   root.QV2_STAGES = [{"id":"prep","no":1,"name":"拆改与现场保护"},{"id":"mep","no":2,"name":"水电隐蔽"},{"id":"wp","no":3,"name":"防水"},{"id":"tile","no":4,"name":"泥水瓷砖 / 地面"},{"id":"ceil","no":5,"name":"天花墙面"},{"id":"custom","no":6,"name":"定制柜与门窗"},{"id":"equip","no":7,"name":"设备安装与收尾"},{"id":"outdoor","no":8,"name":"户外与外围工程"},{"id":"soft","no":9,"name":"软装"}];
   // ---------- 参考价（公司还没核定的项目先有个价，报价单和价目表都标「参考价」）----------
   // 来源：2025-2026 新山 / 马来西亚公开报价（Qanvast、RenovationKL、承包商报价、家具店）取中间偏下，含工含料卖价。公司核定后在价目表里改掉即可。

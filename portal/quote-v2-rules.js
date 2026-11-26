@@ -89,7 +89,7 @@
   }
 
   // ---------- 空间类型：默认尺寸、门数、可选项目 ----------
-  const DRY = ['wall_work', 'demo_cab', 'demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
+  const DRY = ['wall_work', 'demo_cab', 'demo_floor', 'demo_skin', 'demo_ceiling', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'led_cove', 'electric', 'aircon', 'fan', 'curtain', 'sill', 'fly_screen', 'door', 'window_new', 'slide_door', 'glass_part', 'damp_proof', 'window_casing', 'mirror_wall', 'floor_raise', 'wall_mesh', 'floor_refinish', 'wall_core', 'smart_room'];
   const ROOMS = {
     living:  { label: '客厅', icon: '🛋️', L: 20, W: 14, doors: 0, packs: [...DRY, 'tv_cab', 'shoe_cab', 'altar', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'soft_panel', 'bar_counter', 'floor_border', 'mosaic', 'culture_stone', 'glass_block', 'bay_window', 'audio_wire'] },
     dining:  { label: '餐厅', icon: '🍽️', L: 12, W: 10, doors: 0, packs: [...DRY, 'sideboard', 'soft_dining', 'slab_wall', 'wall_panel', 'wine_cab', 'bar_counter', 'floor_border'] },
@@ -102,7 +102,7 @@
     balcony: { label: '阳台', icon: '🌿', L: 10, W: 4, doors: 0, wet: true, confirmWall: true, packs: ['demo_floor', 'wet_tile', 'rack', 'electric', 'balc_seal', 'sun_canopy', 'sunroom', 'soft_out', 'mop_sink', 'mosaic', 'culture_stone', 'decking', 'wall_work', 'demo_cab'] },
     family:  { label: '家庭厅', icon: '🛋️', L: 14, W: 12, doors: 0, packs: [...DRY, 'tv_cab', 'bookcase', 'soft_living', 'slab_wall', 'wall_panel', 'wine_cab', 'tatami', 'soft_panel', 'floor_border', 'culture_stone', 'audio_wire'] },
     store:   { label: '储物间', icon: '📦', L: 6, W: 5, doors: 1, packs: ['demo_floor', 'floor', 'wall_finish', 'ceil_paint', 'electric', 'bookcase', 'door', 'damp_proof', 'wall_work', 'demo_cab'] },
-    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh', 'smart_room', 'wall_work', 'demo_cab'] },
+    corridor:{ label: '走廊/玄关', icon: '🚶', L: 12, W: 4, doors: 0, packs: ['demo_floor', 'floor', 'wall_finish', 'ceiling', 'ceil_paint', 'cornice', 'led_cove', 'electric', 'shoe_cab', 'slab_wall', 'wall_panel', 'glass_part', 'damp_proof', 'floor_border', 'glass_block', 'mirror_wall', 'wall_mesh', 'smart_room', 'wall_work', 'demo_cab'] },
     stairs:  { label: '楼梯', icon: '🪜', L: 12, W: 4, doors: 0, packs: ['stair_tile', 'stair_rail', 'stair_step_light', 'stair_light', 'wall_finish', 'scaffold'] },
     yard:    { label: '后院/花园', icon: '🌳', L: 20, W: 8, doors: 0, outdoor: true, packs: ['porch_tile', 'drain_ch', 'awning', 'sunroom', 'garden_light', 'soft_out', 'culture_stone', 'decking'] },
     // 加建空间：新建的地基、墙、屋顶按地面面积自动算；里面的地砖、水电等照常选
@@ -248,6 +248,7 @@
       wp: { label: '防水涂料', opts: ['JS 柔性防水', '聚氨酯防水', '防水卷材'], std: 'JS 柔性防水', codes: ['wp', 'wp_bath'] },
       pipe: { label: '水管', opts: ['PPR 水管', 'PEX 水管', '不锈钢水管'], std: 'PPR 水管', codes: ['water_pt'] },
       wire: { label: '电线品牌', opts: ['普通 SIRIM 认证电线', 'Southern Cable', 'Tai Sin', 'Power Cables Malaysia', 'Sindutch Cable（Prysmian）', 'Fujikura'], std: '普通 SIRIM 认证电线', codes: ['wire'] },
+      ledCove: { label: 'LED 发光线条规格', opts: ['大号·单色灯带（白/暖/中性光）', '大号·三色光灯带', '小号·单色灯带（白/暖/中性光）', '小号·三色光灯带', '特大号·单色灯带（白/暖/中性光）', '特大号·三色光灯带', '大号·不含光源（白罩）', '大号·不含光源（黑罩）', '特大号·不含光源'], std: '大号·单色灯带（白/暖/中性光）', codes: ['led_cove'] },
       cornice: { label: '天花线条材料', opts: ['石膏线', 'PU 线条', '铝合金线条'], std: '石膏线', codes: ['cornice'] }
     } },
     soft2: { label: '窗帘 / 晾衣架 / 吊扇', icon: '🎐', keys: {
@@ -364,6 +365,8 @@
     ceiling:        { g: 'ceil', area: ['floor'], label: '天花吊顶', icon: '⬜', hint: '平顶、L-box、叠级、格栅、铝扣板等做法选上后在卡片里定；窗帘盒随「窗帘」自动加',
                       lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
     ceil_paint:     { g: 'ceil', area: ['floor'], label: '天花重刷（不吊顶）', icon: '🖌️', lines: (r, g) => [['paint_ceiling', g.floor, '天花面积']] },
+    led_cove:       { g: 'ceil', label: 'LED 发光铝合金线条（灯槽）', icon: '💡', hint: '天花与墙交角的发光线条，含 220V 灯带；规格（大小号、单色/三色光）在「④ 选材」里定', inputs: [{ k: 'len', label: '线条长度', unit: '延尺', def: (r, g) => g.perim }, { k: 'corner', label: '90° 阳角配件', unit: '个', def: () => 0, opt: true }],
+                      lines: (r, g, v) => [['led_cove', v.len, num(v.len) === g.perim ? '= 周长' : '按实际做的长度'], ['led_cove_corner', num(v.corner), '外转角']] },
     cornice:        { g: 'ceil', label: '石膏线 / 铝合金线条', icon: '〰️', hint: '不做吊顶也可以单独选；石膏线、PU、铝合金在「④ 选材」里定', inputs: [{ k: 'len', label: '线条长度', unit: '延尺', def: (r, g) => g.perim }],
                       lines: (r, g, v) => [['cornice', v.len, num(v.len) === g.perim ? '= 周长' : '按实际做的长度']] },
     bath_ceil:      { g: 'ceil', area: ['floor'], label: '防潮天花', icon: '⬜', lines: (r, g, v, picked, sp) => ceilLines(g, v, sp('ceiling', 'style')) },
