@@ -430,6 +430,17 @@
   .lang-switch button { border:0; border-radius:6px; padding:6px 9px; background:transparent; color:#e4cf9b; font-size:12px; font-weight:600; }
   .lang-switch button[aria-pressed="true"] { background:#c8a96e; color:#153927; }
   .tabs { padding-top:2px; padding-bottom:11px; }
+  /* 页头可折叠：收起后只留品牌、客户名、总额和一行页签 */
+  .headToggle { flex:none; padding:6px 10px; border:1px solid #c8a96e88; border-radius:7px; background:transparent; color:#e4cf9b; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .headToggle:hover { background:#245640; }
+  .headInfo { display:none; color:#e4cf9b; font-size:13px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  body.head-min .top .in { min-height:0; padding-top:6px; padding-bottom:6px; }
+  body.head-min .top .return-system, body.head-min .top .newQuote, body.head-min .top .cust, body.head-min .top [data-save-client], body.head-min .top [data-client-save-status], body.head-min .top .lang-switch, body.head-min .top .demoBtn, body.head-min .top .brandtitle small { display:none !important; }
+  body.head-min .top .headInfo { display:block; }
+  body.head-min .top .sum small { display:none; }
+  body.head-min .top .sum b { font-size:17px; }
+  body.head-min .tabs { display:flex; overflow-x:auto; padding-bottom:6px; }
+  body.head-min .tab { flex:1 0 auto; min-width:74px; padding:5px 6px; font-size:12px; }
   .tab { background:#245640; border-color:#486f55; color:#f3f1e9; border-radius:7px; }
   .tab.on { background:#c8a96e; border-color:#c8a96e; color:#153927; }
   .tab:hover:not(.on) { background:#315f42; }
@@ -481,7 +492,9 @@
     <button type="button" class="btn" data-save-client>保存到云端客户档案</button><span class="hint" data-client-save-status role="status" aria-live="polite" style="margin:0"></span>
     <div class="lang-switch" role="group" aria-label="Language / 语言"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
     <button class="btn pri demoBtn" data-demo="open"><span id="playIc"></span> 演示给客户</button>
+    <span class="headInfo" id="headInfo"></span>
     <div class="sum"><small>报价总额</small><b class="mono" id="grand">RM 0</b></div>
+    <button type="button" class="headToggle noprint" id="headToggle" aria-expanded="true" title="收起 / 展开页头">▴ 收起</button>
   </div>
   <div class="tabs" id="tabs"></div>
 </div>
@@ -659,6 +672,16 @@
   let cloudListState = 'idle';
   let cloudListError = '';
   let cloudBusy = false;
+  // 页头收起/展开（记在本机）
+  function headInfoText() { const i = P.info || {}; return [i.name, i.phone].filter(Boolean).join(' · ') || '（客户资料未填）'; }
+  function setHeadMin(on) {
+    document.body.classList.toggle('head-min', on);
+    const b = document.getElementById('headToggle'); if (b) { b.textContent = on ? '▾ 展开' : '▴ 收起'; b.setAttribute('aria-expanded', String(!on)); }
+    const h = document.getElementById('headInfo'); if (h) h.textContent = headInfoText();
+    try { localStorage.setItem('houzy-quote-v2-headmin', on ? '1' : '0'); } catch (e) {}
+  }
+  document.getElementById('headToggle')?.addEventListener('click', () => setHeadMin(!document.body.classList.contains('head-min')));
+  try { if (localStorage.getItem('houzy-quote-v2-headmin') === '1') setHeadMin(true); } catch (e) {}
   let tab = new URLSearchParams(location.search).get('tab') === 'supplier' ? 'supplier' : P.houseType ? 'room' : 'house';
   let roomId = P.rooms[0]?.id || null;
   let confirmReset = false;
@@ -1919,6 +1942,7 @@
     P.info = { name: '', phone: '', address: '', ...(P.info || {}) };
     const C = compute(); if (persist) save();
     document.getElementById('grand').textContent = rm(C.T.total);
+    { const hi = document.getElementById('headInfo'); if (hi) hi.textContent = headInfoText(); }
     const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['supplier', '供应商询价'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     document.getElementById('viewer').innerHTML = viewerHtml();
