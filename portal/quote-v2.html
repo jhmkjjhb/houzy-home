@@ -1007,9 +1007,16 @@
       if (existing?.length) {
         const customer = existing[0];
         const unchanged = customer.name === info.name && (customer.address || '') === info.address;
-        report(unchanged
-          ? (uiLang === 'en' ? 'This customer is already saved in the cloud.' : '该客户已保存在云端客户档案。')
-          : (uiLang === 'en' ? 'This phone is already in cloud records. Details were not overwritten; edit them in Staff System → Customers.' : '该手机号已有云端档案，资料不同；未覆盖，请到员工系统「客户管理」修改。'), unchanged);
+        if (unchanged) { report(uiLang === 'en' ? 'This customer is already saved in the cloud.' : '该客户已保存在云端客户档案。', true); return; }
+        // 资料不同：问一次，确认后用报价器里的姓名、地址覆盖云端档案
+        const ask = uiLang === 'en'
+          ? `This phone is already in cloud records:\nName: ${customer.name}\nAddress: ${customer.address || '-'}\n\nOverwrite with:\nName: ${info.name}\nAddress: ${info.address}?`
+          : `云端已有这个手机号的客户：\n姓名：${customer.name}\n地址：${customer.address || '（空）'}\n\n要改成报价器里的资料吗？\n姓名：${info.name}\n地址：${info.address}`;
+        if (!confirm(ask)) { report(uiLang === 'en' ? 'Not overwritten.' : '没有覆盖，云端档案保持原样。'); return; }
+        const { data: updated, error: updateError } = await sb.from('customers').update({ name: info.name, address: info.address }).eq('id', customer.id).select('id');
+        if (updateError) throw updateError;
+        if (!updated?.length) { report(uiLang === 'en' ? 'No permission to overwrite this customer (created by a colleague). Ask a manager to edit it in Staff System → Customers.' : '这位客户是同事建的，你没有权限覆盖；请店长到员工系统「客户管理」修改。'); return; }
+        report(uiLang === 'en' ? 'Cloud customer record updated.' : '已覆盖云端客户档案。', true);
         return;
       }
       const { data: customer, error: insertError } = await sb.from('customers')
