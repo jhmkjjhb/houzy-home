@@ -2615,7 +2615,7 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.hasAttribute('data-qqtyreset')) { if (P.qtyFix) delete P.qtyFix[b.dataset.qqtyreset]; render(); return; }
-    if (b.hasAttribute('data-qdrop')) { (P.drop = P.drop || {})[b.dataset.qdrop] = true; render(); return; }
+    if (b.hasAttribute('data-qdrop')) { const [rid, code] = b.dataset.qdrop.split('|'), r = rid && P.rooms.find(x => x.id === rid); if (!confirm(`去掉「${PRICE[code]?.name || code}」（${r ? Q.roomLabel(r, P) : '全屋'}）？\n去掉后不计入报价，可在报价单下面「已去掉」里恢复。`)) return; (P.drop = P.drop || {})[b.dataset.qdrop] = true; render(); return; }
     if (b.hasAttribute('data-qundrop')) { if (P.drop) delete P.drop[b.dataset.qundrop]; render(); return; }
     if (b.hasAttribute('data-cloud-save')) { saveCloudRecord(); return; }
     if (b.hasAttribute('data-cloud-refresh')) { refreshCloudRecords(); return; }
