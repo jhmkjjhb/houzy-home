@@ -1768,6 +1768,11 @@
       <div class="row" style="margin-top:12px">${field(`管理费（硬装直接费 × %，软装不收）= ${rm(T.mgmt)}`, '%', stepper('data-setting="mgmtRate"', T.settings.mgmtRate, 1))}${field(`不可预见费（硬装直接费 × %）= ${rm(T.cont)}`, '%', stepper('data-setting="contRate"', T.settings.contRate, 1))}${field(`SST = ${rm(T.sst)}`, '%', stepper('data-setting="sst"', T.settings.sst, 1))}</div>
       <div class="row" style="margin-top:8px"><label class="fld"><span><input type="checkbox" data-design ${pget('design') !== false ? 'checked' : ''}> 收设计费（有施工的室内面积 ${nf(T.floorSum)} 平方尺 × 单价）= ${rm(T.design)}</span></label>${field('设计费单价', 'RM/平方尺', stepper('data-setting="designRate"', T.settings.designRate, 1))}
       ${field('优惠金额', 'RM', stepper(`data-discount`, pget('discount', 0) || 0, 100))}</div>
+      ${(() => { const pay = T.settings.pay, sum = Math.round(pay.reduce((t, [, x]) => t + num(x), 0) * 100) / 100, own = plan().settings?.pay !== undefined;
+        return `<div class="paybox" style="margin-top:12px"><b>付款节点</b> <span class="hint" style="margin:0">（只改本方案；比例合计要 100%）</span>
+        ${T.pay.map((x, i) => `<div class="row" style="margin-top:6px;align-items:center;gap:6px"><span class="mono" style="min-width:3em">第 ${i + 1} 期</span><input class="cust" style="flex:1;min-width:140px" data-payname="${i}" value="${esc(pay[i][0])}" aria-label="第 ${i + 1} 期名称"><input class="cust mono" style="width:70px;text-align:right" inputmode="decimal" data-paypct="${i}" value="${nf(pay[i][1])}" aria-label="第 ${i + 1} 期比例"> % <span class="mono" style="min-width:7em;text-align:right">${rm(x.amt)}</span>${pay.length > 1 ? `<button type="button" class="qdrop" data-paydel="${i}" title="删掉这一期">×</button>` : ''}</div>`).join('')}
+        <div class="adds" style="margin-top:6px"><button type="button" class="chip" data-payadd>＋ 加一期</button>${own ? '<button type="button" class="chip" data-payreset>恢复默认（30/30/30/10）</button>' : ''}</div>
+        ${sum !== 100 ? `<p class="hint" style="color:var(--red);margin:6px 0 0">现在比例合计 ${nf(sum)}%，不是 100%。最后一期会自动补齐差额，请把比例改对。</p>` : ''}</div>`; })()}
       <p class="hint" style="margin-top:8px">不含在报价里、要提前告诉客户的：物业装修押金（客户直接交物业，完工退还）、施工期间水电费、白蚁防治 / 大垃圾箱 / 工程保险（需要的话在上面「结构与申请」里选）。</p></div>`;
     allDoneMsg = null;
     h += `<div class="donebar" style="justify-content:flex-end"><button class="btn pri" data-tospec>全屋项目填好了，下一步：选怎么做、用什么材料 →</button></div>`;
@@ -2797,6 +2802,13 @@
     else if (ds.feeqty) { pobj('feeQty')[ds.feeqty] = v; }
     else if (ds.setting) { pobj('settings')[ds.setting] = v; }
   }
+  // 付款节点：名称、比例改完（离开输入框）才算，免得打字时整页刷新
+  const payList = () => { const st = pobj('settings'); if (!Array.isArray(st.pay)) st.pay = JSON.parse(JSON.stringify(Q.totals(P, Q.buildLines(P)).settings.pay)); return st.pay; };
+  document.addEventListener('change', e => {
+    const ds = e.target.dataset;
+    if (ds.payname !== undefined) { const v = e.target.value.trim(); if (!v) { render(); return; } payList()[+ds.payname][0] = v; render(); }
+    else if (ds.paypct !== undefined) { const v = num(String(e.target.value).replace(/[^\d.]/g, '')); if (!(v >= 0 && v <= 100)) { alert('比例要在 0–100 之间'); render(); return; } payList()[+ds.paypct][1] = v; render(); }
+  });
   document.addEventListener('input', e => {
     const t = e.target;
     if (t.dataset.info) { if (t.dataset.info === 'phone' && cloudCurrent && cloudCurrent.phone !== t.value) unlinkCloud(); P.info[t.dataset.info] = t.value; t.setAttribute('aria-invalid', 'false'); save(); return; }
@@ -2823,6 +2835,9 @@
     if (b.hasAttribute('data-qopenall')) { const qv = P.quoteView || 'stage'; document.querySelectorAll('tr[data-qgrp]').forEach(tr => b.dataset.qopenall === '1' ? qOpen.add(tr.dataset.qgrp) : qOpen.delete(tr.dataset.qgrp)); saveQOpen(); render(); return; }
     if (b.hasAttribute('data-qdup')) { const [roomId, pack, code, qty] = b.dataset.qdup.split('|'); (plan().dups = plan().dups || []).push({ id: 'd' + Date.now().toString(36), roomId, pack, code, qty: num(qty) }); render(); return; }
     if (b.hasAttribute('data-qdupdel')) { if (!confirm('删掉复制增加的这一组？')) return; const pl = plan(); pl.dups = (pl.dups || []).filter(d => d.id !== b.dataset.qdupdel); render(); return; }
+    if (b.hasAttribute('data-payadd')) { const pay = payList(); pay.push([`第 ${pay.length + 1} 期`, 0]); render(); return; }
+    if (b.dataset.paydel !== undefined) { const pay = payList(); if (pay.length > 1 && confirm(`删掉「${pay[+b.dataset.paydel][0]}」这一期？`)) { pay.splice(+b.dataset.paydel, 1); render(); } return; }
+    if (b.hasAttribute('data-payreset')) { delete pobj('settings').pay; render(); return; }
     if (b.hasAttribute('data-qqtyfrom')) { const k = b.dataset.qqtyfrom, q = num(b.dataset.qty), pl = plan();
       if (k.startsWith('dup:')) { const d = (pl.dups || []).find(x => x.id === k.slice(4)); if (d) d.qty = q; } else (pl.qtyFix = pl.qtyFix || {})[k] = q;
       render(); return; }
