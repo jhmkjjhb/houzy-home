@@ -49,6 +49,25 @@ CREATE INDEX IF NOT EXISTS reno_expenses_project ON public.renovation_expenses(p
 CREATE INDEX IF NOT EXISTS reno_expenses_store ON public.renovation_expenses(store_id,status,spent_on);
 CREATE INDEX IF NOT EXISTS reno_expenses_creator ON public.renovation_expenses(created_by,created_at DESC);
 
+-- 2b. 普通商品订单也能挂支出；币种跟订单走（新加坡店是 SGD）；单据照片指纹（防同一张照片报两次）
+ALTER TABLE public.renovation_expenses ADD COLUMN IF NOT EXISTS order_id uuid REFERENCES public.orders(id);
+ALTER TABLE public.renovation_expenses ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'MYR';
+ALTER TABLE public.renovation_expenses ADD COLUMN IF NOT EXISTS doc_hashes jsonb NOT NULL DEFAULT '[]'::jsonb;
+CREATE INDEX IF NOT EXISTS reno_expenses_order ON public.renovation_expenses(order_id,spent_on);
+CREATE INDEX IF NOT EXISTS reno_expenses_docno ON public.renovation_expenses(lower(payee),doc_no) WHERE doc_no<>'';
+DO $c$
+DECLARE c record;
+BEGIN
+ FOR c IN SELECT conname FROM pg_constraint WHERE conrelid='public.renovation_expenses'::regclass AND contype='c'
+  AND pg_get_constraintdef(oid) ~ 'project_id IS NOT NULL\) OR \(category' LOOP
+  EXECUTE format('ALTER TABLE public.renovation_expenses DROP CONSTRAINT %I',c.conname);
+ END LOOP;
+END $c$;
+ALTER TABLE public.renovation_expenses DROP CONSTRAINT IF EXISTS reno_expenses_target;
+ALTER TABLE public.renovation_expenses ADD CONSTRAINT reno_expenses_target CHECK(num_nonnulls(project_id,order_id)<=1 AND (category='overhead')=(project_id IS NULL AND order_id IS NULL));
+ALTER TABLE public.renovation_expenses DROP CONSTRAINT IF EXISTS reno_expenses_currency;
+ALTER TABLE public.renovation_expenses ADD CONSTRAINT reno_expenses_currency CHECK(currency ~ '^[A-Z]{3}$');
+
 -- 谁是财务（含总经理及以上，他们也能付款）
 CREATE OR REPLACE FUNCTION public._is_finance()
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
@@ -91,48 +110,117 @@ DROP POLICY IF EXISTS reno_expense_doc_read ON storage.objects;
 CREATE POLICY reno_expense_doc_read ON storage.objects FOR SELECT TO authenticated
  USING(bucket_id='renovation-expenses' AND public._expense_doc_readable(name));
 
--- 4. 我能给哪些项目 / 门店请款：项目（含未作废的子订单）+ 门店（店长及以上、财务才能记门店开销）
+-- 4. 请款入口：我的角色、能记门店开销的门店、我负责的工地 + 我最近请过款的单（订单多了靠下面的搜索）
+CREATE OR REPLACE FUNCTION public._expense_project_ok(p_project uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+ SELECT EXISTS(SELECT 1 FROM renovation_projects p WHERE p.id=p_project AND p.state IN ('confirmed','executing','accepted')
+  AND (public._reno_access(p.store_id,p.created_by) OR public._is_finance()
+   OR EXISTS(SELECT 1 FROM renovation_site_supervisors s WHERE s.project_id=p.id AND s.profile_id=auth.uid() AND s.active AND s.kind='internal')));
+$$;
+REVOKE ALL ON FUNCTION public._expense_project_ok(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public._expense_project_ok(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public._expense_order_ok(p_order uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+ SELECT EXISTS(SELECT 1 FROM orders o WHERE o.id=p_order AND o.status<>'cancelled'
+  AND (public._is_finance() OR (EXISTS(SELECT 1 FROM profiles WHERE id=auth.uid() AND active AND role IN ('staff','store_manager','regional_manager','general_manager','admin','superadmin'))
+   AND public._order_row_visible(o.id,o.store_id,o.staff_id,o.supplier_id,o.status))));
+$$;
+REVOKE ALL ON FUNCTION public._expense_order_ok(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public._expense_order_ok(uuid) TO authenticated;
+
+-- 一张可以请款的单（整装单或普通订单）给页面用的样子
+CREATE OR REPLACE FUNCTION public._expense_target_json(p_kind text,p_id uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+ SELECT CASE WHEN p_kind='project' THEN (SELECT jsonb_build_object('kind','project','id',p.id,'store_id',p.store_id,'no',p.contract_no,'contract_no',p.contract_no,'customer_name',p.customer_name,'address',p.address,'state',p.state,'currency','MYR',
+   'work_orders',coalesce((SELECT jsonb_agg(jsonb_build_object('id',w.id,'name',w.group_name,'assignee',w.assignee) ORDER BY w.group_name) FROM renovation_work_orders w WHERE w.project_id=p.id AND w.cancelled_at IS NULL),'[]'::jsonb))
+   FROM renovation_projects p WHERE p.id=p_id)
+ ELSE (SELECT jsonb_build_object('kind','order','id',o.id,'store_id',o.store_id,'no',o.order_no,'customer_name',c.name,'address',coalesce(c.address,''),'state',o.status,
+   'currency',upper(coalesce(nullif(to_jsonb(o)->>'currency',''),'MYR')),'supplier',sp.name,'description',left(coalesce(o.description,''),80),'work_orders','[]'::jsonb)
+   FROM orders o LEFT JOIN customers c ON c.id=o.customer_id LEFT JOIN suppliers sp ON sp.id=o.supplier_id WHERE o.id=p_id) END;
+$$;
+REVOKE ALL ON FUNCTION public._expense_target_json(text,uuid) FROM PUBLIC,anon,authenticated;
+
 CREATE OR REPLACE FUNCTION public.renovation_expense_targets()
 RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
  SELECT jsonb_build_object(
   'role',(SELECT role FROM profiles WHERE id=auth.uid()),
   'finance',public._is_finance(),
-  'projects',coalesce((SELECT jsonb_agg(jsonb_build_object('id',p.id,'store_id',p.store_id,'contract_no',p.contract_no,'customer_name',p.customer_name,'address',p.address,
-     'work_orders',coalesce((SELECT jsonb_agg(jsonb_build_object('id',w.id,'name',w.group_name,'assignee',w.assignee) ORDER BY w.group_name) FROM renovation_work_orders w WHERE w.project_id=p.id AND w.cancelled_at IS NULL),'[]'::jsonb))
-    ORDER BY p.created_at DESC)
-   FROM renovation_projects p WHERE p.state IN ('confirmed','executing','accepted')
-    AND (public._reno_access(p.store_id,p.created_by) OR public._is_finance()
-     OR EXISTS(SELECT 1 FROM renovation_site_supervisors s WHERE s.project_id=p.id AND s.profile_id=auth.uid() AND s.active AND s.kind='internal'))),'[]'::jsonb),
+  -- 我负责的工地 + 最近 10 张我请过款的单
+  'projects',coalesce((SELECT jsonb_agg(t ORDER BY ord) FROM (
+    SELECT public._expense_target_json('project',s.project_id) t,0 ord FROM renovation_site_supervisors s
+     WHERE s.profile_id=auth.uid() AND s.active AND s.kind='internal' AND public._expense_project_ok(s.project_id)
+    UNION ALL
+    SELECT public._expense_target_json(k,id),1 FROM (
+     SELECT CASE WHEN project_id IS NOT NULL THEN 'project' ELSE 'order' END k,coalesce(project_id,order_id) id,max(created_at) last
+     FROM renovation_expenses WHERE created_by=auth.uid() AND coalesce(project_id,order_id) IS NOT NULL GROUP BY 1,2 ORDER BY 3 DESC LIMIT 10) r
+     WHERE (k='project' AND public._expense_project_ok(id) AND NOT EXISTS(SELECT 1 FROM renovation_site_supervisors s WHERE s.project_id=r.id AND s.profile_id=auth.uid() AND s.active AND s.kind='internal'))
+      OR (k='order' AND public._expense_order_ok(id))) q),'[]'::jsonb),
   'stores',coalesce((SELECT jsonb_agg(jsonb_build_object('id',s.id,'name',s.name) ORDER BY s.name) FROM stores s WHERE s.active AND (public._is_finance() OR public._expense_manager(s.id))),'[]'::jsonb),
   'all_stores',coalesce((SELECT jsonb_agg(jsonb_build_object('id',s.id,'name',s.name) ORDER BY s.name) FROM stores s),'[]'::jsonb));
 $$;
 REVOKE ALL ON FUNCTION public.renovation_expense_targets() FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.renovation_expense_targets() TO authenticated;
 
+-- 搜单：合同号 / 单号 / 客户名 / 电话后几位 / 地址，整装单和普通订单一起找，最多 20 张。
+-- 默认只找还在进行的（整装未验收、普通订单未完成，或 90 天内完工的）；p_all=true 包括更早完工的。p_id 直接取一张。
+CREATE OR REPLACE FUNCTION public.renovation_expense_search(p_q text DEFAULT '',p_all boolean DEFAULT false,p_kind text DEFAULT NULL,p_id uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
+DECLARE q text:=lower(btrim(coalesce(p_q,'')));d text:=regexp_replace(coalesce(p_q,''),'\D','','g');out jsonb;
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION '请先登录' USING ERRCODE='42501'; END IF;
+ IF p_id IS NOT NULL THEN
+  IF (p_kind='project' AND public._expense_project_ok(p_id)) OR (p_kind='order' AND public._expense_order_ok(p_id)) THEN RETURN jsonb_build_array(public._expense_target_json(p_kind,p_id)); END IF;
+  RETURN '[]'::jsonb;
+ END IF;
+ IF length(q)<2 THEN RETURN '[]'::jsonb; END IF;
+ SELECT coalesce(jsonb_agg(public._expense_target_json(k,id) ORDER BY t DESC),'[]'::jsonb) INTO out FROM (
+  (SELECT 'project' k,p.id,p.created_at t FROM renovation_projects p
+   WHERE (position(q IN lower(p.contract_no))>0 OR position(q IN lower(p.customer_name))>0 OR position(q IN lower(p.address))>0
+     OR (length(d)>=4 AND right(regexp_replace(coalesce(p.customer_phone,''),'\D','','g'),length(d))=d))
+    AND (p_all OR p.state IN ('confirmed','executing') OR (p.state='accepted' AND p.updated_at>now()-interval '90 days'))
+    AND public._expense_project_ok(p.id) ORDER BY p.created_at DESC LIMIT 20)
+  UNION ALL
+  (SELECT 'order',o.id,o.created_at FROM orders o LEFT JOIN customers c ON c.id=o.customer_id
+   WHERE (position(q IN lower(o.order_no))>0 OR position(q IN lower(coalesce(c.name,'')))>0 OR position(q IN lower(coalesce(c.address,'')))>0
+     OR (length(d)>=4 AND right(regexp_replace(coalesce(c.phone,''),'\D','','g'),length(d))=d))
+    AND o.status<>'cancelled' AND (p_all OR o.status NOT IN ('completed','closed') OR coalesce(o.completed_at,o.updated_at)>now()-interval '90 days')
+    AND public._expense_order_ok(o.id) ORDER BY o.created_at DESC LIMIT 20)) r;
+ RETURN (SELECT coalesce(jsonb_agg(x),'[]'::jsonb) FROM (SELECT x FROM jsonb_array_elements(out) x LIMIT 20) y);
+END $$;
+REVOKE ALL ON FUNCTION public.renovation_expense_search(text,boolean,text,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.renovation_expense_search(text,boolean,text,uuid) TO authenticated;
+
 -- 5. 提交请款。p_data: {project_id|store_id, work_order_id, category, payee, payee_bank, amount, sst, doc_type, doc_no, docs:[path], spent_on, note}
 --    一笔钱分到几个子订单：前端拆成几次提交，单据照片共用。
 CREATE OR REPLACE FUNCTION public.renovation_expense_submit(p_data jsonb)
 RETURNS public.renovation_expenses LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
-DECLARE p renovation_projects%ROWTYPE;w renovation_work_orders%ROWTYPE;e renovation_expenses%ROWTYPE;
- v_store uuid;v_amount numeric;v_total numeric;v_sst numeric;v_proof text;v_docs jsonb:=p_data->'docs';x jsonb;v_cat text:=p_data->>'category';v_day date;
+DECLARE p renovation_projects%ROWTYPE;w renovation_work_orders%ROWTYPE;e renovation_expenses%ROWTYPE;o orders%ROWTYPE;dup renovation_expenses%ROWTYPE;
+ v_cur text:='MYR';v_hashes jsonb:=coalesce(p_data->'doc_hashes','[]'::jsonb);v_store uuid;v_amount numeric;v_total numeric;v_sst numeric;v_proof text;v_docs jsonb:=p_data->'docs';x jsonb;v_cat text:=p_data->>'category';v_day date;
 BEGIN
  IF auth.uid() IS NULL OR NOT EXISTS(SELECT 1 FROM profiles WHERE id=auth.uid() AND active) THEN RAISE EXCEPTION '请先登录' USING ERRCODE='42501'; END IF;
  IF coalesce(p_data->>'project_id','')<>'' THEN
   SELECT * INTO p FROM renovation_projects WHERE id=(p_data->>'project_id')::uuid;
   IF p.id IS NULL OR NOT (public._reno_access(p.store_id,p.created_by) OR public._is_finance()
    OR EXISTS(SELECT 1 FROM renovation_site_supervisors s WHERE s.project_id=p.id AND s.profile_id=auth.uid() AND s.active AND s.kind='internal')) THEN RAISE EXCEPTION '你没有这个项目的权限'; END IF;
-  IF p.state NOT IN ('confirmed','executing','accepted') THEN RAISE EXCEPTION '合同确认后才能记这一单的支出'; END IF;
+  IF NOT public._expense_project_ok(p.id) THEN RAISE EXCEPTION '合同确认后才能记这一单的支出'; END IF;
   v_store:=p.store_id;
   IF v_cat='overhead' THEN RAISE EXCEPTION '门店开销不要挂在项目上'; END IF;
   IF coalesce(p_data->>'work_order_id','')<>'' THEN
    SELECT * INTO w FROM renovation_work_orders WHERE id=(p_data->>'work_order_id')::uuid AND project_id=p.id AND cancelled_at IS NULL;
    IF w.id IS NULL THEN RAISE EXCEPTION '子订单不存在或已作废'; END IF;
   END IF;
+ ELSIF coalesce(p_data->>'order_id','')<>'' THEN
+  SELECT * INTO o FROM orders WHERE id=(p_data->>'order_id')::uuid;
+  IF o.id IS NULL OR NOT public._expense_order_ok(o.id) THEN RAISE EXCEPTION '你没有这张订单的权限，或订单已取消'; END IF;
+  IF v_cat='overhead' THEN RAISE EXCEPTION '门店开销不要挂在订单上'; END IF;
+  v_store:=o.store_id;v_cur:=upper(coalesce(nullif(to_jsonb(o)->>'currency',''),'MYR'));
  ELSE
   v_store:=nullif(p_data->>'store_id','')::uuid;
   IF v_store IS NULL OR NOT (public._is_finance() OR public._expense_manager(v_store)) THEN RAISE EXCEPTION '门店开销只有店长或财务能记'; END IF;
   v_cat:='overhead';
+  v_cur:=CASE WHEN upper(coalesce(p_data->>'currency',''))='SGD' THEN 'SGD' ELSE 'MYR' END;
  END IF;
+ IF v_cat IS NULL OR v_cat NOT IN ('material','labour','subcontract','transport','misc','commission','overhead') THEN RAISE EXCEPTION '请选类别'; END IF;
  v_amount:=round(nullif(p_data->>'amount','')::numeric,2);v_sst:=round(coalesce(nullif(p_data->>'sst','')::numeric,0),2);
  IF v_amount IS NULL OR v_amount<=0 THEN RAISE EXCEPTION '请填写金额'; END IF;
  IF v_sst<0 OR v_sst>v_amount THEN RAISE EXCEPTION 'SST 金额不对'; END IF;
@@ -142,6 +230,15 @@ BEGIN
   IF jsonb_typeof(x)<>'string' OR split_part(x#>>'{}','/',1)<>auth.uid()::text
    OR NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='renovation-expenses' AND name=x#>>'{}') THEN RAISE EXCEPTION '单据照片还没上传好，请重新拍'; END IF;
  END LOOP;
+ IF jsonb_typeof(v_hashes)<>'array' OR jsonb_array_length(v_hashes)>8 THEN v_hashes:='[]'::jsonb; END IF;
+ -- 防重复报销：同一收款人 + 同一单据号，或同一张照片（指纹相同），已经报过就拦住（同一次拆单共用照片不算）
+ SELECT * INTO dup FROM renovation_expenses x WHERE x.status IN ('pending','approved','paid')
+  AND NOT (x.created_by=auth.uid() AND x.docs ?| ARRAY(SELECT jsonb_array_elements_text(v_docs)))
+  AND ((btrim(coalesce(p_data->>'doc_no',''))<>'' AND lower(x.payee)=lower(btrim(coalesce(p_data->>'payee',''))) AND x.doc_no=btrim(p_data->>'doc_no'))
+   OR (jsonb_array_length(v_hashes)>0 AND x.doc_hashes ?| ARRAY(SELECT h FROM jsonb_array_elements_text(v_hashes) h WHERE length(h)=64)))
+  ORDER BY x.created_at LIMIT 1;
+ IF dup.id IS NOT NULL THEN RAISE EXCEPTION '这张单据已经报过了（% 提交，% %，状态：%），不能重复请款',to_char(dup.created_at AT TIME ZONE 'Asia/Kuala_Lumpur','YYYY-MM-DD'),dup.currency,dup.amount,
+  CASE dup.status WHEN 'pending' THEN '待批准' WHEN 'approved' THEN '待付款' ELSE '已付' END; END IF;
  v_day:=coalesce(nullif(p_data->>'spent_on','')::date,(now() AT TIME ZONE 'Asia/Kuala_Lumpur')::date);
  IF v_day>(now() AT TIME ZONE 'Asia/Kuala_Lumpur')::date+30 OR v_day<'2020-01-01' THEN RAISE EXCEPTION '日期不对'; END IF;
  -- 同一张单据拆成几笔：按合计算，超过 RM 500 就都要店长批（拆小单绕不过去）
@@ -158,14 +255,14 @@ BEGIN
   v_proof:=nullif(btrim(coalesce(p_data->>'paid_proof','')),'');
   IF v_proof IS NULL AND btrim(coalesce(p_data->>'paid_ref',''))='' THEN RAISE EXCEPTION '请上传转账截图或填写转账参考号'; END IF;
   IF v_proof IS NOT NULL AND (split_part(v_proof,'/',1)<>auth.uid()::text OR NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='renovation-expenses' AND name=v_proof)) THEN RAISE EXCEPTION '转账截图还没上传好'; END IF;
-  INSERT INTO renovation_expenses(store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at,paid_by,paid_at,paid_on,paid_ref,paid_proof)
-  VALUES(v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),
+  INSERT INTO renovation_expenses(order_id,currency,doc_hashes,store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at,paid_by,paid_at,paid_on,paid_ref,paid_proof)
+  VALUES(o.id,v_cur,v_hashes,v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),
    'paid',auth.uid(),auth.uid(),now(),auth.uid(),now(),coalesce(nullif(p_data->>'paid_on','')::date,v_day),left(btrim(coalesce(p_data->>'paid_ref','')),120),v_proof)
   RETURNING * INTO e;
   RETURN e;
  END IF;
- INSERT INTO renovation_expenses(store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at)
- VALUES(v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),
+ INSERT INTO renovation_expenses(order_id,currency,doc_hashes,store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at)
+ VALUES(o.id,v_cur,v_hashes,v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),
   CASE WHEN v_total<=500 THEN 'approved' ELSE 'pending' END,auth.uid(),
   CASE WHEN v_total<=500 THEN auth.uid() END,CASE WHEN v_total<=500 THEN now() END)
  RETURNING * INTO e;
@@ -221,10 +318,25 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_tem
   SELECT e.* FROM renovation_expenses e WHERE e.store_id IN (SELECT id FROM vis) AND e.status IN ('pending','approved','paid')
  ), proj AS (
   SELECT p.* FROM renovation_projects p WHERE p.store_id IN (SELECT id FROM vis) AND p.state<>'draft'
+ ), ord AS (
+  -- 普通订单：有支出的，或最近 120 天建的（取消的不算）
+  SELECT o.*,upper(coalesce(nullif(to_jsonb(o)->>'currency',''),'MYR')) cur FROM orders o
+  WHERE o.store_id IN (SELECT id FROM vis) AND o.status<>'cancelled'
+   AND (EXISTS(SELECT 1 FROM ex WHERE ex.order_id=o.id) OR o.created_at>now()-interval '120 days')
+ ), allord AS (
+  SELECT o.id,o.store_id,o.amount,o.payment_status,o.created_at,upper(coalesce(nullif(to_jsonb(o)->>'currency',''),'MYR')) cur FROM orders o
+  WHERE o.store_id IN (SELECT id FROM vis) AND o.status<>'cancelled'
+ ), opay AS (
+  -- 普通订单收款：有分期收款记录按记录（现金未核实也算，作废的不算）；老订单只有「已付」标记的按订单金额
+  SELECT o.id order_id,o.store_id,o.cur,(pp.paid_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date AS d_on,pp.amount::numeric amount
+   FROM allord o JOIN order_payments pp ON pp.order_id=o.id WHERE nullif(to_jsonb(pp)->>'voided_at','') IS NULL
+  UNION ALL
+  SELECT o.id,o.store_id,o.cur,(o.created_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date,o.amount FROM allord o
+   WHERE o.payment_status='paid' AND NOT EXISTS(SELECT 1 FROM order_payments pp WHERE pp.order_id=o.id)
  )
  SELECT jsonb_build_object(
   'projects',coalesce((SELECT jsonb_agg(jsonb_build_object(
-    'id',p.id,'store_id',p.store_id,'contract_no',p.contract_no,'customer_name',p.customer_name,'state',p.state,
+    'id',p.id,'store_id',p.store_id,'contract_no',p.contract_no,'customer_name',p.customer_name,'state',p.state,'currency','MYR',
     'contract',coalesce(p.current_total,0),
     'received',coalesce((SELECT sum(CASE WHEN r.kind='receipt' THEN r.amount ELSE -r.amount END) FROM renovation_payments r WHERE r.project_id=p.id AND r.voided_at IS NULL),0),
     'committed',coalesce((SELECT sum(amount) FROM ex WHERE ex.project_id=p.id AND ex.status IN ('approved','paid')),0),
@@ -237,15 +349,29 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_tem
       FROM renovation_work_orders w WHERE w.project_id=p.id AND w.cancelled_at IS NULL),'[]'::jsonb),
     'shared',coalesce((SELECT sum(amount) FROM ex WHERE ex.project_id=p.id AND ex.work_order_id IS NULL AND ex.status IN ('approved','paid')),0)
    ) ORDER BY p.created_at DESC) FROM proj p),'[]'::jsonb),
-  'months',coalesce((SELECT jsonb_agg(m ORDER BY m->>'month' DESC,m->>'store_id') FROM (
-    SELECT jsonb_build_object('store_id',store_id,'month',mon,'income',sum(income),'project_cost',sum(project_cost),'overhead',sum(overhead)) m FROM (
-     SELECT p.store_id,to_char(r.paid_on,'YYYY-MM') AS mon,CASE WHEN r.kind='receipt' THEN r.amount ELSE -r.amount END income,0 project_cost,0 overhead
+  'orders',coalesce((SELECT jsonb_agg(jsonb_build_object(
+    'id',o.id,'store_id',o.store_id,'order_no',o.order_no,'customer_name',c.name,'status',o.status,'currency',o.cur,'supplier',sp.name,
+    'contract',o.amount,
+    'received',coalesce((SELECT sum(amount) FROM opay WHERE opay.order_id=o.id),0),
+    'committed',coalesce((SELECT sum(amount) FROM ex WHERE ex.order_id=o.id AND ex.status IN ('approved','paid')),0),
+    'paid',coalesce((SELECT sum(amount) FROM ex WHERE ex.order_id=o.id AND ex.status='paid'),0),
+    'pending',coalesce((SELECT sum(amount) FROM ex WHERE ex.order_id=o.id AND ex.status='pending'),0),
+    'by_category',coalesce((SELECT jsonb_object_agg(category,amt) FROM (SELECT category,sum(amount) amt FROM ex WHERE ex.order_id=o.id AND ex.status IN ('approved','paid') GROUP BY category) z),'{}'::jsonb)
+   ) ORDER BY o.created_at DESC) FROM ord o LEFT JOIN customers c ON c.id=o.customer_id LEFT JOIN suppliers sp ON sp.id=o.supplier_id),'[]'::jsonb),
+  'months',coalesce((SELECT jsonb_agg(m ORDER BY m->>'month' DESC,m->>'store_id',m->>'currency') FROM (
+    SELECT jsonb_build_object('store_id',store_id,'month',mon,'currency',cur,'income',sum(income),'reno_income',sum(reno_income),'goods_income',sum(goods_income),
+      'project_cost',sum(project_cost),'order_cost',sum(order_cost),'overhead',sum(overhead)) m FROM (
+     SELECT p.store_id,to_char(r.paid_on,'YYYY-MM') AS mon,'MYR' AS cur,CASE WHEN r.kind='receipt' THEN r.amount ELSE -r.amount END income,
+       CASE WHEN r.kind='receipt' THEN r.amount ELSE -r.amount END reno_income,0 goods_income,0 project_cost,0 order_cost,0 overhead
       FROM renovation_payments r JOIN renovation_projects p ON p.id=r.project_id
       WHERE r.voided_at IS NULL AND p.store_id IN (SELECT id FROM vis) AND (p_from IS NULL OR r.paid_on>=p_from) AND (p_to IS NULL OR r.paid_on<=p_to)
      UNION ALL
-     SELECT store_id,to_char(spent_on,'YYYY-MM'),0,CASE WHEN project_id IS NOT NULL THEN amount ELSE 0 END,CASE WHEN project_id IS NULL THEN amount ELSE 0 END
+     SELECT store_id,to_char(d_on,'YYYY-MM'),cur,amount,0,amount,0,0,0 FROM opay WHERE (p_from IS NULL OR d_on>=p_from) AND (p_to IS NULL OR d_on<=p_to)
+     UNION ALL
+     SELECT store_id,to_char(spent_on,'YYYY-MM'),currency,0,0,0,
+       CASE WHEN project_id IS NOT NULL THEN amount ELSE 0 END,CASE WHEN order_id IS NOT NULL THEN amount ELSE 0 END,CASE WHEN project_id IS NULL AND order_id IS NULL THEN amount ELSE 0 END
       FROM ex WHERE status IN ('approved','paid') AND (p_from IS NULL OR spent_on>=p_from) AND (p_to IS NULL OR spent_on<=p_to)
-    ) t GROUP BY store_id,mon) q),'[]'::jsonb));
+    ) t GROUP BY store_id,mon,cur) q),'[]'::jsonb));
 $$;
 REVOKE ALL ON FUNCTION public.renovation_finance_overview(date,date) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.renovation_finance_overview(date,date) TO authenticated;
@@ -255,7 +381,7 @@ GRANT EXECUTE ON FUNCTION public.renovation_finance_overview(date,date) TO authe
 CREATE OR REPLACE FUNCTION public.renovation_expense_list(p_scope text DEFAULT 'mine')
 RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
  SELECT coalesce(jsonb_agg(to_jsonb(e)||jsonb_build_object('store_name',s.name,'contract_no',p.contract_no,'customer_name',p.customer_name,
-   'work_order',w.group_name,'creator',coalesce(nullif(c.name,''),'(未填名字)'),'approver',a.name,'payer',f.name) ORDER BY e.created_at DESC),'[]'::jsonb)
+   'work_order',w.group_name,'order_no',o.order_no,'order_customer',oc.name,'creator',coalesce(nullif(c.name,''),'(未填名字)'),'approver',a.name,'payer',f.name) ORDER BY e.created_at DESC),'[]'::jsonb)
  FROM (SELECT * FROM renovation_expenses x WHERE
    CASE p_scope
     WHEN 'mine' THEN x.created_by=auth.uid()
@@ -266,6 +392,7 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_tem
  JOIN stores s ON s.id=e.store_id
  LEFT JOIN renovation_projects p ON p.id=e.project_id
  LEFT JOIN renovation_work_orders w ON w.id=e.work_order_id
+ LEFT JOIN orders o ON o.id=e.order_id LEFT JOIN customers oc ON oc.id=o.customer_id
  LEFT JOIN profiles c ON c.id=e.created_by LEFT JOIN profiles a ON a.id=e.approved_by LEFT JOIN profiles f ON f.id=e.paid_by;
 $$;
 REVOKE ALL ON FUNCTION public.renovation_expense_list(text) FROM PUBLIC,anon;

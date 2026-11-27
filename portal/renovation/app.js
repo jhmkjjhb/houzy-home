@@ -62,7 +62,7 @@ function render(){
  $('editor').hidden=false;$('list').hidden=true;$('back-list').hidden=false;$('new-project').hidden=true;const locked=project&&project.state!=='draft';
  if(project){$('contract-no').value=project.contract_no;$('customer-name').value=project.customer_name;$('customer-phone').value=project.customer_phone;$('address').value=project.address;$('store').value=project.store_id;}
  for(const id of ['store','contract-no','customer-name','customer-phone','address'])$(id).disabled=!!project;
- $('create').hidden=!!project;$('state').textContent=project?states[project.state]:'未保存';$('revision').textContent=project?'云端版本 '+project.revision:'';
+ $('create').hidden=!!project;$('state').textContent=project?states[project.state]:'未保存';{const x=$('expense-link');if(x){x.hidden=!project||project.state==='draft';if(project)x.href='finance.html?project='+encodeURIComponent(project.id);}}$('revision').textContent=project?'云端版本 '+project.revision:'';
  $('title').textContent=project?project.contract_no:'新建整装订单';
  $('discount').value=snapshot.discount;$('net').value=snapshot.net;$('signed-on').value=snapshot.signed_on||'';
  $('raw').textContent=snapshot.source_text||'暂无提取原文';

@@ -719,6 +719,7 @@
       <div class="flex items-center gap-3 mb-5">
         <button id="detail-back" onclick="goto('orders')" class="text-gray-400 hover:text-gray-600">←</button>
         <h1 class="text-xl font-bold text-gray-800">订单详情</h1>
+        <a id="detail-expense" href="finance.html" class="ml-auto text-sm font-semibold text-emerald-800 border border-emerald-800 rounded-lg px-3 py-1.5">💰 记支出 / 请款</a>
       </div>
       <div id="detail-content"></div>
     </div>
@@ -4357,6 +4358,7 @@ async function resolveProductExact(sku, name) {
 // ── Order Detail ──
 async function openDetail(id, backView) {
   _openDetailId = id;
+  { const x = document.getElementById('detail-expense'); if (x) x.href = 'finance.html?order=' + encodeURIComponent(id); }
   if (backView) document.getElementById('detail-back').onclick = () => goto(backView);
   goto('detail');
 

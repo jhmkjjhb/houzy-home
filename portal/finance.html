@@ -43,6 +43,7 @@ const sb = window.supabase.createClient('https://csabbxiijzghooppayae.supabase.c
 const $ = id => document.getElementById(id);
 const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const RM = n => 'RM ' + (Number(n) || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = (n, c) => (c && c !== 'MYR' ? c + ' ' : 'RM ') + (Number(n) || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const today = () => new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
 const CAT = { material: '材料', labour: '工人', subcontract: '外包 / 厂家', transport: '运输', misc: '杂费', commission: '佣金', overhead: '门店开销' };
 const DOC = { invoice: '正式发票', receipt: '收据', voucher: '付款签收单' };
@@ -94,26 +95,53 @@ async function refreshCounts() {
 }
 
 // ---------- 请款 ----------
+// 「这笔钱属于」：整装单 / 普通订单 / 门店开销。订单多了靠搜索；我负责的工地和最近请过款的单排在最前面。
+const KIND = { project: '整装单', order: '普通订单', store: '门店开销' };
+const selLabel = s => s.kind === 'store' ? `门店开销 · ${E(s.name)}` : `${E(s.no)} · ${E(s.customer_name || '')}`;
+const selSub = s => s.kind === 'project' ? E(s.address || '') : s.kind === 'order' ? [s.supplier && '厂家：' + E(s.supplier), s.description && E(s.description), s.currency !== 'MYR' && s.currency].filter(Boolean).join(' · ') : '房租、水电、办公、员工开销等，不挂订单';
+const cur = () => form.sel?.kind === 'store' ? form.cur : (form.sel?.currency || 'MYR');
 function blankForm() {
-  const q = new URLSearchParams(location.search).get('project');
-  const p = T.projects.find(x => x.id === q) || (T.projects.length === 1 ? T.projects[0] : null);
-  return { target: p ? p.id : '', parts: [{ wo: '', amount: '' }], category: '', payee: '', bank: '', sst: '', doc_type: '', doc_no: '', spent_on: today(), note: '', files: [], paid: false, paid_on: today(), paid_ref: '', proof: null };
+  const one = T.projects.length === 1 && T.role === 'supervisor' ? { ...T.projects[0] } : null;
+  return { sel: one, q: '', all: false, hits: null, cur: 'MYR', parts: [{ wo: '', amount: '' }], category: '', payee: '', bank: '', sst: '', doc_type: '', doc_no: '', spent_on: today(), note: '', files: [], paid: false, paid_on: today(), paid_ref: '', proof: null };
+}
+function pickHTML(list, attr) { return list.map((s, i) => `<button type="button" class="btn sec" ${attr}="${i}" style="display:block;width:100%;text-align:left;margin:0 0 6px;min-height:0;padding:8px 10px"><span class="tag">${KIND[s.kind]}</span> <b>${selLabel(s)}</b><small style="display:block;color:var(--muted);font-size:12px">${selSub(s)}</small></button>`).join(''); }
+function drawHits() {
+  const box = $('hits'); if (!box) return; const f = form;
+  if (f.q.trim().length < 2) { box.innerHTML = T.projects.length ? `<p class="hint" style="margin-top:8px">我的工地 / 最近请过款的单：</p>${pickHTML(T.projects, 'data-recent')}` : '<p class="hint">输入至少 2 个字开始找。</p>'; return; }
+  box.innerHTML = f.hits === null ? '<p class="hint">正在找…</p>' : f.hits.length ? pickHTML(f.hits, 'data-hit') : `<p class="hint">没找到。${f.all ? '' : '可以勾上「包括已完工很久的单」再找。'}</p>`;
+}
+let searchTimer = 0, searchSeq = 0;
+function runSearch() {
+  clearTimeout(searchTimer); form.hits = null; drawHits();
+  if (form.q.trim().length < 2) return;
+  searchTimer = setTimeout(() => guarded(async () => { const n = ++searchSeq, r = await rpc('renovation_expense_search', { p_q: form.q.trim(), p_all: form.all }); if (n === searchSeq) { form.hits = r; drawHits(); } }), 300);
+}
+function choose(s) {
+  const f = form; f.sel = s; f.parts = [{ wo: '', amount: f.parts.reduce((t, p) => t + (Number(p.amount) || 0), 0) || '' }];
+  f.category = s.kind === 'store' ? 'overhead' : (f.category === 'overhead' ? '' : f.category);
+  if (s.kind === 'order' && s.supplier && !f.payee) { f.payee = s.supplier; if (!f.category) f.category = 'subcontract'; }
+  if (s.kind === 'store') f.cur = /singapore|新加坡|\bsg\b/i.test(s.name) ? 'SGD' : 'MYR';
+  drawNew();
 }
 function drawNew() {
-  const f = form, proj = T.projects.find(p => p.id === f.target), store = f.target.startsWith('store:') ? f.target.slice(6) : null;
-  const wos = proj ? proj.work_orders : [], total = f.parts.reduce((t, p) => t + (Number(p.amount) || 0), 0);
-  const cats = store ? [] : Object.keys(CAT).filter(k => k !== 'overhead');
+  const f = form, s = f.sel, proj = s?.kind === 'project' ? s : null, wos = proj ? proj.work_orders : [], total = f.parts.reduce((t, p) => t + (Number(p.amount) || 0), 0), C = cur();
+  const cats = s?.kind === 'store' ? [] : Object.keys(CAT).filter(k => k !== 'overhead');
   $('view').innerHTML = `<div class="card"><h2>新的请款</h2>
-   <label>这笔钱属于<select data-f="target"><option value="">— 选整装单 —</option>${T.projects.map(p => `<option value="${p.id}" ${p.id === f.target ? 'selected' : ''}>${E(p.contract_no)} · ${E(p.customer_name)}</option>`).join('')}${T.stores.length ? `<optgroup label="门店开销（房租、水电、办公等）">${T.stores.map(s => `<option value="store:${s.id}" ${f.target === 'store:' + s.id ? 'selected' : ''}>${E(s.name)} · 门店开销</option>`).join('')}</optgroup>` : ''}</select></label>
-   ${!T.projects.length && !T.stores.length ? '<p class="hint">你现在没有可以请款的整装单（合同确认后才能请款）。</p>' : ''}
-   ${proj ? `<div class="hint">${E(proj.address || '')}</div>` : ''}
+   <label>这笔钱属于</label>
+   ${s ? `<div class="card" style="background:#f3f8f4;border-color:#cfe6d7;margin:0 0 10px;padding:10px"><div class="item-head"><b><span class="tag">${KIND[s.kind]}</span> ${selLabel(s)}</b><button type="button" class="btn sec" data-unpick style="min-height:32px;padding:4px 10px;font-size:13px">换一张</button></div><small style="color:var(--muted)">${selSub(s)}</small>
+      ${s.kind === 'store' ? `<label style="margin:8px 0 0">币种<select data-f="cur"><option value="MYR" ${f.cur === 'MYR' ? 'selected' : ''}>RM 马币</option><option value="SGD" ${f.cur === 'SGD' ? 'selected' : ''}>SGD 新币</option></select></label>` : ''}</div>`
+    : `<input data-search value="${E(f.q)}" placeholder="搜合同号 / 单号 / 客户名 / 电话后 4 位 / 地址" style="display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid #d0c8b8;border-radius:10px" autocomplete="off">
+      <label style="display:flex;gap:6px;align-items:center;margin:6px 0 0"><input type="checkbox" data-all ${f.all ? 'checked' : ''} style="width:18px;height:18px;margin:0"> 包括已完工很久的单</label>
+      <div id="hits"></div>
+      ${T.stores.length ? `<p class="hint" style="margin-top:8px">不属于任何订单：</p>${pickHTML(T.stores.map(x => ({ kind: 'store', id: x.id, name: x.name })), 'data-store')}` : ''}`}
+   ${s ? `
    ${cats.length ? `<label>类别<div class="pick">${cats.map(k => `<button type="button" data-cat="${k}" class="${f.category === k ? 'on' : ''}">${CAT[k]}</button>`).join('')}</div></label>` : ''}
    ${f.parts.map((p, i) => `<div class="row">${proj ? `<label>子订单<select data-part="${i}" data-k="wo"><option value="">整单公共（清运、运费等）</option>${wos.map(w => `<option value="${w.id}" ${p.wo === w.id ? 'selected' : ''}>${E(w.name)}${w.assignee ? ' · ' + E(w.assignee) : ''}</option>`).join('')}</select></label>` : ''}
-     <label>金额 RM<input data-part="${i}" data-k="amount" inputmode="decimal" value="${E(p.amount)}" placeholder="0.00"></label>${f.parts.length > 1 ? `<div style="flex:0 0 auto;align-self:end;margin-bottom:10px"><button type="button" class="btn red" data-unsplit="${i}">删</button></div>` : ''}</div>`).join('')}
-   ${proj && wos.length ? `<p class="hint"><a href="#" data-split>＋ 这笔钱要分到几个子订单（同一张单据）</a>${f.parts.length > 1 ? ` · 合计 <b>${RM(total)}</b>` : ''}</p>` : ''}
-   <div class="row"><label>收款人（店名 / 工人名字）<input data-f="payee" value="${E(f.payee)}" maxlength="120"></label><label>收款银行和账号<input data-f="bank" value="${E(f.bank)}" maxlength="200" placeholder="例：Maybank 1234 5678 9012"></label></div>
+     <label>金额 ${C === 'MYR' ? 'RM' : C}<input data-part="${i}" data-k="amount" inputmode="decimal" value="${E(p.amount)}" placeholder="0.00"></label>${f.parts.length > 1 ? `<div style="flex:0 0 auto;align-self:end;margin-bottom:10px"><button type="button" class="btn red" data-unsplit="${i}">删</button></div>` : ''}</div>`).join('')}
+   ${proj && wos.length ? `<p class="hint"><a href="#" data-split>＋ 这笔钱要分到几个子订单（同一张单据）</a>${f.parts.length > 1 ? ` · 合计 <b>${money(total, C)}</b>` : ''}</p>` : ''}
+   <div class="row"><label>收款人（店名 / 厂家 / 工人名字）<input data-f="payee" value="${E(f.payee)}" maxlength="120"></label><label>收款银行和账号<input data-f="bank" value="${E(f.bank)}" maxlength="200" placeholder="例：Maybank 1234 5678 9012"></label></div>
    <label>单据类型<div class="pick">${Object.entries(DOC).map(([k, n]) => `<button type="button" data-doctype="${k}" class="${f.doc_type === k ? 'on' : ''}">${n}</button>`).join('')}</div></label>
-   ${f.doc_type === 'voucher' ? '<p class="hint">工人没有发票时用：请让收款人在纸上写「收到 HOUZY RM 金额 · 日期 · IC 号码 · 签名」，拍下来上传。</p>' : ''}
+   ${f.doc_type === 'voucher' ? '<p class="hint">工人没有发票时用：请让收款人在纸上写「收到 HOUZY 金额 · 日期 · IC 号码 · 签名」，拍下来上传。</p>' : ''}
    <div class="row"><label>单据号码（发票号 / 收据号）<input data-f="doc_no" value="${E(f.doc_no)}" maxlength="80"></label>${f.doc_type === 'invoice' ? `<label>其中 SST（没有就留空）<input data-f="sst" inputmode="decimal" value="${E(f.sst)}"></label>` : ''}<label>单据日期<input type="date" data-f="spent_on" value="${E(f.spent_on)}"></label></div>
    <label>单据照片（必须，最多 8 张）</label>
    <div class="shots">${f.files.map((x, i) => `<div>${x.url ? `<img src="${x.url}" alt="">` : 'PDF'}<button type="button" data-unshot="${i}" aria-label="删除">×</button></div>`).join('')}</div>
@@ -121,18 +149,28 @@ function drawNew() {
    <label>备注<textarea data-f="note" rows="2" maxlength="500" placeholder="例：二楼主卧瓷砖尾款">${E(f.note)}</textarea></label>
    ${isFin() ? `<div class="card" style="background:#f3f8f4;border-color:#cfe6d7;margin:0 0 10px"><label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:15px;margin:0"><input type="checkbox" data-paid ${f.paid ? 'checked' : ''} style="width:20px;height:20px;margin:0"> 这笔公司已经付了（财务直接登记，不用批准）</label>
      ${f.paid ? `<div class="row" style="margin-top:10px"><label>付款日期<input type="date" data-f="paid_on" value="${E(f.paid_on)}"></label><label>转账参考号<input data-f="paid_ref" value="${E(f.paid_ref)}" maxlength="120"></label></div><label class="btn sec" style="text-align:center;color:var(--green);margin:0">${f.proof ? '✓ 已选转账截图' : '上传转账截图（或填参考号）'}<input type="file" accept="image/*,application/pdf" data-proof hidden></label>` : ''}</div>` : ''}
-   <p class="hint">${f.paid ? '会直接记成「已付」，算进这一单的支出。' : 'RM 500 以下直接交给公司财务付款；超过 RM 500 先由店长批准。'}</p>
-   <button type="button" class="btn" data-submit style="width:100%">提交请款</button></div>`;
+   <p class="hint">${f.paid ? '会直接记成「已付」，算进这一单的支出。' : '500 以下直接交给公司财务付款；超过 500 先由店长批准。同一张单据不能报两次。'}</p>
+   <button type="button" class="btn" data-submit style="width:100%">提交请款</button>` : ''}</div>`;
+  if (!s) { drawHits(); if (f.q) { const i = $('view').querySelector('[data-search]'); i.focus(); i.setSelectionRange(f.q.length, f.q.length); } }
 }
 const VIEWS = {};
-VIEWS.new = async () => { if (!form) form = blankForm(); drawNew(); };
+VIEWS.new = async () => {
+  if (!form) {
+    form = blankForm();
+    const q = new URLSearchParams(location.search), kind = q.get('project') ? 'project' : q.get('order') ? 'order' : null;
+    if (kind) { const r = await rpc('renovation_expense_search', { p_q: '', p_all: true, p_kind: kind, p_id: q.get(kind) }); if (r[0]) choose(r[0]); else say('这张单你没有权限请款，或还没确认合同。', true); }
+  }
+  drawNew();
+};
 $('view').addEventListener('input', e => {
   if (tab !== 'new') return; const t = e.target;
-  if (t.dataset.f) { form[t.dataset.f] = t.value; if (t.dataset.f === 'target') { form.parts = [{ wo: '', amount: form.parts.reduce((s, p) => s + (Number(p.amount) || 0), 0) || '' }]; form.category = t.value.startsWith('store:') ? 'overhead' : (form.category === 'overhead' ? '' : form.category); drawNew(); } }
+  if (t.matches('[data-search]')) { form.q = t.value; runSearch(); return; }
+  if (t.dataset.f) { form[t.dataset.f] = t.value; if (t.dataset.f === 'cur') drawNew(); }
   else if (t.dataset.part !== undefined) form.parts[+t.dataset.part][t.dataset.k] = t.value;
 });
 $('view').addEventListener('change', e => {
   const t = e.target; if (tab !== 'new') return;
+  if (t.matches('[data-all]')) { form.all = t.checked; runSearch(); return; }
   if (t.matches('[data-paid]')) { form.paid = t.checked; drawNew(); return; }
   if (t.matches('[data-proof]')) { form.proof = t.files[0] || null; drawNew(); return; }
   if (!t.matches('[data-shot]')) return;
@@ -141,32 +179,39 @@ $('view').addEventListener('change', e => {
 });
 $('view').addEventListener('click', e => {
   if (tab !== 'new') return; const b = e.target.closest('button,a'); if (!b) return;
-  if (b.dataset.cat) { form.category = b.dataset.cat; drawNew(); }
+  if (b.dataset.recent !== undefined) choose({ ...T.projects[+b.dataset.recent] });
+  else if (b.dataset.hit !== undefined) choose({ ...form.hits[+b.dataset.hit] });
+  else if (b.dataset.store !== undefined) { const x = T.stores[+b.dataset.store]; choose({ kind: 'store', id: x.id, name: x.name }); }
+  else if (b.hasAttribute('data-unpick')) { form.sel = null; form.hits = null; drawNew(); if (form.q) runSearch(); }
+  else if (b.dataset.cat) { form.category = b.dataset.cat; drawNew(); }
   else if (b.dataset.doctype) { form.doc_type = b.dataset.doctype; drawNew(); }
   else if (b.dataset.unshot !== undefined) { form.files.splice(+b.dataset.unshot, 1); drawNew(); }
   else if (b.hasAttribute('data-split')) { e.preventDefault(); form.parts.push({ wo: '', amount: '' }); drawNew(); }
   else if (b.dataset.unsplit !== undefined) { form.parts.splice(+b.dataset.unsplit, 1); drawNew(); }
   else if (b.hasAttribute('data-submit')) submitForm(b);
 });
+// 照片指纹（SHA-256）：同一张照片换个人再报也能认出来
+async function fingerprint(file) { try { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))].map(b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { return null; } }
 async function submitForm(btn) {
-  const f = form, store = f.target.startsWith('store:') ? f.target.slice(6) : null;
+  const f = form, s = f.sel;
   const parts = f.parts.map(p => ({ ...p, amount: Math.round((Number(String(p.amount).replace(/,/g, '')) || 0) * 100) / 100 }));
-  const miss = [!f.target && '这笔钱属于哪一单', !store && !f.category && '类别', parts.some(p => !(p.amount > 0)) && '金额', !f.payee.trim() && '收款人', !f.doc_type && '单据类型', !f.files.length && '单据照片'].filter(Boolean);
+  const miss = [!s && '这笔钱属于哪一单', s?.kind !== 'store' && !f.category && '类别', parts.some(p => !(p.amount > 0)) && '金额', !f.payee.trim() && '收款人', !f.doc_type && '单据类型', !f.files.length && '单据照片'].filter(Boolean);
   if (miss.length) return say('还没填：' + miss.join('、'), true);
   if (f.paid && !f.proof && !f.paid_ref.trim()) return say('已付款请上传转账截图或填写转账参考号', true);
   if (parts.length > 1 && new Set(parts.map(p => p.wo)).size < parts.length) return say('分到的子订单有重复，请合并成一行', true);
   btn.disabled = true;
   await guarded(async () => {
-    say('正在上传单据…'); const docs = []; for (const x of f.files) docs.push(await upload(x.file));
+    say('正在上传单据…'); const docs = [], hashes = [];
+    for (const x of f.files) { const h = await fingerprint(x.file); if (h) hashes.push(h); docs.push(await upload(x.file)); }
     const proof = f.paid && f.proof ? await upload(f.proof) : null;
     say('正在提交…'); const sst = Number(f.sst) || 0, sum = parts.reduce((t, p) => t + p.amount, 0); let pending = 0;
     for (const [i, p] of parts.entries()) {
       // SST 按金额比例分到各子订单
-      const r = await rpc('renovation_expense_submit', { p_data: { project_id: store ? null : f.target, store_id: store, work_order_id: p.wo || null, category: store ? 'overhead' : f.category, payee: f.payee, payee_bank: f.bank, amount: p.amount, sst: f.doc_type === 'invoice' ? Math.round(sst * p.amount / sum * 100) / 100 : 0, doc_type: f.doc_type, doc_no: f.doc_no, docs, spent_on: f.spent_on, ...(f.paid ? { paid: true, paid_on: f.paid_on, paid_ref: f.paid_ref.trim(), paid_proof: proof } : {}), note: f.note + (parts.length > 1 ? `（同一单据分 ${parts.length} 笔，第 ${i + 1} 笔）` : '') } });
+      const r = await rpc('renovation_expense_submit', { p_data: { project_id: s.kind === 'project' ? s.id : null, order_id: s.kind === 'order' ? s.id : null, store_id: s.kind === 'store' ? s.id : null, currency: cur(), work_order_id: p.wo || null, category: s.kind === 'store' ? 'overhead' : f.category, payee: f.payee, payee_bank: f.bank, amount: p.amount, sst: f.doc_type === 'invoice' ? Math.round(sst * p.amount / sum * 100) / 100 : 0, doc_type: f.doc_type, doc_no: f.doc_no, docs, doc_hashes: hashes, spent_on: f.spent_on, ...(f.paid ? { paid: true, paid_on: f.paid_on, paid_ref: f.paid_ref.trim(), paid_proof: proof } : {}), note: f.note + (parts.length > 1 ? `（同一单据分 ${parts.length} 笔，第 ${i + 1} 笔）` : '') } });
       if (r.status === 'pending') pending++;
     }
     form = blankForm(); drawNew(); refreshCounts();
-    say(f.paid ? '已登记为已付，算进这一单的支出。' : pending ? '已提交。超过 RM 500，等店长批准后交给财务付款。' : '已提交给公司财务，付款后会在「我的请款」显示已付。');
+    say(f.paid ? '已登记为已付，算进这一单的支出。' : pending ? '已提交。超过 500，等店长批准后交给财务付款。' : '已提交给公司财务，付款后会在「我的请款」显示已付。');
     window.scrollTo(0, 0);
   });
   btn.disabled = false;
@@ -174,9 +219,9 @@ async function submitForm(btn) {
 
 // ---------- 列表 ----------
 function itemHTML(x, acts = '') {
-  const where = x.project_id ? `${E(x.contract_no)} · ${E(x.customer_name)}${x.work_order ? ' · ' + E(x.work_order) : ' · 整单公共'}` : `${E(x.store_name)} · 门店开销`;
-  return `<div class="item"><div class="item-head"><b>${E(x.payee)}<span class="tag ${x.status}">${ST[x.status]}</span><span class="tag ${x.doc_type}">${DOC[x.doc_type]}</span></b><span class="money">${RM(x.amount)}</span></div>
-   <small>${where} · ${CAT[x.category]}${Number(x.sst) ? ` · 含 SST ${RM(x.sst)}` : ''}</small>
+  const where = x.project_id ? `整装 ${E(x.contract_no)} · ${E(x.customer_name)}${x.work_order ? ' · ' + E(x.work_order) : ' · 整单公共'}` : x.order_id ? `订单 ${E(x.order_no)} · ${E(x.order_customer || '')}` : `${E(x.store_name)} · 门店开销`;
+  return `<div class="item"><div class="item-head"><b>${E(x.payee)}<span class="tag ${x.status}">${ST[x.status]}</span><span class="tag ${x.doc_type}">${DOC[x.doc_type]}</span></b><span class="money">${money(x.amount, x.currency)}</span></div>
+   <small>${where} · ${CAT[x.category]}${Number(x.sst) ? ` · 含 SST ${money(x.sst, x.currency)}` : ''}</small>
    <small>${E(x.spent_on)} · ${E(x.creator)} 提交${x.doc_no ? ' · 单据号 ' + E(x.doc_no) : ''}${x.payee_bank ? ' · ' + E(x.payee_bank) : ''}</small>
    ${x.note ? `<small>备注：${E(x.note)}</small>` : ''}
    ${x.status === 'paid' ? `<small style="color:var(--ok)">${E(x.paid_on)} 已付${x.paid_ref ? ' · 参考号 ' + E(x.paid_ref) : ''}${x.payer ? ' · ' + E(x.payer) : ''}</small>` : ''}
@@ -192,8 +237,8 @@ VIEWS.approve = async () => {
   $('view').innerHTML = `<div class="card"><h2>等你批准（超过 RM 500）</h2>${r.length ? r.map(x => itemHTML(x, `<div class="acts"><button type="button" class="btn" data-act="approve" data-id="${x.id}">批准</button><button type="button" class="btn red" data-act="reject" data-id="${x.id}">退回</button></div>`)).join('') : '<p class="hint">没有要批准的请款。</p>'}</div>`;
 };
 VIEWS.pay = async () => {
-  const r = await rpc('renovation_expense_list', { p_scope: 'pay' }), sum = r.reduce((t, x) => t + Number(x.amount), 0);
-  $('view').innerHTML = `<div class="card"><h2>待付款 · ${r.length} 笔 · ${RM(sum)}</h2><p class="hint">照着收款人和账号转账，转完上传转账截图（或填参考号），点「已付」。</p>${r.length ? r.map(x => itemHTML(x, `<div class="acts" data-payrow="${x.id}"><input type="date" value="${today()}" data-paid-on style="font:inherit;padding:6px;border:1px solid #d0c8b8;border-radius:8px"><input placeholder="转账参考号" data-paid-ref style="font:inherit;padding:6px;border:1px solid #d0c8b8;border-radius:8px;width:150px"><label class="btn sec" style="margin:0;min-height:36px;padding:6px 12px;font-size:14px;color:var(--green)">转账截图<input type="file" accept="image/*,application/pdf" data-paid-proof hidden></label><button type="button" class="btn" data-act="pay" data-id="${x.id}">已付</button><button type="button" class="btn red" data-act="reject" data-id="${x.id}">退回</button></div>`)).join('') : '<p class="hint">没有待付款。</p>'}</div>`;
+  const r = await rpc('renovation_expense_list', { p_scope: 'pay' }), byCur = {}; r.forEach(x => byCur[x.currency] = (byCur[x.currency] || 0) + Number(x.amount)); const sum = Object.entries(byCur).map(([c, n]) => money(n, c)).join(' + ') || money(0);
+  $('view').innerHTML = `<div class="card"><h2>待付款 · ${r.length} 笔 · ${sum}</h2><p class="hint">照着收款人和账号转账，转完上传转账截图（或填参考号），点「已付」。</p>${r.length ? r.map(x => itemHTML(x, `<div class="acts" data-payrow="${x.id}"><input type="date" value="${today()}" data-paid-on style="font:inherit;padding:6px;border:1px solid #d0c8b8;border-radius:8px"><input placeholder="转账参考号" data-paid-ref style="font:inherit;padding:6px;border:1px solid #d0c8b8;border-radius:8px;width:150px"><label class="btn sec" style="margin:0;min-height:36px;padding:6px 12px;font-size:14px;color:var(--green)">转账截图<input type="file" accept="image/*,application/pdf" data-paid-proof hidden></label><button type="button" class="btn" data-act="pay" data-id="${x.id}">已付</button><button type="button" class="btn red" data-act="reject" data-id="${x.id}">退回</button></div>`)).join('') : '<p class="hint">没有待付款。</p>'}</div>`;
 };
 $('view').addEventListener('change', e => { const t = e.target; if (t.matches('[data-paid-proof]')) t.closest('label').firstChild.textContent = t.files[0] ? '✓ 已选截图' : '转账截图'; });
 $('view').addEventListener('click', e => {
@@ -219,13 +264,19 @@ let OV = null;
 const pct = (a, b) => b > 0 ? Math.round(a / b * 1000) / 10 + '%' : '—';
 VIEWS.profit = async () => {
   OV = await rpc('renovation_finance_overview', {});
-  const ps = OV.projects, sum = k => ps.reduce((t, p) => t + Number(p[k]), 0), store = Object.fromEntries(T.all_stores.map(s => [s.id, s.name]));
+  const ps = OV.projects, os = OV.orders, sum = k => ps.reduce((t, p) => t + Number(p[k]), 0), store = Object.fromEntries(T.all_stores.map(s => [s.id, s.name]));
   const c = sum('contract'), cm = sum('committed');
-  $('view').innerHTML = `<div class="tot"><div><small>合同总额</small><b>${RM(c)}</b></div><div><small>已收款</small><b>${RM(sum('received'))}</b></div><div><small>已花（批准 + 已付）</small><b>${RM(cm)}</b></div><div><small>还没付</small><b>${RM(cm - sum('paid'))}</b></div><div><small>毛利</small><b class="${c - cm < 0 ? 'bad' : ''}">${RM(c - cm)}</b></div></div>
+  // 普通订单按币种分开合计
+  const oc = {}; os.filter(o => Number(o.committed) || Number(o.pending)).forEach(o => { const x = oc[o.currency] = oc[o.currency] || { contract: 0, committed: 0 }; x.contract += Number(o.contract); x.committed += Number(o.committed); });
+  $('view').innerHTML = `<h2 style="font-size:16px;margin:4px 0 8px">整装单</h2><div class="tot"><div><small>合同总额</small><b>${RM(c)}</b></div><div><small>已收款</small><b>${RM(sum('received'))}</b></div><div><small>已花（批准 + 已付）</small><b>${RM(cm)}</b></div><div><small>还没付</small><b>${RM(cm - sum('paid'))}</b></div><div><small>毛利</small><b class="${c - cm < 0 ? 'bad' : ''}">${RM(c - cm)}</b></div></div>
    <div class="card"><h2>每张整装单</h2><p class="hint">毛利 = 合同价（含增减项）− 已批准和已付的支出。门店房租等开销不算在单里，见「门店月账」。点一行看各子订单。</p><div class="scroll"><table><thead><tr><th>整装单</th><th>合同价</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
    ${ps.map(p => { const g = p.contract - p.committed; return `<tr data-open-p="${p.id}" style="cursor:pointer"><td><b>${E(p.contract_no)}</b> · ${E(p.customer_name)}<br><small style="color:var(--muted)">${E(store[p.store_id] || '')}</small></td><td>${RM(p.contract)}</td><td>${RM(p.received)}</td><td>${RM(p.committed)}</td><td>${Number(p.pending) ? RM(p.pending) : '—'}</td><td class="${g < 0 ? 'bad' : 'good'}">${RM(g)}</td><td class="${g < 0 ? 'bad' : ''}">${pct(g, p.contract)}</td></tr>
      <tr hidden data-sub-of="${p.id}"><td colspan="7" style="padding:0"><table>${p.work_orders.map(w => { const wg = w.contract - w.committed, over = w.committed > w.contract && w.contract > 0; return `<tr class="sub"><td>${E(w.name)}</td><td>合同 ${RM(w.contract)}</td><td class="${over ? 'bad' : ''}">已花 ${RM(w.committed)}${over ? ' 超支' : ''}</td><td class="${wg < 0 ? 'bad' : ''}">${pct(wg, w.contract)}</td></tr>`; }).join('')}<tr class="sub"><td>整单公共（清运、运费等）</td><td></td><td>已花 ${RM(p.shared)}</td><td></td></tr></table></td></tr>`; }).join('') || '<tr><td colspan="7">还没有已确认的整装单。</td></tr>'}
-   </tbody></table></div><p class="hint">子订单合同额按清单原价（优惠前），所以各子订单加起来会比合同价稍高。</p></div>`;
+   </tbody></table></div><p class="hint">子订单合同额按清单原价（优惠前），所以各子订单加起来会比合同价稍高。</p></div>
+   <h2 style="font-size:16px;margin:16px 0 8px">普通订单</h2><div class="tot">${Object.entries(oc).map(([k, x]) => `<div><small>${k} 订单毛利（只算已记支出的单）</small><b class="${x.contract - x.committed < 0 ? 'bad' : ''}">${money(x.contract - x.committed, k)}</b><small>卖价 ${money(x.contract, k)} · 已花 ${money(x.committed, k)}</small></div>`).join('') || '<div><small>普通订单</small><b>—</b></div>'}</div>
+   <div class="card"><h2>每张普通订单</h2><p class="hint">列出有支出的订单和最近 120 天的订单。毛利 = 订单金额 − 货款、运费、安装、佣金等支出。<b>还没记任何支出的订单，毛利不准</b>（显示为灰色）。</p><div class="scroll"><table><thead><tr><th>订单</th><th>金额</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
+   ${os.map(o => { const g = o.contract - o.committed, none = !Number(o.committed) && !Number(o.pending), cats = Object.entries(o.by_category || {}).map(([k, v]) => `${CAT[k]} ${money(v, o.currency)}`).join(' · '); return `<tr${none ? ' style="color:var(--muted)"' : ''}><td><b>${E(o.order_no)}</b> · ${E(o.customer_name || '')}<br><small style="color:var(--muted)">${E(store[o.store_id] || '')}${o.supplier ? ' · ' + E(o.supplier) : ''}${cats ? '<br>' + cats : ''}</small></td><td>${money(o.contract, o.currency)}</td><td>${money(o.received, o.currency)}</td><td>${money(o.committed, o.currency)}</td><td>${Number(o.pending) ? money(o.pending, o.currency) : '—'}</td><td class="${none ? '' : g < 0 ? 'bad' : 'good'}">${none ? '未记支出' : money(g, o.currency)}</td><td class="${!none && g < 0 ? 'bad' : ''}">${none ? '—' : pct(g, o.contract)}</td></tr>`; }).join('') || '<tr><td colspan="7">没有普通订单。</td></tr>'}
+   </tbody></table></div></div>`;
 };
 $('view').addEventListener('click', e => { const r = e.target.closest('[data-open-p]'); if (r) { const s = $('view').querySelector(`[data-sub-of="${r.dataset.openP}"]`); s.hidden = !s.hidden; } });
 
@@ -233,15 +284,15 @@ $('view').addEventListener('click', e => { const r = e.target.closest('[data-ope
 VIEWS.month = async () => {
   OV = await rpc('renovation_finance_overview', {});
   const store = Object.fromEntries(T.all_stores.map(s => [s.id, s.name])), ms = OV.months;
-  $('view').innerHTML = `<div class="card"><h2>门店月账</h2><p class="hint">收入 = 当月收到的整装款（扣退款）；整装支出按单据日期算；门店开销是房租、水电、办公等。这是管理账，报税还要会计按规定做。</p>
-   <div class="scroll"><table><thead><tr><th>月份 · 门店</th><th>收入</th><th>整装支出</th><th>门店开销</th><th>结余</th></tr></thead><tbody>
-   ${ms.map(m => { const net = m.income - m.project_cost - m.overhead; return `<tr><td>${E(m.month)} · ${E(store[m.store_id] || '')}</td><td>${RM(m.income)}</td><td>${RM(m.project_cost)}</td><td>${RM(m.overhead)}</td><td class="${net < 0 ? 'bad' : 'good'}">${RM(net)}</td></tr>`; }).join('') || '<tr><td colspan="5">还没有数据。</td></tr>'}
-   </tbody></table></div></div>
-   <div class="card"><h2>导出给会计</h2><div class="row"><label>从<input type="date" id="ex-from" value="${today().slice(0, 8)}01"></label><label>到<input type="date" id="ex-to" value="${today()}"></label></div><button type="button" class="btn" id="ex-go">导出 Excel（CSV）</button><p class="hint">每笔支出一行：日期、门店、整装单、子订单、类别、收款人、金额、SST、单据类型和号码、状态、付款日期。单据照片在系统里点开看。</p></div>`;
+  $('view').innerHTML = `<div class="card"><h2>门店月账</h2><p class="hint">收入 = 当月收到的整装款（扣退款）+ 普通订单收款；支出按单据日期算；门店开销是房租、水电、办公等。马币和新币分开列，不相加。这是管理账，报税还要会计按规定做。</p>
+   <div class="scroll"><table><thead><tr><th>月份 · 门店</th><th>整装收款</th><th>订单收款</th><th>整装支出</th><th>订单支出</th><th>门店开销</th><th>结余</th></tr></thead><tbody>
+   ${ms.map(m => { const c = m.currency, net = m.income - m.project_cost - m.order_cost - m.overhead; return `<tr><td>${E(m.month)} · ${E(store[m.store_id] || '')}${c !== 'MYR' ? ' · ' + E(c) : ''}</td><td>${money(m.reno_income, c)}</td><td>${money(m.goods_income, c)}</td><td>${money(m.project_cost, c)}</td><td>${money(m.order_cost, c)}</td><td>${money(m.overhead, c)}</td><td class="${net < 0 ? 'bad' : 'good'}">${money(net, c)}</td></tr>`; }).join('') || '<tr><td colspan="7">还没有数据。</td></tr>'}
+   </tbody></table></div><p class="hint">普通订单还没开始记支出时，「订单支出」会偏少、结余会偏高。</p></div>
+   <div class="card"><h2>导出给会计</h2><div class="row"><label>从<input type="date" id="ex-from" value="${today().slice(0, 8)}01"></label><label>到<input type="date" id="ex-to" value="${today()}"></label></div><button type="button" class="btn" id="ex-go">导出 Excel（CSV）</button><p class="hint">每笔支出一行：日期、门店、整装单或订单、子订单、类别、收款人、币种、金额、SST、单据类型和号码、状态、付款日期。单据照片在系统里点开看。</p></div>`;
   $('ex-go').onclick = () => guarded(async () => {
     const from = $('ex-from').value, to = $('ex-to').value, r = (await rpc('renovation_expense_list', { p_scope: 'all' })).filter(x => ['approved', 'paid'].includes(x.status) && (!from || x.spent_on >= from) && (!to || x.spent_on <= to));
-    const rows = [['单据日期', '门店', '整装单', '客户', '子订单', '类别', '收款人', '收款账号', '金额(RM)', '其中SST', '单据类型', '单据号', '状态', '付款日期', '转账参考号', '提交人', '备注'],
-      ...r.map(x => [x.spent_on, x.store_name, x.contract_no || '', x.customer_name || '', x.project_id ? (x.work_order || '整单公共') : '门店开销', CAT[x.category], x.payee, x.payee_bank, x.amount, x.sst, DOC[x.doc_type], x.doc_no, ST[x.status], x.paid_on || '', x.paid_ref || '', x.creator, x.note])];
+    const rows = [['单据日期', '门店', '归属', '单号', '客户', '子订单', '类别', '收款人', '收款账号', '币种', '金额', '其中SST', '单据类型', '单据号', '状态', '付款日期', '转账参考号', '提交人', '备注'],
+      ...r.map(x => [x.spent_on, x.store_name, x.project_id ? '整装单' : x.order_id ? '普通订单' : '门店开销', x.contract_no || x.order_no || '', x.customer_name || x.order_customer || '', x.project_id ? (x.work_order || '整单公共') : '', CAT[x.category], x.payee, x.payee_bank, x.currency, x.amount, x.sst, DOC[x.doc_type], x.doc_no, ST[x.status], x.paid_on || '', x.paid_ref || '', x.creator, x.note])];
     const csv = '﻿' + rows.map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `HOUZY支出_${from}_${to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 30000);
     say(`已导出 ${r.length} 笔。`);
@@ -260,7 +311,8 @@ VIEWS.month = async () => {
     if (T.role === 'finance') $('back').hidden = true;
     $('who').textContent = { finance: '公司财务：所有门店的付款和利润', supervisor: '监理：给自己的工地请款' }[T.role] || (isMgr() ? '店长 / 管理：批准请款、看利润' : '请款，并查看自己提交的记录');
     const want = new URLSearchParams(location.search).get('tab');
-    tab = want && (want !== 'pay' || isFin()) && (want !== 'approve' || isMgr()) ? want : T.role === 'finance' ? 'pay' : 'new';
+    const deep = new URLSearchParams(location.search).has('project') || new URLSearchParams(location.search).has('order');
+    tab = deep ? 'new' : want && (want !== 'pay' || isFin()) && (want !== 'approve' || isMgr()) ? want : T.role === 'finance' ? 'pay' : 'new';
     await refreshCounts(); await show();
   } catch (e) { say(errText(e), true); $('view').innerHTML = ''; }
 })();
