@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#17324f">
+<title>HOUZY HOME · 装修方案</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+  :root { --ink: #17324f; --muted: #5d6b78; --line: #dfe4e8; --bg: #f5f3ee; --card: #fff; --accent: #c4501c; --ok: #1f6f4a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.5; }
+  header { background: var(--ink); color: #fff; padding: 18px 16px; border-bottom: 4px solid var(--accent); }
+  header b { font-size: 20px; letter-spacing: .08em; } header small { display: block; color: #d4e1e8; font-size: 11px; letter-spacing: .2em; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; position: relative; z-index: 1; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0; }
+  h1 { font-size: 22px; margin: 4px 0 2px; } .muted { color: var(--muted); font-size: 13px; }
+  .gate input { font-size: 24px; letter-spacing: .4em; width: 8em; text-align: center; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--ink); background: var(--ink); color: #fff; padding: 9px 18px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .tabs button { background: #fff; color: var(--ink); } .tabs button.on { background: var(--ink); color: #fff; }
+  .total { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .space { border-top: 1px solid var(--line); padding: 12px 0; } .space:first-child { border-top: 0; }
+  .space-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+  .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; } .items span { background: #eef2f5; border-radius: 999px; padding: 2px 10px; font-size: 13px; }
+  .pay div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .warn { color: #b42318; }
+  #wm { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: .13; background-repeat: repeat; }
+  @media print { body * { visibility: hidden !important; } body::after { content: '本页面仅供在线查看'; visibility: visible; } }
+</style>
+</head><body>
+<header><b>HOUZY HOME</b><small>合屋整装 · 装修方案</small></header>
+<div id="wm" hidden></div>
+<main id="app"><div class="card"><p class="muted" id="msg">正在读取…</p></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
+<script>
+'use strict';
+(() => {
+  const SB_URL = 'https://csabbxiijzghooppayae.supabase.co', SB_KEY = 'sb_publishable__9KY2RRSxb1excfVxBTH_Q_5HtFWxmH';
+  const q = new URLSearchParams(location.search), id = q.get('s'), token = q.get('t');
+  const app = document.getElementById('app');
+  const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rm = n => 'RM ' + Math.round(Number(n) || 0).toLocaleString('en-US');
+  const day = s => new Date(s).toLocaleDateString('zh-CN');
+  const say = (t, warn) => { app.innerHTML = `<div class="card"><p class="${warn ? 'warn' : 'muted'}">${t}</p></div>`; };
+  if (!id || !token || !window.supabase) { say('链接不完整，请向顾问重新索取。', true); return; }
+  const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } });
+  const KEY = 'qs-' + id;
+  let data = null, planIdx = 0;
+
+  function gate(note) {
+    app.innerHTML = `<div class="card gate"><h1>查看装修方案</h1><p class="muted">为保护您的报价资料，请输入<b>您手机号的后 4 位</b>。</p>
+      <form id="f"><input id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="手机号后 4 位" required> <button>查看</button></form>
+      ${note ? `<p class="warn">${E(note)}</p>` : ''}</div>`;
+    const f = document.getElementById('f'), c = document.getElementById('code'); c.focus();
+    f.addEventListener('submit', e => { e.preventDefault(); load(c.value.replace(/\D/g, '')); });
+  }
+  async function load(code) {
+    if (!/^\d{4}$/.test(code)) return gate('请输入 4 位数字');
+    say('正在打开…');
+    const { data: r, error } = await sb.rpc('quote_share_open', { p_id: id, p_token: token, p_code: code });
+    if (error) return say('打开失败，请稍后再试。', true);
+    if (!r) return say('链接无效，请向顾问重新索取。', true);
+    if (r.status === 'revoked') return say('这个链接已经停用，请联系您的顾问。', true);
+    if (r.status === 'expired') return say('这个链接已经过期，请联系您的顾问重新发送。', true);
+    if (r.status === 'locked') return say('输错次数太多，请 15 分钟后再试。', true);
+    if (r.status === 'bad_code') { try { sessionStorage.removeItem(KEY); } catch (e) {} return gate(`后 4 位不对${r.left ? `，还可以试 ${r.left} 次` : ''}。`); }
+    try { sessionStorage.setItem(KEY, code); } catch (e) {}
+    data = r; watermark(); render();
+  }
+  function watermark() {
+    const t = `${data.customer_name} ${data.phone_mask} · 仅供本人查看 · HOUZY`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="340" height="180"><text x="10" y="110" transform="rotate(-24 170 90)" font-family="sans-serif" font-size="15" fill="#17324f">${E(t)}</text></svg>`;
+    const wm = document.getElementById('wm'); wm.style.backgroundImage = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`; wm.hidden = false;
+  }
+  function render() {
+    const plans = data.payload.plans || [], p = plans[planIdx] || plans[0];
+    app.innerHTML = `<div class="card"><p class="muted">${E(data.customer_name)} 您好，以下是为您准备的装修方案${data.payload.houseType ? `（${E(data.payload.houseType)}）` : ''}。</p>
+      ${plans.length > 1 ? `<div class="tabs">${plans.map((x, i) => `<button type="button" data-i="${i}" class="${i === planIdx ? 'on' : ''}">${E(x.name)}</button>`).join('')}</div>` : ''}
+      <h1>${E(p.name)}</h1><div class="total">${rm(p.total)}</div>
+      <p class="muted">按空间包价：每个空间的价格已含设计、施工管理等费用${p.designGift ? '；<b style="color:var(--ok)">设计费赠送</b>' : ''}。具体规格以双方确认的合同和附件为准。</p></div>
+      <div class="card">${(p.spaces || []).map(s => `<div class="space"><div class="space-head"><span>${E(s.name)}</span><span class="money">${rm(s.price)}</span></div>${(s.items || []).length ? `<div class="items">${s.items.map(x => `<span>${E(x)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>
+      ${(p.pay || []).length ? `<div class="card pay"><b>付款安排</b>${p.pay.map((x, i) => `<div><span>第 ${i + 1} 期 · ${E(x.name)}（${E(x.pct)}%）</span><span class="money">${rm(x.amt)}</span></div>`).join('')}</div>` : ''}
+      <p class="muted">链接有效期至 ${day(data.expires_at)}。本方案仅供 ${E(data.customer_name)} 本人查看，请勿转发。</p>`;
+    app.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => { planIdx = +b.dataset.i; render(); window.scrollTo(0, 0); }));
+  }
+  let saved = null; try { saved = sessionStorage.getItem(KEY); } catch (e) {}
+  saved ? load(saved) : gate();
+})();
+</script>
+</body></html>
