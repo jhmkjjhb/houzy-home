@@ -1,6 +1,24 @@
 /* UI copy only. Quote data, prices, filenames and customer input stay untouched. */
 (function (root) {
   const pairs = [
+    ['卫生间防水（按间）','Bathroom waterproofing (per room)'],['基层清理→刷界面剂→防水涂料两遍：地面满涂，墙面上翻 1 尺，淋浴区按选定高度；阴角、管根加贴网格布','Clean base → primer → two coats of waterproofing: full floor, 1 ft wall upstand, shower area to the selected height; mesh tape at corners and pipe penetrations'],
+    ['围墙油漆','Boundary wall painting'],['清洗墙面→补裂缝→底漆→外墙面漆两遍','Wash wall → fill cracks → primer → two coats of exterior paint'],
+    ['窗户铁花翻新油漆','Window grille repainting'],['铁花表面清洁后刷油漆两遍（打磨除锈另计）','Clean grille, then two coats of paint (sanding/rust removal extra)'],
+    ['车库大铁门翻新油漆','Main gate repainting'],['大铁门表面清洁后刷油漆两遍（打磨除锈另计）','Clean gate, then two coats of paint (sanding/rust removal extra)'],
+    ['楼梯铁花扶手翻新油漆','Staircase railing repainting'],['楼梯铁花/扶手表面清洁后刷油漆两遍（打磨除锈另计）','Clean railing, then two coats of paint (sanding/rust removal extra)'],
+    ['阳台防护栏杆翻新油漆','Balcony railing repainting'],['阳台栏杆表面清洁后刷油漆两遍（打磨除锈另计）','Clean balcony railing, then two coats of paint (sanding/rust removal extra)'],
+    ['木门 + 门框翻新油漆','Timber door + frame repainting'],['卧室木门连门框一套：打磨、补钉眼、刷底漆和面漆','Bedroom door with frame: sand, fill nail holes, primer and top coat'],
+    ['铁门框改色翻新','Metal door frame recolour'],['铁门框打磨后改色重刷','Sand metal door frame and repaint in a new colour'],
+    ['金属件轻微打磨 + 面漆重刷','Metalwork light sanding + top coat'],['表面状况良好：轻微打磨后重刷面漆','Good surface: light sanding, then top coat'],
+    ['金属件机器打磨 + 红丹防锈底漆','Metalwork machine sanding + red-oxide primer'],['有锈点：机器打磨后涂红丹防锈底漆','Rust spots: machine sanding, then red-oxide anti-rust primer'],
+    ['金属件深度机械除锈 + 除锈剂清洗','Metalwork deep rust removal + rust remover'],['锈蚀严重：深度机械除锈、特效除锈剂清洗（严重的现场另议）','Heavy rust: deep mechanical rust removal and rust-remover wash (severe cases quoted on site)'],
+    ['LED 发光铝合金天花线条（含 220V 灯带）','LED aluminium ceiling profile (with 220V strip)'],['铝合金发光线条贴天花与墙面交角，内置 220V 灯带；转角用阳角配件；预留灯带电源；含安装人工 RM50/尺','Aluminium light profile at the ceiling–wall junction with built-in 220V strip; corner fittings for outside corners; power point reserved; installation RM50/ft included'],
+    ['LED 发光线条 90° 阳角配件','LED profile 90° outside-corner fitting'],['外转角（阳角）专用配件','Fitting for outside corners'],
+    ['LED 发光铝合金线条（灯槽）','LED aluminium light profile (cove)'],['石膏线 / 铝合金线条','Cornice / aluminium profile'],['铁件 / 门翻新油漆','Metalwork / door repainting'],
+    ['生态板','Eco board'],['LED 发光线条规格','LED profile size'],['大号·单色灯带（白/暖/中性光）','Large · single-colour strip (white/warm/neutral)'],['大号·三色光灯带','Large · three-colour strip'],
+    ['小号·单色灯带（白/暖/中性光）','Small · single-colour strip (white/warm/neutral)'],['小号·三色光灯带','Small · three-colour strip'],['特大号·单色灯带（白/暖/中性光）','Extra-large · single-colour strip (white/warm/neutral)'],
+    ['特大号·三色光灯带','Extra-large · three-colour strip'],['大号·不含光源（白罩）','Large · no light source (white cover)'],['大号·不含光源（黑罩）','Large · no light source (black cover)'],['特大号·不含光源','Extra-large · no light source'],
+    ['天花线条材料','Ceiling profile material'],['铝合金线条','Aluminium profile'],['干厨房','Dry kitchen'],['湿厨房','Wet kitchen'],['现场增项','Site additions'],['工程项目','Works'],
     ['报价器 · QUOTE STUDIO','QUOTE STUDIO · 报价器'],
     ['参考做法','Illustrative method'],['项目标准待确认','Project specification to be confirmed'],['施工步骤','Work sequence'],['验收要点','What to inspect'],['参考资料','Reference'],['本说明用于理解项目范围；具体施工标准以本项目双方书面确认内容为准。','This guide explains the scope. The project standard must be confirmed in writing by both parties.'],['项目具体标准以双方书面确认内容为准。','Project specifications are subject to written agreement by both parties.'],['参考做法 · 项目标准待确认','Illustrative method · project specification to be confirmed'],
     ['价格已保存并用于当前报价；这一项已从“只看没核定的”列表移除。','Price saved and applied to this quote. This item has moved out of the unconfirmed list.'],['逐项点「确认此价格」会立即保存并用于报价；批量修改可点上方「保存」。','Confirm a row to save its price and apply it to the quote immediately. Use Save above for batch changes.'],
@@ -676,10 +694,12 @@ CCTV 监控摄像头（含布线+主机分摊）	CCTV camera (wiring and recorde
       .replace(/宽\s*([\d.]+)\s*×\s*深\s*([\d.]+)\s*×\s*高\s*([\d.]+)\s*(cm|mm|尺|ft)?/g, (_, w, d, h, unit = '') => `width ${w} × depth ${d} × height ${h}${unit === '尺' ? ' ft' : unit ? ` ${unit}` : ''}`)
       .replace(/宽\s*([\d.]+)\s*×\s*高\s*([\d.]+)/g, 'width $1 × height $2').replace(/宽\s*([\d.]+)\s*×\s*深\s*([\d.]+)/g, 'width $1 × depth $2').replace(/长\s*([\d.]+)\s*×\s*宽\s*([\d.]+)/g, 'length $1 × width $2')
       .replace(/^\s*客户：/, 'Client: ').replace(/^\s*方案：/, 'Plan: ').replace(/^\s*日期：/, 'Date: ')
+      .replace(/干厨房/g, 'Dry kitchen').replace(/湿厨房/g, 'Wet kitchen')
       .replace(/共管公寓|普通公寓|排屋|半独立式|独立式|联排分层|客厅|餐厅|厨房|书房|阳台/g, match => ({'共管公寓': 'Condominium', '普通公寓': 'Apartment', '排屋': 'Terrace house', '半独立式': 'Semi-detached', '独立式': 'Bungalow', '联排分层': 'Townhouse', '客厅': 'Living room', '餐厅': 'Dining room', '厨房': 'Kitchen', '书房': 'Study', '阳台': 'Balcony'}[match])).replace(/未填写/g, 'Not provided')
       .replace(/砖材规格/g, 'Tile size/finish').replace(/地／墙／门廊通用/g, 'floor/wall/porch').replace(/铺贴辅料／人工另按面积计/g, 'Installation materials and labour priced by area').replace(/未计损耗/g, 'waste excluded').replace(/参考价/g, 'Reference price').replace(/\/片/g, '/piece').replace(/^\s*片\s*$/, 'piece').replace(/平方尺/g, 'sq ft').replace(/平方米/g, 'm²').replace(/\+\s*加一层/g, '+ Add a level')
       .replace(pattern, match => dict.get(match)).replace(/「([^」]+)」/g, (_, label) => `“${dict.get(label) || label}”`).replace(/^\s*已选\s*(\d+) items/, (_, n) => `Selected ${n} items`).replace(/这间完成/g, 'Complete space').replace(/一起选/g, 'Select together').replace(/下一间/g, 'Next space').replace(/(\d+) spaces\b/g, (_, n) => `${n} ${n === '1' ? 'space' : 'spaces'}`)
       .replace(/^\s*长\s*(\d+)/, 'Length $1').replace(/^\s*宽\s*(\d+)/, 'Width $1').replace(/^\s*墙面\s*(\d+)/, 'Wall area $1').replace(/周长\s*(\d+)/g, 'Perimeter $1')
+      .replace(/楼梯/g, 'Staircase').replace(/储物间/g, 'Store room').replace(/阳台/g, 'Balcony').replace(/走廊/g, 'Corridor').replace(/玄关/g, 'Foyer')
       .replace(/（/g, ' (').replace(/）/g, ')').replace(/，/g, ', ').replace(/。/g, '.').replace(/；/g, '; ').replace(/：/g, ': ').replace(/”(?=[A-Z])/g, '” ').replace(/([A-Za-z])\(/g, '$1 (');
   }
   function auditCatalog() {

@@ -530,7 +530,7 @@
 <script src="quote-v2-rules.js?v=20261127gskip"></script>
 <script src="quote-v2-plan.js?v=20261120restore"></script>
 <script src="html2pdf.bundle.min.js?v=0.14.0"></script>
-<script src="quote-v2-i18n.js?v=20261127counter"></script>
+<script src="quote-v2-i18n.js?v=20261127share"></script>
 <script src="quote-v2-workmanship.js?v=20261120-houzy-redraw"></script>
 <script>
 (function () {
@@ -816,17 +816,28 @@
       const items = [...new Set(ls.map(l => PACKS[l.pack]?.label || HOUSE_ITEMS.find(x => x.k === l.pack)?.label || (l.custom ? '现场增项' : PRICE[l.code]?.name || '工程项目')))];
       return { name, price, items };
     });
-    return { id, name: pl.name || '方案 ' + id, total: T.total, designGift: !!T.designGift, spaces, pay: T.pay.map(x => ({ name: x.name, pct: x.pct, amt: x.amt })) };
+    // 按工序：每项只给名称（不带规格）、空间和价格；价格按比例摊进设计、管理等费用，加起来等于总价
+    const f = direct > 0 ? T.total / direct : 0, stages = [];
+    STAGES.forEach(st => {
+      const ls = lines.filter(l => l.stage === st.id); if (!ls.length) return;
+      const m = new Map(); ls.forEach(l => { const nm = l.custom ? l.name : (PRICE[l.code]?.name || l.name), k = nm + '|' + (l.room || ''); const o = m.get(k) || { name: nm, space: l.room || '全屋', raw: 0 }; o.raw += l.total; m.set(k, o); });
+      stages.push({ name: Q.stageTitle(st.id, ls.map(l => l.code)), items: [...m.values()] });
+    });
+    let acc = 0, run = 0; const all = stages.flatMap(g => g.items);
+    all.forEach((it, i) => { run += it.raw; const target = i === all.length - 1 ? T.total : Math.round(run * f); it.price = target - acc; acc = target; delete it.raw; });
+    stages.forEach(g => { g.price = g.items.reduce((t, x) => t + x.price, 0); });
+    return { id, name: pl.name || '方案 ' + id, total: T.total, designGift: !!T.designGift, spaces, stages, pay: T.pay.map(x => ({ name: x.name, pct: x.pct, amt: x.amt })) };
   }
-  const shareLink = r => { const u = new URL('quote-share.html', location.href); u.search = ''; u.hash = ''; u.searchParams.set('s', r.id); u.searchParams.set('t', r.token); return u.href; };
+  const shareLink = r => { const u = new URL('quote-share.html', location.href); u.search = ''; u.hash = ''; u.searchParams.set('s', r.id); u.searchParams.set('t', r.token); if ((r.payload?.lang || r.lang) === 'en') u.searchParams.set('l', 'en'); return u.href; };
   async function openShareDialog() {
     if (!requireClientInfo()) return;
     const digits = String(P.info?.phone || '').replace(/\D/g, '');
     if (digits.length < 6) { alert('请先在「客户资料」里填好客户手机号，客户要用后 4 位打开链接。'); return; }
     const ps = Q.plans(P), d = document.createElement('dialog'); d.className = 'cloud-dialog';
     d.innerHTML = `<h3 style="margin:0 0 8px">发客户看（链接）</h3>
-      <p class="hint" style="margin:0 0 8px">客户只看到<b>每个空间做哪些项目和空间包价</b>，没有数量和单价；打开要输入手机后 4 位 <b>${esc(digits.slice(-4))}</b>；页面铺满「${esc(P.info.name)}」水印。</p>
+      <p class="hint" style="margin:0 0 8px">客户可以按空间看（空间包价）或按工序看（项目名称、空间、价格），<b>没有规格、数量和单价</b>；打开要输入手机后 4 位 <b>${esc(digits.slice(-4))}</b>；页面铺满「${esc(P.info.name)}」水印。</p>
       <div><b>给哪些方案</b><div class="adds" style="margin-top:4px">${ps.map(p => `<label class="chip" style="cursor:pointer"><input type="checkbox" data-share-plan="${esc(p.id)}" ${p.id === plan().id ? 'checked' : ''}> ${esc(p.name || '方案 ' + p.id)}</label>`).join('')}</div></div>
+      <label class="fld" style="margin-top:8px">客户看的语言<select class="cust" data-share-lang><option value="zh">中文</option><option value="en">English</option></select></label>
       <label class="fld" style="margin-top:8px">有效期<select class="cust" data-share-days>${[3, 7, 14, 30].map(n => `<option value="${n}" ${n === 7 ? 'selected' : ''}>${n} 天</option>`).join('')}</select></label>
       <div class="adds" style="margin-top:10px"><button type="button" class="btn pri" data-share-make>生成链接</button><button type="button" class="btn" data-share-close>关闭</button></div>
       <div data-share-out></div><div data-share-list style="margin-top:12px"><span class="hint">正在读取已发出的链接…</span></div>`;
@@ -840,7 +851,7 @@
         if (error) throw error;
         const mine = (data || []).filter(x => x.phone_mask.slice(-4) === digits.slice(-4) && x.customer_name === P.info.name);
         list.innerHTML = mine.length ? `<b>发给这位客户的链接</b>${mine.map(x => { const live = !x.revoked_at && new Date(x.expires_at) > new Date();
-          return `<div class="row" style="justify-content:space-between;align-items:center;gap:6px;border-top:1px solid var(--line);padding:6px 0"><span>${esc((x.payload?.plans || []).map(p => p.name).join('、'))} · ${new Date(x.created_at).toLocaleDateString('zh-CN')} 发<br><small class="hint" style="margin:0">${x.revoked_at ? '已停用' : live ? `有效期到 ${new Date(x.expires_at).toLocaleDateString('zh-CN')}` : '已过期'} · ${x.view_count ? `客户已打开 ${x.view_count} 次（最近 ${new Date(x.last_opened_at).toLocaleString('zh-CN', { hour12: false })}）` : '客户还没打开'}</small></span>${live ? `<span><button type="button" class="chip" data-share-copy="${esc(shareLink(x))}">复制</button><button type="button" class="chip" data-share-revoke="${esc(x.id)}">停用</button></span>` : ''}</div>`; }).join('')}` : '<span class="hint">还没有发过链接给这位客户。</span>';
+          return `<div class="row" style="justify-content:space-between;align-items:center;gap:6px;border-top:1px solid var(--line);padding:6px 0"><span>${esc((x.payload?.plans || []).map(p => p.name).join('、'))}${x.payload?.lang === 'en' ? ' · English' : ' · 中文'} · ${new Date(x.created_at).toLocaleDateString('zh-CN')} 发<br><small class="hint" style="margin:0">${x.revoked_at ? '已停用' : live ? `有效期到 ${new Date(x.expires_at).toLocaleDateString('zh-CN')}` : '已过期'} · ${x.view_count ? `客户已打开 ${x.view_count} 次（最近 ${new Date(x.last_opened_at).toLocaleString('zh-CN', { hour12: false })}）` : '客户还没打开'}</small></span>${live ? `<span><button type="button" class="chip" data-share-copy="${esc(shareLink(x))}">复制</button><button type="button" class="chip" data-share-revoke="${esc(x.id)}">停用</button></span>` : ''}</div>`; }).join('')}` : '<span class="hint">还没有发过链接给这位客户。</span>';
       } catch (err) { list.innerHTML = `<span class="hint">${esc(/quote_shares|relation|schema cache/i.test(err.message || '') ? '「发客户看」需要先在 Supabase 运行 quote_share_migration.sql。' : (err.message || String(err)))}</span>`; }
     };
     refresh();
@@ -855,10 +866,16 @@
         b.disabled = true; b.textContent = '正在生成…';
         try {
           sb = sb || await cloudSession();
-          const payload = { houseType: HOUSES[P.houseType]?.label || '', plans: ids.map(sharePlan) };
+          const lang = d.querySelector('[data-share-lang]').value, T8 = window.HOUZY_QUOTE_I18N?.translate || (x => x);
+          const payEn = { '签约定金': 'Contract signing deposit', '水电隐蔽验收通过': 'After concealed electrical and plumbing inspection', '泥水瓷砖验收通过': 'After masonry and tiling inspection', '竣工验收交付': 'Upon final inspection and handover' };
+          const tx = v => lang === 'en' ? T8(String(v || '')) : v;
+          const STAGE_EN = { 拆除: 'Demolition', 改墙: 'Wall changes', 保护: 'Protection', 申请: 'Permits', 清运: 'Waste removal', 防白蚁: 'Termite control', 电路: 'Electrical', 水路: 'Plumbing', 弱电: 'Low-voltage', 空调管: 'Aircon piping', 燃气: 'Gas', 防水: 'Waterproofing', 瓷砖: 'Tiling', 地板: 'Flooring', 石材: 'Stone', 楼梯: 'Stairs', 天花: 'Ceiling', 墙面: 'Walls', 外墙: 'Exterior walls', 楼梯油漆: 'Stair painting', 橱柜: 'Kitchen cabinets', 定制柜: 'Custom cabinetry', 门窗: 'Doors & windows', 栏杆: 'Railings', 背景墙: 'Feature walls', 翻新油漆: 'Repainting', 卫浴: 'Bathroom', 厨房: 'Kitchen', 灯具开关: 'Lights & switches', 智能家居: 'Smart home', 清洁: 'Cleaning', 扩建: 'Extension', 雨棚: 'Canopy', 围墙大门: 'Fence & gate', 户外地面: 'Outdoor flooring', 屋顶: 'Roof', 软装: 'Furnishings' };
+          const stageEn = n => { const more = /等$/.test(n); const parts = n.replace(/等$/, '').split('、').map(x => STAGE_EN[x] || tx(x)); return parts.join(', ') + (more ? ' etc.' : ''); };
+          const plansOut = ids.map(sharePlan).map(p => lang !== 'en' ? p : { ...p, name: tx(p.name), spaces: p.spaces.map(x => ({ ...x, name: tx(x.name), items: x.items.map(tx) })), stages: p.stages.map(g => ({ ...g, name: stageEn(g.name), items: g.items.map(x => ({ ...x, name: tx(x.name), space: tx(x.space) })) })), pay: p.pay.map(x => ({ ...x, name: payEn[x.name] || tx(x.name) })) });
+          const payload = { lang, houseType: lang === 'en' ? (HOUSES[P.houseType]?.en || '') : (HOUSES[P.houseType]?.label || ''), plans: plansOut };
           const { data, error } = await sb.rpc('quote_share_create', { p_data: { customer_name: P.info.name, phone: P.info.phone, days: +d.querySelector('[data-share-days]').value, payload } });
           if (error) throw error;
-          const link = shareLink(data);
+          const link = shareLink({ ...data, lang });
           out.innerHTML = `<div class="card" style="margin-top:10px"><b>链接已生成</b>（有效期到 ${new Date(data.expires_at).toLocaleDateString('zh-CN')}）<input class="cust" style="width:100%;margin-top:6px" readonly value="${esc(link)}"><div class="adds" style="margin-top:6px"><button type="button" class="btn pri" data-share-copy="${esc(link)}">复制链接</button></div><p class="hint" style="margin:6px 0 0">发给客户时告诉对方：打开后输入自己手机号后 4 位。之后改了报价，要重新生成链接，旧链接内容不会自动更新。</p></div>`;
           refresh();
         } catch (err) { alert('生成失败：' + (/quote_share_create|function|schema cache/i.test(err.message || '') ? '需要先在 Supabase 运行 quote_share_migration.sql。' : (err.message || err))); }
