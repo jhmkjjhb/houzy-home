@@ -8138,9 +8138,9 @@ function renderUsersTable(users) {
     <div id="card-${u.id}" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div class="flex items-start justify-between mb-3">
         <div class="min-w-0 flex-1">
-          <div class="font-semibold text-gray-800 truncate">${['general_manager','admin','superadmin'].includes(profile.role) ? `<a href="finance.html?tab=people&user=${u.id}" target="_blank" class="hover:underline" title="打开个人看板">${u.name || '—'} <span class="text-xs font-normal text-emerald-700">看板 ›</span></a>` : (u.name || '—')}</div>
+          <div class="font-semibold text-gray-800 truncate">${['general_manager','admin','superadmin'].includes(profile.role) ? `<a href="finance.html?tab=people&user=${u.id}" target="_blank" class="hover:underline" title="打开个人看板">${escHtml(u.name || '—')} <span class="text-xs font-normal text-emerald-700">看板 ›</span></a>` : escHtml(u.name || '—')}</div>
           ${(u.extra_roles || []).length ? `<div class="text-xs text-emerald-700 mt-0.5">兼任：${(u.extra_roles || []).map(x => EXTRA_ROLE_LABEL[x] || x).join('、')}</div>` : ''}
-          <div class="text-xs text-gray-400 mt-0.5">${u.phone || '无手机号'}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${escHtml(u.phone || '无手机号')}</div>
         </div>
         <button onclick="toggleUserActive('${u.id}',${u.active})"
                 class="ml-3 flex-shrink-0 text-xs px-3 py-1 rounded-full font-medium ${u.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
