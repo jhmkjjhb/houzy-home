@@ -754,7 +754,9 @@
     return false;
   }
   function save(sync = true) { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} backupNow(); updateCloudSaveInfo(); if (sync && typeof scheduleAutoSync === 'function') scheduleAutoSync(); }
-  const quoteFilename = ext => `HOUZY-${uiLang === 'en' ? 'Quote' : '报价'}-${String(P.info?.name || (uiLang === 'en' ? 'Client' : '未命名客户')).replace(/[\\/:*?"<>|\r\n]/g, '_').slice(0, 40)}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  // 文件名带方案：PDF / Excel 是当前方案（如「方案B」）；专属文件含全部方案（如「方案A+B」）
+  const planTag = all => { const ps = Q.plans(P); if (all) return ps.length > 1 ? '-方案' + ps.map(p => p.id).join('+') : ''; const n = String(Q.activePlan(P).name || '方案 ' + Q.activePlan(P).id).replace(/\s+/g, ''); return '-' + n; };
+  const quoteFilename = (ext, all) => `HOUZY-${uiLang === 'en' ? 'Quote' : '报价'}-${String(P.info?.name || (uiLang === 'en' ? 'Client' : '未命名客户')).replace(/[\\/:*?"<>|\r\n]/g, '_').slice(0, 40)}${planTag(all).replace(/[\\/:*?"<>|\r\n]/g, '_')}-${new Date().toISOString().slice(0, 10)}.${ext}`;
   function downloadQuote(content, filename, type) {
     const url = URL.createObjectURL(new Blob([content], { type }));
     const link = document.createElement('a'); link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
@@ -796,11 +798,11 @@
     const url = URL.createObjectURL(zipFiles(files)), link = document.createElement('a'); link.href = url; link.download = quoteFilename('xlsx'); document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   function exportQuoteProject() {
-    downloadQuote(JSON.stringify({ format: 'houzy-quote-v2', version: 1, exportedAt: new Date().toISOString(), project: P, images: IMG }, null, 2), quoteFilename('houzy-quote.json'), 'application/json;charset=utf-8');
+    downloadQuote(JSON.stringify({ format: 'houzy-quote-v2', version: 1, exportedAt: new Date().toISOString(), project: P, images: IMG }, null, 2), quoteFilename('houzy-quote.json', true), 'application/json;charset=utf-8');
   }
   async function exportQuotePdf(summary) {
     if (!requireClientInfo()) return;
-    const C = compute(), title = summary ? (C.K?.red?.length ? '预估项目方案' : '项目方案报价') : '详细工程报价', groups = new Map();
+    const C = compute(), title = (summary ? (C.K?.red?.length ? '预估项目方案' : '项目方案报价') : '详细工程报价') + (Q.plans(P).length > 1 ? ` · ${Q.activePlan(P).name || '方案 ' + Q.activePlan(P).id}` : ''), groups = new Map();
     for (const line of summary ? C.lines : quoteDisplayLines(C.lines)) {
       const group = line.room || '全屋工程';
       if (!groups.has(group)) groups.set(group, []);
