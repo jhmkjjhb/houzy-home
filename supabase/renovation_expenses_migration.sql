@@ -71,7 +71,8 @@ ALTER TABLE public.renovation_expenses ADD CONSTRAINT reno_expenses_currency CHE
 -- 谁是财务（含总经理及以上，他们也能付款）
 CREATE OR REPLACE FUNCTION public._is_finance()
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public,pg_temp AS $$
- SELECT EXISTS(SELECT 1 FROM profiles WHERE id=auth.uid() AND active AND role IN ('finance','general_manager','admin','superadmin'));
+ SELECT EXISTS(SELECT 1 FROM profiles p WHERE p.id=auth.uid() AND p.active
+  AND (p.role IN ('finance','general_manager','admin','superadmin') OR coalesce(to_jsonb(p)->'extra_roles','[]'::jsonb) ? 'finance'));
 $$;
 REVOKE ALL ON FUNCTION public._is_finance() FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public._is_finance() TO authenticated;

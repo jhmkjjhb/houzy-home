@@ -167,6 +167,9 @@
       <div class="nav-link" id="nav-finance" data-hz-icon="pricing" onclick="location.href='finance.html'">
         <span>财务 · 请款</span>
       </div>
+      <div class="nav-link hidden" id="nav-site" data-hz-icon="pricing" onclick="location.href='renovation-site.html'">
+        <span>我的工地（监理）</span>
+      </div>
       <div class="nav-sec hidden admin-nav" data-perm="pricing">经营</div>
       <div class="nav-link hidden admin-nav" id="nav-pricing" data-hz-icon="pricing" data-perm="pricing" onclick="goto('pricing')">
         <span>商品价目</span>
@@ -2472,6 +2475,7 @@ async function init() {
   }
 
   profile = await getProfilePatiently();
+  if ((profile?.extra_roles || []).includes('supervisor')) document.getElementById('nav-site')?.classList.remove('hidden');
   // 门店名和下面的数据同时读，不再排队
   const storeNameP = profile?.store_id
     ? sb.from('stores').select('name').eq('id', profile.store_id).single().then(r => r.data?.name || '', () => '')
@@ -8037,6 +8041,7 @@ const ROLE_OPTIONS = [
 ];
 
 let suppliersMap = {};
+const EXTRA_ROLE_LABEL = { finance: '公司财务', supervisor: '施工监理' };
 
 function switchUserTab(tab) {
   const tabs = ['staff', 'supplier'];
@@ -8074,7 +8079,7 @@ async function loadUsersPage() {
 
 async function loadUsersData() {
   const [{ data, error }, { data: supRows }] = await Promise.all([
-    sb.from('profiles').select('id, name, phone, role, store_id, region, active, created_at')
+    sb.from('profiles').select('*')
       .neq('role', 'supplier').neq('role', 'logistics')
       .order('created_at', { ascending: false }).limit(500),
     sb.from('suppliers').select('user_id, supplier_code, product_types'),
@@ -8118,7 +8123,8 @@ function renderUsersTable(users) {
       ${stores.map(s => `<option value="${s.id}" ${s.id === currentStoreId ? 'selected' : ''}>${s.name}</option>`).join('')}
     </select>`;
 
-  el.innerHTML = users.map(u => {
+  // 停用的人收进最下面的折叠栏
+  const card = u => {
     const sup = suppliersMap[u.id];
     const supInfo = u.role === 'supplier' && sup ? `
       <div class="col-span-2 mt-1 p-2 bg-blue-50 rounded-lg">
@@ -8132,7 +8138,8 @@ function renderUsersTable(users) {
     <div id="card-${u.id}" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div class="flex items-start justify-between mb-3">
         <div class="min-w-0 flex-1">
-          <div class="font-semibold text-gray-800 truncate">${u.name || '—'}</div>
+          <div class="font-semibold text-gray-800 truncate">${['general_manager','admin','superadmin'].includes(profile.role) ? `<a href="finance.html?tab=people&user=${u.id}" target="_blank" class="hover:underline" title="打开个人看板">${u.name || '—'} <span class="text-xs font-normal text-emerald-700">看板 ›</span></a>` : (u.name || '—')}</div>
+          ${(u.extra_roles || []).length ? `<div class="text-xs text-emerald-700 mt-0.5">兼任：${(u.extra_roles || []).map(x => EXTRA_ROLE_LABEL[x] || x).join('、')}</div>` : ''}
           <div class="text-xs text-gray-400 mt-0.5">${u.phone || '无手机号'}</div>
         </div>
         <button onclick="toggleUserActive('${u.id}',${u.active})"
@@ -8154,6 +8161,10 @@ function renderUsersTable(users) {
           <input id="region-${u.id}" type="text" value="${u.region || ''}" placeholder="如 south"
                  class="text-xs border border-gray-200 rounded px-2 py-1.5 w-full focus:outline-none focus:border-hg">
         </div>
+        ${['customer','supplier','logistics'].includes(u.role) ? '' : `<div class="col-span-2">
+          <div class="text-xs text-gray-400 mb-1">兼任（可多选，主职位之外再加的权限）</div>
+          <div class="flex gap-4 flex-wrap">${Object.entries(EXTRA_ROLE_LABEL).map(([k, n]) => `<label class="text-xs text-gray-700 flex items-center gap-1"><input type="checkbox" id="extra-${u.id}-${k}" ${(u.extra_roles || []).includes(k) ? 'checked' : ''}> ${n}</label>`).join('')}</div>
+        </div>`}
         ${supInfo}
       </div>
       <button id="save-btn-${u.id}" onclick="saveUser('${u.id}')"
@@ -8161,13 +8172,15 @@ function renderUsersTable(users) {
         保存
       </button>
     </div>`;
-  }).join('');
+  };
+  const on = users.filter(u => u.active !== false), off = users.filter(u => u.active === false);
+  el.innerHTML = on.map(card).join('') + (off.length ? `<details class="mt-4 border-t border-gray-200 pt-2"><summary class="cursor-pointer text-sm text-gray-500 py-2">已停用（${off.length} 人）· 点开查看，可重新启用</summary><div class="space-y-3 mt-2">${off.map(card).join('')}</div></details>` : '');
 }
 
 function lockUserCard(uid) {
   const card = document.getElementById(`card-${uid}`);
   if (!card) return;
-  card.querySelectorAll('select, input[type="text"]').forEach(el => {
+  card.querySelectorAll('select, input[type="text"], input[type="checkbox"]').forEach(el => {
     el.disabled = true;
     el.classList.add('opacity-60', 'cursor-not-allowed');
   });
@@ -8181,7 +8194,7 @@ function lockUserCard(uid) {
 function enableEditUser(uid) {
   const card = document.getElementById(`card-${uid}`);
   if (!card) return;
-  card.querySelectorAll('select, input[type="text"]').forEach(el => {
+  card.querySelectorAll('select, input[type="text"], input[type="checkbox"]').forEach(el => {
     el.disabled = false;
     el.classList.remove('opacity-60', 'cursor-not-allowed');
   });
@@ -8211,6 +8224,7 @@ async function saveUser(uid) {
   const storeId = document.getElementById(`store-${uid}`).value;
   const region  = document.getElementById(`region-${uid}`).value.trim();
   const u       = allUsers.find(u => u.id === uid);
+  const extra   = Object.keys(EXTRA_ROLE_LABEL).filter(k => document.getElementById(`extra-${uid}-${k}`)?.checked && k !== role);
 
   if (uid === profile.id && u && role !== u.role) {
     if (!confirm(t('confirm_modify_own_role'))) return;
@@ -8221,7 +8235,7 @@ async function saveUser(uid) {
   btn.textContent = '保存中…';
 
   const { error } = await sb.from('profiles')
-    .update({ role, store_id: storeId || null, region: region || null })
+    .update({ role, store_id: storeId || null, region: region || null, ...('extra_roles' in (u || {}) ? { extra_roles: extra } : {}) })
     .eq('id', uid);
 
   if (error) {
@@ -8233,9 +8247,9 @@ async function saveUser(uid) {
 
   const roleLabel  = ROLE_OPTIONS.find(r => r.value === role)?.label || role;
   const storeLabel = stores.find(s => s.id === storeId)?.name || '无';
-  if (u) { u.role = role; u.store_id = storeId || null; u.region = region || null; }
+  if (u) { u.role = role; u.store_id = storeId || null; u.region = region || null; if ('extra_roles' in u) u.extra_roles = extra; }
 
-  addOpLog(`修改「${u?.name || uid}」→ 角色: ${roleLabel}，店面: ${storeLabel}${region ? '，区域: ' + region : ''}`);
+  addOpLog(`修改「${u?.name || uid}」→ 角色: ${roleLabel}${extra.length ? '，兼任: ' + extra.map(x => EXTRA_ROLE_LABEL[x]).join('、') : ''}，店面: ${storeLabel}${region ? '，区域: ' + region : ''}`);
   lockUserCard(uid);
 }
 

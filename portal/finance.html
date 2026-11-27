@@ -82,7 +82,7 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-doc]
 // ---------- 栏目 ----------
 const isMgr = () => MANAGER.includes(T.role), isFin = () => !!T.finance;
 function tabs() {
-  const list = [['new', '请款'], ['mine', '我的请款'], ...(isMgr() ? [['approve', '待批准']] : []), ...(isFin() ? [['pay', '待付款']] : []), ...(isMgr() || isFin() ? [['profit', '每单利润'], ['month', '门店月账']] : [])];
+  const list = [['new', '请款'], ['mine', '我的请款'], ...(isMgr() ? [['approve', '待批准']] : []), ...(isFin() ? [['pay', '待付款']] : []), ...(isMgr() || isFin() ? [['profit', '每单利润'], ['month', '门店月账']] : []), ...(isFin() ? [['people', '人员看板']] : [])];
   $('tabs').innerHTML = list.map(([k, n]) => `<button type="button" data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}${counts[k] ? `<b>${counts[k]}</b>` : ''}</button>`).join('');
 }
 $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; say(''); show(); } });
@@ -299,6 +299,43 @@ VIEWS.month = async () => {
   });
 };
 
+// ---------- 人员看板（总经理、公司财务、管理员）----------
+const ROLE_NAME = { staff: '店员', store_manager: '店长', regional_manager: '区域负责人', general_manager: '总经理', admin: '管理员', superadmin: '超级管理员', supervisor: '施工监理', finance: '公司财务', warehouse: '仓库' };
+const EXTRA_NAME = { finance: '公司财务', supervisor: '施工监理' };
+const ORDER_ST = { pending_payment: '待付款', paid: '已付款', assigned: '已派单', accepted: '工厂接单', in_production: '生产中', production_complete: '生产完成', shipped: '已发货', in_transit: '运输中', arrived: '已送达', installing: '安装中', completed: '完成', after_sales: '售后', closed: '关闭', cancelled: '已取消' };
+const recentText = t => String(t).replace(/→ ([a-z_]+)/, (m, k) => '→ ' + (ORDER_ST[k] || k));
+let personId = new URLSearchParams(location.search).get('user'), personMonth = today().slice(0, 7);
+const curMap = o => Object.entries(o || {}).map(([c, n]) => money(n, c)).join(' + ') || money(0);
+VIEWS.people = async () => {
+  if (personId) return drawPerson();
+  const list = await rpc('staff_people_list'), row = u => `<div class="item" data-person="${u.id}" style="cursor:pointer"><div class="item-head"><b>${E(u.name || '(未填名字)')}</b><span style="color:var(--green);font-size:13px">看板 ›</span></div><small>${ROLE_NAME[u.role] || E(u.role)}${(u.extra_roles || []).length ? ' · 兼任 ' + u.extra_roles.map(x => EXTRA_NAME[x] || x).join('、') : ''}${u.store ? ' · ' + E(u.store) : ''}</small></div>`;
+  const on = list.filter(u => u.active !== false), off = list.filter(u => u.active === false);
+  $('view').innerHTML = `<div class="card"><h2>人员看板</h2><p class="hint">点一个人，看他这个月的开单、整装、报价、监理、请款和最近动态。</p>${on.map(row).join('') || '<p class="hint">没有人员。</p>'}
+   ${off.length ? `<details style="margin-top:10px"><summary class="hint">已停用（${off.length} 人）</summary>${off.map(row).join('')}</details>` : ''}</div>`;
+};
+async function drawPerson() {
+  const v = await rpc('staff_person_overview', { p_user: personId, p_month: personMonth + '-01' }), u = v.person;
+  const tile = (label, value, sub = '') => `<div><small>${label}</small><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const R = v.renovation, Q = v.quotes, S = v.supervision, X = v.expenses, A = v.approvals;
+  $('view').innerHTML = `<p><a href="#" data-people-back style="color:var(--green)">‹ 所有人员</a></p>
+   <div class="card"><div class="item-head"><h2 style="margin:0">${E(u.name || '(未填名字)')}${u.active === false ? ' <span class="tag void">已停用</span>' : ''}</h2><input type="month" data-pmonth value="${personMonth}" style="font:inherit;padding:4px 8px;border:1px solid #d0c8b8;border-radius:8px"></div>
+    <small style="color:var(--muted)">${ROLE_NAME[u.role] || E(u.role)}${(u.extra_roles || []).length ? ' · 兼任 ' + u.extra_roles.map(x => EXTRA_NAME[x] || x).join('、') : ''}${u.store ? ' · ' + E(u.store) : ''}${u.phone ? ' · ' + E(u.phone) : ''}</small></div>
+   <h2 style="font-size:15px;margin:12px 0 6px">${E(v.month)} 业绩</h2>
+   <div class="tot">${tile('普通订单 · 本月开单', v.goods.created + ' 张', curMap(v.goods_amount))}${tile('普通订单 · 本月收款', curMap(v.goods_received), '进行中 ' + v.goods.open + ' 张')}
+    ${tile('整装 · 本月签约', R.signed + ' 张', RM(R.signed_amount))}${tile('整装 · 本月收款', RM(R.received), `施工中 ${R.active} 张${R.drafts ? ' · 草稿 ' + R.drafts : ''}`)}</div>
+   <div class="tot">${tile('报价 · 发给客户', Q.links + ' 个链接', `客户打开 ${Q.opened} 个，共 ${Q.views} 次`)}${tile('报价 · 本月改过', Q.saved + ' 份', '云端保存的报价')}
+    ${tile('施工监理 · 负责工地', S.sites + ' 个', `本月记日志 ${S.log_days} 天 · 共 ${S.entries} 条`)}${tile('监理 · 未解决问题', S.open_issues + ' 个', '')}</div>
+   <div class="tot">${tile('请款 · 本月提交', X.count + ' 笔', curMap(X.amount))}${tile('请款 · 待批 / 本月退回', `${X.pending} / ${X.rejected}`, '')}
+    ${tile('审批 · 本月批准别人', A.approved + ' 笔', '')}${tile('付款 · 本月付出', A.paid + ' 笔', curMap(A.paid_amount))}</div>
+   <div class="card"><h2>最近动态</h2>${v.recent.length ? v.recent.map(r => `<div class="item"><small>${new Date(r.at).toLocaleString('zh-CN', { hour12: false })} · ${{ order: '订单', renovation: '整装', expense: '请款' }[r.kind]}</small>${E(recentText(r.text))}</div>`).join('') : '<p class="hint">没有记录。</p>'}</div>`;
+}
+$('view').addEventListener('click', e => {
+  if (tab !== 'people') return;
+  const p = e.target.closest('[data-person]'); if (p) { personId = p.dataset.person; guarded(drawPerson); return; }
+  if (e.target.closest('[data-people-back]')) { e.preventDefault(); personId = null; guarded(VIEWS.people); }
+});
+$('view').addEventListener('change', e => { if (tab === 'people' && e.target.matches('[data-pmonth]')) { personMonth = e.target.value || personMonth; guarded(drawPerson); } });
+
 // ---------- 开始 ----------
 (async () => {
   try {
@@ -312,7 +349,7 @@ VIEWS.month = async () => {
     $('who').textContent = { finance: '公司财务：所有门店的付款和利润', supervisor: '监理：给自己的工地请款' }[T.role] || (isMgr() ? '店长 / 管理：批准请款、看利润' : '请款，并查看自己提交的记录');
     const want = new URLSearchParams(location.search).get('tab');
     const deep = new URLSearchParams(location.search).has('project') || new URLSearchParams(location.search).has('order');
-    tab = deep ? 'new' : want && (want !== 'pay' || isFin()) && (want !== 'approve' || isMgr()) ? want : T.role === 'finance' ? 'pay' : 'new';
+    tab = deep ? 'new' : want && (want !== 'pay' || isFin()) && (want !== 'approve' || isMgr()) && (want !== 'people' || isFin()) ? want : T.role === 'finance' ? 'pay' : 'new';
     await refreshCounts(); await show();
   } catch (e) { say(errText(e), true); $('view').innerHTML = ''; }
 })();
