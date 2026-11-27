@@ -616,6 +616,8 @@
     outdoor: [['扩建', /^(extension|ext_permit)$/], ['雨棚', /^(awning|sunroom_wall)$/], ['围墙大门', /^(fence|autogate|fence_paint|gate_paint)$/], ['户外地面', /^(outdoor_paving|outdoor_tile|decking|outdoor_planter|drain_ch)$/], ['屋顶', /^roof_fix$/]],
     soft: [['软装', /./]],
   };
+  // 组内按项目排序用：这一项在本工序里属于第几类（对不上的排最后）
+  function stagePart(id, code) { const i = (STAGE_PARTS[id] || []).findIndex(([, re]) => re.test(code)); return i < 0 ? 99 : i; }
   function stageTitle(id, codes) {
     const parts = (STAGE_PARTS[id] || []).filter(([, re]) => codes.some(c => re.test(c))).map(([label]) => label);
     if (!parts.length) return (STAGES.find(s => s.id === id) || {}).name || id;
@@ -1130,7 +1132,7 @@
     return project;
   }
 
-  const api = { stageTitle, groupOffs, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { stageTitle, stagePart, groupOffs, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
