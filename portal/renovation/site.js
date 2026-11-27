@@ -146,7 +146,7 @@
    return `<details class="site-wo"${done?'':''}><summary><b>${E(w.group_name)}</b><span>${done?'✓ 已完成':`${w.planned_start?E(w.planned_start.slice(5))+'–'+E((w.planned_end||'').slice(5)):'未排期'}${w.assignee?' · '+E(w.assignee):''}`}</span></summary>
     <ul>${w.items.map(i=>`<li><span>${E(i.name)}${i.spec?` <small>${E(i.spec)}</small>`:''}</span><em class="st-${i.stage}">${E(STAGE[i.stage]||i.stage)}${i.stage==='ordered'&&i.expected_on?' · '+E(i.expected_on.slice(5))+' 到':''}</em></li>`).join('')}</ul>
     ${acts.length?`<div class="site-row">${acts.join('')}</div>`:''}</details>`;};
-  el.innerHTML=`<section class="site-head">${list?'<button type="button" class="site-back" data-back>‹ 我的工地</button>':''}<p class="site-eyebrow">HOUZY 施工监理 · ${E(site.supervisor.name)}</p><h1>${E(P.contract_no)}</h1><p>${E(P.address||'')}${days!==null?` · 交房 ${E(P.handover_on)}（${days>=0?'还有 '+days+' 天':'已过 '+(-days)+' 天'}）`:''}</p></section>
+  el.innerHTML=`<section class="site-head">${list?'<button type="button" class="site-back" data-back>‹ 我的工地</button>':''}<p class="site-eyebrow">HOUZY 施工监理 · ${E(site.supervisor.name)}</p><h1>${E(P.contract_no)}</h1><p>${E(P.address||'')}${days!==null?` · 交房 ${E(P.handover_on)}（${days>=0?'还有 '+days+' 天':'已过 '+(-days)+' 天'}）`:''}</p>${auth?'':`<a href="finance.html?project=${E(P.id)}" style="display:inline-block;margin-top:8px;color:var(--gold);font-weight:700;text-decoration:none">💰 请款 / 记支出（拍单据）</a>`}</section>
    <p id="site-msg" class="site-msg" role="status"></p>
    <section class="site-card"><h2>今天要做</h2>
     ${tasks.map(x=>`<button type="button" class="site-task" data-act="${x.act}" data-wo="${x.w.id}"><b>${E(x.label)}</b><span>${E(x.sub)}</span></button>`).join('')}
