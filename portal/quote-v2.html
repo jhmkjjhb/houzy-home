@@ -1137,7 +1137,7 @@
   }
   async function listCloudRecords(sb) {
     const { data, error } = await sb.from('quote_cloud_slots')
-      .select('slot,revision,customer_name,customer_phone,updated_at').order('slot');
+      .select('slot,revision,customer_name,customer_phone,updated_at,plans:document->project->plans').order('slot');
     if (error) throw error;
     cloudRecords = data || [];
     cloudListState = 'ready';
@@ -1152,7 +1152,7 @@
       const slot = +record.slot;
       const date = new Date(record.updated_at).toLocaleString('zh-MY', { hour12: false });
       const current = cloudCurrent?.slot === slot && cloudCurrent?.revision === record.revision;
-      return `<div class="cloud-library-row"><button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}</small></span><span class="cloud-arrow">打开 →</span></button><button type="button" class="chip cloud-del" data-cloud-del="${slot}" aria-label="删除第 ${slot} 份云端报价">删除</button></div>`;
+      return `<div class="cloud-library-row"><button type="button" class="cloud-library-record" data-cloud-open="${slot}" aria-label="打开第 ${slot} 份云端报价：${esc(record.customer_name)}"><span><b>第 ${slot} 份 · ${esc(record.customer_name)}</b>${current ? ' <span class="hint">（当前打开）</span>' : ''}<small>${esc(record.customer_phone)} · ${esc(date)}${Array.isArray(record.plans) && record.plans.length ? ` · 含${record.plans.map(p => esc(p.name || '方案 ' + p.id)).join('、')}` : ''}</small></span><span class="cloud-arrow">打开 →</span></button><button type="button" class="chip cloud-del" data-cloud-del="${slot}" aria-label="删除第 ${slot} 份云端报价">删除</button></div>`;
     }).join('');
   }
   function cloudSaveInfoText() {
@@ -1182,7 +1182,7 @@
       const record = records.find(item => item.slot === slot);
       if (!record) return `<div class="cloud-slot"><div><b>第 ${slot} 份 · 空位</b></div></div>`;
       const date = new Date(record.updated_at).toLocaleString('zh-MY', { hour12: false });
-      return `<div class="cloud-slot"><div><b>第 ${slot} 份 · ${esc(record.customer_name)}</b><small>${esc(record.customer_phone)} · ${esc(date)}</small></div><div class="cloud-slot-actions">${importingPlan ? `<button type="button" class="btn" data-cloud-import-plan="${slot}">${uiLang === 'en' ? `Import as Plan ${nextPlanId() || 'B'}` : `导入为方案 ${nextPlanId() || 'B'}`}</button>` : `<button type="button" class="btn" data-cloud-open="${slot}">打开</button><button type="button" class="btn warn" data-cloud-overwrite="${slot}">覆盖这份</button>`}</div></div>`;
+      return `<div class="cloud-slot"><div><b>第 ${slot} 份 · ${esc(record.customer_name)}</b><small>${esc(record.customer_phone)} · ${esc(date)}${Array.isArray(record.plans) && record.plans.length ? ` · 含${record.plans.map(p => esc(p.name || '方案 ' + p.id)).join('、')}` : ''}</small></div><div class="cloud-slot-actions">${importingPlan ? `<button type="button" class="btn" data-cloud-import-plan="${slot}">${uiLang === 'en' ? `Import as Plan ${nextPlanId() || 'B'}` : `导入为方案 ${nextPlanId() || 'B'}`}</button>` : `<button type="button" class="btn" data-cloud-open="${slot}">打开</button><button type="button" class="btn warn" data-cloud-overwrite="${slot}">覆盖这份</button>`}</div></div>`;
     }).join('');
     document.getElementById('cloud-dialog-title').textContent = importingPlan ? (uiLang === 'en' ? 'Choose a cloud quotation to import' : '选择要导入的云端方案') : choosingOverwrite ? '3 份已满，请选择要覆盖的报价' : '我的云端报价';
     document.getElementById('cloud-slots').innerHTML = rows;
@@ -1972,7 +1972,7 @@
       ? (paymentLabelsEn[value] || window.HOUZY_QUOTE_I18N.translate(value))
       : value;
     const mode = P.quoteMode || 'estimate';
-    let h = `<h2>⑤ 报价单</h2><section class="card cloud-library noprint" aria-label="我的云端报价"><div class="cloud-library-head"><b>我的云端报价（最多 3 份）</b><button type="button" class="chip" data-cloud-refresh>刷新</button></div><div id="cloud-quote-list" class="cloud-library-list">${cloudListHtml()}</div><div class="adds" style="margin:8px 0 0"><button type="button" class="btn pri" data-cloud-save>保存当前报价到云端</button><span class="hint" style="align-self:center">连上云端后，每次修改几秒内自动同步（含平面图和照片），手机电脑都能打开；第 4 份须选择覆盖。</span></div><div class="hint" data-cloud-save-info style="margin-top:8px">${cloudSaveInfoText()}</div></section>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
+    let h = `<h2>⑤ 报价单</h2><section class="card cloud-library noprint" aria-label="我的云端报价"><div class="cloud-library-head"><b>我的云端报价（最多 3 份）</b><button type="button" class="chip" data-cloud-refresh>刷新</button></div><div id="cloud-quote-list" class="cloud-library-list">${cloudListHtml()}</div><div class="adds" style="margin:8px 0 0"><button type="button" class="btn pri" data-cloud-save>保存当前报价到云端</button><span class="hint" style="align-self:center">连上云端后，每次修改几秒内自动同步（含平面图和照片），手机电脑都能打开；第 4 份须选择覆盖。${Q.plans(P).length > 1 ? `<b>${Q.plans(P).map(p => esc(p.name || '方案 ' + p.id)).join('、')}会一起保存在同一份里。</b>` : ''}</span></div><div class="hint" data-cloud-save-info style="margin-top:8px">${cloudSaveInfoText()}</div></section>${planBar()}<div class="adds noprint" style="margin:0 0 10px">${[['estimate', '预估报价（可有暂定项）'], ['formal', '正式报价（全部定好）']].map(([m, l]) => `<button class="rchip ${mode === m ? 'on' : ''}" style="min-width:auto" data-mode="${m}">${l}</button>`).join('')}</div>`;
     const ps = Q.plans(P);
     if (ps.length > 1) {
       const rows = ps.map(p => { const L = Q.buildLines(P, p.id), T2 = Q.totals(P, L, p.id); return { p, total: T2.total, open: L.filter(l => l.tbd.length).length }; });
