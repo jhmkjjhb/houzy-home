@@ -229,7 +229,7 @@
   root.QV2_FIXED = { plaster_ceiling: 1, ceiling_step: 1, paint_wall: 1, paint_ceiling: 1, ext_paint: 1, wp_bath: 1, led_cove: 1, led_cove_corner: 1, fence_paint: 1, grille_paint: 1, gate_paint: 1, rail_paint: 1, balc_rail_paint: 1, door_paint: 1, metal_frame_paint: 1, metal_prep_light: 1, metal_prep_primer: 1, metal_prep_heavy: 1 };
   // 2026-11-26 LED 发光铝合金天花线条（淘宝「弧形双面发光铝槽+220V 灯带」，人民币标价直接当马币，再加 30%（赚汇率差），按 1 米 = 3.28 尺折成每尺）
   // 标准 = 大号+单色灯带 ¥14.2/米；只含材料，安装人工在价目表「人工」栏另填
-  root.QV2_PRICE.led_cove = { stage: 'ceil', name: 'LED 发光铝合金天花线条（含 220V 灯带）', unit: '延尺', mat: 5.63, aux: 0, lab: 0, waste: 0, desc: '铝合金发光线条贴天花与墙面交角，内置 220V 灯带；转角用阳角配件；预留灯带电源' };
+  root.QV2_PRICE.led_cove = { stage: 'ceil', name: 'LED 发光铝合金天花线条（含 220V 灯带）', unit: '延尺', mat: 5.63, aux: 0, lab: 50, waste: 0, desc: '铝合金发光线条贴天花与墙面交角，内置 220V 灯带；转角用阳角配件；预留灯带电源；含安装人工 RM50/尺' };
   root.QV2_PRICE.led_cove_corner = { stage: 'ceil', name: 'LED 发光线条 90° 阳角配件', unit: '个', mat: 9.88, aux: 0, lab: 0, waste: 0, desc: '外转角（阳角）专用配件' };
   root.QV2_OPTION_PRICES['base.ledCove.大号·三色光灯带'] = { led_cove: { mat: 1.5 } };
   root.QV2_OPTION_PRICES['base.ledCove.小号·单色灯带（白/暖/中性光）'] = { led_cove: { mat: 0.0 } };
