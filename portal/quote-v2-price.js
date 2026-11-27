@@ -209,6 +209,8 @@
   // 选材价差：键为「类别.选项.值」，内容为各项目在标准价上的加减（RM/单位）。公司核定后在这里登记。
   // 例：'tile.floorSize.600×1200 mm': { floor_tile: { mat: 2, lab: 0.5 } }
   root.QV2_OPTION_PRICES = {};
+  // 公司定的百分比价差（按标准单价加减，不算参考价）。2026-11-27 生态板比多层实木板贵 10%
+  root.QV2_OPTION_PCT = { 'cabinet.body.生态板': 10 };
   // 2026-11-26 粉刷与金属件油漆：师傅成本价取区间中间值 ×1.4（公司定价）
   root.QV2_PRICE.fence_paint = { stage: 'outdoor', name: '围墙油漆', unit: '平方尺', mat: 0, aux: 0, lab: 5.95, waste: 0, desc: '清洗墙面→补裂缝→底漆→外墙面漆两遍' };
   root.QV2_PRICE.grille_paint = { stage: 'custom', name: '窗户铁花翻新油漆', unit: '平方尺', mat: 0, aux: 0, lab: 4.9, waste: 0, desc: '铁花表面清洁后刷油漆两遍（打磨除锈另计）' };
@@ -305,5 +307,5 @@
     Object.entries(base).forEach(([size, b]) => Object.entries(k).forEach(([f, x]) => { out[`tile.size.${size}.${f}`] = Math.round(b * x * 2) / 2; }));
     return out;
   })();
-  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES, OPTION_REF: root.QV2_OPTION_REF, TILE_PIECE_REF: root.QV2_TILE_PIECE_REF };
+  if (typeof module !== "undefined") module.exports = { PRICE: root.QV2_PRICE, STAGES: root.QV2_STAGES, OPTION_PRICES: root.QV2_OPTION_PRICES, OPTION_REF: root.QV2_OPTION_REF, OPTION_PCT: root.QV2_OPTION_PCT, TILE_PIECE_REF: root.QV2_TILE_PIECE_REF };
 })(typeof window !== "undefined" ? window : globalThis);

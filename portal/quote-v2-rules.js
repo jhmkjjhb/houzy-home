@@ -10,6 +10,7 @@
   const STAGES = root.QV2_STAGES || src.STAGES;
   const OPTION_PRICES = root.QV2_OPTION_PRICES || (src && src.OPTION_PRICES) || {};
   const OPTION_REF = root.QV2_OPTION_REF || (src && src.OPTION_REF) || {};
+  const OPTION_PCT = root.QV2_OPTION_PCT || (src && src.OPTION_PCT) || {};
   const TILE_PIECE_PRICES = root.QV2_TILE_PIECE_PRICES || {};
   const TILE_PIECE_REF = root.QV2_TILE_PIECE_REF || (src && src.TILE_PIECE_REF) || {};
   const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
@@ -652,6 +653,11 @@
     if (place !== undefined) return { v: place, decided: true, own: true };
     if (own !== undefined) return { v: own, decided: true, own: true };
     if (all !== undefined) return { v: all, decided: true, own: false };
+    // 踢脚线没选时跟着地面材料走：SPC / 木地板默认配 PVC 踢脚（瓷砖、石材才默认瓷砖踢脚）
+    if (cat === 'base' && k === 'skirting' && room) {
+      const mat = specOf(project, room, 'tile', 'material', planId, pack).v;
+      if (mat && mat !== '瓷砖' && !/石材/.test(mat)) return { v: 'PVC 踢脚', decided: false, own: false };
+    }
     return { v: stdOf(key, room), decided: false, own: false };
   }
 
@@ -731,6 +737,7 @@
       if (mod && mod.matZero) { mat = 0; supplied = true; return; }
       const add = OPTION_PRICES[`${cat}.${k}.${s.v}`]?.[code];
       if (add) { mat += num(add.mat); aux += num(add.aux); lab += num(add.lab); }
+      else if (OPTION_PCT[`${cat}.${k}.${s.v}`] !== undefined) mat += base * OPTION_PCT[`${cat}.${k}.${s.v}`] / 100;
       // 公司没填价差：有参考百分比就先按参考价算，并标「参考价」
       else if (OPTION_REF[`${cat}.${k}.${s.v}`] !== undefined) { mat += base * OPTION_REF[`${cat}.${k}.${s.v}`] / 100; ref.push(`${key.label}：${s.v}`); }
       else priceTbd.push(`${key.label}：${s.v}`);
