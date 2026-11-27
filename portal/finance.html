@@ -25,7 +25,26 @@ label{display:block;margin:0 0 10px;font-size:13px;color:var(--muted)}label>inpu
 .docs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.docs a{font-size:13px;color:#2c4fa3}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left;white-space:normal}th{font-size:12px;color:var(--muted);font-weight:600}
 td.bad,b.bad{color:var(--red)}td.good{color:var(--ok)}tr.sub td{font-size:13px;color:var(--muted);background:#faf8f3}tr.sub td:first-child{padding-left:18px}
-.scroll{overflow-x:auto}.tot{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:12px}.tot div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.tot small{display:block;color:var(--muted);font-size:12px}.tot b{font-size:18px}
+.scroll{overflow-x:auto}.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px}.tot.four{grid-template-columns:repeat(4,minmax(0,1fr))}.tot div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tot small{display:block;color:var(--muted);font-size:12px}.tot b{display:block;font-size:18px;font-variant-numeric:tabular-nums;margin:2px 0}
+header{padding:16px max(16px,calc(50% - 478px))}
+.link{color:var(--green);font-weight:600;text-decoration:none}.link:hover{text-decoration:underline}
+td b{white-space:nowrap}
+@media (max-width:640px){
+ .tot,.tot.four{grid-template-columns:repeat(2,minmax(0,1fr))}.tot b{font-size:16px}
+ /* 手机上表格改成一张张卡片：每格前面写上标题 */
+ table.resp thead{display:none}
+ table.resp>tbody>tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+ table.resp>tbody>tr>td{border:0;padding:2px 0;text-align:left;white-space:normal}
+ table.resp>tbody>tr>td:first-child{grid-column:1/-1;font-size:15px}
+ table.resp>tbody>tr>td[data-l]::before{content:attr(data-l);display:block;font-size:11px;color:var(--muted)}
+ table.resp>tbody>tr[hidden]{display:none}
+ table.resp>tbody>tr.subwrap{display:block;padding:0}
+ table.resp>tbody>tr.subwrap>td{display:block}
+ table.resp tr.subwrap table tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 8px;padding:8px 10px;background:#faf8f3;border-radius:8px;margin-bottom:4px}
+ table.resp tr.subwrap table td{background:none!important}
+ table.resp tr.subwrap table td{border:0;padding:0;text-align:left;white-space:normal}
+ table.resp tr.subwrap table td:first-child{grid-column:1/-1;font-weight:600;color:var(--ink)}
+}
 details>summary{cursor:pointer}
 </style>
 </head><body>
@@ -138,7 +157,7 @@ function drawNew() {
    ${cats.length ? `<label>类别<div class="pick">${cats.map(k => `<button type="button" data-cat="${k}" class="${f.category === k ? 'on' : ''}">${CAT[k]}</button>`).join('')}</div></label>` : ''}
    ${f.parts.map((p, i) => `<div class="row">${proj ? `<label>子订单<select data-part="${i}" data-k="wo"><option value="">整单公共（清运、运费等）</option>${wos.map(w => `<option value="${w.id}" ${p.wo === w.id ? 'selected' : ''}>${E(w.name)}${w.assignee ? ' · ' + E(w.assignee) : ''}</option>`).join('')}</select></label>` : ''}
      <label>金额 ${C === 'MYR' ? 'RM' : C}<input data-part="${i}" data-k="amount" inputmode="decimal" value="${E(p.amount)}" placeholder="0.00"></label>${f.parts.length > 1 ? `<div style="flex:0 0 auto;align-self:end;margin-bottom:10px"><button type="button" class="btn red" data-unsplit="${i}">删</button></div>` : ''}</div>`).join('')}
-   ${proj && wos.length ? `<p class="hint"><a href="#" data-split>＋ 这笔钱要分到几个子订单（同一张单据）</a>${f.parts.length > 1 ? ` · 合计 <b>${money(total, C)}</b>` : ''}</p>` : ''}
+   ${proj && wos.length ? `<p class="hint"><a href="#" class="link" data-split>＋ 这笔钱要分到几个子订单（同一张单据）</a>${f.parts.length > 1 ? ` · 合计 <b>${money(total, C)}</b>` : ''}</p>` : ''}
    <div class="row"><label>收款人（店名 / 厂家 / 工人名字）<input data-f="payee" value="${E(f.payee)}" maxlength="120"></label><label>收款银行和账号<input data-f="bank" value="${E(f.bank)}" maxlength="200" placeholder="例：Maybank 1234 5678 9012"></label></div>
    <label>单据类型<div class="pick">${Object.entries(DOC).map(([k, n]) => `<button type="button" data-doctype="${k}" class="${f.doc_type === k ? 'on' : ''}">${n}</button>`).join('')}</div></label>
    ${f.doc_type === 'voucher' ? '<p class="hint">工人没有发票时用：请让收款人在纸上写「收到 HOUZY 金额 · 日期 · IC 号码 · 签名」，拍下来上传。</p>' : ''}
@@ -269,13 +288,13 @@ VIEWS.profit = async () => {
   // 普通订单按币种分开合计
   const oc = {}; os.filter(o => Number(o.committed) || Number(o.pending)).forEach(o => { const x = oc[o.currency] = oc[o.currency] || { contract: 0, committed: 0 }; x.contract += Number(o.contract); x.committed += Number(o.committed); });
   $('view').innerHTML = `<h2 style="font-size:16px;margin:4px 0 8px">整装单</h2><div class="tot"><div><small>合同总额</small><b>${RM(c)}</b></div><div><small>已收款</small><b>${RM(sum('received'))}</b></div><div><small>已花（批准 + 已付）</small><b>${RM(cm)}</b></div><div><small>还没付</small><b>${RM(cm - sum('paid'))}</b></div><div><small>毛利</small><b class="${c - cm < 0 ? 'bad' : ''}">${RM(c - cm)}</b></div></div>
-   <div class="card"><h2>每张整装单</h2><p class="hint">毛利 = 合同价（含增减项）− 已批准和已付的支出。门店房租等开销不算在单里，见「门店月账」。点一行看各子订单。</p><div class="scroll"><table><thead><tr><th>整装单</th><th>合同价</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
-   ${ps.map(p => { const g = p.contract - p.committed; return `<tr data-open-p="${p.id}" style="cursor:pointer"><td><b>${E(p.contract_no)}</b> · ${E(p.customer_name)}<br><small style="color:var(--muted)">${E(store[p.store_id] || '')}</small></td><td>${RM(p.contract)}</td><td>${RM(p.received)}</td><td>${RM(p.committed)}</td><td>${Number(p.pending) ? RM(p.pending) : '—'}</td><td class="${g < 0 ? 'bad' : 'good'}">${RM(g)}</td><td class="${g < 0 ? 'bad' : ''}">${pct(g, p.contract)}</td></tr>
-     <tr hidden data-sub-of="${p.id}"><td colspan="7" style="padding:0"><table>${p.work_orders.map(w => { const wg = w.contract - w.committed, over = w.committed > w.contract && w.contract > 0; return `<tr class="sub"><td>${E(w.name)}</td><td>合同 ${RM(w.contract)}</td><td class="${over ? 'bad' : ''}">已花 ${RM(w.committed)}${over ? ' 超支' : ''}</td><td class="${wg < 0 ? 'bad' : ''}">${pct(wg, w.contract)}</td></tr>`; }).join('')}<tr class="sub"><td>整单公共（清运、运费等）</td><td></td><td>已花 ${RM(p.shared)}</td><td></td></tr></table></td></tr>`; }).join('') || '<tr><td colspan="7">还没有已确认的整装单。</td></tr>'}
+   <div class="card"><h2>每张整装单</h2><p class="hint">毛利 = 合同价（含增减项）− 已批准和已付的支出。门店房租等开销不算在单里，见「门店月账」。点一行看各子订单。</p><div class="scroll"><table class="resp"><thead><tr><th>整装单</th><th>合同价</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
+   ${ps.map(p => { const g = p.contract - p.committed; return `<tr data-open-p="${p.id}" style="cursor:pointer"><td><b>${E(p.contract_no)}</b> · ${E(p.customer_name)}<br><small style="color:var(--muted)">${E(store[p.store_id] || '')}</small></td><td data-l="合同价">${RM(p.contract)}</td><td data-l="已收">${RM(p.received)}</td><td data-l="已花">${RM(p.committed)}</td><td data-l="待批">${Number(p.pending) ? RM(p.pending) : '—'}</td><td data-l="毛利" class="${g < 0 ? 'bad' : 'good'}">${RM(g)}</td><td data-l="毛利率" class="${g < 0 ? 'bad' : ''}">${pct(g, p.contract)}</td></tr>
+     <tr hidden class="subwrap" data-sub-of="${p.id}"><td colspan="7" style="padding:0"><table>${p.work_orders.map(w => { const wg = w.contract - w.committed, over = w.committed > w.contract && w.contract > 0; return `<tr class="sub"><td>${E(w.name)}</td><td>合同 ${RM(w.contract)}</td><td class="${over ? 'bad' : ''}">已花 ${RM(w.committed)}${over ? ' 超支' : ''}</td><td class="${wg < 0 ? 'bad' : ''}">${pct(wg, w.contract)}</td></tr>`; }).join('')}<tr class="sub"><td>整单公共（清运、运费等）</td><td></td><td>已花 ${RM(p.shared)}</td><td></td></tr></table></td></tr>`; }).join('') || '<tr><td colspan="7">还没有已确认的整装单。</td></tr>'}
    </tbody></table></div><p class="hint">子订单合同额按清单原价（优惠前），所以各子订单加起来会比合同价稍高。</p></div>
    <h2 style="font-size:16px;margin:16px 0 8px">普通订单</h2><div class="tot">${Object.entries(oc).map(([k, x]) => `<div><small>${k} 订单毛利（只算已记支出的单）</small><b class="${x.contract - x.committed < 0 ? 'bad' : ''}">${money(x.contract - x.committed, k)}</b><small>卖价 ${money(x.contract, k)} · 已花 ${money(x.committed, k)}</small></div>`).join('') || '<div><small>普通订单</small><b>—</b></div>'}</div>
-   <div class="card"><h2>每张普通订单</h2><p class="hint">列出有支出的订单和最近 120 天的订单。毛利 = 订单金额 − 货款、运费、安装、佣金等支出。<b>还没记任何支出的订单，毛利不准</b>（显示为灰色）。</p><div class="scroll"><table><thead><tr><th>订单</th><th>金额</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
-   ${os.map(o => { const g = o.contract - o.committed, none = !Number(o.committed) && !Number(o.pending), cats = Object.entries(o.by_category || {}).map(([k, v]) => `${CAT[k]} ${money(v, o.currency)}`).join(' · '); return `<tr${none ? ' style="color:var(--muted)"' : ''}><td><b>${E(o.order_no)}</b> · ${E(o.customer_name || '')}<br><small style="color:var(--muted)">${E(store[o.store_id] || '')}${o.supplier ? ' · ' + E(o.supplier) : ''}${cats ? '<br>' + cats : ''}</small></td><td>${money(o.contract, o.currency)}</td><td>${money(o.received, o.currency)}</td><td>${money(o.committed, o.currency)}</td><td>${Number(o.pending) ? money(o.pending, o.currency) : '—'}</td><td class="${none ? '' : g < 0 ? 'bad' : 'good'}">${none ? '未记支出' : money(g, o.currency)}</td><td class="${!none && g < 0 ? 'bad' : ''}">${none ? '—' : pct(g, o.contract)}</td></tr>`; }).join('') || '<tr><td colspan="7">没有普通订单。</td></tr>'}
+   <div class="card"><h2>每张普通订单</h2><p class="hint">列出有支出的订单和最近 120 天的订单。毛利 = 订单金额 − 货款、运费、安装、佣金等支出。<b>还没记任何支出的订单，毛利不准</b>（显示为灰色）。</p><div class="scroll"><table class="resp"><thead><tr><th>订单</th><th>金额</th><th>已收</th><th>已花</th><th>待批</th><th>毛利</th><th>毛利率</th></tr></thead><tbody>
+   ${os.map(o => { const g = o.contract - o.committed, none = !Number(o.committed) && !Number(o.pending), cats = Object.entries(o.by_category || {}).map(([k, v]) => `${CAT[k]} ${money(v, o.currency)}`).join(' · '); return `<tr${none ? ' style="color:var(--muted)"' : ''}><td><b>${E(o.order_no)}</b> · ${E(o.customer_name || '')}<br><small style="color:var(--muted)">${E(store[o.store_id] || '')}${o.supplier ? ' · ' + E(o.supplier) : ''}${cats ? '<br>' + cats : ''}</small></td><td data-l="金额">${money(o.contract, o.currency)}</td><td data-l="已收">${money(o.received, o.currency)}</td><td data-l="已花">${money(o.committed, o.currency)}</td><td data-l="待批">${Number(o.pending) ? money(o.pending, o.currency) : '—'}</td><td data-l="毛利" class="${none ? '' : g < 0 ? 'bad' : 'good'}">${none ? '未记支出' : money(g, o.currency)}</td><td data-l="毛利率" class="${!none && g < 0 ? 'bad' : ''}">${none ? '—' : pct(g, o.contract)}</td></tr>`; }).join('') || '<tr><td colspan="7">没有普通订单。</td></tr>'}
    </tbody></table></div></div>`;
 };
 $('view').addEventListener('click', e => { const r = e.target.closest('[data-open-p]'); if (r) { const s = $('view').querySelector(`[data-sub-of="${r.dataset.openP}"]`); s.hidden = !s.hidden; } });
@@ -285,8 +304,8 @@ VIEWS.month = async () => {
   OV = await rpc('renovation_finance_overview', {});
   const store = Object.fromEntries(T.all_stores.map(s => [s.id, s.name])), ms = OV.months;
   $('view').innerHTML = `<div class="card"><h2>门店月账</h2><p class="hint">收入 = 当月收到的整装款（扣退款）+ 普通订单收款；支出按单据日期算；门店开销是房租、水电、办公等。马币和新币分开列，不相加。这是管理账，报税还要会计按规定做。</p>
-   <div class="scroll"><table><thead><tr><th>月份 · 门店</th><th>整装收款</th><th>订单收款</th><th>整装支出</th><th>订单支出</th><th>门店开销</th><th>结余</th></tr></thead><tbody>
-   ${ms.map(m => { const c = m.currency, net = m.income - m.project_cost - m.order_cost - m.overhead; return `<tr><td>${E(m.month)} · ${E(store[m.store_id] || '')}${c !== 'MYR' ? ' · ' + E(c) : ''}</td><td>${money(m.reno_income, c)}</td><td>${money(m.goods_income, c)}</td><td>${money(m.project_cost, c)}</td><td>${money(m.order_cost, c)}</td><td>${money(m.overhead, c)}</td><td class="${net < 0 ? 'bad' : 'good'}">${money(net, c)}</td></tr>`; }).join('') || '<tr><td colspan="7">还没有数据。</td></tr>'}
+   <div class="scroll"><table class="resp"><thead><tr><th>月份 · 门店</th><th>整装收款</th><th>订单收款</th><th>整装支出</th><th>订单支出</th><th>门店开销</th><th>结余</th></tr></thead><tbody>
+   ${ms.map(m => { const c = m.currency, net = m.income - m.project_cost - m.order_cost - m.overhead; return `<tr><td>${E(m.month)} · ${E(store[m.store_id] || '')}${c !== 'MYR' ? ' · ' + E(c) : ''}</td><td data-l="整装收款">${money(m.reno_income, c)}</td><td data-l="订单收款">${money(m.goods_income, c)}</td><td data-l="整装支出">${money(m.project_cost, c)}</td><td data-l="订单支出">${money(m.order_cost, c)}</td><td data-l="门店开销">${money(m.overhead, c)}</td><td data-l="结余" class="${net < 0 ? 'bad' : 'good'}">${money(net, c)}</td></tr>`; }).join('') || '<tr><td colspan="7">还没有数据。</td></tr>'}
    </tbody></table></div><p class="hint">普通订单还没开始记支出时，「订单支出」会偏少、结余会偏高。</p></div>
    <div class="card"><h2>导出给会计</h2><div class="row"><label>从<input type="date" id="ex-from" value="${today().slice(0, 8)}01"></label><label>到<input type="date" id="ex-to" value="${today()}"></label></div><button type="button" class="btn" id="ex-go">导出 Excel（CSV）</button><p class="hint">每笔支出一行：日期、门店、整装单或订单、子订单、类别、收款人、币种、金额、SST、单据类型和号码、状态、付款日期。单据照片在系统里点开看。</p></div>`;
   $('ex-go').onclick = () => guarded(async () => {
@@ -317,15 +336,15 @@ async function drawPerson() {
   const v = await rpc('staff_person_overview', { p_user: personId, p_month: personMonth + '-01' }), u = v.person;
   const tile = (label, value, sub = '') => `<div><small>${label}</small><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
   const R = v.renovation, Q = v.quotes, S = v.supervision, X = v.expenses, A = v.approvals;
-  $('view').innerHTML = `<p><a href="#" data-people-back style="color:var(--green)">‹ 所有人员</a></p>
+  $('view').innerHTML = `<p><a href="#" class="link" data-people-back>‹ 所有人员</a></p>
    <div class="card"><div class="item-head"><h2 style="margin:0">${E(u.name || '(未填名字)')}${u.active === false ? ' <span class="tag void">已停用</span>' : ''}</h2><input type="month" data-pmonth value="${personMonth}" style="font:inherit;padding:4px 8px;border:1px solid #d0c8b8;border-radius:8px"></div>
     <small style="color:var(--muted)">${ROLE_NAME[u.role] || E(u.role)}${(u.extra_roles || []).length ? ' · 兼任 ' + u.extra_roles.map(x => EXTRA_NAME[x] || x).join('、') : ''}${u.store ? ' · ' + E(u.store) : ''}${u.phone ? ' · ' + E(u.phone) : ''}</small></div>
    <h2 style="font-size:15px;margin:12px 0 6px">${E(v.month)} 业绩</h2>
-   <div class="tot">${tile('普通订单 · 本月开单', v.goods.created + ' 张', curMap(v.goods_amount))}${tile('普通订单 · 本月收款', curMap(v.goods_received), '进行中 ' + v.goods.open + ' 张')}
+   <div class="tot four">${tile('普通订单 · 本月开单', v.goods.created + ' 张', curMap(v.goods_amount))}${tile('普通订单 · 本月收款', curMap(v.goods_received), '进行中 ' + v.goods.open + ' 张')}
     ${tile('整装 · 本月签约', R.signed + ' 张', RM(R.signed_amount))}${tile('整装 · 本月收款', RM(R.received), `施工中 ${R.active} 张${R.drafts ? ' · 草稿 ' + R.drafts : ''}`)}</div>
-   <div class="tot">${tile('报价 · 发给客户', Q.links + ' 个链接', `客户打开 ${Q.opened} 个，共 ${Q.views} 次`)}${tile('报价 · 本月改过', Q.saved + ' 份', '云端保存的报价')}
+   <div class="tot four">${tile('报价 · 发给客户', Q.links + ' 个链接', `客户打开 ${Q.opened} 个，共 ${Q.views} 次`)}${tile('报价 · 本月改过', Q.saved + ' 份', '云端保存的报价')}
     ${tile('施工监理 · 负责工地', S.sites + ' 个', `本月记日志 ${S.log_days} 天 · 共 ${S.entries} 条`)}${tile('监理 · 未解决问题', S.open_issues + ' 个', '')}</div>
-   <div class="tot">${tile('请款 · 本月提交', X.count + ' 笔', curMap(X.amount))}${tile('请款 · 待批 / 本月退回', `${X.pending} / ${X.rejected}`, '')}
+   <div class="tot four">${tile('请款 · 本月提交', X.count + ' 笔', curMap(X.amount))}${tile('请款 · 待批 / 本月退回', `${X.pending} / ${X.rejected}`, '')}
     ${tile('审批 · 本月批准别人', A.approved + ' 笔', '')}${tile('付款 · 本月付出', A.paid + ' 笔', curMap(A.paid_amount))}</div>
    <div class="card"><h2>最近动态</h2>${v.recent.length ? v.recent.map(r => `<div class="item"><small>${new Date(r.at).toLocaleString('zh-CN', { hour12: false })} · ${{ order: '订单', renovation: '整装', expense: '请款' }[r.kind]}</small>${E(recentText(r.text))}</div>`).join('') : '<p class="hint">没有记录。</p>'}</div>`;
 }

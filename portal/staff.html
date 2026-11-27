@@ -8215,7 +8215,7 @@ function addOpLog(msg) {
   logEl.innerHTML = userOpLog.map(e => `
     <div class="flex items-start gap-3 px-4 py-2.5">
       <span class="text-xs text-gray-400 flex-shrink-0 mt-0.5">${e.time}</span>
-      <span class="text-xs text-gray-700">${e.msg}</span>
+      <span class="text-xs text-gray-700">${escHtml(e.msg)}</span>
     </div>`).join('');
 }
 
