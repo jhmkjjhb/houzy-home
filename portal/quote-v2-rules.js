@@ -1165,7 +1165,34 @@
     return project;
   }
 
-  const api = { stageTitle, stagePart, groupOffs, lineParts, offsOf, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  // 报价方案 → 整装订单草稿的合同清单（renovation_projects.snapshot 的格式）。
+  // 每项按报价的数量、单价列；单价取整造成的几分钱差，放进「优惠」或补一行「金额取整差额」，保证合同价 = 报价合计。
+  // 设计费、管理费、不可预见费、SST 各成一行；设计费赠送和所有优惠合成一个优惠金额；付款各期照报价。
+  function toReno(project, planId) {
+    const lines = buildLines(project, planId), T = totals(project, lines, planId), pl = activePlan(project, planId) || {};
+    const cents = n => Math.round(n * 100), out = [];
+    const warranty = [{ component: '质保待核对', years: null, source: '由报价转入，按签署合同核对' }];
+    const add = (name, spec, qty, unit, rate, kind, group) => out.push({ id: 'Q' + (out.length + 1), name, spec, qty, unit: unit || 'lot', rate, kind, group, warranties: warranty.map(w => ({ ...w })) });
+    lines.forEach(l => {
+      const group = stageTitle(l.stage, [l.code]) || '其他工程', kind = l.stage === 'soft' ? 'stock' : l.stage === 'custom' ? 'custom' : 'work';
+      const spec = [l.room, l.spec].filter(Boolean).join(' · '), qty = l.qty > 0 ? r4(l.qty) : 1;
+      if (l.gift) {
+        if (l.total > 0) add(`${l.name}（产品赠送，收安装人工）`, spec, qty, l.unitName, r4(l.total / qty), kind, group);
+        add(`赠送：${l.name}`, spec, qty, l.unitName, 0, 'gift', group);
+      } else if (l.total > 0) add(l.name, spec, qty, l.unitName, r4(l.qty > 0 ? l.unit : l.total), kind, group);
+    });
+    [['设计费', T.design], ['管理费', T.mgmt], ['不可预见费', T.cont], ['SST', T.sst]].forEach(([n, a]) => { if (a > 0) add(n, '', 1, 'lot', a, 'work', '设计及管理'); });
+    const sum = () => out.reduce((t, l) => t + cents(l.qty * l.rate), 0);
+    let discount = sum() - cents(T.total);
+    if (discount < 0) { add('金额取整差额', '报价单价取整', 1, 'lot', -discount / 100, 'work', '设计及管理'); discount = 0; }
+    return {
+      lines: out, discount: discount / 100, net: T.total, signed_on: '', source_text: '', contract_path: '',
+      payments: T.pay.filter(p => p.amt > 0).map(p => ({ name: `${p.name}（${p.pct}%）`, amount: p.amt })),
+      warnings: [`由报价器「${pl.name || '方案 ' + planId}」转入，共 ${out.length} 项；请核对清单与付款计划后上传签署合同`],
+      from_quote: { plan: pl.name || planId, at: new Date().toISOString() }
+    };
+  }
+  const api = { toReno, stageTitle, stagePart, groupOffs, lineParts, offsOf, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

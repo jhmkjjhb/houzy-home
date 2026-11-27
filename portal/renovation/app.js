@@ -159,6 +159,16 @@ async function unseal(sealed,buffer){
  const bytes=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes(sealed.iv)},key,bytes(sealed.data))));
 }
+// 报价器「转整装订单」：报价页把方案清单存在本机，这里预填客户资料和合同清单（还没存进系统，员工补合同编号后保存）
+function fromQuote(){
+ let x=null;try{x=JSON.parse(localStorage.getItem('houzy-quote-to-reno')||'null');}catch(e){}
+ if(!x?.snapshot?.lines?.length||Date.now()-x.at>864e5){message('没有找到刚转过来的报价，请回报价器重新点「转整装订单」。',true);return;}
+ const i=x.info||{};$('customer-name').value=i.name||'';$('address').value=i.address||'';
+ const ph=String(i.phone||'').trim();$('customer-phone').value=ph.startsWith('+')?ph:(C.normalizePhone(ph,'60')?'+'+C.normalizePhone(ph,'60'):ph);
+ snapshot=Object.assign(blank(),x.snapshot);draftPaymentWeights=snapshot.payments.map(p=>Number(p.amount)||0);dirty=true;render();
+ try{localStorage.removeItem('houzy-quote-to-reno');}catch(e){}
+ message(`已从报价「${x.snapshot.from_quote?.plan||''}」带入 ${snapshot.lines.length} 项，合同价 RM ${fmt(snapshot.net)}。请选门店、填合同编号，点「保存项目草稿」；再上传签署合同，点「保存核对版本」。`);
+}
 function reset(){RenoAdditions.clear();RenoDeductions.clear();additionData=null;deductionData=null;draftPaymentWeights=[];project=null;snapshot=blank();dirty=false;upload=null;work=[];for(const id of ['contract-no','customer-name','customer-phone','address','signed-on','contract-file'])$(id).value='';$('signed').checked=$('reviewed').checked=false;$('work-orders').innerHTML='';$('audit').innerHTML='';history.replaceState(null,'',location.pathname);render();}
 window.addEventListener('beforeunload',e=>{if(dirty||RenoAdditions.isDirty()||RenoDeductions.isDirty()){e.preventDefault();e.returnValue='';}});
 $('back-list').onclick=()=>guarded(async()=>{
@@ -182,6 +192,8 @@ $('create').onclick=()=>guarded(async()=>{
 $('contract-file').onchange=()=>guarded(async()=>{
  const file=$('contract-file').files[0];if(!file)return;
  if(file.size>20*1024*1024||!(/\.pdf$/i.test(file.name)))throw new Error('请选择20MB以内的PDF合同');
+ // 报价转入的清单已经核对过金额：上传的签署合同只归档，不再读 PDF 覆盖清单
+ if(snapshot.from_quote){upload=file;dirty=true;render();message('签署合同已选好。核对清单和付款计划后，点「保存核对版本」归档。');return;}
  message('正在读取PDF文字与表格…');const {customer_name,customer_phone,...parsed}=await parsePDF(file);
  if(project&&parsed.contract_no&&parsed.contract_no!==project.contract_no)throw new Error('合同编号与当前项目不一致，请先核对，不会导入到其他项目');
  if(snapshot.lines.length&&!confirm('导入将替换尚未锁定的清单，是否继续？'))return;
@@ -260,7 +272,7 @@ $('print-checklist').onclick=()=>guarded(async()=>{if(!snapshot.lines.length)thr
  // 有项目编号时先开项目，列表和待办在后台同时读，不用等
  const id=location.hash.slice(1),isNew=new URLSearchParams(location.search).get('new')==='1';
  const listJob=Promise.all([loadList(),refreshHome().catch(e=>message(e.message,true))]);
- if(isNew){await listJob;reset();return;}
+ if(isNew){await listJob;reset();if(new URLSearchParams(location.search).get('from')==='quote')fromQuote();return;}
  if(/^[0-9a-f-]{36}$/i.test(id)){await openProject(id);listJob.catch(e=>message(e.message,true));}
  else{await listJob;message('每个项目只显示一张整装主单；点开后查看合同、清单与履约子单。');}
  }catch(e){message(e.message,true);$('new-project').disabled=true;}
