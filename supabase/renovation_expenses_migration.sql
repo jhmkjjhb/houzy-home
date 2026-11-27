@@ -114,7 +114,7 @@ GRANT EXECUTE ON FUNCTION public.renovation_expense_targets() TO authenticated;
 CREATE OR REPLACE FUNCTION public.renovation_expense_submit(p_data jsonb)
 RETURNS public.renovation_expenses LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 DECLARE p renovation_projects%ROWTYPE;w renovation_work_orders%ROWTYPE;e renovation_expenses%ROWTYPE;
- v_store uuid;v_amount numeric;v_total numeric;v_sst numeric;v_docs jsonb:=p_data->'docs';x jsonb;v_cat text:=p_data->>'category';v_day date;
+ v_store uuid;v_amount numeric;v_total numeric;v_sst numeric;v_proof text;v_docs jsonb:=p_data->'docs';x jsonb;v_cat text:=p_data->>'category';v_day date;
 BEGIN
  IF auth.uid() IS NULL OR NOT EXISTS(SELECT 1 FROM profiles WHERE id=auth.uid() AND active) THEN RAISE EXCEPTION '请先登录' USING ERRCODE='42501'; END IF;
  IF coalesce(p_data->>'project_id','')<>'' THEN
@@ -151,6 +151,18 @@ BEGIN
   UPDATE renovation_expenses x SET status='pending',approved_by=NULL,approved_at=NULL
    WHERE x.created_by=auth.uid() AND x.status='approved' AND x.approved_by=auth.uid() AND x.docs ?| ARRAY(SELECT jsonb_array_elements_text(v_docs))
     AND NOT public._expense_manager(x.store_id);
+ END IF;
+ -- 财务直接登记已经付掉的款（例如公司直接付的材料款）：不用店长批，记成已付，要有转账参考号或截图
+ IF coalesce(p_data->>'paid','')='true' THEN
+  IF NOT public._is_finance() THEN RAISE EXCEPTION '只有财务能直接登记已付款'; END IF;
+  v_proof:=nullif(btrim(coalesce(p_data->>'paid_proof','')),'');
+  IF v_proof IS NULL AND btrim(coalesce(p_data->>'paid_ref',''))='' THEN RAISE EXCEPTION '请上传转账截图或填写转账参考号'; END IF;
+  IF v_proof IS NOT NULL AND (split_part(v_proof,'/',1)<>auth.uid()::text OR NOT EXISTS(SELECT 1 FROM storage.objects WHERE bucket_id='renovation-expenses' AND name=v_proof)) THEN RAISE EXCEPTION '转账截图还没上传好'; END IF;
+  INSERT INTO renovation_expenses(store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at,paid_by,paid_at,paid_on,paid_ref,paid_proof)
+  VALUES(v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),
+   'paid',auth.uid(),auth.uid(),now(),auth.uid(),now(),coalesce(nullif(p_data->>'paid_on','')::date,v_day),left(btrim(coalesce(p_data->>'paid_ref','')),120),v_proof)
+  RETURNING * INTO e;
+  RETURN e;
  END IF;
  INSERT INTO renovation_expenses(store_id,project_id,work_order_id,category,payee,payee_bank,amount,sst,doc_type,doc_no,docs,spent_on,note,status,created_by,approved_by,approved_at)
  VALUES(v_store,p.id,w.id,v_cat,btrim(coalesce(p_data->>'payee','')),btrim(coalesce(p_data->>'payee_bank','')),v_amount,v_sst,p_data->>'doc_type',btrim(coalesce(p_data->>'doc_no','')),v_docs,v_day,btrim(coalesce(p_data->>'note','')),

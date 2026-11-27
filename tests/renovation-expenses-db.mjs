@@ -89,19 +89,27 @@ await assert.rejects(act(big.id, 'pay', {}), /转账截图|参考号/);
 assert.equal((await act(big.id, 'pay', { paid_ref: 'MBB123', paid_on: '2026-11-20' })).status, 'paid');
 await assert.rejects(act(big.id, 'void'), /不能撤回/, '已付的不能撤回');
 
+// 财务直接登记已付的材料款：不用批，直接已付；店员不能这样登记
+const fdoc = await doc(U.fin, 'mat.jpg'); await as(U.fin);
+await assert.rejects(submit({ project_id: P1, work_order_id: W2, category: 'material', payee: '板材厂', amount: 2000, doc_type: 'invoice', docs: [fdoc], paid: true }), /参考号/);
+const direct = await submit({ project_id: P1, work_order_id: W2, category: 'material', payee: '板材厂', amount: 2000, doc_type: 'invoice', docs: [fdoc], paid: true, paid_ref: 'CIMB9', paid_on: '2026-11-21' });
+assert.equal(direct.status, 'paid'); assert.equal(direct.paid_ref, 'CIMB9');
+const sdoc3 = await doc(U.staff, 'x3.jpg'); await as(U.staff);
+await assert.rejects(submit({ project_id: P1, category: 'material', payee: 'X', amount: 100, doc_type: 'receipt', docs: [sdoc3], paid: true, paid_ref: 'x' }), /只有财务/);
+await as(U.fin);
 const o = await overview(), p = o.projects[0];
 assert.equal(Number(p.contract), 10000); assert.equal(Number(p.received), 5500, '已收 = 收款 − 退款');
-assert.equal(Number(p.committed), 3700, '支出 = 300 + 3000 + 400'); assert.equal(Number(p.paid), 3000);
+assert.equal(Number(p.committed), 5700, '支出 = 300 + 3000 + 400 + 财务直付 2000'); assert.equal(Number(p.paid), 5000);
 const w1 = p.work_orders.find(w => w.name === '水电'), w2 = p.work_orders.find(w => w.name === '橱柜');
 assert.equal(Number(w1.contract), 6000); assert.equal(Number(w1.committed), 700);
-assert.equal(Number(w2.contract), 4000); assert.equal(Number(w2.committed), 3000);
+assert.equal(Number(w2.contract), 4000); assert.equal(Number(w2.committed), 5000);
 const m = o.months.find(x => x.store_id === S1);
 assert.equal(Number(m.overhead), 3500, '门店开销单独一栏'); assert.equal(Number(m.income), 5500);
 
 // 列表：店长只看到本店待批的；财务待付里没有已付的；店员 mine 只有自己的
 
 const list = (scope) => db.query('SELECT public.renovation_expense_list($1) AS r', [scope]).then(r => r.rows[0].r);
-await as(U.fin); assert.ok((await list('pay')).every(x => x.status === 'approved')); assert.equal((await list('all')).length, 6);
+await as(U.fin); assert.ok((await list('pay')).every(x => x.status === 'approved')); assert.equal((await list('all')).length, 7);
 await as(U.mgr2); assert.equal((await list('all')).length, 0);
 await as(U.staff); assert.ok((await list('mine')).every(x => x.created_by === U.staff)); assert.equal((await list('approve')).length, 0);
 // 单据照片：财务能看，别的店员看不到

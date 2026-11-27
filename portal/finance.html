@@ -97,7 +97,7 @@ async function refreshCounts() {
 function blankForm() {
   const q = new URLSearchParams(location.search).get('project');
   const p = T.projects.find(x => x.id === q) || (T.projects.length === 1 ? T.projects[0] : null);
-  return { target: p ? p.id : '', parts: [{ wo: '', amount: '' }], category: '', payee: '', bank: '', sst: '', doc_type: '', doc_no: '', spent_on: today(), note: '', files: [] };
+  return { target: p ? p.id : '', parts: [{ wo: '', amount: '' }], category: '', payee: '', bank: '', sst: '', doc_type: '', doc_no: '', spent_on: today(), note: '', files: [], paid: false, paid_on: today(), paid_ref: '', proof: null };
 }
 function drawNew() {
   const f = form, proj = T.projects.find(p => p.id === f.target), store = f.target.startsWith('store:') ? f.target.slice(6) : null;
@@ -119,7 +119,9 @@ function drawNew() {
    <div class="shots">${f.files.map((x, i) => `<div>${x.url ? `<img src="${x.url}" alt="">` : 'PDF'}<button type="button" data-unshot="${i}" aria-label="删除">×</button></div>`).join('')}</div>
    <div class="row"><label class="btn sec" style="text-align:center;color:var(--green)">📷 拍照<input type="file" accept="image/*" capture="environment" data-shot hidden></label><label class="btn sec" style="text-align:center;color:var(--green)">从相册 / 文件选<input type="file" accept="image/*,application/pdf" multiple data-shot hidden></label></div>
    <label>备注<textarea data-f="note" rows="2" maxlength="500" placeholder="例：二楼主卧瓷砖尾款">${E(f.note)}</textarea></label>
-   <p class="hint">RM 500 以下直接交给公司财务付款；超过 RM 500 先由店长批准。</p>
+   ${isFin() ? `<div class="card" style="background:#f3f8f4;border-color:#cfe6d7;margin:0 0 10px"><label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:15px;margin:0"><input type="checkbox" data-paid ${f.paid ? 'checked' : ''} style="width:20px;height:20px;margin:0"> 这笔公司已经付了（财务直接登记，不用批准）</label>
+     ${f.paid ? `<div class="row" style="margin-top:10px"><label>付款日期<input type="date" data-f="paid_on" value="${E(f.paid_on)}"></label><label>转账参考号<input data-f="paid_ref" value="${E(f.paid_ref)}" maxlength="120"></label></div><label class="btn sec" style="text-align:center;color:var(--green);margin:0">${f.proof ? '✓ 已选转账截图' : '上传转账截图（或填参考号）'}<input type="file" accept="image/*,application/pdf" data-proof hidden></label>` : ''}</div>` : ''}
+   <p class="hint">${f.paid ? '会直接记成「已付」，算进这一单的支出。' : 'RM 500 以下直接交给公司财务付款；超过 RM 500 先由店长批准。'}</p>
    <button type="button" class="btn" data-submit style="width:100%">提交请款</button></div>`;
 }
 const VIEWS = {};
@@ -130,7 +132,10 @@ $('view').addEventListener('input', e => {
   else if (t.dataset.part !== undefined) form.parts[+t.dataset.part][t.dataset.k] = t.value;
 });
 $('view').addEventListener('change', e => {
-  const t = e.target; if (tab !== 'new' || !t.matches('[data-shot]')) return;
+  const t = e.target; if (tab !== 'new') return;
+  if (t.matches('[data-paid]')) { form.paid = t.checked; drawNew(); return; }
+  if (t.matches('[data-proof]')) { form.proof = t.files[0] || null; drawNew(); return; }
+  if (!t.matches('[data-shot]')) return;
   const add = [...t.files].slice(0, 8 - form.files.length).map(file => ({ file, url: /^image\//.test(file.type) ? URL.createObjectURL(file) : '' }));
   form.files.push(...add); t.value = ''; drawNew();
 });
@@ -148,18 +153,20 @@ async function submitForm(btn) {
   const parts = f.parts.map(p => ({ ...p, amount: Math.round((Number(String(p.amount).replace(/,/g, '')) || 0) * 100) / 100 }));
   const miss = [!f.target && '这笔钱属于哪一单', !store && !f.category && '类别', parts.some(p => !(p.amount > 0)) && '金额', !f.payee.trim() && '收款人', !f.doc_type && '单据类型', !f.files.length && '单据照片'].filter(Boolean);
   if (miss.length) return say('还没填：' + miss.join('、'), true);
+  if (f.paid && !f.proof && !f.paid_ref.trim()) return say('已付款请上传转账截图或填写转账参考号', true);
   if (parts.length > 1 && new Set(parts.map(p => p.wo)).size < parts.length) return say('分到的子订单有重复，请合并成一行', true);
   btn.disabled = true;
   await guarded(async () => {
     say('正在上传单据…'); const docs = []; for (const x of f.files) docs.push(await upload(x.file));
+    const proof = f.paid && f.proof ? await upload(f.proof) : null;
     say('正在提交…'); const sst = Number(f.sst) || 0, sum = parts.reduce((t, p) => t + p.amount, 0); let pending = 0;
     for (const [i, p] of parts.entries()) {
       // SST 按金额比例分到各子订单
-      const r = await rpc('renovation_expense_submit', { p_data: { project_id: store ? null : f.target, store_id: store, work_order_id: p.wo || null, category: store ? 'overhead' : f.category, payee: f.payee, payee_bank: f.bank, amount: p.amount, sst: f.doc_type === 'invoice' ? Math.round(sst * p.amount / sum * 100) / 100 : 0, doc_type: f.doc_type, doc_no: f.doc_no, docs, spent_on: f.spent_on, note: f.note + (parts.length > 1 ? `（同一单据分 ${parts.length} 笔，第 ${i + 1} 笔）` : '') } });
+      const r = await rpc('renovation_expense_submit', { p_data: { project_id: store ? null : f.target, store_id: store, work_order_id: p.wo || null, category: store ? 'overhead' : f.category, payee: f.payee, payee_bank: f.bank, amount: p.amount, sst: f.doc_type === 'invoice' ? Math.round(sst * p.amount / sum * 100) / 100 : 0, doc_type: f.doc_type, doc_no: f.doc_no, docs, spent_on: f.spent_on, ...(f.paid ? { paid: true, paid_on: f.paid_on, paid_ref: f.paid_ref.trim(), paid_proof: proof } : {}), note: f.note + (parts.length > 1 ? `（同一单据分 ${parts.length} 笔，第 ${i + 1} 笔）` : '') } });
       if (r.status === 'pending') pending++;
     }
     form = blankForm(); drawNew(); refreshCounts();
-    say(pending ? '已提交。超过 RM 500，等店长批准后交给财务付款。' : '已提交给公司财务，付款后会在「我的请款」显示已付。');
+    say(f.paid ? '已登记为已付，算进这一单的支出。' : pending ? '已提交。超过 RM 500，等店长批准后交给财务付款。' : '已提交给公司财务，付款后会在「我的请款」显示已付。');
     window.scrollTo(0, 0);
   });
   btn.disabled = false;
