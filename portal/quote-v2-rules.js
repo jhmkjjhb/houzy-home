@@ -658,7 +658,8 @@
     const houseState = { house: clone(srcHouse.house || {}), extras: clone(srcHouse.extras || []).filter(x => !x.roomId || ids[x.roomId]).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId })) };
     // prices 为空：导入的方案和 A 用同一份价目表算价，来源报价里的旧单价不带过来
     const imported = { id, name: '方案 ' + id, roomState, houseState, specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: {}, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), groupFix: Object.fromEntries(Object.entries(srcPlan.groupFix || {}).filter(([k]) => !k.startsWith('room:') || k === 'room:' || ids[k.slice(5)]).map(([k, v]) => [k.startsWith('room:') && k !== 'room:' ? 'room:' + ids[k.slice(5)] : k, v])), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
-    for (const key of ['waive', 'feeQty', 'settings', 'design', 'designGift', 'discount', 'discountNote', 'totalFix', 'groupSkip']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    for (const key of ['waive', 'feeQty', 'settings', 'design', 'designGift', 'discount', 'discountNote', 'totalFix', 'groupSkip', 'clsOff']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    if (srcPlan.lineFix) imported.lineFix = Object.fromEntries(Object.entries(srcPlan.lineFix).filter(([k]) => k.startsWith('dup:') || !k.split('|')[0] || ids[k.split('|')[0]]).map(([k, v]) => { if (k.startsWith('dup:')) return [k, v]; const parts = k.split('|'); if (parts[0]) parts[0] = ids[parts[0]]; return [parts.join('|'), v]; }));
     project.plans.push(imported);
     switchPlan(project, id);
     return id;
@@ -929,6 +930,28 @@
       return { key, orig, target, off: orig > 0 && target >= 0 && target < orig ? orig - target : 0 };
     }).filter(g => g.off > 0);
   }
+  // 报价单一行拆成「金额部分」：瓷砖分材料和铺贴两部分（和报价单显示一致），其余一行一部分
+  // key 用来记单项优惠价（plan.lineFix），cls 用来分硬装 / 材料 / 软装打折（plan.clsOff）
+  const TILE_SPLIT = ['floor_tile', 'wall_tile', 'porch_tile'];
+  function lineParts(l) {
+    const key = l.dupId ? 'dup:' + l.dupId : `${l.roomId || ''}|${l.code}|${l.pack || ''}`, cls = clsOf(l.code);
+    if (!TILE_SPLIT.includes(l.code) || l.custom || l.gift) return [{ key, cls, total: l.total }];
+    const m = l.tile ? Math.round(l.tile.materialTotal) : l.customerSupplied ? 0 : Math.round(l.qty * num(l.matUnit));
+    return [...(l.customerSupplied ? [] : [{ key: key + '|material', cls: 'mat', total: m }]), { key: key + '|laying', cls, total: l.total - m }];
+  }
+  // 分类打折 + 单项优惠价（只改这个方案）：明细单价不动，差额计入「优惠」，报价单上分行写明
+  // 已经给整组填了优惠价的组，组里的项目不再重复打折
+  function offsOf(project, lines, planId) {
+    const pl = activePlan(project, planId) || {}, fix = pl.lineFix || {}, pct = planVal(project, planId, 'clsOff') || {};
+    const covered = new Set(groupOffs(project, lines, planId).map(g => g.key));
+    const base = { hard: 0, mat: 0, soft: 0 }, items = [];
+    lines.forEach(l => { if (covered.has('stage:' + l.stage) || covered.has('room:' + (l.roomId || ''))) return;
+      lineParts(l).forEach(p => { const t = fix[p.key], n = Math.round(num(t));
+        if (t !== undefined && t !== '' && t !== null && n >= 0 && n < p.total) items.push({ key: p.key, name: l.name, room: l.room, orig: p.total, target: n, off: p.total - n });
+        else base[p.cls] += p.total; }); });
+    const cls = Object.keys(base).map(k => { const r = Math.min(100, Math.max(0, num(pct[k]))); return { cls: k, pct: r, base: base[k], off: Math.round(base[k] * r / 100) }; }).filter(x => x.off > 0);
+    return { cls, items, itemOff: items.reduce((t, x) => t + x.off, 0), clsOff: cls.reduce((t, x) => t + x.off, 0) };
+  }
   function totals(project, lines, planId) {
     project = viewFor(project, planId);
     const direct = lines.reduce((t, l) => t + l.total, 0);
@@ -943,14 +966,15 @@
     const groupOff = groupOffs(project, lines, planId).reduce((t, g) => t + g.off, 0);
     // 设计费赠送：报价单照常列出设计费，再全额减免（只改这个方案）
     const designGift = design > 0 && planVal(project, planId, 'designGift') ? design : 0;
-    const discount = Math.min(Math.round(num(planVal(project, planId, 'discount'))) + groupOff, before - designGift);
+    const offs = offsOf(project, lines, planId), manualOff = Math.max(0, Math.round(num(planVal(project, planId, 'discount'))));
+    const discount = Math.min(manualOff + groupOff + offs.itemOff + offs.clsOff, Math.max(0, before - designGift));
     const sst = Math.round((before - designGift - discount) * num(s.sst) / 100);
     const total = before - designGift - discount + sst;
     const byStage = STAGES.map(st => { const ls = lines.filter(l => l.stage === st.id); return { ...st, name: stageTitle(st.id, ls.map(l => l.code)), total: ls.reduce((t, l) => t + l.total, 0) }; }).filter(x => x.total > 0);
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
-    return { direct, hard, soft, design, designGift, mgmt, cont, discount, groupOff, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+    return { direct, hard, soft, design, designGift, mgmt, cont, discount, groupOff, manualOff, clsOffs: offs.cls, clsOff: offs.clsOff, itemOffs: offs.items, itemOff: offs.itemOff, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
@@ -1141,7 +1165,7 @@
     return project;
   }
 
-  const api = { stageTitle, stagePart, groupOffs, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { stageTitle, stagePart, groupOffs, lineParts, offsOf, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
