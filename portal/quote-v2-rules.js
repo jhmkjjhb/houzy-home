@@ -583,15 +583,20 @@
   const ROOM_STATE = ['packs', 'vals', 'gift', 'items'];
   function viewFor(project, planId) {
     const ps = plans(project), cur = ps.find(p => p.id === project.planId) || ps[0], pl = planId ? ps.find(p => p.id === planId) : null;
-    if (!pl || pl === cur || !pl.roomState) return project;
-    return { ...project, rooms: project.rooms.map(r => { const st = pl.roomState[r.id]; if (!st) return r; const x = { ...r }; ROOM_STATE.forEach(k => { if (st[k] === undefined) delete x[k]; else x[k] = st[k]; }); return x; }) };
+    if (!pl || pl === cur || (!pl.roomState && !pl.houseState)) return project;
+    if (!pl.roomState) return { ...project, ...pl.houseState };
+    return { ...project, ...(pl.houseState || {}), rooms: project.rooms.map(r => { const st = pl.roomState[r.id]; if (!st) return r; const x = { ...r }; ROOM_STATE.forEach(k => { if (st[k] === undefined) delete x[k]; else x[k] = st[k]; }); return x; }) };
   }
+  // 全屋工程和人工增加项也按方案分开：改 B 不动 A
+  const houseSnapshot = project => JSON.parse(JSON.stringify({ house: project.house || {}, extras: project.extras || [] }));
   const roomSnapshot = project => Object.fromEntries(project.rooms.map(r => [r.id, JSON.parse(JSON.stringify(Object.fromEntries(ROOM_STATE.map(k => [k, r[k]]))))]));
   // 切换方案：把当前方案的房间工程存起来，换上目标方案的
   function switchPlan(project, id) {
     const ps = plans(project), cur = ps.find(p => p.id === project.planId) || ps[0], next = ps.find(p => p.id === id);
     if (!next || next === cur) return;
     cur.roomState = roomSnapshot(project);
+    cur.houseState = houseSnapshot(project);
+    if (next.houseState) { const h = JSON.parse(JSON.stringify(next.houseState)); project.house = h.house; project.extras = h.extras; }
     if (next.roomState) project.rooms.forEach(r => { const st = next.roomState[r.id]; if (st) ROOM_STATE.forEach(k => { if (st[k] === undefined) delete r[k]; else r[k] = JSON.parse(JSON.stringify(st[k])); }); });
     project.planId = id;
   }
@@ -599,32 +604,57 @@
     const ps = plans(project), id = planId || project.planId;
     return ps.find(p => p.id === id) || ps[0];
   }
-  // 把另一份同布局报价的当前方案加入本单；先验证，失败时不改动现有方案。
+  // 报价单分组标题跟着里面的项目走：只列出实际有的几类，最多 3 类，多了加「等」；没对上的用原名
+  const STAGE_PARTS = {
+    prep: [['拆除', /^demo_/], ['改墙', /^(build_wall|door_open|struct|drywall|glass_block|bath_drop)$/], ['保护', /^(setout|protect|scaffold|carry_up)$/], ['申请', /^(permit|reno_permit|engineer|car_insurance)$/], ['清运', /^(waste_out|roro_bin)$/], ['防白蚁', /^termite$/]],
+    mep: [['电路', /^(wire|circuit|db_box|db_move|three_phase|fan_point|garden_light|audio_wire|wall_core)$/], ['水路', /^(water_pt|pipe_test|main_pipe|water_filter|sewer|downpipe|hot_insul)$/], ['弱电', /^(net|cctv|doorbell|lv_box)$/], ['空调管', /^aircon_pipe$/], ['燃气', /^gas$/]],
+    wp: [['防水', /./]],
+    tile: [['瓷砖', /^(floor_tile|wall_tile|porch_tile|grout|big_tile_extra|niche|tile_border|mosaic|floor_border|threshold|window_sill|bay_window)$/], ['地板', /^(laminate|wood_floor|solid_wood|floor_refinish)$/], ['石材', /^(stone_floor|culture_stone)$/], ['楼梯', /^stair_/]],
+    ceil: [['天花', /^(plaster_ceiling|ceiling_step|paint_ceiling|cornice|curtain_box|ceil_slat|ceil_alu|ceil_curve|led_cove|led_cove_corner)$/], ['墙面', /^(skim|paint_wall|wallpaper|art_paint|wall_cloth|damp_proof|wall_mesh)$/], ['外墙', /^ext_paint$/], ['楼梯油漆', /^stair_paint/]],
+    custom: [['橱柜', /^(cab_low|cab_up|counter|cab_basket|hw_)/], ['定制柜', /^(wardrobe|shoe_cab|tv_cab|laundry_cab|sideboard|headboard|bookcase|altar_cab|wine_cab|desk|tatami|bar_counter|vanity_custom|whw_)/], ['门窗', /^(door|main_door|slide_door|smart_lock|balc_seal|window_new|fly_screen|window_casing|grille)$/], ['栏杆', /^(stair_rail|rail_)/], ['背景墙', /^(slab_wall|wall_panel|soft_panel|mirror_wall|glass_part)$/], ['翻新油漆', /(_paint|^metal_)/]],
+    equip: [['卫浴', /^(exhaust|bath_acc|mirror|toilet|vanity|shower|screen|screen_l|screen_diamond|heater|shower_tray|curtain_rod|bathtub|mop_sink)$/], ['厨房', /^(sink|hood|ro_filter)$/], ['灯具开关', /^(panel|light|led_strip|stair_light|stair_steplight|stair_steplight_sensor|ceiling_fan)$/], ['智能家居', /^(smart_|curtain_motor)/], ['清洁', /^(clean|formaldehyde)$/]],
+    outdoor: [['扩建', /^(extension|ext_permit)$/], ['雨棚', /^(awning|sunroom_wall)$/], ['围墙大门', /^(fence|autogate|fence_paint|gate_paint)$/], ['户外地面', /^(outdoor_paving|outdoor_tile|decking|outdoor_planter|drain_ch)$/], ['屋顶', /^roof_fix$/]],
+    soft: [['软装', /./]],
+  };
+  function stageTitle(id, codes) {
+    const parts = (STAGE_PARTS[id] || []).filter(([, re]) => codes.some(c => re.test(c))).map(([label]) => label);
+    if (!parts.length) return (STAGES.find(s => s.id === id) || {}).name || id;
+    return parts.length > 3 ? parts.slice(0, 3).join('、') + '等' : parts.join('、');
+  }
+  // 把另一份报价（同一位客户）的当前方案加入本单，成为新方案；失败时不改动现有方案。
+  // 房间按「楼层+类型+名称+尺寸」对上的合并；对不上的加进来，只在新方案里有工程，原方案里是空房间（反之亦然）。
   function importPlan(project, sourceProject) {
     if (!sourceProject || !Array.isArray(sourceProject.rooms) || !Array.isArray(sourceProject.plans) || !sourceProject.plans.length) throw new Error('文件没有可导入的报价方案');
-    if (!project.rooms.length || project.houseType !== sourceProject.houseType) throw new Error('房屋类型不同，请先打开同一套房屋的报价');
     const sourcePhone = String(sourceProject.info?.phone || '').replace(/\D/g, ''), targetPhone = String(project.info?.phone || '').replace(/\D/g, '');
     if (sourcePhone && targetPhone && sourcePhone !== targetPhone) throw new Error('客户电话不同，请确认选的是同一位客户的报价');
-    if (project.rooms.length !== sourceProject.rooms.length) throw new Error('房间数量不同，无法作为同一套房屋的 B 方案导入');
-    const layout = r => JSON.stringify([r.level || 1, r.type, String(r.name || '').trim().toLowerCase(), +r.L || 0, +r.W || 0, +r.H || 0, r.ext || false, r.doorList || [], r.windows || []]);
-    const used = new Set(), ids = {};
-    for (const src of sourceProject.rooms) {
-      const matches = project.rooms.filter(dst => !used.has(dst.id) && layout(dst) === layout(src));
-      const dst = matches.find(x => x.id === src.id) || (matches.length === 1 ? matches[0] : null);
-      if (!dst) throw new Error('房间名称、尺寸或门窗布局不同，请先核对两份报价的房间');
-      ids[src.id] = dst.id; used.add(dst.id);
-    }
-    if (JSON.stringify(project.house || {}) !== JSON.stringify(sourceProject.house || {})) throw new Error('全屋工程不同；目前方案共用全屋工程，请先核对后再导入');
-    const clone = value => JSON.parse(JSON.stringify(value));
-    const sourceExtras = (sourceProject.extras || []).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId }));
-    if (JSON.stringify(project.extras || []) !== JSON.stringify(sourceExtras)) throw new Error('人工增加项不同；目前方案共用这些项目，请先核对后再导入');
-    const srcPlan = activePlan(sourceProject), active = srcPlan.id === sourceProject.planId;
-    const states = active ? roomSnapshot(sourceProject) : (srcPlan.roomState || roomSnapshot(sourceProject));
-    const remap = obj => Object.fromEntries(Object.entries(obj || {}).filter(([id]) => ids[id]).map(([id, value]) => [ids[id], clone(value)]));
-    const remapKeys = obj => Object.fromEntries(Object.entries(obj || {}).filter(([key]) => !key.split('|')[0] || ids[key.split('|')[0]]).map(([key, value]) => { const parts = key.split('|'); if (parts[0]) parts[0] = ids[parts[0]]; return [parts.join('|'), clone(value)]; }));
     const id = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find(x => !plans(project).some(p => p.id === x));
     if (!id) throw new Error('方案数量已达上限');
-    const imported = { id, name: '方案 ' + id, roomState: remap(states), specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: { ...clone(sourceProject.prices || {}), ...clone(srcPlan.prices || {}) }, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
+    const clone = value => JSON.parse(JSON.stringify(value));
+    const layout = r => JSON.stringify([r.level || 1, r.type, String(r.name || '').trim().toLowerCase(), +r.L || 0, +r.W || 0, +r.H || 0, r.ext || false, r.doorList || [], r.windows || []]);
+    const srcPlan = activePlan(sourceProject), active = srcPlan.id === sourceProject.planId;
+    const states = active ? roomSnapshot(sourceProject) : (srcPlan.roomState || roomSnapshot(sourceProject));
+    const used = new Set(), ids = {}, added = [], empty = { packs: [] };
+    for (const src of sourceProject.rooms) {
+      const matches = project.rooms.filter(dst => !used.has(dst.id) && layout(dst) === layout(src));
+      let dst = matches.find(x => x.id === src.id) || matches[0];
+      if (!dst) {
+        dst = clone(src); ROOM_STATE.forEach(k => delete dst[k]); dst.packs = [];
+        if (project.rooms.some(r => r.id === dst.id)) dst.id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        if (project.rooms.some(r => (r.level || 1) === (dst.level || 1) && String(r.name || '').trim() === String(dst.name || '').trim())) dst.name = `${dst.name || ''}（方案 ${id}）`;
+        added.push(dst);
+      }
+      ids[src.id] = dst.id; used.add(dst.id);
+    }
+    // 新加的房间：现有各方案里都是空的
+    added.forEach(r => { project.rooms.push(r); plans(project).forEach(p => { if (p.roomState) p.roomState[r.id] = clone(empty); }); });
+    const roomState = {};
+    project.rooms.forEach(r => { roomState[r.id] = clone(empty); });
+    Object.entries(states || {}).forEach(([sid, st]) => { if (ids[sid]) roomState[ids[sid]] = clone(st); });
+    const remap = obj => Object.fromEntries(Object.entries(obj || {}).filter(([rid]) => ids[rid]).map(([rid, value]) => [ids[rid], clone(value)]));
+    const remapKeys = obj => Object.fromEntries(Object.entries(obj || {}).filter(([key]) => !key.split('|')[0] || ids[key.split('|')[0]]).map(([key, value]) => { const parts = key.split('|'); if (parts[0]) parts[0] = ids[parts[0]]; return [parts.join('|'), clone(value)]; }));
+    const srcHouse = active ? houseSnapshot(sourceProject) : (srcPlan.houseState || houseSnapshot(sourceProject));
+    const houseState = { house: clone(srcHouse.house || {}), extras: clone(srcHouse.extras || []).filter(x => !x.roomId || ids[x.roomId]).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId })) };
+    const imported = { id, name: '方案 ' + id, roomState, houseState, specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: { ...clone(sourceProject.prices || {}), ...clone(srcPlan.prices || {}) }, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
     for (const key of ['waive', 'feeQty', 'settings', 'design', 'discount']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
     project.plans.push(imported);
     switchPlan(project, id);
@@ -875,7 +905,7 @@
     const discount = Math.min(Math.round(num(planVal(project, planId, 'discount'))), before);
     const sst = Math.round((before - discount) * num(s.sst) / 100);
     const total = before - discount + sst;
-    const byStage = STAGES.map(st => ({ ...st, total: lines.filter(l => l.stage === st.id).reduce((t, l) => t + l.total, 0) })).filter(x => x.total > 0);
+    const byStage = STAGES.map(st => { const ls = lines.filter(l => l.stage === st.id); return { ...st, name: stageTitle(st.id, ls.map(l => l.code)), total: ls.reduce((t, l) => t + l.total, 0) }; }).filter(x => x.total > 0);
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
@@ -1070,7 +1100,7 @@
     return project;
   }
 
-  const api = { importPlan, switchPlan, roomSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
+  const api = { stageTitle, importPlan, switchPlan, roomSnapshot, houseSnapshot, specApplies, CLS, clsOf, HOUSES, ROOMS, PACKS, GROUPS, HOUSE_ITEMS, HOUSE_GROUPS, EXTRA_UNITS, SPEC_CATS, SETTINGS, PRICE: P, STAGES, OPTION_PRICES, OPTION_REF, TILE_PIECE_PRICES, TILE_PIECE_REF, geo, inputsOf, packValues, houseValues, unitPrice, buildLines, totals, checks, specOf, stdOf, specKeysFor, specStatus, placesOf, plans, activePlan, LAYOUTS, layoutsFor, layoutRooms, DEFAULT_LAYOUT, roomsFor, kinOf, kinLabel, AUTO_FEES, wallUnconfirmed, SPACE_GROUPS, sortRooms, roomGroup, setPackFor, copyPack, copyRoom, newRoom, presetRooms, migrate, roomLabel, num, r2 };
   root.QV2 = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
