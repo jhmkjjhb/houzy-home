@@ -658,7 +658,7 @@
     const houseState = { house: clone(srcHouse.house || {}), extras: clone(srcHouse.extras || []).filter(x => !x.roomId || ids[x.roomId]).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId })) };
     // prices 为空：导入的方案和 A 用同一份价目表算价，来源报价里的旧单价不带过来
     const imported = { id, name: '方案 ' + id, roomState, houseState, specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: {}, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), groupFix: Object.fromEntries(Object.entries(srcPlan.groupFix || {}).filter(([k]) => !k.startsWith('room:') || k === 'room:' || ids[k.slice(5)]).map(([k, v]) => [k.startsWith('room:') && k !== 'room:' ? 'room:' + ids[k.slice(5)] : k, v])), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
-    for (const key of ['waive', 'feeQty', 'settings', 'design', 'discount', 'totalFix']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    for (const key of ['waive', 'feeQty', 'settings', 'design', 'designGift', 'discount', 'totalFix']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
     project.plans.push(imported);
     switchPlan(project, id);
     return id;
@@ -934,14 +934,16 @@
     const mgmt = Math.round(hard * num(s.mgmtRate) / 100), cont = Math.round(hard * num(s.contRate) / 100);
     const before = direct + design + mgmt + cont;
     const groupOff = groupOffs(project, lines, planId).reduce((t, g) => t + g.off, 0);
-    const discount = Math.min(Math.round(num(planVal(project, planId, 'discount'))) + groupOff, before);
-    const sst = Math.round((before - discount) * num(s.sst) / 100);
-    const total = before - discount + sst;
+    // 设计费赠送：报价单照常列出设计费，再全额减免（只改这个方案）
+    const designGift = design > 0 && planVal(project, planId, 'designGift') ? design : 0;
+    const discount = Math.min(Math.round(num(planVal(project, planId, 'discount'))) + groupOff, before - designGift);
+    const sst = Math.round((before - designGift - discount) * num(s.sst) / 100);
+    const total = before - designGift - discount + sst;
     const byStage = STAGES.map(st => { const ls = lines.filter(l => l.stage === st.id); return { ...st, name: stageTitle(st.id, ls.map(l => l.code)), total: ls.reduce((t, l) => t + l.total, 0) }; }).filter(x => x.total > 0);
     let paid = 0;
     const pay = s.pay.map(([name, pct], i, a) => { const amt = i === a.length - 1 ? total - paid : Math.round(total * pct / 100); paid += amt; return { name, pct, amt }; });
     const gift = lines.reduce((t, l) => t + (l.gift ? l.giftValue : 0), 0);
-    return { direct, hard, soft, design, mgmt, cont, discount, groupOff, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
+    return { direct, hard, soft, design, designGift, mgmt, cont, discount, groupOff, gift, sst, total, floorSum: r2(floorSum), byStage, pay, settings: s };
   }
 
   // 一个房间里要定选材的「位置」：每个选了的范围项目是一个位置，只列出当前真正用到的选项
