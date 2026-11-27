@@ -18,7 +18,7 @@ assert.equal(Q.importPlan(target, source), 'B');
 assert.equal(target.planId, 'B');
 assert.deepEqual(target.rooms[0].packs, ['cabinets']);
 assert.equal(target.plans[1].roomSpecs['target-room'].cabinet.body, '铝合金');
-assert.deepEqual(target.plans[1].prices.cabinet_base, { mat: 100, lab: 50 });
+assert.deepEqual(target.plans[1].prices, {}, '导入的方案和 A 用同一份价目表，不带来源报价的旧单价');
 Q.switchPlan(target, 'A');
 assert.deepEqual(target.rooms[0], originalA, '切回 A 后房间工程保持原样');
 Q.switchPlan(target, 'B');
