@@ -656,7 +656,7 @@
     const houseState = { house: clone(srcHouse.house || {}), extras: clone(srcHouse.extras || []).filter(x => !x.roomId || ids[x.roomId]).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId })) };
     // prices 为空：导入的方案和 A 用同一份价目表算价，来源报价里的旧单价不带过来
     const imported = { id, name: '方案 ' + id, roomState, houseState, specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: {}, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), groupFix: Object.fromEntries(Object.entries(srcPlan.groupFix || {}).filter(([k]) => !k.startsWith('room:') || k === 'room:' || ids[k.slice(5)]).map(([k, v]) => [k.startsWith('room:') && k !== 'room:' ? 'room:' + ids[k.slice(5)] : k, v])), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
-    for (const key of ['waive', 'feeQty', 'settings', 'design', 'discount']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    for (const key of ['waive', 'feeQty', 'settings', 'design', 'discount', 'totalFix']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
     project.plans.push(imported);
     switchPlan(project, id);
     return id;
@@ -886,6 +886,24 @@
       // 砸墙渣土最重：每 100 平方尺 1 车（同旧版）
       auto('waste_out', 1 + ceil(demoArea / 400) + ceil(wallArea / 100) + ceil(pieces / 10), `基础 1 车 + 铲除面积 ${r2(demoArea)}÷400 + 砸墙 ${r2(wallArea)}÷100 + 旧件 ${pieces}÷10（进位）`, '自动');
       auto('clean', worked.reduce((t, r) => t + geo(r, project).floor, 0), '施工房间地面面积合计', '自动');
+    }
+    // 报价单上直接改「合计」（只改这个方案）：所有项目单价按同一比例调，明细、各组、管理费、付款各期都跟着变，合计正好等于填的数
+    const tf = Math.round(num(qp.totalFix));
+    if (tf > 0) {
+      const ls = lines.filter(l => !l.gift && l.total > 0), tot = () => totals(project, lines, planId).total;
+      const orig = tot();
+      if (ls.length && orig > 0 && tf !== orig) {
+        const base = ls.map(l => ({ l, total: l.total, unit: l.unit, matUnit: num(l.matUnit), layUnit: num(l.layUnit), tile: l.tile }));
+        const apply = f => base.forEach(b => { const l = b.l; l.preFix = b.total; l.total = Math.round(b.total * f); l.unit = r2(b.unit * f); l.matUnit = r2(b.matUnit * f); l.layUnit = r2(b.layUnit * f);
+          if (b.tile) l.tile = { ...b.tile, price: r2(b.tile.price * f), materialTotal: r2(b.tile.materialTotal * f), areaTotal: r2(b.tile.areaTotal * f) }; });
+        // 合计和比例基本是直线关系（设计费、优惠不跟着变），用两点求比例，再迭代两次去掉取整误差
+        let f0 = 1, t0 = orig, f1 = tf / orig; apply(f1); let t1 = tot();
+        for (let k = 0; k < 4 && t1 !== tf && t1 !== t0; k++) { const f2 = f1 + (tf - t1) * (f1 - f0) / (t1 - t0); f0 = f1; t0 = t1; f1 = Math.max(0, f2); apply(f1); t1 = tot(); }
+        // 剩下几块钱的取整差额放在金额最大的那一项
+        const big = ls.reduce((a, b) => (b.total > a.total ? b : a));
+        for (let k = 0; k < 6 && t1 !== tf; k++) { big.total += Math.round((tf - t1) / Math.max(1, t1 / Math.max(1, ls.reduce((t, l) => t + l.total, 0)))) || Math.sign(tf - t1); t1 = tot(); }
+        lines.fixedFrom = orig;
+      }
     }
     return lines;
   }
