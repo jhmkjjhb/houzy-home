@@ -658,7 +658,7 @@
     const houseState = { house: clone(srcHouse.house || {}), extras: clone(srcHouse.extras || []).filter(x => !x.roomId || ids[x.roomId]).map(x => ({ ...x, roomId: x.roomId ? ids[x.roomId] : x.roomId })) };
     // prices 为空：导入的方案和 A 用同一份价目表算价，来源报价里的旧单价不带过来
     const imported = { id, name: '方案 ' + id, roomState, houseState, specs: clone(srcPlan.specs || {}), roomSpecs: remap(srcPlan.roomSpecs), prices: {}, qtyFix: remapKeys(srcPlan.qtyFix), drop: remapKeys(srcPlan.drop), groupFix: Object.fromEntries(Object.entries(srcPlan.groupFix || {}).filter(([k]) => !k.startsWith('room:') || k === 'room:' || ids[k.slice(5)]).map(([k, v]) => [k.startsWith('room:') && k !== 'room:' ? 'room:' + ids[k.slice(5)] : k, v])), dups: clone(srcPlan.dups || []).filter(d => !d.roomId || ids[d.roomId]).map(d => ({ ...d, roomId: d.roomId ? ids[d.roomId] : d.roomId })) };
-    for (const key of ['waive', 'feeQty', 'settings', 'design', 'designGift', 'discount', 'totalFix']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
+    for (const key of ['waive', 'feeQty', 'settings', 'design', 'designGift', 'discount', 'discountNote', 'totalFix']) if (srcPlan[key] !== undefined || sourceProject[key] !== undefined) imported[key] = clone(srcPlan[key] !== undefined ? srcPlan[key] : sourceProject[key]);
     project.plans.push(imported);
     switchPlan(project, id);
     return id;
