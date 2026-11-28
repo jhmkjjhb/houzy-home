@@ -44,7 +44,7 @@
   .top .sum { text-align: right; }
   .top .sum small { display: block; font-size: 11px; color: var(--ink-dim); }
   .top .sum b { font-size: 20px; color: var(--accent); }
-  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 6px; }
+  .tabs { max-width: 1080px; margin: 0 auto; padding: 0 16px 10px; display: grid; grid-template-columns: repeat(5, 1fr) auto auto; gap: 6px; }
   .tab[data-tab="book"] { padding: 8px 10px; font-size: 15px !important; }
   .supplier-quote-frame { display:block; width:100%; height:calc(100vh - 210px); min-height:760px; border:0; background:transparent; }
   .card > h2:first-child { margin-top: 0; }
@@ -485,6 +485,34 @@
     .tabs { overflow-x:auto; display:flex; }
     .tab { min-width:74px; flex:1 0 auto; }
   }
+  /* ---------- 手机排版（≤700px）：顶部一条细栏（客户名 + 总额 + 展开），页签放到屏幕底部，内容区尽量大 ---------- */
+  @media(max-width:700px) {
+    html body .top .tabs { position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; gap:3px; overflow:visible; margin:0;
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom)); background:#153927; border-top:1px solid #c8a96e66; box-shadow:0 -8px 24px #0f2a1d33; }
+    html body .top .tab { flex:1 1 0; min-width:0; padding:7px 1px; font-size:11.5px; line-height:1.2; white-space:normal; text-align:center; border-radius:8px; }
+    html body .top .tab .dot { position:absolute; margin:-10px 0 0 -6px; }
+    body { padding-bottom:calc(70px + env(safe-area-inset-bottom)); }
+    [data-cloud-status]:not(:empty) { bottom:calc(76px + env(safe-area-inset-bottom)); }
+    /* 收起：一条 52px 的细栏，滚动时一直在顶上 */
+    body.head-min .top .in { flex-wrap:nowrap; gap:8px; padding:8px 12px; }
+    body.head-min .top .brandtitle { display:none; }
+    body.head-min .top .brandmark { width:30px; height:30px; flex:none; }
+    body.head-min .top .headInfo { order:1; flex:1 1 auto; font-size:13px; }
+    body.head-min .top .sum { order:2; margin-left:0; }
+    body.head-min .top .sum b { font-size:16px; }
+    body.head-min .top .headToggle { order:3; }
+    /* 展开：客户资料和按钮跟着页面一起滚走，不再一直占着屏幕 */
+    body:not(.head-min) .top { position:relative; }
+    body:not(.head-min) .top .cust { flex:1 1 100%; max-width:none; min-width:0; font-size:16px; }
+    body:not(.head-min) .top .cust[data-info="name"], body:not(.head-min) .top .cust[data-info="phone"] { flex:1 1 40%; }
+    .wrap { padding-left:12px; padding-right:12px; }
+    /* 全屋「收费」表：一行拆成两行，不再撑宽屏幕 */
+    table.q.fees, table.q.fees tbody { display:block; }
+    table.q.fees tr { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; padding:10px 0; border-bottom:1px solid var(--line); }
+    table.q.fees td { display:block; padding:0; border:0; min-width:0; }
+    table.q.fees td:first-child { grid-column:1/-1; }
+    table.q.fees td.r { text-align:left; }
+  }
   @media print {
     body.demo-on .dbar, body.demo-on .dnav, body.demo-on .dots, body.demo-on .dopt button:not(.on) { display: none !important; }
     body.demo-on .slide { page-break-after: always; padding-bottom: 20px; animation: none; }
@@ -718,14 +746,17 @@
   let cloudBusy = false;
   // 页头收起/展开（记在本机）
   function headInfoText() { const i = P.info || {}; return [i.name, i.phone].filter(Boolean).join(' · ') || '（客户资料未填）'; }
-  function setHeadMin(on) {
+  // 手机上：页头默认收成一条细栏（客户名 + 总额），客户资料还没填时才展开让员工先填
+  const PHONE = window.matchMedia?.('(max-width:700px)').matches;
+  function setHeadMin(on, remember = true) {
     document.body.classList.toggle('head-min', on);
-    const b = document.getElementById('headToggle'); if (b) { b.textContent = on ? '▾ 展开' : '▴ 收起'; b.setAttribute('aria-expanded', String(!on)); }
+    const b = document.getElementById('headToggle'); if (b) { b.textContent = on ? (PHONE ? '▾ 资料' : '▾ 展开') : '▴ 收起'; b.setAttribute('aria-expanded', String(!on)); }
     const h = document.getElementById('headInfo'); if (h) h.textContent = headInfoText();
-    try { localStorage.setItem('houzy-quote-v2-headmin', on ? '1' : '0'); } catch (e) {}
+    if (remember && !PHONE) try { localStorage.setItem('houzy-quote-v2-headmin', on ? '1' : '0'); } catch (e) {}
   }
   document.getElementById('headToggle')?.addEventListener('click', () => setHeadMin(!document.body.classList.contains('head-min')));
-  try { if (localStorage.getItem('houzy-quote-v2-headmin') === '1') setHeadMin(true); } catch (e) {}
+  if (PHONE) setHeadMin(!!String(P.info?.name || '').trim(), false);
+  else try { if (localStorage.getItem('houzy-quote-v2-headmin') === '1') setHeadMin(true); } catch (e) {}
   let tab = new URLSearchParams(location.search).get('tab') === 'supplier' ? 'supplier' : P.houseType ? 'room' : 'house';
   let roomId = P.rooms[0]?.id || null;
   let confirmReset = false;
@@ -1886,7 +1917,7 @@
       if (wv[code]) return `<tr><td>${esc(PRICE[code].name)}<div class="desc">这单免收</div></td><td></td><td></td><td class="r mono" style="color:var(--ink-dim)">免收</td><td class="r"><button class="chip" data-waive="${code}">恢复收取</button></td></tr>`;
       return `<tr><td>${esc(PRICE[code].name)}<div class="desc">${esc(l.formula)}${P.prices?.[code] || plan().prices?.[code] ? ' · 本方案临时价覆盖公司价' : ''}</div></td><td>${field('数量', l.unitName, stepper(`data-feeqty="${code}"`, l.qty, 1))}</td><td>${field('单价', showM2 ? 'RM/平方米' : `RM/${l.unitName}`, stepper(`data-price="${code}" data-price-m2="${showM2 ? '1' : '0'}"`, shownUnit, showM2 ? 1 : 0.1))}</td><td class="r mono">${rm(amt)}</td><td class="r">${changed ? `<button class="chip" data-feereset="${code}">恢复自动</button> ` : ''}<button class="chip" data-waive="${code}">这单免收</button></td></tr>`; };
     h += `</div><h2>收费</h2><div class="card"><p class="hint" style="margin:0 0 6px">下面这些按房间和工程量自动加上，不用另外选；某一单不收的，点「这单免收」。</p>
-      <table class="q"><tbody>${Q.AUTO_FEES.map(feeRow).join('') || '<tr><td class="hint">选了施工项目后自动出现</td></tr>'}</tbody></table>
+      <table class="q fees"><tbody>${Q.AUTO_FEES.map(feeRow).join('') || '<tr><td class="hint">选了施工项目后自动出现</td></tr>'}</tbody></table>
       <div class="row" style="margin-top:12px">${field(`管理费（硬装直接费 × %，软装不收）= ${rm(T.mgmt)}`, '%', stepper('data-setting="mgmtRate"', T.settings.mgmtRate, 1))}${field(`不可预见费（硬装直接费 × %）= ${rm(T.cont)}`, '%', stepper('data-setting="contRate"', T.settings.contRate, 1))}${field(`SST = ${rm(T.sst)}`, '%', stepper('data-setting="sst"', T.settings.sst, 1))}</div>
       <div class="row" style="margin-top:8px"><label class="fld"><span><input type="checkbox" data-design ${pget('design') !== false ? 'checked' : ''}> 收设计费（有施工的室内面积 ${nf(T.floorSum)} 平方尺 × 单价）= ${rm(T.design)}</span></label><label class="fld"><span><input type="checkbox" data-designgift ${pget('designGift') ? 'checked' : ''} ${pget('design') === false ? 'disabled' : ''}> 设计费赠送（报价单照常列出，再全额减免）</span></label>${field('设计费单价', 'RM/平方尺', stepper('data-setting="designRate"', T.settings.designRate, 1))}
       ${field('优惠金额', 'RM', stepper(`data-discount`, pget('discount', 0) || 0, 100))}<label class="fld">优惠说明（报价单上显示）<input class="cust" data-discnote value="${esc(pget('discountNote', '') || '')}" maxlength="30" placeholder="例如：赠送设计费、开业优惠"></label></div>
@@ -2196,7 +2227,8 @@
     const C = compute(); if (persist) save();
     document.getElementById('grand').textContent = rm(C.T.total);
     { const hi = document.getElementById('headInfo'); if (hi) hi.textContent = headInfoText(); }
-    const tabs = [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['supplier', '供应商询价'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
+    const tabs = PHONE ? [['house', '户型'], ['room', '房间'], ['all', '全屋'], ['spec', '选材'], ['quote', '报价单'], ['supplier', '询价'], ['book', ic('gear')]]
+      : [['house', '① 户型'], ['room', '② 房间'], ['all', '③ 全屋'], ['spec', '④ 选材'], ['quote', '⑤ 报价单'], ['supplier', '供应商询价'], ['book', ic('gear') + '<span class="tl"> 价目表</span>']];
     document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'quote' && C.K.red.length ? `<span class="dot">${C.K.red.length}</span>` : ''}</button>`).join('');
     document.getElementById('viewer').innerHTML = viewerHtml();
     const dm = document.getElementById('demo');
